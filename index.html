@@ -236,6 +236,7 @@
     <li><a href="#group-anagrams">Group Anagrams — groupAnagrams()</a> <span class="difficulty medium">Medium</span></li>
     <li><a href="#top-k-frequent">Top K Frequent Elements — topKFrequent()</a> <span class="difficulty medium">Medium</span></li>
     <li><a href="#encode-decode-strings">Encode and Decode Strings — encode() / decode()</a> <span class="difficulty medium">Medium</span></li>
+    <li><a href="#product-except-self">Product of Array Except Self — productExceptSelf()</a> <span class="difficulty medium">Medium</span></li>
   </ol>
 </div>
 
@@ -908,6 +909,193 @@ def decode(self, s: str) -> List[str]:
   <div class="info-box note">
     <strong>This is the same idea behind real network protocols!</strong>
     HTTP uses <code>Content-Length</code> headers, TCP uses length-prefixed frames, and Protocol Buffers use varint-encoded lengths — all for the same reason: length-prefixing is the most robust way to frame variable-length data.
+  </div>
+
+  <div class="back-to-top"><a href="#top">↑ Back to top</a></div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PROBLEM 7: Product of Array Except Self -->
+<!-- ============================================================ -->
+<div class="section" id="product-except-self">
+  <div class="section-num">Problem 7</div>
+  <h2>Product of Array Except Self</h2>
+  <div class="subtitle">productExceptSelf() — Brute-Force Exclude-and-Multiply</div>
+
+  <h3>Problem Statement</h3>
+  <p>Given an integer array <code>nums</code>, return an array <code>output</code> where <code>output[i]</code> is the product of all the elements of <code>nums</code> except <code>nums[i]</code>.</p>
+  <p>Each product is guaranteed to fit in a 32-bit integer.</p>
+
+  <h3>Constraints</h3>
+  <ul>
+    <li><code>2 &lt;= nums.length &lt;= 1000</code></li>
+    <li><code>-20 &lt;= nums[i] &lt;= 20</code></li>
+  </ul>
+
+  <h3>Solution Code (Brute-Force)</h3>
+  <pre><span class="lang-label">Python</span>
+def productExceptSelf(self, nums: List[int]) -> List[int]:
+    length = len(nums)
+    i = 0
+    output = []
+    while i < length:
+        result = 1
+        new_list = nums[:i] + nums[i + 1:]
+        for x in new_list:
+            result = result * x
+        output.append(result)
+        i = i + 1
+    return output</pre>
+
+  <h3>How It Works</h3>
+  <p>For each index <code>i</code>, the algorithm creates a <strong>new list excluding <code>nums[i]</code></strong> by concatenating the left slice <code>nums[:i]</code> and the right slice <code>nums[i+1:]</code>. It then multiplies all elements in this new list to get the product. This is straightforward but has O(n&sup2;) time complexity.</p>
+
+  <h3>Algorithm Flowchart</h3>
+  <div class="flowchart">
+    <div class="fc-title">Brute-force: exclude each element and multiply the rest</div>
+    <div class="fc-node fc-start">START</div>
+    <div class="fc-arrow">▼</div>
+    <div class="fc-node fc-process">i = 0, output = [ ]</div>
+    <div class="fc-arrow">▼</div>
+    <div class="fc-node fc-decision">◆ i < length? ◆</div>
+    <div class="fc-branch">
+      <div>
+        <div class="fc-label">YES</div>
+        <div class="fc-arrow">▼</div>
+        <div class="fc-node fc-process">new_list = nums[:i] + nums[i+1:]<br>(everything except nums[i])</div>
+        <div class="fc-arrow">▼</div>
+        <div class="fc-node fc-process">result = multiply all in new_list</div>
+        <div class="fc-arrow">▼</div>
+        <div class="fc-node fc-process">output.append(result)<br>i += 1</div>
+        <div class="fc-arrow">↰ Loop back</div>
+      </div>
+      <div>
+        <div class="fc-label">NO</div>
+        <div class="fc-arrow">▼</div>
+        <div class="fc-node fc-end">Return output</div>
+      </div>
+    </div>
+  </div>
+
+  <h3>Step-by-Step Trace</h3>
+  <h4>Example 1: nums = [1, 2, 4, 6]</h4>
+  <table class="kv-table">
+    <tr><th>i</th><th>Excluded</th><th>new_list</th><th>Product</th><th>output</th></tr>
+    <tr><td>0</td><td>1</td><td>[2, 4, 6]</td><td>2 × 4 × 6 = <strong>48</strong></td><td>[48]</td></tr>
+    <tr><td>1</td><td>2</td><td>[1, 4, 6]</td><td>1 × 4 × 6 = <strong>24</strong></td><td>[48, 24]</td></tr>
+    <tr><td>2</td><td>4</td><td>[1, 2, 6]</td><td>1 × 2 × 6 = <strong>12</strong></td><td>[48, 24, 12]</td></tr>
+    <tr><td>3</td><td>6</td><td>[1, 2, 4]</td><td>1 × 2 × 4 = <strong>8</strong></td><td>[48, 24, 12, 8]</td></tr>
+  </table>
+  <p>Output: <strong>[48, 24, 12, 8]</strong></p>
+
+  <h4>Example 2: nums = [-1, 0, 1, 2, 3]</h4>
+  <table class="kv-table">
+    <tr><th>i</th><th>Excluded</th><th>new_list</th><th>Product</th><th>output</th></tr>
+    <tr><td>0</td><td>-1</td><td>[0, 1, 2, 3]</td><td>0 × 1 × 2 × 3 = <strong>0</strong></td><td>[0]</td></tr>
+    <tr><td>1</td><td>0</td><td>[-1, 1, 2, 3]</td><td>-1 × 1 × 2 × 3 = <strong>-6</strong></td><td>[0, -6]</td></tr>
+    <tr><td>2</td><td>1</td><td>[-1, 0, 2, 3]</td><td>-1 × 0 × 2 × 3 = <strong>0</strong></td><td>[0, -6, 0]</td></tr>
+    <tr><td>3</td><td>2</td><td>[-1, 0, 1, 3]</td><td>-1 × 0 × 1 × 3 = <strong>0</strong></td><td>[0, -6, 0, 0]</td></tr>
+    <tr><td>4</td><td>3</td><td>[-1, 0, 1, 2]</td><td>-1 × 0 × 1 × 2 = <strong>0</strong></td><td>[0, -6, 0, 0, 0]</td></tr>
+  </table>
+  <p>Output: <strong>[0, -6, 0, 0, 0]</strong></p>
+
+  <h3>Complexity Analysis (Brute-Force)</h3>
+  <table class="kv-table">
+    <tr><th>Metric</th><th>Value</th><th>Why</th></tr>
+    <tr><td>Time</td><td><strong>O(n&sup2;)</strong></td><td>For each of n elements, multiply n-1 others</td></tr>
+    <tr><td>Space</td><td><strong>O(n)</strong></td><td>new_list created each iteration + output array</td></tr>
+  </table>
+
+  <h3>Optimal O(n) Approach — Prefix × Suffix</h3>
+  <p>The key insight: <code>output[i] = (product of everything LEFT of i) × (product of everything RIGHT of i)</code>. We can compute this in two passes without division.</p>
+
+  <pre><span class="lang-label">Python — O(n)</span>
+def productExceptSelf(self, nums: List[int]) -> List[int]:
+    n = len(nums)
+    output = [1] * n
+
+    prefix = 1
+    for i in range(n):
+        output[i] = prefix
+        prefix *= nums[i]
+
+    suffix = 1
+    for i in range(n - 1, -1, -1):
+        output[i] *= suffix
+        suffix *= nums[i]
+
+    return output</pre>
+
+  <h3>Optimal Flowchart — Two-Pass</h3>
+  <div class="flowchart">
+    <div class="fc-title">O(n): Prefix pass (→) then Suffix pass (←)</div>
+    <div class="fc-node fc-start">START</div>
+    <div class="fc-arrow">▼</div>
+    <div class="fc-node fc-process">output = [1, 1, 1, ..., 1]</div>
+    <div class="fc-arrow">▼</div>
+    <div style="background: rgba(35,131,226,0.06); border: 1px dashed var(--accent); border-radius: 8px; padding: 12px; margin: 8px 0;">
+      <div style="font-size: 0.8em; color: var(--accent); font-weight: 600; margin-bottom: 8px;">PASS 1: PREFIX (left → right)</div>
+      <div class="fc-node fc-process">prefix = 1<br>For i = 0 to n-1:<br>&nbsp;&nbsp;output[i] = prefix<br>&nbsp;&nbsp;prefix *= nums[i]</div>
+    </div>
+    <div class="fc-arrow">▼</div>
+    <div style="background: rgba(105,64,165,0.06); border: 1px dashed var(--accent3); border-radius: 8px; padding: 12px; margin: 8px 0;">
+      <div style="font-size: 0.8em; color: var(--accent3); font-weight: 600; margin-bottom: 8px;">PASS 2: SUFFIX (right → left)</div>
+      <div class="fc-node fc-process">suffix = 1<br>For i = n-1 down to 0:<br>&nbsp;&nbsp;output[i] *= suffix<br>&nbsp;&nbsp;suffix *= nums[i]</div>
+    </div>
+    <div class="fc-arrow">▼</div>
+    <div class="fc-node fc-end">Return output</div>
+  </div>
+
+  <h3>Optimal Trace: nums = [1, 2, 4, 6]</h3>
+  <h4>Pass 1 — Prefix (left → right)</h4>
+  <p>Each <code>output[i]</code> gets the product of everything to its left.</p>
+  <table class="kv-table">
+    <tr><th>i</th><th>prefix (before)</th><th>output[i] = prefix</th><th>prefix *= nums[i]</th></tr>
+    <tr><td>0</td><td>1</td><td>output[0] = <strong>1</strong></td><td>1 × 1 = 1</td></tr>
+    <tr><td>1</td><td>1</td><td>output[1] = <strong>1</strong></td><td>1 × 2 = 2</td></tr>
+    <tr><td>2</td><td>2</td><td>output[2] = <strong>2</strong></td><td>2 × 4 = 8</td></tr>
+    <tr><td>3</td><td>8</td><td>output[3] = <strong>8</strong></td><td>8 × 6 = 48</td></tr>
+  </table>
+  <p>After Pass 1: <code>output = [1, 1, 2, 8]</code> (prefix products only)</p>
+
+  <h4>Pass 2 — Suffix (right → left)</h4>
+  <p>Multiply each <code>output[i]</code> by the product of everything to its right.</p>
+  <table class="kv-table">
+    <tr><th>i</th><th>suffix (before)</th><th>output[i] *= suffix</th><th>suffix *= nums[i]</th></tr>
+    <tr><td>3</td><td>1</td><td>8 × 1 = <strong>8</strong></td><td>1 × 6 = 6</td></tr>
+    <tr><td>2</td><td>6</td><td>2 × 6 = <strong>12</strong></td><td>6 × 4 = 24</td></tr>
+    <tr><td>1</td><td>24</td><td>1 × 24 = <strong>24</strong></td><td>24 × 2 = 48</td></tr>
+    <tr><td>0</td><td>48</td><td>1 × 48 = <strong>48</strong></td><td>48 × 1 = 48</td></tr>
+  </table>
+  <p>After Pass 2: <code>output = [48, 24, 12, 8]</code></p>
+
+  <h3>Visual: Prefix × Suffix Decomposition</h3>
+  <div class="flowchart" style="text-align: left; padding: 20px;">
+    <div class="fc-title" style="text-align: center;">output[i] = prefix[i] × suffix[i]</div>
+    <table class="kv-table" style="margin-top: 16px; text-align: center;">
+      <tr><th>Index</th><th>nums[i]</th><th>Prefix (left product)</th><th>Suffix (right product)</th><th>output[i]</th></tr>
+      <tr><td>0</td><td>1</td><td>— (nothing left)</td><td>2 × 4 × 6 = 48</td><td>1 × 48 = <strong>48</strong></td></tr>
+      <tr><td>1</td><td>2</td><td>1</td><td>4 × 6 = 24</td><td>1 × 24 = <strong>24</strong></td></tr>
+      <tr><td>2</td><td>4</td><td>1 × 2 = 2</td><td>6</td><td>2 × 6 = <strong>12</strong></td></tr>
+      <tr><td>3</td><td>6</td><td>1 × 2 × 4 = 8</td><td>— (nothing right)</td><td>8 × 1 = <strong>8</strong></td></tr>
+    </table>
+  </div>
+
+  <h3>Complexity Analysis (Optimal)</h3>
+  <table class="kv-table">
+    <tr><th>Metric</th><th>Value</th><th>Why</th></tr>
+    <tr><td>Time</td><td><strong>O(n)</strong></td><td>Two linear passes through the array</td></tr>
+    <tr><td>Space</td><td><strong>O(1)</strong></td><td>Only the output array (no extra prefix/suffix arrays)</td></tr>
+  </table>
+
+  <h3>Key Insight</h3>
+  <div class="info-box success">
+    <strong>Product except self = prefix × suffix.</strong>
+    For any index i, the answer is the product of everything to its left (prefix) multiplied by the product of everything to its right (suffix). Two passes — one forward, one backward — build these running products using just a single variable each. No division needed, no extra arrays.
+  </div>
+  <div class="info-box note">
+    <strong>Why not just divide total product by nums[i]?</strong>
+    Division fails when <code>nums[i] == 0</code>. The prefix × suffix approach handles zeros naturally — if there's a zero in the array, the prefix or suffix containing it will be zero, and only the position where that zero is excluded will have a nonzero product.
   </div>
 
   <div class="back-to-top"><a href="#top">↑ Back to top</a></div>
