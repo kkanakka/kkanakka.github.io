@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<title>Coding Problems — Visual Guide</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #f7f6f3;
+    --border: #e3e2de;
+    --text: #37352f;
+    --text-muted: #787774;
+    --accent: #2383e2;
+    --accent2: #0f7b0f;
+    --accent3: #6940a5;
+    --accent4: #d9730d;
+    --red: #e03e3e;
+    --code-bg: #f7f6f3;
+    --card: #ffffff;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    font-size: 15px;
+  }
+  .container { max-width: 900px; margin: 0 auto; padding: 0 24px; }
+
+  .hero {
+    background: linear-gradient(180deg, #fafafa 0%, #ffffff 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 48px 0 36px;
+    text-align: center;
+  }
+  .hero h1 { font-size: 2.2em; font-weight: 700; margin-bottom: 12px; }
+  .hero h1 span { color: var(--accent); }
+  .hero p { font-size: 1.05em; color: var(--text-muted); max-width: 700px; margin: 0 auto 20px; }
+  .hero .nav-links { margin-top: 16px; display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+  .hero .nav-links a {
+    display: inline-block; background: var(--surface); border: 1px solid var(--border);
+    padding: 8px 20px; border-radius: 20px; font-size: 0.85em; color: var(--text-muted);
+    text-decoration: none; transition: all 0.2s;
+  }
+  .hero .nav-links a:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  .toc {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 32px;
+    margin: 40px auto;
+    max-width: 800px;
+  }
+  .toc h2 { font-size: 1.2em; margin-bottom: 16px; color: var(--accent); }
+  .toc ol { padding-left: 24px; }
+  .toc li { margin: 8px 0; }
+  .toc a {
+    color: var(--text); text-decoration: none; border-bottom: 1px dashed var(--border);
+    transition: color 0.2s;
+  }
+  .toc a:hover { color: var(--accent); border-bottom-color: var(--accent); }
+  .toc .difficulty { font-size: 0.75em; padding: 2px 8px; border-radius: 10px; margin-left: 8px; font-weight: 600; }
+  .toc .easy { background: rgba(15,123,15,0.1); color: var(--accent2); }
+  .toc .medium { background: rgba(210,153,34,0.1); color: #d29922; }
+
+  .section {
+    margin: 40px 0; padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+  .section-num {
+    font-size: 0.75em; font-weight: 600; color: var(--accent);
+    text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;
+  }
+  .section h2 {
+    font-size: 1.6em; font-weight: 600; margin-bottom: 8px;
+    color: var(--accent);
+  }
+  .section .subtitle {
+    font-size: 1em; color: var(--text-muted); margin-bottom: 20px;
+  }
+  .section h3 {
+    font-size: 1.15em; margin: 30px 0 12px; color: var(--accent2);
+    border-left: 3px solid var(--accent2); padding-left: 12px;
+  }
+  .section h4 { font-size: 1.05em; margin: 20px 0 8px; color: var(--accent3); }
+  .section p { margin: 12px 0; color: var(--text); }
+  .section ul, .section ol { margin: 12px 0 12px 24px; }
+  .section li { margin: 6px 0; }
+
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    overflow-x: auto;
+    margin: 16px 0;
+    font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', Consolas, monospace;
+    font-size: 0.88em;
+    line-height: 1.7;
+    position: relative;
+  }
+  pre .lang-label {
+    position: absolute; top: 8px; right: 12px;
+    font-size: 0.75em; color: var(--text-muted);
+    background: var(--surface); padding: 2px 8px; border-radius: 4px;
+  }
+  code {
+    font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', Consolas, monospace;
+    font-size: 0.9em;
+  }
+  :not(pre) > code {
+    background: var(--surface);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--accent);
+    border: 1px solid var(--border);
+  }
+
+  .kv-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 0.95em;
+  }
+  .kv-table th {
+    background: var(--surface);
+    text-align: left;
+    padding: 10px 14px;
+    font-weight: 600;
+    border: 1px solid var(--border);
+    color: var(--accent);
+  }
+  .kv-table td {
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    vertical-align: top;
+  }
+  .kv-table tr:nth-child(even) { background: var(--surface); }
+
+  .flowchart {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 24px 0;
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.88em;
+    line-height: 1.8;
+  }
+  .flowchart .fc-title {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.85em;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+    font-weight: 600;
+  }
+  .fc-node {
+    display: inline-block;
+    padding: 8px 20px;
+    border-radius: 8px;
+    margin: 4px 0;
+    font-weight: 500;
+  }
+  .fc-start { background: var(--accent); color: #fff; border-radius: 20px; }
+  .fc-process { background: var(--surface); border: 2px solid var(--border); color: var(--text); }
+  .fc-decision { background: #fff3e0; border: 2px solid var(--accent4); color: var(--accent4); transform: rotate(0deg); }
+  .fc-yes { background: rgba(15,123,15,0.1); border: 2px solid var(--accent2); color: var(--accent2); }
+  .fc-no { background: rgba(224,62,62,0.1); border: 2px solid var(--red); color: var(--red); }
+  .fc-end { background: var(--accent3); color: #fff; border-radius: 20px; }
+  .fc-arrow { color: var(--text-muted); font-size: 1.2em; display: block; }
+  .fc-branch { display: flex; justify-content: center; gap: 40px; margin: 8px 0; }
+  .fc-label { font-size: 0.8em; color: var(--text-muted); font-weight: 600; }
+
+  .info-box {
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 16px 0;
+    border-left: 4px solid;
+  }
+  .info-box.note { background: rgba(88, 166, 255, 0.1); border-left-color: var(--accent); }
+  .info-box.success { background: rgba(63, 185, 80, 0.1); border-left-color: var(--accent2); }
+  .info-box.warning { background: rgba(240, 136, 62, 0.1); border-left-color: var(--accent4); }
+  .info-box strong { display: block; margin-bottom: 4px; }
+
+  .back-to-top {
+    text-align: right; margin: 16px 0;
+    font-size: 0.85em;
+  }
+  .back-to-top a { color: var(--text-muted); text-decoration: none; }
+  .back-to-top a:hover { color: var(--accent); }
+
+  .footer {
+    text-align: center;
+    padding: 40px 0;
+    color: var(--text-muted);
+    font-size: 0.85em;
+    border-top: 1px solid var(--border);
+    margin-top: 40px;
+  }
+
+  @media (max-width: 640px) {
+    .hero h1 { font-size: 1.6em; }
+    .toc { padding: 20px; }
+    .fc-branch { flex-direction: column; gap: 12px; align-items: center; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Hero -->
+<div class="hero">
+  <div class="container">
+    <h1>Coding <span>Problems</span></h1>
+    <p>A visual guide to solving coding interview problems with step-by-step traces, flowcharts, and complexity analysis.</p>
+    <div class="nav-links">
+      <a href="https://kkanakka.github.io/linux-systems-guide/">Linux Systems Guide</a>
+      <a href="https://kkanakka.github.io/linux-systems-guide/sd-index.html">System Design Hub</a>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- Table of Contents -->
+<div class="toc" id="top">
+  <h2>Problems</h2>
+  <ol>
+    <li><a href="#contains-duplicate">Contains Duplicate — hasDuplicate()</a> <span class="difficulty easy">Easy</span></li>
+    <li><a href="#valid-anagram">Valid Anagram — isAnagram()</a> <span class="difficulty easy">Easy</span></li>
+    <li><a href="#two-sum">Two Sum — twoSum()</a> <span class="difficulty easy">Easy</span></li>
+    <li><a href="#group-anagrams">Group Anagrams — groupAnagrams()</a> <span class="difficulty medium">Medium</span></li>
+    <li><a href="#top-k-frequent">Top K Frequent Elements — topKFrequent()</a> <span class="difficulty medium">Medium</span></li>
+  </ol>
+</div>
+
+<!-- ============================================================ -->
+<!-- PROBLEM 1: Contains Duplicate -->
+<!-- ============================================================ -->
+<div class="section" id="contains-duplicate">
+  <div class="section-num">Problem 1</div>
+  <h2>Contains Duplicate</h2>
+  <div class="subtitle">hasDuplicate() — Using a HashSet Approach</div>
+
+  <h3>Problem Statement</h3>
+  <p>Given an integer array <code>nums</code>, return <code>true</code> if any value appears more than once in the array, otherwise return <code>false</code>.</p>
+
+  <h3>Solution Code</h3>
+  <pre><span class="lang-label">Python</span>
+def hasDuplicate(self, nums: List[int]) -> bool:
+    seen = set()
+    for num in nums:
+        if num in seen:
+            return True
+        seen.add(num)
+    return False</pre>
+
+  <h3>How It Works</h3>
+  <p>The algorithm uses a <strong>HashSet</strong> to track numbers already seen. For each number in the array, it checks if the number exists in the set. If yes, a duplicate is found. If no, the number is added to the set. This gives <strong>O(n)</strong> time and <strong>O(n)</strong> space complexity.</p>
+
+  <h3>Algorithm Flowchart</h3>
+  <div class="flowchart">
+    <div class="fc-title">Decision flow for each element</div>
+    <div class="fc-node fc-start">START</div>
+    <div class="fc-arrow">▼</div>
+    <div class="fc-node fc-process">Initialize seen = { }</div>
+    <div class="fc-arrow">▼</div>
+    <div class="fc-node fc-process">Get next num from array</div>
+    <div class="fc-arrow">▼</div>
+    <div class="fc-node fc-decision">◆ Is num in seen? ◆</div>
+    <div class="fc-branch">
+      <div>
+        <div class="fc-label">YES</div>
+        <div class="fc-arrow">▼</div>
+        <div class="fc-node fc-yes">return True</div>
+      </div>
+      <div>
+        <div class="fc-label">NO</div>
+        <div class="fc-arrow">▼</div>
+        <div class="fc-node fc-process">Add num to seen</div>
+        <div class="fc-arrow">↰ Loop back</div>
+      </div>
+    </div>
+    <div class="fc-arrow" style="margin-top:12px">▼</div>
+    <div class="fc-node fc-end">All done → return False</div>
+  </div>
+
+  <h3>Step-by-Step Trace</h3>
+  <p>Example: <code>nums = [1, 2, 3, 3]</code></p>
+  <table class="kv-table">
+    <tr><th>Step</th><th>num</th><th>seen (before)</th><th>In seen?</th><th>Action</th></tr>
+    <tr><td>1</td><td>1</td><td>{ }</td><td>No</td><td>Add 1</td></tr>
+    <tr><td>2</td><td>2</td><td>{ 1 }</td><td>No</td><td>Add 2</td></tr>
+    <tr><td>3</td><td>3</td><td>{ 1, 2 }</td><td>No</td><td>Add 3</td></tr>
+    <tr><td>4</td><td>3</td><td>{ 1, 2, 3 }</td><td><strong>YES!</strong></td><td>return True</td></tr>
+  </table>
+
+  <h3>Complexity Analysis</h3>
+  <table class="kv-table">
+    <tr><th>Metric</th><th>Value</th><th>Why</th></tr>
+    <tr><td>Time</td><td><strong>O(n)</strong></td><td>Single pass through array</td></tr>
+    <tr><td>Space</td><td><strong>O(n)</strong></td><td>HashSet stores up to n items</td></tr>
+  </table>
+
+  <h3>Key Insight</h3>
+  <div class="info-box success">
+    <strong>HashSet lookup is O(1) on average.</strong>
+    This makes the set-based approach far more efficient than a brute-force O(n&sup2;) nested loop or an O(n log n) sort-then-scan approach. We trade space for speed.
+  </div>
+
+  <div class="back-to-top"><a href="#top">↑ Back to top</a></div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PROBLEM 2: Valid Anagram -->
+<!-- ============================================================ -->
+<div class="section" id="valid-anagram">
+  <div class="section-num">Problem 2</div>
+  <h2>Valid Anagram</h2>
+  <div class="subtitle">isAnagram() — Using a HashMap / Counter Approach</div>
+
+  <h3>Problem Statement</h3>
+  <p>Given two strings <code>s</code> and <code>t</code>, return <code>true</code> if the two strings are anagrams of each other, otherwise return <code>false</code>.</p>
+  <p>An <strong>anagram</strong> is a string that contains the exact same characters as another string, but the order of the characters can be different.</p>
+
+  <h3>Solution Code</h3>
+  <pre><span class="lang-label">Python</span>
+def isAnagram(self, s: str, t: str) -> bool:
+    if len(s) != len(t):
+        return False
+
+    count = {}
+    for i in range(len(s)):
+        count[s[i]] = count.get(s[i], 0) + 1
+        count[t[i]] = count.get(t[i], 0) - 1
+
+    for val in count.values():
+        if val != 0:
+            return False
+    return True</pre>
+
+  <h3>How It Works</h3>
+  <p>The algorithm uses a single <strong>HashMap</strong> (dictionary) to count character frequencies. It increments the count for each character in <code>s</code> and decrements for each character in <code>t</code>. If all counts end up at zero, the strings are anagrams. A quick length check at the start provides an early exit for obvious non-matches.</p>
+
+  <h3>Algorithm Flowchart</h3>
+  <div class="flowchart">
+    <div class="fc-title">Decision flow</div>
+    <div class="fc-node fc-start">START</div>
+    <div class="fc-arrow">▼</div>
+    <div class="fc-node fc-decision">◆ len(s) == len(t)? ◆</div>
+    <div class="fc-branch">
+      <div>
+        <div class="fc-label">YES</div>
+        <div class="fc-arrow">▼</div>
+        <div class="fc-node fc-process">For each index i:<br>count[s[i]] += 1<br>count[t[i]] -= 1</div>
+      </div>
+      <div>
+        <div class="fc-label">NO</div>
+        <div class="fc-arrow">▶</div>
+        <div class="fc-node fc-no">return False</div>
+      </div>
+    </div>
+    <div class="fc-arrow" style="margin-top:12px">▼</div>
+    <div class="fc-node fc-decision">◆ All counts == 0? ◆</div>
+    <div class="fc-branch">
+      <div>
+        <div class="fc-label">YES</div>
+        <div class="fc-arrow">▼</div>
+        <div class="fc-node fc-yes">return True</div>
+      </div>
+      <div>
+        <div class="fc-label">NO</div>
+        <div class="fc-arrow">▼</div>
+        <div class="fc-node fc-no">return False</div>
+      </div>
+    </div>
+  </div>
+
+  <h3>Step-by-Step Trace</h3>
+  <h4>Example 1: s = "racecar", t = "carrace"</h4>
+  <table class="kv-table">
+    <tr><th>i</th><th>s[i]</th><th>t[i]</th><th>Action</th><th>count</th></tr>
+    <tr><td>0</td><td>r</td><td>c</td><td>+r, -c</td><td>{r:1, c:-1}</td></tr>
+    <tr><td>1</td><td>a</td><td>a</td><td>+a, -a</td><td>{r:1, c:-1, a:0}</td></tr>
+    <tr><td>2</td><td>c</td><td>r</td><td>+c, -r</td><td>{r:0, c:0, a:0}</td></tr>
+    <tr><td>3</td><td>e</td><td>r</td><td>+e, -r</td><td>{r:-1, c:0, a:0, e:1}</td></tr>
+    <tr><td>4</td><td>c</td><td>a</td><td>+c, -a</td><td>{r:-1, c:1, a:-1, e:1}</td></tr>
+    <tr><td>5</td><td>a</td><td>c</td><td>+a, -c</td><td>{r:-1, c:0, a:0, e:1}</td></tr>
+    <tr><td>6</td><td>r</td><td>e</td><td>+r, -e</td><td>{r:0, c:0, a:0, e:0}</td></tr>
+  </table>
+  <p>All counts are 0 → <strong>return True</strong> (they are anagrams!)</p>
+
+  <h4>Example 2: s = "jar", t = "jam"</h4>
+  <table class="kv-table">
+    <tr><th>i</th><th>s[i]</th><th>t[i]</th><th>Action</th><th>count</th></tr>
+    <tr><td>0</td><td>j</td><td>j</td><td>+j, -j</td><td>{j:0}</td></tr>
+    <tr><td>1</td><td>a</td><td>a</td><td>+a, -a</td><td>{j:0, a:0}</td></tr>
+    <tr><td>2</td><td>r</td><td>m</td><td>+r, -m</td><td>{j:0, a:0, r:1, m:-1}</td></tr>
+  </table>
+  <p>r:1 and m:-1 are not 0 → <strong>return False</strong> (not anagrams)</p>
+
+  <h3>Complexity Analysis</h3>
+  <table class="kv-table">
+    <tr><th>Metric</th><th>Value</th><th>Why</th></tr>
+    <tr><td>Time</td><td><strong>O(n)</strong></td><td>Single pass through both strings</td></tr>
+    <tr><td>Space</td><td><strong>O(1)</strong></td><td>At most 26 lowercase letters</td></tr>
+  </table>
+
+  <h3>Key Insight</h3>
+  <div class="info-box success">
+    <strong>Increment and decrement in one pass.</strong>
+    By adding for s and subtracting for t in the same loop, we avoid building two separate frequency maps. If every character cancels out to zero, the strings are perfect anagrams. Space is O(1) since there are at most 26 lowercase English letters.
+  </div>
+
+  <div class="back-to-top"><a href="#top">↑ Back to top</a></div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PROBLEM 3: Two Sum -->
+<!-- ============================================================ -->
+<div class="section" id="two-sum">
+  <div class="section-num">Problem 3</div>
+  <h2>Two Sum</h2>
+  <div class="subtitle">twoSum() — Brute-Force Two-Pointer Scan</div>
+
+  <h3>Problem Statement</h3>
+  <p>Given an array of integers <code>nums</code> and an integer <code>target</code>, return the indices <code>i</code> and <code>j</code> such that <code>nums[i] + nums[j] == target</code> and <code>i != j</code>.</p>
+  <p>You may assume that every input has exactly one pair of indices. Return the answer with the smaller index first.</p>
+
+  <h3>Solution Code</h3>
+  <pre><span class="lang-label">Python</span>
+def twoSum(self, nums: List[int], target: int) -> List[int]:
+    first = 0
+    while first < len(nums):
+        last = len(nums) - 1
+        while first < last:
+            if nums[first] + nums[last] == target:
+                return [first, last]
+            else:
+                last = last - 1
+        first = first + 1</pre>
+
+  <h3>How It Works</h3>
+  <p>This solution uses a <strong>brute-force approach</strong> with two nested loops. The outer pointer (<code>first</code>) starts at index 0 and moves forward. The inner pointer (<code>last</code>) starts at the end and scans backward toward <code>first</code>. For each pair, it checks if <code>nums[first] + nums[last]</code> equals the target. Once found, it returns the pair of indices immediately.</p>
+
+  <h3>Algorithm Flowchart</h3>
+  <div class="flowchart">
+    <div class="fc-title">Two-pointer scanning logic</div>
+    <div class="fc-node fc-start">START</div>
+    <div class="fc-arrow">▼</div>
+    <div class="fc-node fc-process">first = 0</div>
+    <div class="fc-arrow">▼</div>
+    <div class="fc-node fc-decision">◆ first < len(nums)? ◆</div>
+    <div class="fc-arrow">▼</div>
+    <div class="fc-node fc-process">last = len(nums) - 1</div>
+    <div class="fc-arrow">▼</div>
+    <div class="fc-node fc-decision">◆ nums[first] + nums[last] == target? ◆</div>
+    <div class="fc-branch">
+      <div>
+        <div class="fc-label">YES</div>
+        <div class="fc-arrow">▼</div>
+        <div class="fc-node fc-yes">return [first, last]</div>
+      </div>
+      <div>
+        <div class="fc-label">NO</div>
+        <div class="fc-arrow">▼</div>
+        <div class="fc-node fc-process">last -= 1</div>
+        <div class="fc-arrow">↰ inner loop</div>
+      </div>
+    </div>
+    <div style="margin-top:12px; color: var(--text-muted); font-size: 0.85em;">
+      If inner loop exhausts → first += 1, reset last → ↰ outer loop
+    </div>
+  </div>
+
+  <h3>Step-by-Step Trace</h3>
+  <h4>Example 1: nums = [3, 4, 5, 6], target = 7</h4>
+  <table class="kv-table">
+    <tr><th>first</th><th>last</th><th>nums[first]</th><th>nums[last]</th><th>Sum</th><th>Result</th></tr>
+    <tr><td>0</td><td>3</td><td>3</td><td>6</td><td>3+6 = 9</td><td>✘ ≠ 7</td></tr>
+    <tr><td>0</td><td>2</td><td>3</td><td>5</td><td>3+5 = 8</td><td>✘ ≠ 7</td></tr>
+    <tr><td>0</td><td>1</td><td>3</td><td>4</td><td>3+4 = 7</td><td><strong>✔ == 7!</strong></td></tr>
+  </table>
+  <p>Match found at first=0, last=1 → <strong>return [0, 1]</strong></p>
+
+  <h4>Example 2: nums = [4, 5, 6], target = 10</h4>
+  <table class="kv-table">
+    <tr><th>first</th><th>last</th><th>nums[first]</th><th>nums[last]</th><th>Sum</th><th>Result</th></tr>
+    <tr><td>0</td><td>2</td><td>4</td><td>6</td><td>4+6 = 10</td><td><strong>✔ == 10!</strong></td></tr>
+  </table>
+  <p>Match found immediately at first=0, last=2 → <strong>return [0, 2]</strong></p>
+
+  <h3>Complexity Analysis</h3>
+  <table class="kv-table">
+    <tr><th>Metric</th><th>Value</th><th>Why</th></tr>
+    <tr><td>Time</td><td><strong>O(n&sup2;)</strong></td><td>Nested loops check all pairs</td></tr>
+    <tr><td>Space</td><td><strong>O(1)</strong></td><td>No extra data structures used</td></tr>
+  </table>
+
+  <h3>Key Insight</h3>
+  <div class="info-box warning">
+    <strong>This brute-force works but can be optimized!</strong>
+    The nested loop approach is O(n&sup2;). A HashMap-based solution can solve this in O(n) by storing each number's index as you iterate. For each <code>num</code>, check if <code>(target - num)</code> is already in the map. If so, you instantly have both indices.
+  </div>
+  <div class="info-box note">
+    <strong>HashMap approach:</strong>
+    For each num, compute <code>complement = target - num</code>. If complement is in the map, return both indices. Otherwise, store <code>num:index</code> and continue.
+  </div>
+
+  <div class="back-to-top"><a href="#top">↑ Back to top</a></div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PROBLEM 4: Group Anagrams -->
+<!-- ============================================================ -->
+<div class="section" id="group-anagrams">
+  <div class="section-num">Problem 4</div>
+  <h2>Group Anagrams</h2>
+  <div class="subtitle">groupAnagrams() — Sorted Key + HashMap Approach</div>
+
+  <h3>Problem Statement</h3>
+  <p>Given an array of strings <code>strs</code>, group all anagrams together into sublists. You may return the output in any order.</p>
+  <p>An <strong>anagram</strong> is a string formed by rearranging the letters of another string, using all the original letters exactly once.</p>
+
+  <h3>Solution Code</h3>
+  <pre><span class="lang-label">Python</span>
+from collections import defaultdict
+
+def groupAnagrams(self, strs: List[str]) -> List[List[str]]:
+    anagram_map = defaultdict(list)
+
+    for s in strs:
+        key = "".join(sorted(s))
+        anagram_map[key].append(s)
+
+    return list(anagram_map.values())</pre>
+
+  <h3>How It Works</h3>
+  <p>The core idea is that all anagrams, when sorted, produce the <strong>same string</strong>. For example, both "eat" and "tea" become "aet" when sorted. This sorted string acts as a <strong>fingerprint (key)</strong> in a HashMap.</p>
+  <p>The algorithm iterates through each word, sorts its characters to create a key, and appends the original word to the list mapped to that key. At the end, each key's list contains all words that are anagrams of each other.</p>
+
+  <h3>Algorithm Flowchart</h3>
+  <div class="flowchart">
+    <div class="fc-title">Grouping logic for each word</div>
+    <div class="fc-node fc-start">START</div>
+    <div class="fc-arrow">▼</div>
+    <div class="fc-node fc-process">anagram_map = { }</div>
+    <div class="fc-arrow">▼</div>
+    <div class="fc-node fc-process">Get next word s from strs</div>
+    <div class="fc-arrow">▼</div>
+    <div class="fc-node fc-process">Sort characters of s<br>key = "".join(sorted(s))</div>
+    <div class="fc-arrow">▼</div>
+    <div class="fc-node fc-process">Append s to map[key]<br>anagram_map[key].append(s)</div>
+    <div class="fc-arrow">↰ Loop back for next word</div>
+    <div class="fc-arrow" style="margin-top:12px">▼</div>
+    <div class="fc-node fc-end">Return map.values()</div>
+  </div>
+
+  <h3>The Sorting Fingerprint</h3>
+  <p>Anagrams share the same sorted key — this is what groups them together:</p>
+  <table class="kv-table">
+    <tr><th>Word</th><th></th><th>Sorted Key</th><th>Group</th></tr>
+    <tr><td>"eat"</td><td>→</td><td>"aet"</td><td>A</td></tr>
+    <tr><td>"tea"</td><td>→</td><td>"aet"</td><td>A</td></tr>
+    <tr><td>"ate"</td><td>→</td><td>"aet"</td><td>A</td></tr>
+    <tr><td>"tan"</td><td>→</td><td>"ant"</td><td>B</td></tr>
+    <tr><td>"nat"</td><td>→</td><td>"ant"</td><td>B</td></tr>
+    <tr><td>"bat"</td><td>→</td><td>"abt"</td><td>C</td></tr>
+  </table>
+
+  <h3>Step-by-Step Trace</h3>
+  <p>Example: <code>strs = ["eat", "tea", "tan", "ate", "nat", "bat"]</code></p>
+  <table class="kv-table">
+    <tr><th>Step</th><th>Word</th><th>Key</th><th>anagram_map state</th></tr>
+    <tr><td>1</td><td>"eat"</td><td>"aet"</td><td>{ "aet": ["eat"] }</td></tr>
+    <tr><td>2</td><td>"tea"</td><td>"aet"</td><td>{ "aet": ["eat","tea"] }</td></tr>
+    <tr><td>3</td><td>"tan"</td><td>"ant"</td><td>{ "aet": ["eat","tea"], "ant": ["tan"] }</td></tr>
+    <tr><td>4</td><td>"ate"</td><td>"aet"</td><td>{ "aet": ["eat","tea","ate"], "ant": ["tan"] }</td></tr>
+    <tr><td>5</td><td>"nat"</td><td>"ant"</td><td>{ "aet": ["eat","tea","ate"], "ant": ["tan","nat"] }</td></tr>
+    <tr><td>6</td><td>"bat"</td><td>"abt"</td><td>{ "aet": [...], "ant": [...], "abt": ["bat"] }</td></tr>
+  </table>
+  <p><strong>Final output:</strong></p>
+  <table class="kv-table">
+    <tr><th>Group</th><th>Values</th></tr>
+    <tr><td>Group A</td><td>["eat", "tea", "ate"]</td></tr>
+    <tr><td>Group B</td><td>["tan", "nat"]</td></tr>
+    <tr><td>Group C</td><td>["bat"]</td></tr>
+  </table>
+
+  <h3>Complexity Analysis</h3>
+  <table class="kv-table">
+    <tr><th>Metric</th><th>Value</th><th>Why</th></tr>
+    <tr><td>Time</td><td><strong>O(n · k log k)</strong></td><td>Sort each of n strings of avg length k</td></tr>
+    <tr><td>Space</td><td><strong>O(n · k)</strong></td><td>Store all strings in the map</td></tr>
+  </table>
+
+  <h3>Key Insight</h3>
+  <div class="info-box success">
+    <strong>Sorting creates a canonical form for comparison.</strong>
+    By sorting each string, we transform the grouping problem into a simple equality check. All anagrams collapse to the same sorted key, making the HashMap do the heavy lifting of grouping automatically.
+  </div>
+  <div class="info-box note">
+    <strong>Alternative:</strong> Instead of sorting (O(k log k) per word), you can use a character count array of 26 zeros as the key, achieving O(n · k) time. Convert counts to a tuple for hashability.
+  </div>
+
+  <div class="back-to-top"><a href="#top">↑ Back to top</a></div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PROBLEM 5: Top K Frequent Elements -->
+<!-- ============================================================ -->
+<div class="section" id="top-k-frequent">
+  <div class="section-num">Problem 5</div>
+  <h2>Top K Frequent Elements</h2>
+  <div class="subtitle">topKFrequent() — Count + Sort Approach</div>
+
+  <h3>Problem Statement</h3>
+  <p>Given an integer array <code>nums</code> and an integer <code>k</code>, return the <code>k</code> most frequent elements within the array.</p>
+  <p>The test cases are generated such that the answer is always unique. You may return the output in any order.</p>
+
+  <h3>Solution Code</h3>
+  <pre><span class="lang-label">Python</span>
+def topKFrequent(self, nums: List[int], k: int) -> List[int]:
+    count = {}
+    first = 0
+    while first < len(nums):
+        count[nums[first]] = count.get(nums[first], 0) + 1
+        first = first + 1
+
+    sorted_count = dict(
+        sorted(count.items(), key=lambda x: x[1], reverse=True)
+    )
+    return list(
+        dict(tuple(sorted_count.items())[:k]).keys()
+    )</pre>
+
+  <h3>How It Works</h3>
+  <p>This solution breaks the problem into <strong>two clear phases</strong>:</p>
+  <ol>
+    <li><strong>Count Phase:</strong> Iterate through <code>nums</code> using a while loop, building a HashMap where each key is a number and its value is how many times it appears.</li>
+    <li><strong>Sort Phase:</strong> Sort the HashMap entries by frequency in descending order (highest count first), then slice the first <code>k</code> keys as the result.</li>
+  </ol>
+
+  <h3>Algorithm Flowchart</h3>
+  <div class="flowchart">
+    <div class="fc-title">Two-phase logic</div>
+    <div class="fc-node fc-start">START</div>
+    <div class="fc-arrow">▼</div>
+    <div class="fc-node fc-process">count = { }, first = 0</div>
+    <div class="fc-arrow">▼</div>
+    <div style="background: rgba(35,131,226,0.06); border: 1px dashed var(--accent); border-radius: 8px; padding: 12px; margin: 8px 0;">
+      <div style="font-size: 0.8em; color: var(--accent); font-weight: 600; margin-bottom: 8px;">PHASE 1: COUNT FREQUENCIES</div>
+      <div class="fc-node fc-process">For each nums[first]:<br>count[nums[first]] += 1<br>first += 1</div>
+    </div>
+    <div class="fc-arrow">▼</div>
+    <div style="background: rgba(105,64,165,0.06); border: 1px dashed var(--accent3); border-radius: 8px; padding: 12px; margin: 8px 0;">
+      <div style="font-size: 0.8em; color: var(--accent3); font-weight: 600; margin-bottom: 8px;">PHASE 2: SORT + PICK TOP K</div>
+      <div class="fc-node fc-process">Sort count by value (desc)</div>
+      <div class="fc-arrow">▼</div>
+      <div class="fc-node fc-process">Take first k keys</div>
+    </div>
+    <div class="fc-arrow">▼</div>
+    <div class="fc-node fc-end">Return result list</div>
+  </div>
+
+  <h3>Step-by-Step Trace</h3>
+  <h4>Example 1: nums = [1, 2, 2, 3, 3, 3], k = 2</h4>
+  <p><strong>Phase 1 — Counting Frequencies</strong></p>
+  <table class="kv-table">
+    <tr><th>first</th><th>nums[first]</th><th>Action</th><th>count</th></tr>
+    <tr><td>0</td><td>1</td><td>+1</td><td>{1: 1}</td></tr>
+    <tr><td>1</td><td>2</td><td>+2</td><td>{1: 1, 2: 1}</td></tr>
+    <tr><td>2</td><td>2</td><td>2++</td><td>{1: 1, 2: 2}</td></tr>
+    <tr><td>3</td><td>3</td><td>+3</td><td>{1: 1, 2: 2, 3: 1}</td></tr>
+    <tr><td>4</td><td>3</td><td>3++</td><td>{1: 1, 2: 2, 3: 2}</td></tr>
+    <tr><td>5</td><td>3</td><td>3++</td><td>{1: 1, 2: 2, 3: 3}</td></tr>
+  </table>
+  <p><strong>Phase 2 — Sort by Frequency (Descending)</strong></p>
+  <table class="kv-table">
+    <tr><th>Rank</th><th>Number</th><th>Frequency</th><th>In top k=2?</th></tr>
+    <tr><td>1st</td><td>3</td><td>3</td><td><strong>✔ SELECTED</strong></td></tr>
+    <tr><td>2nd</td><td>2</td><td>2</td><td><strong>✔ SELECTED</strong></td></tr>
+    <tr><td>3rd</td><td>1</td><td>1</td><td>✘ SKIPPED</td></tr>
+  </table>
+  <p>Output: <strong>[3, 2]</strong> (or [2, 3] — order doesn't matter)</p>
+
+  <h4>Example 2: nums = [7, 7], k = 1</h4>
+  <table class="kv-table">
+    <tr><th>Number</th><th>Frequency</th><th>Rank</th><th>In top k=1?</th></tr>
+    <tr><td>7</td><td>2</td><td>1st</td><td><strong>✔ SELECTED</strong></td></tr>
+  </table>
+  <p>Output: <strong>[7]</strong></p>
+
+  <h4>Example 3: nums = [4, 5, 6, 7, 8, 8, 9, 4], k = 2</h4>
+  <p>After Phase 1 — Frequency count:</p>
+  <table class="kv-table">
+    <tr><th>Number</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th></tr>
+    <tr><td><strong>Count</strong></td><td>2</td><td>1</td><td>1</td><td>1</td><td>2</td><td>1</td></tr>
+  </table>
+  <p>After Phase 2 — Sorted by frequency:</p>
+  <table class="kv-table">
+    <tr><th>Rank</th><th>Number</th><th>Frequency</th><th>In top k=2?</th></tr>
+    <tr><td>1st</td><td>4</td><td>2</td><td><strong>✔ SELECTED</strong></td></tr>
+    <tr><td>2nd</td><td>8</td><td>2</td><td><strong>✔ SELECTED</strong></td></tr>
+    <tr><td>3rd–6th</td><td>5, 6, 7, 9</td><td>1 each</td><td>✘ SKIPPED</td></tr>
+  </table>
+  <p>Output: <strong>[4, 8]</strong></p>
+
+  <h3>Complexity Analysis</h3>
+  <table class="kv-table">
+    <tr><th>Metric</th><th>Value</th><th>Why</th></tr>
+    <tr><td>Time</td><td><strong>O(n log n)</strong></td><td>Sorting the frequency map</td></tr>
+    <tr><td>Space</td><td><strong>O(n)</strong></td><td>HashMap + sorted copy</td></tr>
+  </table>
+
+  <h3>Key Insight</h3>
+  <div class="info-box success">
+    <strong>Two phases: Count, then Rank.</strong>
+    This solution uses sorting to rank, which gives O(n log n). The counting phase is always O(n). The bottleneck is the sort.
+  </div>
+  <div class="info-box note">
+    <strong>Can we do better? Yes — Bucket Sort!</strong>
+    Create an array of size n+1 where index i holds numbers with frequency i. Walk backward from n to collect k elements. This achieves O(n) time by avoiding sorting entirely.
+  </div>
+
+  <div class="back-to-top"><a href="#top">↑ Back to top</a></div>
+</div>
+
+</div><!-- container -->
+
+<div class="footer">
+  Coding Problems — A Visual Guide | Built for learning and interview preparation
+</div>
+
+</body>
+</html>
