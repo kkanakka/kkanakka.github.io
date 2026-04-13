@@ -237,6 +237,7 @@
     <li><a href="#top-k-frequent">Top K Frequent Elements — topKFrequent()</a> <span class="difficulty medium">Medium</span></li>
     <li><a href="#encode-decode-strings">Encode and Decode Strings — encode() / decode()</a> <span class="difficulty medium">Medium</span></li>
     <li><a href="#product-except-self">Product of Array Except Self — productExceptSelf()</a> <span class="difficulty medium">Medium</span></li>
+    <li><a href="#longest-consecutive">Longest Consecutive Sequence — longestConsecutive()</a> <span class="difficulty medium">Medium</span></li>
   </ol>
 </div>
 
@@ -1100,6 +1101,161 @@ def productExceptSelf(self, nums: list[int]) -> list[int]:
   <div class="info-box note">
     <strong>Why not just divide total product by nums[i]?</strong>
     Division fails when <code>nums[i] == 0</code>. The prefix × suffix approach handles zeros naturally — if there's a zero in the array, the prefix or suffix containing it will be zero, and only the position where that zero is excluded will have a nonzero product.
+  </div>
+
+  <div class="back-to-top"><a href="#top">↑ Back to top</a></div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PROBLEM 8: Longest Consecutive Sequence -->
+<!-- ============================================================ -->
+<div class="section" id="longest-consecutive">
+  <div class="section-num">Problem 8</div>
+  <h2>Longest Consecutive Sequence</h2>
+  <div class="subtitle">longestConsecutive() — HashSet + Sequence Start Detection</div>
+
+  <h3>Problem Statement</h3>
+  <p>Given an array of integers <code>nums</code>, return the length of the longest consecutive sequence of elements that can be formed.</p>
+  <p>A <strong>consecutive sequence</strong> is a sequence of elements in which each element is exactly 1 greater than the previous element. The elements do not have to be consecutive in the original array.</p>
+  <p>You must write an algorithm that runs in <strong>O(n)</strong> time.</p>
+
+  <h3>Constraints</h3>
+  <ul>
+    <li><code>0 &lt;= nums.length &lt;= 1000</code></li>
+    <li><code>-10<sup>9</sup> &lt;= nums[i] &lt;= 10<sup>9</sup></code></li>
+  </ul>
+
+  <h3>Solution Code</h3>
+  <pre><span class="lang-label">Python</span>
+def longestConsecutive(self, nums: List[int]) -> int:
+    numSet = set(nums)
+    longest = 0
+
+    for num in numSet:
+        if (num - 1) not in numSet:
+            length = 1
+            while (num + length) in numSet:
+                length += 1
+            longest = max(length, longest)
+    return longest</pre>
+
+  <h3>How It Works</h3>
+  <p>The algorithm uses a <strong>HashSet</strong> for O(1) lookups and a clever trick: it only starts counting a sequence from its <strong>smallest element</strong>. For each number, it checks if <code>num - 1</code> exists in the set. If it does, this number is <em>not</em> the start of a sequence — skip it. If <code>num - 1</code> is missing, this number <em>is</em> the start, so we count forward (<code>num+1</code>, <code>num+2</code>, ...) until the chain breaks.</p>
+
+  <h3>The Key Trick: Finding Sequence Starts</h3>
+  <div class="flowchart" style="text-align: left; padding: 20px;">
+    <div class="fc-title" style="text-align: center;">Only start counting from the beginning of a sequence</div>
+    <div style="margin: 16px 0; font-size: 0.92em; line-height: 2;">
+      <div>Given: <code>nums = [2, 20, 4, 10, 3, 4, 5]</code> → <code>numSet = {2, 3, 4, 5, 10, 20}</code></div>
+      <div style="margin-top: 12px;">
+        <table class="kv-table" style="text-align: center;">
+          <tr><th>num</th><th>num - 1 in set?</th><th>Is sequence start?</th><th>Action</th></tr>
+          <tr><td>2</td><td>1 not in set</td><td><strong>YES — start here</strong></td><td>Count: 2→3→4→5 = length 4</td></tr>
+          <tr><td>3</td><td>2 in set</td><td>No — skip</td><td>—</td></tr>
+          <tr><td>4</td><td>3 in set</td><td>No — skip</td><td>—</td></tr>
+          <tr><td>5</td><td>4 in set</td><td>No — skip</td><td>—</td></tr>
+          <tr><td>10</td><td>9 not in set</td><td><strong>YES — start here</strong></td><td>Count: 10 = length 1</td></tr>
+          <tr><td>20</td><td>19 not in set</td><td><strong>YES — start here</strong></td><td>Count: 20 = length 1</td></tr>
+        </table>
+      </div>
+      <div style="margin-top: 8px; color: var(--text-muted); font-size: 0.9em;">Only 3 out of 6 numbers trigger the inner while loop — the rest are skipped in O(1).</div>
+    </div>
+  </div>
+
+  <h3>Algorithm Flowchart</h3>
+  <div class="flowchart">
+    <div class="fc-title">For each number in the set</div>
+    <div class="fc-node fc-start">START</div>
+    <div class="fc-arrow">▼</div>
+    <div class="fc-node fc-process">numSet = set(nums)<br>longest = 0</div>
+    <div class="fc-arrow">▼</div>
+    <div class="fc-node fc-process">Get next num from numSet</div>
+    <div class="fc-arrow">▼</div>
+    <div class="fc-node fc-decision">◆ (num - 1) in numSet? ◆</div>
+    <div class="fc-branch">
+      <div>
+        <div class="fc-label">YES (not a start)</div>
+        <div class="fc-arrow">▼</div>
+        <div class="fc-node fc-no">Skip — not the start<br>of a sequence</div>
+        <div class="fc-arrow">↰ Next num</div>
+      </div>
+      <div>
+        <div class="fc-label">NO (this IS a start)</div>
+        <div class="fc-arrow">▼</div>
+        <div class="fc-node fc-process">length = 1</div>
+        <div class="fc-arrow">▼</div>
+        <div class="fc-node fc-decision">◆ (num + length) in numSet? ◆</div>
+        <div style="margin-top: 4px;">
+          <span class="fc-label">YES → length += 1, ↰ check again</span>
+        </div>
+        <div style="margin-top: 4px;">
+          <span class="fc-label">NO → done counting</span>
+        </div>
+        <div class="fc-arrow">▼</div>
+        <div class="fc-node fc-yes">longest = max(length, longest)</div>
+        <div class="fc-arrow">↰ Next num</div>
+      </div>
+    </div>
+    <div class="fc-arrow" style="margin-top:12px">▼</div>
+    <div class="fc-node fc-end">Return longest</div>
+  </div>
+
+  <h3>Step-by-Step Trace</h3>
+  <h4>Example 1: nums = [2, 20, 4, 10, 3, 4, 5]</h4>
+  <p><code>numSet = {2, 3, 4, 5, 10, 20}</code> (duplicates removed)</p>
+  <table class="kv-table">
+    <tr><th>num</th><th>num-1 in set?</th><th>Start?</th><th>Count chain</th><th>length</th><th>longest</th></tr>
+    <tr><td>2</td><td>1? No</td><td><strong>Yes</strong></td><td>2→3✔→4✔→5✔→6✘</td><td>4</td><td>4</td></tr>
+    <tr><td>3</td><td>2? Yes</td><td>Skip</td><td>—</td><td>—</td><td>4</td></tr>
+    <tr><td>4</td><td>3? Yes</td><td>Skip</td><td>—</td><td>—</td><td>4</td></tr>
+    <tr><td>5</td><td>4? Yes</td><td>Skip</td><td>—</td><td>—</td><td>4</td></tr>
+    <tr><td>10</td><td>9? No</td><td><strong>Yes</strong></td><td>10→11✘</td><td>1</td><td>4</td></tr>
+    <tr><td>20</td><td>19? No</td><td><strong>Yes</strong></td><td>20→21✘</td><td>1</td><td>4</td></tr>
+  </table>
+  <p>Output: <strong>4</strong> (the sequence [2, 3, 4, 5])</p>
+
+  <h4>Example 2: nums = [0, 3, 2, 5, 4, 6, 1, 1]</h4>
+  <p><code>numSet = {0, 1, 2, 3, 4, 5, 6}</code></p>
+  <table class="kv-table">
+    <tr><th>num</th><th>num-1 in set?</th><th>Start?</th><th>Count chain</th><th>length</th><th>longest</th></tr>
+    <tr><td>0</td><td>-1? No</td><td><strong>Yes</strong></td><td>0→1✔→2✔→3✔→4✔→5✔→6✔→7✘</td><td>7</td><td>7</td></tr>
+    <tr><td>1</td><td>0? Yes</td><td>Skip</td><td>—</td><td>—</td><td>7</td></tr>
+    <tr><td>2</td><td>1? Yes</td><td>Skip</td><td>—</td><td>—</td><td>7</td></tr>
+    <tr><td>3</td><td>2? Yes</td><td>Skip</td><td>—</td><td>—</td><td>7</td></tr>
+    <tr><td>4</td><td>3? Yes</td><td>Skip</td><td>—</td><td>—</td><td>7</td></tr>
+    <tr><td>5</td><td>4? Yes</td><td>Skip</td><td>—</td><td>—</td><td>7</td></tr>
+    <tr><td>6</td><td>5? Yes</td><td>Skip</td><td>—</td><td>—</td><td>7</td></tr>
+  </table>
+  <p>Output: <strong>7</strong> (the sequence [0, 1, 2, 3, 4, 5, 6])</p>
+
+  <h3>Why Is This O(n) and Not O(n&sup2;)?</h3>
+  <div class="flowchart" style="text-align: left; padding: 20px;">
+    <div class="fc-title" style="text-align: center;">Each element is visited at most twice</div>
+    <div style="margin: 16px 0; font-size: 0.92em; line-height: 1.8;">
+      <p>It looks like a nested loop (for + while), but consider: the inner <code>while</code> loop only runs when we find a <strong>sequence start</strong>. Each element in the array is either:</p>
+      <ul style="margin: 8px 0 8px 24px;">
+        <li><strong>A sequence start</strong> → checked once in the outer loop, then counted once by the while loop</li>
+        <li><strong>Not a sequence start</strong> → checked once in the outer loop (O(1) skip), never entered by while</li>
+      </ul>
+      <p>Every element is "touched" at most <strong>twice</strong> total (once as a candidate, once during counting). So the total work across all iterations is O(n), not O(n&sup2;).</p>
+    </div>
+  </div>
+
+  <h3>Complexity Analysis</h3>
+  <table class="kv-table">
+    <tr><th>Metric</th><th>Value</th><th>Why</th></tr>
+    <tr><td>Time</td><td><strong>O(n)</strong></td><td>Each element visited at most twice total</td></tr>
+    <tr><td>Space</td><td><strong>O(n)</strong></td><td>HashSet stores all unique elements</td></tr>
+  </table>
+
+  <h3>Key Insight</h3>
+  <div class="info-box success">
+    <strong>Only count from the start of each sequence.</strong>
+    The <code>(num - 1) not in numSet</code> check is the entire trick. It ensures we never redundantly count the middle or end of a sequence. We only fire the while loop for sequence-starting elements, making the algorithm O(n) despite the nested loop appearance.
+  </div>
+  <div class="info-box note">
+    <strong>Why use a set instead of sorting?</strong>
+    Sorting would give O(n log n). The HashSet gives O(1) lookups for both the "is this a start?" check and the "does the next number exist?" check, bringing the whole algorithm down to O(n).
   </div>
 
   <div class="back-to-top"><a href="#top">↑ Back to top</a></div>
