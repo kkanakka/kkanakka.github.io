@@ -1010,19 +1010,23 @@ def productExceptSelf(self, nums: List[int]) -> List[int]:
   <p>The key insight: <code>output[i] = (product of everything LEFT of i) × (product of everything RIGHT of i)</code>. We can compute this in two passes without division.</p>
 
   <pre><span class="lang-label">Python — O(n)</span>
-def productExceptSelf(self, nums: List[int]) -> List[int]:
-    n = len(nums)
-    output = [1] * n
+def productExceptSelf(self, nums: list[int]) -> list[int]:
+    length = len(nums)
+    output = [1] * length
 
+    # --- PASS 1: Calculate Products to the LEFT ---
     prefix = 1
-    for i in range(n):
-        output[i] = prefix
-        prefix *= nums[i]
+    for i in range(length):
+        output[i] = prefix      # Set current spot to the product of its left neighbors
+        prefix *= nums[i]       # Update prefix to include current number for next index
 
+    # At this point, if nums = [1, 2, 3, 4], output = [1, 1, 2, 6]
+
+    # --- PASS 2: Calculate Products to the RIGHT ---
     suffix = 1
-    for i in range(n - 1, -1, -1):
-        output[i] *= suffix
-        suffix *= nums[i]
+    for i in range(length - 1, -1, -1):
+        output[i] *= suffix     # Multiply the "Left" product (already there) by the "Right" product
+        suffix *= nums[i]       # Update suffix to include current number for next index
 
     return output</pre>
 
