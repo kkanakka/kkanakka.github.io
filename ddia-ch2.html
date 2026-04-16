@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<title>Data Models &amp; Query Languages &mdash; Data Intensive Systems</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #f7f6f3;
+    --border: #e3e2de;
+    --text: #37352f;
+    --text-muted: #787774;
+    --accent: #2383e2;
+    --accent2: #0f7b0f;
+    --accent3: #6940a5;
+    --accent4: #d9730d;
+    --red: #e03e3e;
+    --code-bg: #f7f6f3;
+    --card: #ffffff;
+    --ch-color: #00695c;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    font-size: 15px;
+  }
+  .container { max-width: 900px; margin: 0 auto; padding: 0 24px; }
+  .hero {
+    background: linear-gradient(180deg, #fafafa 0%, #ffffff 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 48px 0 36px;
+    text-align: center;
+  }
+  .hero h1 { font-size: 2.2em; font-weight: 700; margin-bottom: 12px; }
+  .hero h1 span { color: var(--ch-color); }
+  .hero p { font-size: 1.05em; color: var(--text-muted); max-width: 700px; margin: 0 auto 30px; }
+  .hero .badge {
+    display: inline-block; background: var(--surface); border: 1px solid var(--border);
+    padding: 6px 16px; border-radius: 20px; font-size: 0.8em; color: var(--text-muted);
+  }
+  .nav-links { margin-top: 20px; }
+  .nav-links a {
+    display: inline-block; background: var(--surface); border: 1px solid var(--border);
+    padding: 8px 20px; border-radius: 8px; color: var(--accent); text-decoration: none;
+    margin: 4px; font-size: 0.9em; transition: all 0.2s;
+  }
+  .nav-links a:hover { border-color: var(--accent); background: rgba(35,131,226,0.06); }
+  .nav-links a.ch { color: var(--ch-color); border-color: var(--ch-color); }
+  .nav-links a.ch:hover { background: rgba(0,105,92,0.06); }
+
+  .toc {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 32px; margin: 40px auto; max-width: 900px;
+  }
+  .toc h2 { font-size: 1.2em; margin-bottom: 16px; color: var(--ch-color); }
+  .toc ol { padding-left: 24px; }
+  .toc li { margin: 8px 0; }
+  .toc a {
+    color: var(--text); text-decoration: none; border-bottom: 1px dashed var(--border);
+    transition: color 0.2s;
+  }
+  .toc a:hover { color: var(--ch-color); border-bottom-color: var(--ch-color); }
+  .toc .sub { padding-left: 24px; list-style: disc; }
+
+  .section {
+    margin: 40px 0; padding-top: 16px; border-top: 1px solid var(--border);
+  }
+  .section-num {
+    font-size: 0.75em; font-weight: 600; color: var(--ch-color);
+    text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;
+  }
+  .section h2 {
+    font-size: 1.6em; font-weight: 600; margin-bottom: 20px;
+    color: var(--ch-color);
+  }
+  .section h3 {
+    font-size: 1.15em; font-weight: 600; margin: 30px 0 12px;
+    color: var(--accent); border-left: 3px solid var(--accent); padding-left: 12px;
+  }
+  .section h4 {
+    font-size: 1em; font-weight: 600; margin: 20px 0 10px;
+    color: var(--accent3);
+  }
+
+  .card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 24px; margin: 20px 0;
+  }
+  .card.highlight { border-left: 4px solid var(--accent); }
+  .card.warn { border-left: 4px solid var(--accent4); }
+  .card.success { border-left: 4px solid var(--accent2); }
+  .card.danger { border-left: 4px solid var(--red); }
+  .card.interview { border-left: 4px solid var(--ch-color); background: rgba(0,105,92,0.02); }
+  .card.linkedin { border-left: 4px solid #0077b5; background: rgba(0,119,181,0.02); }
+
+  .diagram {
+    margin: 30px 0; text-align: center;
+  }
+  .diagram svg {
+    max-width: 100%;
+    height: auto;
+  }
+  .caption {
+    font-size: 0.9em; color: var(--text-muted); margin-top: 10px; font-style: italic;
+  }
+
+  code {
+    background: var(--code-bg); border: 1px solid var(--border);
+    padding: 2px 8px; border-radius: 4px; font-family: 'JetBrains Mono', 'SF Mono', monospace;
+    font-size: 0.9em; color: var(--accent3);
+  }
+  pre {
+    background: var(--code-bg); border: 1px solid var(--border);
+    padding: 20px; border-radius: 8px; overflow-x: auto;
+    font-family: 'JetBrains Mono', 'SF Mono', monospace; font-size: 0.85em; margin: 14px 0; line-height: 1.5;
+  }
+
+  table {
+    width: 100%; border-collapse: collapse; margin: 16px 0;
+    background: var(--card); border-radius: 8px; overflow: hidden;
+  }
+  th {
+    background: rgba(0,105,92,0.08); color: var(--ch-color); padding: 12px 16px;
+    text-align: left; font-weight: 600; border-bottom: 2px solid var(--border);
+  }
+  td {
+    padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 0.92em;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(0,105,92,0.03); }
+
+  .compare-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0;
+  }
+  .compare-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 20px;
+  }
+  .compare-card h4 { margin-top: 0; }
+  .compare-card ul { padding-left: 18px; font-size: .9em; }
+  .compare-card li { margin: 4px 0; }
+
+  .three-col {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 24px 0;
+  }
+  .pillar {
+    background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 20px; text-align: center; transition: .2s;
+  }
+  .pillar:hover { border-color: var(--ch-color); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,.06); }
+  .pillar .icon { font-size: 2em; margin-bottom: 8px; }
+  .pillar h4 { color: var(--ch-color); margin-bottom: 6px; font-size: 1em; }
+  .pillar p { font-size: .82em; color: var(--text-muted); line-height: 1.5; }
+
+  .interview-tag {
+    display: inline-block; padding: 2px 10px; border-radius: 12px;
+    font-size: .75em; font-weight: 600; margin-left: 8px;
+  }
+  .interview-tag.meta { background: rgba(66,133,244,0.1); color: #4285f4; border: 1px solid #4285f4; }
+  .interview-tag.netflix { background: rgba(229,9,20,0.1); color: #e50914; border: 1px solid #e50914; }
+  .interview-tag.google { background: rgba(15,123,15,0.1); color: #0f7b0f; border: 1px solid #0f7b0f; }
+  .interview-tag.li { background: rgba(0,119,181,0.1); color: #0077b5; border: 1px solid #0077b5; }
+
+  .linkedin-tag {
+    display: inline-block; background: rgba(0,119,181,0.08); border: 1px solid rgba(0,119,181,0.2);
+    padding: 2px 10px; border-radius: 12px; font-size: 0.8em; color: #0077b5;
+    font-weight: 600;
+  }
+
+  @media (max-width: 700px) {
+    .three-col { grid-template-columns: 1fr; }
+    .compare-grid { grid-template-columns: 1fr; }
+  }
+
+  .back-top { display: block; text-align: right; margin-top: 20px; }
+  .back-top a { color: var(--text-muted); text-decoration: none; font-size: .85em; }
+  .back-top a:hover { color: var(--ch-color); }
+
+  footer {
+    text-align: center; padding: 40px 0; border-top: 1px solid var(--border);
+    color: var(--text-muted); font-size: 0.9em; margin-top: 60px;
+  }
+  footer a { color: var(--ch-color); text-decoration: none; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="container">
+    <h1>Data Models &amp; <span>Query Languages</span></h1>
+    <p>How to model your data matters more than anything else. Relational, document, and graph models &mdash; mapped to LinkedIn's Espresso, Venice, Pinot, and Galene.</p>
+    <div class="badge">Data Intensive Systems &bull; Chapter 2 &bull; Interview Guide</div>
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="/ddia-ch1.html" class="ch">Ch 1: Reliability &amp; Scalability</a>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+<div class="toc" id="toc">
+  <h2>Table of Contents</h2>
+  <ol>
+    <li><a href="#sec-1">Data Model Layers</a></li>
+    <li><a href="#sec-2">Relational vs Document vs Graph</a>
+      <ul class="sub">
+        <li><a href="#sec-2-rel">Relational Model (SQL)</a></li>
+        <li><a href="#sec-2-doc">Document Model (NoSQL)</a></li>
+        <li><a href="#sec-2-graph">Graph Model</a></li>
+      </ul>
+    </li>
+    <li><a href="#sec-3">LinkedIn Data Store Mapping</a>
+      <ul class="sub">
+        <li><a href="#sec-3-espresso">Espresso (Document/Relational)</a></li>
+        <li><a href="#sec-3-venice">Venice (Derived / Key-Value)</a></li>
+        <li><a href="#sec-3-pinot">Pinot (OLAP / Analytics)</a></li>
+        <li><a href="#sec-3-galene">Galene / SEAS (Search)</a></li>
+        <li><a href="#sec-3-liquid">Liquid (Graph)</a></li>
+      </ul>
+    </li>
+    <li><a href="#sec-4">Modeling Relationships</a>
+      <ul class="sub">
+        <li><a href="#sec-4-one">One-to-Many</a></li>
+        <li><a href="#sec-4-many-one">Many-to-One</a></li>
+        <li><a href="#sec-4-many-many">Many-to-Many</a></li>
+      </ul>
+    </li>
+    <li><a href="#sec-5">Schema-on-Read vs Schema-on-Write</a></li>
+    <li><a href="#sec-6">Query Languages: Declarative vs Imperative</a></li>
+    <li><a href="#sec-7">Interview Questions &amp; Talking Points</a></li>
+  </ol>
+</div>
+
+
+<!-- ======================= SECTION 1 ======================= -->
+<div class="section" id="sec-1">
+  <div class="section-num">Section 1</div>
+  <h2>Data Model Layers</h2>
+
+  <p>Applications are built by <strong>layering one data model on top of another</strong>. Each layer hides the complexity below it.</p>
+
+  <!-- DIAGRAM: Layered Data Models -->
+  <div class="diagram">
+    <svg viewBox="0 0 800 340" xmlns="http://www.w3.org/2000/svg" style="max-width:750px;">
+      <defs>
+        <marker id="arr1" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#546e7a"/>
+        </marker>
+        <filter id="sh1" x="-3%" y="-3%" width="106%" height="110%">
+          <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.08"/>
+        </filter>
+      </defs>
+
+      <!-- Layer 4: Application -->
+      <rect x="150" y="15" width="500" height="60" rx="12" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2" filter="url(#sh1)"/>
+      <text x="400" y="38" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#1b5e20">Layer 4: Application Developer</text>
+      <text x="400" y="58" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#546e7a">Real world &rarr; objects, data structures, APIs</text>
+      <text x="20" y="50" font-family="Inter,sans-serif" font-size="11" fill="#787774">People, orgs,</text>
+      <text x="20" y="65" font-family="Inter,sans-serif" font-size="11" fill="#787774">goods, actions</text>
+
+      <line x1="400" y1="75" x2="400" y2="95" stroke="#546e7a" stroke-width="1.5" marker-end="url(#arr1)"/>
+
+      <!-- Layer 3: Data Model -->
+      <rect x="150" y="95" width="500" height="60" rx="12" fill="#e3f2fd" stroke="#1565c0" stroke-width="2" filter="url(#sh1)"/>
+      <text x="400" y="118" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#0d47a1">Layer 3: Data Model</text>
+      <text x="400" y="138" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#546e7a">JSON, tables, documents, graphs, columns</text>
+      <text x="20" y="130" font-family="Inter,sans-serif" font-size="11" fill="#787774">This chapter!</text>
+
+      <line x1="400" y1="155" x2="400" y2="175" stroke="#546e7a" stroke-width="1.5" marker-end="url(#arr1)"/>
+
+      <!-- Layer 2: Storage Engine -->
+      <rect x="150" y="175" width="500" height="60" rx="12" fill="#fff3e0" stroke="#e65100" stroke-width="2" filter="url(#sh1)"/>
+      <text x="400" y="198" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#bf360c">Layer 2: Storage Engine</text>
+      <text x="400" y="218" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#546e7a">Bytes in memory, on disk, on network (B-trees, LSM, SSTable)</text>
+      <text x="20" y="210" font-family="Inter,sans-serif" font-size="11" fill="#787774">Chapter 3</text>
+
+      <line x1="400" y1="235" x2="400" y2="255" stroke="#546e7a" stroke-width="1.5" marker-end="url(#arr1)"/>
+
+      <!-- Layer 1: Hardware -->
+      <rect x="150" y="255" width="500" height="60" rx="12" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="2" filter="url(#sh1)"/>
+      <text x="400" y="278" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#4a148c">Layer 1: Hardware</text>
+      <text x="400" y="298" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#546e7a">Electrical currents, magnetic fields, photons</text>
+    </svg>
+    <div class="caption">Each layer provides a clean abstraction, hiding the complexity below. This chapter focuses on Layer 3: the data model.</div>
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+
+<!-- ======================= SECTION 2 ======================= -->
+<div class="section" id="sec-2">
+  <div class="section-num">Section 2</div>
+  <h2>Relational vs Document vs Graph <span class="interview-tag meta">Meta</span><span class="interview-tag google">Google</span></h2>
+
+  <!-- DIAGRAM: Three Data Models -->
+  <div class="diagram">
+    <svg viewBox="0 0 820 380" xmlns="http://www.w3.org/2000/svg" style="max-width:800px;">
+      <defs>
+        <marker id="arr2" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#546e7a"/>
+        </marker>
+      </defs>
+
+      <!-- Relational -->
+      <rect x="10" y="10" width="250" height="360" rx="12" fill="#e3f2fd" stroke="#1565c0" stroke-width="2"/>
+      <text x="135" y="40" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="15" fill="#0d47a1">Relational (SQL)</text>
+
+      <!-- Mini table: users -->
+      <rect x="30" y="55" width="210" height="80" rx="6" fill="#fff" stroke="#90caf9" stroke-width="1"/>
+      <text x="135" y="72" text-anchor="middle" font-family="JetBrains Mono,monospace" font-weight="600" font-size="10" fill="#1565c0">users</text>
+      <line x1="30" y1="78" x2="240" y2="78" stroke="#90caf9" stroke-width="1"/>
+      <text x="45" y="93" font-family="JetBrains Mono,monospace" font-size="9" fill="#37352f">id | name    | region_id</text>
+      <text x="45" y="107" font-family="JetBrains Mono,monospace" font-size="9" fill="#787774">1  | Bill    | 91</text>
+      <text x="45" y="121" font-family="JetBrains Mono,monospace" font-size="9" fill="#787774">2  | Satya   | 42</text>
+
+      <!-- Mini table: positions -->
+      <rect x="30" y="145" width="210" height="70" rx="6" fill="#fff" stroke="#90caf9" stroke-width="1"/>
+      <text x="135" y="162" text-anchor="middle" font-family="JetBrains Mono,monospace" font-weight="600" font-size="10" fill="#1565c0">positions</text>
+      <line x1="30" y1="168" x2="240" y2="168" stroke="#90caf9" stroke-width="1"/>
+      <text x="45" y="183" font-family="JetBrains Mono,monospace" font-size="9" fill="#37352f">user_id | title      | org</text>
+      <text x="45" y="197" font-family="JetBrains Mono,monospace" font-size="9" fill="#787774">1       | Co-chair   | BMGF</text>
+
+      <!-- FK arrow -->
+      <line x1="55" y1="135" x2="55" y2="145" stroke="#c62828" stroke-width="1.5" marker-end="url(#arr2)"/>
+      <text x="70" y="143" font-family="Inter,sans-serif" font-size="8" fill="#c62828">FK</text>
+
+      <text x="30" y="240" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#1565c0">Strengths:</text>
+      <text x="30" y="258" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; JOINs across tables</text>
+      <text x="30" y="273" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Many-to-many natural</text>
+      <text x="30" y="288" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Schema-on-write</text>
+      <text x="30" y="303" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; ACID guarantees</text>
+      <rect x="30" y="318" width="210" height="35" rx="6" fill="#bbdefb"/>
+      <text x="135" y="340" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#0d47a1">MySQL, PostgreSQL, Espresso</text>
+
+      <!-- Document -->
+      <rect x="285" y="10" width="250" height="360" rx="12" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"/>
+      <text x="410" y="40" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="15" fill="#1b5e20">Document (NoSQL)</text>
+
+      <!-- JSON doc -->
+      <rect x="305" y="55" width="210" height="155" rx="6" fill="#fff" stroke="#a5d6a7" stroke-width="1"/>
+      <text x="315" y="72" font-family="JetBrains Mono,monospace" font-size="9" fill="#37352f">{</text>
+      <text x="325" y="86" font-family="JetBrains Mono,monospace" font-size="9" fill="#37352f">"user_id": 251,</text>
+      <text x="325" y="100" font-family="JetBrains Mono,monospace" font-size="9" fill="#37352f">"name": "Bill Gates",</text>
+      <text x="325" y="114" font-family="JetBrains Mono,monospace" font-size="9" fill="#37352f">"positions": [</text>
+      <text x="335" y="128" font-family="JetBrains Mono,monospace" font-size="9" fill="#787774">{"title": "Co-chair",</text>
+      <text x="340" y="142" font-family="JetBrains Mono,monospace" font-size="9" fill="#787774"> "org": "BMGF"}</text>
+      <text x="325" y="156" font-family="JetBrains Mono,monospace" font-size="9" fill="#37352f">],</text>
+      <text x="325" y="170" font-family="JetBrains Mono,monospace" font-size="9" fill="#37352f">"education": [...]</text>
+      <text x="315" y="184" font-family="JetBrains Mono,monospace" font-size="9" fill="#37352f">}</text>
+      <text x="410" y="200" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#2e7d32">Self-contained document = tree</text>
+
+      <text x="305" y="225" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#1b5e20">Strengths:</text>
+      <text x="305" y="243" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Data locality (one fetch)</text>
+      <text x="305" y="258" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Schema flexibility</text>
+      <text x="305" y="273" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; 1-to-many is natural</text>
+      <text x="305" y="288" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Less impedance mismatch</text>
+      <rect x="305" y="318" width="210" height="35" rx="6" fill="#c8e6c9"/>
+      <text x="410" y="340" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#1b5e20">MongoDB, Espresso, CouchDB</text>
+
+      <!-- Graph -->
+      <rect x="560" y="10" width="250" height="360" rx="12" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="2"/>
+      <text x="685" y="40" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="15" fill="#4a148c">Graph</text>
+
+      <!-- Graph nodes -->
+      <circle cx="620" cy="90" r="18" fill="#e1bee7" stroke="#6a1b9a" stroke-width="1.5"/>
+      <text x="620" y="94" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#4a148c">Lucy</text>
+      <circle cx="750" cy="90" r="18" fill="#e1bee7" stroke="#6a1b9a" stroke-width="1.5"/>
+      <text x="750" y="94" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#4a148c">Alain</text>
+      <circle cx="685" cy="150" r="18" fill="#ede7f6" stroke="#6a1b9a" stroke-width="1"/>
+      <text x="685" y="154" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" fill="#4a148c">London</text>
+      <circle cx="620" cy="190" r="16" fill="#ede7f6" stroke="#6a1b9a" stroke-width="1"/>
+      <text x="620" y="194" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" fill="#4a148c">Idaho</text>
+      <circle cx="750" cy="190" r="16" fill="#ede7f6" stroke="#6a1b9a" stroke-width="1"/>
+      <text x="750" y="194" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" fill="#4a148c">Beaune</text>
+
+      <!-- Edges -->
+      <line x1="638" y1="90" x2="732" y2="90" stroke="#6a1b9a" stroke-width="1.2"/>
+      <text x="685" y="84" text-anchor="middle" font-family="Inter,sans-serif" font-size="7" fill="#6a1b9a">MARRIED_TO</text>
+      <line x1="625" y1="108" x2="680" y2="135" stroke="#6a1b9a" stroke-width="1"/>
+      <text x="640" y="125" font-family="Inter,sans-serif" font-size="7" fill="#6a1b9a">LIVES_IN</text>
+      <line x1="745" y1="108" x2="690" y2="135" stroke="#6a1b9a" stroke-width="1"/>
+      <line x1="620" y1="108" x2="620" y2="174" stroke="#9e9e9e" stroke-width="1" stroke-dasharray="3"/>
+      <text x="607" y="155" font-family="Inter,sans-serif" font-size="7" fill="#9e9e9e">BORN_IN</text>
+      <line x1="750" y1="108" x2="750" y2="174" stroke="#9e9e9e" stroke-width="1" stroke-dasharray="3"/>
+
+      <text x="580" y="225" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#4a148c">Strengths:</text>
+      <text x="580" y="243" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Many-to-many natural</text>
+      <text x="580" y="258" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Heterogeneous entities</text>
+      <text x="580" y="273" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Traversal queries fast</text>
+      <text x="580" y="288" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Highly evolvable schema</text>
+      <rect x="580" y="318" width="210" height="35" rx="6" fill="#e1bee7"/>
+      <text x="685" y="340" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#4a148c">Neo4j, Liquid, TAO (Meta)</text>
+    </svg>
+    <div class="caption">The three dominant data models. Each excels at different relationship patterns.</div>
+  </div>
+
+  <h3 id="sec-2-rel">Relational Model (SQL)</h3>
+  <p>Data organized into <strong>relations (tables)</strong> of <strong>tuples (rows)</strong>. The queen of data models for 40+ years. Normalization eliminates duplication; JOINs reconnect data at query time.</p>
+
+  <h3 id="sec-2-doc">Document Model (NoSQL)</h3>
+  <p>Self-contained documents (JSON/BSON). Great for <strong>one-to-many</strong> tree structures. All data for an entity loaded in one read (locality). Weak at JOINs and many-to-many.</p>
+
+  <h3 id="sec-2-graph">Graph Model</h3>
+  <p>Vertices + edges. Anything can connect to anything. Best for <strong>highly interconnected data</strong> where many-to-many relationships dominate (social graphs, knowledge graphs).</p>
+
+  <div class="card interview">
+    <strong>Interview Decision Framework:</strong> "What model should I use?" &rarr; <em>What are the relationships?</em><br><br>
+    &#8226; <strong>Mostly 1-to-many (tree)?</strong> &rarr; Document (Espresso, MongoDB)<br>
+    &#8226; <strong>Many-to-many with JOINs?</strong> &rarr; Relational (MySQL, Espresso)<br>
+    &#8226; <strong>Highly interconnected?</strong> &rarr; Graph (Liquid, Neo4j, TAO)
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+
+<!-- ======================= SECTION 3 ======================= -->
+<div class="section" id="sec-3">
+  <div class="section-num">Section 3</div>
+  <h2>LinkedIn Data Store Mapping <span class="interview-tag li">LinkedIn</span></h2>
+
+  <p>LinkedIn uses <strong>polyglot persistence</strong> &mdash; different data stores for different access patterns. Here's how each maps to the data model concepts.</p>
+
+  <!-- DIAGRAM: LinkedIn Data Store Landscape -->
+  <div class="diagram">
+    <svg viewBox="0 0 820 440" xmlns="http://www.w3.org/2000/svg" style="max-width:800px;">
+      <defs>
+        <marker id="arr3" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#546e7a"/>
+        </marker>
+        <filter id="sh2" x="-3%" y="-3%" width="106%" height="110%">
+          <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.06"/>
+        </filter>
+      </defs>
+
+      <text x="410" y="25" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="16" fill="#0077b5">LinkedIn Data Store Landscape</text>
+
+      <!-- Espresso -->
+      <rect x="20" y="50" width="230" height="170" rx="12" fill="#e3f2fd" stroke="#1565c0" stroke-width="2" filter="url(#sh2)"/>
+      <text x="135" y="78" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="14" fill="#0d47a1">Espresso</text>
+      <text x="135" y="96" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#787774">Document + Relational Hybrid</text>
+      <line x1="40" y1="105" x2="230" y2="105" stroke="#bbdefb" stroke-width="1"/>
+      <text x="40" y="123" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; JSON docs in MySQL storage</text>
+      <text x="40" y="140" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Secondary indexes</text>
+      <text x="40" y="157" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Timeline-consistent</text>
+      <text x="40" y="174" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Change capture &rarr; Kafka</text>
+      <rect x="40" y="190" width="190" height="20" rx="4" fill="#bbdefb"/>
+      <text x="135" y="204" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#0d47a1">Profiles, Messages, Feeds</text>
+
+      <!-- Venice -->
+      <rect x="295" y="50" width="230" height="170" rx="12" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2" filter="url(#sh2)"/>
+      <text x="410" y="78" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="14" fill="#1b5e20">Venice</text>
+      <text x="410" y="96" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#787774">Derived Data (Key-Value)</text>
+      <line x1="315" y1="105" x2="505" y2="105" stroke="#c8e6c9" stroke-width="1"/>
+      <text x="315" y="123" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Batch push + stream write</text>
+      <text x="315" y="140" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; RocksDB storage (LSM-tree)</text>
+      <text x="315" y="157" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Read-only serving layer</text>
+      <text x="315" y="174" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Pre-computed results</text>
+      <rect x="315" y="190" width="190" height="20" rx="4" fill="#c8e6c9"/>
+      <text x="410" y="204" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#1b5e20">ML features, recommendations</text>
+
+      <!-- Pinot -->
+      <rect x="570" y="50" width="230" height="170" rx="12" fill="#fff3e0" stroke="#e65100" stroke-width="2" filter="url(#sh2)"/>
+      <text x="685" y="78" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="14" fill="#bf360c">Pinot</text>
+      <text x="685" y="96" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#787774">OLAP / Real-Time Analytics</text>
+      <line x1="590" y1="105" x2="780" y2="105" stroke="#ffcc80" stroke-width="1"/>
+      <text x="590" y="123" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Columnar storage (segments)</text>
+      <text x="590" y="140" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; SQL-like queries (PQL)</text>
+      <text x="590" y="157" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Real-time + offline ingestion</text>
+      <text x="590" y="174" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Star-tree index for aggregation</text>
+      <rect x="590" y="190" width="190" height="20" rx="4" fill="#ffcc80"/>
+      <text x="685" y="204" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#bf360c">Who Viewed, Ad Analytics</text>
+
+      <!-- Galene -->
+      <rect x="20" y="260" width="230" height="160" rx="12" fill="#fce4ec" stroke="#c62828" stroke-width="2" filter="url(#sh2)"/>
+      <text x="135" y="288" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="14" fill="#c62828">Galene / SEAS</text>
+      <text x="135" y="306" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#787774">Full-Text Search</text>
+      <line x1="40" y1="315" x2="230" y2="315" stroke="#ef9a9a" stroke-width="1"/>
+      <text x="40" y="333" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Inverted index (Lucene-based)</text>
+      <text x="40" y="350" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; BM25 + custom ranking</text>
+      <text x="40" y="367" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Faceted search, typeahead</text>
+      <rect x="40" y="385" width="190" height="20" rx="4" fill="#ef9a9a"/>
+      <text x="135" y="399" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#c62828">People Search, Job Search</text>
+
+      <!-- Liquid -->
+      <rect x="295" y="260" width="230" height="160" rx="12" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="2" filter="url(#sh2)"/>
+      <text x="410" y="288" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="14" fill="#4a148c">Liquid</text>
+      <text x="410" y="306" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#787774">Graph Database</text>
+      <line x1="315" y1="315" x2="505" y2="315" stroke="#e1bee7" stroke-width="1"/>
+      <text x="315" y="333" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Social graph (1st/2nd/3rd)</text>
+      <text x="315" y="350" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Entity relationships</text>
+      <text x="315" y="367" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Graph traversal queries</text>
+      <rect x="315" y="385" width="190" height="20" rx="4" fill="#e1bee7"/>
+      <text x="410" y="399" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#4a148c">Connections, PYMK, Endorsements</text>
+
+      <!-- Data Flow -->
+      <rect x="570" y="260" width="230" height="160" rx="12" fill="#e0f7fa" stroke="#00838f" stroke-width="2" filter="url(#sh2)"/>
+      <text x="685" y="288" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="14" fill="#006064">Kafka + Samza/Flink</text>
+      <text x="685" y="306" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#787774">Data Pipeline (Glue)</text>
+      <line x1="590" y1="315" x2="780" y2="315" stroke="#80deea" stroke-width="1"/>
+      <text x="590" y="333" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Change data capture</text>
+      <text x="590" y="350" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Stream processing</text>
+      <text x="590" y="367" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Connects all stores</text>
+      <rect x="590" y="385" width="190" height="20" rx="4" fill="#80deea"/>
+      <text x="685" y="399" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#006064">Espresso &rarr; Venice/Pinot/Galene</text>
+    </svg>
+    <div class="caption">LinkedIn's polyglot persistence: Espresso (source of truth) feeds Kafka, which populates Venice, Pinot, and Galene for specialized access patterns.</div>
+  </div>
+
+  <h3 id="sec-3-espresso">Espresso &mdash; Document/Relational Hybrid <span class="linkedin-tag">LinkedIn</span></h3>
+
+  <div class="card linkedin">
+    <h4>LinkedIn Profile in Espresso (Document Model)</h4>
+    <pre>{
+  "memberId": 12345,
+  "firstName": "Satya",
+  "lastName": "Nadella",
+  "headline": "CEO at Microsoft",
+  "regionId": "us:sf-bay",     // FK to regions (many-to-one)
+  "industryId": 96,             // FK to industries (many-to-one)
+  "positions": [                // 1-to-many: embedded array
+    {"title": "CEO", "companyId": 1035, "startDate": "2014-02"},
+    {"title": "EVP", "companyId": 1035, "startDate": "2011-01"}
+  ],
+  "education": [                // 1-to-many: embedded array
+    {"schoolId": 5678, "degree": "MS", "field": "CS"}
+  ],
+  "skills": ["Cloud", "AI", "Leadership"]  // 1-to-many
+}</pre>
+    <p><strong>Key insight:</strong> Espresso stores JSON documents but is backed by MySQL. It gives you document flexibility (schema-on-read for nested arrays) with relational guarantees (secondary indexes, change capture).</p>
+  </div>
+
+  <h3 id="sec-3-venice">Venice &mdash; Derived Key-Value Store <span class="linkedin-tag">LinkedIn</span></h3>
+
+  <div class="card linkedin">
+    <h4>Pre-computed ML Features in Venice</h4>
+    <pre>// Venice stores pre-computed, read-optimized data
+// Key: memberId, Value: feature vector (derived from Espresso + Kafka)
+
+Key: "member:12345"
+Value: {
+  "profileCompleteness": 0.92,
+  "connectionCount": 2847,
+  "avgEndorsements": 15.3,
+  "industryVector": [0.23, 0.87, ...],  // ML embedding
+  "lastActiveTs": 1713200000
+}
+
+// Batch push: Spark job computes features → pushes to Venice
+// Stream write: Samza/Flink updates in near-real-time via Kafka</pre>
+    <p><strong>When to use:</strong> When you need pre-computed, read-heavy lookups (ML features, recommendation scores, "People You May Know" precomputed lists).</p>
+  </div>
+
+  <h3 id="sec-3-pinot">Pinot &mdash; Real-Time OLAP Analytics <span class="linkedin-tag">LinkedIn</span></h3>
+
+  <div class="card linkedin">
+    <h4>"Who Viewed Your Profile" Analytics in Pinot</h4>
+    <pre>// Pinot uses columnar storage optimized for aggregation queries
+// Schema: star-schema with dimensions and metrics
+
+Table: profile_views
+Columns: viewer_id, viewed_id, timestamp, viewer_industry,
+         viewer_region, viewer_seniority, device_type
+
+// PQL Query: "How many people from tech viewed my profile this week?"
+SELECT COUNT(*), viewer_seniority
+FROM profile_views
+WHERE viewed_id = 12345
+  AND timestamp > ago('7d')
+  AND viewer_industry = 'Technology'
+GROUP BY viewer_seniority
+ORDER BY COUNT(*) DESC
+LIMIT 10</pre>
+    <p><strong>When to use:</strong> Real-time analytics dashboards, ad impression counting, A/B test metrics. Not for transactional reads/writes.</p>
+  </div>
+
+  <h3 id="sec-3-galene">Galene / SEAS &mdash; Search Index <span class="linkedin-tag">LinkedIn</span></h3>
+
+  <div class="card linkedin">
+    <h4>People Search via Galene</h4>
+    <pre>// Galene builds inverted indexes from Espresso data (via Kafka)
+// Search doc indexed for member:
+
+{
+  "memberId": 12345,
+  "name": "Satya Nadella",
+  "headline": "CEO at Microsoft",
+  "skills": ["Cloud Computing", "AI", "Enterprise Software"],
+  "company": "Microsoft",
+  "location": "Redmond, WA",
+  "connections": 2847,
+  "profileStrength": 0.92
+}
+
+// Query: "AI engineers in Bay Area" →
+// BM25 text match + geo filter + connection-distance boost
+// Results ranked by: relevance × network proximity × profile strength</pre>
+    <p><strong>When to use:</strong> Full-text search, typeahead, faceted filtering. Galene is LinkedIn's custom search engine (Lucene-based). Not a source of truth &mdash; rebuilt from Espresso via Kafka.</p>
+  </div>
+
+  <h3 id="sec-3-liquid">Liquid &mdash; Graph Database <span class="linkedin-tag">LinkedIn</span></h3>
+
+  <div class="card linkedin">
+    <h4>Social Graph in Liquid</h4>
+    <pre>// Liquid stores the social graph: members, companies, schools as vertices
+// Connections, follows, endorsements as edges
+
+Vertex: Member(id=12345, name="Satya")
+Vertex: Member(id=67890, name="Bill")
+Vertex: Company(id=1035, name="Microsoft")
+Vertex: Skill(id=500, name="Cloud Computing")
+
+Edge: (12345) --[CONNECTED_TO]--> (67890)       // bidirectional
+Edge: (12345) --[WORKS_AT]--> (1035)             // many-to-one
+Edge: (67890) --[WORKS_AT]--> (1035)             // many-to-one
+Edge: (12345) --[ENDORSED_BY {skill:500}]--> (67890) // many-to-many
+
+// "People You May Know" traversal:
+// Find friends-of-friends not yet connected
+// member:12345 → CONNECTED_TO → ??? → CONNECTED_TO → candidates
+// Filter: not already connected, rank by shared connections</pre>
+    <p><strong>When to use:</strong> Relationship traversals (connection degree, mutual connections, PYMK), where many-to-many is the <em>entire</em> data model.</p>
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+
+<!-- ======================= SECTION 4 ======================= -->
+<div class="section" id="sec-4">
+  <div class="section-num">Section 4</div>
+  <h2>Modeling Relationships <span class="interview-tag meta">Meta</span><span class="interview-tag google">Google</span><span class="interview-tag li">LinkedIn</span></h2>
+
+  <h3 id="sec-4-one">One-to-Many (User &rarr; Positions, Skills)</h3>
+
+  <!-- DIAGRAM: One-to-Many -->
+  <div class="diagram">
+    <svg viewBox="0 0 800 280" xmlns="http://www.w3.org/2000/svg" style="max-width:780px;">
+      <defs>
+        <marker id="arr4" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#546e7a"/>
+        </marker>
+      </defs>
+
+      <!-- Parent: User -->
+      <rect x="30" y="30" width="180" height="60" rx="10" fill="#e3f2fd" stroke="#1565c0" stroke-width="2"/>
+      <text x="120" y="55" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#0d47a1">Member</text>
+      <text x="120" y="75" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#546e7a">id=12345 "Satya"</text>
+
+      <!-- Children -->
+      <rect x="300" y="10" width="170" height="40" rx="8" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1.5"/>
+      <text x="385" y="35" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#1b5e20">Position: "CEO"</text>
+
+      <rect x="300" y="60" width="170" height="40" rx="8" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1.5"/>
+      <text x="385" y="85" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#1b5e20">Position: "EVP"</text>
+
+      <rect x="300" y="110" width="170" height="40" rx="8" fill="#fff3e0" stroke="#e65100" stroke-width="1.5"/>
+      <text x="385" y="135" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#bf360c">Education: "UW-M MS"</text>
+
+      <rect x="300" y="160" width="170" height="40" rx="8" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="1.5"/>
+      <text x="385" y="185" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#4a148c">Skill: "Cloud"</text>
+
+      <rect x="300" y="210" width="170" height="40" rx="8" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="1.5"/>
+      <text x="385" y="235" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#4a148c">Skill: "AI"</text>
+
+      <!-- Arrows 1-to-many -->
+      <line x1="210" y1="50" x2="300" y2="30" stroke="#546e7a" stroke-width="1.2" marker-end="url(#arr4)"/>
+      <line x1="210" y1="55" x2="300" y2="80" stroke="#546e7a" stroke-width="1.2" marker-end="url(#arr4)"/>
+      <line x1="210" y1="60" x2="300" y2="130" stroke="#546e7a" stroke-width="1.2" marker-end="url(#arr4)"/>
+      <line x1="210" y1="65" x2="300" y2="180" stroke="#546e7a" stroke-width="1.2" marker-end="url(#arr4)"/>
+      <line x1="210" y1="70" x2="300" y2="230" stroke="#546e7a" stroke-width="1.2" marker-end="url(#arr4)"/>
+
+      <text x="240" y="25" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#c62828">1 : N</text>
+
+      <!-- Right side: How to model -->
+      <rect x="530" y="10" width="250" height="110" rx="10" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1.5"/>
+      <text x="655" y="35" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="12" fill="#1b5e20">Document Model (Espresso)</text>
+      <text x="545" y="55" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Embed as nested array:</text>
+      <text x="545" y="72" font-family="JetBrains Mono,monospace" font-size="9" fill="#37352f">"positions": [{...}, {...}]</text>
+      <text x="545" y="92" font-family="Inter,sans-serif" font-size="10" fill="#2e7d32">One fetch, great locality</text>
+      <text x="545" y="107" font-family="Inter,sans-serif" font-size="10" fill="#c62828">Hard to query children alone</text>
+
+      <rect x="530" y="130" width="250" height="110" rx="10" fill="#e3f2fd" stroke="#1565c0" stroke-width="1.5"/>
+      <text x="655" y="155" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="12" fill="#0d47a1">Relational Model (MySQL)</text>
+      <text x="545" y="175" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Separate table + FK:</text>
+      <text x="545" y="192" font-family="JetBrains Mono,monospace" font-size="9" fill="#37352f">positions(user_id FK, ...)</text>
+      <text x="545" y="212" font-family="Inter,sans-serif" font-size="10" fill="#2e7d32">Can query positions alone</text>
+      <text x="545" y="227" font-family="Inter,sans-serif" font-size="10" fill="#c62828">Requires JOIN to assemble</text>
+    </svg>
+    <div class="caption">One-to-many: a LinkedIn member has many positions, many skills. Document model embeds them; relational model normalizes to separate tables.</div>
+  </div>
+
+  <h3 id="sec-4-many-one">Many-to-One (Members &rarr; Region, Industry)</h3>
+
+  <!-- DIAGRAM: Many-to-One -->
+  <div class="diagram">
+    <svg viewBox="0 0 800 220" xmlns="http://www.w3.org/2000/svg" style="max-width:750px;">
+      <defs>
+        <marker id="arr5" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#546e7a"/>
+        </marker>
+      </defs>
+
+      <!-- Multiple members -->
+      <rect x="30" y="20" width="150" height="40" rx="8" fill="#e3f2fd" stroke="#1565c0" stroke-width="1.5"/>
+      <text x="105" y="45" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#0d47a1">Satya (regionId:91)</text>
+      <rect x="30" y="70" width="150" height="40" rx="8" fill="#e3f2fd" stroke="#1565c0" stroke-width="1.5"/>
+      <text x="105" y="95" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#0d47a1">Amy (regionId:91)</text>
+      <rect x="30" y="120" width="150" height="40" rx="8" fill="#e3f2fd" stroke="#1565c0" stroke-width="1.5"/>
+      <text x="105" y="145" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#0d47a1">Kevin (regionId:91)</text>
+      <rect x="30" y="170" width="150" height="40" rx="8" fill="#e3f2fd" stroke="#1565c0" stroke-width="1.5"/>
+      <text x="105" y="195" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#0d47a1">Priya (regionId:42)</text>
+
+      <!-- Arrows to shared entity -->
+      <line x1="180" y1="40" x2="310" y2="75" stroke="#546e7a" stroke-width="1.2" marker-end="url(#arr5)"/>
+      <line x1="180" y1="90" x2="310" y2="80" stroke="#546e7a" stroke-width="1.2" marker-end="url(#arr5)"/>
+      <line x1="180" y1="140" x2="310" y2="85" stroke="#546e7a" stroke-width="1.2" marker-end="url(#arr5)"/>
+      <line x1="180" y1="190" x2="310" y2="155" stroke="#546e7a" stroke-width="1.2" marker-end="url(#arr5)"/>
+
+      <text x="240" y="55" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#c62828">N : 1</text>
+
+      <!-- Shared entities -->
+      <rect x="310" y="55" width="180" height="50" rx="10" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"/>
+      <text x="400" y="78" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="12" fill="#1b5e20">Bay Area</text>
+      <text x="400" y="95" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#787774">region_id: 91</text>
+
+      <rect x="310" y="130" width="180" height="50" rx="10" fill="#fff3e0" stroke="#e65100" stroke-width="2"/>
+      <text x="400" y="153" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="12" fill="#bf360c">Bangalore</text>
+      <text x="400" y="170" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#787774">region_id: 42</text>
+
+      <!-- Why normalize -->
+      <rect x="540" y="40" width="240" height="150" rx="10" fill="#f7f6f3" stroke="#e3e2de" stroke-width="1"/>
+      <text x="660" y="65" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#00695c">Why use IDs, not strings?</text>
+      <text x="555" y="88" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Update name in one place</text>
+      <text x="555" y="106" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Consistent spelling</text>
+      <text x="555" y="124" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Localization (i18n)</text>
+      <text x="555" y="142" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Better search (semantic)</text>
+      <text x="555" y="164" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#c62828">= Normalization</text>
+      <text x="555" y="180" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Removes duplication &rarr; needs JOINs</text>
+    </svg>
+    <div class="caption">Many-to-one: many members share one region. Store the ID, not the string. This is normalization &mdash; and it requires JOINs (easy in SQL, hard in documents).</div>
+  </div>
+
+  <h3 id="sec-4-many-many">Many-to-Many (Members &harr; Skills, Endorsements)</h3>
+
+  <!-- DIAGRAM: Many-to-Many -->
+  <div class="diagram">
+    <svg viewBox="0 0 800 320" xmlns="http://www.w3.org/2000/svg" style="max-width:780px;">
+      <defs>
+        <marker id="arr6" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#546e7a"/>
+        </marker>
+      </defs>
+
+      <text x="400" y="25" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="14" fill="#00695c">Many-to-Many: Members &harr; Skills (with Endorsements)</text>
+
+      <!-- Members -->
+      <rect x="30" y="60" width="140" height="40" rx="8" fill="#e3f2fd" stroke="#1565c0" stroke-width="1.5"/>
+      <text x="100" y="85" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#0d47a1">Satya</text>
+      <rect x="30" y="120" width="140" height="40" rx="8" fill="#e3f2fd" stroke="#1565c0" stroke-width="1.5"/>
+      <text x="100" y="145" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#0d47a1">Amy</text>
+      <rect x="30" y="180" width="140" height="40" rx="8" fill="#e3f2fd" stroke="#1565c0" stroke-width="1.5"/>
+      <text x="100" y="205" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#0d47a1">Kevin</text>
+
+      <!-- Skills -->
+      <rect x="350" y="60" width="140" height="40" rx="8" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1.5"/>
+      <text x="420" y="85" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#1b5e20">Cloud</text>
+      <rect x="350" y="120" width="140" height="40" rx="8" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1.5"/>
+      <text x="420" y="145" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#1b5e20">AI / ML</text>
+      <rect x="350" y="180" width="140" height="40" rx="8" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1.5"/>
+      <text x="420" y="205" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#1b5e20">Java</text>
+
+      <!-- Cross connections (many-to-many) -->
+      <line x1="170" y1="75" x2="350" y2="75" stroke="#1565c0" stroke-width="1.2" marker-end="url(#arr6)"/>
+      <line x1="170" y1="80" x2="350" y2="135" stroke="#1565c0" stroke-width="1" marker-end="url(#arr6)"/>
+      <line x1="170" y1="135" x2="350" y2="80" stroke="#e65100" stroke-width="1" marker-end="url(#arr6)"/>
+      <line x1="170" y1="140" x2="350" y2="140" stroke="#e65100" stroke-width="1.2" marker-end="url(#arr6)"/>
+      <line x1="170" y1="145" x2="350" y2="195" stroke="#e65100" stroke-width="1" marker-end="url(#arr6)"/>
+      <line x1="170" y1="200" x2="350" y2="195" stroke="#6a1b9a" stroke-width="1.2" marker-end="url(#arr6)"/>
+      <line x1="170" y1="195" x2="350" y2="140" stroke="#6a1b9a" stroke-width="1" marker-end="url(#arr6)"/>
+
+      <text x="260" y="55" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#c62828">N : M</text>
+
+      <!-- How to model in each system -->
+      <rect x="540" y="50" width="240" height="75" rx="8" fill="#e3f2fd" stroke="#1565c0" stroke-width="1"/>
+      <text x="660" y="72" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#0d47a1">Relational / Espresso</text>
+      <text x="555" y="90" font-family="JetBrains Mono,monospace" font-size="9" fill="#37352f">endorsements(member_id,</text>
+      <text x="555" y="103" font-family="JetBrains Mono,monospace" font-size="9" fill="#37352f">  skill_id, endorser_id)</text>
+      <text x="555" y="118" font-family="Inter,sans-serif" font-size="9" fill="#787774">Junction table with FKs</text>
+
+      <rect x="540" y="135" width="240" height="60" rx="8" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="1"/>
+      <text x="660" y="157" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#4a148c">Graph / Liquid</text>
+      <text x="555" y="175" font-family="JetBrains Mono,monospace" font-size="9" fill="#37352f">(Satya)--[HAS_SKILL]-->(Cloud)</text>
+      <text x="555" y="188" font-family="Inter,sans-serif" font-size="9" fill="#787774">Edges with properties</text>
+
+      <rect x="540" y="205" width="240" height="60" rx="8" fill="#fce4ec" stroke="#c62828" stroke-width="1"/>
+      <text x="660" y="227" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#c62828">Document (anti-pattern!)</text>
+      <text x="555" y="245" font-family="Inter,sans-serif" font-size="9" fill="#37352f">Denormalize &rarr; duplicated data</text>
+      <text x="555" y="258" font-family="Inter,sans-serif" font-size="9" fill="#c62828">Updates become inconsistent</text>
+
+      <!-- Summary bar -->
+      <rect x="30" y="270" width="460" height="40" rx="8" fill="#f7f6f3" stroke="#e3e2de" stroke-width="1"/>
+      <text x="260" y="295" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#00695c">Rule: As data becomes more interconnected, move from Document &rarr; Relational &rarr; Graph</text>
+    </svg>
+    <div class="caption">Many-to-many: members have many skills, each skill belongs to many members. Junction tables (relational) or edges (graph) are the clean solutions. Documents struggle here.</div>
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+
+<!-- ======================= SECTION 5 ======================= -->
+<div class="section" id="sec-5">
+  <div class="section-num">Section 5</div>
+  <h2>Schema-on-Read vs Schema-on-Write <span class="interview-tag meta">Meta</span><span class="interview-tag google">Google</span></h2>
+
+  <div class="compare-grid">
+    <div class="compare-card" style="border-top: 3px solid #1565c0;">
+      <h4 style="color:#1565c0;">Schema-on-Write (Relational)</h4>
+      <p style="font-size:.9em;color:#787774;margin-bottom:10px;">Like static typing (compile-time checks)</p>
+      <ul>
+        <li>Schema is <strong>explicit</strong>, enforced on every write</li>
+        <li>DB rejects invalid data</li>
+        <li>Schema changes via <code>ALTER TABLE</code></li>
+        <li>MySQL: ALTER copies entire table (slow!)</li>
+        <li>Good when all records have same structure</li>
+      </ul>
+      <pre style="font-size:.8em;margin-top:12px;">ALTER TABLE users ADD COLUMN first_name text;
+UPDATE users SET first_name =
+  substring_index(name, ' ', 1);</pre>
+    </div>
+    <div class="compare-card" style="border-top: 3px solid #2e7d32;">
+      <h4 style="color:#2e7d32;">Schema-on-Read (Document)</h4>
+      <p style="font-size:.9em;color:#787774;margin-bottom:10px;">Like dynamic typing (runtime checks)</p>
+      <ul>
+        <li>Schema is <strong>implicit</strong>, interpreted on read</li>
+        <li>Any JSON shape is accepted</li>
+        <li>Code handles old + new formats</li>
+        <li>No downtime for schema changes</li>
+        <li>Good when data is heterogeneous</li>
+      </ul>
+      <pre style="font-size:.8em;margin-top:12px;">// Handle old docs at read time:
+if (user && user.name && !user.first_name) {
+  user.first_name = user.name.split(" ")[0];
+}</pre>
+    </div>
+  </div>
+
+  <div class="card interview">
+    <strong>Interview Tip:</strong> Neither is universally better. Schema-on-write gives <strong>guarantees</strong> (great for financial data). Schema-on-read gives <strong>flexibility</strong> (great for rapidly evolving features). Espresso gives you both: JSON docs with optional secondary index enforcement.
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+
+<!-- ======================= SECTION 6 ======================= -->
+<div class="section" id="sec-6">
+  <div class="section-num">Section 6</div>
+  <h2>Query Languages: Declarative vs Imperative <span class="interview-tag google">Google</span></h2>
+
+  <!-- DIAGRAM: Declarative vs Imperative -->
+  <div class="diagram">
+    <svg viewBox="0 0 800 280" xmlns="http://www.w3.org/2000/svg" style="max-width:750px;">
+      <!-- Declarative -->
+      <rect x="20" y="10" width="360" height="260" rx="12" fill="#e3f2fd" stroke="#1565c0" stroke-width="2"/>
+      <text x="200" y="40" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="15" fill="#0d47a1">Declarative</text>
+      <text x="200" y="58" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#787774">"What data I want"</text>
+      <line x1="40" y1="68" x2="360" y2="68" stroke="#bbdefb" stroke-width="1"/>
+      <text x="40" y="90" font-family="JetBrains Mono,monospace" font-size="10" fill="#37352f">SELECT * FROM animals</text>
+      <text x="40" y="106" font-family="JetBrains Mono,monospace" font-size="10" fill="#37352f">WHERE family = 'Sharks';</text>
+      <text x="40" y="135" font-family="Inter,sans-serif" font-size="10" fill="#2e7d32">&#10003; DB chooses indexes, join order</text>
+      <text x="40" y="152" font-family="Inter,sans-serif" font-size="10" fill="#2e7d32">&#10003; Parallelizable by engine</text>
+      <text x="40" y="169" font-family="Inter,sans-serif" font-size="10" fill="#2e7d32">&#10003; Perf improves without rewrite</text>
+      <text x="40" y="186" font-family="Inter,sans-serif" font-size="10" fill="#2e7d32">&#10003; More concise</text>
+      <rect x="40" y="205" width="320" height="45" rx="8" fill="#bbdefb"/>
+      <text x="200" y="225" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#0d47a1">SQL, CSS, Cypher, SPARQL, PQL (Pinot)</text>
+      <text x="200" y="242" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#546e7a">Also: MongoDB Aggregation Pipeline</text>
+
+      <!-- Imperative -->
+      <rect x="420" y="10" width="360" height="260" rx="12" fill="#fff3e0" stroke="#e65100" stroke-width="2"/>
+      <text x="600" y="40" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="15" fill="#bf360c">Imperative</text>
+      <text x="600" y="58" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#787774">"How to get the data"</text>
+      <line x1="440" y1="68" x2="760" y2="68" stroke="#ffcc80" stroke-width="1"/>
+      <text x="440" y="88" font-family="JetBrains Mono,monospace" font-size="10" fill="#37352f">for (var i=0; i &lt; animals.length;</text>
+      <text x="440" y="103" font-family="JetBrains Mono,monospace" font-size="10" fill="#37352f">     i++) {</text>
+      <text x="440" y="118" font-family="JetBrains Mono,monospace" font-size="10" fill="#37352f">  if (animals[i].family ===</text>
+      <text x="440" y="133" font-family="JetBrains Mono,monospace" font-size="10" fill="#37352f">      "Sharks") sharks.push(...);</text>
+      <text x="440" y="148" font-family="JetBrains Mono,monospace" font-size="10" fill="#37352f">}</text>
+      <text x="440" y="175" font-family="Inter,sans-serif" font-size="10" fill="#c62828">&#10007; Must specify iteration order</text>
+      <text x="440" y="192" font-family="Inter,sans-serif" font-size="10" fill="#c62828">&#10007; Hard to parallelize</text>
+      <text x="440" y="209" font-family="Inter,sans-serif" font-size="10" fill="#c62828">&#10007; Rewrite needed for optimization</text>
+      <rect x="440" y="230" width="320" height="25" rx="8" fill="#ffcc80"/>
+      <text x="600" y="247" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#bf360c">IMS, CODASYL, DOM manipulation</text>
+    </svg>
+    <div class="caption">Declarative tells the database WHAT you want; imperative tells it HOW. SQL won because the query optimizer handles the HOW automatically.</div>
+  </div>
+
+  <div class="card interview">
+    <strong>Key Insight for Interviews:</strong> MapReduce is <em>between</em> declarative and imperative &mdash; you write <code>map()</code> and <code>reduce()</code> functions, but the framework handles distribution. MongoDB eventually added a declarative aggregation pipeline (reinventing SQL!). The moral: declarative wins in the long run because it enables the engine to optimize.
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+
+<!-- ======================= SECTION 7 ======================= -->
+<div class="section" id="sec-7">
+  <div class="section-num">Section 7</div>
+  <h2>Interview Questions &amp; Talking Points</h2>
+
+  <div class="card interview">
+    <h4>Q1: "When would you use a document DB vs relational?" <span class="interview-tag meta">Meta</span><span class="interview-tag google">Google</span></h4>
+    <p><strong>Answer:</strong> Document when data is self-contained with 1-to-many nesting (profiles, product catalogs, event logs). Relational when you need JOINs, many-to-many relationships, and strict schema enforcement (financial transactions, inventory). At LinkedIn, Espresso bridges both: JSON documents with secondary indexes and change capture.</p>
+  </div>
+
+  <div class="card interview">
+    <h4>Q2: "How would you model a social graph?" <span class="interview-tag meta">Meta</span><span class="interview-tag li">LinkedIn</span></h4>
+    <p><strong>Answer:</strong> Graph model. Vertices = members, companies, schools. Edges = connections, follows, endorsements. At LinkedIn, Liquid stores the social graph for traversal queries (PYMK, mutual connections, connection degree). Meta uses TAO (graph cache over MySQL shards). Graph enables "friends of friends" queries that would require recursive CTEs in SQL.</p>
+  </div>
+
+  <div class="card interview">
+    <h4>Q3: "How do you handle schema evolution?" <span class="interview-tag google">Google</span><span class="interview-tag netflix">Netflix</span></h4>
+    <p><strong>Answer:</strong> Schema-on-read (document DBs): write new format, handle old format in code. Schema-on-write (relational): <code>ALTER TABLE</code> + backfill. Google Spanner uses schema-on-write with online schema changes. At LinkedIn, Espresso supports both &mdash; you can evolve JSON doc structure without downtime while keeping secondary indexes.</p>
+  </div>
+
+  <div class="card interview">
+    <h4>Q4: "SQL vs NoSQL &mdash; which is better?" <span class="interview-tag meta">Meta</span><span class="interview-tag google">Google</span></h4>
+    <p><strong>Answer:</strong> Wrong question! It's polyglot persistence &mdash; use the right store for each access pattern. Source of truth (Espresso/MySQL), search (Galene/Elasticsearch), analytics (Pinot/BigQuery), derived data (Venice/Redis), graph (Liquid/Neo4j). They're converging: relational DBs add JSON support, document DBs add JOINs.</p>
+  </div>
+
+  <div class="card interview">
+    <h4>Q5: "Explain normalization vs denormalization" <span class="interview-tag meta">Meta</span><span class="interview-tag google">Google</span></h4>
+    <p><strong>Answer:</strong> Normalization: store each fact once, use IDs/FKs, JOIN to assemble. Removes duplication, ensures consistency. Denormalization: duplicate data for read performance (embed region name in every profile instead of region_id). Tradeoff: faster reads vs harder writes and risk of inconsistency. At LinkedIn, Espresso is normalized (source of truth), Venice is denormalized (pre-computed for reads).</p>
+  </div>
+
+  <!-- DIAGRAM: Quick Reference -->
+  <div class="diagram">
+    <svg viewBox="0 0 820 220" xmlns="http://www.w3.org/2000/svg" style="max-width:800px;">
+      <rect x="10" y="10" width="800" height="200" rx="14" fill="#f7f6f3" stroke="#00695c" stroke-width="2"/>
+      <text x="410" y="40" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="16" fill="#00695c">Chapter 2 Interview Cheatsheet</text>
+
+      <rect x="30" y="55" width="245" height="140" rx="10" fill="#e3f2fd" stroke="#1565c0" stroke-width="1"/>
+      <text x="152" y="78" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#0d47a1">Data Models</text>
+      <text x="45" y="98" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Relational: tables + JOINs</text>
+      <text x="45" y="115" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Document: JSON trees</text>
+      <text x="45" y="132" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Graph: vertices + edges</text>
+      <text x="45" y="149" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; 1:N &rarr; Doc, N:M &rarr; Rel/Graph</text>
+      <text x="45" y="170" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#0d47a1">Pick model by relationship pattern</text>
+
+      <rect x="290" y="55" width="245" height="140" rx="10" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1"/>
+      <text x="412" y="78" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#1b5e20">LinkedIn Stores</text>
+      <text x="305" y="98" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Espresso: source of truth</text>
+      <text x="305" y="115" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Venice: derived / ML features</text>
+      <text x="305" y="132" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Pinot: real-time analytics</text>
+      <text x="305" y="149" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Galene: search index</text>
+      <text x="305" y="170" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Liquid: social graph</text>
+      <text x="305" y="185" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#1b5e20">Kafka connects everything</text>
+
+      <rect x="550" y="55" width="245" height="140" rx="10" fill="#fff3e0" stroke="#e65100" stroke-width="1"/>
+      <text x="672" y="78" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#bf360c">Query Languages</text>
+      <text x="565" y="98" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Declarative &gt; Imperative</text>
+      <text x="565" y="115" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; SQL: relational algebra</text>
+      <text x="565" y="132" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Cypher/SPARQL: graphs</text>
+      <text x="565" y="149" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; MapReduce: batch (low-level)</text>
+      <text x="565" y="170" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Schema-on-read vs write</text>
+      <text x="565" y="185" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#bf360c">Declarative wins long-term</text>
+    </svg>
+    <div class="caption">Quick reference: data models, LinkedIn stores, and query language insights for interviews.</div>
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+</div>
+
+<footer>
+  <div class="container">
+    <p>Data Intensive Systems &mdash; Chapter 2 &mdash; <a href="/ddia-ch1.html">Ch 1: Reliability &amp; Scalability</a> | <a href="/">Home</a></p>
+  </div>
+</footer>
+
+</body>
+</html>
