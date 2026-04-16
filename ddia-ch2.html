@@ -1042,6 +1042,285 @@ GET /SkillsDB/SkillMembers/500
 //   c) Move to a graph DB (Liquid) for relationship-heavy access</pre>
   </div>
 
+  <h4>FNV Hashing &mdash; How Key "12345" Maps to Partition 42</h4>
+
+  <p>The partition assignment formula is simple: <code>partition = FNV_hash(key) % numPartitions</code>. FNV (Fowler-Noll-Vo) is a fast, non-cryptographic hash. You can verify with <code>esretool calc fnvhash -n 256 -k "12345"</code>.</p>
+
+  <!-- DIAGRAM: FNV Partitioning -->
+  <div class="diagram">
+    <svg viewBox="0 0 820 330" xmlns="http://www.w3.org/2000/svg" style="max-width:800px;">
+      <defs>
+        <marker id="arrH" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#546e7a"/>
+        </marker>
+        <filter id="shH" x="-3%" y="-3%" width="106%" height="110%">
+          <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.06"/>
+        </filter>
+      </defs>
+
+      <!-- Key input -->
+      <rect x="20" y="20" width="150" height="50" rx="10" fill="#e3f2fd" stroke="#1565c0" stroke-width="2" filter="url(#shH)"/>
+      <text x="95" y="42" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#0d47a1">Key = "12345"</text>
+      <text x="95" y="58" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#787774">(from URL path)</text>
+
+      <!-- Arrow to hash -->
+      <line x1="170" y1="45" x2="220" y2="45" stroke="#546e7a" stroke-width="1.5" marker-end="url(#arrH)"/>
+
+      <!-- FNV Hash -->
+      <rect x="220" y="15" width="180" height="60" rx="10" fill="#fff3e0" stroke="#e65100" stroke-width="2" filter="url(#shH)"/>
+      <text x="310" y="38" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#e65100">FNV Hash</text>
+      <text x="310" y="55" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#787774">0x811c9dc5 ^ bytes * 0x01000193</text>
+      <text x="310" y="68" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" fill="#787774">fast, non-cryptographic, uniform</text>
+
+      <!-- Arrow to modulo -->
+      <line x1="400" y1="45" x2="440" y2="45" stroke="#546e7a" stroke-width="1.5" marker-end="url(#arrH)"/>
+
+      <!-- Modulo -->
+      <rect x="440" y="15" width="160" height="60" rx="10" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="2" filter="url(#shH)"/>
+      <text x="520" y="38" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#6a1b9a">% 256</text>
+      <text x="520" y="55" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#787774">numPartitions</text>
+      <text x="520" y="68" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" fill="#c62828">FIXED at DB creation!</text>
+
+      <!-- Arrow to result -->
+      <line x1="600" y1="45" x2="640" y2="45" stroke="#546e7a" stroke-width="1.5" marker-end="url(#arrH)"/>
+
+      <!-- Result -->
+      <rect x="640" y="15" width="150" height="60" rx="10" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2" filter="url(#shH)"/>
+      <text x="715" y="38" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="14" fill="#2e7d32">Partition 42</text>
+      <text x="715" y="58" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#787774">→ Helix → StorageNode2</text>
+
+      <!-- Partition ring visualization -->
+      <text x="410" y="108" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#00695c">256 Partitions Across 32 Storage Nodes</text>
+
+      <!-- Simplified ring as boxes -->
+      <g transform="translate(30, 120)">
+        <!-- Node 1 -->
+        <rect x="0" y="0" width="90" height="90" rx="8" fill="#e8eaf6" stroke="#283593" stroke-width="1"/>
+        <text x="45" y="20" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#283593">Node 1</text>
+        <text x="45" y="38" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#787774">P0, P1, P2</text>
+        <text x="45" y="50" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#787774">P3, P4, P5</text>
+        <text x="45" y="62" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#787774">P6, P7</text>
+        <text x="45" y="80" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" fill="#283593">~8 leader partitions</text>
+
+        <!-- Node 2 -->
+        <rect x="100" y="0" width="90" height="90" rx="8" fill="#e8eaf6" stroke="#283593" stroke-width="1"/>
+        <text x="145" y="20" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#283593">Node 2</text>
+        <text x="145" y="38" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#787774">P8, P9, P10</text>
+        <text x="145" y="50" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#787774">...</text>
+
+        <!-- Highlighted: Node with partition 42 -->
+        <rect x="200" y="0" width="90" height="90" rx="8" fill="#c8e6c9" stroke="#2e7d32" stroke-width="2"/>
+        <text x="245" y="20" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#2e7d32">Node 6</text>
+        <text x="245" y="38" text-anchor="middle" font-family="JetBrains Mono,monospace" font-weight="700" font-size="9" fill="#2e7d32">P40, P41, P42</text>
+        <text x="245" y="50" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#787774">P43, P44, ...</text>
+        <text x="245" y="80" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="9" fill="#2e7d32">← key 12345 goes here!</text>
+
+        <rect x="300" y="0" width="90" height="90" rx="8" fill="#e8eaf6" stroke="#283593" stroke-width="1"/>
+        <text x="345" y="20" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#283593">Node 7</text>
+        <text x="345" y="38" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#787774">P48, P49 ...</text>
+
+        <text x="410" y="45" text-anchor="middle" font-family="Inter,sans-serif" font-size="20" fill="#787774">...</text>
+
+        <rect x="440" y="0" width="90" height="90" rx="8" fill="#e8eaf6" stroke="#283593" stroke-width="1"/>
+        <text x="485" y="20" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#283593">Node 31</text>
+        <text x="485" y="38" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#787774">P248 ...</text>
+
+        <rect x="540" y="0" width="90" height="90" rx="8" fill="#e8eaf6" stroke="#283593" stroke-width="1"/>
+        <text x="585" y="20" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#283593">Node 32</text>
+        <text x="585" y="38" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#787774">... P255</text>
+
+        <!-- Replicas note -->
+        <rect x="650" y="0" width="100" height="90" rx="8" fill="#fce4ec" stroke="#c62828" stroke-width="1"/>
+        <text x="700" y="20" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="9" fill="#c62828">Replication</text>
+        <text x="700" y="38" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" fill="#37352f">Each partition</text>
+        <text x="700" y="50" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" fill="#37352f">has 3 replicas:</text>
+        <text x="700" y="65" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="8" fill="#c62828">1 LEADER</text>
+        <text x="700" y="78" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" fill="#787774">2 FOLLOWERS</text>
+      </g>
+
+      <!-- NOT a hash ring note -->
+      <rect x="30" y="240" width="760" height="75" rx="10" fill="#f7f6f3" stroke="#e3e2de" stroke-width="1"/>
+      <text x="50" y="262" font-family="Inter,sans-serif" font-weight="700" font-size="11" fill="#c62828">This is NOT a consistent hash ring (like DynamoDB/Cassandra)!</text>
+      <text x="50" y="280" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Espresso uses <tspan font-weight="600">fixed partition count + Helix assignment</tspan>, not a hash ring with virtual nodes</text>
+      <text x="50" y="296" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Helix decides which node hosts which partition (state machine: OFFLINE → SLAVE → MASTER)</text>
+      <text x="50" y="312" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; When a node fails, Helix reassigns its partitions to other nodes. Partition count stays the same (256)</text>
+    </svg>
+    <div class="caption">FNV hash maps a key to one of 256 fixed partitions. Helix assigns partitions to storage nodes. This is NOT a consistent hash ring — Helix manages assignment via a state machine.</div>
+  </div>
+
+  <h4>Does the Router Load the Schema? Who Deserializes Avro?</h4>
+
+  <div class="card highlight">
+    <h4>The Router Does NOT Deserialize Avro</h4>
+    <pre>READ RESPONSE FLOW — Who handles what:
+
+Storage Node (MySQL):
+  SELECT _value, _schemaVersion, _etag FROM Profiles WHERE _key='12345'
+  → Returns raw bytes: _value = [08 42 69 6C 6C 0A 47 61 74 65 73 ...]
+  → The storage node does NOT interpret the blob. It's just bytes.
+
+Router (Netty):
+  → Receives raw bytes from storage node
+  → Passes them through to client AS-IS (opaque blob)
+  → Router does NOT load Avro schemas
+  → Router does NOT deserialize the document
+  → Router is a STATELESS PROXY — it only knows about keys and partitions
+
+Client SDK (espresso-pub):
+  → Receives the raw Avro bytes + _schemaVersion number
+  → Looks up schema v3 from ZooKeeper (cached locally after first fetch)
+  → Uses SpecificDatumReader to deserialize:
+     SpecificDatumReader&lt;Profile&gt; reader = new SpecificDatumReader&lt;&gt;(schemaV3);
+     Profile profile = reader.read(null, decoderFactory.binaryDecoder(bytes));
+  → Now you have a typed Java object: profile.getFirstName() → "Bill"
+
+WHO NEEDS THE SCHEMA:
+  ┌─────────────┬───────────────────────────────────────────────┐
+  │ Component   │ Needs Schema?                                 │
+  ├─────────────┼───────────────────────────────────────────────┤
+  │ Client SDK  │ YES — to deserialize Avro bytes into objects  │
+  │ Router      │ NO  — treats _value as opaque bytes           │
+  │ Storage Node│ NO  — MySQL stores MEDIUMBLOB, doesn't parse  │
+  │ ZooKeeper   │ YES — stores all versioned schemas            │
+  │ Lucene Index│ YES — needs to extract indexed fields          │
+  └─────────────┴───────────────────────────────────────────────┘
+
+EXCEPTION: The Lucene index on the storage node DOES need to understand
+the schema — when a document is written, the storage node deserializes
+the indexed fields to update the Lucene index. But this only happens
+on the WRITE path, not on reads.</pre>
+  </div>
+
+  <h4>MySQL Table vs Avro Schema &mdash; No Column Per Field!</h4>
+
+  <div class="card warn">
+    <pre>COMMON MISCONCEPTION: "Avro schema fields become MySQL columns"
+REALITY: The ENTIRE document is ONE blob column (_value)
+
+Avro Schema:                    MySQL Table:
+┌─────────────────────┐         ┌──────────────────────────────┐
+│ firstName: string   │         │ _key      VARCHAR(255)  PK   │
+│ lastName:  string   │    →    │ _subKey1  VARCHAR(255)  PK   │
+│ regionId:  int      │  NOT    │ _subKey2  VARCHAR(255)  PK   │
+│ positions: array[]  │ columns │ _value    MEDIUMBLOB ← EVERYTHING│
+│ headline:  string   │         │ _schemaVersion INT           │
+└─────────────────────┘         │ _etag     VARCHAR(32)        │
+                                │ _timestamp BIGINT            │
+                                └──────────────────────────────┘
+
+WHY? Because Espresso is a DOCUMENT store using MySQL for:
+  ✓ ACID transactions (InnoDB)
+  ✓ Proven durability (redo log, fsync)
+  ✓ Efficient B-tree primary key lookup
+  ✗ NOT for relational queries on individual fields
+  ✗ NOT for SQL JOINs between tables
+
+To query individual fields → use Lucene secondary index or GSI
+MySQL only does: lookup by _key (+ optional _subKey1, _subKey2)</pre>
+  </div>
+
+  <h4>Local Lucene Index vs GSI &mdash; Where They Live, How Queries Route</h4>
+
+  <!-- DIAGRAM: Local Index vs GSI -->
+  <div class="diagram">
+    <svg viewBox="0 0 820 420" xmlns="http://www.w3.org/2000/svg" style="max-width:800px;">
+      <defs>
+        <marker id="arrI" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#546e7a"/>
+        </marker>
+      </defs>
+
+      <!-- Left: Local Lucene -->
+      <rect x="10" y="10" width="390" height="400" rx="12" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"/>
+      <text x="205" y="38" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="14" fill="#1b5e20">Local Lucene Index (per partition)</text>
+
+      <text x="30" y="60" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Lives on: <tspan font-weight="600">same storage node as the partition</tspan></text>
+      <text x="30" y="76" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Scope: <tspan font-weight="600">ONE partition only</tspan></text>
+      <text x="30" y="92" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Requires: <tspan font-weight="600">partition key in the query</tspan></text>
+
+      <!-- Local query flow -->
+      <rect x="30" y="108" width="350" height="120" rx="8" fill="#fff" stroke="#a5d6a7" stroke-width="1"/>
+      <text x="45" y="128" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#2e7d32">Query: "Find member 12345's position at Microsoft"</text>
+      <text x="45" y="148" font-family="JetBrains Mono,monospace" font-size="9" fill="#37352f">GET /MemberDB/Positions/12345</text>
+      <text x="45" y="162" font-family="JetBrains Mono,monospace" font-size="9" fill="#37352f">  .setQuery("companyId=1035")</text>
+      <text x="45" y="182" font-family="Inter,sans-serif" font-size="9" fill="#37352f">1. Router: FNV(12345) → partition 42 → Node 6</text>
+      <text x="45" y="196" font-family="Inter,sans-serif" font-size="9" fill="#37352f">2. Node 6: query LOCAL Lucene for partition 42</text>
+      <text x="45" y="210" font-family="Inter,sans-serif" font-size="9" fill="#37352f">3. Lucene finds matching docs → return</text>
+      <text x="45" y="224" font-family="Inter,sans-serif" font-weight="600" font-size="9" fill="#2e7d32">Fast! Single node, 10-100ms</text>
+
+      <text x="30" y="250" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#2e7d32">How Lucene gets populated:</text>
+      <text x="30" y="268" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; On EVERY write to the partition</text>
+      <text x="30" y="284" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Storage node deserializes indexed fields from Avro</text>
+      <text x="30" y="300" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Updates Lucene index synchronously with MySQL write</text>
+      <text x="30" y="316" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Declarative: you declare which fields to index</text>
+
+      <text x="30" y="345" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#c62828">Limitation:</text>
+      <text x="30" y="363" font-family="Inter,sans-serif" font-size="10" fill="#37352f">If you DON'T know the partition key, local Lucene</text>
+      <text x="30" y="379" font-family="Inter,sans-serif" font-size="10" fill="#37352f">can't help. You'd need to scan ALL 256 partitions!</text>
+      <text x="30" y="395" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#c62828">→ That's when you need GSI</text>
+
+      <!-- Right: GSI -->
+      <rect x="420" y="10" width="390" height="400" rx="12" fill="#fce4ec" stroke="#c62828" stroke-width="2"/>
+      <text x="615" y="38" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="14" fill="#c62828">Global Secondary Index (GSI)</text>
+
+      <text x="440" y="60" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Lives on: <tspan font-weight="600">separate index service / search provider</tspan></text>
+      <text x="440" y="76" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Scope: <tspan font-weight="600">ALL partitions globally</tspan></text>
+      <text x="440" y="92" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Requires: <tspan font-weight="600">NO partition key needed!</tspan></text>
+
+      <!-- GSI query flow -->
+      <rect x="440" y="108" width="350" height="120" rx="8" fill="#fff" stroke="#ef9a9a" stroke-width="1"/>
+      <text x="455" y="128" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#c62828">Query: "Find ALL members at Microsoft"</text>
+      <text x="455" y="148" font-family="JetBrains Mono,monospace" font-size="9" fill="#37352f">GET /MemberDB/Positions</text>
+      <text x="455" y="162" font-family="JetBrains Mono,monospace" font-size="9" fill="#37352f">  .setGlobalIndexName("company_idx")</text>
+      <text x="455" y="176" font-family="JetBrains Mono,monospace" font-size="9" fill="#37352f">  .setQuery("companyId=1035")</text>
+      <text x="455" y="196" font-family="Inter,sans-serif" font-size="9" fill="#37352f">1. Router: no partition key → route to GSI provider</text>
+      <text x="455" y="210" font-family="Inter,sans-serif" font-size="9" fill="#37352f">2. GSI searches across ALL partitions globally</text>
+      <text x="455" y="224" font-family="Inter,sans-serif" font-weight="600" font-size="9" fill="#c62828">Slower (scatter-gather), but the ONLY option</text>
+
+      <text x="440" y="250" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#c62828">No automatic fallback!</text>
+      <text x="440" y="268" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Local index and GSI are SEPARATE query paths</text>
+      <text x="440" y="284" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Client code decides which to use at query time</text>
+      <text x="440" y="300" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; If data isn't in local Lucene AND you don't</text>
+      <text x="440" y="316" font-family="Inter,sans-serif" font-size="10" fill="#37352f">  have a GSI → you're stuck. No results.</text>
+
+      <text x="440" y="345" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#c62828">Can lack of GSI cause an outage?</text>
+      <text x="440" y="363" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Without GSI, devs do full table scans:</text>
+      <text x="450" y="379" font-family="JetBrains Mono,monospace" font-size="9" fill="#c62828">.setCount(Integer.MAX_VALUE) ← ANTI-PATTERN!</text>
+      <text x="440" y="395" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Scatter-gather ALL nodes → 429s, timeouts, outage</text>
+    </svg>
+    <div class="caption">Local Lucene index lives on each storage node (fast, single partition). GSI lives on a separate service (slower, spans all partitions). There is NO automatic fallback between them — the client must choose the right query path.</div>
+  </div>
+
+  <div class="card danger">
+    <h4>Anti-Pattern: Missing GSI Can Cause Outages</h4>
+    <pre>// SCENARIO: You need "all members at company X" but forgot to create a GSI
+
+// BAD: Full table scan (scatter-gather all 256 partitions)
+GetRequest request = GetRequest.builder()
+    .setDatabase("MemberDB").setTable("Positions")
+    .setQuery("companyId=1035")
+    .setCount(Integer.MAX_VALUE)    // ← NEVER DO THIS
+    .build();
+// → Router fans out to ALL 256 partitions (32 storage nodes)
+// → Each node scans its local data
+// → 429 TOO_MANY_REQUESTS (quota exhausted)
+// → 504 GATEWAY_TIMEOUT (query too slow)
+// → Other queries to the same nodes slow down
+// → CASCADING FAILURE = OUTAGE
+
+// GOOD: Use a pre-declared GSI
+GetRequest request = GetRequest.builder()
+    .setDatabase("MemberDB").setTable("Positions")
+    .setGlobalIndexName("company_index")  // ← pre-provisioned GSI
+    .setQuery("companyId=1035")
+    .setStart(0).setCount(100)             // ← always paginate!
+    .build();
+
+// ALTERNATIVE: If cross-partition queries are common,
+// Espresso recommends using HDFS/Spark for batch analysis,
+// NOT Espresso as a query engine for analytics workloads.</pre>
+  </div>
+
   <h4>Espresso vs MongoDB</h4>
 
   <table>
