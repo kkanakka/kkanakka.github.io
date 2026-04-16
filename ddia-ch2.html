@@ -224,6 +224,13 @@
         <li><a href="#sec-3-liquid">Liquid (Graph)</a></li>
       </ul>
     </li>
+    <li><a href="#sec-3b">LinkedIn Profile Browsing &mdash; End-to-End Flow</a>
+      <ul class="sub">
+        <li><a href="#sec-3b">When Do You Need a Secondary Index?</a></li>
+        <li><a href="#sec-3b">Materialized Views (Venice)</a></li>
+        <li><a href="#sec-3b">Couchbase Cache Update Flow</a></li>
+      </ul>
+    </li>
     <li><a href="#sec-4">Modeling Relationships</a>
       <ul class="sub">
         <li><a href="#sec-4-one">One-to-Many</a></li>
@@ -1142,6 +1149,231 @@ Edge: (12345) --[ENDORSED_BY {skill:500}]--> (67890) // many-to-many
 // member:12345 → CONNECTED_TO → ??? → CONNECTED_TO → candidates
 // Filter: not already connected, rank by shared connections</pre>
     <p><strong>When to use:</strong> Relationship traversals (connection degree, mutual connections, PYMK), where many-to-many is the <em>entire</em> data model.</p>
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+
+<!-- ======================= SECTION 3B ======================= -->
+<div class="section" id="sec-3b">
+  <div class="section-num">Section 3B</div>
+  <h2>LinkedIn Profile Browsing &mdash; End-to-End Data Flow <span class="interview-tag li">LinkedIn</span></h2>
+
+  <p>When you open a LinkedIn profile, click a company, browse jobs &mdash; each click triggers queries across <strong>multiple data stores</strong>. This is the book's composite data system in action. Let's trace every click.</p>
+
+  <!-- DIAGRAM: LinkedIn Profile Browsing Flow -->
+  <div class="diagram">
+    <svg viewBox="0 0 820 780" xmlns="http://www.w3.org/2000/svg" style="max-width:800px;">
+      <defs>
+        <marker id="arrF" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#546e7a"/>
+        </marker>
+        <marker id="arrR" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#c62828"/>
+        </marker>
+        <marker id="arrG" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#2e7d32"/>
+        </marker>
+        <filter id="shF" x="-3%" y="-3%" width="106%" height="110%">
+          <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.06"/>
+        </filter>
+      </defs>
+
+      <!-- STEP 1: View Profile -->
+      <rect x="10" y="10" width="800" height="140" rx="12" fill="#e3f2fd" stroke="#1565c0" stroke-width="2"/>
+      <rect x="20" y="15" width="200" height="22" rx="4" fill="#1565c0"/>
+      <text x="120" y="31" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="11" fill="#fff">STEP 1: View Profile Page</text>
+
+      <text x="30" y="55" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#0d47a1">User clicks: linkedin.com/in/satyanadella</text>
+
+      <!-- Query flow boxes -->
+      <rect x="30" y="65" width="235" height="75" rx="8" fill="#fff" stroke="#90caf9" stroke-width="1"/>
+      <text x="45" y="82" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#0d47a1">Query 1: Espresso (primary)</text>
+      <text x="45" y="97" font-family="JetBrains Mono,monospace" font-size="8" fill="#37352f">GET /MemberDB/Profiles/12345</text>
+      <text x="45" y="110" font-family="Inter,sans-serif" font-size="9" fill="#37352f">&rarr; {firstName, lastName, headline,</text>
+      <text x="50" y="122" font-family="Inter,sans-serif" font-size="9" fill="#37352f">companyId: 1035, regionId: 91}</text>
+      <text x="45" y="135" font-family="Inter,sans-serif" font-size="8" fill="#2e7d32">Point lookup by key. &lt;5ms. Cache hit? → skip Espresso</text>
+
+      <rect x="290" y="65" width="235" height="75" rx="8" fill="#fff" stroke="#90caf9" stroke-width="1"/>
+      <text x="305" y="82" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#0d47a1">Query 2: Espresso (sub-keys)</text>
+      <text x="305" y="97" font-family="JetBrains Mono,monospace" font-size="8" fill="#37352f">GET /MemberDB/Positions/12345</text>
+      <text x="305" y="110" font-family="Inter,sans-serif" font-size="9" fill="#37352f">&rarr; [{title: "CEO", companyId: 1035},</text>
+      <text x="310" y="122" font-family="Inter,sans-serif" font-size="9" fill="#37352f">{title: "EVP", companyId: 1035}]</text>
+      <text x="305" y="135" font-family="Inter,sans-serif" font-size="8" fill="#2e7d32">Same partition = same node! 1-to-many via sub-keys</text>
+
+      <rect x="550" y="65" width="240" height="75" rx="8" fill="#fff" stroke="#e1bee7" stroke-width="1"/>
+      <text x="565" y="82" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#4a148c">Query 3: Liquid (graph)</text>
+      <text x="565" y="97" font-family="JetBrains Mono,monospace" font-size="8" fill="#37352f">connections(12345).count()</text>
+      <text x="565" y="110" font-family="Inter,sans-serif" font-size="9" fill="#37352f">&rarr; 2847 connections</text>
+      <text x="565" y="122" font-family="Inter,sans-serif" font-size="9" fill="#37352f">&rarr; mutual connections with viewer</text>
+      <text x="565" y="135" font-family="Inter,sans-serif" font-size="8" fill="#4a148c">Graph traversal for social data</text>
+
+      <!-- Arrow down -->
+      <line x1="410" y1="150" x2="410" y2="170" stroke="#546e7a" stroke-width="1.5" marker-end="url(#arrF)"/>
+      <text x="420" y="164" font-family="Inter,sans-serif" font-size="9" fill="#c62828">companyId: 1035 is just an ID → user clicks it!</text>
+
+      <!-- STEP 2: Company Page -->
+      <rect x="10" y="170" width="800" height="140" rx="12" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"/>
+      <rect x="20" y="175" width="250" height="22" rx="4" fill="#2e7d32"/>
+      <text x="145" y="191" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="11" fill="#fff">STEP 2: Click Company → Company Page</text>
+
+      <text x="30" y="215" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#1b5e20">User clicks "Microsoft" (companyId: 1035)</text>
+
+      <rect x="30" y="225" width="235" height="75" rx="8" fill="#fff" stroke="#a5d6a7" stroke-width="1"/>
+      <text x="45" y="242" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#1b5e20">Query 4: Espresso</text>
+      <text x="45" y="257" font-family="JetBrains Mono,monospace" font-size="8" fill="#37352f">GET /CompanyDB/Companies/1035</text>
+      <text x="45" y="270" font-family="Inter,sans-serif" font-size="9" fill="#37352f">&rarr; {name: "Microsoft", logo, hq,</text>
+      <text x="50" y="282" font-family="Inter,sans-serif" font-size="9" fill="#37352f">industryId: 96, employeeCount: ...}</text>
+      <text x="45" y="295" font-family="Inter,sans-serif" font-size="8" fill="#2e7d32">Point lookup. The company IS an entity, not a string!</text>
+
+      <rect x="290" y="225" width="235" height="75" rx="8" fill="#fff" stroke="#a5d6a7" stroke-width="1"/>
+      <text x="305" y="242" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#c62828">Query 5: SECONDARY INDEX needed!</text>
+      <text x="305" y="257" font-family="JetBrains Mono,monospace" font-size="8" fill="#37352f">GSI: companyId=1035 on Positions</text>
+      <text x="305" y="270" font-family="Inter,sans-serif" font-size="9" fill="#37352f">&rarr; "214,382 employees on LinkedIn"</text>
+      <text x="305" y="282" font-family="Inter,sans-serif" font-size="9" fill="#c62828">WHY? Positions partitioned by memberId</text>
+      <text x="305" y="295" font-family="Inter,sans-serif" font-size="8" fill="#c62828">companyId=1035 scattered across ALL partitions!</text>
+
+      <rect x="550" y="225" width="240" height="75" rx="8" fill="#fff" stroke="#a5d6a7" stroke-width="1"/>
+      <text x="565" y="242" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#1b5e20">Query 6: Galene (search)</text>
+      <text x="565" y="257" font-family="JetBrains Mono,monospace" font-size="8" fill="#37352f">search: company="Microsoft"</text>
+      <text x="565" y="270" font-family="Inter,sans-serif" font-size="9" fill="#37352f">&rarr; People at Microsoft ranked by</text>
+      <text x="570" y="282" font-family="Inter,sans-serif" font-size="9" fill="#37352f">connection proximity to viewer</text>
+      <text x="565" y="295" font-family="Inter,sans-serif" font-size="8" fill="#1b5e20">Full-text search + social ranking</text>
+
+      <!-- Arrow down -->
+      <line x1="410" y1="310" x2="410" y2="330" stroke="#546e7a" stroke-width="1.5" marker-end="url(#arrF)"/>
+      <text x="420" y="324" font-family="Inter,sans-serif" font-size="9" fill="#c62828">User clicks "Jobs" tab</text>
+
+      <!-- STEP 3: Jobs Page -->
+      <rect x="10" y="330" width="800" height="130" rx="12" fill="#fff3e0" stroke="#e65100" stroke-width="2"/>
+      <rect x="20" y="335" width="250" height="22" rx="4" fill="#e65100"/>
+      <text x="145" y="351" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="11" fill="#fff">STEP 3: Click Jobs → Job Listings</text>
+
+      <text x="30" y="375" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#bf360c">User clicks "Jobs at Microsoft"</text>
+
+      <rect x="30" y="385" width="235" height="65" rx="8" fill="#fff" stroke="#ffcc80" stroke-width="1"/>
+      <text x="45" y="402" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#c62828">Query 7: Galene SECONDARY INDEX</text>
+      <text x="45" y="417" font-family="JetBrains Mono,monospace" font-size="8" fill="#37352f">search: companyId=1035 AND type=JOB</text>
+      <text x="45" y="430" font-family="Inter,sans-serif" font-size="9" fill="#37352f">&rarr; 10,000+ open positions</text>
+      <text x="45" y="443" font-family="Inter,sans-serif" font-size="8" fill="#bf360c">Galene = inverted index on job listings</text>
+
+      <rect x="290" y="385" width="235" height="65" rx="8" fill="#fff" stroke="#ffcc80" stroke-width="1"/>
+      <text x="305" y="402" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#1b5e20">Query 8: Venice (pre-computed)</text>
+      <text x="305" y="417" font-family="JetBrains Mono,monospace" font-size="8" fill="#37352f">GET member:12345:job_recs</text>
+      <text x="305" y="430" font-family="Inter,sans-serif" font-size="9" fill="#37352f">&rarr; Personalized job ranking scores</text>
+      <text x="305" y="443" font-family="Inter,sans-serif" font-size="8" fill="#1b5e20">ML features pre-computed via Spark → Venice</text>
+
+      <rect x="550" y="385" width="240" height="65" rx="8" fill="#fff" stroke="#ffcc80" stroke-width="1"/>
+      <text x="565" y="402" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#4a148c">Query 9: Pinot (analytics)</text>
+      <text x="565" y="417" font-family="JetBrains Mono,monospace" font-size="8" fill="#37352f">SELECT COUNT(*) FROM job_views</text>
+      <text x="565" y="430" font-family="Inter,sans-serif" font-size="9" fill="#37352f">&rarr; "342 people applied this week"</text>
+      <text x="565" y="443" font-family="Inter,sans-serif" font-size="8" fill="#4a148c">Real-time analytics aggregation</text>
+
+      <!-- Arrow down -->
+      <line x1="410" y1="460" x2="410" y2="480" stroke="#546e7a" stroke-width="1.5" marker-end="url(#arrF)"/>
+
+      <!-- STEP 4: When do you need secondary index? -->
+      <rect x="10" y="480" width="800" height="285" rx="12" fill="#fce4ec" stroke="#c62828" stroke-width="2"/>
+      <rect x="20" y="485" width="400" height="22" rx="4" fill="#c62828"/>
+      <text x="220" y="501" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="11" fill="#fff">WHEN Do You Need a Secondary Index? (The Key Question)</text>
+
+      <text x="30" y="525" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#c62828">You DON'T need a secondary index when:</text>
+      <text x="30" y="543" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; You know the partition key: <tspan font-family="JetBrains Mono,monospace" font-size="9">GET /Profiles/12345</tspan> → direct lookup, &lt;5ms</text>
+      <text x="30" y="559" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; You know key + sub-key: <tspan font-family="JetBrains Mono,monospace" font-size="9">GET /Positions/12345</tspan> → all positions for member, same node</text>
+
+      <text x="30" y="585" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#c62828">You DO need a secondary index when:</text>
+      <text x="30" y="603" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; "Find all members at companyId=1035" → companyId is NOT the partition key!</text>
+      <text x="30" y="619" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; "Find all members in regionId=91" → regionId scattered across all partitions</text>
+      <text x="30" y="635" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; "Search for 'AI engineers in Bay Area'" → full-text search, needs inverted index (Galene)</text>
+      <text x="30" y="651" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; "How many people viewed job X?" → aggregation across events, needs columnar (Pinot)</text>
+
+      <text x="30" y="677" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#0d47a1">How is the secondary index populated?</text>
+      <text x="30" y="695" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Espresso Lucene index: populated <tspan font-weight="600">on write</tspan> — when you write a doc, indexed fields auto-update in Lucene</text>
+      <text x="30" y="711" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Galene search index: populated via <tspan font-weight="600">Kafka CDC</tspan> — Espresso binlog → Kafka → Galene consumer rebuilds inverted index</text>
+      <text x="30" y="727" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Venice derived data: populated via <tspan font-weight="600">Spark batch</tspan> or <tspan font-weight="600">Flink/Samza stream</tspan> — pre-compute, push to Venice</text>
+      <text x="30" y="743" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Pinot analytics: populated via <tspan font-weight="600">Kafka real-time + Hadoop offline</tspan> — events stream into columnar segments</text>
+    </svg>
+    <div class="caption">Every click on LinkedIn crosses multiple data stores. Secondary indexes are needed when querying by a field that isn't the partition key. Each downstream store is populated differently.</div>
+  </div>
+
+  <h3>Materialized Views &mdash; Pre-Computed Query Results</h3>
+
+  <p>The book talks about derived data throughout. At LinkedIn, <strong>Venice</strong> is the materialized view layer. A materialized view is a <strong>pre-computed result</strong> stored separately from the source data, so reads are instant instead of computing on the fly.</p>
+
+  <div class="card linkedin">
+    <h4>Materialized View Example: "People You May Know"</h4>
+    <pre>// SOURCE DATA (in Espresso + Liquid):
+//   Member profiles, connections graph, activity events
+
+// COMPUTATION (Spark batch job, runs nightly):
+//   For each member:
+//     1. Get their connections from Liquid
+//     2. Get friends-of-friends (2nd degree)
+//     3. Filter out existing connections
+//     4. Score by shared connections, industry, school
+//     5. Rank top 100 candidates
+
+// MATERIALIZED VIEW (pushed to Venice):
+Key: "pymk:12345"
+Value: {
+  candidates: [
+    {memberId: 67890, score: 0.95, sharedConns: 23, reason: "Microsoft"},
+    {memberId: 11111, score: 0.87, sharedConns: 15, reason: "Harvard"},
+    ...
+  ],
+  computedAt: "2026-04-16T03:00:00Z"
+}
+
+// READING THE VIEW (at profile page load time):
+GET venice/pymk:12345 → instant! No graph traversal at read time.
+
+// WHY MATERIALIZE?
+// Computing PYMK from scratch = traverse graph (seconds)
+// Reading pre-computed Venice result = key-value lookup (&lt;5ms)
+// Trade-off: data is stale (nightly batch), but reads are 1000x faster</pre>
+  </div>
+
+  <h3>Couchbase Cache &mdash; How It Gets Updated</h3>
+
+  <p>Espresso has a <strong>two-tier cache</strong>: L1 (OHC off-heap, per router) and L2 (Couchbase, shared across routers). Here's exactly how the cache stays consistent:</p>
+
+  <div class="card linkedin">
+    <pre>CACHE UPDATE FLOW:
+
+1. READ PATH (cache HIT):
+   Client → Router → check L1 OHC → HIT → return cached doc
+   (never touches Espresso storage node or MySQL)
+
+2. READ PATH (cache MISS):
+   Client → Router → check L1 → MISS → check L2 Couchbase → MISS
+   → query Espresso Storage Node → MySQL SELECT
+   → return doc to client
+   → POPULATE L1 cache (local OHC, TTL-based eviction)
+   → POPULATE L2 cache (Couchbase, shared, larger)
+   Cache key = hash(database + table + primary_key + schema_version)
+                                                    ^^^^^^^^^^^^
+   schema_version in cache key → schema change = automatic invalidation!
+
+3. WRITE PATH (cache INVALIDATION):
+   Client writes to Espresso → Leader commits to MySQL
+   → Router INVALIDATES cache entry in L1 AND L2
+   → Next read will be a cache miss → fresh data fetched
+   → Cache repopulated with new version
+
+4. SCHEMA CHANGE (automatic invalidation):
+   Schema v2 deployed → cache key includes schema_version
+   → All existing cache entries (schema v1 keys) become stale
+   → New reads generate new cache keys with v2 → cache miss → fresh data
+
+WHY TWO TIERS?
+  L1 (OHC): ~100MB per router, nanosecond access, local only
+  L2 (Couchbase): ~100GB shared pool, microsecond access, survives router restart
+  Combined: 95%+ cache hit rate for hot profiles</pre>
+  </div>
+
+  <div class="card interview">
+    <strong>Interview Connection to the Book:</strong> The book says "if you have an application-managed caching layer (Memcached or similar) separate from your main database, it is normally the application code's responsibility to keep those caches and indexes in sync." At LinkedIn, Espresso <em>builds this into the infrastructure</em>: the Router handles cache population and invalidation automatically. Galene/Venice are populated via Kafka CDC. This is the <strong>composite data system</strong> from Figure 1-1 of the book — but with the sync mechanism built into the platform, not left to application developers.
   </div>
 
   <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
