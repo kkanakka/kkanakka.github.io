@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<title>Storage &amp; Retrieval &mdash; Data Intensive Systems</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #f7f6f3;
+    --border: #e3e2de;
+    --text: #37352f;
+    --text-muted: #787774;
+    --accent: #2383e2;
+    --accent2: #0f7b0f;
+    --accent3: #6940a5;
+    --accent4: #d9730d;
+    --red: #e03e3e;
+    --code-bg: #f7f6f3;
+    --card: #ffffff;
+    --ch-color: #b71c1c;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; font-size: 15px; }
+  .container { max-width: 900px; margin: 0 auto; padding: 0 24px; }
+  .hero { background: linear-gradient(180deg, #fafafa 0%, #ffffff 100%); border-bottom: 1px solid var(--border); padding: 48px 0 36px; text-align: center; }
+  .hero h1 { font-size: 2.2em; font-weight: 700; margin-bottom: 12px; }
+  .hero h1 span { color: var(--ch-color); }
+  .hero p { font-size: 1.05em; color: var(--text-muted); max-width: 700px; margin: 0 auto 30px; }
+  .hero .badge { display: inline-block; background: var(--surface); border: 1px solid var(--border); padding: 6px 16px; border-radius: 20px; font-size: 0.8em; color: var(--text-muted); }
+  .nav-links { margin-top: 20px; }
+  .nav-links a { display: inline-block; background: var(--surface); border: 1px solid var(--border); padding: 8px 20px; border-radius: 8px; color: var(--accent); text-decoration: none; margin: 4px; font-size: 0.9em; transition: all 0.2s; }
+  .nav-links a:hover { border-color: var(--accent); background: rgba(35,131,226,0.06); }
+  .nav-links a.ch { color: var(--ch-color); border-color: var(--ch-color); }
+
+  .toc { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 32px; margin: 40px auto; }
+  .toc h2 { font-size: 1.2em; margin-bottom: 16px; color: var(--ch-color); }
+  .toc ol { padding-left: 24px; }
+  .toc li { margin: 8px 0; }
+  .toc a { color: var(--text); text-decoration: none; border-bottom: 1px dashed var(--border); transition: color 0.2s; }
+  .toc a:hover { color: var(--ch-color); border-bottom-color: var(--ch-color); }
+  .toc .sub { padding-left: 24px; list-style: disc; }
+
+  .section { margin: 40px 0; padding-top: 16px; border-top: 1px solid var(--border); }
+  .section-num { font-size: 0.75em; font-weight: 600; color: var(--ch-color); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px; }
+  .section h2 { font-size: 1.6em; font-weight: 600; margin-bottom: 20px; color: var(--ch-color); }
+  .section h3 { font-size: 1.15em; font-weight: 600; margin: 30px 0 12px; color: var(--accent); border-left: 3px solid var(--accent); padding-left: 12px; }
+  .section h4 { font-size: 1em; font-weight: 600; margin: 20px 0 10px; color: var(--accent3); }
+
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 24px; margin: 20px 0; }
+  .card.highlight { border-left: 4px solid var(--accent); }
+  .card.warn { border-left: 4px solid var(--accent4); }
+  .card.success { border-left: 4px solid var(--accent2); }
+  .card.danger { border-left: 4px solid var(--red); }
+  .card.interview { border-left: 4px solid var(--ch-color); background: rgba(183,28,28,0.02); }
+  .card.linkedin { border-left: 4px solid #0077b5; background: rgba(0,119,181,0.02); }
+
+  .diagram { margin: 30px 0; text-align: center; }
+  .diagram svg { max-width: 100%; height: auto; }
+  .caption { font-size: 0.9em; color: var(--text-muted); margin-top: 10px; font-style: italic; }
+
+  code { background: var(--code-bg); border: 1px solid var(--border); padding: 2px 8px; border-radius: 4px; font-family: 'JetBrains Mono', 'SF Mono', monospace; font-size: 0.9em; color: var(--accent3); }
+  pre { background: var(--code-bg); border: 1px solid var(--border); padding: 20px; border-radius: 8px; overflow-x: auto; font-family: 'JetBrains Mono', 'SF Mono', monospace; font-size: 0.85em; margin: 14px 0; line-height: 1.5; }
+
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; background: var(--card); border-radius: 8px; overflow: hidden; }
+  th { background: rgba(183,28,28,0.08); color: var(--ch-color); padding: 12px 16px; text-align: left; font-weight: 600; border-bottom: 2px solid var(--border); }
+  td { padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 0.92em; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(183,28,28,0.03); }
+
+  .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
+  .compare-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 20px; }
+  .compare-card h4 { margin-top: 0; }
+  .compare-card ul { padding-left: 18px; font-size: .9em; }
+  .compare-card li { margin: 4px 0; }
+
+  .interview-tag { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: .75em; font-weight: 600; margin-left: 8px; }
+  .interview-tag.meta { background: rgba(66,133,244,0.1); color: #4285f4; border: 1px solid #4285f4; }
+  .interview-tag.netflix { background: rgba(229,9,20,0.1); color: #e50914; border: 1px solid #e50914; }
+  .interview-tag.google { background: rgba(15,123,15,0.1); color: #0f7b0f; border: 1px solid #0f7b0f; }
+  .interview-tag.li { background: rgba(0,119,181,0.1); color: #0077b5; border: 1px solid #0077b5; }
+
+  .linkedin-tag { display: inline-block; background: rgba(0,119,181,0.08); border: 1px solid rgba(0,119,181,0.2); padding: 2px 10px; border-radius: 12px; font-size: 0.8em; color: #0077b5; font-weight: 600; }
+
+  @media (max-width: 700px) { .compare-grid { grid-template-columns: 1fr; } }
+
+  .back-top { display: block; text-align: right; margin-top: 20px; }
+  .back-top a { color: var(--text-muted); text-decoration: none; font-size: .85em; }
+  .back-top a:hover { color: var(--ch-color); }
+
+  footer { text-align: center; padding: 40px 0; border-top: 1px solid var(--border); color: var(--text-muted); font-size: 0.9em; margin-top: 60px; }
+  footer a { color: var(--ch-color); text-decoration: none; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="container">
+    <h1>Storage &amp; <span>Retrieval</span></h1>
+    <p>How databases store data and find it again. B-Trees vs LSM-Trees, hash indexes, SSTables, column storage, OLTP vs OLAP &mdash; mapped to Espresso (InnoDB), Venice (RocksDB), and Pinot.</p>
+    <div class="badge">Data Intensive Systems &bull; Chapter 3 &bull; Interview Guide</div>
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="/ddia-ch1.html">Ch 1: Reliability</a>
+      <a href="/ddia-ch2.html" class="ch">Ch 2: Data Models</a>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+<div class="toc" id="toc">
+  <h2>Table of Contents</h2>
+  <ol>
+    <li><a href="#sec-1">The Index Trade-Off</a></li>
+    <li><a href="#sec-2">Hash Indexes</a></li>
+    <li><a href="#sec-3">SSTables &amp; LSM-Trees</a></li>
+    <li><a href="#sec-4">B-Trees</a></li>
+    <li><a href="#sec-5">B-Trees vs LSM-Trees</a></li>
+    <li><a href="#sec-6">Secondary Indexes, Clustered &amp; Covering</a></li>
+    <li><a href="#sec-7">OLTP vs OLAP &amp; Column Storage</a></li>
+    <li><a href="#sec-8">LinkedIn Mapping: Which Engine Where?</a></li>
+    <li><a href="#sec-9">Interview Questions</a></li>
+  </ol>
+</div>
+
+
+<!-- ======================= SECTION 1 ======================= -->
+<div class="section" id="sec-1">
+  <div class="section-num">Section 1</div>
+  <h2>The Index Trade-Off <span class="interview-tag meta">Meta</span><span class="interview-tag google">Google</span></h2>
+
+  <div class="card danger">
+    <h4>The Fundamental Trade-Off of Every Storage System</h4>
+    <pre>Every INDEX speeds up READS but slows down WRITES.
+
+WHY? On every write, the database must update:
+  1. The actual data (row/document/blob)
+  2. EVERY index that covers any field in that write
+
+Example: Espresso table with 3 indexes (primary key B-tree + 2 Lucene secondary indexes)
+  → 1 write = 1 MySQL INSERT + 1 B-tree update + 2 Lucene index updates = 4x write amplification
+
+This is why databases DON'T index everything by default.
+YOU choose indexes based on your query patterns.
+More indexes = faster reads, slower writes, more storage.
+
+THE RULE:
+┌──────────────────────────────────────────────────────────┐
+│  Read-heavy workload? → Add more indexes. Worth it.      │
+│  Write-heavy workload? → Fewer indexes. Avoid overhead.  │
+│  Mixed? → Index only the fields you actually query on.   │
+└──────────────────────────────────────────────────────────┘</pre>
+  </div>
+
+  <!-- DIAGRAM: Index Trade-Off -->
+  <div class="diagram">
+    <svg viewBox="0 0 820 300" xmlns="http://www.w3.org/2000/svg" style="max-width:800px;">
+      <defs>
+        <filter id="sh1" x="-3%" y="-3%" width="106%" height="110%">
+          <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.06"/>
+        </filter>
+      </defs>
+
+      <text x="410" y="25" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="15" fill="#b71c1c">The Index Trade-Off Spectrum</text>
+
+      <!-- Left: No index -->
+      <rect x="20" y="50" width="240" height="230" rx="12" fill="#fce4ec" stroke="#c62828" stroke-width="2" filter="url(#sh1)"/>
+      <text x="140" y="78" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="14" fill="#c62828">No Indexes</text>
+      <text x="140" y="96" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#787774">(append-only log, like the bash example)</text>
+      <text x="40" y="125" font-family="Inter,sans-serif" font-size="11" fill="#2e7d32">&#10003; Writes: O(1) — just append</text>
+      <text x="40" y="145" font-family="Inter,sans-serif" font-size="11" fill="#2e7d32">&#10003; Fastest possible writes</text>
+      <text x="40" y="165" font-family="Inter,sans-serif" font-size="11" fill="#2e7d32">&#10003; No write amplification</text>
+      <text x="40" y="195" font-family="Inter,sans-serif" font-size="11" fill="#c62828">&#10007; Reads: O(n) — full scan</text>
+      <text x="40" y="215" font-family="Inter,sans-serif" font-size="11" fill="#c62828">&#10007; 1M records = scan all 1M</text>
+      <text x="40" y="235" font-family="Inter,sans-serif" font-size="11" fill="#c62828">&#10007; Unusable at scale</text>
+      <rect x="40" y="250" width="200" height="20" rx="4" fill="#ef9a9a"/>
+      <text x="140" y="264" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#c62828">Kafka log segments work this way</text>
+
+      <!-- Middle: Balanced -->
+      <rect x="290" y="50" width="240" height="230" rx="12" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2" filter="url(#sh1)"/>
+      <text x="410" y="78" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="14" fill="#2e7d32">Selective Indexes</text>
+      <text x="410" y="96" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#787774">(primary key + 1-2 secondary indexes)</text>
+      <text x="310" y="125" font-family="Inter,sans-serif" font-size="11" fill="#2e7d32">&#10003; Reads: O(log n) — B-tree</text>
+      <text x="310" y="145" font-family="Inter,sans-serif" font-size="11" fill="#2e7d32">&#10003; Writes: moderate overhead</text>
+      <text x="310" y="165" font-family="Inter,sans-serif" font-size="11" fill="#2e7d32">&#10003; Best overall balance</text>
+      <text x="310" y="195" font-family="Inter,sans-serif" font-size="11" fill="#787774">Index only what you query.</text>
+      <text x="310" y="215" font-family="Inter,sans-serif" font-size="11" fill="#787774">2-3x write amplification.</text>
+      <rect x="310" y="250" width="200" height="20" rx="4" fill="#c8e6c9"/>
+      <text x="410" y="264" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="9" fill="#2e7d32">Espresso, MySQL, PostgreSQL</text>
+
+      <!-- Right: Over-indexed -->
+      <rect x="560" y="50" width="240" height="230" rx="12" fill="#fff3e0" stroke="#e65100" stroke-width="2" filter="url(#sh1)"/>
+      <text x="680" y="78" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="14" fill="#e65100">Over-Indexed</text>
+      <text x="680" y="96" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#787774">(index on every field)</text>
+      <text x="580" y="125" font-family="Inter,sans-serif" font-size="11" fill="#2e7d32">&#10003; Reads: fast for any query</text>
+      <text x="580" y="145" font-family="Inter,sans-serif" font-size="11" fill="#2e7d32">&#10003; Any field is searchable</text>
+      <text x="580" y="175" font-family="Inter,sans-serif" font-size="11" fill="#c62828">&#10007; Writes: 5-10x amplification</text>
+      <text x="580" y="195" font-family="Inter,sans-serif" font-size="11" fill="#c62828">&#10007; More storage (2-3x data)</text>
+      <text x="580" y="215" font-family="Inter,sans-serif" font-size="11" fill="#c62828">&#10007; Compaction can't keep up</text>
+      <rect x="580" y="250" width="200" height="20" rx="4" fill="#ffcc80"/>
+      <text x="680" y="264" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#e65100">Elasticsearch, Galene (by design)</text>
+    </svg>
+    <div class="caption">The index trade-off: no indexes = fast writes but O(n) reads. Selective indexes = balanced. Over-indexed = fast reads but write amplification kills throughput.</div>
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+
+<!-- ======================= SECTION 2 ======================= -->
+<div class="section" id="sec-2">
+  <div class="section-num">Section 2</div>
+  <h2>Hash Indexes <span class="interview-tag google">Google</span></h2>
+
+  <p>The simplest index: an <strong>in-memory hash map</strong> mapping every key to a byte offset on disk.</p>
+
+  <!-- DIAGRAM: Hash Index -->
+  <div class="diagram">
+    <svg viewBox="0 0 820 280" xmlns="http://www.w3.org/2000/svg" style="max-width:780px;">
+      <defs>
+        <marker id="arr2" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#546e7a"/>
+        </marker>
+      </defs>
+
+      <!-- In-memory hash map -->
+      <rect x="20" y="20" width="300" height="240" rx="12" fill="#e3f2fd" stroke="#1565c0" stroke-width="2"/>
+      <text x="170" y="48" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#0d47a1">In-Memory Hash Map</text>
+
+      <rect x="40" y="60" width="260" height="28" rx="4" fill="#fff" stroke="#90caf9" stroke-width="1"/>
+      <text x="55" y="79" font-family="JetBrains Mono,monospace" font-size="10" fill="#37352f">"user:42"    → offset 0</text>
+      <rect x="40" y="93" width="260" height="28" rx="4" fill="#fff" stroke="#90caf9" stroke-width="1"/>
+      <text x="55" y="112" font-family="JetBrains Mono,monospace" font-size="10" fill="#37352f">"user:123"   → offset 64</text>
+      <rect x="40" y="126" width="260" height="28" rx="4" fill="#c8e6c9" stroke="#2e7d32" stroke-width="1.5"/>
+      <text x="55" y="145" font-family="JetBrains Mono,monospace" font-weight="700" font-size="10" fill="#2e7d32">"user:12345" → offset 128</text>
+      <rect x="40" y="159" width="260" height="28" rx="4" fill="#fff" stroke="#90caf9" stroke-width="1"/>
+      <text x="55" y="178" font-family="JetBrains Mono,monospace" font-size="10" fill="#37352f">"user:999"   → offset 256</text>
+
+      <text x="170" y="215" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#0d47a1">O(1) lookup — constant time!</text>
+      <text x="170" y="232" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#787774">Limitation: ALL keys must fit in RAM</text>
+      <text x="170" y="248" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#787774">No range queries ("all users 100-200")</text>
+
+      <!-- Arrow to disk -->
+      <line x1="320" y1="140" x2="380" y2="140" stroke="#2e7d32" stroke-width="2" marker-end="url(#arr2)"/>
+      <text x="350" y="132" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#2e7d32">seek</text>
+
+      <!-- Disk file -->
+      <rect x="380" y="20" width="420" height="240" rx="12" fill="#f7f6f3" stroke="#e3e2de" stroke-width="2"/>
+      <text x="590" y="48" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#37352f">Append-Only Data File (on Disk)</text>
+
+      <rect x="400" y="60" width="380" height="25" rx="4" fill="#fff" stroke="#e3e2de" stroke-width="1"/>
+      <text x="410" y="77" font-family="JetBrains Mono,monospace" font-size="9" fill="#787774">offset 0:   user:42,{"name":"San Francisco",...}</text>
+      <rect x="400" y="90" width="380" height="25" rx="4" fill="#fff" stroke="#e3e2de" stroke-width="1"/>
+      <text x="410" y="107" font-family="JetBrains Mono,monospace" font-size="9" fill="#787774">offset 64:  user:123,{"name":"London",...}</text>
+      <rect x="400" y="120" width="380" height="25" rx="4" fill="#c8e6c9" stroke="#2e7d32" stroke-width="1.5"/>
+      <text x="410" y="137" font-family="JetBrains Mono,monospace" font-weight="700" font-size="9" fill="#2e7d32">offset 128: user:12345,{"name":"Satya",...}</text>
+      <rect x="400" y="150" width="380" height="25" rx="4" fill="#fff" stroke="#e3e2de" stroke-width="1"/>
+      <text x="410" y="167" font-family="JetBrains Mono,monospace" font-size="9" fill="#787774">offset 256: user:999,{"name":"Amy",...}</text>
+      <rect x="400" y="180" width="380" height="25" rx="4" fill="#fff3e0" stroke="#e65100" stroke-width="1"/>
+      <text x="410" y="197" font-family="JetBrains Mono,monospace" font-size="9" fill="#e65100">offset 320: user:42,{"name":"SF Updated",...} ← newer!</text>
+
+      <text x="590" y="228" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Writes: always APPEND to end (sequential, fast)</text>
+      <text x="590" y="246" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Old values not deleted — compaction cleans up later</text>
+    </svg>
+    <div class="caption">Hash index: in-memory hash map points to byte offsets in an append-only file. O(1) reads, O(1) writes. Used by Bitcask (Riak). Limitation: all keys must fit in RAM, no range queries.</div>
+  </div>
+
+  <div class="card linkedin">
+    <strong>LinkedIn parallel:</strong> Espresso's Router keeps the Helix partition map in memory — it's essentially a hash map: <code>FNV(key) % 256 → partition → host</code>. Same O(1) concept. But the actual data lookup within a partition uses B-trees, not hash indexes.
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+
+<!-- ======================= SECTION 3 ======================= -->
+<div class="section" id="sec-3">
+  <div class="section-num">Section 3</div>
+  <h2>SSTables &amp; LSM-Trees <span class="interview-tag google">Google</span><span class="interview-tag netflix">Netflix</span></h2>
+
+  <p>What if we <strong>sort</strong> the log segments by key? That's an SSTable (Sorted String Table). Stack multiple SSTables with an in-memory write buffer (memtable) and you get an <strong>LSM-Tree</strong>.</p>
+
+  <!-- DIAGRAM: LSM-Tree -->
+  <div class="diagram">
+    <svg viewBox="0 0 820 430" xmlns="http://www.w3.org/2000/svg" style="max-width:800px;">
+      <defs>
+        <marker id="arr3" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#546e7a"/>
+        </marker>
+        <filter id="sh3" x="-3%" y="-3%" width="106%" height="110%">
+          <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.06"/>
+        </filter>
+      </defs>
+
+      <text x="410" y="22" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="15" fill="#b71c1c">LSM-Tree: Write-Optimized Storage Engine</text>
+
+      <!-- Write path -->
+      <rect x="20" y="40" width="140" height="40" rx="8" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1.5"/>
+      <text x="90" y="65" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#1b5e20">Write Request</text>
+
+      <line x1="160" y1="60" x2="200" y2="60" stroke="#546e7a" stroke-width="1.5" marker-end="url(#arr3)"/>
+
+      <!-- WAL -->
+      <rect x="200" y="40" width="100" height="40" rx="8" fill="#fce4ec" stroke="#c62828" stroke-width="1"/>
+      <text x="250" y="58" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#c62828">WAL</text>
+      <text x="250" y="72" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" fill="#787774">(crash recovery)</text>
+
+      <line x1="300" y1="60" x2="340" y2="60" stroke="#546e7a" stroke-width="1.5" marker-end="url(#arr3)"/>
+
+      <!-- Memtable -->
+      <rect x="340" y="35" width="200" height="55" rx="10" fill="#e3f2fd" stroke="#1565c0" stroke-width="2" filter="url(#sh3)"/>
+      <text x="440" y="56" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#0d47a1">Memtable (RAM)</text>
+      <text x="440" y="74" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#787774">Red-black tree / skip list — sorted in memory</text>
+
+      <!-- Flush arrow -->
+      <line x1="440" y1="90" x2="440" y2="120" stroke="#c62828" stroke-width="1.5" marker-end="url(#arr3)"/>
+      <text x="460" y="108" font-family="Inter,sans-serif" font-size="9" fill="#c62828">flush when full (~4MB)</text>
+
+      <!-- SSTable Levels -->
+      <rect x="20" y="120" width="780" height="90" rx="10" fill="#fff3e0" stroke="#e65100" stroke-width="1.5"/>
+      <text x="30" y="142" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#e65100">Level 0 (newest SSTables — recently flushed from memtable)</text>
+      <rect x="40" y="150" width="160" height="35" rx="6" fill="#fff" stroke="#ffcc80" stroke-width="1"/>
+      <text x="120" y="172" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#37352f">SST-4: a→d sorted</text>
+      <rect x="210" y="150" width="160" height="35" rx="6" fill="#fff" stroke="#ffcc80" stroke-width="1"/>
+      <text x="290" y="172" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#37352f">SST-3: b→f sorted</text>
+      <text x="420" y="172" font-family="Inter,sans-serif" font-size="9" fill="#787774">may overlap key ranges</text>
+
+      <line x1="410" y1="210" x2="410" y2="230" stroke="#546e7a" stroke-width="1.2" marker-end="url(#arr3)"/>
+      <text x="430" y="224" font-family="Inter,sans-serif" font-size="9" fill="#787774">compaction (merge + deduplicate)</text>
+
+      <rect x="20" y="230" width="780" height="70" rx="10" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1.5"/>
+      <text x="30" y="252" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#2e7d32">Level 1 (merged, non-overlapping key ranges, larger files)</text>
+      <rect x="40" y="260" width="230" height="30" rx="6" fill="#fff" stroke="#a5d6a7" stroke-width="1"/>
+      <text x="155" y="280" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#37352f">SST: a→m sorted, deduplicated</text>
+      <rect x="280" y="260" width="230" height="30" rx="6" fill="#fff" stroke="#a5d6a7" stroke-width="1"/>
+      <text x="395" y="280" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#37352f">SST: n→z sorted, deduplicated</text>
+
+      <line x1="410" y1="300" x2="410" y2="320" stroke="#546e7a" stroke-width="1.2" marker-end="url(#arr3)"/>
+
+      <rect x="20" y="320" width="780" height="50" rx="10" fill="#e3f2fd" stroke="#1565c0" stroke-width="1.5"/>
+      <text x="30" y="342" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#0d47a1">Level 2+ (even larger, fully sorted, oldest data)</text>
+      <text x="30" y="360" font-family="Inter,sans-serif" font-size="9" fill="#787774">Each level is ~10x larger than the previous. Compaction runs in background.</text>
+
+      <!-- Read path -->
+      <rect x="600" y="40" width="180" height="40" rx="8" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="1.5"/>
+      <text x="690" y="58" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#4a148c">Read: check each level</text>
+      <text x="690" y="72" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" fill="#787774">memtable → L0 → L1 → L2</text>
+
+      <!-- Bottom summary -->
+      <rect x="20" y="385" width="780" height="35" rx="8" fill="#f7f6f3" stroke="#e3e2de" stroke-width="1"/>
+      <text x="410" y="405" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#37352f"><tspan font-weight="700">Key insight:</tspan> Writes go to memtable (RAM) = fast. Reads may check multiple levels = slower. Bloom filters skip levels where key doesn't exist.</text>
+    </svg>
+    <div class="caption">LSM-Tree: writes go to an in-memory memtable (sorted), flush to disk as immutable SSTables, background compaction merges and deduplicates. Used by RocksDB (Venice), Cassandra, HBase, LevelDB.</div>
+  </div>
+
+  <div class="card linkedin">
+    <strong>LinkedIn mapping:</strong> <strong>Venice</strong> uses RocksDB (an LSM-tree engine). Write path: Spark batch job or Flink stream → push data → RocksDB writes to memtable → flush to SST files. Optimized for write-heavy ingestion of pre-computed ML features.
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+
+<!-- ======================= SECTION 4 ======================= -->
+<div class="section" id="sec-4">
+  <div class="section-num">Section 4</div>
+  <h2>B-Trees <span class="interview-tag meta">Meta</span><span class="interview-tag google">Google</span></h2>
+
+  <p>The most widely used index structure. Unlike LSM-trees (append-only segments), B-trees use <strong>fixed-size pages</strong> (typically 4-16KB) organized as a tree. <strong>Updates in place.</strong></p>
+
+  <div class="card highlight">
+    <pre>B-TREE KEY PROPERTIES:
+  ✓ Fixed-size pages (InnoDB: 16KB)
+  ✓ Sorted by key (enables range queries)
+  ✓ Update in place (overwrite the page)
+  ✓ Balanced: depth = O(log n)
+  ✓ Branching factor ~500 (keys per page)
+  ✓ 500^4 = 62.5 BILLION rows in just 4 levels
+
+  Write-Ahead Log (WAL / redo log):
+    Every modification written to WAL BEFORE updating the B-tree page.
+    If crash happens mid-write → WAL replays to restore consistency.
+    This is exactly what InnoDB does inside Espresso storage nodes.</pre>
+  </div>
+
+  <p>See the detailed B+ tree traversal diagram in <a href="/ddia-ch2.html#sec-3-espresso">Chapter 2: How Espresso Finds 1 Row in 800M</a> — it shows the 3-stage funnel (partitioning → B-tree → return) with actual page-level walkthrough.</p>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+
+<!-- ======================= SECTION 5 ======================= -->
+<div class="section" id="sec-5">
+  <div class="section-num">Section 5</div>
+  <h2>B-Trees vs LSM-Trees <span class="interview-tag meta">Meta</span><span class="interview-tag google">Google</span><span class="interview-tag netflix">Netflix</span></h2>
+
+  <!-- DIAGRAM: B-Tree vs LSM-Tree -->
+  <div class="diagram">
+    <svg viewBox="0 0 820 380" xmlns="http://www.w3.org/2000/svg" style="max-width:800px;">
+      <!-- B-Tree -->
+      <rect x="10" y="10" width="395" height="360" rx="12" fill="#e3f2fd" stroke="#1565c0" stroke-width="2"/>
+      <text x="207" y="40" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="16" fill="#0d47a1">B-Tree (Update In Place)</text>
+
+      <text x="30" y="70" font-family="Inter,sans-serif" font-weight="600" font-size="12" fill="#2e7d32">Advantages:</text>
+      <text x="30" y="90" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Reads are fast: one path root→leaf, O(log n)</text>
+      <text x="30" y="108" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Each key exists in exactly ONE place</text>
+      <text x="30" y="126" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Predictable latency (no compaction spikes)</text>
+      <text x="30" y="144" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Strong transactions: locks attach to tree nodes</text>
+      <text x="30" y="162" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Mature (50+ years of optimization)</text>
+
+      <text x="30" y="192" font-family="Inter,sans-serif" font-weight="600" font-size="12" fill="#c62828">Disadvantages:</text>
+      <text x="30" y="212" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Write amplification: WAL + page overwrite</text>
+      <text x="30" y="230" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Fragmentation (split pages waste space)</text>
+      <text x="30" y="248" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Random I/O for writes (seek to page)</text>
+
+      <rect x="30" y="270" width="355" height="80" rx="8" fill="#bbdefb"/>
+      <text x="207" y="292" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="11" fill="#0d47a1">Used By:</text>
+      <text x="50" y="310" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; MySQL/InnoDB (inside Espresso)</text>
+      <text x="50" y="326" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; PostgreSQL, Oracle, SQL Server</text>
+      <text x="50" y="342" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; All traditional RDBMS</text>
+
+      <!-- LSM-Tree -->
+      <rect x="415" y="10" width="395" height="360" rx="12" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"/>
+      <text x="612" y="40" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="16" fill="#1b5e20">LSM-Tree (Append + Merge)</text>
+
+      <text x="435" y="70" font-family="Inter,sans-serif" font-weight="600" font-size="12" fill="#2e7d32">Advantages:</text>
+      <text x="435" y="90" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Sequential writes (fast on SSD + HDD)</text>
+      <text x="435" y="108" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Higher write throughput</text>
+      <text x="435" y="126" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Better compression (no page fragmentation)</text>
+      <text x="435" y="144" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Smaller on-disk footprint</text>
+      <text x="435" y="162" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Simpler concurrency (immutable segments)</text>
+
+      <text x="435" y="192" font-family="Inter,sans-serif" font-weight="600" font-size="12" fill="#c62828">Disadvantages:</text>
+      <text x="435" y="212" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Reads slower (check multiple levels)</text>
+      <text x="435" y="230" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Compaction can spike tail latency (p99)</text>
+      <text x="435" y="248" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Same key may exist in multiple levels</text>
+
+      <rect x="435" y="270" width="355" height="80" rx="8" fill="#c8e6c9"/>
+      <text x="612" y="292" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="11" fill="#1b5e20">Used By:</text>
+      <text x="455" y="310" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; RocksDB (inside Venice)</text>
+      <text x="455" y="326" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Cassandra, HBase, LevelDB</text>
+      <text x="455" y="342" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Lucene term dictionary (Galene, Elasticsearch)</text>
+    </svg>
+    <div class="caption">B-Trees: update in place, fast reads, predictable latency, strong transactions. LSM-Trees: append-only, fast writes, better compression, but compaction can spike latency.</div>
+  </div>
+
+  <div class="card interview">
+    <h4>The One-Liner for Interviews</h4>
+    <p><strong>B-Trees are faster for reads, LSM-Trees are faster for writes.</strong> Use B-Trees for OLTP (Espresso/MySQL — user-facing, needs predictable latency). Use LSM-Trees for write-heavy workloads (Venice/RocksDB — ML feature ingestion, log storage). Lucene (inside Galene) uses LSM-like sorted files for its term dictionary.</p>
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+
+<!-- ======================= SECTION 6 ======================= -->
+<div class="section" id="sec-6">
+  <div class="section-num">Section 6</div>
+  <h2>Secondary Indexes, Clustered &amp; Covering <span class="interview-tag meta">Meta</span><span class="interview-tag google">Google</span></h2>
+
+  <table>
+    <tr><th>Index Type</th><th>What It Does</th><th>Example</th><th>Trade-Off</th></tr>
+    <tr>
+      <td><strong>Primary index</strong></td>
+      <td>Uniquely identifies each row. Clustered in InnoDB (data lives IN the leaf pages)</td>
+      <td>Espresso: <code>_key</code> is the primary B-tree</td>
+      <td>Must have. Can only have one.</td>
+    </tr>
+    <tr>
+      <td><strong>Secondary index</strong></td>
+      <td>Non-unique lookup by another field. Points back to primary key.</td>
+      <td>Espresso Lucene: <code>regionId=91</code></td>
+      <td>Speeds up reads on that field. Slows all writes.</td>
+    </tr>
+    <tr>
+      <td><strong>Clustered index</strong></td>
+      <td>Row data stored directly IN the index leaf. InnoDB primary key does this.</td>
+      <td>InnoDB: primary key lookup returns data directly (no heap file hop)</td>
+      <td>Fastest reads, but only one per table. Writes update data + index together.</td>
+    </tr>
+    <tr>
+      <td><strong>Covering index</strong></td>
+      <td>Index includes extra columns so some queries never touch the main table</td>
+      <td><code>CREATE INDEX ON orders(customer_id) INCLUDE (total)</code></td>
+      <td>Avoids heap lookup for covered queries. More storage.</td>
+    </tr>
+    <tr>
+      <td><strong>Concatenated / Composite</strong></td>
+      <td>Multi-column index: (lastname, firstname)</td>
+      <td>Phone book: find by (last, first) — useless for first-name-only search</td>
+      <td>Column order matters! Leftmost prefix rule.</td>
+    </tr>
+    <tr>
+      <td><strong>Spatial (R-tree)</strong></td>
+      <td>Multi-dimensional range queries (latitude + longitude)</td>
+      <td>PostGIS, Google Maps: "restaurants within this rectangle"</td>
+      <td>Standard B-tree can't do 2D ranges efficiently</td>
+    </tr>
+    <tr>
+      <td><strong>Full-text (inverted)</strong></td>
+      <td>Maps terms → list of document IDs (postings list). Fuzzy, synonyms.</td>
+      <td>Galene/Elasticsearch: "AI engineers" → [doc1, doc7, doc42]</td>
+      <td>Built on LSM-like sorted files (Lucene). Heavy write amplification.</td>
+    </tr>
+  </table>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+
+<!-- ======================= SECTION 7 ======================= -->
+<div class="section" id="sec-7">
+  <div class="section-num">Section 7</div>
+  <h2>OLTP vs OLAP &amp; Column Storage <span class="interview-tag google">Google</span><span class="interview-tag netflix">Netflix</span></h2>
+
+  <div class="compare-grid">
+    <div class="compare-card" style="border-top: 3px solid #1565c0;">
+      <h4 style="color:#1565c0;">OLTP (Transaction Processing)</h4>
+      <ul>
+        <li>User-facing, low-latency</li>
+        <li>Small number of records per query</li>
+        <li>Random read/write by key</li>
+        <li>Disk seek time is bottleneck</li>
+        <li>Row-oriented storage</li>
+      </ul>
+      <pre style="font-size:.8em;">SELECT * FROM profiles WHERE id = 12345
+-- 1 row, fast B-tree lookup</pre>
+      <p style="font-size:.85em;color:#0d47a1;margin-top:8px;"><strong>Engines:</strong> InnoDB (B-tree), RocksDB (LSM)</p>
+      <p style="font-size:.85em;color:#0077b5;"><strong>LinkedIn:</strong> Espresso, MySQL</p>
+    </div>
+    <div class="compare-card" style="border-top: 3px solid #e65100;">
+      <h4 style="color:#e65100;">OLAP (Analytical Processing)</h4>
+      <ul>
+        <li>Analyst-facing, high-throughput</li>
+        <li>Scan millions of rows per query</li>
+        <li>Sequential scan, aggregate</li>
+        <li>Disk bandwidth is bottleneck</li>
+        <li>Column-oriented storage</li>
+      </ul>
+      <pre style="font-size:.8em;">SELECT region, COUNT(*) FROM profile_views
+WHERE timestamp > ago('7d')
+GROUP BY region -- scan millions of rows</pre>
+      <p style="font-size:.85em;color:#e65100;margin-top:8px;"><strong>Engines:</strong> Column stores, star-tree</p>
+      <p style="font-size:.85em;color:#0077b5;"><strong>LinkedIn:</strong> Pinot, HDFS+Spark</p>
+    </div>
+  </div>
+
+  <div class="card highlight">
+    <h4>Column-Oriented Storage — Why Pinot Is Fast for Analytics</h4>
+    <pre>ROW-ORIENTED (MySQL/Espresso):
+  Row 1: [date, product, store, customer, price, quantity]
+  Row 2: [date, product, store, customer, price, quantity]
+  → To compute SUM(price), must load ALL columns of every row. Wasteful!
+
+COLUMN-ORIENTED (Pinot/BigQuery/Parquet):
+  date column:     [2024-01-01, 2024-01-01, 2024-01-02, ...]
+  product column:  [iPhone, Galaxy, Pixel, ...]
+  price column:    [999, 899, 699, ...]      ← only load this column!
+  quantity column: [1, 2, 1, ...]
+
+  SUM(price) → read ONLY the price column. Skip all other columns.
+  With 100 columns and you need 3 → read 3% of the data. 33x faster!
+
+COMPRESSION BONUS:
+  Column of dates: [2024-01-01, 2024-01-01, 2024-01-01, 2024-01-02, ...]
+  → Many repeated values → run-length encoding → tiny on disk
+  → Bitmap index: date=2024-01-01 → [1,1,1,0,0,...] — bitwise AND/OR!</pre>
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+
+<!-- ======================= SECTION 8 ======================= -->
+<div class="section" id="sec-8">
+  <div class="section-num">Section 8</div>
+  <h2>LinkedIn Mapping: Which Engine Where? <span class="interview-tag li">LinkedIn</span></h2>
+
+  <table>
+    <tr><th>System</th><th>Storage Engine</th><th>Index Type</th><th>Optimized For</th></tr>
+    <tr><td><strong>Espresso</strong></td><td>MySQL/InnoDB (B-tree)</td><td>Primary: B+ tree. Secondary: Lucene. GSI: separate service.</td><td>OLTP: user-facing CRUD, point lookups, source of truth</td></tr>
+    <tr><td><strong>Venice</strong></td><td>RocksDB (LSM-tree)</td><td>Key-value (primary key only)</td><td>Write-heavy derived data: ML features, batch push from Spark</td></tr>
+    <tr><td><strong>Pinot</strong></td><td>Custom columnar (segments)</td><td>Inverted + star-tree + sorted</td><td>OLAP: real-time analytics, GROUP BY, COUNT aggregations</td></tr>
+    <tr><td><strong>Galene</strong></td><td>Lucene (LSM-like sorted files)</td><td>Inverted index (term → postings list)</td><td>Full-text search, typeahead, faceted filtering</td></tr>
+    <tr><td><strong>Liquid</strong></td><td>In-memory (B-tree + hash)</td><td>B-tree + hash on vertices/edges</td><td>Graph traversals, multi-hop joins, PYMK</td></tr>
+    <tr><td><strong>Couchbase</strong></td><td>In-memory + async disk</td><td>Hash (key → value)</td><td>L2 cache for Espresso hot reads</td></tr>
+    <tr><td><strong>Kafka</strong></td><td>Append-only log (segments)</td><td>Offset-based (no key index)</td><td>Event streaming, CDC, exactly-once delivery</td></tr>
+  </table>
+
+  <div class="card interview">
+    <strong>Interview Power Statement:</strong> "The choice of storage engine is the most important decision in database design. B-trees (InnoDB) for OLTP with predictable latency. LSM-trees (RocksDB) for write-heavy ingestion. Columnar (Pinot) for analytics. Inverted indexes (Lucene) for search. In-memory (Liquid) for graph traversals. Each is a different trade-off on the index spectrum: reads vs writes vs space."
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+
+<!-- ======================= SECTION 9 ======================= -->
+<div class="section" id="sec-9">
+  <div class="section-num">Section 9</div>
+  <h2>Interview Questions</h2>
+
+  <div class="card interview">
+    <h4>Q1: "Explain the index trade-off" <span class="interview-tag meta">Meta</span><span class="interview-tag google">Google</span></h4>
+    <p><strong>Answer:</strong> Every index speeds up reads but slows down writes (write amplification: data + every index must be updated). Databases don't index everything by default — you choose indexes based on query patterns. Read-heavy → more indexes. Write-heavy → fewer. Espresso uses selective indexing: primary B-tree + declared Lucene secondary indexes only.</p>
+  </div>
+
+  <div class="card interview">
+    <h4>Q2: "B-Tree vs LSM-Tree — when to use which?" <span class="interview-tag google">Google</span><span class="interview-tag netflix">Netflix</span></h4>
+    <p><strong>Answer:</strong> B-trees for read-heavy OLTP with strong transactions (Espresso/MySQL — each key in one place, predictable latency, range queries). LSM-trees for write-heavy workloads (Venice/RocksDB, Cassandra — sequential writes, better compression, higher write throughput). Trade-off: LSM compaction can spike p99 latency; B-trees have write amplification from WAL + page updates.</p>
+  </div>
+
+  <div class="card interview">
+    <h4>Q3: "Why column storage for analytics?" <span class="interview-tag google">Google</span></h4>
+    <p><strong>Answer:</strong> Analytical queries read few columns across millions of rows. Column storage reads only needed columns (100 columns, need 3 = read 3% of data). Compression is much better (repeated values in a column → run-length/bitmap encoding). Vectorized processing: tight loops on compressed column chunks fit in CPU L1 cache. LinkedIn's Pinot uses columnar segments with star-tree pre-aggregation for sub-second dashboards.</p>
+  </div>
+
+  <div class="card interview">
+    <h4>Q4: "What is write amplification?" <span class="interview-tag meta">Meta</span></h4>
+    <p><strong>Answer:</strong> One logical write triggers multiple physical writes. B-tree: WAL write + page overwrite = 2x minimum. With page splits = 3x. LSM-tree: memtable flush + compaction rewrites = 10-30x over lifetime. Critical on SSDs (limited write cycles). Espresso's WCU calculation uses 1.6x amplification factor accounting for MySQL write + binlog + replication + index updates.</p>
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+</div>
+
+<footer>
+  <div class="container">
+    <p>Data Intensive Systems &mdash; Chapter 3 &mdash; <a href="/ddia-ch2.html">Ch 2: Data Models</a> | <a href="/ddia-ch1.html">Ch 1: Reliability</a> | <a href="/">Home</a></p>
+  </div>
+</footer>
+
+</body>
+</html>
