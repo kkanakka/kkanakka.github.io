@@ -1,0 +1,1197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<title>Reliable, Scalable &amp; Maintainable Systems &mdash; Data Intensive Systems</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #f7f6f3;
+    --border: #e3e2de;
+    --text: #37352f;
+    --text-muted: #787774;
+    --accent: #2383e2;
+    --accent2: #0f7b0f;
+    --accent3: #6940a5;
+    --accent4: #d9730d;
+    --red: #e03e3e;
+    --code-bg: #f7f6f3;
+    --card: #ffffff;
+    --ch-color: #0d47a1;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    font-size: 15px;
+  }
+  .container { max-width: 900px; margin: 0 auto; padding: 0 24px; }
+  .hero {
+    background: linear-gradient(180deg, #fafafa 0%, #ffffff 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 48px 0 36px;
+    text-align: center;
+  }
+  .hero h1 { font-size: 2.2em; font-weight: 700; margin-bottom: 12px; }
+  .hero h1 span { color: var(--ch-color); }
+  .hero p { font-size: 1.05em; color: var(--text-muted); max-width: 700px; margin: 0 auto 30px; }
+  .hero .badge {
+    display: inline-block; background: var(--surface); border: 1px solid var(--border);
+    padding: 6px 16px; border-radius: 20px; font-size: 0.8em; color: var(--text-muted);
+  }
+  .nav-links { margin-top: 20px; }
+  .nav-links a {
+    display: inline-block; background: var(--surface); border: 1px solid var(--border);
+    padding: 8px 20px; border-radius: 8px; color: var(--accent); text-decoration: none;
+    margin: 4px; font-size: 0.9em; transition: all 0.2s;
+  }
+  .nav-links a:hover { border-color: var(--accent); background: rgba(35,131,226,0.06); }
+  .nav-links a.ch { color: var(--ch-color); border-color: var(--ch-color); }
+  .nav-links a.ch:hover { background: rgba(13,71,161,0.06); }
+  .nav-links a.purple { color: var(--accent3); border-color: var(--accent3); }
+  .nav-links a.purple:hover { background: rgba(105,64,165,0.06); }
+
+  .toc {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 32px; margin: 40px auto; max-width: 900px;
+  }
+  .toc h2 { font-size: 1.2em; margin-bottom: 16px; color: var(--ch-color); }
+  .toc ol { padding-left: 24px; }
+  .toc li { margin: 8px 0; }
+  .toc a {
+    color: var(--text); text-decoration: none; border-bottom: 1px dashed var(--border);
+    transition: color 0.2s;
+  }
+  .toc a:hover { color: var(--ch-color); border-bottom-color: var(--ch-color); }
+  .toc .sub { padding-left: 24px; list-style: disc; }
+
+  .section {
+    margin: 40px 0; padding-top: 16px; border-top: 1px solid var(--border);
+  }
+  .section-num {
+    font-size: 0.75em; font-weight: 600; color: var(--ch-color);
+    text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;
+  }
+  .section h2 {
+    font-size: 1.6em; font-weight: 600; margin-bottom: 20px;
+    color: var(--ch-color);
+  }
+  .section h3 {
+    font-size: 1.15em; font-weight: 600; margin: 30px 0 12px;
+    color: var(--accent); border-left: 3px solid var(--accent); padding-left: 12px;
+  }
+  .section h4 {
+    font-size: 1em; font-weight: 600; margin: 20px 0 10px;
+    color: var(--accent3);
+  }
+
+  .card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 24px; margin: 20px 0;
+  }
+  .card.highlight { border-left: 4px solid var(--accent); }
+  .card.warn { border-left: 4px solid var(--accent4); }
+  .card.success { border-left: 4px solid var(--accent2); }
+  .card.danger { border-left: 4px solid var(--red); }
+  .card.interview { border-left: 4px solid var(--ch-color); background: rgba(13,71,161,0.02); }
+
+  .diagram {
+    margin: 30px 0; text-align: center;
+  }
+  .diagram svg {
+    max-width: 100%;
+    height: auto;
+  }
+  .caption {
+    font-size: 0.9em; color: var(--text-muted); margin-top: 10px; font-style: italic;
+  }
+
+  code {
+    background: var(--code-bg); border: 1px solid var(--border);
+    padding: 2px 8px; border-radius: 4px; font-family: 'JetBrains Mono', 'SF Mono', monospace;
+    font-size: 0.9em; color: var(--accent3);
+  }
+  pre {
+    background: var(--code-bg); border: 1px solid var(--border);
+    padding: 20px; border-radius: 8px; overflow-x: auto;
+    font-family: 'JetBrains Mono', 'SF Mono', monospace; font-size: 0.85em; margin: 14px 0; line-height: 1.5;
+  }
+
+  table {
+    width: 100%; border-collapse: collapse; margin: 16px 0;
+    background: var(--card); border-radius: 8px; overflow: hidden;
+  }
+  th {
+    background: rgba(13,71,161,0.08); color: var(--ch-color); padding: 12px 16px;
+    text-align: left; font-weight: 600; border-bottom: 2px solid var(--border);
+  }
+  td {
+    padding: 10px 14px; border-bottom: 1px solid var(--border);
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(13,71,161,0.03); }
+
+  .three-pillars {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 24px 0;
+  }
+  .pillar {
+    background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 20px; text-align: center; transition: .2s;
+  }
+  .pillar:hover { border-color: var(--ch-color); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,.06); }
+  .pillar .icon { font-size: 2em; margin-bottom: 8px; }
+  .pillar h4 { color: var(--ch-color); margin-bottom: 6px; font-size: 1em; }
+  .pillar p { font-size: .82em; color: var(--text-muted); line-height: 1.5; }
+
+  .scale-box {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px; margin: 20px 0;
+  }
+  .scale-item {
+    background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 20px; text-align: center;
+  }
+  .scale-item .number {
+    font-size: 1.3em; font-weight: 700; color: var(--ch-color);
+  }
+  .scale-item .label {
+    font-size: 0.85em; color: var(--text-muted); margin-top: 4px;
+  }
+
+  .tradeoff-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0;
+  }
+  .compare-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0;
+  }
+  .compare-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 20px;
+  }
+  .compare-card h4 { margin-top: 0; }
+  .compare-card ul { padding-left: 18px; font-size: .9em; }
+  .compare-card li { margin: 4px 0; }
+
+  @media (max-width: 700px) {
+    .three-pillars { grid-template-columns: 1fr; }
+    .tradeoff-grid, .compare-grid { grid-template-columns: 1fr; }
+    .scale-box { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  .back-top { display: block; text-align: right; margin-top: 20px; }
+  .back-top a { color: var(--text-muted); text-decoration: none; font-size: .85em; }
+  .back-top a:hover { color: var(--ch-color); }
+
+  .interview-tag {
+    display: inline-block; padding: 2px 10px; border-radius: 12px;
+    font-size: .75em; font-weight: 600; margin-left: 8px;
+  }
+  .interview-tag.meta { background: rgba(66,133,244,0.1); color: #4285f4; border: 1px solid #4285f4; }
+  .interview-tag.netflix { background: rgba(229,9,20,0.1); color: #e50914; border: 1px solid #e50914; }
+  .interview-tag.google { background: rgba(15,123,15,0.1); color: #0f7b0f; border: 1px solid #0f7b0f; }
+
+  footer {
+    text-align: center; padding: 40px 0; border-top: 1px solid var(--border);
+    color: var(--text-muted); font-size: 0.9em; margin-top: 60px;
+  }
+  footer a { color: var(--ch-color); text-decoration: none; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="container">
+    <h1>Reliable, Scalable &amp; <span>Maintainable</span> Systems</h1>
+    <p>The three pillars every data-intensive system must master &mdash; with interview-focused diagrams, real-world case studies from Twitter, Netflix, and Amazon.</p>
+    <div class="badge">Data Intensive Systems &bull; Chapter 1 &bull; Interview Guide</div>
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="/linux-systems-guide/sd-index.html" class="ch">System Design Hub</a>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- Table of Contents -->
+<div class="toc" id="toc">
+  <h2>Table of Contents</h2>
+  <ol>
+    <li><a href="#sec-1">What Are Data-Intensive Systems?</a>
+      <ul class="sub">
+        <li><a href="#sec-1-building-blocks">The 5 Building Blocks</a></li>
+        <li><a href="#sec-1-composite">Composite Data Systems</a></li>
+      </ul>
+    </li>
+    <li><a href="#sec-2">Reliability</a>
+      <ul class="sub">
+        <li><a href="#sec-2-faults">Fault vs Failure</a></li>
+        <li><a href="#sec-2-hardware">Hardware Faults</a></li>
+        <li><a href="#sec-2-software">Software Faults</a></li>
+        <li><a href="#sec-2-human">Human Errors</a></li>
+      </ul>
+    </li>
+    <li><a href="#sec-3">Scalability</a>
+      <ul class="sub">
+        <li><a href="#sec-3-load">Describing Load &mdash; Twitter Fan-Out</a></li>
+        <li><a href="#sec-3-perf">Describing Performance &mdash; Percentiles</a></li>
+        <li><a href="#sec-3-tail">Tail Latency Amplification</a></li>
+        <li><a href="#sec-3-coping">Scaling Up vs Scaling Out</a></li>
+      </ul>
+    </li>
+    <li><a href="#sec-4">Maintainability</a>
+      <ul class="sub">
+        <li><a href="#sec-4-ops">Operability</a></li>
+        <li><a href="#sec-4-simple">Simplicity</a></li>
+        <li><a href="#sec-4-evolve">Evolvability</a></li>
+      </ul>
+    </li>
+    <li><a href="#sec-5">Interview Questions &amp; Talking Points</a></li>
+  </ol>
+</div>
+
+
+<!-- ======================= SECTION 1 ======================= -->
+<div class="section" id="sec-1">
+  <div class="section-num">Section 1</div>
+  <h2>What Are Data-Intensive Systems?</h2>
+
+  <p>Most applications today are <strong>data-intensive</strong>, not compute-intensive. The bottleneck is the amount of data, its complexity, and the speed at which it changes &mdash; not raw CPU power.</p>
+
+  <div class="card interview">
+    <strong>Interview Framing:</strong> When an interviewer says "design X," they're asking you to compose these five building blocks into a system that's reliable, scalable, and maintainable. Start every answer by identifying which blocks you need.
+  </div>
+
+  <h3 id="sec-1-building-blocks">The 5 Building Blocks</h3>
+
+  <!-- DIAGRAM: 5 Building Blocks -->
+  <div class="diagram">
+    <svg viewBox="0 0 800 320" xmlns="http://www.w3.org/2000/svg" style="max-width:750px;">
+      <defs>
+        <filter id="shadow1" x="-4%" y="-4%" width="108%" height="112%">
+          <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.08"/>
+        </filter>
+      </defs>
+      <!-- Boxes -->
+      <rect x="20" y="20" width="140" height="120" rx="12" fill="#e3f2fd" stroke="#1565c0" stroke-width="1.5" filter="url(#shadow1)"/>
+      <text x="90" y="52" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#0d47a1">Databases</text>
+      <text x="90" y="72" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#546e7a">Store data</text>
+      <text x="90" y="86" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#546e7a">for later retrieval</text>
+      <text x="90" y="115" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#1565c0">PostgreSQL, MySQL</text>
+      <text x="90" y="128" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#1565c0">MongoDB, DynamoDB</text>
+
+      <rect x="180" y="20" width="140" height="120" rx="12" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1.5" filter="url(#shadow1)"/>
+      <text x="250" y="52" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#1b5e20">Caches</text>
+      <text x="250" y="72" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#546e7a">Speed up reads by</text>
+      <text x="250" y="86" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#546e7a">remembering results</text>
+      <text x="250" y="115" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#2e7d32">Redis, Memcached</text>
+      <text x="250" y="128" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#2e7d32">CDN, Varnish</text>
+
+      <rect x="340" y="20" width="140" height="120" rx="12" fill="#fff3e0" stroke="#e65100" stroke-width="1.5" filter="url(#shadow1)"/>
+      <text x="410" y="52" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#bf360c">Search Indexes</text>
+      <text x="410" y="72" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#546e7a">Search by keyword</text>
+      <text x="410" y="86" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#546e7a">or filter data</text>
+      <text x="410" y="115" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#e65100">Elasticsearch, Solr</text>
+      <text x="410" y="128" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#e65100">Lucene, Galene</text>
+
+      <rect x="500" y="20" width="140" height="120" rx="12" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="1.5" filter="url(#shadow1)"/>
+      <text x="570" y="48" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#4a148c">Stream</text>
+      <text x="570" y="63" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#4a148c">Processing</text>
+      <text x="570" y="83" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#546e7a">Async message</text>
+      <text x="570" y="97" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#546e7a">handling</text>
+      <text x="570" y="128" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#6a1b9a">Kafka, Flink, Samza</text>
+
+      <rect x="660" y="20" width="120" height="120" rx="12" fill="#fce4ec" stroke="#c62828" stroke-width="1.5" filter="url(#shadow1)"/>
+      <text x="720" y="48" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#b71c1c">Batch</text>
+      <text x="720" y="63" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#b71c1c">Processing</text>
+      <text x="720" y="83" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#546e7a">Crunch large</text>
+      <text x="720" y="97" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#546e7a">accumulated data</text>
+      <text x="720" y="128" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#c62828">Spark, Hadoop, MR</text>
+
+      <!-- Bottom: Three Pillars -->
+      <rect x="100" y="200" width="600" height="100" rx="14" fill="#e8eaf6" stroke="#283593" stroke-width="2" filter="url(#shadow1)"/>
+      <text x="400" y="230" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="15" fill="#1a237e">Every System Must Be:</text>
+      <text x="220" y="265" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="13" fill="#1565c0">Reliable</text>
+      <text x="220" y="282" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#546e7a">Works correctly under faults</text>
+      <text x="400" y="265" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="13" fill="#2e7d32">Scalable</text>
+      <text x="400" y="282" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#546e7a">Handles growth gracefully</text>
+      <text x="580" y="265" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="13" fill="#6a1b9a">Maintainable</text>
+      <text x="580" y="282" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#546e7a">Easy to operate &amp; evolve</text>
+
+      <!-- Arrows -->
+      <line x1="90" y1="140" x2="200" y2="200" stroke="#90a4ae" stroke-width="1" stroke-dasharray="4"/>
+      <line x1="250" y1="140" x2="300" y2="200" stroke="#90a4ae" stroke-width="1" stroke-dasharray="4"/>
+      <line x1="410" y1="140" x2="400" y2="200" stroke="#90a4ae" stroke-width="1" stroke-dasharray="4"/>
+      <line x1="570" y1="140" x2="500" y2="200" stroke="#90a4ae" stroke-width="1" stroke-dasharray="4"/>
+      <line x1="720" y1="140" x2="600" y2="200" stroke="#90a4ae" stroke-width="1" stroke-dasharray="4"/>
+    </svg>
+    <div class="caption">The five standard building blocks of data-intensive applications, all governed by the three pillars.</div>
+  </div>
+
+  <h3 id="sec-1-composite">Composite Data Systems</h3>
+
+  <p>Modern applications combine multiple tools behind a single API. You become both an application developer <em>and</em> a data system designer.</p>
+
+  <!-- DIAGRAM: Composite Data System -->
+  <div class="diagram">
+    <svg viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg" style="max-width:750px;">
+      <defs>
+        <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#546e7a"/>
+        </marker>
+        <filter id="shadow2" x="-4%" y="-4%" width="108%" height="112%">
+          <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.08"/>
+        </filter>
+      </defs>
+
+      <!-- Client -->
+      <rect x="310" y="10" width="180" height="50" rx="10" fill="#e3f2fd" stroke="#1565c0" stroke-width="1.5" filter="url(#shadow2)"/>
+      <text x="400" y="40" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="13" fill="#0d47a1">Client Request</text>
+
+      <!-- API Layer -->
+      <rect x="230" y="90" width="340" height="50" rx="10" fill="#e8eaf6" stroke="#283593" stroke-width="2" filter="url(#shadow2)"/>
+      <text x="400" y="120" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="14" fill="#1a237e">Application Code / API</text>
+
+      <!-- Arrow client -> API -->
+      <line x1="400" y1="60" x2="400" y2="90" stroke="#546e7a" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+
+      <!-- Primary DB -->
+      <rect x="40" y="190" width="150" height="70" rx="10" fill="#e3f2fd" stroke="#1565c0" stroke-width="1.5" filter="url(#shadow2)"/>
+      <text x="115" y="218" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="12" fill="#0d47a1">Primary Database</text>
+      <text x="115" y="238" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#546e7a">Source of truth</text>
+
+      <!-- Cache -->
+      <rect x="230" y="190" width="150" height="70" rx="10" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1.5" filter="url(#shadow2)"/>
+      <text x="305" y="218" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="12" fill="#1b5e20">Cache</text>
+      <text x="305" y="238" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#546e7a">Redis / Memcached</text>
+
+      <!-- Search Index -->
+      <rect x="420" y="190" width="150" height="70" rx="10" fill="#fff3e0" stroke="#e65100" stroke-width="1.5" filter="url(#shadow2)"/>
+      <text x="495" y="218" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="12" fill="#bf360c">Full-Text Search</text>
+      <text x="495" y="238" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#546e7a">Elasticsearch</text>
+
+      <!-- Message Queue -->
+      <rect x="610" y="190" width="150" height="70" rx="10" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="1.5" filter="url(#shadow2)"/>
+      <text x="685" y="218" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="12" fill="#4a148c">Message Queue</text>
+      <text x="685" y="238" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#546e7a">Kafka / RabbitMQ</text>
+
+      <!-- Arrows from API to components -->
+      <line x1="320" y1="140" x2="115" y2="190" stroke="#546e7a" stroke-width="1.2" marker-end="url(#arrowhead)"/>
+      <line x1="370" y1="140" x2="305" y2="190" stroke="#546e7a" stroke-width="1.2" marker-end="url(#arrowhead)"/>
+      <line x1="430" y1="140" x2="495" y2="190" stroke="#546e7a" stroke-width="1.2" marker-end="url(#arrowhead)"/>
+      <line x1="480" y1="140" x2="685" y2="190" stroke="#546e7a" stroke-width="1.2" marker-end="url(#arrowhead)"/>
+
+      <!-- Sync arrows between DB and Cache/Search -->
+      <line x1="190" y1="225" x2="230" y2="225" stroke="#c62828" stroke-width="1.2" stroke-dasharray="5,3" marker-end="url(#arrowhead)"/>
+      <line x1="190" y1="235" x2="420" y2="235" stroke="#c62828" stroke-width="1.2" stroke-dasharray="5,3" marker-end="url(#arrowhead)"/>
+
+      <!-- Labels for sync -->
+      <text x="210" y="215" font-family="Inter,sans-serif" font-size="9" fill="#c62828">invalidate</text>
+      <text x="310" y="248" font-family="Inter,sans-serif" font-size="9" fill="#c62828">sync index</text>
+
+      <!-- Downstream Consumer -->
+      <rect x="610" y="310" width="150" height="55" rx="10" fill="#fce4ec" stroke="#c62828" stroke-width="1.5" filter="url(#shadow2)"/>
+      <text x="685" y="335" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="12" fill="#b71c1c">Async Consumer</text>
+      <text x="685" y="352" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#546e7a">Email, Analytics</text>
+
+      <line x1="685" y1="260" x2="685" y2="310" stroke="#546e7a" stroke-width="1.2" marker-end="url(#arrowhead)"/>
+
+      <!-- API boundary label -->
+      <rect x="10" y="88" width="80" height="24" rx="4" fill="#283593"/>
+      <text x="50" y="104" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#fff">API hides all</text>
+    </svg>
+    <div class="caption">A composite data system: the API hides implementation details. The app code keeps cache, index, and queue in sync with the primary database.</div>
+  </div>
+
+  <div class="card interview">
+    <strong>Interview Tip (Meta/Google/Netflix):</strong> When asked "Design X," always draw this composite pattern first. Show the interviewer you understand that behind every API there are multiple data systems that must stay consistent.
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+
+<!-- ======================= SECTION 2 ======================= -->
+<div class="section" id="sec-2">
+  <div class="section-num">Section 2</div>
+  <h2>Reliability <span class="interview-tag meta">Meta</span><span class="interview-tag netflix">Netflix</span><span class="interview-tag google">Google</span></h2>
+
+  <p>A system is reliable if it continues to work correctly even when things go wrong. "Working correctly" means:</p>
+  <ul style="padding-left:24px;margin:12px 0;">
+    <li>Performs the expected function at the expected performance level</li>
+    <li>Tolerates user mistakes and unexpected usage</li>
+    <li>Prevents unauthorized access and abuse</li>
+  </ul>
+
+  <h3 id="sec-2-faults">Fault vs Failure</h3>
+
+  <!-- DIAGRAM: Fault vs Failure -->
+  <div class="diagram">
+    <svg viewBox="0 0 800 220" xmlns="http://www.w3.org/2000/svg" style="max-width:700px;">
+      <defs>
+        <marker id="arr2" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#546e7a"/>
+        </marker>
+      </defs>
+      <!-- Fault box -->
+      <rect x="30" y="40" width="200" height="140" rx="12" fill="#fff3e0" stroke="#e65100" stroke-width="2"/>
+      <text x="130" y="70" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="16" fill="#e65100">FAULT</text>
+      <text x="130" y="95" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#37352f">One component deviates</text>
+      <text x="130" y="112" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#37352f">from its spec</text>
+      <text x="130" y="140" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#787774">Example: one disk dies,</text>
+      <text x="130" y="155" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#787774">one process crashes</text>
+
+      <!-- Arrow -->
+      <line x1="230" y1="110" x2="310" y2="110" stroke="#546e7a" stroke-width="2" marker-end="url(#arr2)"/>
+      <text x="270" y="100" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#c62828">can cause</text>
+
+      <!-- Fault Tolerance Shield -->
+      <rect x="310" y="40" width="180" height="140" rx="12" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"/>
+      <text x="400" y="70" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="14" fill="#2e7d32">FAULT TOLERANCE</text>
+      <text x="400" y="95" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#37352f">Mechanisms that</text>
+      <text x="400" y="112" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#37352f">prevent faults from</text>
+      <text x="400" y="129" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#37352f">becoming failures</text>
+      <text x="400" y="155" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#787774">Redundancy, retries, etc.</text>
+
+      <!-- Arrow -->
+      <line x1="490" y1="90" x2="570" y2="60" stroke="#2e7d32" stroke-width="1.5" stroke-dasharray="4"/>
+      <line x1="490" y1="130" x2="570" y2="160" stroke="#c62828" stroke-width="1.5" marker-end="url(#arr2)"/>
+
+      <!-- Success -->
+      <rect x="570" y="20" width="190" height="60" rx="10" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1.5"/>
+      <text x="665" y="48" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="12" fill="#2e7d32">System keeps working</text>
+      <text x="665" y="66" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#787774">Fault handled gracefully</text>
+
+      <!-- Failure -->
+      <rect x="570" y="140" width="190" height="60" rx="10" fill="#fce4ec" stroke="#c62828" stroke-width="1.5"/>
+      <text x="665" y="165" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="14" fill="#c62828">FAILURE</text>
+      <text x="665" y="185" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#37352f">System stops serving users</text>
+
+      <text x="540" y="55" font-family="Inter,sans-serif" font-size="10" fill="#2e7d32">handled</text>
+      <text x="530" y="155" font-family="Inter,sans-serif" font-size="10" fill="#c62828">unhandled</text>
+    </svg>
+    <div class="caption">A fault is a component-level deviation; a failure is system-level service loss. Good design prevents faults from cascading into failures.</div>
+  </div>
+
+  <h3 id="sec-2-hardware">Hardware Faults</h3>
+
+  <div class="scale-box">
+    <div class="scale-item">
+      <div class="number">10-50 yr</div>
+      <div class="label">Hard disk MTTF</div>
+    </div>
+    <div class="scale-item">
+      <div class="number">1/day</div>
+      <div class="label">Disk failure in a 10K-disk cluster</div>
+    </div>
+    <div class="scale-item">
+      <div class="number">RAID</div>
+      <div class="label">Disk redundancy</div>
+    </div>
+    <div class="scale-item">
+      <div class="number">Rolling</div>
+      <div class="label">Upgrades with zero downtime</div>
+    </div>
+  </div>
+
+  <div class="card highlight">
+    <h4>Modern Approach: Software Fault Tolerance</h4>
+    <p>Cloud platforms (AWS, GCP) prioritize elasticity over single-machine reliability. VMs can disappear without warning. Systems must tolerate loss of entire machines, enabling rolling upgrades without downtime.</p>
+  </div>
+
+  <h3 id="sec-2-software">Software Faults &mdash; Systematic Errors</h3>
+
+  <p>Unlike hardware faults (random, independent), software faults are <strong>correlated</strong> &mdash; they can take down many nodes simultaneously.</p>
+
+  <!-- DIAGRAM: Types of Faults -->
+  <div class="diagram">
+    <svg viewBox="0 0 800 300" xmlns="http://www.w3.org/2000/svg" style="max-width:750px;">
+      <!-- Center label -->
+      <rect x="280" y="10" width="240" height="40" rx="8" fill="#283593"/>
+      <text x="400" y="35" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="14" fill="#fff">Types of Faults</text>
+
+      <!-- Hardware -->
+      <rect x="20" y="80" width="230" height="200" rx="12" fill="#e3f2fd" stroke="#1565c0" stroke-width="1.5"/>
+      <text x="135" y="108" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#0d47a1">Hardware Faults</text>
+      <text x="135" y="128" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#787774">Random &amp; independent</text>
+      <line x1="50" y1="140" x2="220" y2="140" stroke="#e3e2de" stroke-width="1"/>
+      <text x="40" y="160" font-family="Inter,sans-serif" font-size="11" fill="#37352f">&#8226; Disk crashes</text>
+      <text x="40" y="180" font-family="Inter,sans-serif" font-size="11" fill="#37352f">&#8226; Faulty RAM</text>
+      <text x="40" y="200" font-family="Inter,sans-serif" font-size="11" fill="#37352f">&#8226; Power blackout</text>
+      <text x="40" y="220" font-family="Inter,sans-serif" font-size="11" fill="#37352f">&#8226; Wrong cable unplugged</text>
+      <rect x="40" y="240" width="190" height="24" rx="6" fill="#e8f5e9"/>
+      <text x="135" y="256" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#2e7d32">Fix: RAID, dual PSU, redundancy</text>
+
+      <!-- Software -->
+      <rect x="285" y="80" width="230" height="200" rx="12" fill="#fff3e0" stroke="#e65100" stroke-width="1.5"/>
+      <text x="400" y="108" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#e65100">Software Faults</text>
+      <text x="400" y="128" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#787774">Systematic &amp; correlated</text>
+      <line x1="315" y1="140" x2="485" y2="140" stroke="#e3e2de" stroke-width="1"/>
+      <text x="305" y="160" font-family="Inter,sans-serif" font-size="11" fill="#37352f">&#8226; Leap-second bug (2012)</text>
+      <text x="305" y="180" font-family="Inter,sans-serif" font-size="11" fill="#37352f">&#8226; Runaway resource usage</text>
+      <text x="305" y="200" font-family="Inter,sans-serif" font-size="11" fill="#37352f">&#8226; Cascading failures</text>
+      <text x="305" y="220" font-family="Inter,sans-serif" font-size="11" fill="#37352f">&#8226; Dependency slowdown</text>
+      <rect x="305" y="240" width="190" height="24" rx="6" fill="#e8f5e9"/>
+      <text x="400" y="256" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#2e7d32">Fix: Isolation, monitoring, chaos</text>
+
+      <!-- Human -->
+      <rect x="550" y="80" width="230" height="200" rx="12" fill="#fce4ec" stroke="#c62828" stroke-width="1.5"/>
+      <text x="665" y="108" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#c62828">Human Errors</text>
+      <text x="665" y="128" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#787774">Leading cause of outages</text>
+      <line x1="580" y1="140" x2="750" y2="140" stroke="#e3e2de" stroke-width="1"/>
+      <text x="570" y="160" font-family="Inter,sans-serif" font-size="11" fill="#37352f">&#8226; Config errors (#1 cause)</text>
+      <text x="570" y="180" font-family="Inter,sans-serif" font-size="11" fill="#37352f">&#8226; Bad deployments</text>
+      <text x="570" y="200" font-family="Inter,sans-serif" font-size="11" fill="#37352f">&#8226; Wrong commands</text>
+      <text x="570" y="220" font-family="Inter,sans-serif" font-size="11" fill="#37352f">&#8226; HW only 10-25% of outages</text>
+      <rect x="570" y="240" width="190" height="24" rx="6" fill="#e8f5e9"/>
+      <text x="665" y="256" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#2e7d32">Fix: Sandbox, rollback, testing</text>
+    </svg>
+    <div class="caption">Three categories of faults: hardware (random), software (systematic), and human (most frequent).</div>
+  </div>
+
+  <h3 id="sec-2-human">Mitigating Human Errors</h3>
+
+  <div class="card interview">
+    <strong>Interview Answer Framework (Netflix Chaos Engineering):</strong>
+    Netflix pioneered <strong>Chaos Monkey</strong> &mdash; deliberately injecting faults to exercise fault-tolerance machinery. If you can't survive a random process kill, you'll definitely fail under real faults. This is a great talking point when asked "How do you ensure reliability?"
+  </div>
+
+  <table>
+    <tr><th>Strategy</th><th>Example</th><th>Asked At</th></tr>
+    <tr><td>Minimize error opportunities</td><td>Well-designed APIs, good abstractions</td><td>All FAANG</td></tr>
+    <tr><td>Decouple mistake zones from failure zones</td><td>Sandbox / staging environments</td><td>Meta, Google</td></tr>
+    <tr><td>Thorough testing at every level</td><td>Unit &rarr; integration &rarr; chaos testing</td><td>Netflix, Google</td></tr>
+    <tr><td>Quick recovery</td><td>Fast rollback, canary deploys, feature flags</td><td>Meta, Netflix</td></tr>
+    <tr><td>Detailed monitoring &amp; telemetry</td><td>Metrics, error rates, early warning</td><td>All FAANG</td></tr>
+  </table>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+
+<!-- ======================= SECTION 3 ======================= -->
+<div class="section" id="sec-3">
+  <div class="section-num">Section 3</div>
+  <h2>Scalability <span class="interview-tag meta">Meta</span><span class="interview-tag netflix">Netflix</span><span class="interview-tag google">Google</span></h2>
+
+  <p>Scalability is <strong>not</strong> a one-dimensional label ("X is scalable"). It means asking: <em>"If the system grows in a particular way, what are our options for coping?"</em></p>
+
+  <h3 id="sec-3-load">Describing Load &mdash; The Twitter Fan-Out Problem</h3>
+
+  <p>Load is described by <strong>load parameters</strong>: requests/sec, read/write ratio, cache hit rate, fan-out degree. Twitter's scaling challenge wasn't tweet volume &mdash; it was <strong>fan-out</strong>.</p>
+
+  <div class="scale-box">
+    <div class="scale-item">
+      <div class="number">4.6K/s</div>
+      <div class="label">Tweet writes (avg)</div>
+    </div>
+    <div class="scale-item">
+      <div class="number">12K/s</div>
+      <div class="label">Tweet writes (peak)</div>
+    </div>
+    <div class="scale-item">
+      <div class="number">300K/s</div>
+      <div class="label">Timeline reads</div>
+    </div>
+    <div class="scale-item">
+      <div class="number">~75</div>
+      <div class="label">Avg followers/user</div>
+    </div>
+  </div>
+
+  <!-- DIAGRAM: Twitter Approach 1 vs 2 -->
+  <div class="diagram">
+    <svg viewBox="0 0 800 520" xmlns="http://www.w3.org/2000/svg" style="max-width:780px;">
+      <defs>
+        <marker id="arr3" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#546e7a"/>
+        </marker>
+      </defs>
+
+      <!-- Approach 1 Header -->
+      <rect x="10" y="5" width="380" height="30" rx="6" fill="#c62828"/>
+      <text x="200" y="25" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#fff">Approach 1: Fan-Out on Read (Query-Time Join)</text>
+
+      <!-- Approach 1 -->
+      <rect x="10" y="40" width="380" height="220" rx="12" fill="#fff" stroke="#e3e2de" stroke-width="1"/>
+
+      <!-- User icon -->
+      <circle cx="60" cy="80" r="15" fill="#e3f2fd" stroke="#1565c0" stroke-width="1.5"/>
+      <text x="60" y="84" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#0d47a1">User</text>
+
+      <line x1="75" y1="80" x2="120" y2="80" stroke="#546e7a" stroke-width="1.2" marker-end="url(#arr3)"/>
+      <text x="97" y="73" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" fill="#787774">GET timeline</text>
+
+      <!-- API box -->
+      <rect x="120" y="60" width="80" height="40" rx="8" fill="#e8eaf6" stroke="#283593" stroke-width="1"/>
+      <text x="160" y="84" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#283593">API</text>
+
+      <line x1="200" y1="80" x2="240" y2="80" stroke="#546e7a" stroke-width="1.2" marker-end="url(#arr3)"/>
+
+      <!-- Query -->
+      <rect x="240" y="55" width="140" height="55" rx="8" fill="#fce4ec" stroke="#c62828" stroke-width="1"/>
+      <text x="310" y="75" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#c62828">SELECT tweets.*</text>
+      <text x="310" y="88" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#c62828">JOIN follows</text>
+      <text x="310" y="101" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#c62828">WHERE follower=me</text>
+
+      <!-- Pros/Cons under Approach 1 -->
+      <text x="30" y="140" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#2e7d32">Pros:</text>
+      <text x="30" y="157" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Simple write (insert into tweets)</text>
+      <text x="30" y="172" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; No duplication of data</text>
+      <text x="30" y="197" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#c62828">Cons:</text>
+      <text x="30" y="214" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Read requires JOINs at 300K/s</text>
+      <text x="30" y="229" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; DB crushed by timeline reads</text>
+      <text x="30" y="244" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Twitter v1 used this; couldn't keep up</text>
+
+      <!-- Approach 2 Header -->
+      <rect x="410" y="5" width="380" height="30" rx="6" fill="#2e7d32"/>
+      <text x="600" y="25" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#fff">Approach 2: Fan-Out on Write (Pre-computed)</text>
+
+      <!-- Approach 2 -->
+      <rect x="410" y="40" width="380" height="220" rx="12" fill="#fff" stroke="#e3e2de" stroke-width="1"/>
+
+      <!-- User posts -->
+      <circle cx="460" cy="80" r="15" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1.5"/>
+      <text x="460" y="84" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#1b5e20">Post</text>
+
+      <line x1="475" y1="80" x2="520" y2="80" stroke="#546e7a" stroke-width="1.2" marker-end="url(#arr3)"/>
+
+      <!-- Fan-out box -->
+      <rect x="520" y="55" width="110" height="50" rx="8" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1"/>
+      <text x="575" y="76" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#1b5e20">Fan-out to</text>
+      <text x="575" y="92" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#1b5e20">all follower caches</text>
+
+      <!-- Follower caches -->
+      <line x1="630" y1="68" x2="670" y2="56" stroke="#546e7a" stroke-width="1" marker-end="url(#arr3)"/>
+      <line x1="630" y1="80" x2="670" y2="80" stroke="#546e7a" stroke-width="1" marker-end="url(#arr3)"/>
+      <line x1="630" y1="92" x2="670" y2="104" stroke="#546e7a" stroke-width="1" marker-end="url(#arr3)"/>
+
+      <rect x="670" y="45" width="100" height="20" rx="4" fill="#e3f2fd" stroke="#90caf9" stroke-width="1"/>
+      <text x="720" y="59" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#1565c0">user_A cache</text>
+      <rect x="670" y="70" width="100" height="20" rx="4" fill="#e3f2fd" stroke="#90caf9" stroke-width="1"/>
+      <text x="720" y="84" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#1565c0">user_B cache</text>
+      <rect x="670" y="95" width="100" height="20" rx="4" fill="#e3f2fd" stroke="#90caf9" stroke-width="1"/>
+      <text x="720" y="109" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#1565c0">user_C cache</text>
+
+      <!-- Pros/Cons -->
+      <text x="430" y="140" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#2e7d32">Pros:</text>
+      <text x="430" y="157" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Timeline reads are O(1) cache lookup</text>
+      <text x="430" y="172" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Reads &gt;&gt; writes (300K vs 4.6K/s)</text>
+      <text x="430" y="197" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#c62828">Cons:</text>
+      <text x="430" y="214" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; 4.6K &times; 75 = 345K writes/s to caches</text>
+      <text x="430" y="229" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Celebrity tweet &rarr; 30M+ cache writes!</text>
+      <text x="430" y="244" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Needs 5s delivery SLA</text>
+
+      <!-- Approach 3: Hybrid -->
+      <rect x="120" y="290" width="560" height="30" rx="6" fill="#283593"/>
+      <text x="400" y="310" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#fff">Approach 3 (Current): Hybrid &mdash; Fan-Out on Write + Read for Celebrities</text>
+
+      <rect x="120" y="325" width="560" height="180" rx="12" fill="#fff" stroke="#283593" stroke-width="1.5"/>
+
+      <!-- Normal users -->
+      <rect x="140" y="345" width="230" height="65" rx="8" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1"/>
+      <text x="255" y="370" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#1b5e20">Normal Users (&lt; 10K followers)</text>
+      <text x="255" y="390" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Fan-out on write to follower caches</text>
+      <text x="255" y="403" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#37352f">(same as Approach 2)</text>
+
+      <!-- Celebrity users -->
+      <rect x="430" y="345" width="230" height="65" rx="8" fill="#fff3e0" stroke="#e65100" stroke-width="1"/>
+      <text x="545" y="370" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#e65100">Celebrities (&gt; 10K followers)</text>
+      <text x="545" y="390" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Fetched at read time and merged</text>
+      <text x="545" y="403" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#37352f">(same as Approach 1)</text>
+
+      <!-- Merge arrow -->
+      <line x1="255" y1="410" x2="350" y2="460" stroke="#283593" stroke-width="1.5" marker-end="url(#arr3)"/>
+      <line x1="545" y1="410" x2="450" y2="460" stroke="#283593" stroke-width="1.5" marker-end="url(#arr3)"/>
+
+      <!-- Merged timeline -->
+      <rect x="320" y="460" width="160" height="30" rx="8" fill="#e8eaf6" stroke="#283593" stroke-width="1.5"/>
+      <text x="400" y="480" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#283593">Merged Timeline</text>
+    </svg>
+    <div class="caption">Twitter's evolution: from query-time joins (v1) to pre-computed fan-out (v2) to a hybrid approach (current). This is a classic interview question at Meta, Google, and Netflix.</div>
+  </div>
+
+  <div class="card interview">
+    <strong>Interview Power Move:</strong> When asked "Design Twitter/Instagram Feed," mention all three approaches and explain <em>why</em> the hybrid exists. The key insight: the distribution of followers per user is the critical load parameter &mdash; it determines fan-out cost.
+  </div>
+
+  <h3 id="sec-3-perf">Describing Performance &mdash; Percentiles</h3>
+
+  <p>Don't use averages. Use <strong>percentiles</strong> (p50, p95, p99, p999).</p>
+
+  <!-- DIAGRAM: Percentiles -->
+  <div class="diagram">
+    <svg viewBox="0 0 800 350" xmlns="http://www.w3.org/2000/svg" style="max-width:780px;">
+      <!-- Background -->
+      <rect x="60" y="20" width="700" height="260" rx="8" fill="#f7f6f3" stroke="#e3e2de" stroke-width="1"/>
+
+      <!-- Y axis -->
+      <line x1="80" y1="40" x2="80" y2="260" stroke="#37352f" stroke-width="1.5"/>
+      <text x="55" y="150" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#37352f" transform="rotate(-90, 55, 150)">Response Time (ms)</text>
+
+      <!-- X axis -->
+      <line x1="80" y1="260" x2="740" y2="260" stroke="#37352f" stroke-width="1.5"/>
+      <text x="410" y="290" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#37352f">Requests (sorted by response time)</text>
+
+      <!-- Bars - simulate a response time distribution (100 requests) -->
+      <!-- Short bars (majority) -->
+      <g fill="#90caf9">
+        <rect x="90" y="230" width="5" height="30" rx="1"/>
+        <rect x="98" y="225" width="5" height="35" rx="1"/>
+        <rect x="106" y="228" width="5" height="32" rx="1"/>
+        <rect x="114" y="232" width="5" height="28" rx="1"/>
+        <rect x="122" y="226" width="5" height="34" rx="1"/>
+        <rect x="130" y="230" width="5" height="30" rx="1"/>
+        <rect x="138" y="224" width="5" height="36" rx="1"/>
+        <rect x="146" y="228" width="5" height="32" rx="1"/>
+        <rect x="154" y="232" width="5" height="28" rx="1"/>
+        <rect x="162" y="226" width="5" height="34" rx="1"/>
+        <rect x="170" y="229" width="5" height="31" rx="1"/>
+        <rect x="178" y="223" width="5" height="37" rx="1"/>
+        <rect x="186" y="227" width="5" height="33" rx="1"/>
+        <rect x="194" y="231" width="5" height="29" rx="1"/>
+        <rect x="202" y="225" width="5" height="35" rx="1"/>
+        <rect x="210" y="228" width="5" height="32" rx="1"/>
+        <rect x="218" y="222" width="5" height="38" rx="1"/>
+        <rect x="226" y="226" width="5" height="34" rx="1"/>
+        <rect x="234" y="230" width="5" height="30" rx="1"/>
+        <rect x="242" y="224" width="5" height="36" rx="1"/>
+        <rect x="250" y="228" width="5" height="32" rx="1"/>
+        <rect x="258" y="220" width="5" height="40" rx="1"/>
+        <rect x="266" y="224" width="5" height="36" rx="1"/>
+        <rect x="274" y="228" width="5" height="32" rx="1"/>
+        <rect x="282" y="222" width="5" height="38" rx="1"/>
+        <rect x="290" y="226" width="5" height="34" rx="1"/>
+        <rect x="298" y="218" width="5" height="42" rx="1"/>
+        <rect x="306" y="222" width="5" height="38" rx="1"/>
+        <rect x="314" y="226" width="5" height="34" rx="1"/>
+        <rect x="322" y="220" width="5" height="40" rx="1"/>
+        <rect x="330" y="218" width="5" height="42" rx="1"/>
+        <rect x="338" y="214" width="5" height="46" rx="1"/>
+        <rect x="346" y="216" width="5" height="44" rx="1"/>
+        <rect x="354" y="212" width="5" height="48" rx="1"/>
+        <rect x="362" y="210" width="5" height="50" rx="1"/>
+        <rect x="370" y="214" width="5" height="46" rx="1"/>
+        <rect x="378" y="208" width="5" height="52" rx="1"/>
+        <rect x="386" y="212" width="5" height="48" rx="1"/>
+        <rect x="394" y="206" width="5" height="54" rx="1"/>
+        <rect x="402" y="210" width="5" height="50" rx="1"/>
+        <rect x="410" y="204" width="5" height="56" rx="1"/>
+        <rect x="418" y="208" width="5" height="52" rx="1"/>
+        <rect x="426" y="200" width="5" height="60" rx="1"/>
+        <rect x="434" y="204" width="5" height="56" rx="1"/>
+        <rect x="442" y="198" width="5" height="62" rx="1"/>
+        <rect x="450" y="196" width="5" height="64" rx="1"/>
+        <rect x="458" y="192" width="5" height="68" rx="1"/>
+        <rect x="466" y="188" width="5" height="72" rx="1"/>
+      </g>
+      <!-- Medium bars (p50-p95 range) -->
+      <g fill="#42a5f5">
+        <rect x="474" y="180" width="5" height="80" rx="1"/>
+        <rect x="482" y="175" width="5" height="85" rx="1"/>
+        <rect x="490" y="170" width="5" height="90" rx="1"/>
+        <rect x="498" y="162" width="5" height="98" rx="1"/>
+        <rect x="506" y="155" width="5" height="105" rx="1"/>
+        <rect x="514" y="148" width="5" height="112" rx="1"/>
+        <rect x="522" y="140" width="5" height="120" rx="1"/>
+        <rect x="530" y="132" width="5" height="128" rx="1"/>
+        <rect x="538" y="124" width="5" height="136" rx="1"/>
+        <rect x="546" y="116" width="5" height="144" rx="1"/>
+        <rect x="554" y="108" width="5" height="152" rx="1"/>
+        <rect x="562" y="100" width="5" height="160" rx="1"/>
+        <rect x="570" y="92" width="5" height="168" rx="1"/>
+        <rect x="578" y="84" width="5" height="176" rx="1"/>
+        <rect x="586" y="76" width="5" height="184" rx="1"/>
+        <rect x="594" y="68" width="5" height="192" rx="1"/>
+        <rect x="602" y="60" width="5" height="200" rx="1"/>
+        <rect x="610" y="52" width="5" height="208" rx="1"/>
+      </g>
+      <!-- Tall bars (p95+) -->
+      <g fill="#1565c0">
+        <rect x="618" y="110" width="6" height="150" rx="1"/>
+        <rect x="627" y="90" width="6" height="170" rx="1"/>
+        <rect x="636" y="80" width="6" height="180" rx="1"/>
+        <rect x="645" y="70" width="6" height="190" rx="1"/>
+      </g>
+      <!-- Very tall (p99+) -->
+      <g fill="#0d47a1">
+        <rect x="656" y="55" width="7" height="205" rx="1"/>
+        <rect x="666" y="50" width="7" height="210" rx="1"/>
+      </g>
+      <!-- p999 -->
+      <g fill="#c62828">
+        <rect x="678" y="40" width="7" height="220" rx="1"/>
+      </g>
+
+      <!-- Percentile lines -->
+      <line x1="80" y1="225" x2="740" y2="225" stroke="#2e7d32" stroke-width="1" stroke-dasharray="6,3"/>
+      <text x="743" y="228" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#2e7d32">p50 (median)</text>
+
+      <line x1="80" y1="170" x2="740" y2="170" stroke="#e65100" stroke-width="1" stroke-dasharray="6,3"/>
+      <text x="743" y="173" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#e65100">p95</text>
+
+      <line x1="80" y1="90" x2="740" y2="90" stroke="#c62828" stroke-width="1" stroke-dasharray="6,3"/>
+      <text x="743" y="93" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#c62828">p99</text>
+
+      <line x1="80" y1="45" x2="740" y2="45" stroke="#4a148c" stroke-width="1" stroke-dasharray="6,3"/>
+      <text x="743" y="48" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#4a148c">p999</text>
+
+      <!-- Legend -->
+      <text x="400" y="325" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#787774">Higher percentiles = tail latency = the customers with the most data (most valuable!)</text>
+      <text x="400" y="345" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#c62828">Amazon: 100ms slower = 1% less revenue. p999 matters.</text>
+    </svg>
+    <div class="caption">Response time distribution showing percentile thresholds. The median (p50) is what typical users experience; p99/p999 affect your most valuable customers.</div>
+  </div>
+
+  <table>
+    <tr><th>Percentile</th><th>Meaning</th><th>Use Case</th></tr>
+    <tr><td><strong>p50 (median)</strong></td><td>Half of requests are faster</td><td>Typical user experience</td></tr>
+    <tr><td><strong>p95</strong></td><td>95% of requests are faster</td><td>SLO target for most services</td></tr>
+    <tr><td><strong>p99</strong></td><td>99% of requests are faster</td><td>Important for SLAs</td></tr>
+    <tr><td><strong>p999</strong></td><td>99.9% of requests are faster</td><td>Amazon internal services target</td></tr>
+  </table>
+
+  <div class="card warn">
+    <h4>Latency vs Response Time</h4>
+    <p><strong>Response time</strong> = what the client sees (service time + network + queueing). <strong>Latency</strong> = time a request waits before being handled. They're <em>not</em> synonyms.</p>
+  </div>
+
+  <h3 id="sec-3-tail">Tail Latency Amplification</h3>
+
+  <p>When a single user request fans out to multiple backend services in parallel, the overall response time is determined by the <strong>slowest</strong> backend call.</p>
+
+  <!-- DIAGRAM: Tail Latency Amplification -->
+  <div class="diagram">
+    <svg viewBox="0 0 800 340" xmlns="http://www.w3.org/2000/svg" style="max-width:750px;">
+      <defs>
+        <marker id="arr4" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#546e7a"/>
+        </marker>
+      </defs>
+
+      <!-- User -->
+      <circle cx="80" cy="160" r="22" fill="#e3f2fd" stroke="#1565c0" stroke-width="1.5"/>
+      <text x="80" y="155" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#0d47a1">End</text>
+      <text x="80" y="167" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#0d47a1">User</text>
+
+      <!-- Web App -->
+      <rect x="160" y="125" width="130" height="70" rx="10" fill="#e8eaf6" stroke="#283593" stroke-width="1.5"/>
+      <text x="225" y="158" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="12" fill="#283593">Web App</text>
+      <text x="225" y="175" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#787774">Parallel calls</text>
+
+      <line x1="102" y1="160" x2="160" y2="160" stroke="#546e7a" stroke-width="1.5" marker-end="url(#arr4)"/>
+
+      <!-- Backend services -->
+      <rect x="370" y="15" width="110" height="36" rx="8" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1"/>
+      <text x="425" y="38" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#1b5e20">Backend 1</text>
+      <text x="490" y="38" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#2e7d32">92ms</text>
+
+      <rect x="370" y="60" width="110" height="36" rx="8" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1"/>
+      <text x="425" y="83" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#1b5e20">Backend 2</text>
+      <text x="490" y="83" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#2e7d32">76ms</text>
+
+      <rect x="370" y="105" width="110" height="36" rx="8" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1"/>
+      <text x="425" y="128" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#1b5e20">Backend 3</text>
+      <text x="490" y="128" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#2e7d32">103ms</text>
+
+      <rect x="370" y="150" width="110" height="36" rx="8" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1"/>
+      <text x="425" y="173" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#1b5e20">Backend 4</text>
+      <text x="490" y="173" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#2e7d32">143ms</text>
+
+      <rect x="370" y="195" width="110" height="36" rx="8" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1"/>
+      <text x="425" y="218" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#1b5e20">Backend 5</text>
+      <text x="490" y="218" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#2e7d32">86ms</text>
+
+      <!-- Slow backend! -->
+      <rect x="370" y="240" width="110" height="36" rx="8" fill="#fce4ec" stroke="#c62828" stroke-width="2"/>
+      <text x="425" y="263" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#c62828">Backend 6</text>
+      <text x="490" y="263" font-family="Inter,sans-serif" font-weight="700" font-size="11" fill="#c62828">487ms</text>
+
+      <rect x="370" y="285" width="110" height="36" rx="8" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1"/>
+      <text x="425" y="308" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#1b5e20">Backend 7</text>
+      <text x="490" y="308" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#2e7d32">133ms</text>
+
+      <!-- Arrows from Web App to backends -->
+      <line x1="290" y1="140" x2="370" y2="33" stroke="#546e7a" stroke-width="1" marker-end="url(#arr4)"/>
+      <line x1="290" y1="145" x2="370" y2="78" stroke="#546e7a" stroke-width="1" marker-end="url(#arr4)"/>
+      <line x1="290" y1="150" x2="370" y2="123" stroke="#546e7a" stroke-width="1" marker-end="url(#arr4)"/>
+      <line x1="290" y1="155" x2="370" y2="168" stroke="#546e7a" stroke-width="1" marker-end="url(#arr4)"/>
+      <line x1="290" y1="160" x2="370" y2="213" stroke="#546e7a" stroke-width="1" marker-end="url(#arr4)"/>
+      <line x1="290" y1="170" x2="370" y2="258" stroke="#c62828" stroke-width="1.5" marker-end="url(#arr4)"/>
+      <line x1="290" y1="180" x2="370" y2="303" stroke="#546e7a" stroke-width="1" marker-end="url(#arr4)"/>
+
+      <!-- Result box -->
+      <rect x="570" y="130" width="200" height="70" rx="10" fill="#fce4ec" stroke="#c62828" stroke-width="2"/>
+      <text x="670" y="155" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="12" fill="#c62828">Total Response: 487ms</text>
+      <text x="670" y="175" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Slowest backend wins</text>
+      <text x="670" y="190" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#787774">Even though 6/7 were fast!</text>
+
+      <line x1="490" y1="258" x2="570" y2="175" stroke="#c62828" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr4)"/>
+    </svg>
+    <div class="caption">Tail latency amplification: one slow backend call (487ms) determines the entire end-user response time, even when all other calls are fast.</div>
+  </div>
+
+  <div class="card interview">
+    <strong>Google Interview Insight:</strong> With N parallel backend calls, the probability of hitting a slow tail increases dramatically. If each call has a 1% chance of being slow (p99), with 100 parallel calls, <strong>63% of requests</strong> will be slow. This is why Google obsesses over tail latency.
+  </div>
+
+  <h3 id="sec-3-coping">Scaling Up vs Scaling Out</h3>
+
+  <!-- DIAGRAM: Scaling Strategies -->
+  <div class="diagram">
+    <svg viewBox="0 0 800 270" xmlns="http://www.w3.org/2000/svg" style="max-width:750px;">
+      <!-- Scale Up -->
+      <rect x="30" y="20" width="340" height="230" rx="12" fill="#e3f2fd" stroke="#1565c0" stroke-width="1.5"/>
+      <text x="200" y="50" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="15" fill="#0d47a1">Scale Up (Vertical)</text>
+      <text x="200" y="70" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#787774">Bigger machine</text>
+
+      <!-- Big server icon -->
+      <rect x="130" y="90" width="140" height="80" rx="8" fill="#bbdefb" stroke="#1565c0" stroke-width="1"/>
+      <text x="200" y="118" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="20" fill="#0d47a1">SERVER</text>
+      <text x="200" y="138" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#546e7a">64 cores, 512GB RAM</text>
+      <text x="200" y="155" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#546e7a">NVMe SSDs</text>
+
+      <text x="60" y="195" font-family="Inter,sans-serif" font-size="11" fill="#2e7d32">+ Simpler architecture</text>
+      <text x="60" y="212" font-family="Inter,sans-serif" font-size="11" fill="#2e7d32">+ No distributed complexity</text>
+      <text x="60" y="232" font-family="Inter,sans-serif" font-size="11" fill="#c62828">&minus; Very expensive at top end</text>
+
+      <!-- Scale Out -->
+      <rect x="430" y="20" width="340" height="230" rx="12" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1.5"/>
+      <text x="600" y="50" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="15" fill="#1b5e20">Scale Out (Horizontal)</text>
+      <text x="600" y="70" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#787774">Many smaller machines</text>
+
+      <!-- Multiple small servers -->
+      <rect x="460" y="90" width="65" height="45" rx="6" fill="#c8e6c9" stroke="#2e7d32" stroke-width="1"/>
+      <text x="492" y="117" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#1b5e20">Node 1</text>
+      <rect x="535" y="90" width="65" height="45" rx="6" fill="#c8e6c9" stroke="#2e7d32" stroke-width="1"/>
+      <text x="567" y="117" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#1b5e20">Node 2</text>
+      <rect x="610" y="90" width="65" height="45" rx="6" fill="#c8e6c9" stroke="#2e7d32" stroke-width="1"/>
+      <text x="642" y="117" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#1b5e20">Node 3</text>
+      <rect x="685" y="90" width="65" height="45" rx="6" fill="#c8e6c9" stroke="#2e7d32" stroke-width="1"/>
+      <text x="717" y="117" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#1b5e20">Node N</text>
+
+      <text x="600" y="155" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#787774">Shared-nothing architecture</text>
+
+      <text x="460" y="180" font-family="Inter,sans-serif" font-size="11" fill="#2e7d32">+ Near-linear cost scaling</text>
+      <text x="460" y="197" font-family="Inter,sans-serif" font-size="11" fill="#2e7d32">+ Better fault tolerance</text>
+      <text x="460" y="217" font-family="Inter,sans-serif" font-size="11" fill="#c62828">&minus; Distributed state is complex</text>
+      <text x="460" y="234" font-family="Inter,sans-serif" font-size="11" fill="#c62828">&minus; Network partitions, consensus</text>
+    </svg>
+    <div class="caption">In practice, most architectures use a pragmatic mix: scale up for databases (until forced), scale out for stateless services.</div>
+  </div>
+
+  <div class="compare-grid">
+    <div class="compare-card">
+      <h4 style="color:#1565c0;">Elastic Scaling</h4>
+      <ul>
+        <li>Auto-add resources on load increase</li>
+        <li>Good for unpredictable workloads</li>
+        <li>Netflix, Uber use this heavily</li>
+      </ul>
+    </div>
+    <div class="compare-card">
+      <h4 style="color:#2e7d32;">Manual Scaling</h4>
+      <ul>
+        <li>Human analyzes capacity, adds nodes</li>
+        <li>Simpler, fewer operational surprises</li>
+        <li>Better for predictable loads</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card interview">
+    <strong>Key Interview Statement:</strong> "There is no magic scaling sauce. An architecture for 100K req/s at 1KB each looks very different from 3 req/min at 2GB each &mdash; even though they have the same throughput." Always ask about the <em>shape</em> of the load first.
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+
+<!-- ======================= SECTION 4 ======================= -->
+<div class="section" id="sec-4">
+  <div class="section-num">Section 4</div>
+  <h2>Maintainability <span class="interview-tag meta">Meta</span><span class="interview-tag google">Google</span></h2>
+
+  <p>The majority of software cost is in <strong>ongoing maintenance</strong>, not initial development. Good design minimizes pain for future engineers.</p>
+
+  <div class="three-pillars">
+    <div class="pillar">
+      <div class="icon" style="color:#1565c0;">&#9881;</div>
+      <h4 style="color:#1565c0;">Operability</h4>
+      <p>Make it easy for ops teams to keep the system running. Good monitoring, automation, documentation, predictable behavior.</p>
+    </div>
+    <div class="pillar">
+      <div class="icon" style="color:#2e7d32;">&#9672;</div>
+      <h4 style="color:#2e7d32;">Simplicity</h4>
+      <p>Remove <em>accidental</em> complexity. Use good abstractions. SQL hides disk structures; high-level languages hide machine code.</p>
+    </div>
+    <div class="pillar">
+      <div class="icon" style="color:#6a1b9a;">&#8644;</div>
+      <h4 style="color:#6a1b9a;">Evolvability</h4>
+      <p>Make changes easy. Requirements shift constantly &mdash; new features, platforms, regulations. Also called extensibility or plasticity.</p>
+    </div>
+  </div>
+
+  <!-- DIAGRAM: Maintainability Breakdown -->
+  <div class="diagram">
+    <svg viewBox="0 0 800 320" xmlns="http://www.w3.org/2000/svg" style="max-width:750px;">
+      <!-- Operability -->
+      <rect x="20" y="10" width="240" height="300" rx="12" fill="#e3f2fd" stroke="#1565c0" stroke-width="1.5"/>
+      <text x="140" y="40" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="14" fill="#0d47a1">Operability</text>
+      <text x="140" y="58" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#787774">"Making Life Easy for Ops"</text>
+      <line x1="40" y1="68" x2="240" y2="68" stroke="#bbdefb" stroke-width="1"/>
+      <text x="40" y="90" font-family="Inter,sans-serif" font-size="10.5" fill="#37352f">&#8226; Monitor health &amp; quick restore</text>
+      <text x="40" y="110" font-family="Inter,sans-serif" font-size="10.5" fill="#37352f">&#8226; Track down root causes</text>
+      <text x="40" y="130" font-family="Inter,sans-serif" font-size="10.5" fill="#37352f">&#8226; Keep software up to date</text>
+      <text x="40" y="150" font-family="Inter,sans-serif" font-size="10.5" fill="#37352f">&#8226; Capacity planning</text>
+      <text x="40" y="170" font-family="Inter,sans-serif" font-size="10.5" fill="#37352f">&#8226; Good defaults + overrides</text>
+      <text x="40" y="190" font-family="Inter,sans-serif" font-size="10.5" fill="#37352f">&#8226; Self-healing + manual control</text>
+      <text x="40" y="210" font-family="Inter,sans-serif" font-size="10.5" fill="#37352f">&#8226; Predictable behavior</text>
+      <rect x="40" y="230" width="200" height="60" rx="8" fill="#bbdefb"/>
+      <text x="140" y="252" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#0d47a1">Interview Example:</text>
+      <text x="140" y="268" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Netflix Chaos Monkey</text>
+      <text x="140" y="282" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Google SRE Runbooks</text>
+
+      <!-- Simplicity -->
+      <rect x="280" y="10" width="240" height="300" rx="12" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1.5"/>
+      <text x="400" y="40" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="14" fill="#1b5e20">Simplicity</text>
+      <text x="400" y="58" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#787774">"Managing Complexity"</text>
+      <line x1="300" y1="68" x2="500" y2="68" stroke="#c8e6c9" stroke-width="1"/>
+      <text x="300" y="90" font-family="Inter,sans-serif" font-size="10.5" fill="#37352f">&#8226; Remove accidental complexity</text>
+      <text x="300" y="110" font-family="Inter,sans-serif" font-size="10.5" fill="#37352f">&#8226; Use good abstractions</text>
+      <text x="300" y="130" font-family="Inter,sans-serif" font-size="10.5" fill="#37352f">&#8226; Avoid big ball of mud</text>
+      <text x="300" y="150" font-family="Inter,sans-serif" font-size="10.5" fill="#37352f">&#8226; Clean interfaces between</text>
+      <text x="300" y="165" font-family="Inter,sans-serif" font-size="10.5" fill="#37352f">  modules</text>
+      <text x="300" y="185" font-family="Inter,sans-serif" font-size="10.5" fill="#37352f">&#8226; Reduce hidden assumptions</text>
+      <text x="300" y="205" font-family="Inter,sans-serif" font-size="10.5" fill="#37352f">&#8226; Consistent naming</text>
+      <rect x="300" y="230" width="200" height="60" rx="8" fill="#c8e6c9"/>
+      <text x="400" y="252" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#1b5e20">Key Abstractions:</text>
+      <text x="400" y="268" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#37352f">SQL, HTTP, TCP/IP</text>
+      <text x="400" y="282" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#37352f">MapReduce, gRPC</text>
+
+      <!-- Evolvability -->
+      <rect x="540" y="10" width="240" height="300" rx="12" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="1.5"/>
+      <text x="660" y="40" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="14" fill="#4a148c">Evolvability</text>
+      <text x="660" y="58" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#787774">"Making Change Easy"</text>
+      <line x1="560" y1="68" x2="760" y2="68" stroke="#e1bee7" stroke-width="1"/>
+      <text x="560" y="90" font-family="Inter,sans-serif" font-size="10.5" fill="#37352f">&#8226; Requirements always change</text>
+      <text x="560" y="110" font-family="Inter,sans-serif" font-size="10.5" fill="#37352f">&#8226; New use cases emerge</text>
+      <text x="560" y="130" font-family="Inter,sans-serif" font-size="10.5" fill="#37352f">&#8226; Business priorities shift</text>
+      <text x="560" y="150" font-family="Inter,sans-serif" font-size="10.5" fill="#37352f">&#8226; Regulatory changes</text>
+      <text x="560" y="170" font-family="Inter,sans-serif" font-size="10.5" fill="#37352f">&#8226; Scale forces arch changes</text>
+      <text x="560" y="190" font-family="Inter,sans-serif" font-size="10.5" fill="#37352f">&#8226; TDD + refactoring help</text>
+      <rect x="560" y="230" width="200" height="60" rx="8" fill="#e1bee7"/>
+      <text x="660" y="252" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#4a148c">Example:</text>
+      <text x="660" y="268" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Twitter timeline refactor:</text>
+      <text x="660" y="282" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Approach 1 &rarr; 2 &rarr; Hybrid</text>
+    </svg>
+    <div class="caption">The three sub-pillars of maintainability. In interviews, show you think beyond "it works today" to "it works in 3 years with 10x the team."</div>
+  </div>
+
+  <h3 id="sec-4-ops">Operability in Practice</h3>
+  <div class="card highlight">
+    <p>Good operations means: runtime visibility (metrics, dashboards), automation (CI/CD, auto-scaling), machine independence (rolling upgrades without downtime), clear documentation, and good defaults with escape hatches.</p>
+  </div>
+
+  <h3 id="sec-4-simple">Simplicity &mdash; The Abstraction Weapon</h3>
+  <div class="card success">
+    <p><strong>Accidental complexity</strong> = complexity that isn't inherent to the problem but arises from the implementation. The best tool against it is <strong>abstraction</strong>. SQL hides on-disk data structures. Programming languages hide machine code. MapReduce hides distributed execution.</p>
+  </div>
+
+  <h3 id="sec-4-evolve">Evolvability</h3>
+  <div class="card highlight">
+    <p>The ease of modifying a system is linked to its simplicity and abstractions. Simple systems are easier to change. At data-system scale, this is called <strong>evolvability</strong> (vs "agility" at code level). Think: how would you refactor Twitter's timeline from Approach 1 to Approach 2?</p>
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+
+<!-- ======================= SECTION 5 ======================= -->
+<div class="section" id="sec-5">
+  <div class="section-num">Section 5</div>
+  <h2>Interview Questions &amp; Talking Points</h2>
+
+  <div class="card interview">
+    <h4>Q1: "How would you design a system that's fault-tolerant?" <span class="interview-tag google">Google</span><span class="interview-tag netflix">Netflix</span></h4>
+    <p><strong>Answer framework:</strong> Distinguish fault from failure. Apply redundancy at every layer (data replication, service redundancy, multi-AZ). Use chaos engineering to validate. Netflix Chaos Monkey randomly kills processes; Google uses DiRT (Disaster Recovery Testing). Emphasize that you <em>prefer tolerating faults</em> over preventing them.</p>
+  </div>
+
+  <div class="card interview">
+    <h4>Q2: "How do you measure the performance of a service?" <span class="interview-tag meta">Meta</span><span class="interview-tag google">Google</span></h4>
+    <p><strong>Answer framework:</strong> Don't use averages &mdash; use percentiles. p50 for typical user, p95/p99 for SLOs, p999 for high-value customers. Mention tail latency amplification in fan-out architectures. Amazon observed 100ms increase = 1% revenue loss. Use histograms (HdrHistogram, t-digest), never average percentiles across machines.</p>
+  </div>
+
+  <div class="card interview">
+    <h4>Q3: "Design Twitter's home timeline" <span class="interview-tag meta">Meta</span><span class="interview-tag netflix">Netflix</span></h4>
+    <p><strong>Answer framework:</strong> Start with Approach 1 (fan-out on read), explain why it fails at scale (300K reads/s needing JOINs). Move to Approach 2 (fan-out on write, pre-computed caches). Discuss celebrity problem (30M followers = 30M cache writes). Present hybrid solution. Key load parameter: follower distribution.</p>
+  </div>
+
+  <div class="card interview">
+    <h4>Q4: "Scale up or scale out?" <span class="interview-tag google">Google</span><span class="interview-tag meta">Meta</span></h4>
+    <p><strong>Answer framework:</strong> It depends on the workload! Stateless services &rarr; scale out easily. Stateful databases &rarr; prefer scale up until forced to distribute. Good architectures use a pragmatic mix. Elastic auto-scaling for unpredictable loads; manual for predictable. Mention shared-nothing architecture and its tradeoffs (network partitions, consensus protocols).</p>
+  </div>
+
+  <div class="card interview">
+    <h4>Q5: "What makes a system maintainable?" <span class="interview-tag meta">Meta</span><span class="interview-tag google">Google</span></h4>
+    <p><strong>Answer framework:</strong> Three sub-pillars: Operability (good monitoring, runbooks, automation), Simplicity (remove accidental complexity via abstractions), Evolvability (TDD, refactoring, loose coupling). The majority of software cost is maintenance, not initial development. Config errors by humans are the #1 cause of outages.</p>
+  </div>
+
+  <!-- DIAGRAM: Quick Reference Cheatsheet -->
+  <div class="diagram">
+    <svg viewBox="0 0 800 260" xmlns="http://www.w3.org/2000/svg" style="max-width:780px;">
+      <rect x="10" y="10" width="780" height="240" rx="14" fill="#f7f6f3" stroke="#283593" stroke-width="2"/>
+      <text x="400" y="40" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="16" fill="#283593">Chapter 1 Interview Cheatsheet</text>
+
+      <!-- Column 1: Reliability -->
+      <rect x="30" y="55" width="230" height="180" rx="10" fill="#e3f2fd" stroke="#1565c0" stroke-width="1"/>
+      <text x="145" y="78" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#0d47a1">Reliability</text>
+      <text x="45" y="100" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Fault &#8800; Failure</text>
+      <text x="45" y="118" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; HW: RAID, dual PSU</text>
+      <text x="45" y="136" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; SW: Isolation, monitoring</text>
+      <text x="45" y="154" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Human: Sandbox, rollback</text>
+      <text x="45" y="172" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Chaos Monkey (Netflix)</text>
+      <text x="45" y="190" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Config errors = #1 outage</text>
+      <text x="45" y="212" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#0d47a1">Prefer tolerating &gt; preventing</text>
+
+      <!-- Column 2: Scalability -->
+      <rect x="280" y="55" width="230" height="180" rx="10" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1"/>
+      <text x="395" y="78" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#1b5e20">Scalability</text>
+      <text x="295" y="100" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Load params: req/s, fan-out</text>
+      <text x="295" y="118" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Twitter: 4.6K W, 300K R/s</text>
+      <text x="295" y="136" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Use percentiles, not avg</text>
+      <text x="295" y="154" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; p50, p95, p99, p999</text>
+      <text x="295" y="172" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Tail latency amplification</text>
+      <text x="295" y="190" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Scale up + out pragmatically</text>
+      <text x="295" y="212" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#1b5e20">100ms slower = 1% revenue loss</text>
+
+      <!-- Column 3: Maintainability -->
+      <rect x="530" y="55" width="240" height="180" rx="10" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="1"/>
+      <text x="650" y="78" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#4a148c">Maintainability</text>
+      <text x="545" y="100" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Operability: monitoring, docs</text>
+      <text x="545" y="118" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Simplicity: kill accidental</text>
+      <text x="545" y="133" font-family="Inter,sans-serif" font-size="10" fill="#37352f">  complexity with abstractions</text>
+      <text x="545" y="154" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Evolvability: TDD, refactor</text>
+      <text x="545" y="172" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Most cost = maintenance</text>
+      <text x="545" y="190" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Abstraction = best weapon</text>
+      <text x="545" y="212" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#4a148c">Design for the next 10x team</text>
+    </svg>
+    <div class="caption">Quick reference: the three pillars of data-intensive systems with key facts for interviews.</div>
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+</div>
+
+<footer>
+  <div class="container">
+    <p>Data Intensive Systems &mdash; Chapter 1 &mdash; <a href="/">Back to Home</a></p>
+  </div>
+</footer>
+</body>
+</html>
