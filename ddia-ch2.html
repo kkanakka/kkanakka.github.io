@@ -514,28 +514,394 @@
     <div class="caption">LinkedIn's polyglot persistence: Espresso (source of truth) feeds Kafka, which populates Venice, Pinot, and Galene for specialized access patterns.</div>
   </div>
 
-  <h3 id="sec-3-espresso">Espresso &mdash; Document/Relational Hybrid <span class="linkedin-tag">LinkedIn</span></h3>
+  <h3 id="sec-3-espresso">Espresso &mdash; Deep Dive <span class="linkedin-tag">LinkedIn</span></h3>
+
+  <p>Espresso is LinkedIn's distributed document store. Unlike MongoDB (schema-optional, BSON, WiredTiger), Espresso is <strong>schema-first</strong>: every table requires an Avro schema. Documents are serialized as <strong>Avro binary blobs</strong> stored in <strong>MySQL/InnoDB</strong> tables.</p>
+
+  <h4>How Documents Are Actually Stored in MySQL</h4>
 
   <div class="card linkedin">
-    <h4>LinkedIn Profile in Espresso (Document Model)</h4>
-    <pre>{
-  "memberId": 12345,
-  "firstName": "Satya",
-  "lastName": "Nadella",
-  "headline": "CEO at Microsoft",
-  "regionId": "us:sf-bay",     // FK to regions (many-to-one)
-  "industryId": 96,             // FK to industries (many-to-one)
-  "positions": [                // 1-to-many: embedded array
-    {"title": "CEO", "companyId": 1035, "startDate": "2014-02"},
-    {"title": "EVP", "companyId": 1035, "startDate": "2011-01"}
-  ],
-  "education": [                // 1-to-many: embedded array
-    {"schoolId": 5678, "degree": "MS", "field": "CS"}
-  ],
-  "skills": ["Cloud", "AI", "Leadership"]  // 1-to-many
-}</pre>
-    <p><strong>Key insight:</strong> Espresso stores JSON documents but is backed by MySQL. It gives you document flexibility (schema-on-read for nested arrays) with relational guarantees (secondary indexes, change capture).</p>
+    <pre>-- This is the ACTUAL MySQL table schema inside Espresso storage nodes:
+
+CREATE TABLE Members (
+    _key        VARCHAR(255) NOT NULL,    -- partition key (e.g. memberId)
+    _subKey1    VARCHAR(255) DEFAULT '',  -- 1st sub-key (for 1-to-many)
+    _subKey2    VARCHAR(255) DEFAULT '',  -- 2nd sub-key (nested 1-to-many)
+    _value      MEDIUMBLOB,              -- Avro-serialized document (NOT raw JSON!)
+    _schemaVersion INT,                  -- which Avro schema version was used
+    _etag       VARCHAR(32),             -- optimistic concurrency (compare-and-swap)
+    _timestamp  BIGINT,                  -- last modification timestamp
+    PRIMARY KEY (_key, _subKey1, _subKey2)
+);
+
+-- Max doc size: 2MB default (configurable up to 10MB)
+-- Larger blobs go to Ambry (LinkedIn's blob store)</pre>
+    <p><strong>Key insight:</strong> Espresso does NOT store raw JSON on disk. It stores <strong>Avro binary</strong> in a MEDIUMBLOB column. The schema version tracks which Avro schema to use for deserialization. This gives you type safety + compact serialization + backward/forward compatible evolution.</p>
   </div>
+
+  <h4>Espresso Architecture</h4>
+
+  <!-- DIAGRAM: Espresso Architecture -->
+  <div class="diagram">
+    <svg viewBox="0 0 820 480" xmlns="http://www.w3.org/2000/svg" style="max-width:800px;">
+      <defs>
+        <marker id="arrE" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#546e7a"/>
+        </marker>
+        <filter id="shE" x="-3%" y="-3%" width="106%" height="110%">
+          <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.06"/>
+        </filter>
+      </defs>
+
+      <!-- Client -->
+      <rect x="300" y="10" width="220" height="50" rx="10" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2" filter="url(#shE)"/>
+      <text x="410" y="32" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#1b5e20">Client (espresso-pub SDK)</text>
+      <text x="410" y="48" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#787774">Builder pattern, R2/D2 transport, schema-aware</text>
+
+      <line x1="410" y1="60" x2="410" y2="85" stroke="#546e7a" stroke-width="1.5" marker-end="url(#arrE)"/>
+
+      <!-- Router -->
+      <rect x="200" y="85" width="420" height="90" rx="12" fill="#e3f2fd" stroke="#1565c0" stroke-width="2" filter="url(#shE)"/>
+      <text x="410" y="108" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="14" fill="#0d47a1">Espresso Router (Stateless, Netty)</text>
+      <text x="220" y="128" font-family="Inter,sans-serif" font-size="9" fill="#37352f">1. Parse path: /db/table/key</text>
+      <text x="220" y="142" font-family="Inter,sans-serif" font-size="9" fill="#37352f">2. FNV hash key &rarr; partition ID</text>
+      <text x="220" y="156" font-family="Inter,sans-serif" font-size="9" fill="#37352f">3. Helix lookup: partition &rarr; host</text>
+      <text x="430" y="128" font-family="Inter,sans-serif" font-size="9" fill="#37352f">4. ACL check &amp; auth</text>
+      <text x="430" y="142" font-family="Inter,sans-serif" font-size="9" fill="#37352f">5. Check L1/L2 cache</text>
+      <text x="430" y="156" font-family="Inter,sans-serif" font-size="9" fill="#37352f">6. Forward to storage node</text>
+
+      <!-- Cache -->
+      <rect x="660" y="95" width="140" height="70" rx="8" fill="#fff3e0" stroke="#e65100" stroke-width="1.5"/>
+      <text x="730" y="118" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#bf360c">Cache (2-tier)</text>
+      <text x="675" y="135" font-family="Inter,sans-serif" font-size="9" fill="#37352f">L1: OHC (off-heap)</text>
+      <text x="675" y="150" font-family="Inter,sans-serif" font-size="9" fill="#37352f">L2: Couchbase</text>
+      <line x1="620" y1="130" x2="660" y2="130" stroke="#e65100" stroke-width="1" stroke-dasharray="4"/>
+
+      <!-- Helix/ZK -->
+      <rect x="20" y="100" width="150" height="60" rx="8" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="1.5"/>
+      <text x="95" y="123" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#4a148c">Helix + ZooKeeper</text>
+      <text x="35" y="140" font-family="Inter,sans-serif" font-size="9" fill="#37352f">Partition &rarr; host map</text>
+      <text x="35" y="153" font-family="Inter,sans-serif" font-size="9" fill="#37352f">Schema registry</text>
+      <line x1="170" y1="130" x2="200" y2="130" stroke="#6a1b9a" stroke-width="1" stroke-dasharray="4"/>
+
+      <line x1="320" y1="175" x2="250" y2="215" stroke="#546e7a" stroke-width="1.5" marker-end="url(#arrE)"/>
+      <line x1="410" y1="175" x2="410" y2="215" stroke="#546e7a" stroke-width="1.5" marker-end="url(#arrE)"/>
+      <line x1="500" y1="175" x2="570" y2="215" stroke="#546e7a" stroke-width="1.5" marker-end="url(#arrE)"/>
+
+      <!-- Storage Nodes -->
+      <rect x="120" y="215" width="180" height="120" rx="10" fill="#e8eaf6" stroke="#283593" stroke-width="1.5" filter="url(#shE)"/>
+      <text x="210" y="238" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#283593">Storage Node 1</text>
+      <text x="210" y="253" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#283593">LEADER (partitions 0-85)</text>
+      <rect x="140" y="265" width="140" height="25" rx="4" fill="#c5cae9"/>
+      <text x="210" y="282" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#283593">MySQL/InnoDB</text>
+      <rect x="140" y="295" width="140" height="25" rx="4" fill="#dcedc8"/>
+      <text x="210" y="312" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#33691e">Lucene Index</text>
+
+      <rect x="320" y="215" width="180" height="120" rx="10" fill="#e8eaf6" stroke="#283593" stroke-width="1.5" filter="url(#shE)"/>
+      <text x="410" y="238" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#283593">Storage Node 2</text>
+      <text x="410" y="253" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#283593">LEADER (partitions 86-170)</text>
+      <rect x="340" y="265" width="140" height="25" rx="4" fill="#c5cae9"/>
+      <text x="410" y="282" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#283593">MySQL/InnoDB</text>
+      <rect x="340" y="295" width="140" height="25" rx="4" fill="#dcedc8"/>
+      <text x="410" y="312" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#33691e">Lucene Index</text>
+
+      <rect x="520" y="215" width="180" height="120" rx="10" fill="#e8eaf6" stroke="#283593" stroke-width="1.5" filter="url(#shE)"/>
+      <text x="610" y="238" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#283593">Storage Node 3</text>
+      <text x="610" y="253" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#283593">LEADER (partitions 171-255)</text>
+      <rect x="540" y="265" width="140" height="25" rx="4" fill="#c5cae9"/>
+      <text x="610" y="282" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#283593">MySQL/InnoDB</text>
+      <rect x="540" y="295" width="140" height="25" rx="4" fill="#dcedc8"/>
+      <text x="610" y="312" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#33691e">Lucene Index</text>
+
+      <!-- Binlog → Kafka -->
+      <line x1="210" y1="335" x2="210" y2="370" stroke="#c62828" stroke-width="1.2" marker-end="url(#arrE)"/>
+      <line x1="410" y1="335" x2="410" y2="370" stroke="#c62828" stroke-width="1.2" marker-end="url(#arrE)"/>
+      <line x1="610" y1="335" x2="610" y2="370" stroke="#c62828" stroke-width="1.2" marker-end="url(#arrE)"/>
+      <text x="310" y="358" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#c62828">MySQL binlog</text>
+
+      <!-- Kafka -->
+      <rect x="120" y="370" width="580" height="45" rx="10" fill="#fce4ec" stroke="#c62828" stroke-width="1.5" filter="url(#shE)"/>
+      <text x="410" y="393" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="12" fill="#c62828">Kafka (Change Data Capture)</text>
+      <text x="410" y="408" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#787774">BinlogTranslator &rarr; EspressoEvent &rarr; KafkaProducer | per-partition topics</text>
+
+      <!-- Downstream -->
+      <line x1="250" y1="415" x2="180" y2="445" stroke="#546e7a" stroke-width="1" marker-end="url(#arrE)"/>
+      <line x1="370" y1="415" x2="330" y2="445" stroke="#546e7a" stroke-width="1" marker-end="url(#arrE)"/>
+      <line x1="450" y1="415" x2="490" y2="445" stroke="#546e7a" stroke-width="1" marker-end="url(#arrE)"/>
+      <line x1="570" y1="415" x2="640" y2="445" stroke="#546e7a" stroke-width="1" marker-end="url(#arrE)"/>
+
+      <rect x="120" y="445" width="110" height="28" rx="6" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1"/>
+      <text x="175" y="464" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#1b5e20">Venice</text>
+      <rect x="270" y="445" width="110" height="28" rx="6" fill="#fff3e0" stroke="#e65100" stroke-width="1"/>
+      <text x="325" y="464" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#bf360c">Pinot</text>
+      <rect x="430" y="445" width="110" height="28" rx="6" fill="#fce4ec" stroke="#c62828" stroke-width="1"/>
+      <text x="485" y="464" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#c62828">Galene</text>
+      <rect x="580" y="445" width="120" height="28" rx="6" fill="#e8eaf6" stroke="#283593" stroke-width="1"/>
+      <text x="640" y="464" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#283593">Follower DCs</text>
+    </svg>
+    <div class="caption">Espresso architecture: stateless Routers hash keys to partitions, Helix maps partitions to Storage Nodes running MySQL/InnoDB. Binlog feeds Kafka for CDC to Venice, Pinot, Galene, and cross-DC replicas.</div>
+  </div>
+
+  <h4>Write Path &mdash; What Happens When You Write to Espresso</h4>
+
+  <div class="card linkedin">
+    <pre>WRITE PATH (step by step):
+
+T=0ms   Client sends PUT /MemberDB/Profiles/12345 with Avro document
+T=1ms   Router receives request:
+          1. Parse path → db=MemberDB, table=Profiles, key=12345
+          2. FNV hash(12345) → partition 42
+          3. Helix lookup: partition 42 → StorageNode2 (LEADER)
+          4. Router ALWAYS routes writes to LEADER (never follower)
+T=2ms   StorageNode2 executes MySQL INSERT/UPDATE:
+          INSERT INTO Profiles (_key, _value, _schemaVersion, _etag, _timestamp)
+          VALUES ('12345', &lt;avro_blob&gt;, 3, 'abc123', 1713200000)
+          ON DUPLICATE KEY UPDATE ...
+          → InnoDB writes to redo log, fsync to disk
+          → InnoDB writes to binlog
+T=3ms   Leader returns 200 OK to Router → Client
+          ⚡ Write is acknowledged on LEADER COMMIT ONLY (not replicated yet!)
+T=5ms   BinlogTranslator reads the binlog entry → creates EspressoEvent
+T=8ms   KafkaProducer publishes event to topic MemberDB_p42
+T=15ms  Follower replicas (same DC) consume and apply event
+T=50ms  Cross-DC replicas receive and apply event
+T=∞     Router invalidates cache entry for key 12345</pre>
+  </div>
+
+  <h4>Read Path &mdash; What Happens When You Read from Espresso</h4>
+
+  <div class="card linkedin">
+    <pre>READ PATH (step by step):
+
+T=0ms   Client sends GET /MemberDB/Profiles/12345
+T=1ms   Router Netty pipeline:
+          1. HTTP Decoder → SSL Handler → Request Parser
+          2. EspressoPathParser: extract db, table, key
+          3. Authentication → Authorization → ACL Check
+          4. PartitionFinder: FNV hash(12345) → partition 42
+          5. HostFinder: Helix external view → partition 42 on StorageNode2
+          6. Apply RoutingPolicy:
+             • LEADER_ONLY: always go to leader (strong consistency)
+             • LEADER_THEN_FOLLOWER: try leader, fallback to follower (HA)
+          7. Check HostHealthMonitor: is StorageNode2 healthy?
+          8. Check L1 cache (OHC off-heap) → MISS
+          9. Check L2 cache (Couchbase) → MISS
+T=2ms   Router obtains connection from pool → forwards to StorageNode2
+T=3ms   StorageNode2 executes MySQL SELECT:
+          SELECT _value, _schemaVersion, _etag FROM Profiles WHERE _key='12345'
+          → InnoDB B-tree lookup → return Avro blob
+T=4ms   Router deserializes Avro blob using schema version 3
+T=5ms   Response returned to Client
+
+Cache key format: hash(database + table + primary_key + schema_version)
+→ schema_version in cache key = automatic invalidation on schema changes!</pre>
+  </div>
+
+  <h4>Schema Enforcement &mdash; How Espresso Validates Documents</h4>
+
+  <p>Unlike MongoDB (schema-optional), Espresso <strong>requires an Avro schema for every table</strong>. This is a hard requirement.</p>
+
+  <div class="card linkedin">
+    <h4>Schema Enforcement Mechanism</h4>
+    <pre>// Schema file: database/MemberDB/schemata/document/MemberDB/Profiles/1.avsc
+{
+  "type": "record",
+  "name": "Profile",
+  "namespace": "com.linkedin.memberdb",
+  "fields": [
+    {"name": "firstName", "type": "string"},
+    {"name": "lastName",  "type": "string"},
+    {"name": "headline",  "type": ["null", "string"], "default": null},
+    {"name": "regionId",  "type": "int"},
+    {"name": "industryId","type": "int"},
+    {"name": "positions", "type": {"type": "array", "items": {
+      "type": "record", "name": "Position", "fields": [
+        {"name": "title", "type": "string"},
+        {"name": "companyId", "type": "long"},
+        {"name": "startDate", "type": "string"}
+      ]
+    }}}
+  ]
+}
+
+How schema evolution works:
+  v1: {firstName, lastName, regionId}
+  v2: {firstName, lastName, regionId, headline}  ← added with default null
+  v3: {firstName, lastName, regionId, headline, positions[]}
+
+Rules:
+  ✓ Add fields with defaults (backward compatible)
+  ✓ Remove fields with defaults (forward compatible)
+  ✓ Promote types (int → long)
+  ✗ Remove required fields → REJECTED
+  ✗ Change field type incompatibly → REJECTED
+  ✗ Write doc that violates schema → HTTP 422
+
+Where schemas live: ZooKeeper, versioned per table
+Each stored row has _schemaVersion → deserializer picks the right schema</pre>
+  </div>
+
+  <h4>Secondary Indexes &mdash; How You Query by Non-Key Fields</h4>
+
+  <p>If a profile doc has <code>regionId: 91</code>, how do you find all members in Bay Area? You can't scan every partition. Espresso provides <strong>three types of secondary indexes</strong>:</p>
+
+  <div class="card linkedin">
+    <pre>// TYPE 1: Lucene-Based Secondary Index (within a partition)
+// Physical: Lucene index alongside MySQL on each storage node
+GetRequest request = GetRequest.builder()
+    .setDatabase("MemberDB").setTable("Profiles")
+    .setQuery("regionId=91 AND industryId=96")  // Lucene syntax
+    .build();
+// Latency: 10-100ms (vs &lt;5ms for point lookups)
+
+// TYPE 2: SQL Query
+GetRequest request = GetRequest.builder()
+    .setDatabase("MemberDB").setTable("Profiles")
+    .setSqlQuery("SELECT * FROM Profiles WHERE regionId = 91")
+    .build();
+
+// TYPE 3: Global Secondary Index (GSI) — spans ALL partitions
+// When regionId=91 could be on ANY partition:
+GetRequest request = GetRequest.builder()
+    .setDatabase("MemberDB").setTable("Profiles")
+    .setGlobalIndexName("region_index")      // pre-declared GSI
+    .setQuery("regionId=91")
+    .build();
+// Router does scatter-gather: queries ALL partitions, aggregates results
+
+// HOW SECONDARY INDEXES ACTUALLY WORK:
+// Each storage node maintains a Lucene index alongside MySQL.
+// When a doc is written, the indexed fields are also written to Lucene.
+// Declarative: you declare indexes in config, Espresso maintains them.
+// No Kafka consumer needed (unlike manually maintaining a separate table).</pre>
+  </div>
+
+  <h4>The "Storing IDs" Question &mdash; Object-Relational Mismatch</h4>
+
+  <p>The book asks: if you store <code>regionId: 91</code> instead of <code>"Greater Seattle Area"</code>, how does anyone know what 91 means? This is the <strong>impedance mismatch</strong> between app objects and stored data:</p>
+
+  <div class="card highlight">
+    <h4>Why Store IDs Instead of Strings?</h4>
+    <pre>// BAD: Storing the string directly
+{"region": "Greater Seattle Area", "industry": "Philanthropy"}
+  → If Seattle renames a district, update EVERY profile that has it
+  → Inconsistent spelling: "Greater Seattle Area" vs "Seattle Area"
+  → Can't localize: French users see English region names
+  → Search is dumb: "Washington state" doesn't match "Seattle"
+
+// GOOD: Storing an ID (normalization)
+{"regionId": 91, "industryId": 131}
+  → Region name stored ONCE in a regions table/doc
+  → Update the name in ONE place, all profiles reflect it
+  → Localization: regionId 91 → "Greater Seattle Area" (EN) / "Région de Seattle" (FR)
+  → Search: regionId 91 encodes that Seattle is in Washington state
+
+// THE TRADE-OFF:
+// Storing IDs = you need a JOIN (or a follow-up query) to show the human name
+// In Espresso: no JOINs! So the client does TWO queries:
+//   1. GET /MemberDB/Profiles/12345 → {regionId: 91, ...}
+//   2. GET /MemberDB/Regions/91 → {name: "Greater Seattle Area"}
+// Or: denormalize into Venice (pre-joined, read-optimized)</pre>
+  </div>
+
+  <h4>1-to-Many in Espresso: Sub-Keys</h4>
+
+  <p>Espresso models one-to-many using its <strong>hierarchical key structure</strong> with sub-keys. The primary key is <code>(_key, _subKey1, _subKey2)</code>:</p>
+
+  <div class="card linkedin">
+    <pre>// EXAMPLE: Messaging (1 member has many conversations, 1 conversation has many messages)
+
+Database: MessagingDB (256 partitions)
+
+Table: Conversations
+  _key = memberId          ← the "one" (also partition key)
+  _subKey1 = conversationId ← the "many"
+  _value = {participants: [...], title: "...", lastMessageTs: ...}
+
+// Get ALL conversations for member 12345:
+GET /MessagingDB/Conversations/12345?start=0&count=50
+→ Returns all rows where _key='12345' (co-located on same MySQL instance!)
+
+// Get ONE specific conversation:
+GET /MessagingDB/Conversations/12345/conv789
+→ MySQL: SELECT * WHERE _key='12345' AND _subKey1='conv789'
+
+Table: Messages
+  _key = conversationId    ← the "one"
+  _subKey1 = messageId     ← the "many"
+  _value = {senderId: ..., text: "...", timestamp: ...}
+
+// Get all messages in a conversation:
+GET /MessagingDB/Messages/conv789?start=0&count=100
+
+// WHY THIS IS EFFICIENT:
+// All docs sharing the same _key are on the SAME MySQL instance
+// (same partition = same node) → no cross-node queries for 1-to-many!
+// This is DATA LOCALITY — the same advantage as embedding in MongoDB,
+// but with the ability to paginate and query sub-keys independently.</pre>
+  </div>
+
+  <h4>Many-to-Many in Espresso: Junction Tables + GSI</h4>
+
+  <div class="card linkedin">
+    <pre>// EXAMPLE: Members ↔ Skills (with endorsements)
+// One member has many skills, one skill belongs to many members
+
+// APPROACH: Junction/association table
+Table: MemberSkills
+  _key = memberId          ← partition key
+  _subKey1 = skillId       ← which skill
+  _value = {endorserIds: [67890, 11111], endorsedAt: "2024-01"}
+
+// "What skills does member 12345 have?"
+GET /SkillsDB/MemberSkills/12345
+→ Fast! All on same partition.
+
+// "Who has the skill 'Cloud Computing' (skillId=500)?"
+// PROBLEM: skillId is _subKey1, not _key. Data is partitioned by memberId.
+// Skill 500 could be on ANY partition!
+
+// SOLUTION 1: Global Secondary Index
+GET /SkillsDB/MemberSkills?gsi=skill_index&query=skillId=500
+→ Router scatter-gathers across ALL partitions (expensive but works)
+
+// SOLUTION 2: Denormalized reverse table
+Table: SkillMembers  ← separate table, partitioned by skillId
+  _key = skillId           ← partition key
+  _subKey1 = memberId      ← which member
+  _value = {endorserCount: 2}
+
+GET /SkillsDB/SkillMembers/500
+→ Fast! But now you maintain TWO tables. Kafka CDC keeps them in sync.
+
+// SOLUTION 3: Use Liquid (graph DB) for the relationship
+// (Satya)--[HAS_SKILL{endorsers:[...]}]-->(Cloud)
+// Graph traversal naturally handles many-to-many.
+
+// ESPRESSO'S LIMITATION:
+// No JOINs across tables. No cross-partition queries (without GSI/scatter).
+// Many-to-many requires either:
+//   a) GSI (expensive scatter-gather)
+//   b) Denormalized reverse table (extra write amplification)
+//   c) Move to a graph DB (Liquid) for relationship-heavy access</pre>
+  </div>
+
+  <h4>Espresso vs MongoDB</h4>
+
+  <table>
+    <tr><th>Aspect</th><th>Espresso</th><th>MongoDB</th></tr>
+    <tr><td><strong>Schema</strong></td><td>Required (Avro) &mdash; schema-on-write</td><td>Optional &mdash; schema-on-read</td></tr>
+    <tr><td><strong>Storage</strong></td><td>Avro binary in MySQL/InnoDB BLOB</td><td>BSON in WiredTiger</td></tr>
+    <tr><td><strong>Transactions</strong></td><td>Single-partition ACID (InnoDB)</td><td>Multi-document ACID (since 4.0)</td></tr>
+    <tr><td><strong>Consistency</strong></td><td>Strong on leader, eventual on follower</td><td>Configurable</td></tr>
+    <tr><td><strong>Secondary Index</strong></td><td>Lucene-based + GSI</td><td>B-tree based, built-in</td></tr>
+    <tr><td><strong>Partitioning</strong></td><td>FNV hash, fixed count, Helix-managed</td><td>Range or hash, dynamic</td></tr>
+    <tr><td><strong>JOINs</strong></td><td>Not supported</td><td>$lookup (limited)</td></tr>
+    <tr><td><strong>Replication</strong></td><td>Binlog &rarr; Kafka &rarr; followers</td><td>Oplog &rarr; replica sets</td></tr>
+    <tr><td><strong>Caching</strong></td><td>Built-in (OHC + Couchbase)</td><td>External (Redis)</td></tr>
+    <tr><td><strong>Max Doc</strong></td><td>2MB (10MB max)</td><td>16MB</td></tr>
+    <tr><td><strong>Read p99</strong></td><td>5-15ms</td><td>Variable</td></tr>
+  </table>
 
   <h3 id="sec-3-venice">Venice &mdash; Derived Key-Value Store <span class="linkedin-tag">LinkedIn</span></h3>
 
@@ -638,63 +1004,140 @@ Edge: (12345) --[ENDORSED_BY {skill:500}]--> (67890) // many-to-many
   <div class="section-num">Section 4</div>
   <h2>Modeling Relationships <span class="interview-tag meta">Meta</span><span class="interview-tag google">Google</span><span class="interview-tag li">LinkedIn</span></h2>
 
+  <p>The book uses a <strong>LinkedIn profile</strong> as the canonical example. A profile has exactly one name but multiple positions, education entries, and skills. This is the <strong>Object-Relational Mismatch</strong> (impedance mismatch): your app objects are trees, but SQL tables are flat rows.</p>
+
   <h3 id="sec-4-one">One-to-Many (User &rarr; Positions, Skills)</h3>
 
-  <!-- DIAGRAM: One-to-Many -->
+  <p>Three ways to represent 1-to-many. Each has real tradeoffs:</p>
+
+  <div class="card highlight">
+    <h4>Option A: Relational (Normalized, Separate Tables + FK)</h4>
+    <pre>-- The "textbook SQL" approach from the book (Figure 2-1)
+CREATE TABLE users (
+  user_id INT PRIMARY KEY, first_name TEXT, last_name TEXT,
+  region_id INT REFERENCES regions(id),    -- many-to-one FK
+  industry_id INT REFERENCES industries(id)
+);
+CREATE TABLE positions (
+  id INT PRIMARY KEY, user_id INT REFERENCES users(user_id),
+  job_title TEXT, organization TEXT
+);
+CREATE TABLE education (
+  id INT PRIMARY KEY, user_id INT REFERENCES users(user_id),
+  school_name TEXT, start_year INT, end_year INT
+);
+
+-- To fetch a full profile: multi-table JOIN (or N+1 queries)
+SELECT u.*, p.job_title, p.organization
+FROM users u JOIN positions p ON u.user_id = p.user_id
+WHERE u.user_id = 251;
+-- PROBLEM: messy multi-way join for one profile page load</pre>
+  </div>
+
+  <div class="card success">
+    <h4>Option B: Document (Embedded, Single Fetch)</h4>
+    <pre>// The JSON/document approach — what Espresso and MongoDB use
+// This is the SAME profile, but as a self-contained document:
+{
+  "user_id": 251,
+  "first_name": "Bill", "last_name": "Gates",
+  "region_id": "us:91",
+  "industry_id": 131,
+  "positions": [  // 1-to-many: embedded RIGHT IN the document
+    {"job_title": "Co-chair", "organization": "Bill &amp; Melinda Gates Foundation"},
+    {"job_title": "Co-founder", "organization": "Microsoft"}
+  ],
+  "education": [  // 1-to-many: embedded
+    {"school_name": "Harvard University", "start": 1973, "end": 1975},
+    {"school_name": "Lakeside School", "start": null, "end": null}
+  ]
+}
+// ONE query fetches everything. No JOINs.
+// The 1-to-many relationship forms a TREE — and JSON makes this tree explicit.</pre>
+  </div>
+
+  <div class="card linkedin">
+    <h4>Option C: Espresso Sub-Keys (Best of Both)</h4>
+    <pre>// Espresso's unique approach: sub-keys give you document locality
+// WITH the ability to query/paginate children independently
+
+Table: Profiles   _key=memberId                → profile doc
+Table: Positions  _key=memberId, _subKey1=posId → each position is a separate doc
+Table: Education  _key=memberId, _subKey1=eduId → each education is a separate doc
+
+// Get full profile:
+GET /MemberDB/Profiles/251        → the profile doc
+GET /MemberDB/Positions/251       → ALL positions (same partition = same node!)
+GET /MemberDB/Education/251       → ALL education entries
+
+// Get just one position:
+GET /MemberDB/Positions/251/pos2  → only the 2nd position
+
+// WHY this works: _key=memberId is the partition key.
+// All data for member 251 lives on the SAME MySQL instance.
+// You get document locality WITHOUT embedding everything in one blob.</pre>
+  </div>
+
+  <!-- DIAGRAM: One-to-Many Tree -->
   <div class="diagram">
-    <svg viewBox="0 0 800 280" xmlns="http://www.w3.org/2000/svg" style="max-width:780px;">
+    <svg viewBox="0 0 800 240" xmlns="http://www.w3.org/2000/svg" style="max-width:750px;">
       <defs>
         <marker id="arr4" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
           <polygon points="0 0, 8 3, 0 6" fill="#546e7a"/>
         </marker>
       </defs>
 
-      <!-- Parent: User -->
-      <rect x="30" y="30" width="180" height="60" rx="10" fill="#e3f2fd" stroke="#1565c0" stroke-width="2"/>
-      <text x="120" y="55" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#0d47a1">Member</text>
-      <text x="120" y="75" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#546e7a">id=12345 "Satya"</text>
+      <text x="400" y="20" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#00695c">A LinkedIn Profile is a TREE (1-to-many at every level)</text>
 
-      <!-- Children -->
-      <rect x="300" y="10" width="170" height="40" rx="8" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1.5"/>
-      <text x="385" y="35" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#1b5e20">Position: "CEO"</text>
+      <!-- Root: User -->
+      <rect x="300" y="35" width="200" height="40" rx="10" fill="#e3f2fd" stroke="#1565c0" stroke-width="2"/>
+      <text x="400" y="60" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="12" fill="#0d47a1">user_id: 251 "Bill Gates"</text>
 
-      <rect x="300" y="60" width="170" height="40" rx="8" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1.5"/>
-      <text x="385" y="85" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#1b5e20">Position: "EVP"</text>
+      <!-- Level 2 -->
+      <rect x="30" y="110" width="140" height="35" rx="8" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1.5"/>
+      <text x="100" y="132" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#1b5e20">Positions [ ]</text>
 
-      <rect x="300" y="110" width="170" height="40" rx="8" fill="#fff3e0" stroke="#e65100" stroke-width="1.5"/>
-      <text x="385" y="135" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#bf360c">Education: "UW-M MS"</text>
+      <rect x="210" y="110" width="140" height="35" rx="8" fill="#fff3e0" stroke="#e65100" stroke-width="1.5"/>
+      <text x="280" y="132" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#bf360c">Education [ ]</text>
 
-      <rect x="300" y="160" width="170" height="40" rx="8" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="1.5"/>
-      <text x="385" y="185" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#4a148c">Skill: "Cloud"</text>
+      <rect x="390" y="110" width="140" height="35" rx="8" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="1.5"/>
+      <text x="460" y="132" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#4a148c">Contact Info</text>
 
-      <rect x="300" y="210" width="170" height="40" rx="8" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="1.5"/>
-      <text x="385" y="235" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#4a148c">Skill: "AI"</text>
+      <rect x="570" y="110" width="80" height="35" rx="8" fill="#fce4ec" stroke="#c62828" stroke-width="1.5"/>
+      <text x="610" y="132" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#c62828">region_id</text>
 
-      <!-- Arrows 1-to-many -->
-      <line x1="210" y1="50" x2="300" y2="30" stroke="#546e7a" stroke-width="1.2" marker-end="url(#arr4)"/>
-      <line x1="210" y1="55" x2="300" y2="80" stroke="#546e7a" stroke-width="1.2" marker-end="url(#arr4)"/>
-      <line x1="210" y1="60" x2="300" y2="130" stroke="#546e7a" stroke-width="1.2" marker-end="url(#arr4)"/>
-      <line x1="210" y1="65" x2="300" y2="180" stroke="#546e7a" stroke-width="1.2" marker-end="url(#arr4)"/>
-      <line x1="210" y1="70" x2="300" y2="230" stroke="#546e7a" stroke-width="1.2" marker-end="url(#arr4)"/>
+      <rect x="670" y="110" width="100" height="35" rx="8" fill="#fce4ec" stroke="#c62828" stroke-width="1.5"/>
+      <text x="720" y="132" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#c62828">industry_id</text>
 
-      <text x="240" y="25" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#c62828">1 : N</text>
+      <!-- Arrows -->
+      <line x1="350" y1="75" x2="100" y2="110" stroke="#546e7a" stroke-width="1.2" marker-end="url(#arr4)"/>
+      <line x1="380" y1="75" x2="280" y2="110" stroke="#546e7a" stroke-width="1.2" marker-end="url(#arr4)"/>
+      <line x1="420" y1="75" x2="460" y2="110" stroke="#546e7a" stroke-width="1.2" marker-end="url(#arr4)"/>
+      <line x1="450" y1="75" x2="610" y2="110" stroke="#c62828" stroke-width="1" stroke-dasharray="4" marker-end="url(#arr4)"/>
+      <line x1="470" y1="75" x2="720" y2="110" stroke="#c62828" stroke-width="1" stroke-dasharray="4" marker-end="url(#arr4)"/>
 
-      <!-- Right side: How to model -->
-      <rect x="530" y="10" width="250" height="110" rx="10" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1.5"/>
-      <text x="655" y="35" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="12" fill="#1b5e20">Document Model (Espresso)</text>
-      <text x="545" y="55" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Embed as nested array:</text>
-      <text x="545" y="72" font-family="JetBrains Mono,monospace" font-size="9" fill="#37352f">"positions": [{...}, {...}]</text>
-      <text x="545" y="92" font-family="Inter,sans-serif" font-size="10" fill="#2e7d32">One fetch, great locality</text>
-      <text x="545" y="107" font-family="Inter,sans-serif" font-size="10" fill="#c62828">Hard to query children alone</text>
+      <!-- Level 3 leaves -->
+      <rect x="10" y="170" width="110" height="28" rx="5" fill="#c8e6c9"/>
+      <text x="65" y="189" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#1b5e20">Co-chair BMGF</text>
+      <rect x="130" y="170" width="110" height="28" rx="5" fill="#c8e6c9"/>
+      <text x="185" y="189" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#1b5e20">Co-founder MSFT</text>
 
-      <rect x="530" y="130" width="250" height="110" rx="10" fill="#e3f2fd" stroke="#1565c0" stroke-width="1.5"/>
-      <text x="655" y="155" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="12" fill="#0d47a1">Relational Model (MySQL)</text>
-      <text x="545" y="175" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Separate table + FK:</text>
-      <text x="545" y="192" font-family="JetBrains Mono,monospace" font-size="9" fill="#37352f">positions(user_id FK, ...)</text>
-      <text x="545" y="212" font-family="Inter,sans-serif" font-size="10" fill="#2e7d32">Can query positions alone</text>
-      <text x="545" y="227" font-family="Inter,sans-serif" font-size="10" fill="#c62828">Requires JOIN to assemble</text>
+      <rect x="210" y="170" width="110" height="28" rx="5" fill="#ffcc80"/>
+      <text x="265" y="189" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#bf360c">Harvard 73-75</text>
+      <rect x="330" y="170" width="110" height="28" rx="5" fill="#ffcc80"/>
+      <text x="385" y="189" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#bf360c">Lakeside School</text>
+
+      <line x1="65" y1="145" x2="65" y2="170" stroke="#546e7a" stroke-width="1" marker-end="url(#arr4)"/>
+      <line x1="135" y1="145" x2="185" y2="170" stroke="#546e7a" stroke-width="1" marker-end="url(#arr4)"/>
+      <line x1="250" y1="145" x2="265" y2="170" stroke="#546e7a" stroke-width="1" marker-end="url(#arr4)"/>
+      <line x1="310" y1="145" x2="385" y2="170" stroke="#546e7a" stroke-width="1" marker-end="url(#arr4)"/>
+
+      <!-- Labels -->
+      <text x="610" y="165" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#c62828">many-to-one</text>
+      <text x="610" y="178" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#c62828">(reference to shared entity)</text>
+      <text x="100" y="215" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#2e7d32">1-to-many (embedded / sub-keys)</text>
     </svg>
-    <div class="caption">One-to-many: a LinkedIn member has many positions, many skills. Document model embeds them; relational model normalizes to separate tables.</div>
+    <div class="caption">A LinkedIn profile is a tree: 1-to-many branches (positions, education) are embedded or use sub-keys. Many-to-one references (region, industry) store IDs pointing to shared entities.</div>
   </div>
 
   <h3 id="sec-4-many-one">Many-to-One (Members &rarr; Region, Industry)</h3>
