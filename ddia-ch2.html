@@ -241,7 +241,8 @@
     <li><a href="#sec-5">Schema-on-Read vs Schema-on-Write</a></li>
     <li><a href="#sec-6">Query Languages: Declarative vs Imperative</a></li>
     <li><a href="#sec-7">When to Use What &mdash; Complete Decision Guide</a></li>
-    <li><a href="#sec-8">Interview Questions &amp; Talking Points</a></li>
+    <li><a href="#sec-8">Real-World Data Models &mdash; Facebook, Netflix, YouTube</a></li>
+    <li><a href="#sec-9">Interview Questions &amp; Talking Points</a></li>
   </ol>
 </div>
 
@@ -2453,6 +2454,221 @@ RULE: Write to Espresso → Kafka propagates → downstream stores update.
 <!-- ======================= SECTION 8 ======================= -->
 <div class="section" id="sec-8">
   <div class="section-num">Section 8</div>
+  <h2>Real-World Data Models &mdash; Facebook, Netflix, YouTube <span class="interview-tag meta">Meta</span><span class="interview-tag netflix">Netflix</span><span class="interview-tag google">Google</span></h2>
+
+  <p>Every interview asks "how would you store X?" Here's exactly what data model and store the big companies use for each feature, with the trade-offs that drove those decisions.</p>
+
+  <!-- DIAGRAM: Facebook Feature → Data Model Map -->
+  <div class="diagram">
+    <svg viewBox="0 0 820 850" xmlns="http://www.w3.org/2000/svg" style="max-width:800px;">
+      <defs>
+        <filter id="shR" x="-3%" y="-3%" width="106%" height="110%">
+          <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.06"/>
+        </filter>
+      </defs>
+
+      <text x="410" y="25" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="16" fill="#4285f4">Facebook / Meta &mdash; Feature → Data Model → Store</text>
+
+      <!-- ROW 1: User Profiles -->
+      <rect x="10" y="40" width="800" height="95" rx="10" fill="#e3f2fd" stroke="#1565c0" stroke-width="1.5" filter="url(#shR)"/>
+      <text x="25" y="62" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#0d47a1">User Profiles</text>
+      <text x="25" y="80" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Model: <tspan font-weight="600">Document</tspan> — profile is a self-contained tree (name, bio, photos[], work[], education[])</text>
+      <text x="25" y="95" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Store: <tspan font-weight="600">TAO (MySQL shards + graph cache)</tspan> for entity; profile blob likely in a key-value store</text>
+      <text x="25" y="110" font-family="Inter,sans-serif" font-size="10" fill="#787774">Trade-off: 1-to-many (work history) embeds naturally. But profile → friends = many-to-many → needs graph layer (TAO edges).</text>
+      <text x="25" y="125" font-family="Inter,sans-serif" font-size="9" fill="#0d47a1">LinkedIn equiv: Espresso (document, Avro, sub-keys for 1-to-many)</text>
+
+      <!-- ROW 2: Friends List / Social Graph -->
+      <rect x="10" y="145" width="800" height="95" rx="10" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="1.5" filter="url(#shR)"/>
+      <text x="25" y="167" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#4a148c">Friends List / Social Graph</text>
+      <text x="25" y="185" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Model: <tspan font-weight="600">Graph</tspan> — vertices (users) + edges (friendships). Many-to-many is THE data.</text>
+      <text x="25" y="200" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Store: <tspan font-weight="600">TAO</tspan> — graph cache over MySQL shards. Objects (vertices) + Associations (edges) + Assoc counts.</text>
+      <text x="25" y="215" font-family="Inter,sans-serif" font-size="10" fill="#787774">Trade-off: TAO is simpler than Neo4j — no multi-hop queries. For friend-of-friend, Meta pre-computes and caches.</text>
+      <text x="25" y="230" font-family="Inter,sans-serif" font-size="9" fill="#4a148c">LinkedIn equiv: Liquid (in-memory graph, Prologin, supports real-time multi-hop traversals unlike TAO)</text>
+
+      <!-- ROW 3: Likes -->
+      <rect x="10" y="250" width="800" height="110" rx="10" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1.5" filter="url(#shR)"/>
+      <text x="25" y="272" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#1b5e20">Likes / Reactions</text>
+      <text x="25" y="290" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Model: <tspan font-weight="600">Graph edge</tspan> — (user)--[LIKES]-->(post). Many-to-many: many users like many posts.</text>
+      <text x="25" y="305" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Store: <tspan font-weight="600">TAO association</tspan> + <tspan font-weight="600">counter cache</tspan>. The "3.2K likes" count is pre-aggregated (not computed on read).</text>
+      <text x="25" y="320" font-family="Inter,sans-serif" font-size="10" fill="#787774">Trade-off: Storing each like as a row = write-heavy (millions/sec). Counter cache = eventual consistency (you might see 3.2K</text>
+      <text x="25" y="335" font-family="Inter,sans-serif" font-size="10" fill="#787774">for a few seconds before it updates to 3.3K). Worth it: reads &gt;&gt; writes for counts.</text>
+      <text x="25" y="350" font-family="Inter,sans-serif" font-size="9" fill="#1b5e20">LinkedIn equiv: Espresso (junction table) + Pinot (real-time like counts aggregation)</text>
+
+      <!-- ROW 4: Comments -->
+      <rect x="10" y="370" width="800" height="110" rx="10" fill="#fff3e0" stroke="#e65100" stroke-width="1.5" filter="url(#shR)"/>
+      <text x="25" y="392" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#e65100">Comments (Threaded)</text>
+      <text x="25" y="410" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Model: <tspan font-weight="600">Document (tree)</tspan> — 1-to-many: post → comments. But replies create nesting → tree within tree.</text>
+      <text x="25" y="425" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Store: <tspan font-weight="600">TAO</tspan> for the comment entity + association (post → comments). Threaded: adjacency list or closure table.</text>
+      <text x="25" y="440" font-family="Inter,sans-serif" font-size="10" fill="#787774">Trade-off: Adjacency list (parentId) = easy writes, hard deep reads. Closure table = fast reads, expensive writes.</text>
+      <text x="25" y="455" font-family="Inter,sans-serif" font-size="10" fill="#787774">Recommendation mention creates many-to-many: comment → mentioned user. Mentions need graph edges.</text>
+      <text x="25" y="470" font-family="Inter,sans-serif" font-size="9" fill="#e65100">LinkedIn equiv: Espresso (sub-keys: _key=postId, _subKey1=commentId) + Galene (search comments)</text>
+
+      <!-- ROW 5: Messages -->
+      <rect x="10" y="490" width="800" height="110" rx="10" fill="#e3f2fd" stroke="#1565c0" stroke-width="1.5" filter="url(#shR)"/>
+      <text x="25" y="512" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#0d47a1">Messages / Chat (Messenger, WhatsApp)</text>
+      <text x="25" y="530" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Model: <tspan font-weight="600">Document (time-series)</tspan> — 1-to-many: conversation → messages, ordered by timestamp.</text>
+      <text x="25" y="545" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Store: <tspan font-weight="600">HBase / MyRocks</tspan> for message storage (append-heavy, time-ordered). <tspan font-weight="600">Memcache</tspan> for recent.</text>
+      <text x="25" y="560" font-family="Inter,sans-serif" font-size="10" fill="#787774">Trade-off: LSM-tree (HBase/MyRocks) is write-optimized (fast appends). But range scans for "load older messages"</text>
+      <text x="25" y="575" font-family="Inter,sans-serif" font-size="10" fill="#787774">need sorted storage. B-tree (MySQL) would be slower for writes but faster for random reads.</text>
+      <text x="25" y="590" font-family="Inter,sans-serif" font-size="9" fill="#0d47a1">LinkedIn equiv: Espresso (_key=memberId, _subKey1=convId). WhatsApp: custom Erlang + Mnesia.</text>
+
+      <!-- ROW 6: News Feed -->
+      <rect x="10" y="610" width="800" height="110" rx="10" fill="#fce4ec" stroke="#c62828" stroke-width="1.5" filter="url(#shR)"/>
+      <text x="25" y="632" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#c62828">News Feed / Timeline</text>
+      <text x="25" y="650" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Model: <tspan font-weight="600">Materialized view (pre-computed)</tspan> — fan-out on write: when user posts, push to followers' feed caches.</text>
+      <text x="25" y="665" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Store: <tspan font-weight="600">TAO</tspan> (feed edges) + <tspan font-weight="600">Memcache</tspan> (rendered feed) + <tspan font-weight="600">ML ranking service</tspan> (scores per item).</text>
+      <text x="25" y="680" font-family="Inter,sans-serif" font-size="10" fill="#787774">Trade-off: Fan-out on write = fast reads (timeline pre-built) but celebrity problem (100M followers = 100M writes).</text>
+      <text x="25" y="695" font-family="Inter,sans-serif" font-size="10" fill="#787774">Meta uses hybrid like Twitter: fan-out for normal users, pull-on-read for celebrities. Ranking applied at read time.</text>
+      <text x="25" y="710" font-family="Inter,sans-serif" font-size="9" fill="#c62828">LinkedIn equiv: Espresso (feed store) + Venice (pre-computed feed ranking scores) + Kafka (fan-out events)</text>
+
+      <!-- ROW 7: Subscribers/Followers -->
+      <rect x="10" y="730" width="390" height="110" rx="10" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="1.5" filter="url(#shR)"/>
+      <text x="25" y="752" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#4a148c">Followers / Subscribers</text>
+      <text x="25" y="770" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Model: <tspan font-weight="600">Graph edge (directed)</tspan></text>
+      <text x="25" y="785" font-family="Inter,sans-serif" font-size="10" fill="#37352f">(A)--[FOLLOWS]-->(B)</text>
+      <text x="25" y="800" font-family="Inter,sans-serif" font-size="10" fill="#787774">Asymmetric: A follows B</text>
+      <text x="25" y="815" font-family="Inter,sans-serif" font-size="10" fill="#787774">≠ B follows A</text>
+      <text x="25" y="830" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Store: TAO assoc + count</text>
+
+      <!-- ROW 8: Video Metadata -->
+      <rect x="420" y="730" width="390" height="110" rx="10" fill="#fff3e0" stroke="#e65100" stroke-width="1.5" filter="url(#shR)"/>
+      <text x="435" y="752" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#e65100">Video Metadata (YouTube/Reels)</text>
+      <text x="435" y="770" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Model: <tspan font-weight="600">Document</tspan> (self-contained)</text>
+      <text x="435" y="785" font-family="Inter,sans-serif" font-size="10" fill="#37352f">{title, desc, tags[], thumbnails[],</text>
+      <text x="435" y="800" font-family="Inter,sans-serif" font-size="10" fill="#37352f"> duration, uploaderId, viewCount}</text>
+      <text x="435" y="815" font-family="Inter,sans-serif" font-size="10" fill="#787774">Store: Vitess (MySQL shards)</text>
+      <text x="435" y="830" font-family="Inter,sans-serif" font-size="10" fill="#787774">+ Bigtable (view counts)</text>
+    </svg>
+    <div class="caption">Every Facebook/Meta feature mapped to its data model and storage system. The pattern: entities in documents/KV, relationships in graph (TAO), counts in counters, feeds in materialized views, search in inverted indexes.</div>
+  </div>
+
+  <h3>Netflix &amp; YouTube Examples</h3>
+
+  <table>
+    <tr><th>Feature</th><th>Data Model</th><th>Store (Actual)</th><th>Key Trade-Off</th></tr>
+    <tr>
+      <td><strong>Netflix: User profile + preferences</strong></td>
+      <td>Document (JSON-like)</td>
+      <td>Cassandra (wide-column)</td>
+      <td>High availability over consistency. Profile reads must never fail → AP system, eventual consistency OK</td>
+    </tr>
+    <tr>
+      <td><strong>Netflix: Viewing history</strong></td>
+      <td>Time-series (append-only)</td>
+      <td>Cassandra (partitioned by userId, clustered by timestamp)</td>
+      <td>Write-heavy (every play event). LSM-tree = fast writes. Range scan for "recent watches"</td>
+    </tr>
+    <tr>
+      <td><strong>Netflix: Recommendations</strong></td>
+      <td>Materialized view (pre-computed)</td>
+      <td>EVCache (Memcached) + Cassandra</td>
+      <td>ML model scores pre-computed offline (Spark) → cached for instant reads. Stale by hours = acceptable</td>
+    </tr>
+    <tr>
+      <td><strong>Netflix: Video catalog metadata</strong></td>
+      <td>Document (title, genres[], cast[], thumbnails[])</td>
+      <td>Cassandra + Elasticsearch</td>
+      <td>Catalog rarely changes → eventually consistent replicas OK. Search needs inverted index (ES)</td>
+    </tr>
+    <tr>
+      <td><strong>YouTube: Video metadata</strong></td>
+      <td>Document</td>
+      <td>Vitess (sharded MySQL) + Bigtable</td>
+      <td>Strict consistency for upload pipeline. View counts in Bigtable (counter cells, eventually consistent)</td>
+    </tr>
+    <tr>
+      <td><strong>YouTube: Comments</strong></td>
+      <td>Document (1-to-many tree)</td>
+      <td>Spanner (globally consistent)</td>
+      <td>Interleaved tables: video → comments co-located. Global consistency for moderation</td>
+    </tr>
+    <tr>
+      <td><strong>YouTube: Search</strong></td>
+      <td>Inverted index</td>
+      <td>Custom search (descended from Google Search)</td>
+      <td>BM25 + ML ranking + video understanding (auto-captions indexed). Galene equivalent</td>
+    </tr>
+    <tr>
+      <td><strong>YouTube: Subscriptions</strong></td>
+      <td>Graph edge (directed)</td>
+      <td>Spanner / Bigtable</td>
+      <td>Asymmetric: subscribe is directed. Fan-out for "Subscriptions" feed = Twitter problem at YouTube scale</td>
+    </tr>
+  </table>
+
+  <h3>Summary: Data Model Decision Matrix</h3>
+
+  <table>
+    <tr><th>If your data looks like...</th><th>Data Model</th><th>Meta Uses</th><th>LinkedIn Uses</th><th>Google Uses</th></tr>
+    <tr>
+      <td>Self-contained entity (profile, product, video)</td>
+      <td><strong>Document</strong></td>
+      <td>TAO objects</td>
+      <td>Espresso</td>
+      <td>Spanner / Bigtable</td>
+    </tr>
+    <tr>
+      <td>1-to-many tree (posts→comments, user→orders)</td>
+      <td><strong>Document + sub-keys</strong></td>
+      <td>TAO objects</td>
+      <td>Espresso sub-keys</td>
+      <td>Spanner interleaved</td>
+    </tr>
+    <tr>
+      <td>Many-to-many (friends, likes, followers)</td>
+      <td><strong>Graph / Junction table</strong></td>
+      <td>TAO associations</td>
+      <td>Liquid / Espresso GSI</td>
+      <td>Bigtable / Spanner</td>
+    </tr>
+    <tr>
+      <td>Full-text search (find people, jobs, products)</td>
+      <td><strong>Inverted index</strong></td>
+      <td>Unicorn (custom)</td>
+      <td>Galene / SEAS</td>
+      <td>Google Search / Caffeine</td>
+    </tr>
+    <tr>
+      <td>Aggregation (counts, dashboards, analytics)</td>
+      <td><strong>Columnar / OLAP</strong></td>
+      <td>Scuba / Presto</td>
+      <td>Pinot</td>
+      <td>BigQuery / Mesa</td>
+    </tr>
+    <tr>
+      <td>Pre-computed results (recommendations, ML scores)</td>
+      <td><strong>Materialized view (K-V)</strong></td>
+      <td>TAO + Memcache</td>
+      <td>Venice</td>
+      <td>Bigtable / Spanner</td>
+    </tr>
+    <tr>
+      <td>Time-series events (view history, click stream)</td>
+      <td><strong>Append-only log / wide-column</strong></td>
+      <td>Scribe → Hive</td>
+      <td>Kafka → Pinot</td>
+      <td>Bigtable / Colossus</td>
+    </tr>
+    <tr>
+      <td>Cache (hot reads, session data)</td>
+      <td><strong>In-memory K-V</strong></td>
+      <td>Memcache / TAO cache</td>
+      <td>Couchbase / OHC</td>
+      <td>Memcache</td>
+    </tr>
+  </table>
+
+  <div class="card interview">
+    <strong>The Pattern Across All Companies:</strong> Nobody uses one database. Every company at scale uses 5-8 specialized stores connected by an event bus (Kafka at LinkedIn, Wormhole at Meta, Pub/Sub at Google). The source of truth is a transactional store (Espresso, MySQL, Spanner). Everything else is a <strong>derived view</strong> optimized for one access pattern. This is <strong>polyglot persistence</strong> — the central theme of this entire chapter.
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+
+<!-- ======================= SECTION 9 ======================= -->
+<div class="section" id="sec-9">
+  <div class="section-num">Section 9</div>
   <h2>Interview Questions &amp; Talking Points</h2>
 
   <div class="card interview">
