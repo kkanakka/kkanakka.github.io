@@ -741,6 +741,155 @@ Where schemas live: ZooKeeper, versioned per table
 Each stored row has _schemaVersion → deserializer picks the right schema</pre>
   </div>
 
+  <h4>Avro vs JSON &mdash; Why Espresso Doesn't Store Raw JSON</h4>
+
+  <p>This is a critical distinction. When the book says "JSON document," most people picture raw text like <code>{"name":"Bill"}</code>. But Espresso stores <strong>Avro binary</strong>, not JSON text. Here's why:</p>
+
+  <!-- DIAGRAM: Avro vs JSON -->
+  <div class="diagram">
+    <svg viewBox="0 0 820 520" xmlns="http://www.w3.org/2000/svg" style="max-width:800px;">
+      <defs>
+        <filter id="shAJ" x="-3%" y="-3%" width="106%" height="110%">
+          <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.06"/>
+        </filter>
+      </defs>
+
+      <!-- JSON side -->
+      <rect x="20" y="10" width="380" height="500" rx="12" fill="#fff3e0" stroke="#e65100" stroke-width="2"/>
+      <text x="210" y="40" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="16" fill="#e65100">JSON (Text Format)</text>
+      <text x="210" y="58" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#787774">Human-readable, self-describing</text>
+
+      <!-- JSON example -->
+      <rect x="40" y="70" width="340" height="130" rx="8" fill="#fff" stroke="#ffcc80" stroke-width="1"/>
+      <text x="55" y="90" font-family="JetBrains Mono,monospace" font-size="10" fill="#37352f">{</text>
+      <text x="65" y="106" font-family="JetBrains Mono,monospace" font-size="10" fill="#37352f">"firstName": "Bill",</text>
+      <text x="65" y="122" font-family="JetBrains Mono,monospace" font-size="10" fill="#37352f">"lastName": "Gates",</text>
+      <text x="65" y="138" font-family="JetBrains Mono,monospace" font-size="10" fill="#37352f">"regionId": 91,</text>
+      <text x="65" y="154" font-family="JetBrains Mono,monospace" font-size="10" fill="#37352f">"industryId": 131</text>
+      <text x="55" y="170" font-family="JetBrains Mono,monospace" font-size="10" fill="#37352f">}</text>
+      <text x="300" y="185" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#e65100">= 95 bytes</text>
+
+      <!-- What's actually stored -->
+      <rect x="40" y="200" width="340" height="60" rx="8" fill="#fff8e1" stroke="#ffcc80" stroke-width="1"/>
+      <text x="210" y="220" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#e65100">What's in those 95 bytes?</text>
+      <text x="55" y="240" font-family="JetBrains Mono,monospace" font-size="9" fill="#787774">"firstName" ← field name repeated in EVERY document!</text>
+      <text x="55" y="253" font-family="JetBrains Mono,monospace" font-size="9" fill="#787774">"lastName"  ← redundant! schema is baked INTO the data</text>
+
+      <!-- JSON pros/cons -->
+      <text x="40" y="285" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#2e7d32">Pros:</text>
+      <text x="40" y="303" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Human readable (just open the file)</text>
+      <text x="40" y="319" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Self-describing (field names in data)</text>
+      <text x="40" y="335" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Easy to debug &amp; inspect</text>
+      <text x="40" y="351" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Universal (every language parses it)</text>
+
+      <text x="40" y="380" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#c62828">Cons:</text>
+      <text x="40" y="398" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; <tspan font-weight="600">Bloated</tspan>: field names repeat in every doc</text>
+      <text x="40" y="414" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; <tspan font-weight="600">No schema</tspan>: can write garbage, no validation</text>
+      <text x="40" y="430" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; <tspan font-weight="600">No types</tspan>: is "91" a number or string?</text>
+      <text x="40" y="446" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; <tspan font-weight="600">Slow parse</tspan>: text parsing every read</text>
+      <text x="40" y="462" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; <tspan font-weight="600">No evolution rules</tspan>: add a field?</text>
+      <text x="55" y="478" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Old consumers break silently</text>
+
+      <rect x="40" y="488" width="340" height="18" rx="4" fill="#ffcc80"/>
+      <text x="210" y="501" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#e65100">Used by: MongoDB (BSON), REST APIs, config files</text>
+
+      <!-- Avro side -->
+      <rect x="420" y="10" width="390" height="500" rx="12" fill="#e3f2fd" stroke="#1565c0" stroke-width="2"/>
+      <text x="615" y="40" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="16" fill="#0d47a1">Avro (Binary Format)</text>
+      <text x="615" y="58" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#787774">Compact, schema-driven, evolvable</text>
+
+      <!-- Avro example -->
+      <rect x="440" y="70" width="350" height="130" rx="8" fill="#fff" stroke="#90caf9" stroke-width="1"/>
+      <text x="455" y="90" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#0d47a1">Schema (stored ONCE in ZooKeeper):</text>
+      <text x="455" y="106" font-family="JetBrains Mono,monospace" font-size="9" fill="#787774">{"fields": [</text>
+      <text x="465" y="120" font-family="JetBrains Mono,monospace" font-size="9" fill="#787774">{"name":"firstName","type":"string"},</text>
+      <text x="465" y="134" font-family="JetBrains Mono,monospace" font-size="9" fill="#787774">{"name":"lastName","type":"string"}, ...</text>
+      <text x="455" y="148" font-family="JetBrains Mono,monospace" font-size="9" fill="#787774">]}</text>
+      <text x="455" y="168" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#0d47a1">Stored data (just VALUES, no field names):</text>
+      <text x="455" y="184" font-family="JetBrains Mono,monospace" font-size="10" fill="#37352f">08 42 69 6C 6C 0A 47 61 74 65 73 B6 01 86 02</text>
+      <text x="680" y="195" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#0d47a1">= 15 bytes!</text>
+
+      <!-- What's in the bytes -->
+      <rect x="440" y="200" width="350" height="60" rx="8" fill="#e8eaf6" stroke="#90caf9" stroke-width="1"/>
+      <text x="615" y="220" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#0d47a1">What's in those 15 bytes?</text>
+      <text x="455" y="240" font-family="JetBrains Mono,monospace" font-size="9" fill="#37352f">08="Bill"(len4) 0A="Gates"(len5) B6 01=91 86 02=131</text>
+      <text x="455" y="253" font-family="JetBrains Mono,monospace" font-size="9" fill="#37352f">No field names! Schema tells you field order &amp; types</text>
+
+      <!-- Avro pros/cons -->
+      <text x="440" y="285" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#2e7d32">Pros:</text>
+      <text x="440" y="303" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; <tspan font-weight="600">6x smaller</tspan>: no field names in data</text>
+      <text x="440" y="319" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; <tspan font-weight="600">Schema enforced</tspan>: write garbage → rejected</text>
+      <text x="440" y="335" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; <tspan font-weight="600">Type safe</tspan>: int is int, string is string</text>
+      <text x="440" y="351" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; <tspan font-weight="600">Fast decode</tspan>: binary, no text parsing</text>
+      <text x="440" y="367" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; <tspan font-weight="600">Schema evolution</tspan>: add/remove fields</text>
+      <text x="450" y="383" font-family="Inter,sans-serif" font-size="10" fill="#37352f">with compatibility rules (fwd/backward)</text>
+      <text x="440" y="399" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; <tspan font-weight="600">Code generation</tspan>: type-safe Java/Python</text>
+
+      <text x="440" y="425" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#c62828">Cons:</text>
+      <text x="440" y="443" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Not human readable (binary blob)</text>
+      <text x="440" y="459" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Need schema to decode (can't just open)</text>
+      <text x="440" y="475" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Schema registry required (ZooKeeper)</text>
+
+      <rect x="440" y="488" width="350" height="18" rx="4" fill="#bbdefb"/>
+      <text x="615" y="501" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#0d47a1">Used by: Espresso, Kafka, Hadoop, Spark, Flink</text>
+    </svg>
+    <div class="caption">JSON stores field names in every document (bloated, no validation). Avro stores only values; the schema lives separately. Same data: 95 bytes (JSON) vs 15 bytes (Avro) — 6x compression.</div>
+  </div>
+
+  <div class="card linkedin">
+    <h4>How Avro Schema Evolution Works in Practice</h4>
+    <pre>// Scenario: You wrote 1 billion profiles with schema v1.
+// Now you want to add a "headline" field.
+
+// Schema v1 (1 billion docs already stored with _schemaVersion=1):
+{"fields": [
+  {"name": "firstName", "type": "string"},
+  {"name": "lastName",  "type": "string"},
+  {"name": "regionId",  "type": "int"}
+]}
+
+// Schema v2 (new docs get _schemaVersion=2):
+{"fields": [
+  {"name": "firstName", "type": "string"},
+  {"name": "lastName",  "type": "string"},
+  {"name": "regionId",  "type": "int"},
+  {"name": "headline",  "type": ["null","string"], "default": null}  ← NEW
+]}
+
+// READING OLD DOCS (v1) WITH NEW CODE (expects v2):
+// Avro reader sees: _schemaVersion=1, looks up schema v1
+// "headline" field missing in v1 → Avro fills in DEFAULT (null)
+// App gets: {firstName:"Bill", lastName:"Gates", regionId:91, headline:null}
+// ✓ Old data reads perfectly with new code!
+
+// READING NEW DOCS (v2) WITH OLD CODE (expects v1):
+// Avro reader sees: _schemaVersion=2, looks up schema v2
+// Old code doesn't know about "headline" → Avro SKIPS it
+// App gets: {firstName:"Bill", lastName:"Gates", regionId:91}
+// ✓ New data reads perfectly with old code!
+
+// THIS IS BACKWARD + FORWARD COMPATIBILITY.
+// No downtime. No migration of 1 billion rows.
+// Compare with MySQL: ALTER TABLE users ADD COLUMN headline TEXT;
+// → MySQL copies the ENTIRE table (minutes to hours of downtime)</pre>
+  </div>
+
+  <table>
+    <tr><th>Feature</th><th>JSON</th><th>Avro</th><th>Protocol Buffers</th></tr>
+    <tr><td><strong>Format</strong></td><td>Text</td><td>Binary</td><td>Binary</td></tr>
+    <tr><td><strong>Field names in data</strong></td><td>Yes (bloated)</td><td>No (schema has them)</td><td>Tag numbers only</td></tr>
+    <tr><td><strong>Schema required</strong></td><td>No</td><td>Yes (Avro .avsc)</td><td>Yes (.proto)</td></tr>
+    <tr><td><strong>Schema evolution</strong></td><td>None (breaks silently)</td><td>Add/remove with defaults</td><td>Add/remove with tags</td></tr>
+    <tr><td><strong>Type safety</strong></td><td>Weak (is "91" a string?)</td><td>Strong (int, string, array)</td><td>Strong</td></tr>
+    <tr><td><strong>Size (example)</strong></td><td>95 bytes</td><td>15 bytes</td><td>~18 bytes</td></tr>
+    <tr><td><strong>Human readable</strong></td><td>Yes</td><td>No</td><td>No</td></tr>
+    <tr><td><strong>Used at LinkedIn</strong></td><td>REST APIs, configs</td><td>Espresso, Kafka, Spark</td><td>gRPC services</td></tr>
+  </table>
+
+  <div class="card interview">
+    <strong>Interview Insight:</strong> When an interviewer asks "how would you store this data?" and you say "JSON documents" — follow up with: "For storage, I'd use a binary format like Avro or Protobuf. JSON for APIs, Avro for persistence. This gives us type safety, schema evolution without downtime, and 5-6x smaller storage." This shows you understand the difference between a <em>data model</em> (document/JSON-like) and a <em>serialization format</em> (how it's actually encoded on disk).
+  </div>
+
   <h4>Secondary Indexes &mdash; How You Query by Non-Key Fields</h4>
 
   <p>If a profile doc has <code>regionId: 91</code>, how do you find all members in Bay Area? You can't scan every partition. Espresso provides <strong>three types of secondary indexes</strong>:</p>
