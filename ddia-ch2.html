@@ -1406,28 +1406,234 @@ LIMIT 10</pre>
     <p><strong>When to use:</strong> Full-text search, typeahead, faceted filtering. Galene is LinkedIn's custom search engine (Lucene-based). Not a source of truth &mdash; rebuilt from Espresso via Kafka.</p>
   </div>
 
-  <h3 id="sec-3-liquid">Liquid &mdash; Graph Database <span class="linkedin-tag">LinkedIn</span></h3>
+  <h3 id="sec-3-liquid">Liquid &mdash; Graph Database Deep Dive <span class="linkedin-tag">LinkedIn</span></h3>
+
+  <p>Liquid is LinkedIn's <strong>in-memory distributed graph database</strong>. It stores the <strong>Economic Graph</strong> &mdash; the graph of all professional entities (members, companies, jobs, skills, schools). Unlike Espresso (document store) or Neo4j (disk-based property graph), Liquid keeps the entire graph <strong>in RAM</strong> for sub-millisecond traversals.</p>
+
+  <h4>Liquid Architecture</h4>
+
+  <!-- DIAGRAM: Liquid Architecture -->
+  <div class="diagram">
+    <svg viewBox="0 0 820 460" xmlns="http://www.w3.org/2000/svg" style="max-width:800px;">
+      <defs>
+        <marker id="arrL" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#546e7a"/>
+        </marker>
+        <filter id="shL" x="-3%" y="-3%" width="106%" height="110%">
+          <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.06"/>
+        </filter>
+      </defs>
+
+      <!-- Data Sources -->
+      <rect x="20" y="10" width="200" height="55" rx="10" fill="#e3f2fd" stroke="#1565c0" stroke-width="1.5" filter="url(#shL)"/>
+      <text x="120" y="32" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#0d47a1">Espresso (Profiles)</text>
+      <text x="120" y="50" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#787774">Source of truth</text>
+
+      <rect x="240" y="10" width="160" height="55" rx="10" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1.5" filter="url(#shL)"/>
+      <text x="320" y="32" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#1b5e20">Connections DB</text>
+      <text x="320" y="50" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#787774">Espresso</text>
+
+      <rect x="420" y="10" width="160" height="55" rx="10" fill="#fff3e0" stroke="#e65100" stroke-width="1.5" filter="url(#shL)"/>
+      <text x="500" y="32" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#bf360c">Companies DB</text>
+      <text x="500" y="50" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#787774">Espresso</text>
+
+      <!-- Arrows to Kafka -->
+      <line x1="120" y1="65" x2="120" y2="90" stroke="#546e7a" stroke-width="1" marker-end="url(#arrL)"/>
+      <line x1="320" y1="65" x2="320" y2="90" stroke="#546e7a" stroke-width="1" marker-end="url(#arrL)"/>
+      <line x1="500" y1="65" x2="500" y2="90" stroke="#546e7a" stroke-width="1" marker-end="url(#arrL)"/>
+
+      <!-- Kafka/Brooklin -->
+      <rect x="50" y="90" width="550" height="40" rx="8" fill="#fce4ec" stroke="#c62828" stroke-width="1.5"/>
+      <text x="325" y="115" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="12" fill="#c62828">Kafka / Brooklin (Change Data Capture streams)</text>
+
+      <line x1="325" y1="130" x2="325" y2="155" stroke="#546e7a" stroke-width="1.5" marker-end="url(#arrL)"/>
+
+      <!-- Ingestion Server -->
+      <rect x="200" y="155" width="250" height="45" rx="10" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="2" filter="url(#shL)"/>
+      <text x="325" y="175" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#4a148c">Ingestion Server (Java gRPC)</text>
+      <text x="325" y="192" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#787774">Validate schema, produce to Schema Log + Data Log</text>
+
+      <line x1="325" y1="200" x2="325" y2="225" stroke="#546e7a" stroke-width="1.5" marker-end="url(#arrL)"/>
+
+      <!-- Log Consumer -->
+      <rect x="220" y="225" width="210" height="35" rx="8" fill="#ede7f6" stroke="#6a1b9a" stroke-width="1"/>
+      <text x="325" y="247" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#4a148c">Log Consumer → writes to Core Shards</text>
+
+      <line x1="240" y1="260" x2="140" y2="290" stroke="#546e7a" stroke-width="1.2" marker-end="url(#arrL)"/>
+      <line x1="325" y1="260" x2="325" y2="290" stroke="#546e7a" stroke-width="1.2" marker-end="url(#arrL)"/>
+      <line x1="410" y1="260" x2="510" y2="290" stroke="#546e7a" stroke-width="1.2" marker-end="url(#arrL)"/>
+
+      <!-- Shards (in-memory) -->
+      <rect x="60" y="290" width="160" height="70" rx="10" fill="#e1bee7" stroke="#6a1b9a" stroke-width="2" filter="url(#shL)"/>
+      <text x="140" y="312" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#4a148c">Shard 1 (C++)</text>
+      <text x="140" y="328" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#37352f">IN-MEMORY graph data</text>
+      <text x="140" y="344" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#787774">B-tree + Hash indices</text>
+
+      <rect x="245" y="290" width="160" height="70" rx="10" fill="#e1bee7" stroke="#6a1b9a" stroke-width="2" filter="url(#shL)"/>
+      <text x="325" y="312" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#4a148c">Shard 2 (C++)</text>
+      <text x="325" y="328" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#37352f">IN-MEMORY graph data</text>
+      <text x="325" y="344" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#787774">B-tree + Hash indices</text>
+
+      <rect x="430" y="290" width="160" height="70" rx="10" fill="#e1bee7" stroke="#6a1b9a" stroke-width="2" filter="url(#shL)"/>
+      <text x="510" y="312" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#4a148c">Shard N (C++)</text>
+      <text x="510" y="328" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#37352f">IN-MEMORY graph data</text>
+      <text x="510" y="344" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#787774">B-tree + Hash indices</text>
+
+      <!-- Broker -->
+      <rect x="640" y="170" width="160" height="190" rx="12" fill="#e8eaf6" stroke="#283593" stroke-width="2" filter="url(#shL)"/>
+      <text x="720" y="195" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#283593">Broker (C++)</text>
+      <text x="655" y="218" font-family="Inter,sans-serif" font-size="9" fill="#37352f">1. Parse Prologin</text>
+      <text x="655" y="234" font-family="Inter,sans-serif" font-size="9" fill="#37352f">2. Build AST</text>
+      <text x="655" y="250" font-family="Inter,sans-serif" font-size="9" fill="#37352f">3. Algebra tree</text>
+      <text x="655" y="266" font-family="Inter,sans-serif" font-size="9" fill="#37352f">4. Cost estimation</text>
+      <text x="655" y="282" font-family="Inter,sans-serif" font-size="9" fill="#37352f">5. Distribute to shards</text>
+      <text x="655" y="298" font-family="Inter,sans-serif" font-size="9" fill="#37352f">6. Aggregate results</text>
+      <text x="655" y="320" font-family="Inter,sans-serif" font-size="9" fill="#787774">MVCC: snapshot</text>
+      <text x="655" y="336" font-family="Inter,sans-serif" font-size="9" fill="#787774">consistency across shards</text>
+
+      <!-- Arrows Broker ↔ Shards -->
+      <line x1="640" y1="310" x2="590" y2="320" stroke="#283593" stroke-width="1.2" marker-end="url(#arrL)"/>
+      <line x1="640" y1="320" x2="405" y2="330" stroke="#283593" stroke-width="1.2" marker-end="url(#arrL)"/>
+      <line x1="640" y1="330" x2="220" y2="330" stroke="#283593" stroke-width="1.2" marker-end="url(#arrL)"/>
+      <text x="550" y="345" font-family="Inter,sans-serif" font-size="8" fill="#283593">gRPC WorkUnits</text>
+
+      <!-- Client -->
+      <rect x="650" y="390" width="140" height="50" rx="10" fill="#e3f2fd" stroke="#1565c0" stroke-width="2" filter="url(#shL)"/>
+      <text x="720" y="412" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#0d47a1">Client (gRPC)</text>
+      <text x="720" y="430" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#787774">20+ LinkedIn services</text>
+
+      <line x1="720" y1="390" x2="720" y2="360" stroke="#1565c0" stroke-width="1.5" marker-end="url(#arrL)"/>
+      <text x="730" y="378" font-family="Inter,sans-serif" font-size="8" fill="#1565c0">Prologin query</text>
+
+      <!-- NOT source of truth callout -->
+      <rect x="20" y="400" width="370" height="50" rx="8" fill="#fff3e0" stroke="#e65100" stroke-width="1.5"/>
+      <text x="205" y="420" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="11" fill="#e65100">Liquid is NOT a source of truth!</text>
+      <text x="205" y="438" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#37352f">In-memory only. "Kill-9 durability." Rebuilt from Kafka on restart.</text>
+    </svg>
+    <div class="caption">Liquid architecture: Espresso CDC → Kafka → Ingestion Server → Log Consumer → In-memory Shards (C++). Broker distributes Prologin queries across shards via gRPC. Everything lives in RAM.</div>
+  </div>
+
+  <h4>The Data Model: Triples, Not Property Graphs</h4>
+
+  <p>Liquid uses a <strong>triple-store model</strong> (like the book's RDF/SPARQL section), not a property graph (Neo4j). Everything is an <code>Edge(subject, predicate, object)</code>. Related edges are grouped into <strong>Compounds</strong>.</p>
 
   <div class="card linkedin">
-    <h4>Social Graph in Liquid</h4>
-    <pre>// Liquid stores the social graph: members, companies, schools as vertices
-// Connections, follows, endorsements as edges
+    <pre>// LIQUID DATA MODEL: Edge(subject, predicate, object) — three strings
 
-Vertex: Member(id=12345, name="Satya")
-Vertex: Member(id=67890, name="Bill")
-Vertex: Company(id=1035, name="Microsoft")
-Vertex: Skill(id=500, name="Cloud Computing")
+// Simple facts (like RDF triples):
+Edge("urn:li:member:12345", "name", "Satya Nadella").
+Edge("urn:li:member:12345", "works-at", "urn:li:company:1035").
+Edge("urn:li:company:1035", "name", "Microsoft").
 
-Edge: (12345) --[CONNECTED_TO]--> (67890)       // bidirectional
-Edge: (12345) --[WORKS_AT]--> (1035)             // many-to-one
-Edge: (67890) --[WORKS_AT]--> (1035)             // many-to-one
-Edge: (12345) --[ENDORSED_BY {skill:500}]--> (67890) // many-to-many
+// COMPOUND TYPE: groups related edges under a hub node
+// A Connection between two members:
+DefCompound("Connection",
+  "Connection/left_member", "Connection/right_member").
 
-// "People You May Know" traversal:
-// Find friends-of-friends not yet connected
-// member:12345 → CONNECTED_TO → ??? → CONNECTED_TO → candidates
-// Filter: not already connected, rank by shared connections</pre>
-    <p><strong>When to use:</strong> Relationship traversals (connection degree, mutual connections, PYMK), where many-to-many is the <em>entire</em> data model.</p>
+Connection@(
+  Connection/left_member = "urn:li:member:12345",    // Satya
+  Connection/right_member = "urn:li:member:67890"    // Bill
+).
+// This creates a hub node with edges to both members
+
+// Properties on the connection (additional edges on the hub):
+Edge(hub, "Connection/left_score", "95").
+Edge(hub, "Connection/creation_date", "2015-03-14").
+
+// VS NEO4J (property graph):
+// (Satya)-[:CONNECTED_TO {score: 95, since: "2015-03-14"}]->(Bill)
+// In Liquid, properties are MORE edges, not key-value pairs on the edge.</pre>
+  </div>
+
+  <h4>Prologin: Liquid's Declarative Query Language</h4>
+
+  <p>Liquid uses <strong>Prologin</strong> &mdash; a Datalog-based language (the same family the book discusses!). It's <strong>declarative</strong>: you write rules describing what you want, the engine figures out how.</p>
+
+  <div class="card linkedin">
+    <h4>Graph Traversals in Prologin</h4>
+    <pre>// 1ST DEGREE: All direct connections of member 12345
+Connected(src, dest) :-
+    Connection@(Connection/left_member=src, Connection/right_member=dest).
+Connected(src, dest) :-
+    Connection@(Connection/left_member=dest, Connection/right_member=src).
+
+// Query: Who is member:12345 connected to?
+Connected("urn:li:member:12345", who)?
+// → "urn:li:member:67890", "urn:li:member:11111", ...
+// Latency: sub-millisecond (in-memory index lookup)
+
+// 2ND DEGREE: Friends-of-friends
+SecondDegree(src, fof) :-
+    Connected(src, mid),       // my connection
+    Connected(mid, fof),       // their connection
+    src != fof.                // not myself
+
+SecondDegree("urn:li:member:12345", who)?
+// Latency: low single-digit milliseconds (two-hop join)
+
+// PEOPLE YOU MAY KNOW (PYMK):
+PYMK(me, candidate, sharedCount) :-
+    SecondDegree(me, candidate),
+    NOT Connected(me, candidate),       // not already connected
+    count(mid: Connected(me, mid), Connected(mid, candidate)) = sharedCount.
+// → rank by sharedCount descending
+
+// MUTUAL CONNECTIONS (shown on profile page):
+Mutual(viewer, target, mutual) :-
+    Connected(viewer, mutual),
+    Connected(mutual, target).
+
+Mutual("urn:li:member:99999", "urn:li:member:12345", who)?
+// → all people connected to both the viewer and Satya
+
+// CONNECTION DEGREE (1st, 2nd, 3rd):
+// This is what powers the "1st", "2nd", "3rd" badges on LinkedIn!
+Degree1(me, other) :- Connected(me, other).
+Degree2(me, other) :- Connected(me, mid), Connected(mid, other),
+                      NOT Connected(me, other), me != other.
+Degree3(me, other) :- Connected(me, a), Connected(a, b), Connected(b, other),
+                      NOT Connected(me, other), NOT Degree2(me, other),
+                      me != other.</pre>
+  </div>
+
+  <h4>When to Use a Graph DB (vs Document/Relational)</h4>
+
+  <div class="card interview">
+    <h4>The Book's Rule: "As data becomes more interconnected, move from Document → Relational → Graph"</h4>
+    <pre>USE DOCUMENT (Espresso/MongoDB) WHEN:
+  ✓ Data is mostly self-contained trees (profiles, products, events)
+  ✓ 1-to-many is the dominant pattern
+  ✓ You rarely need JOINs across documents
+  Example: A member profile with embedded positions and education
+
+USE RELATIONAL (MySQL/PostgreSQL) WHEN:
+  ✓ Many-to-many relationships exist but are manageable
+  ✓ JOINs are needed but the number of joins is known in advance
+  ✓ ACID transactions across related tables
+  Example: Orders → Products → Inventory (e-commerce)
+
+USE GRAPH (Liquid/Neo4j) WHEN:
+  ✓ EVERYTHING is related to EVERYTHING (social networks)
+  ✓ Traversal depth is variable (1st, 2nd, 3rd degree)
+  ✓ The query "who is connected to whom?" IS the core product
+  ✓ You need 10-100+ joins in real-time
+  Example: Connections, PYMK, endorsements, "people at company X who
+           know people at company Y who have skill Z"</pre>
+  </div>
+
+  <table>
+    <tr><th>Aspect</th><th>Liquid</th><th>Neo4j</th><th>Meta TAO</th></tr>
+    <tr><td><strong>Storage</strong></td><td>In-memory (distributed)</td><td>Disk-based (with cache)</td><td>Cache over MySQL</td></tr>
+    <tr><td><strong>Query Language</strong></td><td>Prologin (Datalog)</td><td>Cypher</td><td>Simple get/assoc API</td></tr>
+    <tr><td><strong>Data Model</strong></td><td>Triples + Compounds</td><td>Property graph</td><td>Objects + Associations</td></tr>
+    <tr><td><strong>Traversal Latency</strong></td><td>&lt;1ms (1st deg), &lt;100ms (multi-hop)</td><td>ms-seconds</td><td>ms (cache hit)</td></tr>
+    <tr><td><strong>Durability</strong></td><td>Kill-9 only (NOT source of truth)</td><td>Full ACID</td><td>MySQL is SoT</td></tr>
+    <tr><td><strong>Designed for</strong></td><td>Complex multi-hop joins (10-100+)</td><td>General graph</td><td>Simple social lookups</td></tr>
+    <tr><td><strong>Ingestion</strong></td><td>Kafka CDC from Espresso</td><td>Direct writes</td><td>Direct writes to MySQL</td></tr>
+  </table>
+
+  <div class="card interview">
+    <strong>Interview Connection to the Book:</strong> The book's chapter covers Cypher (Neo4j), SPARQL (triple-stores), and Datalog. Liquid's Prologin is <em>literally Datalog</em> &mdash; the same query language the book calls "the foundation that later query languages build upon." When an interviewer asks about graph databases, you can say: "LinkedIn uses Liquid, which uses a Datalog-based query language called Prologin. It's a triple-store (like SPARQL), not a property graph (like Neo4j). The advantage of Datalog is composable rules &mdash; you define <code>Connected</code>, then <code>SecondDegree</code> uses <code>Connected</code>, then <code>PYMK</code> uses <code>SecondDegree</code>. Each rule builds on the last."
   </div>
 
   <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
