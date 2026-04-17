@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<title>SRE Systems Design Playbook &mdash; 10 Classic Problems</title>
+<style>
+  :root{--bg:#fff;--surface:#f7f6f3;--border:#e3e2de;--text:#37352f;--text-muted:#787774;--accent:#2383e2;--accent2:#0f7b0f;--accent3:#6940a5;--accent4:#d9730d;--red:#e03e3e;--code-bg:#f7f6f3;--card:#fff;--ch-color:#1a73e8}
+  *{margin:0;padding:0;box-sizing:border-box}body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;font-size:15px}
+  .container{max-width:900px;margin:0 auto;padding:0 24px}.hero{background:linear-gradient(180deg,#fafafa,#fff);border-bottom:1px solid var(--border);padding:48px 0 36px;text-align:center}.hero h1{font-size:2.1em;font-weight:700;margin-bottom:12px}.hero h1 span{color:var(--ch-color)}.hero p{font-size:1.05em;color:var(--text-muted);max-width:700px;margin:0 auto 30px}.hero .badge{display:inline-block;background:var(--surface);border:1px solid var(--border);padding:6px 16px;border-radius:20px;font-size:.8em;color:var(--text-muted)}
+  .nav-links{margin-top:20px}.nav-links a{display:inline-block;background:var(--surface);border:1px solid var(--border);padding:8px 20px;border-radius:8px;color:var(--accent);text-decoration:none;margin:4px;font-size:.9em;transition:.2s}.nav-links a:hover{border-color:var(--accent)}.nav-links a.ch{color:var(--ch-color);border-color:var(--ch-color)}
+  .toc{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px;margin:40px auto}.toc h2{font-size:1.1em;margin-bottom:12px;color:var(--ch-color)}.toc ol{padding-left:24px}.toc li{margin:5px 0;font-size:.92em}.toc a{color:var(--text);text-decoration:none;border-bottom:1px dashed var(--border)}.toc a:hover{color:var(--ch-color)}
+  .design{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin:24px 0;border-left:4px solid var(--ch-color)}
+  .design h3{font-size:1.15em;font-weight:700;color:var(--ch-color);margin-bottom:6px}
+  .design .sub{font-size:.9em;color:var(--text-muted);margin-bottom:12px}
+  .design .slo{background:#e3f2fd;border-radius:8px;padding:14px;margin:10px 0}
+  .design .slo h4{color:#1565c0;margin:0 0 6px;font-size:.9em}
+  .design .arch{background:#e8f5e9;border-radius:8px;padding:14px;margin:10px 0}
+  .design .arch h4{color:#2e7d32;margin:0 0 6px;font-size:.9em}
+  .design .stress{background:#fce4ec;border-radius:8px;padding:14px;margin:10px 0}
+  .design .stress h4{color:#c62828;margin:0 0 6px;font-size:.9em}
+  .design .patterns{background:#fff3e0;border-radius:8px;padding:14px;margin:10px 0}
+  .design .patterns h4{color:#e65100;margin:0 0 6px;font-size:.9em}
+  .design .metrics{background:#f3e5f5;border-radius:8px;padding:12px;margin:8px 0;font-size:.9em}
+  .design .metrics h4{color:#6a1b9a;margin:0 0 4px;font-size:.9em}
+  .design .tradeoff{background:#e8eaf6;border-radius:8px;padding:12px;margin:8px 0;font-size:.9em}
+  .design .tradeoff h4{color:#283593;margin:0 0 4px;font-size:.9em}
+  .design .drill{background:#fff8e1;border-radius:6px;padding:10px;margin:8px 0;font-size:.88em;border-left:3px solid #f9a825}
+  .design .eval{background:#e0f2f1;border-radius:6px;padding:10px;margin:8px 0;font-size:.88em;border-left:3px solid #00695c}
+  pre{background:var(--code-bg);border:1px solid var(--border);padding:12px;border-radius:8px;overflow-x:auto;font-family:'JetBrains Mono','SF Mono',monospace;font-size:.82em;margin:8px 0;line-height:1.5}
+  table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.88em}th{background:rgba(26,115,232,.08);color:var(--ch-color);padding:8px 12px;text-align:left;font-weight:600;border-bottom:2px solid var(--border)}td{padding:8px 12px;border-bottom:1px solid var(--border)}tr:last-child td{border-bottom:none}
+  .back-top{display:block;text-align:right;margin-top:12px}.back-top a{color:var(--text-muted);text-decoration:none;font-size:.85em}
+  footer{text-align:center;padding:40px 0;border-top:1px solid var(--border);color:var(--text-muted);font-size:.9em;margin-top:60px}footer a{color:var(--ch-color);text-decoration:none}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="container">
+    <h1>SRE Systems <span>Design Playbook</span></h1>
+    <p>10 classic Google SRE design problems with SLO sheets, baseline → production architectures, reliability stressors, trade-off tables, failure drills, and evaluation lens.</p>
+    <div class="badge">Google SRE &bull; Systems Design &bull; 10 Problems &bull; 64 Pages</div>
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="/sd-google-sre.html" class="ch">NALSD System Design</a>
+      <a href="/sre-debugging.html">Debugging</a>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- Design Framework -->
+<div style="background:#e8eaf6;border:1px solid #283593;border-radius:12px;padding:24px;margin:30px 0;">
+  <h2 style="color:#283593;margin-bottom:12px;">The SRE Design Flow — Before You Draw a Single Box</h2>
+  <pre style="border-color:#9fa8da;">STEP 0: Frame the Problem Like an SRE
+  → "What is the service trying to guarantee, and to whom?"
+
+THE FLOW:
+  Requirements → SLO Contract → Baseline Design → Stressors →
+  Resilient Architecture → Observability & Ops → Trade-offs
+
+THE CHECKLIST (for ANY design prompt):
+  1. Define User Impact → derive SLOs
+  2. Draw the Happy Path
+  3. Identify 5 ways it can fail
+  4. Apply reliability patterns to each
+  5. Decide metrics & dashboards
+  6. Prepare rollout & recovery plan
+  7. Articulate trade-offs & reasoning
+
+RED FLAG: designing before clarifying requirements
+GREEN FLAG: starting with "let me define the SLO contract first"</pre>
+</div>
+
+<div class="toc" id="toc">
+  <h2>10 Classic Design Problems</h2>
+  <ol>
+    <li><a href="#d1">Feature-Flag Service</a> — Progressive rollouts, blast radius, kill switch</li>
+    <li><a href="#d2">Secrets Rotation System</a> — Zero-downtime key rotation, dual-key pattern</li>
+    <li><a href="#d3">Disaster-Recovery Orchestrator</a> — RTO/RPO, split-brain, failback</li>
+    <li><a href="#d4">Build-Artifact Cache</a> — Content-addressable storage, lease eviction, CI/CD</li>
+    <li><a href="#d5">Config Management System</a> — Drift detection, canary configs, freeze mode</li>
+    <li><a href="#d6">Realtime Metrics Aggregator</a> — 10M metrics/s, cardinality, TSDB</li>
+    <li><a href="#d7">Auto-Scaling Engine</a> — HPA/VPA/CA, latency-based scaling, PDB</li>
+    <li><a href="#d8">Capacity Planning System</a> — Forecasting, BDP math, error budgets</li>
+    <li><a href="#d9">Incident Replay Simulator</a> — Chaos engineering, sandbox isolation, scoring</li>
+    <li><a href="#d10">Cost-Aware Alerting System</a> — Budget burn, cost SLOs, waste detection</li>
+  </ol>
+</div>
+
+
+<!-- P1 -->
+<div class="design" id="d1">
+  <h3>#1 — Design a Feature-Flag Service</h3>
+  <div class="sub">Progressive Rollouts | Reliability vs Velocity | Safe Experimentation</div>
+  <div class="slo"><h4>SLO Sheet</h4><table><tr><th>Objective</th><th>Target</th></tr><tr><td>Flag evaluation latency</td><td>≤ 2ms (p95) — critical path</td></tr><tr><td>Availability</td><td>≥ 99.999% — must not block traffic if backend down</td></tr><tr><td>Rollout consistency</td><td>≥ 99.9% — all users in cohort see same behavior</td></tr><tr><td>Propagation delay</td><td>≤ 30s — flag update → edge apply</td></tr><tr><td>Audit integrity</td><td>100% — immutable audit trail</td></tr></table></div>
+  <div class="arch"><h4>Architecture: 5 Components</h4><p>1. <strong>Control Plane</strong> (UI + API) 2. <strong>Metadata Store</strong> (Spanner/etcd) 3. <strong>Distribution Plane</strong> (Pub/Sub or gRPC stream) 4. <strong>Edge Evaluators</strong> (in-memory cache per service) 5. <strong>Audit & Metrics Service</strong></p></div>
+  <div class="stress"><h4>Reliability Stressors</h4><p>Partial rollout stalls (one region misses update). Clock skew (cohort hashing diverges). Hot flag evaluation (millions/sec). Misconfigured targeting (bad regex). Network partition (control plane unreachable).</p></div>
+  <div class="patterns"><h4>Production Patterns</h4><p><strong>Edge-First Evaluation</strong> (zero dependency on central store). <strong>Delta Streaming</strong> (only diffs, not full snapshots). <strong>Versioned Flags + Fallback</strong> (keep last known good). <strong>Gradual Rollout</strong>: 5% → 25% → 50% → 100% with metric checks + consistent user hashing. <strong>Global Kill Switch</strong>: disable any flag in &lt;10s.</p></div>
+  <div class="metrics"><h4>Metrics</h4><p>Propagation delay (≤30s, page if >60s). Evaluation latency (≤2ms). Flag drift rate (&lt;0.1%). Rollback success rate (100%).</p></div>
+  <div class="tradeoff"><h4>Trade-offs</h4><p>Edge eval: ultra-low latency but cache invalidation risk. Central eval: simpler audit but adds RTT. Delta streaming: bandwidth efficient but state complex. Full snapshot: simpler resync but high network.</p></div>
+  <div class="drill"><strong>Failure Drill:</strong> Flag rolled back but 20% of Europe still shows new behavior → detect via drift metrics → force "resync-all" → validate Pub/Sub delivery logs → add checksum verification on edge payloads.</div>
+  <div class="eval"><strong>Scoring:</strong> Reliability vs velocity? Rollback + kill switch discussed? SLOs and flag-drift metrics? Hash-based targeting + data freshness?</div>
+</div>
+
+<!-- P2 -->
+<div class="design" id="d2">
+  <h3>#2 — Design a Secrets Rotation System</h3>
+  <div class="sub">Security SLOs | Zero-Downtime Rotation | Dual-Key Pattern</div>
+  <div class="slo"><h4>SLO Sheet</h4><table><tr><th>Objective</th><th>Target</th></tr><tr><td>Secret propagation latency</td><td>≤ 60s (p99)</td></tr><tr><td>Control plane availability</td><td>≥ 99.999%</td></tr><tr><td>Rotation success rate</td><td>≥ 99.9% automated</td></tr><tr><td>Audit log completeness</td><td>100%</td></tr></table></div>
+  <div class="arch"><h4>Architecture</h4><p>Secrets Store (KMS-backed) → Rotation Controller (policy scheduler) → Distribution Plane (Pub/Sub + pull hybrid) → Consumer Agent (sidecar, hot-reload) → Audit Logger (immutable)</p></div>
+  <div class="patterns"><h4>Key Pattern: Dual-Key Rotation</h4><p>Maintain <strong>old_key + new_key</strong> overlap window (15 min). Both accepted during transition. Clients gracefully migrate. Pull+Push hybrid for eventual consistency. Versioned secrets (<code>secret_id@version</code>). Fail-safe rollback to previous valid version.</p></div>
+  <div class="drill"><strong>Failure Drill:</strong> Secret drift >1% in APAC → auto-trigger pull-based self-healing → Rotation Controller pauses new rotations → if auto-remediation fails: one-click rollback to previous_valid_version → blameless postmortem.</div>
+</div>
+
+<!-- P3 -->
+<div class="design" id="d3">
+  <h3>#3 — Design a Disaster-Recovery Orchestrator</h3>
+  <div class="sub">Business Continuity | RTO/RPO | Split-Brain Prevention</div>
+  <div class="slo"><h4>SLO Sheet</h4><table><tr><th>Objective</th><th>Target</th></tr><tr><td>RTO (Recovery Time)</td><td>≤ 5 minutes</td></tr><tr><td>RPO (Recovery Point)</td><td>≤ 30 seconds</td></tr><tr><td>Switchover success rate</td><td>≥ 99.99%</td></tr><tr><td>False failover rate</td><td>≤ 0.1%</td></tr><tr><td>Failback completion</td><td>≤ 10 minutes</td></tr></table></div>
+  <div class="arch"><h4>Architecture</h4><p>Health Probe Engine → Decision Controller → Replication Manager → Orchestration Pipeline (DNS shift → traffic drain → data rebind → warm-up validation) → Failback Module → Simulation Framework</p></div>
+  <div class="stress"><h4>Stressors</h4><p>Split-brain (both regions think they're primary). Replication lag > RPO. Flaky health probes (false failover). Dependent service ordering. Operator delay.</p></div>
+  <div class="patterns"><h4>Production Patterns</h4><p><strong>Multi-tier health assessment</strong> (active ping + synthetic txns + dependency checks). <strong>Leader election via Paxos/Raft</strong> (guarantees single DR controller). <strong>Staged failover</strong>: DNS → drain → data rebind → warm-up. <strong>Snapshot + stream merge</strong> for minimal RPO. <strong>Monthly chaos testing</strong> to validate readiness.</p></div>
+  <div class="tradeoff"><h4>Trade-offs</h4><p>Async replication: lower latency but non-zero RPO. Sync: zero data loss but higher write latency. Automated failover: fast but risk of false triggers. Manual: safer but slower.</p></div>
+</div>
+
+<!-- P4 -->
+<div class="design" id="d4">
+  <h3>#4 — Design a Build-Artifact Cache</h3>
+  <div class="sub">CI/CD Reliability | Content-Addressable Storage | Dedup</div>
+  <div class="slo"><h4>SLO Sheet</h4><table><tr><th>Objective</th><th>Target</th></tr><tr><td>Artifact retrieval latency</td><td>p95 ≤ 100ms</td></tr><tr><td>Cache hit rate</td><td>≥ 90%</td></tr><tr><td>Availability</td><td>≥ 99.99%</td></tr><tr><td>Stale artifact probability</td><td>≤ 0.1%</td></tr></table></div>
+  <div class="patterns"><h4>Production Patterns</h4><p><strong>CAS</strong> (Content-Addressable Storage): SHA-256 hash = address. <strong>Two-tier cache</strong>: SSD L1 hot + object store L2 cold. <strong>Lease-based eviction</strong>: prevent removal during active build. <strong>Bloom filter index</strong>: avoid rebuilds during global sync lag. <strong>Checksum validation pipeline</strong>: CRC + periodic audit for bit-rot.</p></div>
+</div>
+
+<!-- P5 -->
+<div class="design" id="d5">
+  <h3>#5 — Design a Config Management System</h3>
+  <div class="sub">Consistency | Drift Detection | Canary Configs | Freeze Mode</div>
+  <div class="slo"><h4>SLO Sheet</h4><table><tr><th>Objective</th><th>Target</th></tr><tr><td>Config propagation latency</td><td>≤ 60s</td></tr><tr><td>Rollback latency</td><td>≤ 30s</td></tr><tr><td>Config drift rate</td><td>&lt; 0.01%</td></tr><tr><td>Corruption probability</td><td>0</td></tr><tr><td>Availability</td><td>≥ 99.999%</td></tr></table></div>
+  <div class="patterns"><h4>Production Patterns</h4><p><strong>Immutable config versions</strong>: rollback = pointer swap. <strong>Canary rollouts</strong>: deploy to &lt;1% fleet first + SLO metric comparison. <strong>Drift detection loop</strong>: agents hash current config → report to registry. <strong>Validation stages</strong>: pre-submit (schema) → pre-rollout (runtime dry-run) → post-deploy (metric regression). <strong>Emergency freeze mode</strong>: prevents changes during active incident.</p></div>
+  <div class="drill"><strong>Failure Drill:</strong> Config update introduces wrong load-balancing ratio → canary detects → auto-rollback (version pointer flip) → clients revert within 20s → Schema Validator updated with new constraint.</div>
+</div>
+
+<!-- P6 -->
+<div class="design" id="d6">
+  <h3>#6 — Design a Realtime Metrics Aggregator</h3>
+  <div class="sub">10M Metrics/s | High Cardinality | Borgmon/Monarch/Stackdriver</div>
+  <div class="slo"><h4>SLO Sheet</h4><table><tr><th>Objective</th><th>Target</th></tr><tr><td>Ingestion throughput</td><td>≥ 10M metrics/s globally</td></tr><tr><td>Ingest latency</td><td>p99 ≤ 1s</td></tr><tr><td>Query latency</td><td>p99 ≤ 2s</td></tr><tr><td>Availability</td><td>≥ 99.999% — monitoring must never go dark</td></tr><tr><td>Metric loss rate</td><td>&lt; 0.001%</td></tr></table></div>
+  <div class="arch"><h4>Architecture</h4><p>Node Agent Exporter → Ingestion Gateways (regional, sharded) → Stream Processor (aggregate, deduplicate, compress) → Hot Storage TSDB (Monarch, in-memory/SSD) → Cold Storage (object store, downsampled) → Query Service (PromQL-style)</p></div>
+  <div class="stress"><h4>Stressors</h4><p>Cardinality explosion (per-host × per-endpoint × per-status = billions of series). Ingestion backpressure. Query fanout across regions. Hot metrics (one dashboard = millions of reads). Cold queries (12-month range).</p></div>
+</div>
+
+<!-- P7 -->
+<div class="design" id="d7">
+  <h3>#7 — Design an Auto-Scaling Engine</h3>
+  <div class="sub">HPA / VPA / Cluster Autoscaler | Latency-Based Scaling | PDB</div>
+  <div class="patterns"><h4>Key Patterns</h4><p><strong>HPA</strong>: horizontal pod autoscaler (scale replicas on latency/CPU). <strong>VPA</strong>: vertical pod autoscaler (adjust resource requests). <strong>Cluster Autoscaler</strong>: provision/deprovision nodes. <strong>PDB</strong> (Pod Disruption Budget): ensures minimum replicas during scaling/upgrades. <strong>Latency-based HPA</strong>: scale on p95 latency, not CPU (better SLO proxy). <strong>Cool-down periods</strong>: prevent flapping (scale out fast, scale in slow).</p></div>
+  <div class="tradeoff"><h4>Trade-offs</h4><p>Latency-based HPA: direct SLO control but needs robust metric path. CPU-based HPA: simple but weak proxy. Fast scale-out / slow scale-in: protects SLO but higher cost. Overprovision buffer nodes: handles bursts but idle cost.</p></div>
+</div>
+
+<!-- P8 -->
+<div class="design" id="d8">
+  <h3>#8 — Design a Capacity Planning System</h3>
+  <div class="sub">Forecasting | Saturation Probability | Capacity Error Budget</div>
+  <div class="arch"><h4>Architecture</h4><p>Ingest Pipeline (RPS, CPU, memory, storage, egress + event calendars) → Feature Builder (seasonality, trend, anomalies, promo flags) → Forecaster (Prophet/ETS + Gradient Boosting) → Risk Engine (saturation probability → capacity error budget) → Action Planner (reservations, change requests) → Feedback Loop (actuals vs forecast → retrain)</p></div>
+  <div class="eval"><strong>Scoring:</strong> SLO-first capacity thinking (Capacity Error Budget). Probabilistic reasoning (quantiles, confidence bands). Constraint awareness (quotas, bin-packing, hardware lead times). Cross-service coupling (upstream → downstream effects).</div>
+</div>
+
+<!-- P9 -->
+<div class="design" id="d9">
+  <h3>#9 — Design an Incident Replay Simulator</h3>
+  <div class="sub">Chaos Engineering | Postmortem Training | Sandbox Isolation</div>
+  <div class="arch"><h4>Architecture</h4><p>Incident Archive → Replay Engine (telemetry at original cadence) → Synthetic Injectors → Scenario Orchestrator → Sandbox Environment (isolated clusters) → Trainer Dashboard → Scoring Engine (MTTD, MTTR)</p></div>
+  <div class="patterns"><h4>Key Patterns</h4><p><strong>Time-warped playback</strong> (1x, 2x, paused with commentary). <strong>Data sanitization</strong> (remove PII). <strong>Sandbox isolation</strong> (ephemeral clusters, no prod access). <strong>Incident templates</strong> (generalized classes: DB spike, config rollback, CrashLoop). <strong>Chaos extensions</strong> (inject variant stressors beyond original). <strong>Self-service portal</strong>.</p></div>
+</div>
+
+<!-- P10 -->
+<div class="design" id="d10">
+  <h3>#10 — Design a Cost-Aware Alerting System</h3>
+  <div class="sub">Budget Burn vs Reliability | Cost as Operational Signal | Waste Detection</div>
+  <div class="slo"><h4>SLO Sheet</h4><table><tr><th>Objective</th><th>Target</th></tr><tr><td>Alert latency (cost anomaly)</td><td>≤ 2 min</td></tr><tr><td>Cost coverage</td><td>≥ 95% of billable services</td></tr></table></div>
+  <div class="patterns"><h4>Key Insight</h4><p>Make <strong>cost an operational signal</strong> — as important as latency or availability. Alert on: cost spikes (sudden 3x), sustained overprovisioning (&gt;30% idle for 7 days), cost-per-request anomalies, budget burn rate exceeding forecast. Integrate with SLO dashboards: show cost-to-achieve-SLO alongside availability.</p></div>
+  <div class="eval"><strong>Senior Signal:</strong> "If this system costs $10M/month at 99.99% but we only need 99.9%, this alerting system quantifies exactly where the $4M savings are."</div>
+</div>
+
+</div>
+
+<footer>
+  <div class="container">
+    <p>SRE Systems Design Playbook &mdash; <a href="/sd-google-sre.html">NALSD Guide</a> | <a href="/sre-debugging.html">Debugging</a> | <a href="/sre-nalsd.html">NALSD Scenarios</a> | <a href="/">Home</a></p>
+  </div>
+</footer>
+
+</body>
+</html>
