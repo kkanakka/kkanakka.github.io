@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<title>TiDB, TiKV &amp; Raft Consensus &mdash; Data Intensive Systems</title>
+<style>
+  :root{--bg:#fff;--surface:#f7f6f3;--border:#e3e2de;--text:#37352f;--text-muted:#787774;--accent:#2383e2;--accent2:#0f7b0f;--accent3:#6940a5;--accent4:#d9730d;--red:#e03e3e;--code-bg:#f7f6f3;--card:#fff;--ch-color:#1565c0}
+  *{margin:0;padding:0;box-sizing:border-box}body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;font-size:15px}
+  .container{max-width:900px;margin:0 auto;padding:0 24px}.hero{background:linear-gradient(180deg,#fafafa,#fff);border-bottom:1px solid var(--border);padding:48px 0 36px;text-align:center}.hero h1{font-size:2.2em;font-weight:700;margin-bottom:12px}.hero h1 span{color:var(--ch-color)}.hero p{font-size:1.05em;color:var(--text-muted);max-width:700px;margin:0 auto 30px}.hero .badge{display:inline-block;background:var(--surface);border:1px solid var(--border);padding:6px 16px;border-radius:20px;font-size:.8em;color:var(--text-muted)}
+  .nav-links{margin-top:20px}.nav-links a{display:inline-block;background:var(--surface);border:1px solid var(--border);padding:8px 20px;border-radius:8px;color:var(--accent);text-decoration:none;margin:4px;font-size:.9em;transition:.2s}.nav-links a:hover{border-color:var(--accent);background:rgba(35,131,226,.06)}.nav-links a.ch{color:var(--ch-color);border-color:var(--ch-color)}
+  .toc{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:32px;margin:40px auto}.toc h2{font-size:1.2em;margin-bottom:16px;color:var(--ch-color)}.toc ol{padding-left:24px}.toc li{margin:8px 0}.toc a{color:var(--text);text-decoration:none;border-bottom:1px dashed var(--border);transition:.2s}.toc a:hover{color:var(--ch-color)}.toc .sub{padding-left:24px;list-style:disc}
+  .section{margin:40px 0;padding-top:16px;border-top:1px solid var(--border)}.section-num{font-size:.75em;font-weight:600;color:var(--ch-color);text-transform:uppercase;letter-spacing:2px;margin-bottom:8px}.section h2{font-size:1.6em;font-weight:600;margin-bottom:20px;color:var(--ch-color)}.section h3{font-size:1.15em;font-weight:600;margin:30px 0 12px;color:var(--accent);border-left:3px solid var(--accent);padding-left:12px}.section h4{font-size:1em;font-weight:600;margin:20px 0 10px;color:var(--accent3)}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px;margin:20px 0}.card.highlight{border-left:4px solid var(--accent)}.card.warn{border-left:4px solid var(--accent4)}.card.success{border-left:4px solid var(--accent2)}.card.danger{border-left:4px solid var(--red)}.card.interview{border-left:4px solid var(--ch-color);background:rgba(21,101,192,.02)}
+  .diagram{margin:30px 0;text-align:center}.diagram svg{max-width:100%;height:auto}.caption{font-size:.9em;color:var(--text-muted);margin-top:10px;font-style:italic}
+  code{background:var(--code-bg);border:1px solid var(--border);padding:2px 8px;border-radius:4px;font-family:'JetBrains Mono','SF Mono',monospace;font-size:.9em;color:var(--accent3)}pre{background:var(--code-bg);border:1px solid var(--border);padding:20px;border-radius:8px;overflow-x:auto;font-family:'JetBrains Mono','SF Mono',monospace;font-size:.85em;margin:14px 0;line-height:1.5}
+  table{width:100%;border-collapse:collapse;margin:16px 0;background:var(--card);border-radius:8px;overflow:hidden}th{background:rgba(21,101,192,.08);color:var(--ch-color);padding:12px 16px;text-align:left;font-weight:600;border-bottom:2px solid var(--border)}td{padding:10px 14px;border-bottom:1px solid var(--border);font-size:.92em}tr:last-child td{border-bottom:none}tr:hover td{background:rgba(21,101,192,.03)}
+  .compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:20px 0}.compare-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:20px}.compare-card h4{margin-top:0}.compare-card ul{padding-left:18px;font-size:.9em}.compare-card li{margin:4px 0}
+  .interview-tag{display:inline-block;padding:2px 10px;border-radius:12px;font-size:.75em;font-weight:600;margin-left:8px}.interview-tag.meta{background:rgba(66,133,244,.1);color:#4285f4;border:1px solid #4285f4}.interview-tag.google{background:rgba(15,123,15,.1);color:#0f7b0f;border:1px solid #0f7b0f}.interview-tag.li{background:rgba(0,119,181,.1);color:#0077b5;border:1px solid #0077b5}
+  @media(max-width:700px){.compare-grid{grid-template-columns:1fr}}
+  .back-top{display:block;text-align:right;margin-top:20px}.back-top a{color:var(--text-muted);text-decoration:none;font-size:.85em}.back-top a:hover{color:var(--ch-color)}
+  footer{text-align:center;padding:40px 0;border-top:1px solid var(--border);color:var(--text-muted);font-size:.9em;margin-top:60px}footer a{color:var(--ch-color);text-decoration:none}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="container">
+    <h1>TiDB, TiKV &amp; <span>Raft Consensus</span></h1>
+    <p>How a distributed NewSQL database works: Raft consensus for replication, Regions for partitioning, PD for scheduling &mdash; no Helix, no master. Open-source alternative to Spanner.</p>
+    <div class="badge">Data Intensive Systems &bull; Chapter 4 &bull; Interview Guide</div>
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="/ddia-ch3.html" class="ch">Ch 3: Storage &amp; Retrieval</a>
+      <a href="/ddia-ch2.html">Ch 2: Data Models</a>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+<div class="toc" id="toc">
+  <h2>Table of Contents</h2>
+  <ol>
+    <li><a href="#sec-1">TiDB Architecture Overview</a></li>
+    <li><a href="#sec-2">Regions &mdash; Partitioning Without a Hash Ring</a></li>
+    <li><a href="#sec-3">Raft Consensus &mdash; How Replication Works</a>
+      <ul class="sub">
+        <li><a href="#sec-3-leader">Leader Election</a></li>
+        <li><a href="#sec-3-write">Write Path (Raft Log Replication)</a></li>
+        <li><a href="#sec-3-read">Read Path (Leader Reads vs Follower Reads)</a></li>
+        <li><a href="#sec-3-quorum">Majority Quorum &mdash; NOT All Followers</a></li>
+      </ul>
+    </li>
+    <li><a href="#sec-4">What Happens When a Replica Goes Down?</a></li>
+    <li><a href="#sec-5">Placement Driver (PD) &mdash; The Brain</a></li>
+    <li><a href="#sec-6">Storage: RocksDB + MVCC + Percolator Transactions</a></li>
+    <li><a href="#sec-7">Backup &amp; Recovery</a></li>
+    <li><a href="#sec-8">TiDB vs Espresso vs Spanner</a></li>
+    <li><a href="#sec-9">Interview Questions</a></li>
+  </ol>
+</div>
+
+
+<!-- ======================= SECTION 1 ======================= -->
+<div class="section" id="sec-1">
+  <div class="section-num">Section 1</div>
+  <h2>TiDB Architecture Overview</h2>
+
+  <p>TiDB is an open-source <strong>distributed NewSQL database</strong>. It's MySQL-compatible, supports ACID transactions, and scales horizontally. Think of it as an open-source Google Spanner.</p>
+
+  <!-- DIAGRAM: TiDB Architecture -->
+  <div class="diagram">
+    <svg viewBox="0 0 820 500" xmlns="http://www.w3.org/2000/svg" style="max-width:800px;">
+      <defs>
+        <marker id="arrT" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#546e7a"/></marker>
+        <filter id="shT" x="-3%" y="-3%" width="106%" height="110%"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.06"/></filter>
+      </defs>
+
+      <!-- Client -->
+      <rect x="300" y="10" width="220" height="45" rx="10" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2" filter="url(#shT)"/>
+      <text x="410" y="30" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#1b5e20">MySQL Client / App</text>
+      <text x="410" y="48" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#787774">Standard MySQL protocol — no code changes!</text>
+
+      <line x1="410" y1="55" x2="410" y2="80" stroke="#546e7a" stroke-width="1.5" marker-end="url(#arrT)"/>
+
+      <!-- TiDB Server (SQL Layer) -->
+      <rect x="150" y="80" width="520" height="75" rx="12" fill="#e3f2fd" stroke="#1565c0" stroke-width="2" filter="url(#shT)"/>
+      <text x="410" y="105" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="15" fill="#0d47a1">TiDB Server (Stateless SQL Layer)</text>
+      <text x="170" y="128" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Parse SQL → optimize → distributed execution plan</text>
+      <text x="170" y="143" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Horizontally scalable (add more TiDB nodes behind load balancer)</text>
+      <text x="500" y="128" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; NO data stored here</text>
+      <text x="500" y="143" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Compute only</text>
+
+      <!-- Arrows to TiKV -->
+      <line x1="300" y1="155" x2="200" y2="195" stroke="#546e7a" stroke-width="1.5" marker-end="url(#arrT)"/>
+      <line x1="410" y1="155" x2="410" y2="195" stroke="#546e7a" stroke-width="1.5" marker-end="url(#arrT)"/>
+      <line x1="520" y1="155" x2="620" y2="195" stroke="#546e7a" stroke-width="1.5" marker-end="url(#arrT)"/>
+
+      <!-- TiKV Nodes -->
+      <rect x="80" y="195" width="200" height="140" rx="10" fill="#fff3e0" stroke="#e65100" stroke-width="2" filter="url(#shT)"/>
+      <text x="180" y="218" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#e65100">TiKV Node 1</text>
+      <rect x="100" y="230" width="160" height="22" rx="4" fill="#ffcc80"/>
+      <text x="180" y="245" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#bf360c">Region 1 (Leader) | Region 4 (Follower)</text>
+      <rect x="100" y="258" width="160" height="22" rx="4" fill="#c8e6c9"/>
+      <text x="180" y="273" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#1b5e20">Region 7 (Leader) | Region 2 (Follower)</text>
+      <rect x="100" y="286" width="160" height="22" rx="4" fill="#bbdefb"/>
+      <text x="180" y="301" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#1565c0">RocksDB (LSM-tree)</text>
+      <text x="180" y="325" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" fill="#787774">Raft + MVCC + Percolator</text>
+
+      <rect x="310" y="195" width="200" height="140" rx="10" fill="#fff3e0" stroke="#e65100" stroke-width="2" filter="url(#shT)"/>
+      <text x="410" y="218" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#e65100">TiKV Node 2</text>
+      <rect x="330" y="230" width="160" height="22" rx="4" fill="#ffcc80"/>
+      <text x="410" y="245" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#bf360c">Region 2 (Leader) | Region 1 (Follower)</text>
+      <rect x="330" y="258" width="160" height="22" rx="4" fill="#c8e6c9"/>
+      <text x="410" y="273" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#1b5e20">Region 5 (Leader) | Region 7 (Follower)</text>
+      <rect x="330" y="286" width="160" height="22" rx="4" fill="#bbdefb"/>
+      <text x="410" y="301" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#1565c0">RocksDB (LSM-tree)</text>
+
+      <rect x="540" y="195" width="200" height="140" rx="10" fill="#fff3e0" stroke="#e65100" stroke-width="2" filter="url(#shT)"/>
+      <text x="640" y="218" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#e65100">TiKV Node 3</text>
+      <rect x="560" y="230" width="160" height="22" rx="4" fill="#ffcc80"/>
+      <text x="640" y="245" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#bf360c">Region 4 (Leader) | Region 1 (Follower)</text>
+      <rect x="560" y="258" width="160" height="22" rx="4" fill="#c8e6c9"/>
+      <text x="640" y="273" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#1b5e20">Region 3 (Leader) | Region 5 (Follower)</text>
+      <rect x="560" y="286" width="160" height="22" rx="4" fill="#bbdefb"/>
+      <text x="640" y="301" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#1565c0">RocksDB (LSM-tree)</text>
+
+      <!-- PD -->
+      <rect x="30" y="380" width="760" height="100" rx="12" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="2" filter="url(#shT)"/>
+      <text x="410" y="408" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="15" fill="#4a148c">Placement Driver (PD) — The Brain (3-node Raft cluster itself)</text>
+      <text x="60" y="430" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Stores cluster metadata (which Region on which node)</text>
+      <text x="60" y="448" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Allocates globally unique transaction IDs (TSO)</text>
+      <text x="60" y="466" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Schedules Region movement (balance load, repair replicas)</text>
+      <text x="430" y="430" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Detects store failures via heartbeats</text>
+      <text x="430" y="448" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Splits/merges Regions when too large/small</text>
+      <text x="430" y="466" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Balances leaders, hot spots, storage capacity</text>
+
+      <!-- Heartbeat arrows -->
+      <line x1="180" y1="335" x2="200" y2="380" stroke="#6a1b9a" stroke-width="1" stroke-dasharray="4"/>
+      <line x1="410" y1="335" x2="410" y2="380" stroke="#6a1b9a" stroke-width="1" stroke-dasharray="4"/>
+      <line x1="640" y1="335" x2="620" y2="380" stroke="#6a1b9a" stroke-width="1" stroke-dasharray="4"/>
+      <text x="310" y="365" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" fill="#6a1b9a">store heartbeats + region heartbeats</text>
+    </svg>
+    <div class="caption">TiDB architecture: Stateless SQL layer (TiDB Server) → Distributed KV storage (TiKV with Raft per Region) → PD (metadata, scheduling, transaction IDs). Compare: TiDB Server ≈ Espresso Router, TiKV ≈ Espresso Storage Node, PD ≈ Helix + ZooKeeper.</div>
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+
+<!-- ======================= SECTION 2 ======================= -->
+<div class="section" id="sec-2">
+  <div class="section-num">Section 2</div>
+  <h2>Regions &mdash; Partitioning Without a Hash Ring</h2>
+
+  <p>TiKV uses <strong>range-based partitioning</strong> (not hash-based like Espresso). The key space is split into <strong>Regions</strong>, each ~256MB. Each Region is a contiguous key range <code>[StartKey, EndKey)</code>.</p>
+
+  <div class="card highlight">
+    <pre>HOW REGIONS WORK:
+
+Key space:  [aaa ... bbb ... ccc ... ddd ... eee ... fff ... zzz]
+             |←── Region 1 ──→|←── Region 2 ──→|←── Region 3 ──→|
+             [aaa, ccc)         [ccc, eee)        [eee, zzz]
+
+Each Region:
+  ✓ Default max size: 256 MB
+  ✓ When Region grows > 256MB → PD auto-splits it into two
+  ✓ When Region shrinks → PD can merge adjacent Regions
+  ✓ 3 replicas by default (configurable)
+  ✓ Each replica set forms a RAFT GROUP
+  ✓ One replica is Leader, others are Followers
+
+WHY RANGE-BASED (not hash like Espresso)?
+  ✓ Efficient range scans: SELECT * WHERE key BETWEEN 'aaa' AND 'bbb'
+    → all data in Region 1, single node scan (no scatter-gather!)
+  ✓ Table data is naturally ordered by primary key
+  ✗ Risk: sequential writes create hot spots on one Region
+    → PD detects and splits hot Regions automatically
+
+VS ESPRESSO:
+  Espresso: FNV hash → fixed partition count (256), Helix assigns to nodes
+  TiKV:     Range-based → dynamic Region count (auto-split/merge), PD assigns</pre>
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+
+<!-- ======================= SECTION 3 ======================= -->
+<div class="section" id="sec-3">
+  <div class="section-num">Section 3</div>
+  <h2>Raft Consensus &mdash; How Replication Works <span class="interview-tag meta">Meta</span><span class="interview-tag google">Google</span></h2>
+
+  <p>Every Region has 3 replicas (on different TiKV nodes). These 3 replicas form a <strong>Raft Group</strong>. Raft ensures they stay consistent.</p>
+
+  <h3 id="sec-3-leader">Leader Election</h3>
+
+  <div class="card highlight">
+    <pre>RAFT LEADER ELECTION:
+
+1. Every replica starts as a FOLLOWER
+2. Followers expect heartbeats from the Leader every ~150ms
+3. If a Follower gets no heartbeat for election timeout (~300ms):
+   → It becomes a CANDIDATE and asks others for votes
+4. If a Candidate gets votes from MAJORITY (2 of 3) → becomes LEADER
+5. Leader sends heartbeats to all Followers to maintain authority
+
+Three states: FOLLOWER → CANDIDATE → LEADER
+
+      ┌──────────────────────────────────────────────┐
+      │  Node A: LEADER  ←── wins election            │
+      │  Node B: FOLLOWER (voted for A)               │
+      │  Node C: FOLLOWER (voted for A)               │
+      └──────────────────────────────────────────────┘
+
+SPLIT BRAIN PREVENTION:
+  A Candidate needs MAJORITY votes (2 of 3, 3 of 5, etc.)
+  → Only ONE leader can be elected per term
+  → Even with network partition, at most one partition has majority</pre>
+  </div>
+
+  <h3 id="sec-3-write">Write Path — Raft Log Replication</h3>
+
+  <!-- DIAGRAM: Raft Write Path -->
+  <div class="diagram">
+    <svg viewBox="0 0 820 420" xmlns="http://www.w3.org/2000/svg" style="max-width:800px;">
+      <defs>
+        <marker id="arrR" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#546e7a"/></marker>
+        <marker id="arrG" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e7d32"/></marker>
+      </defs>
+
+      <text x="410" y="22" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="15" fill="#1565c0">Raft Write Path: INSERT INTO users VALUES (42, 'Alice')</text>
+
+      <!-- Step 1 -->
+      <rect x="20" y="40" width="780" height="55" rx="8" fill="#e3f2fd" stroke="#1565c0" stroke-width="1.5"/>
+      <text x="40" y="60" font-family="Inter,sans-serif" font-weight="700" font-size="11" fill="#0d47a1">Step 1: TiDB Server receives SQL, converts to KV operations</text>
+      <text x="40" y="80" font-family="Inter,sans-serif" font-size="10" fill="#37352f">TiDB Server: parse SQL → optimizer → determine Region for key "users_42" → find Leader from PD cache</text>
+
+      <!-- Step 2 -->
+      <rect x="20" y="105" width="780" height="55" rx="8" fill="#fff3e0" stroke="#e65100" stroke-width="1.5"/>
+      <text x="40" y="125" font-family="Inter,sans-serif" font-weight="700" font-size="11" fill="#e65100">Step 2: Leader appends to its LOCAL Raft log (not committed yet)</text>
+      <text x="40" y="145" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Leader (Node A): write "PUT users_42 = {name: Alice}" to Raft log entry #47. State: <tspan font-weight="700" fill="#e65100">UNCOMMITTED</tspan></text>
+
+      <!-- Step 3: Replicate -->
+      <rect x="20" y="170" width="780" height="80" rx="8" fill="#fce4ec" stroke="#c62828" stroke-width="1.5"/>
+      <text x="40" y="190" font-family="Inter,sans-serif" font-weight="700" font-size="11" fill="#c62828">Step 3: Leader sends log entry #47 to ALL followers (AppendEntries RPC)</text>
+
+      <rect x="40" y="200" width="220" height="35" rx="6" fill="#c8e6c9" stroke="#2e7d32" stroke-width="1"/>
+      <text x="150" y="222" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#2e7d32">Node B (Follower): ACK ✓</text>
+      <rect x="300" y="200" width="220" height="35" rx="6" fill="#c8e6c9" stroke="#2e7d32" stroke-width="1"/>
+      <text x="410" y="222" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#2e7d32">Node C (Follower): ACK ✓</text>
+      <rect x="560" y="200" width="220" height="35" rx="6" fill="#ef9a9a" stroke="#c62828" stroke-width="1"/>
+      <text x="670" y="222" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#c62828">Node D: TIMEOUT (down) ✗</text>
+
+      <!-- Step 4: Majority -->
+      <rect x="20" y="260" width="780" height="55" rx="8" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"/>
+      <text x="40" y="280" font-family="Inter,sans-serif" font-weight="700" font-size="11" fill="#2e7d32">Step 4: Leader got ACK from MAJORITY (2 of 3) → COMMIT!</text>
+      <text x="40" y="300" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Leader applies entry #47 to RocksDB (state machine). Returns SUCCESS to TiDB Server → Client.</text>
+
+      <!-- Step 5 -->
+      <rect x="20" y="325" width="780" height="40" rx="8" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="1"/>
+      <text x="40" y="350" font-family="Inter,sans-serif" font-weight="700" font-size="11" fill="#6a1b9a">Step 5: Leader tells followers to commit. Followers apply to their RocksDB.</text>
+
+      <!-- THE KEY INSIGHT -->
+      <rect x="20" y="375" width="780" height="35" rx="8" fill="#fff3e0" stroke="#e65100" stroke-width="2"/>
+      <text x="410" y="398" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#e65100">CRITICAL: Raft commits after MAJORITY ACK, NOT ALL followers! 2 of 3 is enough. This is NOT eventual consistency — it's STRONG consistency.</text>
+    </svg>
+    <div class="caption">Raft write path: Leader logs → replicates to followers → commits after MAJORITY (not all) acknowledge. This gives strong consistency even if one replica is down.</div>
+  </div>
+
+  <h3 id="sec-3-read">Read Path</h3>
+
+  <div class="card highlight">
+    <pre>READ OPTIONS IN RAFT:
+
+1. LEADER READ (default, strong consistency):
+   Client → TiDB Server → Region Leader → read from RocksDB → return
+   ✓ Always sees the latest committed data
+   ✗ All reads go to Leader (potential bottleneck)
+
+2. FOLLOWER READ (stale read, higher throughput):
+   Client → TiDB Server → any Follower → read from its RocksDB → return
+   ✓ Spreads read load across all replicas
+   ✗ Might read slightly stale data (follower may lag behind leader)
+   TiDB: SET tidb_replica_read = 'follower' or 'closest-replicas'
+
+3. STALE READ (bounded staleness):
+   Client → TiDB Server → any replica → read data as of a specific timestamp
+   ✓ Can read from follower if timestamp ≤ follower's applied version
+   TiDB: SELECT * FROM users AS OF TIMESTAMP '2024-01-01 00:00:00'
+
+IS RAFT EVENTUAL CONSISTENCY?
+  NO! Raft provides STRONG (linearizable) consistency for writes.
+  - Writes are committed only after majority ACK
+  - Leader reads always return the latest committed value
+  - Follower reads CAN be eventually consistent (if you opt in)</pre>
+  </div>
+
+  <h3 id="sec-3-quorum">Majority Quorum — NOT All Followers</h3>
+
+  <div class="card danger">
+    <h4>Common Misconception: "Raft waits for ALL replicas"</h4>
+    <pre>WRONG: Raft waits for ACK from ALL followers before committing
+RIGHT: Raft waits for ACK from MAJORITY (quorum) before committing
+
+With 3 replicas: majority = 2 (leader + 1 follower)
+With 5 replicas: majority = 3 (leader + 2 followers)
+
+WHY MAJORITY, NOT ALL?
+  If Raft waited for ALL replicas:
+    → 1 slow/dead replica blocks ALL writes = no fault tolerance
+    → This would be SYNCHRONOUS replication (like 2PC)
+  
+  With majority:
+    → 1 replica can be down and writes still succeed
+    → This is the CORE TRADE-OFF of Raft:
+       ✓ Tolerate f failures with 2f+1 replicas
+       ✓ 3 replicas → tolerate 1 failure
+       ✓ 5 replicas → tolerate 2 failures
+
+VS ESPRESSO:
+  Espresso: Leader commits ALONE, replicates ASYNC via Kafka
+    → Faster writes, but risk of data loss if leader dies before replication
+  TiKV/Raft: Leader commits after MAJORITY ACK
+    → Slightly slower writes, but NO data loss as long as majority survives</pre>
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+
+<!-- ======================= SECTION 4 ======================= -->
+<div class="section" id="sec-4">
+  <div class="section-num">Section 4</div>
+  <h2>What Happens When a Replica Goes Down?</h2>
+
+  <!-- DIAGRAM: Replica Failure Scenarios -->
+  <div class="diagram">
+    <svg viewBox="0 0 820 450" xmlns="http://www.w3.org/2000/svg" style="max-width:800px;">
+      <defs><filter id="shF2" x="-3%" y="-3%" width="106%" height="110%"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.06"/></filter></defs>
+
+      <!-- Scenario 1: Follower dies -->
+      <rect x="10" y="10" width="395" height="200" rx="12" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"/>
+      <text x="207" y="38" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#2e7d32">Scenario 1: ONE Follower Dies</text>
+      <text x="30" y="60" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Region has 3 replicas: Leader (A) + Follower (B) + Follower (C)</text>
+      <text x="30" y="80" font-family="Inter,sans-serif" font-size="10" fill="#c62828">Node C goes down.</text>
+      <text x="30" y="105" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#2e7d32">READS: ✓ Still work (Leader A serves reads)</text>
+      <text x="30" y="123" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#2e7d32">WRITES: ✓ Still work (majority = 2 of 3: A + B)</text>
+      <text x="30" y="148" font-family="Inter,sans-serif" font-size="10" fill="#37352f">After 30 min: PD marks Node C as "Down"</text>
+      <text x="30" y="166" font-family="Inter,sans-serif" font-size="10" fill="#37352f">PD schedules: AddReplica on Node D</text>
+      <text x="30" y="184" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Node D copies snapshot from Leader A → new Follower</text>
+      <text x="30" y="202" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#2e7d32">Result: Back to 3 replicas. Zero downtime.</text>
+
+      <!-- Scenario 2: Leader dies -->
+      <rect x="415" y="10" width="395" height="200" rx="12" fill="#fce4ec" stroke="#c62828" stroke-width="2"/>
+      <text x="612" y="38" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#c62828">Scenario 2: LEADER Dies</text>
+      <text x="435" y="60" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Region has 3 replicas: Leader (A) + Follower (B) + Follower (C)</text>
+      <text x="435" y="80" font-family="Inter,sans-serif" font-size="10" fill="#c62828">Node A (Leader) goes down.</text>
+      <text x="435" y="105" font-family="Inter,sans-serif" font-size="10" fill="#37352f">B and C stop receiving heartbeats from A.</text>
+      <text x="435" y="123" font-family="Inter,sans-serif" font-size="10" fill="#37352f">After election timeout (~300ms):</text>
+      <text x="435" y="141" font-family="Inter,sans-serif" font-size="10" fill="#37352f">B becomes Candidate → C votes for B → B is new Leader</text>
+      <text x="435" y="166" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#c62828">READS: ✗ Brief pause (~300ms) during election</text>
+      <text x="435" y="184" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#2e7d32">WRITES: ✓ Resume after B becomes Leader</text>
+      <text x="435" y="202" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#2e7d32">No data loss! B has all committed entries (majority rule)</text>
+
+      <!-- Scenario 3: Majority dies -->
+      <rect x="10" y="225" width="800" height="100" rx="12" fill="#fff3e0" stroke="#e65100" stroke-width="2"/>
+      <text x="410" y="253" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#e65100">Scenario 3: MAJORITY Dies (2 of 3)</text>
+      <text x="30" y="275" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Nodes A and B both go down. Only C remains.</text>
+      <text x="30" y="295" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#c62828">READS: ✗ C cannot become Leader (needs majority = 2, only has 1)</text>
+      <text x="30" y="313" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#c62828">WRITES: ✗ Completely unavailable for this Region</text>
+      <text x="500" y="275" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Other Regions on surviving nodes still work!</text>
+      <text x="500" y="295" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Recovery: restart any one of A or B → majority restored</text>
+
+      <!-- Summary -->
+      <rect x="10" y="340" width="800" height="100" rx="12" fill="#f7f6f3" stroke="#e3e2de" stroke-width="1"/>
+      <text x="410" y="365" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="14" fill="#37352f">Raft Failure Tolerance Summary</text>
+      <text x="30" y="390" font-family="Inter,sans-serif" font-size="11" fill="#37352f">&#8226; 3 replicas → tolerates <tspan font-weight="700">1 failure</tspan> (majority = 2). <tspan fill="#2e7d32">Most common production config.</tspan></text>
+      <text x="30" y="410" font-family="Inter,sans-serif" font-size="11" fill="#37352f">&#8226; 5 replicas → tolerates <tspan font-weight="700">2 failures</tspan> (majority = 3). <tspan fill="#787774">Cross-datacenter setups.</tspan></text>
+      <text x="30" y="430" font-family="Inter,sans-serif" font-size="11" fill="#37352f">&#8226; Formula: <tspan font-weight="700">2f + 1</tspan> replicas to tolerate <tspan font-weight="700">f</tspan> failures. Leader election in ~300ms. No data loss as long as majority survives.</text>
+    </svg>
+    <div class="caption">Three failure scenarios: one follower down (no impact), leader down (300ms election, no data loss), majority down (Region unavailable until one returns).</div>
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+
+<!-- ======================= SECTION 5 ======================= -->
+<div class="section" id="sec-5">
+  <div class="section-num">Section 5</div>
+  <h2>Placement Driver (PD) — The Brain <span class="interview-tag google">Google</span></h2>
+
+  <p>PD is TiDB's equivalent of Espresso's Helix + ZooKeeper, but it does <strong>much more</strong>. PD is itself a 3-node Raft cluster for its own high availability.</p>
+
+  <table>
+    <tr><th>PD Responsibility</th><th>What It Does</th><th>Espresso Equivalent</th></tr>
+    <tr><td><strong>Metadata store</strong></td><td>Which Region on which TiKV node. Region key ranges.</td><td>Helix external view (partition → host)</td></tr>
+    <tr><td><strong>TSO (Timestamp Oracle)</strong></td><td>Allocates globally unique, monotonically increasing transaction IDs</td><td>No equivalent (Espresso uses per-partition CAS)</td></tr>
+    <tr><td><strong>Region scheduling</strong></td><td>Balance Regions across nodes, repair under-replicated Regions</td><td>Helix state machine (OFFLINE→SLAVE→MASTER)</td></tr>
+    <tr><td><strong>Auto-split / merge</strong></td><td>Split Regions > 256MB, merge tiny Regions</td><td>Not supported (fixed partition count)</td></tr>
+    <tr><td><strong>Hot spot detection</strong></td><td>Move hot Region leaders away from overloaded nodes</td><td>Manual (no auto hot-spot balancing)</td></tr>
+    <tr><td><strong>Store failure detection</strong></td><td>30min no heartbeat → mark Down → re-replicate all Regions</td><td>Helix detects, reassigns partitions</td></tr>
+    <tr><td><strong>Label-aware placement</strong></td><td>Ensure replicas span racks/zones/DCs via labels</td><td>Helix placement constraints</td></tr>
+  </table>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+
+<!-- ======================= SECTION 6 ======================= -->
+<div class="section" id="sec-6">
+  <div class="section-num">Section 6</div>
+  <h2>Storage: RocksDB + MVCC + Percolator Transactions</h2>
+
+  <div class="card highlight">
+    <pre>STORAGE STACK (bottom to top):
+
+┌─────────────────────────────────────────────┐
+│  SQL Layer (TiDB Server)                     │
+│  Parse → Optimize → KV operations            │
+├─────────────────────────────────────────────┤
+│  Transaction Layer (Percolator 2PC)           │
+│  Distributed ACID with MVCC                  │
+│  Snapshot Isolation by default               │
+├─────────────────────────────────────────────┤
+│  Consensus Layer (Raft)                      │
+│  Log replication, leader election            │
+│  One Raft group per Region                   │
+├─────────────────────────────────────────────┤
+│  Storage Engine (RocksDB — LSM-tree)         │
+│  Local persistent KV store per TiKV node     │
+│  Keys: {table_id}_{row_id}_{version}         │
+│  MVCC: multiple versions per key             │
+└─────────────────────────────────────────────┘
+
+MVCC IN TIKV:
+  Without MVCC:  Key1 → Value
+  With MVCC:     Key1_Version3 → Value   ← latest
+                 Key1_Version2 → Value
+                 Key1_Version1 → Value   ← oldest
+
+  Versions sorted descending (newest first).
+  Read at timestamp T: SeekPrefix(Key1_T) → first entry ≤ T
+
+PERCOLATOR TRANSACTIONS (Google's 2PC variant):
+  Phase 1 (Prewrite): Lock all keys, write to each Region's Leader
+  Phase 2 (Commit):   Write commit record, unlock
+  Provides: Snapshot Isolation (serializable with FOR UPDATE)</pre>
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+
+<!-- ======================= SECTION 7 ======================= -->
+<div class="section" id="sec-7">
+  <div class="section-num">Section 7</div>
+  <h2>Backup &amp; Recovery</h2>
+
+  <div class="card success">
+    <pre>TIDB BACKUP & RESTORE (BR):
+
+1. SNAPSHOT BACKUP (full backup at a point in time):
+   br backup full --pd "pd-host:2379" --storage "s3://my-bucket/backup"
+   → Backs up all Regions' data to S3/GCS/Azure
+   → Speed: 50-100 MB/s per TiKV node
+   → Impact: < 20% CPU on cluster (configurable)
+
+2. LOG BACKUP (continuous incremental — like Espresso's Kafka CDC):
+   br log start --pd "pd-host:2379" --storage "s3://my-bucket/logs"
+   → Continuously streams KV changes to storage
+   → RPO: ~5 minutes (how much data you can lose)
+   → Enables POINT-IN-TIME RECOVERY (PITR)
+
+3. POINT-IN-TIME RECOVERY:
+   br restore point --pd "pd-host:2379" \
+     --full-backup-storage "s3://my-bucket/backup" \
+     --log-backup-storage "s3://my-bucket/logs" \
+     --restored-ts "2024-04-15 14:30:00"
+   → Restores to ANY timestamp: last full backup + replay logs
+   → Speed: ~1 GB/s per TiKV node (restore)
+
+VS ESPRESSO BACKUP:
+  Espresso: MySQL mysqldump or Ambry snapshots + Kafka CDC replay
+  TiDB BR: integrated tool, S3-native, PITR built-in, cluster-consistent</pre>
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+
+<!-- ======================= SECTION 8 ======================= -->
+<div class="section" id="sec-8">
+  <div class="section-num">Section 8</div>
+  <h2>TiDB vs Espresso vs Spanner</h2>
+
+  <table>
+    <tr><th>Aspect</th><th>TiDB/TiKV</th><th>Espresso</th><th>Google Spanner</th></tr>
+    <tr><td><strong>Data Model</strong></td><td>Relational (MySQL SQL)</td><td>Document (Avro in MySQL)</td><td>Relational (SQL)</td></tr>
+    <tr><td><strong>Storage Engine</strong></td><td>RocksDB (LSM-tree)</td><td>MySQL/InnoDB (B-tree)</td><td>Custom (Colossus + B-tree)</td></tr>
+    <tr><td><strong>Partitioning</strong></td><td>Range-based Regions (auto-split)</td><td>FNV hash (fixed count)</td><td>Range-based splits</td></tr>
+    <tr><td><strong>Replication</strong></td><td>Raft (per Region, majority ACK)</td><td>Async (binlog → Kafka)</td><td>Paxos (per split)</td></tr>
+    <tr><td><strong>Consistency</strong></td><td>Strong (linearizable writes)</td><td>Strong within partition (leader)</td><td>External consistency (TrueTime)</td></tr>
+    <tr><td><strong>Transactions</strong></td><td>Distributed ACID (Percolator 2PC)</td><td>Single-partition ACID</td><td>Distributed ACID (2PC + Paxos)</td></tr>
+    <tr><td><strong>Failure Tolerance</strong></td><td>Tolerate f failures with 2f+1</td><td>Leader-only commit (risk window)</td><td>Tolerate f with 2f+1 (Paxos)</td></tr>
+    <tr><td><strong>Cross-DC</strong></td><td>Raft across DCs (PD labels)</td><td>Async replication via Kafka</td><td>Paxos across DCs (TrueTime GPS)</td></tr>
+    <tr><td><strong>Schema</strong></td><td>SQL DDL (online schema change)</td><td>Avro in ZooKeeper (versioned)</td><td>SQL DDL</td></tr>
+    <tr><td><strong>JOINs</strong></td><td>Full SQL JOINs</td><td>Not supported</td><td>Full SQL JOINs (interleaved)</td></tr>
+    <tr><td><strong>Analytics</strong></td><td>TiFlash (columnar OLAP engine)</td><td>Pinot (separate system)</td><td>Built-in OLAP</td></tr>
+    <tr><td><strong>Open Source</strong></td><td>Yes (Apache 2.0)</td><td>No (LinkedIn internal)</td><td>No (Google Cloud only)</td></tr>
+  </table>
+
+  <div class="card interview">
+    <strong>Interview One-Liner:</strong> "TiDB is an open-source Spanner. It uses Raft (not Paxos) for consensus, RocksDB (not custom) for storage, and Percolator (not Spanner 2PC) for distributed transactions. Unlike Espresso, which commits on leader-only and replicates async via Kafka, TiKV commits after majority Raft ACK — stronger consistency but slightly higher write latency."
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+
+<!-- ======================= SECTION 9 ======================= -->
+<div class="section" id="sec-9">
+  <div class="section-num">Section 9</div>
+  <h2>Interview Questions</h2>
+
+  <div class="card interview">
+    <h4>Q1: "How does Raft handle writes? Does it wait for all replicas?" <span class="interview-tag meta">Meta</span><span class="interview-tag google">Google</span></h4>
+    <p><strong>Answer:</strong> No! Raft commits after <strong>majority</strong> (quorum) ACK, not all replicas. With 3 replicas, 2 ACKs (leader + 1 follower) is sufficient. This is what makes Raft fault-tolerant — 1 replica can be down and writes still succeed. The formula is 2f+1 replicas to tolerate f failures. This is NOT eventual consistency — committed writes are guaranteed durable on the majority.</p>
+  </div>
+
+  <div class="card interview">
+    <h4>Q2: "What happens when the Raft leader dies?" <span class="interview-tag google">Google</span></h4>
+    <p><strong>Answer:</strong> Followers detect missing heartbeats after ~300ms (election timeout). One becomes a Candidate, requests votes from others, and wins with majority votes. New leader resumes serving reads and writes. No data loss because the new leader has all committed entries (they were ACK'd by majority, and the new leader was part of that majority). Total unavailability for that Region: ~300ms.</p>
+  </div>
+
+  <div class="card interview">
+    <h4>Q3: "Raft vs Espresso replication — what's the trade-off?" <span class="interview-tag li">LinkedIn</span></h4>
+    <p><strong>Answer:</strong> Espresso commits on leader alone and replicates asynchronously via Kafka binlog. Faster writes (~3ms) but there's a window where committed data exists only on one node — if the leader dies before binlog replication, data is lost. TiKV/Raft commits after majority ACK (~10ms). Slower but no data loss as long as majority survives. Espresso trades durability for latency; TiKV trades latency for durability.</p>
+  </div>
+
+  <div class="card interview">
+    <h4>Q4: "How does TiDB partition data without a hash ring?" <span class="interview-tag google">Google</span></h4>
+    <p><strong>Answer:</strong> Range-based Regions. The key space is split into contiguous ranges, each ~256MB. When a Region grows too large, PD auto-splits it. This enables efficient range scans (all data in order on one node) but risks hot spots on sequential inserts. PD detects hot Regions and splits or moves their leaders. Compare to Espresso's fixed-count hash partitioning (no auto-split, no range scan advantage).</p>
+  </div>
+
+  <div class="card interview">
+    <h4>Q5: "Explain TiDB backup and PITR" <span class="interview-tag google">Google</span></h4>
+    <p><strong>Answer:</strong> TiDB BR does full snapshot backups (all Regions to S3, 50-100 MB/s per node, <20% CPU impact) plus continuous log backup (streams KV changes to S3, RPO ~5 min). For PITR: restore the last snapshot, then replay log backup to the exact timestamp. This gives you "restore to any second" capability. Compare to Espresso: MySQL dumps + Kafka CDC replay (similar concept but less integrated).</p>
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+</div>
+
+<footer>
+  <div class="container">
+    <p>Data Intensive Systems &mdash; Chapter 4 &mdash; <a href="/ddia-ch3.html">Ch 3: Storage</a> | <a href="/ddia-ch2.html">Ch 2: Data Models</a> | <a href="/ddia-ch1.html">Ch 1: Reliability</a> | <a href="/">Home</a></p>
+  </div>
+</footer>
+
+</body>
+</html>
