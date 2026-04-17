@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<title>How Companies Handle Data &mdash; Data Intensive Systems</title>
+<style>
+  :root{--bg:#fff;--surface:#f7f6f3;--border:#e3e2de;--text:#37352f;--text-muted:#787774;--accent:#2383e2;--accent2:#0f7b0f;--accent3:#6940a5;--accent4:#d9730d;--red:#e03e3e;--code-bg:#f7f6f3;--card:#fff;--ch-color:#2e7d32}
+  *{margin:0;padding:0;box-sizing:border-box}body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;font-size:15px}
+  .container{max-width:900px;margin:0 auto;padding:0 24px}.hero{background:linear-gradient(180deg,#fafafa,#fff);border-bottom:1px solid var(--border);padding:48px 0 36px;text-align:center}.hero h1{font-size:2.2em;font-weight:700;margin-bottom:12px}.hero h1 span{color:var(--ch-color)}.hero p{font-size:1.05em;color:var(--text-muted);max-width:700px;margin:0 auto 30px}.hero .badge{display:inline-block;background:var(--surface);border:1px solid var(--border);padding:6px 16px;border-radius:20px;font-size:.8em;color:var(--text-muted)}
+  .nav-links{margin-top:20px}.nav-links a{display:inline-block;background:var(--surface);border:1px solid var(--border);padding:8px 20px;border-radius:8px;color:var(--accent);text-decoration:none;margin:4px;font-size:.9em;transition:.2s}.nav-links a:hover{border-color:var(--accent);background:rgba(35,131,226,.06)}.nav-links a.ch{color:var(--ch-color);border-color:var(--ch-color)}
+  .toc{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:32px;margin:40px auto}.toc h2{font-size:1.2em;margin-bottom:16px;color:var(--ch-color)}.toc ol{padding-left:24px}.toc li{margin:8px 0}.toc a{color:var(--text);text-decoration:none;border-bottom:1px dashed var(--border);transition:.2s}.toc a:hover{color:var(--ch-color)}.toc .sub{padding-left:24px;list-style:disc}
+  .section{margin:40px 0;padding-top:16px;border-top:1px solid var(--border)}.section-num{font-size:.75em;font-weight:600;color:var(--ch-color);text-transform:uppercase;letter-spacing:2px;margin-bottom:8px}.section h2{font-size:1.6em;font-weight:600;margin-bottom:20px;color:var(--ch-color)}.section h3{font-size:1.15em;font-weight:600;margin:30px 0 12px;color:var(--accent);border-left:3px solid var(--accent);padding-left:12px}.section h4{font-size:1em;font-weight:600;margin:20px 0 10px;color:var(--accent3)}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px;margin:20px 0}.card.highlight{border-left:4px solid var(--accent)}.card.warn{border-left:4px solid var(--accent4)}.card.success{border-left:4px solid var(--accent2)}.card.danger{border-left:4px solid var(--red)}.card.interview{border-left:4px solid var(--ch-color);background:rgba(46,125,50,.02)}
+  .diagram{margin:30px 0;text-align:center}.diagram svg{max-width:100%;height:auto}.caption{font-size:.9em;color:var(--text-muted);margin-top:10px;font-style:italic}
+  code{background:var(--code-bg);border:1px solid var(--border);padding:2px 8px;border-radius:4px;font-family:'JetBrains Mono','SF Mono',monospace;font-size:.9em;color:var(--accent3)}pre{background:var(--code-bg);border:1px solid var(--border);padding:20px;border-radius:8px;overflow-x:auto;font-family:'JetBrains Mono','SF Mono',monospace;font-size:.85em;margin:14px 0;line-height:1.5}
+  table{width:100%;border-collapse:collapse;margin:16px 0;background:var(--card);border-radius:8px;overflow:hidden}th{background:rgba(46,125,50,.08);color:var(--ch-color);padding:12px 16px;text-align:left;font-weight:600;border-bottom:2px solid var(--border)}td{padding:10px 14px;border-bottom:1px solid var(--border);font-size:.92em}tr:last-child td{border-bottom:none}tr:hover td{background:rgba(46,125,50,.03)}
+  .interview-tag{display:inline-block;padding:2px 10px;border-radius:12px;font-size:.75em;font-weight:600;margin-left:8px}.interview-tag.meta{background:rgba(66,133,244,.1);color:#4285f4;border:1px solid #4285f4}.interview-tag.google{background:rgba(15,123,15,.1);color:#0f7b0f;border:1px solid #0f7b0f}.interview-tag.li{background:rgba(0,119,181,.1);color:#0077b5;border:1px solid #0077b5}.interview-tag.netflix{background:rgba(229,9,20,.1);color:#e50914;border:1px solid #e50914}
+  @media(max-width:700px){.compare-grid{grid-template-columns:1fr}}
+  .back-top{display:block;text-align:right;margin-top:20px}.back-top a{color:var(--text-muted);text-decoration:none;font-size:.85em}.back-top a:hover{color:var(--ch-color)}
+  footer{text-align:center;padding:40px 0;border-top:1px solid var(--border);color:var(--text-muted);font-size:.9em;margin-top:60px}footer a{color:var(--ch-color);text-decoration:none}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="container">
+    <h1>How Companies <span>Handle Data</span></h1>
+    <p>Replication, multi-DC writes, conflict resolution, Raft vs Paxos, and why "the best way to solve a hard consensus problem is to redesign your data model so you don't have one."</p>
+    <div class="badge">Data Intensive Systems &bull; Chapter 5 &bull; Interview Guide</div>
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="/ddia-ch4.html" class="ch">Ch 4: TiDB &amp; Raft</a>
+      <a href="/ddia-ch3.html">Ch 3: Storage</a>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+<div class="toc" id="toc">
+  <h2>Table of Contents</h2>
+  <ol>
+    <li><a href="#sec-1">The Normalization Problem &mdash; Why IDs, Not Strings</a></li>
+    <li><a href="#sec-2">Single-Leader Replication &mdash; LinkedIn, Facebook, Gmail</a></li>
+    <li><a href="#sec-3">Multi-Leader &mdash; When You Actually Need It</a></li>
+    <li><a href="#sec-4">Conflict Resolution Strategies</a></li>
+    <li><a href="#sec-5">Raft vs Paxos &mdash; The Consensus Showdown</a></li>
+    <li><a href="#sec-6">Every Company Mapped</a></li>
+    <li><a href="#sec-7">The Golden Rule: Avoid the Problem</a></li>
+  </ol>
+</div>
+
+
+<!-- ======================= SECTION 1 ======================= -->
+<div class="section" id="sec-1">
+  <div class="section-num">Section 1</div>
+  <h2>The Normalization Problem &mdash; Why IDs, Not Strings</h2>
+
+  <!-- DIAGRAM: Denormalized vs Normalized -->
+  <div class="diagram">
+    <svg viewBox="0 0 820 380" xmlns="http://www.w3.org/2000/svg" style="max-width:800px;">
+      <defs><filter id="sh1" x="-3%" y="-3%" width="106%" height="110%"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.06"/></filter>
+      <marker id="a1" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#546e7a"/></marker></defs>
+
+      <!-- LEFT: Denormalized -->
+      <rect x="10" y="10" width="390" height="360" rx="12" fill="#fce4ec" stroke="#c62828" stroke-width="2"/>
+      <text x="205" y="38" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="14" fill="#c62828">Denormalized (Strings Everywhere)</text>
+
+      <rect x="30" y="55" width="350" height="65" rx="8" fill="#fff" stroke="#ef9a9a" stroke-width="1"/>
+      <text x="45" y="75" font-family="JetBrains Mono,monospace" font-size="9" fill="#37352f">{"user_id":251, "name":"Bill Gates",</text>
+      <text x="50" y="90" font-family="JetBrains Mono,monospace" font-size="9" fill="#c62828"> "region":"Greater Seattle Area",</text>
+      <text x="50" y="105" font-family="JetBrains Mono,monospace" font-size="9" fill="#c62828"> "industry":"Philanthropy"}</text>
+
+      <rect x="30" y="125" width="350" height="65" rx="8" fill="#fff" stroke="#ef9a9a" stroke-width="1"/>
+      <text x="45" y="145" font-family="JetBrains Mono,monospace" font-size="9" fill="#37352f">{"user_id":252, "name":"Satya Nadella",</text>
+      <text x="50" y="160" font-family="JetBrains Mono,monospace" font-size="9" fill="#c62828"> "region":"Greater Seattle Area",</text>
+      <text x="50" y="175" font-family="JetBrains Mono,monospace" font-size="9" fill="#c62828"> "industry":"Philanthropy"}</text>
+
+      <text x="30" y="210" font-family="Inter,sans-serif" font-weight="700" font-size="11" fill="#c62828">Problems:</text>
+      <text x="30" y="228" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; "Greater Seattle Area" repeated 100K times</text>
+      <text x="30" y="246" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Rename city → update EVERY document</text>
+      <text x="30" y="264" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Typos: "Seattle" vs "seattle area" vs "Seatle"</text>
+      <text x="30" y="282" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; No localization (can't show "西雅图" in Chinese)</text>
+      <text x="30" y="300" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Search can't know Seattle is in Washington state</text>
+
+      <rect x="30" y="320" width="350" height="35" rx="6" fill="#ef9a9a"/>
+      <text x="205" y="342" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#c62828">Fast reads (no join needed) but write/update nightmare</text>
+
+      <!-- RIGHT: Normalized -->
+      <rect x="420" y="10" width="390" height="360" rx="12" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"/>
+      <text x="615" y="38" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="14" fill="#2e7d32">Normalized (IDs + Reference Tables)</text>
+
+      <rect x="440" y="55" width="350" height="50" rx="8" fill="#fff" stroke="#a5d6a7" stroke-width="1"/>
+      <text x="455" y="75" font-family="JetBrains Mono,monospace" font-size="9" fill="#37352f">{"user_id":251, "name":"Bill Gates",</text>
+      <text x="460" y="90" font-family="JetBrains Mono,monospace" font-size="9" fill="#2e7d32"> "region_id":101, "industry_id":501}</text>
+
+      <line x1="615" y1="105" x2="615" y2="125" stroke="#2e7d32" stroke-width="1.5" marker-end="url(#a1)"/>
+      <text x="630" y="118" font-family="Inter,sans-serif" font-size="9" fill="#2e7d32">JOIN</text>
+
+      <rect x="440" y="125" width="170" height="45" rx="8" fill="#c8e6c9" stroke="#2e7d32" stroke-width="1.5"/>
+      <text x="455" y="142" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#2e7d32">Regions</text>
+      <text x="455" y="160" font-family="JetBrains Mono,monospace" font-size="9" fill="#37352f">101 → "Greater Seattle Area"</text>
+
+      <rect x="620" y="125" width="150" height="45" rx="8" fill="#c8e6c9" stroke="#2e7d32" stroke-width="1.5"/>
+      <text x="635" y="142" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#2e7d32">Industries</text>
+      <text x="635" y="160" font-family="JetBrains Mono,monospace" font-size="9" fill="#37352f">501 → "Philanthropy"</text>
+
+      <text x="440" y="195" font-family="Inter,sans-serif" font-weight="700" font-size="11" fill="#2e7d32">Benefits:</text>
+      <text x="440" y="213" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Name stored ONCE → update in one place</text>
+      <text x="440" y="231" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; No typos (pick from dropdown)</text>
+      <text x="440" y="249" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Localization: 101 → "Seattle" (EN) / "西雅图" (ZH)</text>
+      <text x="440" y="267" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Search: 101 encodes "Seattle is in Washington"</text>
+
+      <rect x="440" y="290" width="350" height="60" rx="6" fill="#c8e6c9"/>
+      <text x="615" y="312" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#2e7d32">Clean writes, but NEED JOINs to read!</text>
+      <text x="615" y="332" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#37352f">SQL: trivial JOIN. Document DB: 2 separate queries</text>
+      <text x="615" y="345" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Espresso: no JOINs → use Galene/Venice for resolved views</text>
+    </svg>
+    <div class="caption">Denormalized = fast reads but update nightmare. Normalized = clean writes but need JOINs. Espresso sidesteps this: normalize in source of truth, denormalize in derived stores (Galene, Venice) via Kafka CDC.</div>
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+
+<!-- ======================= SECTION 2 ======================= -->
+<div class="section" id="sec-2">
+  <div class="section-num">Section 2</div>
+  <h2>Single-Leader Replication &mdash; The Default at Scale <span class="interview-tag meta">Meta</span><span class="interview-tag li">LinkedIn</span><span class="interview-tag google">Google</span></h2>
+
+  <p><strong>Most companies at scale use single-leader replication.</strong> Each piece of data has ONE primary datacenter. Writes go to the leader; followers replicate async.</p>
+
+  <!-- DIAGRAM: Single Leader Multi-DC -->
+  <div class="diagram">
+    <svg viewBox="0 0 820 340" xmlns="http://www.w3.org/2000/svg" style="max-width:800px;">
+      <defs><marker id="a2" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#546e7a"/></marker>
+      <filter id="sh2" x="-3%" y="-3%" width="106%" height="110%"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.06"/></filter></defs>
+
+      <!-- DC 1: Primary -->
+      <rect x="20" y="30" width="350" height="250" rx="12" fill="#e3f2fd" stroke="#1565c0" stroke-width="2" filter="url(#sh2)"/>
+      <text x="195" y="55" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="14" fill="#0d47a1">DC-1 (US West) — PRIMARY</text>
+
+      <rect x="40" y="70" width="130" height="40" rx="8" fill="#c8e6c9" stroke="#2e7d32" stroke-width="2"/>
+      <text x="105" y="95" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="11" fill="#2e7d32">LEADER</text>
+
+      <rect x="200" y="70" width="70" height="40" rx="8" fill="#bbdefb" stroke="#1565c0" stroke-width="1"/>
+      <text x="235" y="95" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#0d47a1">Follower</text>
+
+      <rect x="290" y="70" width="70" height="40" rx="8" fill="#bbdefb" stroke="#1565c0" stroke-width="1"/>
+      <text x="325" y="95" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#0d47a1">Follower</text>
+
+      <!-- User writes -->
+      <rect x="40" y="130" width="310" height="30" rx="6" fill="#c8e6c9"/>
+      <text x="195" y="150" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#1b5e20">User writes here: UPDATE profile SET headline='CEO' → ~3ms</text>
+
+      <rect x="40" y="175" width="310" height="80" rx="8" fill="#fff" stroke="#90caf9" stroke-width="1"/>
+      <text x="55" y="195" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Cache (Couchbase/Memcache)</text>
+      <text x="55" y="213" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Search (Galene)</text>
+      <text x="55" y="231" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Analytics (Pinot)</text>
+      <text x="55" y="249" font-family="Inter,sans-serif" font-size="10" fill="#787774">All derived stores, updated via Kafka</text>
+
+      <!-- DC 2: Read Replica -->
+      <rect x="450" y="30" width="350" height="250" rx="12" fill="#fff3e0" stroke="#e65100" stroke-width="2" filter="url(#sh2)"/>
+      <text x="625" y="55" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="14" fill="#e65100">DC-2 (Europe) — READ REPLICA</text>
+
+      <rect x="470" y="70" width="130" height="40" rx="8" fill="#ffcc80" stroke="#e65100" stroke-width="1"/>
+      <text x="535" y="90" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#e65100">Follower</text>
+      <text x="535" y="103" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" fill="#787774">(read-only)</text>
+
+      <rect x="470" y="130" width="310" height="30" rx="6" fill="#ffcc80"/>
+      <text x="625" y="150" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#e65100">European user reads here: GET profile → fast, local</text>
+
+      <rect x="470" y="175" width="310" height="55" rx="8" fill="#fff" stroke="#ffcc80" stroke-width="1"/>
+      <text x="485" y="195" font-family="Inter,sans-serif" font-size="10" fill="#37352f">European user WRITES → routed to DC-1 Leader</text>
+      <text x="485" y="213" font-family="Inter,sans-serif" font-size="10" fill="#c62828">Cross-ocean latency: ~150ms (speed of light)</text>
+      <text x="485" y="224" font-family="Inter,sans-serif" font-size="9" fill="#787774">This is the price of single-leader consistency</text>
+
+      <!-- Async replication arrow -->
+      <line x1="370" y1="90" x2="470" y2="90" stroke="#e65100" stroke-width="2" stroke-dasharray="6,3" marker-end="url(#a2)"/>
+      <text x="420" y="82" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#e65100">async</text>
+      <text x="420" y="105" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" fill="#787774">Kafka CDC</text>
+      <text x="420" y="117" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" fill="#787774">~50-200ms lag</text>
+
+      <!-- Bottom: who uses this -->
+      <rect x="20" y="295" width="780" height="35" rx="8" fill="#f7f6f3" stroke="#e3e2de" stroke-width="1"/>
+      <text x="410" y="318" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#37352f">Used by: <tspan font-weight="700">LinkedIn</tspan> (Espresso), <tspan font-weight="700">Facebook</tspan> (TAO), <tspan font-weight="700">Gmail</tspan> (Bigtable), <tspan font-weight="700">Twitter</tspan> (Manhattan), <tspan font-weight="700">WhatsApp</tspan> — all single-leader per user/shard</text>
+    </svg>
+    <div class="caption">Single-leader: one DC owns writes, other DCs get async read replicas. Simple, no conflicts, but cross-DC writes have latency. This is what 90% of companies use.</div>
+  </div>
+
+  <div class="card highlight">
+    <h4>Facebook's Cache Trick: Read-Your-Writes Consistency</h4>
+    <pre>Problem: User in Europe writes a comment. Write goes to US primary (~150ms).
+         User refreshes page. Read hits local European cache. Comment not there yet!
+
+Facebook's solution (from "Scaling Memcache at Facebook" paper):
+  1. User writes comment → routed to US primary → committed
+  2. Immediately: set a REMOTE MARKER in European cache:
+     "key X is stale, go to primary for reads"
+  3. User reads → cache sees marker → fetches from US primary → shows comment
+  4. After async replication catches up (~200ms) → marker cleared → reads local again
+
+Result: User always sees their own writes, even cross-DC.
+        Other European users see it ~200ms later (acceptable).</pre>
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+
+<!-- ======================= SECTION 3 ======================= -->
+<div class="section" id="sec-3">
+  <div class="section-num">Section 3</div>
+  <h2>Multi-Leader &mdash; When You Actually Need It</h2>
+
+  <p>Multi-leader means <strong>any DC can accept writes</strong>. Sounds great, but now you have the <strong>conflict problem</strong>: what if two DCs write the same data at the same time?</p>
+
+  <div class="card danger">
+    <h4>The Rule: Multi-leader is a tool of LAST RESORT</h4>
+    <pre>Multi-leader is ONLY needed when:
+  ✓ Multiple users CONCURRENTLY modify the SAME mutable object
+  ✓ AND users expect BOTH writes to succeed WITHOUT waiting
+  ✓ AND the data type has well-defined merge semantics
+
+Examples where multi-leader IS needed:
+  ✓ Google Docs (two people typing in same paragraph)
+  ✓ Figma (two designers moving shapes on same canvas)
+  ✓ CRDTs (counters, sets that merge mathematically)
+
+Examples where multi-leader is NOT needed (even though data is shared):
+  ✗ Gmail (messages are immutable, flags are per-user)
+  ✗ WhatsApp group chat (messages are append-only, each person writes their own)
+  ✗ Google Drive file metadata (renames are rare, last-writer-wins is fine)
+  ✗ Shared calendar (editing same event is rare → "reload" UX is acceptable)
+
+The best way to solve a hard consensus problem is to
+REDESIGN YOUR DATA MODEL so you don't have one.</pre>
+  </div>
+
+  <!-- DIAGRAM: When multi-leader is needed -->
+  <div class="diagram">
+    <svg viewBox="0 0 820 330" xmlns="http://www.w3.org/2000/svg" style="max-width:800px;">
+      <defs><filter id="sh3" x="-3%" y="-3%" width="106%" height="110%"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.06"/></filter></defs>
+
+      <text x="410" y="22" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="15" fill="#2e7d32">Do You Need Multi-Leader?</text>
+
+      <!-- Decision flow -->
+      <rect x="260" y="40" width="300" height="35" rx="8" fill="#e8eaf6" stroke="#283593" stroke-width="1.5"/>
+      <text x="410" y="63" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#283593">Can multiple users write the SAME object concurrently?</text>
+
+      <!-- NO branch -->
+      <rect x="30" y="110" width="320" height="85" rx="10" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2" filter="url(#sh3)"/>
+      <text x="190" y="135" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#2e7d32">NO → Single-Leader</text>
+      <text x="50" y="155" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Each object has one writer (or writes are rare).</text>
+      <text x="50" y="173" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Gmail, LinkedIn profiles, Twitter tweets,</text>
+      <text x="50" y="188" font-family="Inter,sans-serif" font-size="10" fill="#37352f">WhatsApp messages, YouTube metadata</text>
+
+      <!-- YES branch -->
+      <rect x="470" y="110" width="320" height="35" rx="8" fill="#fff3e0" stroke="#e65100" stroke-width="1.5"/>
+      <text x="630" y="133" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#e65100">YES → Can you restructure to avoid it?</text>
+
+      <!-- YES-YES: Avoid it -->
+      <rect x="470" y="170" width="150" height="70" rx="10" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1.5"/>
+      <text x="545" y="192" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#2e7d32">YES → Do that!</text>
+      <text x="485" y="210" font-family="Inter,sans-serif" font-size="9" fill="#37352f">Make objects immutable</text>
+      <text x="485" y="224" font-family="Inter,sans-serif" font-size="9" fill="#37352f">or per-user owned</text>
+
+      <!-- YES-NO: Multi-leader -->
+      <rect x="640" y="170" width="150" height="70" rx="10" fill="#fce4ec" stroke="#c62828" stroke-width="2"/>
+      <text x="715" y="192" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="11" fill="#c62828">NO → Multi-Leader</text>
+      <text x="655" y="210" font-family="Inter,sans-serif" font-size="9" fill="#37352f">Use OT or CRDTs</text>
+      <text x="655" y="224" font-family="Inter,sans-serif" font-size="9" fill="#37352f">Google Docs, Figma</text>
+
+      <!-- Arrows -->
+      <line x1="330" y1="75" x2="190" y2="110" stroke="#2e7d32" stroke-width="1.5"/>
+      <text x="230" y="92" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#2e7d32">NO</text>
+      <line x1="490" y1="75" x2="630" y2="110" stroke="#e65100" stroke-width="1.5"/>
+      <text x="570" y="92" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#e65100">YES</text>
+      <line x1="590" y1="145" x2="545" y2="170" stroke="#2e7d32" stroke-width="1"/>
+      <line x1="670" y1="145" x2="715" y2="170" stroke="#c62828" stroke-width="1"/>
+
+      <!-- Bottom: real-world examples -->
+      <rect x="30" y="260" width="760" height="60" rx="10" fill="#f7f6f3" stroke="#e3e2de" stroke-width="1"/>
+      <text x="410" y="282" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#37352f">90% of systems at scale use Single-Leader. Multi-leader only for collaborative editing.</text>
+      <text x="410" y="302" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#787774">WhatsApp group chat = shared but single-leader (messages are append-only, no conflicts). Shared Google Calendar = single-leader (editing same event is rare).</text>
+    </svg>
+    <div class="caption">Decision flowchart: most shared data doesn't need multi-leader. Only concurrent edits to the same mutable object require OT/CRDTs.</div>
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+
+<!-- ======================= SECTION 4 ======================= -->
+<div class="section" id="sec-4">
+  <div class="section-num">Section 4</div>
+  <h2>Conflict Resolution Strategies <span class="interview-tag meta">Meta</span><span class="interview-tag google">Google</span></h2>
+
+  <p>When conflicts DO happen (multi-leader or leaderless), how do you resolve them?</p>
+
+  <table>
+    <tr><th>Strategy</th><th>How It Works</th><th>Data Loss?</th><th>Used By</th></tr>
+    <tr><td><strong>Last-Write-Wins (LWW)</strong></td><td>Compare timestamps, newer wins, older silently discarded</td><td>YES — one write lost</td><td>Cassandra, DynamoDB (default), Spotify</td></tr>
+    <tr><td><strong>Keep Both (Siblings)</strong></td><td>Store both versions, client merges on next read</td><td>No, but client complexity</td><td>Riak, early DynamoDB, Amazon cart</td></tr>
+    <tr><td><strong>CRDTs</strong></td><td>Data structures that merge automatically (counters, sets)</td><td>No, mathematically safe</td><td>Redis Enterprise, Riak, Azure Cosmos DB</td></tr>
+    <tr><td><strong>OT (Operational Transform)</strong></td><td>Transform concurrent operations to preserve intent</td><td>No, intent preserved</td><td>Google Docs</td></tr>
+    <tr><td><strong>Avoid conflicts by design</strong></td><td>Pin writes to one leader, make data immutable/append-only</td><td>N/A — no conflicts</td><td>LinkedIn, Facebook, Gmail, Twitter</td></tr>
+  </table>
+
+  <div class="card highlight">
+    <h4>CRDTs — The Elegant Solution (When Your Data Fits)</h4>
+    <pre>CRDT = Conflict-free Replicated Data Type
+
+Counter CRDT (for "likes"):
+  DC-1 increments: +5 likes
+  DC-2 increments: +3 likes
+  Merge: SUM(5, 3) = 8 likes. No conflict! Both increments survive.
+
+Set CRDT (for "playlist items"):
+  DC-1 adds: {Song A, Song B}
+  DC-2 adds: {Song B, Song C}
+  Merge: UNION = {Song A, Song B, Song C}. Both adds survive.
+
+OR-Set CRDT (add + remove):
+  DC-1 adds Song A (with unique tag α)
+  DC-2 removes Song A (removes tag α)
+  If DC-1's add has a DIFFERENT tag than DC-2's remove → add wins
+  If same tag → remove wins. Deterministic!
+
+Limitation: Not everything can be a CRDT.
+  ✗ Text documents (OT or specialized text CRDTs like Yjs)
+  ✗ Complex business logic (inventory, payments)
+  ✓ Counters, sets, flags, registers, maps</pre>
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+
+<!-- ======================= SECTION 5 ======================= -->
+<div class="section" id="sec-5">
+  <div class="section-num">Section 5</div>
+  <h2>Raft vs Paxos &mdash; The Consensus Showdown <span class="interview-tag google">Google</span></h2>
+
+  <!-- DIAGRAM: Raft vs Paxos -->
+  <div class="diagram">
+    <svg viewBox="0 0 820 450" xmlns="http://www.w3.org/2000/svg" style="max-width:800px;">
+      <defs><filter id="sh5" x="-3%" y="-3%" width="106%" height="110%"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.06"/></filter></defs>
+
+      <text x="410" y="22" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="16" fill="#2e7d32">Raft vs Paxos — Same Guarantees, Different Approach</text>
+
+      <!-- Same box -->
+      <rect x="200" y="35" width="420" height="55" rx="10" fill="#e8eaf6" stroke="#283593" stroke-width="2"/>
+      <text x="410" y="57" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#283593">BOTH guarantee: Safety + Liveness + Quorum (majority)</text>
+      <text x="410" y="78" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Both solve: "how do N nodes agree on a sequence of values when some fail?"</text>
+
+      <!-- Paxos -->
+      <rect x="10" y="110" width="395" height="330" rx="12" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="2" filter="url(#sh5)"/>
+      <text x="207" y="138" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="16" fill="#4a148c">Paxos (1989)</text>
+      <text x="207" y="156" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#787774">Leslie Lamport. "The Part-Time Parliament"</text>
+
+      <text x="30" y="180" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#4a148c">How it works:</text>
+      <text x="30" y="198" font-family="Inter,sans-serif" font-size="10" fill="#37352f">1. <tspan font-weight="600">Prepare:</tspan> Proposer asks acceptors to promise</text>
+      <text x="35" y="213" font-family="Inter,sans-serif" font-size="10" fill="#37352f">not to accept older proposals</text>
+      <text x="30" y="231" font-family="Inter,sans-serif" font-size="10" fill="#37352f">2. <tspan font-weight="600">Accept:</tspan> If majority promises → send value</text>
+      <text x="30" y="249" font-family="Inter,sans-serif" font-size="10" fill="#37352f">3. Multi-Paxos: elect stable leader, skip Prepare</text>
+
+      <text x="30" y="275" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#c62828">Why it's hard:</text>
+      <text x="30" y="293" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Abstract, mathematical, hard to understand</text>
+      <text x="30" y="311" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Doesn't specify leader election or log mgmt</text>
+      <text x="30" y="329" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Multiple proposers can cause livelock</text>
+      <text x="30" y="347" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Google Chubby: "significant gap between</text>
+      <text x="35" y="362" font-family="Inter,sans-serif" font-size="10" fill="#37352f">  Paxos description and real-world needs"</text>
+
+      <rect x="30" y="380" width="355" height="45" rx="6" fill="#e1bee7"/>
+      <text x="207" y="400" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#4a148c">Used by: Google Spanner, Google Chubby,</text>
+      <text x="207" y="416" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Cassandra (lightweight txns), Azure Cosmos DB</text>
+
+      <!-- Raft -->
+      <rect x="415" y="110" width="395" height="330" rx="12" fill="#e3f2fd" stroke="#1565c0" stroke-width="2" filter="url(#sh5)"/>
+      <text x="612" y="138" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="16" fill="#0d47a1">Raft (2013)</text>
+      <text x="612" y="156" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#787774">Ongaro &amp; Ousterhout. "Understandable Consensus"</text>
+
+      <text x="435" y="180" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#0d47a1">How it works (3 clear sub-problems):</text>
+      <text x="435" y="198" font-family="Inter,sans-serif" font-size="10" fill="#37352f">1. <tspan font-weight="600">Leader election:</tspan> timeout → Candidate → votes</text>
+      <text x="435" y="216" font-family="Inter,sans-serif" font-size="10" fill="#37352f">2. <tspan font-weight="600">Log replication:</tspan> Leader → append → replicate</text>
+      <text x="440" y="231" font-family="Inter,sans-serif" font-size="10" fill="#37352f">to followers → majority ACK → commit</text>
+      <text x="435" y="249" font-family="Inter,sans-serif" font-size="10" fill="#37352f">3. <tspan font-weight="600">Safety:</tspan> leader must have all committed entries</text>
+
+      <text x="435" y="275" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#2e7d32">Why it won:</text>
+      <text x="435" y="293" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Designed for understandability (primary goal)</text>
+      <text x="435" y="311" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Strong leader (all writes flow one direction)</text>
+      <text x="435" y="329" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Specifies: log compaction, membership changes</text>
+      <text x="435" y="347" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Rich ecosystem (etcd, TiKV, CockroachDB)</text>
+      <text x="435" y="362" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Debuggable at 3am in production</text>
+
+      <rect x="435" y="380" width="355" height="45" rx="6" fill="#bbdefb"/>
+      <text x="612" y="400" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#0d47a1">Used by: TiDB/TiKV, etcd, CockroachDB, Consul,</text>
+      <text x="612" y="416" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#37352f">MongoDB (repl), Kafka (KRaft), Kubernetes (etcd)</text>
+    </svg>
+    <div class="caption">Paxos (1989): mathematically elegant but hard to implement. Raft (2013): same guarantees but decomposed into 3 clear sub-problems. Raft won post-2014 by being boring and clear.</div>
+  </div>
+
+  <table>
+    <tr><th>Aspect</th><th>Paxos</th><th>Raft</th></tr>
+    <tr><td><strong>Leader</strong></td><td>Any node can propose (flexible, complex)</td><td>Strong leader (all writes flow one way)</td></tr>
+    <tr><td><strong>Phases</strong></td><td>Prepare + Accept (2 round-trips)</td><td>AppendEntries (1 round-trip after election)</td></tr>
+    <tr><td><strong>Log ordering</strong></td><td>Out-of-order commits possible</td><td>Prefix-consistent (simpler log repair)</td></tr>
+    <tr><td><strong>Membership changes</strong></td><td>Not specified (roll your own)</td><td>Joint consensus (specified in paper)</td></tr>
+    <tr><td><strong>Understanding</strong></td><td>"Notoriously hard" — every implementer</td><td>Designed for understandability</td></tr>
+    <tr><td><strong>Convergence</strong></td><td colspan="2" style="text-align:center;">In practice, Multi-Paxos with stable leader ≈ Raft. They're converging.</td></tr>
+  </table>
+
+  <div class="card interview">
+    <strong>Interview One-Liner:</strong> "Raft is essentially Multi-Paxos with all the pragmatic choices already made. Same safety guarantees (majority quorum, leader election, log consistency), but Raft specifies everything Paxos leaves undefined (leader election, membership changes, log compaction). Raft won the 2010s consensus wars by being boring and clear."
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+
+<!-- ======================= SECTION 6 ======================= -->
+<div class="section" id="sec-6">
+  <div class="section-num">Section 6</div>
+  <h2>Every Company Mapped <span class="interview-tag meta">Meta</span><span class="interview-tag google">Google</span><span class="interview-tag li">LinkedIn</span><span class="interview-tag netflix">Netflix</span></h2>
+
+  <table>
+    <tr><th>Company / Feature</th><th>Replication Model</th><th>Conflict Strategy</th><th>Why</th></tr>
+    <tr><td><strong>LinkedIn</strong> (profiles, messages)</td><td>Single-leader per user partition (Espresso)</td><td>No conflicts by design</td><td>User pinned to DC. Writes to one leader, async Kafka CDC to other DCs.</td></tr>
+    <tr><td><strong>Facebook</strong> (posts, likes, comments)</td><td>Single-leader per shard (TAO)</td><td>No conflicts. Remote marker for read-your-writes.</td><td>Each object has one primary DC. Cache hides cross-DC latency.</td></tr>
+    <tr><td><strong>Facebook</strong> (News Feed)</td><td>Read-time aggregation</td><td>N/A — feed is computed, not stored</td><td>ML ranking changes constantly → precomputing wastes work.</td></tr>
+    <tr><td><strong>Twitter</strong> (tweets)</td><td>Single-leader per user (Manhattan)</td><td>No conflicts</td><td>Tweets are append-only. Fan-out on write to Redis timelines.</td></tr>
+    <tr><td><strong>YouTube</strong> (metadata, comments)</td><td>Spanner (synchronous Paxos)</td><td>No conflicts — strong global consistency</td><td>Correctness > latency. ~50-150ms cross-region writes.</td></tr>
+    <tr><td><strong>YouTube</strong> (view counts)</td><td>Eventual (counter system)</td><td>CRDT-like (sum of partitioned counters)</td><td>Can't pay Spanner latency on every play event. Approximate is OK.</td></tr>
+    <tr><td><strong>Gmail</strong></td><td>Single-leader per user (Spanner/Bigtable)</td><td>No conflicts</td><td>Mailbox = single user. Messages immutable. Flags per-user.</td></tr>
+    <tr><td><strong>Google Drive</strong> (metadata)</td><td>Spanner (synchronous)</td><td>Strong consistency (last-writer-wins)</td><td>Permissions need instant global consistency.</td></tr>
+    <tr><td><strong>Google Docs</strong> (editing)</td><td>Multi-leader (OT)</td><td>Operational Transformation</td><td>Concurrent typing is the whole point. Central OT server merges ops.</td></tr>
+    <tr><td><strong>Figma / Notion</strong></td><td>Multi-leader (CRDTs)</td><td>Conflict-free merge</td><td>Offline-friendly. No central server needed for merge.</td></tr>
+    <tr><td><strong>Spotify</strong> (playlists)</td><td>Cassandra (leaderless, multi-DC)</td><td>LWW + app-level merge for playlists</td><td>Play counts are idempotent. Losing one play event is OK.</td></tr>
+    <tr><td><strong>Netflix</strong> (profiles, history)</td><td>Cassandra (leaderless, AP)</td><td>LWW</td><td>High availability > consistency. Profile reads must never fail.</td></tr>
+    <tr><td><strong>Amazon</strong> (shopping cart)</td><td>Dynamo (leaderless)</td><td>Keep siblings, union on merge</td><td>Never lose an "add to cart." Union of both carts = no lost items.</td></tr>
+    <tr><td><strong>WhatsApp</strong></td><td>Single-leader per user/chat</td><td>No conflicts</td><td>Messages append-only. Per-user region pinning.</td></tr>
+    <tr><td><strong>TiDB</strong></td><td>Raft per Region (majority ACK)</td><td>Strong consistency (linearizable)</td><td>ACID transactions. Commits after majority. No data loss.</td></tr>
+  </table>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+
+<!-- ======================= SECTION 7 ======================= -->
+<div class="section" id="sec-7">
+  <div class="section-num">Section 7</div>
+  <h2>The Golden Rule: Avoid the Problem</h2>
+
+  <!-- DIAGRAM: The Meta-Pattern -->
+  <div class="diagram">
+    <svg viewBox="0 0 820 300" xmlns="http://www.w3.org/2000/svg" style="max-width:780px;">
+      <defs><filter id="sh7" x="-3%" y="-3%" width="106%" height="110%"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.06"/></filter></defs>
+
+      <rect x="10" y="10" width="800" height="280" rx="14" fill="#f7f6f3" stroke="#2e7d32" stroke-width="2"/>
+      <text x="410" y="40" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="16" fill="#2e7d32">The Meta-Pattern Across ALL Companies</text>
+
+      <text x="30" y="70" font-family="Inter,sans-serif" font-weight="600" font-size="12" fill="#37352f">1. Most systems use single-leader for the primary write path.</text>
+      <text x="35" y="90" font-family="Inter,sans-serif" font-size="10" fill="#787774">LinkedIn, Facebook, Twitter, Gmail, WhatsApp — all single-leader-per-shard.</text>
+
+      <text x="30" y="115" font-family="Inter,sans-serif" font-weight="600" font-size="12" fill="#37352f">2. Multi-leader ONLY when concurrent edits to the same mutable object are the product.</text>
+      <text x="35" y="135" font-family="Inter,sans-serif" font-size="10" fill="#787774">Google Docs (OT), Figma (CRDTs). Nowhere else.</text>
+
+      <text x="30" y="160" font-family="Inter,sans-serif" font-weight="600" font-size="12" fill="#37352f">3. Strong global consistency (Spanner/Paxos) ONLY when correctness > latency.</text>
+      <text x="35" y="180" font-family="Inter,sans-serif" font-size="10" fill="#787774">Payments, permissions, ad billing, inventory. NOT social feeds or play counts.</text>
+
+      <text x="30" y="205" font-family="Inter,sans-serif" font-weight="600" font-size="12" fill="#37352f">4. Read paths are always more sophisticated than write paths.</text>
+      <text x="35" y="225" font-family="Inter,sans-serif" font-size="10" fill="#787774">Writes: "put it in source of truth." Reads: precomputed timelines, caches, search indexes, ML ranking.</text>
+
+      <text x="30" y="250" font-family="Inter,sans-serif" font-weight="600" font-size="12" fill="#37352f">5. No single database does everything. Polyglot persistence + event streams.</text>
+      <text x="35" y="270" font-family="Inter,sans-serif" font-size="10" fill="#787774">Espresso → Kafka → Venice / Galene / Pinot / Liquid. CQRS: normalized writes, denormalized reads.</text>
+    </svg>
+    <div class="caption">The five rules that govern how every company at scale handles data. From DDIA: "modern systems are pipelines of specialized stores, each optimized for a particular read or write pattern, kept in sync by event streams."</div>
+  </div>
+
+  <div class="card interview">
+    <h4>The Ultimate Interview Statement</h4>
+    <pre>You're always picking two of three:
+  1. Low-latency local writes
+  2. Strong consistency
+  3. High availability during partitions
+
+LinkedIn/Facebook: pick 1 + 3 (pin writes to one DC, eventual cross-DC)
+Google/Spanner:    pick 2 + 3 (pay latency for strong consistency)
+Cassandra/Spotify: pick 1 + 3 (accept LWW data loss)
+CRDTs:            get all 3... but only for data that CAN be a CRDT
+
+Strong consistency across datacenters COSTS LATENCY. Always.
+You're paying for the speed of light between continents (~150ms).
+There is no way around this. Choose your trade-off.</pre>
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+</div>
+
+<footer>
+  <div class="container">
+    <p>Data Intensive Systems &mdash; Chapter 5 &mdash; <a href="/ddia-ch4.html">Ch 4: TiDB &amp; Raft</a> | <a href="/ddia-ch3.html">Ch 3: Storage</a> | <a href="/ddia-ch2.html">Ch 2: Data Models</a> | <a href="/ddia-ch1.html">Ch 1: Reliability</a> | <a href="/">Home</a></p>
+  </div>
+</footer>
+
+</body>
+</html>
