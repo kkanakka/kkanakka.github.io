@@ -49,6 +49,11 @@
     <li><a href="#sec-5">Raft vs Paxos &mdash; The Consensus Showdown</a></li>
     <li><a href="#sec-6">Every Company Mapped</a></li>
     <li><a href="#sec-7">The Golden Rule: Avoid the Problem</a></li>
+    <li><a href="#sec-8">Paxos In Depth &mdash; Phases, Ballots, fsync</a></li>
+    <li><a href="#sec-9">ZooKeeper ZAB Protocol</a></li>
+    <li><a href="#sec-10">Read Strategies in Consensus Systems</a></li>
+    <li><a href="#sec-11">The Consensus Protocol Family Tree</a></li>
+    <li><a href="#sec-12">Tradeoff Comparison Matrix</a></li>
   </ol>
 </div>
 
@@ -495,6 +500,402 @@ CRDTs:            get all 3... but only for data that CAN be a CRDT
 Strong consistency across datacenters COSTS LATENCY. Always.
 You're paying for the speed of light between continents (~150ms).
 There is no way around this. Choose your trade-off.</pre>
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+<!-- ======================= SECTION 8 ======================= -->
+<div class="section" id="sec-8">
+  <div class="section-num">Section 8</div>
+  <h2>Paxos In Depth &mdash; Phases, Ballots, fsync <span class="interview-tag google">Google</span></h2>
+
+  <p><strong>Roles are logical, not physical.</strong> Proposer, Acceptor, Learner are threads in the same process, not separate machines.</p>
+
+  <!-- DIAGRAM: Paxos Two Phases -->
+  <div class="diagram">
+    <svg viewBox="0 0 820 400" xmlns="http://www.w3.org/2000/svg" style="max-width:800px;">
+      <defs><marker id="aP" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#546e7a"/></marker>
+      <filter id="shP" x="-3%" y="-3%" width="106%" height="110%"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.06"/></filter></defs>
+
+      <text x="410" y="22" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="15" fill="#2e7d32">Basic Paxos: Two-Phase Write Flow</text>
+
+      <!-- Proposer -->
+      <rect x="20" y="50" width="100" height="330" rx="10" fill="#e3f2fd" stroke="#1565c0" stroke-width="2"/>
+      <text x="70" y="75" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="11" fill="#0d47a1">Proposer</text>
+      <text x="70" y="92" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" fill="#787774">(any node)</text>
+
+      <!-- Acceptors -->
+      <rect x="250" y="50" width="80" height="330" rx="10" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"/>
+      <text x="290" y="75" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="11" fill="#2e7d32">A1</text>
+      <rect x="370" y="50" width="80" height="330" rx="10" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"/>
+      <text x="410" y="75" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="11" fill="#2e7d32">A2</text>
+      <rect x="490" y="50" width="80" height="330" rx="10" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"/>
+      <text x="530" y="75" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="11" fill="#2e7d32">A3</text>
+
+      <!-- Learner -->
+      <rect x="680" y="50" width="100" height="330" rx="10" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="2"/>
+      <text x="730" y="75" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="11" fill="#4a148c">Learner</text>
+
+      <!-- Phase 1: PREPARE -->
+      <rect x="130" y="100" width="110" height="20" rx="4" fill="#1565c0"/>
+      <text x="185" y="114" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="9" fill="#fff">PHASE 1: PREPARE</text>
+
+      <line x1="120" y1="130" x2="250" y2="130" stroke="#1565c0" stroke-width="1.5" marker-end="url(#aP)"/>
+      <line x1="120" y1="130" x2="370" y2="140" stroke="#1565c0" stroke-width="1.5" marker-end="url(#aP)"/>
+      <line x1="120" y1="130" x2="490" y2="150" stroke="#1565c0" stroke-width="1.5" marker-end="url(#aP)"/>
+      <text x="130" y="125" font-family="JetBrains Mono,monospace" font-size="8" fill="#1565c0">PREPARE(ballot=42)</text>
+
+      <!-- Acceptor responses -->
+      <text x="260" y="155" font-family="Inter,sans-serif" font-size="7" fill="#2e7d32">fsync promise!</text>
+      <text x="380" y="165" font-family="Inter,sans-serif" font-size="7" fill="#2e7d32">fsync promise!</text>
+      <text x="500" y="172" font-family="Inter,sans-serif" font-size="7" fill="#c62828">timeout ✗</text>
+
+      <line x1="250" y1="170" x2="120" y2="185" stroke="#2e7d32" stroke-width="1.2" marker-end="url(#aP)"/>
+      <line x1="370" y1="180" x2="120" y2="190" stroke="#2e7d32" stroke-width="1.2" marker-end="url(#aP)"/>
+      <text x="170" y="200" font-family="Inter,sans-serif" font-size="8" fill="#2e7d32">PROMISE(ballot=42) — majority (2/3) ✓</text>
+
+      <!-- Phase 2: ACCEPT -->
+      <rect x="130" y="215" width="110" height="20" rx="4" fill="#e65100"/>
+      <text x="185" y="229" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="9" fill="#fff">PHASE 2: ACCEPT</text>
+
+      <line x1="120" y1="250" x2="250" y2="250" stroke="#e65100" stroke-width="1.5" marker-end="url(#aP)"/>
+      <line x1="120" y1="250" x2="370" y2="260" stroke="#e65100" stroke-width="1.5" marker-end="url(#aP)"/>
+      <line x1="120" y1="250" x2="490" y2="265" stroke="#e65100" stroke-width="1" stroke-dasharray="4"/>
+      <text x="130" y="245" font-family="JetBrains Mono,monospace" font-size="8" fill="#e65100">ACCEPT(ballot=42, value="X")</text>
+
+      <text x="260" y="272" font-family="Inter,sans-serif" font-size="7" fill="#2e7d32">fsync accepted!</text>
+      <text x="380" y="280" font-family="Inter,sans-serif" font-size="7" fill="#2e7d32">fsync accepted!</text>
+
+      <line x1="250" y1="285" x2="120" y2="300" stroke="#2e7d32" stroke-width="1.2" marker-end="url(#aP)"/>
+      <line x1="370" y1="290" x2="120" y2="305" stroke="#2e7d32" stroke-width="1.2" marker-end="url(#aP)"/>
+      <text x="130" y="315" font-family="Inter,sans-serif" font-weight="700" font-size="9" fill="#2e7d32">ACCEPTED by majority → value "X" is CHOSEN ✓</text>
+
+      <!-- Notify learner -->
+      <line x1="120" y1="330" x2="680" y2="340" stroke="#6a1b9a" stroke-width="1.5" marker-end="url(#aP)"/>
+      <text x="400" y="335" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" fill="#6a1b9a">LEARN: value "X" chosen at ballot 42</text>
+
+      <!-- fsync callout -->
+      <rect x="600" y="120" width="180" height="100" rx="8" fill="#fff3e0" stroke="#e65100" stroke-width="1.5"/>
+      <text x="690" y="140" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="10" fill="#e65100">fsync = real bottleneck</text>
+      <text x="615" y="158" font-family="Inter,sans-serif" font-size="9" fill="#37352f">Acceptors MUST fsync</text>
+      <text x="615" y="172" font-family="Inter,sans-serif" font-size="9" fill="#37352f">before responding.</text>
+      <text x="615" y="190" font-family="Inter,sans-serif" font-size="9" fill="#37352f">SSD: ~0.5ms per fsync</text>
+      <text x="615" y="204" font-family="Inter,sans-serif" font-size="9" fill="#37352f">HDD: ~10ms per fsync</text>
+      <text x="615" y="215" font-family="Inter,sans-serif" font-size="9" fill="#c62828">Batching fsyncs = key opt</text>
+    </svg>
+    <div class="caption">Basic Paxos: Prepare (establish right to propose) → Accept (commit value after majority). Acceptors MUST fsync to disk before responding — crash amnesia would violate safety.</div>
+  </div>
+
+  <div class="card warn">
+    <h4>The Clever Part of Paxos</h4>
+    <pre>If during Phase 1, any acceptor says "I already accepted value Y at ballot 30,"
+the proposer MUST propose Y in Phase 2, not its own value.
+
+This is how Paxos ensures only ONE value is ever chosen,
+even with multiple concurrent proposers.
+
+Multi-Paxos optimization: elect a stable leader, skip Phase 1
+for subsequent writes (reuse the ballot). This is what Spanner does.
+In practice, Multi-Paxos with a stable leader ≈ Raft.</pre>
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+
+<!-- ======================= SECTION 9 ======================= -->
+<div class="section" id="sec-9">
+  <div class="section-num">Section 9</div>
+  <h2>ZooKeeper ZAB Protocol</h2>
+
+  <p>ZAB (ZooKeeper Atomic Broadcast) predates Raft and has unique recovery mechanics. Used <strong>only</strong> by ZooKeeper (Helix, Kafka pre-KRaft, Espresso coordination).</p>
+
+  <!-- DIAGRAM: ZAB Phases -->
+  <div class="diagram">
+    <svg viewBox="0 0 820 310" xmlns="http://www.w3.org/2000/svg" style="max-width:800px;">
+      <defs><marker id="aZ" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#546e7a"/></marker></defs>
+
+      <text x="410" y="22" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="15" fill="#2e7d32">ZAB: Four Phases of Operation</text>
+
+      <!-- Phase 0 -->
+      <rect x="20" y="45" width="180" height="100" rx="10" fill="#fce4ec" stroke="#c62828" stroke-width="2"/>
+      <text x="110" y="68" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#c62828">Phase 0</text>
+      <text x="110" y="85" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#c62828">Leader Election</text>
+      <text x="35" y="105" font-family="Inter,sans-serif" font-size="9" fill="#37352f">Vote for highest (zxid, serverId)</text>
+      <text x="35" y="120" font-family="Inter,sans-serif" font-size="9" fill="#37352f">Winner = most recent state</text>
+      <text x="35" y="135" font-family="Inter,sans-serif" font-size="9" fill="#787774">~200ms</text>
+
+      <line x1="200" y1="95" x2="230" y2="95" stroke="#546e7a" stroke-width="1.5" marker-end="url(#aZ)"/>
+
+      <!-- Phase 1 -->
+      <rect x="230" y="45" width="155" height="100" rx="10" fill="#fff3e0" stroke="#e65100" stroke-width="2"/>
+      <text x="307" y="68" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#e65100">Phase 1</text>
+      <text x="307" y="85" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#e65100">Discovery</text>
+      <text x="245" y="105" font-family="Inter,sans-serif" font-size="9" fill="#37352f">Leader collects last zxid</text>
+      <text x="245" y="120" font-family="Inter,sans-serif" font-size="9" fill="#37352f">from each follower</text>
+
+      <line x1="385" y1="95" x2="415" y2="95" stroke="#546e7a" stroke-width="1.5" marker-end="url(#aZ)"/>
+
+      <!-- Phase 2 -->
+      <rect x="415" y="45" width="170" height="100" rx="10" fill="#e3f2fd" stroke="#1565c0" stroke-width="2"/>
+      <text x="500" y="68" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#0d47a1">Phase 2</text>
+      <text x="500" y="85" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#0d47a1">Synchronization</text>
+      <text x="430" y="105" font-family="Inter,sans-serif" font-size="9" fill="#37352f">Send SNAP/DIFF/TRUNC</text>
+      <text x="430" y="120" font-family="Inter,sans-serif" font-size="9" fill="#37352f">to converge all logs</text>
+      <text x="430" y="135" font-family="Inter,sans-serif" font-size="9" fill="#787774">TRUNC = rollback uncommitted</text>
+
+      <line x1="585" y1="95" x2="615" y2="95" stroke="#546e7a" stroke-width="1.5" marker-end="url(#aZ)"/>
+
+      <!-- Phase 3 -->
+      <rect x="615" y="45" width="185" height="100" rx="10" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"/>
+      <text x="707" y="68" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#2e7d32">Phase 3</text>
+      <text x="707" y="85" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#2e7d32">Broadcast (Normal Op)</text>
+      <text x="630" y="105" font-family="Inter,sans-serif" font-size="9" fill="#37352f">Leader: PROPOSAL(zxid, txn)</text>
+      <text x="630" y="120" font-family="Inter,sans-serif" font-size="9" fill="#37352f">Followers: fsync → ACK</text>
+      <text x="630" y="135" font-family="Inter,sans-serif" font-size="9" fill="#37352f">Majority ACK → COMMIT</text>
+
+      <!-- zxid explanation -->
+      <rect x="20" y="170" width="780" height="55" rx="10" fill="#f7f6f3" stroke="#e3e2de" stroke-width="1"/>
+      <text x="30" y="192" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#37352f">zxid = 64-bit compound identifier</text>
+      <text x="30" y="212" font-family="JetBrains Mono,monospace" font-size="10" fill="#37352f">| epoch (high 32 bits) | counter (low 32 bits) |  e.g. zxid = 0x0005_0000002A = epoch 5, txn 42</text>
+
+      <!-- What makes ZAB different -->
+      <rect x="20" y="240" width="780" height="60" rx="10" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1.5"/>
+      <text x="30" y="262" font-family="Inter,sans-serif" font-weight="700" font-size="11" fill="#2e7d32">What makes ZAB different from Raft?</text>
+      <text x="30" y="280" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; <tspan font-weight="600">Primary Order guarantee:</tspan> if ANY server delivered a txn, ALL future servers deliver it in the same position (stronger than basic Paxos)</text>
+      <text x="30" y="296" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; <tspan font-weight="600">Explicit Discovery + Sync phases:</tspan> handles "catch up a new cluster" more carefully than Raft's log matching (critical for ZooKeeper's coordination use case)</text>
+    </svg>
+    <div class="caption">ZAB has 4 explicit phases: election → discovery → sync → broadcast. The zxid compound identifier (epoch + counter) makes comparing state trivial.</div>
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+
+<!-- ======================= SECTION 10 ======================= -->
+<div class="section" id="sec-10">
+  <div class="section-num">Section 10</div>
+  <h2>Read Strategies in Consensus Systems</h2>
+
+  <p>Reads are trickier than they look. A leader might <em>think</em> it's still the leader when a partition has already caused a new election.</p>
+
+  <!-- DIAGRAM: Four Read Strategies -->
+  <div class="diagram">
+    <svg viewBox="0 0 820 310" xmlns="http://www.w3.org/2000/svg" style="max-width:800px;">
+      <defs><filter id="shR2" x="-3%" y="-3%" width="106%" height="110%"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.06"/></filter></defs>
+
+      <text x="410" y="22" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="15" fill="#2e7d32">Four Read Strategies: Consistency vs Latency</text>
+
+      <!-- Strategy 1: Consensus Read -->
+      <rect x="10" y="40" width="190" height="260" rx="10" fill="#fce4ec" stroke="#c62828" stroke-width="2" filter="url(#shR2)"/>
+      <text x="105" y="65" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#c62828">Consensus Read</text>
+      <text x="25" y="88" font-family="Inter,sans-serif" font-size="9" fill="#37352f">Leader runs a no-op</text>
+      <text x="25" y="103" font-family="Inter,sans-serif" font-size="9" fill="#37352f">through Raft/Paxos to</text>
+      <text x="25" y="118" font-family="Inter,sans-serif" font-size="9" fill="#37352f">PROVE it's still leader.</text>
+      <text x="25" y="138" font-family="Inter,sans-serif" font-size="9" fill="#37352f">Then serves the read.</text>
+      <rect x="25" y="155" width="160" height="22" rx="4" fill="#ef9a9a"/>
+      <text x="105" y="170" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#c62828">Latency: 1 full RTT</text>
+      <rect x="25" y="182" width="160" height="22" rx="4" fill="#c8e6c9"/>
+      <text x="105" y="197" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#2e7d32">Consistency: Strongest</text>
+      <text x="25" y="225" font-family="Inter,sans-serif" font-size="9" fill="#787774">Used: etcd (default)</text>
+      <text x="25" y="245" font-family="Inter,sans-serif" font-size="9" fill="#787774">Safest but slowest</text>
+
+      <!-- Strategy 2: Lease Read -->
+      <rect x="215" y="40" width="190" height="260" rx="10" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2" filter="url(#shR2)"/>
+      <text x="310" y="65" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#2e7d32">Lease Read</text>
+      <text x="230" y="88" font-family="Inter,sans-serif" font-size="9" fill="#37352f">Leader holds a time-</text>
+      <text x="230" y="103" font-family="Inter,sans-serif" font-size="9" fill="#37352f">bounded lease (e.g. 10s).</text>
+      <text x="230" y="118" font-family="Inter,sans-serif" font-size="9" fill="#37352f">While valid, serves reads</text>
+      <text x="230" y="133" font-family="Inter,sans-serif" font-size="9" fill="#37352f">locally. No network!</text>
+      <rect x="230" y="155" width="160" height="22" rx="4" fill="#c8e6c9"/>
+      <text x="310" y="170" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#2e7d32">Latency: ~0 (local RAM)</text>
+      <rect x="230" y="182" width="160" height="22" rx="4" fill="#c8e6c9"/>
+      <text x="310" y="197" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#2e7d32">Consistency: Strong</text>
+      <text x="230" y="225" font-family="Inter,sans-serif" font-size="9" fill="#787774">Used: Spanner, Chubby</text>
+      <text x="230" y="245" font-family="Inter,sans-serif" font-size="9" fill="#787774">Requires clock sync!</text>
+      <text x="230" y="265" font-family="Inter,sans-serif" font-weight="600" font-size="9" fill="#2e7d32">Best for production</text>
+
+      <!-- Strategy 3: Quorum Read -->
+      <rect x="420" y="40" width="190" height="260" rx="10" fill="#e3f2fd" stroke="#1565c0" stroke-width="2" filter="url(#shR2)"/>
+      <text x="515" y="65" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#0d47a1">Quorum Read</text>
+      <text x="435" y="88" font-family="Inter,sans-serif" font-size="9" fill="#37352f">Any node contacts a</text>
+      <text x="435" y="103" font-family="Inter,sans-serif" font-size="9" fill="#37352f">majority of replicas.</text>
+      <text x="435" y="118" font-family="Inter,sans-serif" font-size="9" fill="#37352f">Returns the newest value</text>
+      <text x="435" y="133" font-family="Inter,sans-serif" font-size="9" fill="#37352f">across the majority.</text>
+      <rect x="435" y="155" width="160" height="22" rx="4" fill="#fff3e0"/>
+      <text x="515" y="170" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#e65100">Latency: 1 RTT</text>
+      <rect x="435" y="182" width="160" height="22" rx="4" fill="#c8e6c9"/>
+      <text x="515" y="197" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#2e7d32">Consistency: Strong</text>
+      <text x="435" y="225" font-family="Inter,sans-serif" font-size="9" fill="#787774">Used: DynamoDB (R+W>N)</text>
+      <text x="435" y="245" font-family="Inter,sans-serif" font-size="9" fill="#787774">Spreads read load</text>
+
+      <!-- Strategy 4: Follower Read -->
+      <rect x="625" y="40" width="185" height="260" rx="10" fill="#fff3e0" stroke="#e65100" stroke-width="2" filter="url(#shR2)"/>
+      <text x="717" y="65" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#e65100">Follower Read</text>
+      <text x="640" y="88" font-family="Inter,sans-serif" font-size="9" fill="#37352f">Read from any follower's</text>
+      <text x="640" y="103" font-family="Inter,sans-serif" font-size="9" fill="#37352f">local state directly.</text>
+      <text x="640" y="118" font-family="Inter,sans-serif" font-size="9" fill="#37352f">No coordination.</text>
+      <rect x="640" y="145" width="155" height="22" rx="4" fill="#c8e6c9"/>
+      <text x="717" y="160" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#2e7d32">Latency: ~0 (local)</text>
+      <rect x="640" y="172" width="155" height="22" rx="4" fill="#ef9a9a"/>
+      <text x="717" y="187" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#c62828">Consistency: STALE!</text>
+      <text x="640" y="215" font-family="Inter,sans-serif" font-size="9" fill="#787774">Used: TiDB (opt-in),</text>
+      <text x="640" y="230" font-family="Inter,sans-serif" font-size="9" fill="#787774">Espresso (follower reads)</text>
+      <text x="640" y="250" font-family="Inter,sans-serif" font-size="9" fill="#787774">Fastest, cheapest, but</text>
+      <text x="640" y="265" font-family="Inter,sans-serif" font-size="9" fill="#c62828">may return old data</text>
+    </svg>
+    <div class="caption">Four read strategies: Consensus (safest, slowest), Lease (fast + strong, needs clocks), Quorum (strong, spreads load), Follower (fastest, but stale). Most production systems use Lease reads.</div>
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+
+<!-- ======================= SECTION 11 ======================= -->
+<div class="section" id="sec-11">
+  <div class="section-num">Section 11</div>
+  <h2>The Consensus Protocol Family Tree</h2>
+
+  <!-- DIAGRAM: Protocol Family -->
+  <div class="diagram">
+    <svg viewBox="0 0 820 420" xmlns="http://www.w3.org/2000/svg" style="max-width:800px;">
+      <defs><marker id="aF" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#546e7a"/></marker>
+      <filter id="shF3" x="-3%" y="-3%" width="106%" height="110%"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.06"/></filter></defs>
+
+      <text x="410" y="22" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="15" fill="#2e7d32">Consensus Protocol Lineage</text>
+
+      <!-- Root: Paxos -->
+      <rect x="300" y="40" width="160" height="45" rx="10" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="2" filter="url(#shF3)"/>
+      <text x="380" y="60" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#4a148c">Paxos (1989)</text>
+      <text x="380" y="77" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#787774">Lamport. Foundation.</text>
+
+      <!-- VR -->
+      <rect x="30" y="40" width="170" height="45" rx="10" fill="#e3f2fd" stroke="#1565c0" stroke-width="1.5" filter="url(#shF3)"/>
+      <text x="115" y="60" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#0d47a1">Viewstamped Repl (1988)</text>
+      <text x="115" y="77" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#787774">Liskov. Independent origin.</text>
+
+      <!-- Branches from Paxos -->
+      <line x1="340" y1="85" x2="110" y2="120" stroke="#546e7a" stroke-width="1.2" marker-end="url(#aF)"/>
+      <line x1="360" y1="85" x2="260" y2="120" stroke="#546e7a" stroke-width="1.2" marker-end="url(#aF)"/>
+      <line x1="400" y1="85" x2="420" y2="120" stroke="#546e7a" stroke-width="1.2" marker-end="url(#aF)"/>
+      <line x1="420" y1="85" x2="570" y2="120" stroke="#546e7a" stroke-width="1.2" marker-end="url(#aF)"/>
+      <line x1="440" y1="85" x2="720" y2="120" stroke="#546e7a" stroke-width="1.2" marker-end="url(#aF)"/>
+
+      <!-- Multi-Paxos -->
+      <rect x="20" y="120" width="180" height="55" rx="8" fill="#e8eaf6" stroke="#283593" stroke-width="1.5"/>
+      <text x="110" y="140" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#283593">Multi-Paxos</text>
+      <text x="35" y="158" font-family="Inter,sans-serif" font-size="9" fill="#37352f">Stable leader, skip Phase 1</text>
+      <text x="35" y="170" font-family="Inter,sans-serif" font-size="8" fill="#787774">Spanner, Chubby</text>
+
+      <!-- ZAB -->
+      <rect x="210" y="120" width="130" height="55" rx="8" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1.5"/>
+      <text x="275" y="140" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#2e7d32">ZAB (2008)</text>
+      <text x="225" y="158" font-family="Inter,sans-serif" font-size="9" fill="#37352f">4-phase recovery</text>
+      <text x="225" y="170" font-family="Inter,sans-serif" font-size="8" fill="#787774">ZooKeeper only</text>
+
+      <!-- Raft -->
+      <rect x="360" y="120" width="130" height="55" rx="8" fill="#e3f2fd" stroke="#1565c0" stroke-width="2"/>
+      <text x="425" y="140" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#0d47a1">Raft (2014)</text>
+      <text x="375" y="158" font-family="Inter,sans-serif" font-size="9" fill="#37352f">Understandability-first</text>
+      <text x="375" y="170" font-family="Inter,sans-serif" font-size="8" fill="#0d47a1">TiDB, etcd, CockroachDB</text>
+
+      <!-- EPaxos -->
+      <rect x="510" y="120" width="130" height="55" rx="8" fill="#fff3e0" stroke="#e65100" stroke-width="1.5"/>
+      <text x="575" y="140" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#e65100">EPaxos (2013)</text>
+      <text x="525" y="158" font-family="Inter,sans-serif" font-size="9" fill="#37352f">Leaderless, dep graph</text>
+      <text x="525" y="170" font-family="Inter,sans-serif" font-size="8" fill="#787774">Research only</text>
+
+      <!-- Fast/Flexible Paxos -->
+      <rect x="660" y="120" width="140" height="55" rx="8" fill="#fce4ec" stroke="#c62828" stroke-width="1.5"/>
+      <text x="730" y="140" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#c62828">Flexible Paxos (2016)</text>
+      <text x="675" y="158" font-family="Inter,sans-serif" font-size="9" fill="#37352f">Quorums only need to</text>
+      <text x="675" y="170" font-family="Inter,sans-serif" font-size="8" fill="#37352f">intersect, not both be majority</text>
+
+      <!-- Raft children -->
+      <line x1="425" y1="175" x2="110" y2="220" stroke="#1565c0" stroke-width="1" marker-end="url(#aF)"/>
+      <line x1="425" y1="175" x2="290" y2="220" stroke="#1565c0" stroke-width="1" marker-end="url(#aF)"/>
+      <line x1="425" y1="175" x2="460" y2="220" stroke="#1565c0" stroke-width="1" marker-end="url(#aF)"/>
+      <line x1="425" y1="175" x2="620" y2="220" stroke="#1565c0" stroke-width="1" marker-end="url(#aF)"/>
+
+      <rect x="20" y="220" width="170" height="35" rx="6" fill="#bbdefb" stroke="#1565c0" stroke-width="1"/>
+      <text x="105" y="242" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#0d47a1">TiKV / TiDB</text>
+      <rect x="210" y="220" width="150" height="35" rx="6" fill="#bbdefb" stroke="#1565c0" stroke-width="1"/>
+      <text x="285" y="242" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#0d47a1">etcd / Kubernetes</text>
+      <rect x="380" y="220" width="150" height="35" rx="6" fill="#bbdefb" stroke="#1565c0" stroke-width="1"/>
+      <text x="455" y="242" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#0d47a1">CockroachDB / Consul</text>
+      <rect x="550" y="220" width="150" height="35" rx="6" fill="#bbdefb" stroke="#1565c0" stroke-width="1"/>
+      <text x="625" y="242" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#0d47a1">Kafka KRaft / MongoDB</text>
+
+      <!-- Byzantine -->
+      <rect x="20" y="290" width="780" height="55" rx="10" fill="#f7f6f3" stroke="#e3e2de" stroke-width="1"/>
+      <text x="30" y="312" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#37352f">Byzantine Fault Tolerant (BFT) variants — for trustless environments:</text>
+      <text x="30" y="332" font-family="Inter,sans-serif" font-size="10" fill="#37352f"><tspan font-weight="600">PBFT</tspan> (1999), <tspan font-weight="600">HotStuff</tspan> (2019, Meta's Diem/Libra blockchain), <tspan font-weight="600">Tendermint</tspan> (Cosmos). Need 3f+1 nodes to tolerate f Byzantine faults (vs 2f+1 for crash faults).</text>
+
+      <!-- CASPaxos -->
+      <rect x="20" y="365" width="780" height="40" rx="8" fill="#f7f6f3" stroke="#e3e2de" stroke-width="1"/>
+      <text x="30" y="390" font-family="Inter,sans-serif" font-size="10" fill="#37352f"><tspan font-weight="600">CASPaxos</tspan> (2018): minimalist single-register compare-and-swap. Teaching tool. | <tspan font-weight="600">Fast Paxos</tspan> (2005): skip leader for 1 RTT but needs larger quorum. Rarely used.</text>
+    </svg>
+    <div class="caption">The consensus protocol family: Paxos (1989) is the root. Multi-Paxos → Spanner. ZAB → ZooKeeper. Raft (2014) won post-2014 and powers TiDB, etcd, CockroachDB, Kafka KRaft, Kubernetes.</div>
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+
+<!-- ======================= SECTION 12 ======================= -->
+<div class="section" id="sec-12">
+  <div class="section-num">Section 12</div>
+  <h2>Tradeoff Comparison Matrix</h2>
+
+  <h3>Consensus Protocols</h3>
+  <table>
+    <tr><th>Protocol</th><th>Leader</th><th>Phases</th><th>Quorum</th><th>Log Order</th><th>Membership</th><th>Used By</th></tr>
+    <tr><td><strong>Paxos</strong></td><td>Any proposer</td><td>Prepare + Accept (2 RTT)</td><td>Majority</td><td>Out-of-order possible</td><td>Unspecified</td><td>Spanner, Chubby</td></tr>
+    <tr><td><strong>Multi-Paxos</strong></td><td>Stable leader</td><td>Accept only (1 RTT)</td><td>Majority</td><td>Sequential</td><td>Varies</td><td>Spanner</td></tr>
+    <tr><td><strong>Raft</strong></td><td>Strong leader</td><td>AppendEntries (1 RTT)</td><td>Majority</td><td>Strictly sequential</td><td>Joint consensus</td><td>TiDB, etcd, CockroachDB</td></tr>
+    <tr><td><strong>ZAB</strong></td><td>Strong leader</td><td>4 phases (recovery)</td><td>Majority</td><td>Primary Order</td><td>Built-in</td><td>ZooKeeper</td></tr>
+    <tr><td><strong>EPaxos</strong></td><td>Leaderless</td><td>1 RTT (commutative)</td><td>Fast quorum</td><td>Dependency graph</td><td>Complex</td><td>Research</td></tr>
+  </table>
+
+  <h3>Write-Path Architectures</h3>
+  <table>
+    <tr><th>Company</th><th>Write Model</th><th>Conflict Strategy</th><th>Write Latency</th><th>Consistency</th></tr>
+    <tr><td><strong>LinkedIn</strong></td><td>Single-leader (Espresso)</td><td>None by design</td><td>~3ms</td><td>Strong (leader), eventual (cross-DC)</td></tr>
+    <tr><td><strong>Facebook</strong></td><td>Single-leader (TAO)</td><td>Remote marker trick</td><td>~5ms</td><td>Read-your-writes via cache</td></tr>
+    <tr><td><strong>Google/YouTube</strong></td><td>Sync Paxos (Spanner)</td><td>None (global order)</td><td>~50-150ms</td><td>External consistency</td></tr>
+    <tr><td><strong>Spotify/Netflix</strong></td><td>Leaderless (Cassandra)</td><td>LWW</td><td>~5ms</td><td>Eventual (tunable)</td></tr>
+    <tr><td><strong>TiDB</strong></td><td>Raft per Region</td><td>None (majority ACK)</td><td>~10ms</td><td>Strong (linearizable)</td></tr>
+  </table>
+
+  <h3>Sharding Strategies</h3>
+  <table>
+    <tr><th>Strategy</th><th>Range Scans</th><th>Hot Spots</th><th>Auto-Split</th><th>Adding Nodes</th><th>Used By</th></tr>
+    <tr><td><strong>Hash (modulo)</strong></td><td>Scatter-gather</td><td>Low</td><td>No</td><td>Helix reassigns</td><td>Espresso, Redis</td></tr>
+    <tr><td><strong>Range</strong></td><td>Efficient</td><td>High (sequential)</td><td>Yes</td><td>PD moves Regions</td><td>TiKV, Spanner, HBase</td></tr>
+    <tr><td><strong>Consistent hash</strong></td><td>Scatter-gather</td><td>Low</td><td>No</td><td>1/N keys move</td><td>DynamoDB, Cassandra</td></tr>
+  </table>
+
+  <div class="card interview">
+    <h4>Closing Thoughts from the Document</h4>
+    <pre>FOUR THEMES:
+
+1. Schema design beats fancy protocols.
+   Make objects immutable, give each one writer, append don't update.
+   If you can, single-leader is enough and life is easy.
+
+2. Modern systems are composites.
+   Authoritative write store + derived read stores + change streams.
+   CQRS is the underlying pattern everywhere.
+
+3. Strong consistency costs latency.
+   You cannot beat the speed of light. Spanner: 50-150ms cross-region.
+   Accept eventual, pin writes, or use CRDTs.
+
+4. fsync is the real bottleneck.
+   Consensus latency isn't the network — it's the disk.
+   Acceptor must fsync before ACK: ~0.5ms SSD, ~10ms HDD.
+   Batching fsyncs and NVMe are the real optimizations.</pre>
   </div>
 
   <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
