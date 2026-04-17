@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<title>SRE Debugging &amp; Troubleshooting &mdash; 21 Production Scenarios</title>
+<style>
+  :root{--bg:#fff;--surface:#f7f6f3;--border:#e3e2de;--text:#37352f;--text-muted:#787774;--accent:#2383e2;--accent2:#0f7b0f;--accent3:#6940a5;--accent4:#d9730d;--red:#e03e3e;--code-bg:#f7f6f3;--card:#fff;--ch-color:#c62828}
+  *{margin:0;padding:0;box-sizing:border-box}body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;font-size:15px}
+  .container{max-width:900px;margin:0 auto;padding:0 24px}.hero{background:linear-gradient(180deg,#fafafa,#fff);border-bottom:1px solid var(--border);padding:48px 0 36px;text-align:center}.hero h1{font-size:2.1em;font-weight:700;margin-bottom:12px}.hero h1 span{color:var(--ch-color)}.hero p{font-size:1.05em;color:var(--text-muted);max-width:700px;margin:0 auto 30px}.hero .badge{display:inline-block;background:var(--surface);border:1px solid var(--border);padding:6px 16px;border-radius:20px;font-size:.8em;color:var(--text-muted)}
+  .nav-links{margin-top:20px}.nav-links a{display:inline-block;background:var(--surface);border:1px solid var(--border);padding:8px 20px;border-radius:8px;color:var(--accent);text-decoration:none;margin:4px;font-size:.9em;transition:.2s}.nav-links a:hover{border-color:var(--accent);background:rgba(35,131,226,.06)}.nav-links a.ch{color:var(--ch-color);border-color:var(--ch-color)}
+  .toc{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:32px;margin:40px auto}.toc h2{font-size:1.2em;margin-bottom:16px;color:var(--ch-color)}.toc ol{padding-left:24px}.toc li{margin:6px 0}.toc a{color:var(--text);text-decoration:none;border-bottom:1px dashed var(--border);transition:.2s}.toc a:hover{color:var(--ch-color)}.toc .sub{padding-left:24px;list-style:disc}
+  .section{margin:40px 0;padding-top:16px;border-top:1px solid var(--border)}.section h2{font-size:1.5em;font-weight:600;margin-bottom:20px;color:var(--ch-color)}.section h3{font-size:1.1em;font-weight:600;margin:24px 0 10px;color:var(--accent);border-left:3px solid var(--accent);padding-left:12px}.section h4{font-size:.95em;font-weight:600;margin:16px 0 8px;color:var(--accent3)}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:20px;margin:16px 0}.card.danger{border-left:4px solid var(--red)}.card.success{border-left:4px solid var(--accent2)}.card.warn{border-left:4px solid var(--accent4)}.card.interview{border-left:4px solid var(--ch-color);background:rgba(198,40,40,.02)}
+  .scenario{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin:24px 0;border-left:4px solid var(--ch-color)}
+  .scenario .symptom{background:#fce4ec;border-radius:8px;padding:14px;margin:10px 0}.scenario .symptom h4{color:#c62828;margin:0 0 6px}
+  .scenario .diag{background:#e3f2fd;border-radius:8px;padding:14px;margin:10px 0}.scenario .diag h4{color:#1565c0;margin:0 0 6px}
+  .scenario .root{background:#fff3e0;border-radius:8px;padding:14px;margin:10px 0}.scenario .root h4{color:#e65100;margin:0 0 6px}
+  .scenario .fix{background:#e8f5e9;border-radius:8px;padding:14px;margin:10px 0}.scenario .fix h4{color:#2e7d32;margin:0 0 6px}
+  .scenario .signal{background:#f3e5f5;border-radius:8px;padding:14px;margin:10px 0}.scenario .signal h4{color:#6a1b9a;margin:0 0 6px}
+  .scenario .pitfall{background:#fce4ec;border-radius:8px;padding:12px;margin:8px 0;font-size:.9em}
+  .diagram{margin:24px 0;text-align:center}.diagram svg{max-width:100%;height:auto}.caption{font-size:.9em;color:var(--text-muted);margin-top:10px;font-style:italic}
+  code{background:var(--code-bg);border:1px solid var(--border);padding:2px 8px;border-radius:4px;font-family:'JetBrains Mono','SF Mono',monospace;font-size:.9em;color:var(--accent3)}pre{background:var(--code-bg);border:1px solid var(--border);padding:16px;border-radius:8px;overflow-x:auto;font-family:'JetBrains Mono','SF Mono',monospace;font-size:.82em;margin:10px 0;line-height:1.5}
+  .cat-header{background:var(--ch-color);color:#fff;padding:12px 20px;border-radius:10px;margin:30px 0 20px;font-size:1.1em;font-weight:700}
+  .back-top{display:block;text-align:right;margin-top:16px}.back-top a{color:var(--text-muted);text-decoration:none;font-size:.85em}.back-top a:hover{color:var(--ch-color)}
+  footer{text-align:center;padding:40px 0;border-top:1px solid var(--border);color:var(--text-muted);font-size:.9em;margin-top:60px}footer a{color:var(--ch-color);text-decoration:none}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="container">
+    <h1>SRE Debugging &amp; <span>Troubleshooting</span></h1>
+    <p>21 production scenarios across Network, Database, Application, and OS/Kernel — the exact format Google SRE interviewers use. Symptom → Diagnose → Root Cause → Fix → Senior Signal.</p>
+    <div class="badge">Google SRE Interview &bull; Debugging Handbook &bull; 21 Scenarios</div>
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="/sd-google-sre.html" class="ch">NALSD &amp; System Design</a>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+<div class="toc" id="toc">
+  <h2>21 Scenarios — 4 Categories</h2>
+  <ol>
+    <li><strong style="color:#c62828;">Network / Connectivity (1-6)</strong>
+      <ul class="sub">
+        <li><a href="#s1">S1: DNS TTL Misconfiguration (Global Outage)</a></li>
+        <li><a href="#s2">S2: BGP Route Leak (Regional Blackout)</a></li>
+        <li><a href="#s3">S3: TLS Handshake / Certificate Rotation</a></li>
+        <li><a href="#s4">S4: 2% Packet Loss Under Congestion</a></li>
+        <li><a href="#s5">S5: LB Health Check Misconfiguration (Traffic Blackhole)</a></li>
+        <li><a href="#s6">S6: CDN Cache Invalidation Delay (Broken UX)</a></li>
+      </ul>
+    </li>
+    <li><strong style="color:#e65100;">Database / Storage (7-11)</strong>
+      <ul class="sub">
+        <li><a href="#s7">S7: Database Replica Lag (Stale Reads)</a></li>
+        <li><a href="#s8">S8: Transaction Deadlocks (Flash Sale)</a></li>
+        <li><a href="#s9">S9: Dropped Index → 10x Latency</a></li>
+        <li><a href="#s10">S10: Disk Full → DB Refuses Writes</a></li>
+        <li><a href="#s11">S11: Cache Stampede on Hot Key</a></li>
+      </ul>
+    </li>
+    <li><strong style="color:#1565c0;">Application / Config (12-16)</strong>
+      <ul class="sub">
+        <li><a href="#s12">S12: CrashLoopBackOff (Bad Image Rollout)</a></li>
+        <li><a href="#s13">S13: Feature Flag Misfire (Broken Checkout)</a></li>
+        <li><a href="#s14">S14: Thread Leak → Service Freeze</a></li>
+        <li><a href="#s15">S15: Rate Limit Misapplied (Throttling Legit Users)</a></li>
+        <li><a href="#s16">S16: Canary Rollback Delay</a></li>
+      </ul>
+    </li>
+    <li><strong style="color:#6a1b9a;">OS / Kernel / Infra (17-21)</strong>
+      <ul class="sub">
+        <li><a href="#s17">S17: Memory Leak → OOM Kills</a></li>
+        <li><a href="#s18">S18: CPU Throttling (CFS Quotas)</a></li>
+        <li><a href="#s19">S19: I/O Saturation → Degraded DB Writes</a></li>
+        <li><a href="#s20">S20: Kernel Panic → Mass Node Churn</a></li>
+        <li><a href="#s21">S21: File Descriptor Exhaustion</a></li>
+      </ul>
+    </li>
+  </ol>
+</div>
+
+<!-- ======================= CATEGORY 1: NETWORK ======================= -->
+<div class="cat-header">Category 1: Network / Connectivity (Scenarios 1-6)</div>
+
+<!-- S1 -->
+<div class="scenario" id="s1">
+  <h3>Scenario 1 — DNS TTL Misconfiguration (Global Outage)</h3>
+  <div class="symptom">
+    <h4>Symptom</h4>
+    <p>Users across APAC and EMEA report "site not found." Services healthy, pods running, LBs fine. Half the internet can't resolve your domain.</p>
+  </div>
+  <div class="diag">
+    <h4>First Diagnostic Moves</h4>
+    <pre>dig yourservice.com @8.8.8.8        # Google's resolver
+dig yourservice.com @1.1.1.1        # Cloudflare's resolver
+dig yourservice.com @ns1.auth-dns.net  # Your authoritative NS</pre>
+    <p><strong>Reasoning:</strong> Healthy service + failing resolution → DNS problem. Inconsistent across regions → TTL + caching issue. If bad record pushed with TTL=86400 (1 day), resolvers worldwide cache it for 24h.</p>
+  </div>
+  <div class="root">
+    <h4>Root Cause</h4>
+    <p>An engineer accidentally updated the DNS CNAME to a staging LB. Before rollback, resolvers worldwide cached the bad record for 24h due to a long TTL.</p>
+    <pre>dig yourservice.com @ns1.auth-dns.net
+# Shows wrong CNAME → staging-lb.example.net</pre>
+  </div>
+  <div class="fix">
+    <h4>Mitigation</h4>
+    <p><strong>Immediate:</strong> Fix the authoritative record. Push corrected CNAME.<br>
+    <strong>Long-term:</strong> Use short TTLs (60-300s) for critical records. Implement DNS change reviews. Add monitoring for DNS resolution from multiple global vantage points.</p>
+  </div>
+  <div class="signal">
+    <h4>Senior SRE Signal (What the interviewer looks for)</h4>
+    <p>&#10003; Didn't panic-restart pods. &#10003; Checked DNS resolution chain first. &#10003; Understood recursive vs authoritative DNS. &#10003; Raised TTL awareness.</p>
+  </div>
+  <div class="pitfall"><strong>Pitfalls:</strong> Restarting services when DNS is the issue. Only checking locally. Forgetting cached bad records persist until TTL expiry.</div>
+</div>
+
+<!-- S2 -->
+<div class="scenario" id="s2">
+  <h3>Scenario 2 — BGP Route Leak (Partial Regional Blackout)</h3>
+  <div class="symptom">
+    <h4>Symptom</h4>
+    <p>Traffic from South America drops 80%. Dashboards show regional packet loss. Services and servers are fully healthy. Other regions unaffected.</p>
+  </div>
+  <div class="diag">
+    <h4>First Diagnostic Moves</h4>
+    <pre>traceroute yourservice.com
+mtr -rwzbc100 yourservice.com
+whois &lt;impacted-IP&gt;    # Check AS path</pre>
+    <p><strong>Reasoning:</strong> Service healthy in other regions → not app bug. Latency + drops before reaching your edge → network routing issue. BGP routes may have been incorrectly advertised by an ISP.</p>
+  </div>
+  <div class="root">
+    <h4>Root Cause</h4>
+    <p>A small ISP in South America accidentally advertised overly broad BGP prefixes covering Google's ranges. Traffic misrouted through their congested routers → packet loss and high latency.</p>
+    <pre>whois &lt;impacted-IP&gt;
+# Shows unexpected AS path through ISP-X instead of direct Tier-1</pre>
+  </div>
+  <div class="fix">
+    <h4>Mitigation</h4>
+    <p><strong>Immediate:</strong> Traffic steering — reroute SA traffic through a healthy provider using BGP community strings.<br>
+    <strong>Long-term:</strong> RPKI (Resource Public Key Infrastructure) validation. BGP monitoring (BGPStream). Multi-provider peering.</p>
+  </div>
+  <div class="signal">
+    <h4>Senior SRE Signal</h4>
+    <p>&#10003; Recognizes not all outages are inside your systems. &#10003; Mentions BGP visibility + AS path monitoring. &#10003; Knows SRE must communicate impact even when root cause is external. <strong>Senior move:</strong> "We'd reroute via BGP community strings."</p>
+  </div>
+  <div class="pitfall"><strong>Pitfalls:</strong> Treating as a backend bug. Ignoring regional scope. Not knowing BGP basics.</div>
+</div>
+
+<!-- S3 -->
+<div class="scenario" id="s3">
+  <h3>Scenario 3 — TLS Certificate Rotation Issue</h3>
+  <div class="symptom">
+    <h4>Symptom</h4>
+    <p>At midnight UTC, error rates spike globally. TLS handshake latency spikes. CPU/memory fine. Customers report SSL_ERROR_HANDSHAKE_FAILURE_ALERT.</p>
+  </div>
+  <div class="diag">
+    <h4>First Diagnostic Moves</h4>
+    <pre>openssl s_client -connect service.google.com:443 -showcerts
+openssl verify -CAfile ca-bundle.pem new-cert.pem
+kubectl logs edge-proxy | grep -i "certificate verify failed"</pre>
+    <p><strong>Reasoning:</strong> App layer fine → not code regression. TLS handshake spike → cert-related. Region-wide simultaneity → cert rotation event.</p>
+  </div>
+  <div class="root">
+    <h4>Root Cause</h4>
+    <p>New certificate chain pushed, but intermediate CA bundle wasn't distributed to all edge proxies. 20% of global TLS terminations failed.</p>
+  </div>
+  <div class="fix">
+    <h4>Mitigation</h4>
+    <p><strong>Immediate:</strong> Roll back to previous cert bundle.<br>
+    <strong>Long-term:</strong> Automated cert renewal via ACME. Canary cert rollout. Continuous cert expiry monitoring. Chaos testing for TLS handshake under rotation.</p>
+  </div>
+  <div class="signal">
+    <h4>Senior SRE Signal</h4>
+    <p>&#10003; Calmly treats cert rotation as a predictable, automatable class of incidents. &#10003; Mentions automated cert monitoring. <strong>Senior move:</strong> Proposes canary cert rollout + chaos testing.</p>
+  </div>
+  <div class="pitfall"><strong>Pitfalls:</strong> Blaming app performance. Forgetting intermediate certificates. Not emphasizing automation — manual cert renewal = guaranteed future outage.</div>
+</div>
+
+<!-- S4 -->
+<div class="scenario" id="s4">
+  <h3>Scenario 4 — 2% Packet Loss Under Congestion</h3>
+  <div class="symptom">
+    <h4>Symptom</h4>
+    <p>Intermittent slow page loads across North America. ~2% packet loss on east-coast traffic. CPU/memory healthy. p99 spikes but median unchanged.</p>
+  </div>
+  <div class="diag">
+    <h4>First Diagnostic Moves</h4>
+    <pre>mtr -rwzbc100 service-edge.google.com
+netstat -s | grep retrans
+ethtool -S eth0 | grep drop</pre>
+    <p><strong>Reasoning:</strong> 2% packet loss may sound small, but for TCP it explodes tail latency (exponential backoff). App code fine; failures at transport layer. Likely: network congestion + no Active Queue Management.</p>
+  </div>
+  <div class="root">
+    <h4>Root Cause</h4>
+    <p>East-coast routers near link saturation during peak. Without AQM (RED/CoDel), queue buffers filled → random drops → TCP retransmissions → inflated p95/p99.</p>
+  </div>
+  <div class="fix">
+    <h4>Mitigation</h4>
+    <p><strong>Immediate:</strong> Rate-limit non-critical traffic to free bandwidth.<br>
+    <strong>Confirmed fix:</strong> Implement FQ-CoDel on congested interfaces.<br>
+    <strong>Strategic:</strong> Capacity upgrade + reroute partial load to central POP.</p>
+  </div>
+  <div class="signal">
+    <h4>Senior SRE Signal</h4>
+    <p>&#10003; Knows "2% loss ≠ minor issue" — for TCP, tiny drops crush performance. &#10003; Talks about AQM, RED/CoDel, bufferbloat. <strong>Senior move:</strong> Ties to SLO: "Our p99 SLI is directly breached, even though CPU looks fine."</p>
+  </div>
+  <div class="pitfall"><strong>Pitfalls:</strong> Ignoring small loss rates as "noise." Focusing only on servers. Suggesting only "add bandwidth" without smarter queue management.</div>
+</div>
+
+<!-- S5 -->
+<div class="scenario" id="s5">
+  <h3>Scenario 5 — LB Health Check Misconfiguration (Traffic Blackhole)</h3>
+  <div class="symptom">
+    <h4>Symptom</h4>
+    <p>25% of traffic to a tier-1 API returns 502 Bad Gateway. Servers healthy (CPU &lt;50%). LB dashboards show all backends as "Unhealthy."</p>
+  </div>
+  <div class="diag">
+    <h4>First Diagnostic Moves</h4>
+    <pre>curl -v http://backend-ip:8080/healthz
+gcloud compute backend-services get-health my-service
+kubectl describe pod &lt;pod&gt; | grep readinessProbe</pre>
+    <p><strong>Reasoning:</strong> ALL backends simultaneously "unhealthy" → unlikely true app failure → health check misconfiguration. Common: wrong endpoint (/healthz vs /readyz), HTTP 200 vs 204 mismatch, TLS mismatch, firewall blocking LB probes.</p>
+  </div>
+  <div class="root">
+    <h4>Root Cause</h4>
+    <p>Health check switched from <code>/healthz</code> (returns 200) to <code>/readyz</code> (returns 503 during startup). Service reported 503 on <code>/readyz</code> → LB marked all servers "down" → blackholed requests.</p>
+  </div>
+  <div class="fix">
+    <h4>Mitigation</h4>
+    <p><strong>Immediate:</strong> Roll back health check config. Manually override LB to serve from all backends.<br>
+    <strong>Long-term:</strong> Separate liveness (process alive) from readiness (ready for traffic) probes. Test health checks in staging before prod.</p>
+  </div>
+  <div class="signal">
+    <h4>Senior SRE Signal</h4>
+    <p>&#10003; Awareness that misconfigured control-plane logic causes data-plane outage. &#10003; Suggests dual-probe strategy. <strong>Senior move:</strong> "Our SLO was violated not because the service was down, but because the LB <em>thought</em> it was."</p>
+  </div>
+  <div class="pitfall"><strong>Pitfalls:</strong> Treating as server crash. Not checking the actual probe endpoint. Failing to distinguish readiness vs liveness.</div>
+</div>
+
+<!-- S6 -->
+<div class="scenario" id="s6">
+  <h3>Scenario 6 — CDN Cache Invalidation Delay (Broken UX)</h3>
+  <div class="symptom">
+    <h4>Symptom</h4>
+    <p>Homepage layout "broken" — buttons misaligned, missing icons, JS errors. Origin has correct files, but CDN edges serve old assets.</p>
+  </div>
+  <div class="diag">
+    <h4>First Diagnostic Moves</h4>
+    <pre>curl -I https://cdn.example.com/static/app.js
+curl -I https://origin.example.com/static/app.js
+# Compare Cache-Control, ETag, Last-Modified headers
+curl -sI https://cdn.example.com/app.js?v=124 | grep Age
+# Shows Age: 86399 → file cached almost 24h</pre>
+  </div>
+  <div class="root">
+    <h4>Root Cause</h4>
+    <p>Frontend deployed new <code>app.js</code> but forgot to update cache-busting query string (<code>?v=124</code> → <code>?v=125</code>). CDN served cached old version for 24h per TTL.</p>
+  </div>
+  <div class="fix">
+    <h4>Mitigation</h4>
+    <p><strong>Immediate:</strong> Force CDN purge + update URLs with new version.<br>
+    <strong>Long-term:</strong> Content hash in filenames (<code>app.&lt;SHA&gt;.js</code>) so caches always bust correctly. Automate in build pipeline. Monitor "edge freshness SLI."</p>
+  </div>
+  <div class="signal">
+    <h4>Senior SRE Signal</h4>
+    <p>&#10003; Knows stale assets = availability incident (broken UX). <strong>Senior move:</strong> "Availability SLO covers working features, not just HTTP 200s."</p>
+  </div>
+</div>
+
+
+<!-- ======================= CATEGORY 2: DATABASE ======================= -->
+<div class="cat-header" style="background:#e65100;">Category 2: Database / Storage (Scenarios 7-11)</div>
+
+<!-- S7 -->
+<div class="scenario" id="s7">
+  <h3>Scenario 7 — Database Replica Lag (Stale Reads)</h3>
+  <div class="symptom">
+    <h4>Symptom</h4>
+    <p>"I just updated my profile, but I still see the old picture." Replication lag spiking from &lt;500ms to 30s. <code>replica_lag_seconds</code> breaching SLO (p95 &lt;1s).</p>
+  </div>
+  <div class="diag">
+    <h4>First Diagnostic Moves</h4>
+    <pre>SELECT client_addr, replay_lag FROM pg_stat_replication;
+psql -c "SELECT now()-pg_last_xact_replay_timestamp() AS delay;"
+iostat -x 1 5    # Check disk I/O on replicas</pre>
+  </div>
+  <div class="root">
+    <h4>Root Cause</h4>
+    <p>Analytics job ran large transaction on primary, delaying WAL replay. Replicas fell 30s behind. App read pool included replicas → customers saw stale data.</p>
+  </div>
+  <div class="fix">
+    <h4>Mitigation</h4>
+    <p><strong>Immediate:</strong> Route critical reads to primary until lag clears. Cancel analytics job.<br>
+    <strong>Long-term:</strong> Read-after-write consistency (sticky sessions / version tokens). Remove lagged replicas from read pool. Semi-sync replication for stricter consistency. Monitor <code>replica_lag_seconds</code> as SLI.</p>
+  </div>
+  <div class="signal">
+    <h4>Senior SRE Signal</h4>
+    <p>&#10003; Recognizes lag ≠ outage but SLO violation. &#10003; Shield users from staleness before digging root cause. &#10003; Ties to CAP: in global systems, you often sacrifice consistency for availability. <strong>Senior move:</strong> Suggest multi-primary or read-write partitioning.</p>
+  </div>
+  <div class="pitfall"><strong>Pitfalls:</strong> Treating replica lag as "harmless." Immediately failing over replica→primary (dangerous if primary is fine). Not distinguishing data loss vs lag.</div>
+</div>
+
+<!-- S8 -->
+<div class="scenario" id="s8">
+  <h3>Scenario 8 — Transaction Deadlocks (Flash Sale)</h3>
+  <div class="symptom">
+    <h4>Symptom</h4>
+    <p>Flash sale: API errors spike. Logs: <code>ERROR: deadlock detected</code>. Retries succeed after ~5s but p95 breaches checkout SLO (≤2s). Users abandon carts.</p>
+  </div>
+  <div class="diag">
+    <h4>First Diagnostic Moves</h4>
+    <pre>SELECT pid, wait_event_type, wait_event, state, query
+FROM pg_stat_activity WHERE wait_event_type = 'Lock';</pre>
+    <p><strong>Reasoning:</strong> Deadlocks = two transactions hold locks the other needs. Common: different services accessing rows in inconsistent order.</p>
+  </div>
+  <div class="root">
+    <h4>Root Cause</h4>
+    <p>Service A updated inventory before orders; Service B updated orders before inventory. During peak load, this inconsistent lock ordering created deadlock cycles. Retry storms amplified latency.</p>
+  </div>
+  <div class="fix">
+    <h4>Mitigation</h4>
+    <p><strong>Immediate:</strong> Add jitter + backoff to retries. Avoid retry storms.<br>
+    <strong>Short-term:</strong> Standardize transaction ordering: always lock inventory → orders.<br>
+    <strong>Long-term:</strong> Shard hot tables. Atomic DB constraints. Optimistic concurrency control (OCC). Monitor deadlock rate as SLI.</p>
+  </div>
+  <div class="signal">
+    <h4>Senior SRE Signal</h4>
+    <p>&#10003; Recognizes deadlocks as correctness + reliability failure. &#10003; Mentions backoff to protect system. <strong>Senior move:</strong> Design idempotent retries + monitor deadlock rate as SLI.</p>
+  </div>
+</div>
+
+<!-- S9 -->
+<div class="scenario" id="s9">
+  <h3>Scenario 9 — Dropped Index → 10x Latency Regression</h3>
+  <div class="symptom">
+    <h4>Symptom</h4>
+    <p>Sudden 10x latency for API calls to <code>users</code> table. Query traces show sequential scans over millions of rows. Profile search timeouts.</p>
+  </div>
+  <div class="diag">
+    <h4>First Diagnostic Moves</h4>
+    <pre>EXPLAIN (ANALYZE, BUFFERS) SELECT * FROM users WHERE email='foo@bar.com';
+-- Before: Index Scan using idx_users_email (~50 ms)
+-- After:  Seq Scan on users (10M rows, 500 ms+)</pre>
+  </div>
+  <div class="root">
+    <h4>Root Cause</h4>
+    <p>Schema migration removed old btree index on <code>users.email</code> assuming it was unused. Profile search still relied on it → full table scan of 10M rows.</p>
+  </div>
+  <div class="fix">
+    <h4>Mitigation</h4>
+    <p><strong>Immediate:</strong> <code>CREATE INDEX CONCURRENTLY idx_users_email ON users(email)</code>. Cache hottest lookups in Redis until rebuilt.<br>
+    <strong>Long-term:</strong> Index change reviews with tooling to detect active queries. Automate query plan regression tests in CI/CD. Monitor query latency histograms as SLIs.</p>
+  </div>
+  <div class="signal">
+    <h4>Senior SRE Signal</h4>
+    <p>&#10003; Mitigation-first (cache + rebuild index). &#10003; Connects regression to SLOs + observability gaps. <strong>Bonus:</strong> Statistics freshness (ANALYZE) is as important as index presence.</p>
+  </div>
+</div>
+
+<!-- S10 -->
+<div class="scenario" id="s10">
+  <h3>Scenario 10 — Disk Full → DB Refuses Writes</h3>
+  <div class="symptom">
+    <h4>Symptom</h4>
+    <p>Write errors: <code>could not extend file … No space left on device</code>. New signups fail, transactions 500. Reads still work.</p>
+  </div>
+  <div class="diag">
+    <h4>First Diagnostic Moves</h4>
+    <pre>df -h /var/lib/postgresql
+du -sh /var/lib/postgresql/*
+ls -lh /var/lib/postgresql/pg_wal | tail -n 5
+# Shows thousands of 16MB WAL files unshipped due to replication lag</pre>
+  </div>
+  <div class="root">
+    <h4>Root Cause</h4>
+    <p>Replication to standby failed (network issues). WAL files accumulated on primary. Volume hit 100% → Postgres refused all writes.</p>
+  </div>
+  <div class="fix">
+    <h4>Mitigation</h4>
+    <p><strong>Immediate:</strong> Archive/move old WAL files. Re-enable archiving to cloud storage.<br>
+    <strong>Long-term:</strong> Monitor WAL growth + disk SLOs (alert at 70%, critical at 85%). Separate WAL, data, logs on different volumes. Auto-vacuum + cleanup jobs.</p>
+  </div>
+  <div class="signal">
+    <h4>Senior SRE Signal</h4>
+    <p>Juniors stop at "add more disk." Seniors mention WAL accumulation due to replication failure and frame it: "Our write-availability SLO was violated. We need leading indicators."</p>
+  </div>
+</div>
+
+<!-- S11 -->
+<div class="scenario" id="s11">
+  <h3>Scenario 11 — Cache Stampede on Hot Key</h3>
+  <div class="symptom">
+    <h4>Symptom</h4>
+    <p>DB CPU at 95%, cache hit ratio plummets from 95% to 40%. Single hot key (<code>/product/black-friday-deals</code>) expired. Thousands of clients hammer DB simultaneously.</p>
+  </div>
+  <div class="diag">
+    <h4>First Diagnostic Moves</h4>
+    <pre>redis-cli monitor | grep "MISS" | head -5
+# Massive spike in misses for the hot key</pre>
+  </div>
+  <div class="root">
+    <h4>Root Cause</h4>
+    <p>Hot endpoint cached with 5-min TTL. At 12:00 sharp, entry expired. With no jitter/backfill, 20K req/s hit the DB simultaneously.</p>
+  </div>
+  <div class="fix">
+    <h4>Mitigation</h4>
+    <p><strong>Immediate:</strong> Prewarm cache (manual SET).<br>
+    <strong>Short-term:</strong> Request coalescing (only 1 request populates; others wait).<br>
+    <strong>Long-term:</strong> Randomized TTL jitter. Stale-while-revalidate pattern. Monitor hot-key access + adaptive caching.</p>
+  </div>
+  <div class="signal">
+    <h4>Senior SRE Signal</h4>
+    <p>Juniors stop at "increase TTL." Seniors: "Our availability SLO was broken because cache invalidation created a predictable herd effect." Mentions coalescing + edge cache offload.</p>
+  </div>
+</div>
+
+
+<!-- ======================= CATEGORY 3: APPLICATION ======================= -->
+<div class="cat-header" style="background:#1565c0;">Category 3: Application / Config (Scenarios 12-16)</div>
+
+<!-- S12 -->
+<div class="scenario" id="s12">
+  <h3>Scenario 12 — CrashLoopBackOff (Bad Image Rollout)</h3>
+  <div class="symptom">
+    <h4>Symptom</h4>
+    <p>40% of pods in CrashLoopBackOff. HTTP 503s. Logs: <code>Segmentation fault</code> at startup.</p>
+  </div>
+  <div class="diag">
+    <h4>First Diagnostic Moves</h4>
+    <pre>kubectl describe pod &lt;name&gt;
+kubectl logs &lt;name&gt; --previous | head -10
+# Segmentation fault: missing libssl.so</pre>
+  </div>
+  <div class="root">
+    <h4>Root Cause</h4>
+    <p>New build missing shared library (<code>libssl.so</code>). Canary skipped due to manual override → 40% pods failed simultaneously.</p>
+  </div>
+  <div class="fix">
+    <h4>Mitigation</h4>
+    <p><strong>Immediate:</strong> Rollback to previous image.<br>
+    <strong>Long-term:</strong> Enforce canary + automated health gates. CI/CD scans for missing shared libs. Pre-flight readiness validation in staging.</p>
+  </div>
+  <div class="signal">
+    <h4>Senior SRE Signal</h4>
+    <p>Juniors fix the library. Strong: highlight deployment safety nets. <strong>Senior:</strong> "The system <em>allowed</em> an invalid image to roll out — this is a release-engineering reliability failure."</p>
+  </div>
+</div>
+
+<!-- S13 -->
+<div class="scenario" id="s13">
+  <h3>Scenario 13 — Feature Flag Misfire (Broken Checkout)</h3>
+  <div class="symptom">
+    <h4>Symptom</h4>
+    <p>Users report "blank checkout page." Error rates climb in one region. No code changes — only a feature flag rollout minutes earlier.</p>
+  </div>
+  <div class="root">
+    <h4>Root Cause</h4>
+    <p>Checkout flag rolled out to 100% of users in us-east1, but required backend (<code>/payments/v2</code>) not yet deployed in that region. Frontend called non-existent API → blank page.</p>
+  </div>
+  <div class="fix">
+    <h4>Mitigation</h4>
+    <p><strong>Immediate:</strong> Roll back flag to 0%.<br>
+    <strong>Long-term:</strong> Progressive rollout gates (max 5% until metrics stable). Flag dependency validation (can't enable checkout unless payment v2 flag also on). Monitor flag rollout as SLO-governed event.</p>
+  </div>
+  <div class="signal">
+    <h4>Senior SRE Signal</h4>
+    <p>Juniors: "turn flag off." Strong: progressive rollout + dependency awareness. <strong>Senior:</strong> "Feature flags are part of the release reliability surface — config changes are code and need SLO-driven safety nets."</p>
+  </div>
+</div>
+
+<!-- S14 -->
+<div class="scenario" id="s14">
+  <h3>Scenario 14 — Thread Leak → Service Freeze</h3>
+  <div class="symptom">
+    <h4>Symptom</h4>
+    <p>p95 latency spikes from 200ms to 15s. CPU oddly flat at ~20%. Requests pile up but don't complete. Service alive but frozen. Thread count climbing until system limit.</p>
+  </div>
+  <div class="diag">
+    <h4>First Diagnostic Moves</h4>
+    <pre>jstack &lt;pid&gt; | grep -c "RUNNABLE"
+# Stack trace:
+"http-nio-8080-exec-2345" #2345 RUNNABLE
+  at com.payments.Client.post(Client.java:42)
+  - waiting on socket read (no timeout)</pre>
+  </div>
+  <div class="root">
+    <h4>Root Cause</h4>
+    <p>New payment handler had a blocking call to external API <strong>without timeout</strong>. Each stuck request held a thread. At 10 req/s, leaked 10 threads/sec. Hit 6,000 (system max) in 10 minutes → all new requests stall.</p>
+  </div>
+  <div class="fix">
+    <h4>Mitigation</h4>
+    <p><strong>Immediate:</strong> Restart service (frees threads).<br>
+    <strong>Long-term:</strong> Timeouts + circuit breakers on ALL network calls. Fixed-size thread pools. Runtime alerts on <code>threads_live</code>. Chaos-test with injected API latency.</p>
+  </div>
+  <div class="signal">
+    <h4>Senior SRE Signal</h4>
+    <p>&#10003; Recognizes "frozen ≠ crashed" — resource exhaustion, not a crash. <strong>Senior:</strong> "Thread leaks erode error budget gradually until total outage. We need defense-in-depth monitoring."</p>
+  </div>
+</div>
+
+<!-- S15 -->
+<div class="scenario" id="s15">
+  <h3>Scenario 15 — Rate Limit Misapplied (Throttling Legit Users)</h3>
+  <div class="symptom">
+    <h4>Symptom</h4>
+    <p>Flood of 429 Too Many Requests. Traffic volume normal (no surge). 40% of requests rejected.</p>
+  </div>
+  <div class="root">
+    <h4>Root Cause</h4>
+    <p>Config push set <strong>global</strong> limit of 1,000 RPS at API Gateway instead of <strong>per-user</strong> 1,000 RPS. System receives 10K RPS aggregate → 90% of legit requests throttled.</p>
+    <pre>{"rate_limit_scope": "global", "limit_rps": 1000}   // WRONG
+{"rate_limit_scope": "per_user", "limit_rps": 1000}  // INTENDED</pre>
+  </div>
+  <div class="fix">
+    <h4>Mitigation</h4>
+    <p><strong>Immediate:</strong> Roll back Gateway config.<br>
+    <strong>Long-term:</strong> Config validation (global caps ≥ 10x per-user). Canary for configs. Rate-limit rejection SLI (% traffic dropped).</p>
+  </div>
+  <div class="signal">
+    <h4>Senior SRE Signal</h4>
+    <p><strong>Senior:</strong> "Control-plane configs can take down the entire data plane. Configs must be validated, rolled out via canary, and observable."</p>
+  </div>
+</div>
+
+<!-- S16 -->
+<div class="scenario" id="s16">
+  <h3>Scenario 16 — Canary Rollback Delay</h3>
+  <div class="symptom">
+    <h4>Symptom</h4>
+    <p>Canary v2.3 of payment API rolled out to 5% traffic. 30% of checkout requests fail with 500. Rollback command issued but takes 20+ minutes. Thousands of failed transactions.</p>
+  </div>
+  <div class="root">
+    <h4>Root Cause</h4>
+    <p>Default K8s config <code>maxUnavailable=1 / maxSurge=1</code> treated rollback as gradual deployment. Pods terminated one at a time serially instead of draining all canary pods quickly.</p>
+    <pre># BAD:
+maxUnavailable: 1, maxSurge: 1
+# GOOD for canary rollback:
+maxUnavailable: 100%, maxSurge: 0</pre>
+  </div>
+  <div class="fix">
+    <h4>Mitigation</h4>
+    <p><strong>Immediate:</strong> <code>kubectl scale deployment canary --replicas=0</code>.<br>
+    <strong>Long-term:</strong> Auto-scale canary to zero on SLO breach. Enforce rollback SLO (≤2 min). Synthetic canary monitoring.</p>
+  </div>
+  <div class="signal">
+    <h4>Senior SRE Signal</h4>
+    <p><strong>Senior:</strong> "Rollback speed itself is an SLO for release reliability." Talks about automated kill-switches for bad canaries.</p>
+  </div>
+</div>
+
+
+<!-- ======================= CATEGORY 4: OS/KERNEL ======================= -->
+<div class="cat-header" style="background:#6a1b9a;">Category 4: OS / Kernel / Infra (Scenarios 17-21)</div>
+
+<!-- S17 -->
+<div class="scenario" id="s17">
+  <h3>Scenario 17 — Memory Leak → OOM Kills</h3>
+  <div class="symptom">
+    <h4>Symptom</h4>
+    <p>Search-indexer pods restart every few minutes. Memory climbing steadily to 100%. Linux OOM killer terminates processes.</p>
+  </div>
+  <div class="diag">
+    <h4>First Diagnostic Moves</h4>
+    <pre>dmesg | grep -i oom
+kubectl top pods --namespace=search
+go tool pprof http://pod:6060/debug/pprof/heap
+
+# Heap profile:
+pprof> top
+3.07GB 3.07GB 80% .../search/cache.go:45</pre>
+  </div>
+  <div class="root">
+    <h4>Root Cause</h4>
+    <p>In-memory cache for query results with no TTL/eviction. Under traffic, cache grew unbounded. Hit 4GB limit in 30 min → OOM killed.</p>
+  </div>
+  <div class="fix">
+    <h4>Mitigation</h4>
+    <p><strong>Immediate:</strong> Disable cache feature flag. Add HPA to absorb traffic.<br>
+    <strong>Long-term:</strong> LRU eviction + TTL. Heap monitoring dashboards. New cache features must pass load-test + leak-test.</p>
+  </div>
+  <div class="signal">
+    <h4>Senior SRE Signal</h4>
+    <p>Juniors: "Add more memory." Strong: "pprof the leak." <strong>Senior:</strong> "Every OOM is user-visible availability hit. Enforce memory SLIs. New cache features must pass leak-test before rollout."</p>
+  </div>
+</div>
+
+<!-- S18 -->
+<div class="scenario" id="s18">
+  <h3>Scenario 18 — CPU Throttling (CFS Quotas)</h3>
+  <div class="symptom">
+    <h4>Symptom</h4>
+    <p>p95 latency doubles from 100ms→200ms. CPU usage looks low (~50%). But pods report <code>cfs_quota_exceeded</code> events.</p>
+  </div>
+  <div class="diag">
+    <h4>First Diagnostic Moves</h4>
+    <pre>cat /sys/fs/cgroup/cpu/cpu.stat
+nr_periods 2450
+nr_throttled 1200      # 50% of periods throttled!
+throttled_time 45234567890</pre>
+  </div>
+  <div class="root">
+    <h4>Root Cause</h4>
+    <p>Pod configured with <code>cpu.request = 2</code>, <code>cpu.limit = 2</code>. Bursts required ~3.5 cores. No headroom → kernel throttled repeatedly → p95 latency SLO breached.</p>
+  </div>
+  <div class="fix">
+    <h4>Mitigation</h4>
+    <p><strong>Immediate:</strong> Raise <code>cpu.limit</code> to 4 (keep request at 2 for burst headroom).<br>
+    <strong>Long-term:</strong> Profile workload for burstiness. SLO-based autoscaling triggered by p95 latency, not CPU utilization.</p>
+  </div>
+  <div class="signal">
+    <h4>Senior SRE Signal</h4>
+    <p>Juniors: "Increase CPU limits." Strong: "Recognize throttling ≠ saturation." <strong>Senior:</strong> "Quota settings must align with latency budgets. Limits higher than requests for burst tolerance."</p>
+  </div>
+  <div class="pitfall"><strong>Pitfalls:</strong> Misinterpreting "50% CPU" as "plenty of headroom" without checking throttling stats. Setting limit = request = no burst tolerance.</div>
+</div>
+
+<!-- S19 -->
+<div class="scenario" id="s19">
+  <h3>Scenario 19 — I/O Saturation → Degraded DB Writes</h3>
+  <div class="symptom">
+    <h4>Symptom</h4>
+    <p>INSERT latency spikes 5ms→120ms. Checkout timeouts. CPU/memory normal. Disk: &gt;95% utilization, high queue depth.</p>
+  </div>
+  <div class="diag">
+    <h4>First Diagnostic Moves</h4>
+    <pre>iostat -x 1 3
+Device:  r/s    w/s    await   %util
+nvme0n1  5.2  1200   118.5   99.9    # Fully saturated!</pre>
+  </div>
+  <div class="root">
+    <h4>Root Cause</h4>
+    <p>New audit logging feature doubled write throughput. Storage provisioned at 3K IOPS baseline; burst credits exhausted after 20 min. Disk pegged at 100%.</p>
+  </div>
+  <div class="fix">
+    <h4>Mitigation</h4>
+    <p><strong>Immediate:</strong> Redirect audit logs to separate storage.<br>
+    <strong>Long-term:</strong> Async audit pipeline (Kafka → BigQuery). Separate OLTP from heavy writes. Monitor disk latency SLIs.</p>
+  </div>
+  <div class="signal">
+    <h4>Senior SRE Signal</h4>
+    <p>Juniors: "Increase disk IOPS." Strong: "Identify audit logging as root cause." <strong>Senior:</strong> "Frame durability vs performance trade-offs — relaxing fsync for non-critical logs vs strict ACID for payments."</p>
+  </div>
+</div>
+
+<!-- S20 -->
+<div class="scenario" id="s20">
+  <h3>Scenario 20 — Kernel Panic → Mass Node Churn</h3>
+  <div class="symptom">
+    <h4>Symptom</h4>
+    <p>30% of nodes in us-east1-b simultaneously rebooted. Pods rescheduled en masse. Availability dips. Latency +300ms.</p>
+  </div>
+  <div class="diag">
+    <h4>First Diagnostic Moves</h4>
+    <pre>dmesg excerpt:
+[12345.6789] BUG: unable to handle kernel NULL pointer dereference
+[12345.6789] IP: tcp_v4_conntrack+0x3a2/0x470
+[12345.6789] Kernel panic - not syncing: Fatal exception</pre>
+  </div>
+  <div class="root">
+    <h4>Root Cause</h4>
+    <p>Automated security patch upgraded kernel. Bug in networking stack caused panic when handling large conntrack tables at peak traffic. AZ-scoped rollout → all nodes in that zone ran buggy kernel simultaneously.</p>
+  </div>
+  <div class="fix">
+    <h4>Mitigation</h4>
+    <p><strong>Immediate:</strong> Drain traffic from failing AZ. Multi-AZ failover.<br>
+    <strong>Long-term:</strong> Stagger kernel rollouts by zone (never 100% at once). Canary nodes. Chaos simulation for conntrack saturation before approving patches.</p>
+  </div>
+  <div class="signal">
+    <h4>Senior SRE Signal</h4>
+    <p>Juniors: "Restart nodes." Strong: "Drain AZ, rollback patch." <strong>Senior:</strong> "Safe automation: staged rollouts, canary nodes, feature flags for infra configs. Cross-zone redundancy absorbs single-AZ churn."</p>
+  </div>
+</div>
+
+<!-- S21 -->
+<div class="scenario" id="s21">
+  <h3>Scenario 21 — File Descriptor Exhaustion</h3>
+  <div class="symptom">
+    <h4>Symptom</h4>
+    <p>Sporadic 500 errors. Logs: <code>accept4: Too many open files</code>. Connection attempts spike. Error rate &gt;5%.</p>
+  </div>
+  <div class="diag">
+    <h4>First Diagnostic Moves</h4>
+    <pre>ulimit -n                        # Max FDs per process
+lsof -p &lt;pid&gt; | wc -l           # Shows 102,500 FDs open
+ss -s                            # Thousands of ESTABLISHED gRPC connections</pre>
+  </div>
+  <div class="root">
+    <h4>Root Cause</h4>
+    <p>gRPC client library bug: idle connections not closed. Thousands of sockets in ESTABLISHED state. Each server consumed ~100K FDs, hitting cap (102,400). Can't accept new connections.</p>
+  </div>
+  <div class="fix">
+    <h4>Mitigation</h4>
+    <p><strong>Immediate:</strong> Increase ulimit + restart to free stuck connections.<br>
+    <strong>Long-term:</strong> Monitor <code>fd_usage / fd_limit</code> ratio as SLI. Connection pooling with idle timeout. Patch gRPC library. Chaos testing for FD exhaustion.</p>
+  </div>
+  <div class="signal">
+    <h4>Senior SRE Signal</h4>
+    <p>Juniors: "Just increase ulimit." Strong: "Find the leak, fix library." <strong>Senior:</strong> "Frame FD usage as availability SLI. Infra scaling (FD limits) + app hygiene (timeouts, reuse)."</p>
+  </div>
+</div>
+
+</div>
+
+<footer>
+  <div class="container">
+    <p>SRE Debugging Handbook &mdash; <a href="/sd-google-sre.html">NALSD &amp; System Design</a> | <a href="/">Home</a></p>
+  </div>
+</footer>
+
+</body>
+</html>
