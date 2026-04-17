@@ -141,6 +141,7 @@ for s, e in intervals[1:]:
         if j == len(p): return i - j + 1
     return -1</pre>
   <div class="google"><strong>Google:</strong> Log scanning for crash signatures in Borgmon/Monarch. Naive O(n*m) stalls on adversarial patterns. KMP guarantees O(n+m) — critical for SLO-driven monitoring queries.</div>
+  <div class="cx">O(n+m) time (n = text length, m = pattern length). O(m) space for LPS array. Never backtracks on the text — single pass guaranteed.</div>
 </div>
 
 <div class="prob" id="p5">
@@ -203,6 +204,7 @@ def group_anagrams(words):
         g[tuple(cnt)].append(w)
     return list(g.values())</pre>
   <div class="google"><strong>Google:</strong> Crash-signature canonicalization. Stack traces differ by register offsets; canonical multiset key coalesces identical failures.</div>
+  <div class="cx">O(n*k) time where n = number of words, k = max word length. O(n*k) space for output. Key size is O(26) = O(1) per word.</div>
 </div>
 
 
@@ -212,8 +214,27 @@ def group_anagrams(words):
 <div class="prob" id="p9">
   <h3>9. Min-Stack with O(1) getMin</h3>
   <div class="q">Stack supporting push, pop, top, getMin — all O(1).</div>
-  <div class="framework"><strong>Framework:</strong> Two stacks: S (values) + M (mins). Push x: push to S; if x ≤ M.top, push to M. Pop: if popped == M.top, pop M. getMin = M.top.</div>
+  <div class="framework"><strong>Framework:</strong> Two stacks: S (values) + M (mins). Push x: push to S; if x ≤ M.top, push to M. Pop: if popped == M.top, pop M. getMin = M.top. Invariant: "M.top always equals the minimum of all elements currently in S."</div>
+  <pre>class MinStack:
+    def __init__(self):
+        self.s = []
+        self.m = []
+    def push(self, x):
+        self.s.append(x)
+        if not self.m or x <= self.m[-1]:
+            self.m.append(x)
+    def pop(self):
+        val = self.s.pop()
+        if val == self.m[-1]:
+            self.m.pop()
+    def top(self):
+        return self.s[-1]
+    def getMin(self):
+        return self.m[-1]</pre>
+  <div class="tests"><strong>Walkthrough:</strong> push(3) → S=[3], M=[3]. push(1) → S=[3,1], M=[3,1]. push(2) → S=[3,1,2], M=[3,1] (2 > 1, skip). getMin()=1. pop() → removes 2, M unchanged. pop() → removes 1, M pops 1. getMin()=3.</div>
+  <div class="mistakes"><strong>Common mistake:</strong> Using strict &lt; instead of ≤ when pushing to M. If you push two 1s, you must track both — otherwise popping one 1 removes the min entry while another 1 still exists in S.</div>
   <div class="google"><strong>Google:</strong> Hierarchical quota enforcement in Borg/cgroups. Min-stack gives O(1) effective resource cap during scheduler descent/ascent.</div>
+  <div class="cx">O(1) push, pop, top, getMin. O(n) space worst case (descending input fills M). Amortized M is much smaller.</div>
 </div>
 
 <div class="prob" id="p10">
@@ -257,14 +278,56 @@ class RateLimiter:
 
 <div class="prob" id="p12">
   <h3>12. Serialize/Deserialize Binary Tree</h3>
-  <div class="q">Encode tree to string, decode back. Use BFS level-order with "null" for missing children.</div>
-  <div class="google"><strong>Google:</strong> Lossless encoding of dependency trees for Borg job DAGs. Must reconstruct exact structure from serialized form.</div>
+  <div class="q">Encode tree to string, decode back. Must handle arbitrary binary trees (not just BST).</div>
+  <div class="framework"><strong>Framework:</strong> Preorder DFS with sentinel for null. Serialize: visit node, recurse left, recurse right, write "null" for None. Deserialize: consume tokens left-to-right, reconstruct recursively. Invariant: "preorder traversal + null sentinels uniquely defines tree structure."</div>
+  <pre>class TreeNode:
+    def __init__(self, val=0, left=None, right=None):
+        self.val, self.left, self.right = val, left, right
+
+def serialize(root):
+    res = []
+    def dfs(node):
+        if not node:
+            res.append("null")
+            return
+        res.append(str(node.val))
+        dfs(node.left)
+        dfs(node.right)
+    dfs(root)
+    return ",".join(res)
+
+def deserialize(data):
+    vals = iter(data.split(","))
+    def dfs():
+        v = next(vals)
+        if v == "null": return None
+        node = TreeNode(int(v))
+        node.left = dfs()
+        node.right = dfs()
+        return node
+    return dfs()</pre>
+  <div class="tests"><strong>Walkthrough:</strong> Tree [1,2,3,null,null,4,5] → serialize: "1,2,null,null,3,4,null,null,5,null,null". Deserialize consumes tokens: 1→left(2→left(null)→right(null))→right(3→left(4→...)→right(5→...)). Reconstructs exact original tree.</div>
+  <div class="mistakes"><strong>Common mistake:</strong> Using BFS level-order but forgetting to encode nulls for children of leaf nodes — makes deserialization ambiguous. Preorder DFS with null sentinels is simpler and unambiguous.</div>
+  <div class="google"><strong>Google:</strong> Lossless encoding of dependency trees for Borg job DAGs. Must reconstruct exact structure from serialized form. Also: protocol buffer wire format for nested messages.</div>
+  <div class="cx">O(n) time, O(n) space for both serialize and deserialize. Each node visited exactly once.</div>
 </div>
 
 <div class="prob" id="p13">
   <h3>13. Lowest Common Ancestor (Binary Tree)</h3>
-  <div class="q">Find LCA of two nodes. Recursive: if current is p or q, return it; else recurse left+right; if both non-null, current is LCA.</div>
-  <div class="google"><strong>Google:</strong> Failure propagation in service DAGs — "which shared dependency caused both service A and B to fail?" = LCA in the dependency tree.</div>
+  <div class="q">Find LCA of two nodes p and q in a binary tree. Nodes are guaranteed to exist.</div>
+  <div class="framework"><strong>Framework:</strong> Post-order recursion. Base: if node is None or node is p or q, return node. Recurse left and right. If both return non-null → current node is LCA (p and q are in different subtrees). If one is null → return the other (both targets in same subtree). Invariant: "return value is the LCA of all target nodes found in this subtree."</div>
+  <pre>def lowestCommonAncestor(root, p, q):
+    if not root or root == p or root == q:
+        return root
+    left = lowestCommonAncestor(root.left, p, q)
+    right = lowestCommonAncestor(root.right, p, q)
+    if left and right:
+        return root        # p and q in different subtrees
+    return left or right   # both in same subtree</pre>
+  <div class="tests"><strong>Walkthrough:</strong> Tree: 3→(5,1), 5→(6,2), 1→(0,8). LCA(5,1)=3 (found in different subtrees of root). LCA(5,4)=5 (4 is under 5, so 5 is returned when hit). LCA(6,2)=5 (both under 5's subtrees).</div>
+  <div class="mistakes"><strong>Common mistake:</strong> Trying to track parent pointers or paths — unnecessary complexity. The post-order "bubble-up" pattern handles everything in a single pass. Also: this only works when both p and q are guaranteed to exist in the tree.</div>
+  <div class="google"><strong>Google:</strong> Failure propagation in service DAGs — "which shared dependency caused both service A and B to fail?" = LCA in the dependency tree. Also: git merge-base uses LCA to find common ancestor commit.</div>
+  <div class="cx">O(n) time (visit each node once), O(h) space (recursion stack, h = tree height). Worst case O(n) for skewed tree.</div>
 </div>
 
 <div class="prob" id="p14">
@@ -288,9 +351,41 @@ def bfs_shortest(graph, start, end):
 
 <div class="prob" id="p15">
   <h3>15. Detect Cycle in Directed Graph (Kahn's / DFS)</h3>
-  <div class="q">Detect cycle using Kahn's topological sort (BFS) or DFS with colors (white/gray/black).</div>
-  <div class="framework"><strong>Kahn's:</strong> Count in-degrees. Queue all with in-degree=0. Process: decrement neighbors' in-degree; if 0, enqueue. If processed count &lt; total nodes → cycle exists.<br><strong>DFS:</strong> Gray back-edge → cycle detected.</div>
-  <div class="google"><strong>Google:</strong> Build/deploy dependency DAGs. Circular dependencies cause infinite loops in Borg scheduling. Must detect before job submission.</div>
+  <div class="q">Detect cycle in directed graph. Return True if cycle exists.</div>
+  <div class="framework"><strong>Two approaches:</strong><br><strong>Kahn's (BFS):</strong> Count in-degrees. Queue all with in-degree=0. Process: decrement neighbors' in-degree; if 0, enqueue. If processed count &lt; total nodes → cycle exists. Invariant: "only nodes with all dependencies resolved are processed."<br><strong>DFS colors:</strong> WHITE=unvisited, GRAY=in current path, BLACK=fully processed. Gray→Gray edge = back-edge = cycle. Invariant: "a GRAY node means we're still exploring its descendants."</div>
+  <pre># Kahn's topological sort (BFS)
+from collections import deque
+def has_cycle_kahn(graph, n):
+    indeg = [0] * n
+    for u in range(n):
+        for v in graph[u]:
+            indeg[v] += 1
+    q = deque(i for i in range(n) if indeg[i] == 0)
+    processed = 0
+    while q:
+        u = q.popleft()
+        processed += 1
+        for v in graph[u]:
+            indeg[v] -= 1
+            if indeg[v] == 0: q.append(v)
+    return processed != n  # True = cycle exists
+
+# DFS with colors
+def has_cycle_dfs(graph, n):
+    WHITE, GRAY, BLACK = 0, 1, 2
+    color = [WHITE] * n
+    def dfs(u):
+        color[u] = GRAY
+        for v in graph[u]:
+            if color[v] == GRAY: return True   # back-edge
+            if color[v] == WHITE and dfs(v): return True
+        color[u] = BLACK
+        return False
+    return any(color[i] == WHITE and dfs(i) for i in range(n))</pre>
+  <div class="tests"><strong>Walkthrough (Kahn's):</strong> Graph: 0→1→2→0 (cycle). indeg=[1,1,1]. No node has indeg=0 → queue empty → processed=0 ≠ 3 → cycle=True. DAG: 0→1→2. indeg=[0,1,1]. Queue=[0]→process 0, indeg[1]=0→Queue=[1]→process 1, indeg[2]=0→process 2. processed=3=n → no cycle.</div>
+  <div class="mistakes"><strong>Common mistake (DFS):</strong> Using a simple "visited" set instead of 3 colors. With 2 states you can't distinguish "currently exploring" (GRAY) from "fully done" (BLACK). A cross-edge to a BLACK node is safe; only GRAY→GRAY is a cycle. Two-state visited causes false positives.</div>
+  <div class="google"><strong>Google:</strong> Build/deploy dependency DAGs. Circular dependencies cause infinite loops in Borg scheduling. Must detect before job submission. Also: Kubernetes controller dependency ordering and Terraform plan validation.</div>
+  <div class="cx">Both: O(V+E) time, O(V) space. Kahn's also produces topological order as a side effect — useful for execution scheduling.</div>
 </div>
 
 
@@ -315,14 +410,79 @@ class SafeCounter:
 
 <div class="prob" id="p17">
   <h3>17. Dining Philosophers (Deadlock-Free)</h3>
-  <div class="q">5 philosophers, 5 forks. Prevent deadlock. Solution: resource ordering (always pick lower-numbered fork first) or limit concurrent diners to N-1.</div>
-  <div class="google"><strong>Google:</strong> Resource allocation in Borg. Multiple tasks competing for shared resources. Resource ordering prevents deadlock in scheduler lock acquisition.</div>
+  <div class="q">5 philosophers, 5 forks arranged in a circle. Each needs both adjacent forks to eat. Design a deadlock-free solution.</div>
+  <div class="framework"><strong>Framework:</strong> Deadlock requires all 4 Coffman conditions: mutual exclusion, hold-and-wait, no preemption, circular wait. Break any one to prevent deadlock.<br><strong>Solution 1 — Resource ordering:</strong> Always acquire the lower-numbered fork first. Philosopher 4 picks fork 0 before fork 4, breaking the circular wait.<br><strong>Solution 2 — Limit concurrency:</strong> Allow at most N-1 philosophers to attempt eating simultaneously (via semaphore). Guarantees at least one can always acquire both forks.</div>
+  <pre>import threading
+
+class DiningPhilosophers:
+    def __init__(self, n=5):
+        self.forks = [threading.Lock() for _ in range(n)]
+        self.n = n
+
+    def eat(self, pid):
+        left, right = pid, (pid + 1) % self.n
+        first, second = min(left, right), max(left, right)
+        with self.forks[first]:
+            with self.forks[second]:
+                print(f"Philosopher {pid} eating")
+
+# Solution 2: semaphore-based
+class DiningPhilosophersV2:
+    def __init__(self, n=5):
+        self.forks = [threading.Lock() for _ in range(n)]
+        self.seats = threading.Semaphore(n - 1)  # at most N-1 sit
+        self.n = n
+
+    def eat(self, pid):
+        self.seats.acquire()
+        left, right = pid, (pid + 1) % self.n
+        self.forks[left].acquire()
+        self.forks[right].acquire()
+        print(f"Philosopher {pid} eating")
+        self.forks[right].release()
+        self.forks[left].release()
+        self.seats.release()</pre>
+  <div class="tests"><strong>Walkthrough (ordering):</strong> Philosophers 0-3 pick fork min(left,right) first → 0,1,2,3. Philosopher 4 picks fork min(4,0)=0 first, then fork 4. No circular chain possible — philosopher 4 waits for fork 0 (held by philosopher 0), but philosopher 0 can finish because its chain doesn't loop back to 4.</div>
+  <div class="mistakes"><strong>Common mistake:</strong> Having all philosophers pick left fork first → all 5 hold one fork, wait for the other → classic circular deadlock. Resource ordering breaks this by making at least one philosopher's acquisition order asymmetric.</div>
+  <div class="google"><strong>Google:</strong> Resource allocation in Borg. Multiple tasks competing for shared resources (CPU, memory, disk). Resource ordering prevents deadlock in scheduler lock acquisition. Semaphore approach mirrors admission control — limit concurrent requests to prevent resource exhaustion.</div>
+  <div class="cx">O(1) per eat operation (constant number of lock acquisitions). Space O(n) for n forks + 1 semaphore. Deadlock-free by construction.</div>
 </div>
 
 <div class="prob" id="p18">
   <h3>18. Task Scheduler (Least Interval)</h3>
-  <div class="q">Given tasks and cooldown n, find minimum intervals. Greedy: schedule most frequent first; idle slots = (maxFreq-1) * n - fill with other tasks.</div>
-  <div class="google"><strong>Google:</strong> Borg job scheduling with preemption cooldowns. Must minimize total time while respecting anti-affinity constraints.</div>
+  <div class="q">Given tasks=['A','A','A','B','B','B'] and cooldown n=2, find minimum intervals to complete all tasks. Same task must have at least n intervals between executions.</div>
+  <div class="framework"><strong>Framework:</strong> Greedy — schedule most frequent task first. Calculate idle slots, then fill them with other tasks. Formula: slots = (maxFreq - 1) * (n + 1) + countOfMaxFreq. Answer = max(slots, len(tasks)). Invariant: "most frequent task creates the skeleton; others fill gaps."</div>
+  <pre>from collections import Counter
+def leastInterval(tasks, n):
+    freq = list(Counter(tasks).values())
+    max_freq = max(freq)
+    max_count = freq.count(max_freq)
+    # Frame: (maxFreq-1) groups of (n+1) slots + final group of max_count
+    slots = (max_freq - 1) * (n + 1) + max_count
+    return max(slots, len(tasks))
+
+# Simulation approach (produces actual schedule):
+import heapq
+def schedule_tasks(tasks, n):
+    freq = Counter(tasks)
+    heap = [-f for f in freq.values()]  # max-heap via negation
+    heapq.heapify(heap)
+    time = 0
+    while heap:
+        temp = []
+        for _ in range(n + 1):          # fill one cooldown window
+            if heap:
+                cnt = heapq.heappop(heap) + 1  # execute one instance
+                if cnt < 0: temp.append(cnt)
+            time += 1
+            if not heap and not temp: break
+        for cnt in temp:
+            heapq.heappush(heap, cnt)
+    return time</pre>
+  <div class="tests"><strong>Walkthrough:</strong> tasks=['A','A','A','B','B','B'], n=2. maxFreq=3, maxCount=2 (both A and B have freq 3). slots = (3-1)*(2+1)+2 = 8. Schedule: A B idle A B idle A B → 8 intervals. If tasks=['A','A','A','B','B','C'], n=2: slots=(3-1)*3+1=7, len(tasks)=6 → answer=max(7,6)=7. Schedule: A B C A B idle A.</div>
+  <div class="mistakes"><strong>Common mistake:</strong> Forgetting the max(slots, len(tasks)) — when cooldown is small and there are many distinct tasks, the formula underestimates because no idle slots are needed. The answer can never be less than the number of tasks.</div>
+  <div class="google"><strong>Google:</strong> Borg job scheduling with preemption cooldowns. Must minimize total time while respecting anti-affinity constraints. Also: Kubernetes pod disruption budgets — can't drain N pods of the same service within a cooldown window.</div>
+  <div class="cx">Formula: O(n) time, O(1) space. Simulation: O(T * n) time where T = total intervals, O(26) space (at most 26 task types).</div>
 </div>
 
 
