@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<title>Google SRE L7 System Design &mdash; NALSD &amp; Senior Staff Interview Guide</title>
+<style>
+  :root{--bg:#fff;--surface:#f7f6f3;--border:#e3e2de;--text:#37352f;--text-muted:#787774;--accent:#2383e2;--accent2:#0f7b0f;--accent3:#6940a5;--accent4:#d9730d;--red:#e03e3e;--code-bg:#f7f6f3;--card:#fff;--ch-color:#1a73e8}
+  *{margin:0;padding:0;box-sizing:border-box}body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;font-size:15px}
+  .container{max-width:900px;margin:0 auto;padding:0 24px}.hero{background:linear-gradient(180deg,#fafafa,#fff);border-bottom:1px solid var(--border);padding:48px 0 36px;text-align:center}.hero h1{font-size:2.1em;font-weight:700;margin-bottom:12px}.hero h1 span{color:var(--ch-color)}.hero p{font-size:1.05em;color:var(--text-muted);max-width:700px;margin:0 auto 30px}.hero .badge{display:inline-block;background:var(--surface);border:1px solid var(--border);padding:6px 16px;border-radius:20px;font-size:.8em;color:var(--text-muted)}
+  .nav-links{margin-top:20px}.nav-links a{display:inline-block;background:var(--surface);border:1px solid var(--border);padding:8px 20px;border-radius:8px;color:var(--accent);text-decoration:none;margin:4px;font-size:.9em;transition:.2s}.nav-links a:hover{border-color:var(--accent);background:rgba(35,131,226,.06)}.nav-links a.ch{color:var(--ch-color);border-color:var(--ch-color)}
+  .toc{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:32px;margin:40px auto}.toc h2{font-size:1.2em;margin-bottom:16px;color:var(--ch-color)}.toc ol{padding-left:24px}.toc li{margin:8px 0}.toc a{color:var(--text);text-decoration:none;border-bottom:1px dashed var(--border);transition:.2s}.toc a:hover{color:var(--ch-color)}.toc .sub{padding-left:24px;list-style:disc}
+  .section{margin:40px 0;padding-top:16px;border-top:1px solid var(--border)}.section-num{font-size:.75em;font-weight:600;color:var(--ch-color);text-transform:uppercase;letter-spacing:2px;margin-bottom:8px}.section h2{font-size:1.6em;font-weight:600;margin-bottom:20px;color:var(--ch-color)}.section h3{font-size:1.15em;font-weight:600;margin:30px 0 12px;color:var(--accent);border-left:3px solid var(--accent);padding-left:12px}.section h4{font-size:1em;font-weight:600;margin:20px 0 10px;color:var(--accent3)}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px;margin:20px 0}.card.highlight{border-left:4px solid var(--accent)}.card.warn{border-left:4px solid var(--accent4)}.card.success{border-left:4px solid var(--accent2)}.card.danger{border-left:4px solid var(--red)}.card.interview{border-left:4px solid var(--ch-color);background:rgba(26,115,232,.02)}.card.google{border-left:4px solid #4285f4;background:rgba(66,133,244,.02)}
+  .diagram{margin:30px 0;text-align:center}.diagram svg{max-width:100%;height:auto}.caption{font-size:.9em;color:var(--text-muted);margin-top:10px;font-style:italic}
+  code{background:var(--code-bg);border:1px solid var(--border);padding:2px 8px;border-radius:4px;font-family:'JetBrains Mono','SF Mono',monospace;font-size:.9em;color:var(--accent3)}pre{background:var(--code-bg);border:1px solid var(--border);padding:20px;border-radius:8px;overflow-x:auto;font-family:'JetBrains Mono','SF Mono',monospace;font-size:.85em;margin:14px 0;line-height:1.5}
+  table{width:100%;border-collapse:collapse;margin:16px 0;background:var(--card);border-radius:8px;overflow:hidden}th{background:rgba(26,115,232,.08);color:var(--ch-color);padding:12px 16px;text-align:left;font-weight:600;border-bottom:2px solid var(--border)}td{padding:10px 14px;border-bottom:1px solid var(--border);font-size:.92em}tr:last-child td{border-bottom:none}tr:hover td{background:rgba(26,115,232,.03)}
+  .interview-tag{display:inline-block;padding:2px 10px;border-radius:12px;font-size:.75em;font-weight:600;margin-left:8px}.interview-tag.google{background:rgba(66,133,244,.1);color:#4285f4;border:1px solid #4285f4}.interview-tag.sre{background:rgba(234,67,53,.1);color:#ea4335;border:1px solid #ea4335}.interview-tag.l7{background:rgba(251,188,4,.1);color:#b06c00;border:1px solid #f9ab00}
+  .three-col{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:24px 0}
+  .pillar{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:20px;transition:.2s}
+  .pillar:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.06)}
+  .pillar h4{margin-bottom:6px;font-size:1em}
+  .pillar p{font-size:.82em;color:var(--text-muted);line-height:1.5}
+  @media(max-width:700px){.three-col{grid-template-columns:1fr}}
+  .back-top{display:block;text-align:right;margin-top:20px}.back-top a{color:var(--text-muted);text-decoration:none;font-size:.85em}.back-top a:hover{color:var(--ch-color)}
+  footer{text-align:center;padding:40px 0;border-top:1px solid var(--border);color:var(--text-muted);font-size:.9em;margin-top:60px}footer a{color:var(--ch-color);text-decoration:none}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="container">
+    <h1>Google SRE L7 <span>System Design</span></h1>
+    <p>Non-Abstract Large System Design (NALSD), the three design archetypes, Senior Staff curveballs, and the exact rubric Google SRE interviewers use to evaluate you.</p>
+    <div class="badge">Senior Staff SRE &bull; L7 Interview Guide &bull; NALSD Framework</div>
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="/ddia-ch5.html" class="ch">How Companies Handle Data</a>
+      <a href="/ddia-ch6.html">Caching Strategies</a>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+<div class="toc" id="toc">
+  <h2>Table of Contents</h2>
+  <ol>
+    <li><a href="#sec-1">What Makes L7 SRE Different</a></li>
+    <li><a href="#sec-2">The Three Design Archetypes</a>
+      <ul class="sub">
+        <li><a href="#sec-2a">A. Infrastructure &amp; Management Systems</a></li>
+        <li><a href="#sec-2b">B. Scalable Consumer-Grade Services</a></li>
+        <li><a href="#sec-2c">C. NALSD (Non-Abstract Large System Design)</a></li>
+      </ul>
+    </li>
+    <li><a href="#sec-3">NALSD Deep Dive &mdash; From Diagram to Hardware</a></li>
+    <li><a href="#sec-4">Senior Staff Curveballs (L7 Questions)</a></li>
+    <li><a href="#sec-5">The Evaluation Rubric &mdash; How They Score You</a></li>
+    <li><a href="#sec-6">Deep Dive: Global Metrics Pipeline</a></li>
+    <li><a href="#sec-7">Deep Dive: Feature Flag / Config Push Service</a></li>
+    <li><a href="#sec-8">Deep Dive: Retry Storm Prevention</a></li>
+  </ol>
+</div>
+
+
+<!-- ======================= SECTION 1 ======================= -->
+<div class="section" id="sec-1">
+  <div class="section-num">Section 1</div>
+  <h2>What Makes L7 SRE Different <span class="interview-tag l7">L7</span><span class="interview-tag sre">SRE</span></h2>
+
+  <p>A Senior Staff SRE (L7) interview is fundamentally different from a standard SWE system design. They don't want a "working architecture" — they want <strong>NALSD thinking</strong>: translate a design into real hardware, calculate costs, and discuss failure modes at global scale.</p>
+
+  <!-- DIAGRAM: SWE vs SRE L7 -->
+  <div class="diagram">
+    <svg viewBox="0 0 820 280" xmlns="http://www.w3.org/2000/svg" style="max-width:800px;">
+      <defs><filter id="sh1" x="-3%" y="-3%" width="106%" height="110%"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.06"/></filter></defs>
+
+      <!-- SWE -->
+      <rect x="10" y="10" width="390" height="260" rx="12" fill="#e3f2fd" stroke="#1565c0" stroke-width="2" filter="url(#sh1)"/>
+      <text x="205" y="40" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="15" fill="#0d47a1">Standard SWE System Design</text>
+      <text x="30" y="70" font-family="Inter,sans-serif" font-size="11" fill="#37352f">&#8226; Draw boxes and arrows</text>
+      <text x="30" y="90" font-family="Inter,sans-serif" font-size="11" fill="#37352f">&#8226; "Use a load balancer here"</text>
+      <text x="30" y="110" font-family="Inter,sans-serif" font-size="11" fill="#37352f">&#8226; "Shard the database"</text>
+      <text x="30" y="130" font-family="Inter,sans-serif" font-size="11" fill="#37352f">&#8226; Discuss API design</text>
+      <text x="30" y="150" font-family="Inter,sans-serif" font-size="11" fill="#37352f">&#8226; Talk about scaling "if needed"</text>
+      <text x="30" y="180" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#0d47a1">Evaluated on:</text>
+      <text x="30" y="200" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Functional correctness, API design,</text>
+      <text x="30" y="216" font-family="Inter,sans-serif" font-size="10" fill="#37352f">data model, basic scaling</text>
+      <rect x="30" y="235" width="350" height="22" rx="4" fill="#bbdefb"/>
+      <text x="205" y="250" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#0d47a1">Abstract. "Use Redis." "Use Kafka." Done.</text>
+
+      <!-- SRE L7 -->
+      <rect x="420" y="10" width="390" height="260" rx="12" fill="#fce4ec" stroke="#c62828" stroke-width="2" filter="url(#sh1)"/>
+      <text x="615" y="40" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="15" fill="#c62828">Google SRE L7 (NALSD)</text>
+      <text x="440" y="70" font-family="Inter,sans-serif" font-size="11" fill="#37352f">&#8226; <tspan font-weight="600">Calculate</tspan> machines, disks, bandwidth</text>
+      <text x="440" y="90" font-family="Inter,sans-serif" font-size="11" fill="#37352f">&#8226; <tspan font-weight="600">Define SLOs</tspan> before drawing anything</text>
+      <text x="440" y="110" font-family="Inter,sans-serif" font-size="11" fill="#37352f">&#8226; <tspan font-weight="600">Cost analysis</tspan>: "$10M/month at 99.99%"</text>
+      <text x="440" y="130" font-family="Inter,sans-serif" font-size="11" fill="#37352f">&#8226; <tspan font-weight="600">Global failure modes</tspan>: BGP leaks, DC loss</text>
+      <text x="440" y="150" font-family="Inter,sans-serif" font-size="11" fill="#37352f">&#8226; <tspan font-weight="600">Deployment safety</tspan>: schema migrations</text>
+      <text x="440" y="170" font-family="Inter,sans-serif" font-size="11" fill="#37352f">&#8226; <tspan font-weight="600">Iterative design</tspan>: 1x → 10x → 100x</text>
+      <text x="440" y="200" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#c62828">Evaluated on:</text>
+      <text x="440" y="218" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Economics, failure planning, deployment</text>
+      <text x="440" y="234" font-family="Inter,sans-serif" font-size="10" fill="#37352f">safety, operational maturity, real numbers</text>
+      <rect x="440" y="245" width="350" height="22" rx="4" fill="#ef9a9a"/>
+      <text x="615" y="260" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#c62828">Concrete. "We need 847 machines. Here's why."</text>
+    </svg>
+    <div class="caption">SWE interviews are abstract ("use a load balancer"). SRE L7 interviews are concrete ("how many machines, what's the cost, what breaks at 3am").</div>
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+
+<!-- ======================= SECTION 2 ======================= -->
+<div class="section" id="sec-2">
+  <div class="section-num">Section 2</div>
+  <h2>The Three Design Archetypes <span class="interview-tag google">Google</span><span class="interview-tag sre">SRE</span></h2>
+
+  <div class="three-col">
+    <div class="pillar" style="border-top:4px solid #4285f4;">
+      <h4 style="color:#4285f4;">A. Infrastructure Systems</h4>
+      <p>Managing thousands of machines. The "plumbing."</p>
+      <p style="margin-top:8px;font-size:.85em;color:#37352f;"><strong>Examples:</strong><br>&#8226; Global Metrics Pipeline<br>&#8226; Feature Flag / Config Push<br>&#8226; Job Scheduler (Borg-lite)</p>
+      <p style="margin-top:8px;font-size:.8em;color:#4285f4;"><strong>Focus:</strong> Cardinality, backpressure, blast radius, consistency</p>
+    </div>
+    <div class="pillar" style="border-top:4px solid #34a853;">
+      <h4 style="color:#34a853;">B. Consumer Services</h4>
+      <p>Traditional SD questions through an SRE lens.</p>
+      <p style="margin-top:8px;font-size:.85em;color:#37352f;"><strong>Examples:</strong><br>&#8226; Google Photos / Drive<br>&#8226; Real-time Ad Bidding<br>&#8226; Thumbnail Service</p>
+      <p style="margin-top:8px;font-size:.8em;color:#34a853;"><strong>Focus:</strong> Erasure coding, latency SLIs, cache stampedes, CDN</p>
+    </div>
+    <div class="pillar" style="border-top:4px solid #ea4335;">
+      <h4 style="color:#ea4335;">C. NALSD</h4>
+      <p>Non-Abstract. Calculate actual hardware.</p>
+      <p style="margin-top:8px;font-size:.85em;color:#37352f;"><strong>Examples:</strong><br>&#8226; Log Processing (100TB/day)<br>&#8226; "How many machines?"<br>&#8226; "How much bandwidth?"</p>
+      <p style="margin-top:8px;font-size:.8em;color:#ea4335;"><strong>Focus:</strong> CPU, RAM, Disk I/O, Network — real numbers</p>
+    </div>
+  </div>
+
+  <h3 id="sec-2a">A. Infrastructure &amp; Management Systems</h3>
+
+  <table>
+    <tr><th>Problem</th><th>Key Challenges</th><th>What They're Testing</th></tr>
+    <tr><td><strong>Global Metrics Pipeline</strong></td><td>Cardinality explosion (10M unique label combos), backpressure when downstream is slow, HA ingestion across 40+ DCs</td><td>Can you design for 10B data points/min without losing metrics during spikes?</td></tr>
+    <tr><td><strong>Feature Flag / Config Service</strong></td><td>Blast-radius control (bad config kills 1% not 100%), atomic rollback, eventual vs strong consistency</td><td>Can you push a config to 10M nodes in &lt;60s AND roll back instantly?</td></tr>
+    <tr><td><strong>Job Scheduler (Borg-lite)</strong></td><td>Bin-packing (fit N tasks on M machines), priority preemption (kill batch jobs for serving), state machine replication</td><td>Can you reason about resource fragmentation and priority inversion?</td></tr>
+  </table>
+
+  <h3 id="sec-2b">B. Scalable Consumer-Grade Services</h3>
+
+  <table>
+    <tr><th>Problem</th><th>Key Challenges</th><th>What They're Testing</th></tr>
+    <tr><td><strong>Google Photos / Drive</strong></td><td>11 nines of durability (99.999999999%), erasure coding, checksumming at rest, cross-region replication lag</td><td>Can you calculate storage costs and explain why erasure coding beats replication 3x?</td></tr>
+    <tr><td><strong>Real-time Ad Bidding</strong></td><td>Tight latency SLIs (&lt;100ms p99), "soft" failure: serve default ad if auction slow, load shedding under spike</td><td>Can you design graceful degradation (never show blank, always show something)?</td></tr>
+    <tr><td><strong>Thumbnail Service</strong></td><td>Cache stampede (1M requests for same thumbnail on miss), hot-spotting (viral content), CDN invalidation</td><td>Can you prevent thundering herd and design multi-tier caching with CDN?</td></tr>
+  </table>
+
+  <h3 id="sec-2c">C. NALSD (Non-Abstract Large System Design)</h3>
+
+  <div class="card danger">
+    <h4>This is what makes Google SRE unique. They give you concrete numbers and expect concrete answers.</h4>
+    <pre>EXAMPLE NALSD QUESTION:
+"Design a system to parse 100TB of logs daily to detect fraud."
+
+NOT ACCEPTABLE ANSWER:
+"I'd use Kafka and Spark."
+
+EXPECTED ANSWER:
+"100TB/day = 100,000 GB / 86,400 sec = 1.16 GB/s sustained throughput.
+
+CPU: Parsing + regex matching at ~200 MB/s per core.
+     1,160 MB/s ÷ 200 MB/s = 6 cores minimum for parsing alone.
+     With fraud model inference at ~50 MB/s per core: 24 cores.
+     With 2x overhead for spikes: 48 cores → 3 machines (16-core each).
+
+RAM: Each worker needs ~4GB for state + buffers.
+     48 workers × 4GB = 192GB.
+     3 machines × 64GB each = 192GB ✓
+
+Disk: 100TB raw logs, compressed 5:1 = 20TB stored.
+      Retention: 30 days = 600TB of compressed logs.
+      SSD: too expensive. HDD at $0.03/GB = $18,000 for storage.
+      24 HDDs × 25TB each across 4 storage nodes.
+
+Network: 1.16 GB/s = ~10 Gbps sustained ingestion.
+         Single rack: 2 × 25 Gbps uplinks = sufficient.
+         Cross-rack for replication: 2 × 10 Gbps.
+
+TOTAL: ~7 machines (3 compute + 4 storage), ~$5K/month.
+       Scale to 3x for redundancy + spike handling = 21 machines."</pre>
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+
+<!-- ======================= SECTION 3 ======================= -->
+<div class="section" id="sec-3">
+  <div class="section-num">Section 3</div>
+  <h2>NALSD Deep Dive &mdash; From Diagram to Hardware <span class="interview-tag sre">SRE</span><span class="interview-tag l7">L7</span></h2>
+
+  <p>The NALSD framework: <strong>start simple (1x), then scale to 10x, then 100x</strong>. At each step, identify which component breaks first and fix it.</p>
+
+  <!-- DIAGRAM: NALSD Iterative Design -->
+  <div class="diagram">
+    <svg viewBox="0 0 820 360" xmlns="http://www.w3.org/2000/svg" style="max-width:800px;">
+      <defs><marker id="aN" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#546e7a"/></marker>
+      <filter id="shN" x="-3%" y="-3%" width="106%" height="110%"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.06"/></filter></defs>
+
+      <text x="410" y="22" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="15" fill="#1a73e8">NALSD Iterative Design: 1x → 10x → 100x</text>
+
+      <!-- 1x -->
+      <rect x="20" y="45" width="240" height="300" rx="12" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2" filter="url(#shN)"/>
+      <text x="140" y="72" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="14" fill="#2e7d32">1x (MVP)</text>
+      <text x="140" y="92" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#787774">100K req/s, single region</text>
+
+      <text x="40" y="115" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Single MySQL instance</text>
+      <text x="40" y="133" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; One app server pool</text>
+      <text x="40" y="151" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Redis cache in front</text>
+      <text x="40" y="169" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Simple LB (L4)</text>
+
+      <text x="40" y="200" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#c62828">What breaks at 10x?</text>
+      <text x="40" y="218" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; MySQL write bottleneck</text>
+      <text x="40" y="236" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Single-region failure = total outage</text>
+      <text x="40" y="254" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Cache miss storm</text>
+
+      <rect x="40" y="275" width="200" height="50" rx="6" fill="#c8e6c9"/>
+      <text x="140" y="295" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#2e7d32">NALSD calculation:</text>
+      <text x="140" y="312" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#37352f">3 app servers, 1 DB, 1 Redis, 1 LB</text>
+
+      <!-- Arrow -->
+      <line x1="260" y1="200" x2="290" y2="200" stroke="#546e7a" stroke-width="2" marker-end="url(#aN)"/>
+
+      <!-- 10x -->
+      <rect x="290" y="45" width="240" height="300" rx="12" fill="#fff3e0" stroke="#e65100" stroke-width="2" filter="url(#shN)"/>
+      <text x="410" y="72" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="14" fill="#e65100">10x (Scale)</text>
+      <text x="410" y="92" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#787774">1M req/s, 2 regions</text>
+
+      <text x="310" y="115" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Sharded DB (Vitess/Spanner)</text>
+      <text x="310" y="133" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Multi-region active-passive</text>
+      <text x="310" y="151" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Distributed cache (Redis Cluster)</text>
+      <text x="310" y="169" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; L7 LB with health checks</text>
+
+      <text x="310" y="200" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#c62828">What breaks at 100x?</text>
+      <text x="310" y="218" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Cross-region latency</text>
+      <text x="310" y="236" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Hot shard bottleneck</text>
+      <text x="310" y="254" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Thundering herd on failover</text>
+
+      <rect x="310" y="275" width="200" height="50" rx="6" fill="#ffcc80"/>
+      <text x="410" y="295" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#e65100">NALSD calculation:</text>
+      <text x="410" y="312" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#37352f">30 app, 8 DB shards, 6 Redis, 2 LB</text>
+
+      <!-- Arrow -->
+      <line x1="530" y1="200" x2="560" y2="200" stroke="#546e7a" stroke-width="2" marker-end="url(#aN)"/>
+
+      <!-- 100x -->
+      <rect x="560" y="45" width="240" height="300" rx="12" fill="#fce4ec" stroke="#c62828" stroke-width="2" filter="url(#shN)"/>
+      <text x="680" y="72" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="14" fill="#c62828">100x (Global)</text>
+      <text x="680" y="92" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#787774">10M req/s, 5+ regions</text>
+
+      <text x="580" y="115" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Global Spanner/TiDB</text>
+      <text x="580" y="133" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Multi-region active-active</text>
+      <text x="580" y="151" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Edge caching (CDN)</text>
+      <text x="580" y="169" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Anycast VIPs, GSLB</text>
+      <text x="580" y="187" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Load shedding + circuit breakers</text>
+      <text x="580" y="205" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Chaos testing (DiRT)</text>
+
+      <text x="580" y="235" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#c62828">L7 SRE concerns:</text>
+      <text x="580" y="253" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Cost: $X M/month. Can we do 40% less?</text>
+      <text x="580" y="271" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; What if BGP leak isolates APAC?</text>
+      <text x="580" y="289" font-family="Inter,sans-serif" font-size="10" fill="#37352f">&#8226; Zero-downtime schema migration?</text>
+
+      <rect x="580" y="305" width="200" height="30" rx="6" fill="#ef9a9a"/>
+      <text x="680" y="324" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="9" fill="#c62828">300+ app, 50 DB, 40 cache, 10 LB, CDN</text>
+    </svg>
+    <div class="caption">NALSD iterative design: start with 1x (what's the simplest thing that works?), identify what breaks at 10x, then solve for 100x. At each step, CALCULATE the machines needed.</div>
+  </div>
+
+  <div class="card google">
+    <h4>The NALSD Calculation Cheat Sheet</h4>
+    <pre>QUICK REFERENCE FOR BACK-OF-ENVELOPE CALCULATIONS:
+
+CPU:
+  Modern server: 64-128 cores
+  Simple request processing: ~10K-50K req/s per core
+  Complex processing (ML inference): ~100-1K req/s per core
+
+RAM:
+  Modern server: 256-512 GB
+  Per-connection state: ~10-50 KB
+  Cache: 70-80% of RAM for hot data
+
+Disk:
+  SSD: 100K-500K IOPS, ~1 GB/s sequential, ~$0.10/GB
+  HDD: 100-200 IOPS, ~200 MB/s sequential, ~$0.03/GB
+  NVMe: 500K-1M IOPS, ~3 GB/s sequential, ~$0.15/GB
+
+Network:
+  Within rack: 25-100 Gbps
+  Cross-rack: 10-40 Gbps
+  Cross-DC: 1-10 Gbps (and ~50-150ms RTT)
+
+Cost (cloud):
+  Compute: ~$0.05/core-hour
+  Storage: ~$0.02/GB-month (HDD), ~$0.10/GB-month (SSD)
+  Network egress: ~$0.08/GB (cross-region)
+
+NINES TO DOWNTIME:
+  99%     → 3.65 days/year   (unacceptable for most services)
+  99.9%   → 8.77 hours/year  (many internal services)
+  99.95%  → 4.38 hours/year  (standard production)
+  99.99%  → 52.6 min/year    (critical services)
+  99.999% → 5.26 min/year    (payments, auth)</pre>
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+
+<!-- ======================= SECTION 4 ======================= -->
+<div class="section" id="sec-4">
+  <div class="section-num">Section 4</div>
+  <h2>Senior Staff Curveballs (L7 Questions) <span class="interview-tag l7">L7</span></h2>
+
+  <p>At L7, they move past the diagram quickly and ask <strong>strategic questions</strong> that test operational maturity.</p>
+
+  <div class="card interview">
+    <h4>"If this system costs $10M/month at 99.99%, but we only need 99.9%, how would you re-architect to save 40%?"</h4>
+    <pre>ANSWER FRAMEWORK:
+
+99.99% → 99.9% means we can tolerate 10x more downtime (52 min → 8.77 hrs/year).
+This unlocks:
+
+1. REDUCE REPLICAS: 5 replicas → 3 replicas per shard
+   Saves: ~40% storage and compute for data tier
+   Risk: tolerate 1 failure instead of 2. Acceptable at 99.9%.
+
+2. SINGLE-REGION FOR WRITES: stop synchronous cross-DC replication
+   Switch from Spanner (50-150ms cross-region writes) to
+   single-leader + async replication (Espresso model, ~3ms writes)
+   Saves: ~60% on cross-region network costs
+   Risk: data loss window during DC failure. Acceptable at 99.9%.
+
+3. RELAX SLO BUDGETS: allow longer failover time
+   Instead of instant failover (expensive health checking, warm standby),
+   allow 5-minute cold failover (cheaper standby capacity)
+   Saves: ~30% on standby compute
+
+4. USE SPOT/PREEMPTIBLE FOR BATCH: batch processing on spot instances
+   Saves: ~70% on batch compute (which might be 30% of total cost)
+
+TOTAL SAVINGS ESTIMATE:
+  Data tier: -40% (fewer replicas) = save $1.5M
+  Network: -60% (no sync cross-DC) = save $1M
+  Standby: -30% (cold standby) = save $0.5M
+  Batch: -70% (spot) = save $1M
+  TOTAL: ~$4M/month saved = 40% of $10M ✓</pre>
+  </div>
+
+  <div class="card interview">
+    <h4>"A massive BGP leak has isolated our Asia-Pacific regions. Walk me through automated traffic redirection and data consistency."</h4>
+    <pre>ANSWER FRAMEWORK:
+
+DETECTION (0-30 seconds):
+  1. Anycast health probes from each region → global health dashboard
+  2. APAC probes failing → GSLB (Global Server Load Balancer) detects
+  3. BGP monitoring system (RPKI, BGPStream) confirms route hijack
+
+AUTOMATED RESPONSE (30-120 seconds):
+  4. GSLB removes APAC endpoints from DNS/Anycast
+  5. Users in APAC region are re-routed to nearest healthy region:
+     - Japan/Korea → US-West
+     - Australia → US-West
+     - India → EU-West
+  6. Traffic shift is gradual (canary 5% → 25% → 100%) to avoid
+     overwhelming the receiving region
+
+DATA CONSISTENCY CONCERNS:
+  7. If APAC was a Raft follower → reads fail, redirected to leader (OK)
+  8. If APAC had a Raft leader for some regions → election timeout (~300ms)
+     → new leader elected in surviving DCs → writes resume
+  9. If APAC had uncommitted writes → those writes are LOST
+     (never reached majority). Client retries to new leader.
+  10. If using Espresso (async replication) → APAC writes acknowledged
+      but not yet replicated may be lost. CDC replay after recovery.
+
+RECOVERY:
+  11. BGP leak resolved → APAC routes restored
+  12. APAC servers re-join Raft groups as followers
+  13. Raft log replay catches them up to current state
+  14. Gradual traffic shift back to APAC (canary again)
+  15. Post-incident: check for data divergence, run reconciliation</pre>
+  </div>
+
+  <div class="card interview">
+    <h4>"How do you handle a schema migration for a database with 100 billion rows without a single millisecond of downtime?"</h4>
+    <pre>ANSWER FRAMEWORK (the "expand-contract" pattern):
+
+PHASE 1: EXPAND (add new column, keep old)
+  ALTER TABLE users ADD COLUMN email_v2 VARCHAR(255);
+  - Online DDL: most databases (PostgreSQL, Spanner, TiDB) do this
+    without locking the table
+  - MySQL: use gh-ost (GitHub) or pt-online-schema-change (Percona)
+    which create a shadow table, copy in background, atomic swap
+
+PHASE 2: DUAL-WRITE (write to both columns)
+  Application code updated to write BOTH old and new column.
+  Deploy with feature flag, canary 1% → 10% → 100%.
+  Duration: hours to days, depending on confidence.
+
+PHASE 3: BACKFILL (migrate existing data)
+  Background job: scan 100B rows, copy old → new column.
+  Rate-limited to avoid impacting production (e.g., 10K rows/sec).
+  At 10K/sec: 100B rows = ~116 days. Too slow!
+  Parallelize across shards: 256 shards × 10K/sec = 2.56M/sec → ~11 hours.
+  Checkpoint progress for restartability.
+
+PHASE 4: VERIFY
+  Run checksums on old vs new column. Ensure 100% match.
+  Shadow-read: serve from old column but validate against new.
+
+PHASE 5: CONTRACT (switch reads to new, remove old)
+  Update application to read from new column only.
+  After validation period, DROP old column.
+  Again, online DDL — no downtime.
+
+KEY: Never do a "big bang" migration. Always expand-contract.</pre>
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+
+<!-- ======================= SECTION 5 ======================= -->
+<div class="section" id="sec-5">
+  <div class="section-num">Section 5</div>
+  <h2>The Evaluation Rubric &mdash; How They Score You <span class="interview-tag google">Google</span></h2>
+
+  <p>Google SRE interviewers use this mental checklist. You "pass" by hitting each of these during your explanation:</p>
+
+  <!-- DIAGRAM: Rubric Checklist -->
+  <div class="diagram">
+    <svg viewBox="0 0 820 400" xmlns="http://www.w3.org/2000/svg" style="max-width:800px;">
+      <defs><filter id="shR" x="-3%" y="-3%" width="106%" height="110%"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.06"/></filter></defs>
+
+      <text x="410" y="22" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="15" fill="#1a73e8">The Google SRE Interview Rubric</text>
+
+      <!-- 1. SLOs -->
+      <rect x="10" y="40" width="395" height="75" rx="10" fill="#e3f2fd" stroke="#1565c0" stroke-width="2" filter="url(#shR)"/>
+      <text x="30" y="62" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#0d47a1">1. Requirements &amp; SLOs FIRST</text>
+      <text x="30" y="82" font-family="Inter,sans-serif" font-size="10" fill="#37352f">DON'T start drawing. Define SLOs first:</text>
+      <text x="30" y="98" font-family="Inter,sans-serif" font-size="10" fill="#37352f">"We need 99.95% availability, &lt;200ms p99 latency, &lt;0.1% error rate"</text>
+      <text x="30" y="110" font-family="Inter,sans-serif" font-weight="600" font-size="9" fill="#c62828">RED FLAG: Drawing boxes before defining SLOs</text>
+
+      <!-- 2. Golden Signals -->
+      <rect x="415" y="40" width="395" height="75" rx="10" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2" filter="url(#shR)"/>
+      <text x="435" y="62" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#2e7d32">2. The "Golden Signals"</text>
+      <text x="435" y="82" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Explicitly mention monitoring for:</text>
+      <text x="435" y="98" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#37352f">Latency | Traffic | Errors | Saturation</text>
+      <text x="435" y="110" font-family="Inter,sans-serif" font-weight="600" font-size="9" fill="#2e7d32">GREEN FLAG: "I'd alert on p99 latency &gt; 200ms and error rate &gt; 0.1%"</text>
+
+      <!-- 3. Failure Planning -->
+      <rect x="10" y="125" width="395" height="75" rx="10" fill="#fce4ec" stroke="#c62828" stroke-width="2" filter="url(#shR)"/>
+      <text x="30" y="147" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#c62828">3. Failure Planning (Proactive)</text>
+      <text x="30" y="167" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Talk about these BEFORE they ask:</text>
+      <text x="30" y="183" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#37352f">Circuit Breakers | Exponential Backoff | Load Shedding</text>
+      <text x="30" y="195" font-family="Inter,sans-serif" font-weight="600" font-size="9" fill="#c62828">RED FLAG: Only mentioning failures when the interviewer asks</text>
+
+      <!-- 4. No SPOF -->
+      <rect x="415" y="125" width="395" height="75" rx="10" fill="#fff3e0" stroke="#e65100" stroke-width="2" filter="url(#shR)"/>
+      <text x="435" y="147" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#e65100">4. No Single Point of Failure</text>
+      <text x="435" y="167" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Identify where the design would break:</text>
+      <text x="435" y="183" font-family="Inter,sans-serif" font-size="10" fill="#37352f">"The LB is a bottleneck — I'd use Anycast VIPs to distribute it"</text>
+      <text x="435" y="195" font-family="Inter,sans-serif" font-weight="600" font-size="9" fill="#e65100">GREEN FLAG: Self-identifying SPOFs before asked</text>
+
+      <!-- 5. Observability -->
+      <rect x="10" y="210" width="395" height="75" rx="10" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="2" filter="url(#shR)"/>
+      <text x="30" y="232" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#4a148c">5. Observability (Not Just "Logs")</text>
+      <text x="30" y="252" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Discuss: eBPF-powered tracing, structured logging,</text>
+      <text x="30" y="268" font-family="Inter,sans-serif" font-size="10" fill="#37352f">distributed trace IDs (OpenTelemetry), custom SLI dashboards</text>
+      <text x="30" y="280" font-family="Inter,sans-serif" font-weight="600" font-size="9" fill="#4a148c">GREEN FLAG: "I'd instrument with OpenTelemetry, alert on SLO burn rate"</text>
+
+      <!-- 6. Iterative -->
+      <rect x="415" y="210" width="395" height="75" rx="10" fill="#e3f2fd" stroke="#1565c0" stroke-width="2" filter="url(#shR)"/>
+      <text x="435" y="232" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#0d47a1">6. Iterative Design (NALSD)</text>
+      <text x="435" y="252" font-family="Inter,sans-serif" font-size="10" fill="#37352f">"Let me start with 1x and scale to 10x, then 100x."</text>
+      <text x="435" y="268" font-family="Inter,sans-serif" font-size="10" fill="#37352f">At each level, calculate machines/cost/bottleneck.</text>
+      <text x="435" y="280" font-family="Inter,sans-serif" font-weight="600" font-size="9" fill="#0d47a1">GREEN FLAG: "At 10x, the DB becomes the bottleneck — here's how I'd shard"</text>
+
+      <!-- PRO TIP -->
+      <rect x="10" y="300" width="800" height="90" rx="12" fill="#f7f6f3" stroke="#1a73e8" stroke-width="2"/>
+      <text x="30" y="325" font-family="Inter,sans-serif" font-weight="700" font-size="14" fill="#1a73e8">Pro-Tip for your Champion Call:</text>
+      <text x="30" y="348" font-family="Inter,sans-serif" font-size="11" fill="#37352f">Mention that you are familiar with the <tspan font-weight="700">NALSD framework</tspan>. It shows you've done homework on Google's engineering culture.</text>
+      <text x="30" y="368" font-family="Inter,sans-serif" font-size="11" fill="#37352f">They love <tspan font-weight="700">"Iterative Design"</tspan> — starting simple and scaling up. Never present the "final" architecture first.</text>
+      <text x="30" y="385" font-family="Inter,sans-serif" font-size="11" fill="#37352f">Say: <tspan font-weight="600" fill="#1a73e8">"Let me define SLOs first, then design for 1x, identify what breaks at 10x, and solve for 100x."</tspan></text>
+    </svg>
+    <div class="caption">The 6-point rubric Google SRE interviewers use. Hit all 6 and you pass. Miss SLOs or failure planning and you likely fail regardless of how pretty your diagram is.</div>
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+
+<!-- ======================= SECTION 6 ======================= -->
+<div class="section" id="sec-6">
+  <div class="section-num">Section 6</div>
+  <h2>Deep Dive: Global Metrics Pipeline <span class="interview-tag google">Google</span><span class="interview-tag sre">SRE</span></h2>
+
+  <div class="card google">
+    <h4>"Design a system to collect and query metrics from every Google frontend worldwide."</h4>
+    <pre>SLOs:
+  ✓ Ingest: 10B data points/min, &lt;10s end-to-end latency
+  ✓ Query: &lt;2s for any dashboard query over last 24h
+  ✓ Availability: 99.95% (metrics are critical for SRE)
+  ✓ Retention: raw 30 days, downsampled 1 year, aggregated 5 years
+
+ARCHITECTURE:
+
+Frontends (40+ DCs)
+  → Local agent (statsd/OpenTelemetry) batches metrics every 10s
+  → Regional aggregator (pre-aggregates by label, reduces cardinality)
+  → Kafka (regional) → Cross-region replication → Central Kafka
+  → Stream processor (Flink/Samza): real-time alerting
+  → Time-series DB (Gorilla/Monarch): recent data in memory
+  → Cold storage (Bigtable/S3): downsampled, compressed
+
+KEY CHALLENGES:
+
+1. CARDINALITY EXPLOSION:
+   If every metric has labels {host, endpoint, status, method, region}
+   and there are 100K hosts × 1000 endpoints × 5 statuses × 4 methods × 40 regions
+   = 80 BILLION unique time series. Can't store all of them.
+   FIX: Pre-aggregate at the regional level. Drop high-cardinality labels.
+        Adaptive sampling: keep 100% of errors, sample 1% of successes.
+
+2. BACKPRESSURE:
+   If the central ingestion pipeline is slow, regional buffers fill up.
+   FIX: Kafka as buffer (retained for 24h). Regional agents drop
+        oldest data first (newest is most valuable). Circuit breaker:
+        if Kafka lag > 5min, alert on "metrics pipeline degraded."
+
+3. QUERY FANOUT:
+   "Show me p99 latency for all endpoints in the last hour"
+   = query across 40 DCs, millions of time series.
+   FIX: Pre-computed materialized views for common queries (top dashboards).
+        Gorilla (Facebook's in-memory TSDB): recent 26 hours in RAM.
+        Older data: downsampled to 1-minute resolution (from 10s).
+
+NALSD: ~200 regional aggregators (5/DC × 40 DCs)
+       ~50 Kafka brokers (central)
+       ~100 Flink workers (stream processing)
+       ~30 Gorilla/Monarch nodes (in-memory TSDB)
+       ~20 Bigtable nodes (cold storage)
+       TOTAL: ~400 machines. Cost: ~$500K/month.</pre>
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+
+<!-- ======================= SECTION 7 ======================= -->
+<div class="section" id="sec-7">
+  <div class="section-num">Section 7</div>
+  <h2>Deep Dive: Feature Flag / Config Push <span class="interview-tag google">Google</span></h2>
+
+  <div class="card google">
+    <h4>"Design a system to push configuration changes to 10 million nodes in &lt;60 seconds."</h4>
+    <pre>SLOs:
+  ✓ Propagation: 95% of nodes updated within 60s, 99.9% within 5min
+  ✓ Blast radius: bad config affects &lt;1% of nodes before auto-rollback
+  ✓ Rollback: &lt;30s to revert any change globally
+  ✓ Availability: 99.99% (config service down = can't deploy anything)
+
+ARCHITECTURE:
+
+Config Store (Spanner / etcd cluster)
+  → Central config service (API: set, get, watch, rollback)
+  → Regional relay servers (cache + fan-out, 1 per DC)
+  → Node agents (long-poll or gRPC stream from regional relay)
+
+PUSH MECHANISM:
+  Option A: Long-poll (node polls every 30s, gets update on next poll)
+    ✓ Simple, HTTP-compatible, works through proxies
+    ✗ 30s average propagation delay
+
+  Option B: gRPC streaming (server pushes to connected clients)
+    ✓ Sub-second propagation
+    ✗ 10M persistent connections = significant memory on relay servers
+    10M connections × 10KB/conn = 100GB RAM just for connections
+    → Need ~100 relay servers (1GB RAM each for connections)
+
+  Option C: Hierarchical gossip (tree-shaped fan-out)
+    Root → 100 L1 relays → 10K L2 relays → 10M nodes
+    Each level fans out 100x. 3 levels = 100^3 = 1M nodes per tree.
+    ✓ Minimal server load
+    ✗ Complex, harder to guarantee ordering
+
+BLAST RADIUS CONTROL:
+  1. Canary: push to 0.1% of nodes (10K), wait 5 min, check error rates
+  2. Gradual: 0.1% → 1% → 10% → 50% → 100%
+  3. Auto-rollback: if error rate > threshold at any stage → revert
+  4. Kill switch: any engineer can instant-revert to previous config
+  5. Config versioning: every change is a new version, immutable
+
+NALSD: 3 Spanner nodes (config store)
+       5 central API servers
+       100 regional relay servers (gRPC streaming)
+       10M node agents (lightweight, runs on every server)
+       Cost: ~$50K/month for the infrastructure (not counting node agents)</pre>
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+
+<!-- ======================= SECTION 8 ======================= -->
+<div class="section" id="sec-8">
+  <div class="section-num">Section 8</div>
+  <h2>Deep Dive: Retry Storm Prevention <span class="interview-tag sre">SRE</span><span class="interview-tag l7">L7</span></h2>
+
+  <p>This is the most common "systemic failure" question at Google SRE interviews.</p>
+
+  <!-- DIAGRAM: Retry Storm -->
+  <div class="diagram">
+    <svg viewBox="0 0 820 380" xmlns="http://www.w3.org/2000/svg" style="max-width:800px;">
+      <defs><marker id="aRS" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#c62828"/></marker>
+      <filter id="shRS" x="-3%" y="-3%" width="106%" height="110%"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.06"/></filter></defs>
+
+      <text x="410" y="22" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="15" fill="#c62828">Retry Storm: How a Small Failure Becomes a Global Outage</text>
+
+      <!-- Normal state -->
+      <rect x="20" y="40" width="250" height="70" rx="10" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1.5"/>
+      <text x="145" y="62" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#2e7d32">Normal: 10K req/s</text>
+      <text x="35" y="82" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Auth service handles 10K req/s fine</text>
+      <text x="35" y="98" font-family="Inter,sans-serif" font-size="10" fill="#37352f">All requests succeed. No retries.</text>
+
+      <!-- Arrow -->
+      <line x1="270" y1="75" x2="310" y2="75" stroke="#c62828" stroke-width="2" marker-end="url(#aRS)"/>
+      <text x="290" y="65" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#c62828">1 server dies</text>
+
+      <!-- Degraded -->
+      <rect x="310" y="40" width="250" height="70" rx="10" fill="#fff3e0" stroke="#e65100" stroke-width="1.5"/>
+      <text x="435" y="62" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#e65100">Degraded: capacity = 8K req/s</text>
+      <text x="325" y="82" font-family="Inter,sans-serif" font-size="10" fill="#37352f">2K req/s fail (over capacity)</text>
+      <text x="325" y="98" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Clients retry failed requests...</text>
+
+      <!-- Arrow -->
+      <line x1="560" y1="75" x2="600" y2="75" stroke="#c62828" stroke-width="2" marker-end="url(#aRS)"/>
+      <text x="580" y="65" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#c62828">retries!</text>
+
+      <!-- Overloaded -->
+      <rect x="600" y="40" width="200" height="70" rx="10" fill="#fce4ec" stroke="#c62828" stroke-width="2"/>
+      <text x="700" y="62" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="11" fill="#c62828">STORM: 30K req/s!</text>
+      <text x="615" y="82" font-family="Inter,sans-serif" font-size="10" fill="#c62828">10K original + 2K retries</text>
+      <text x="615" y="98" font-family="Inter,sans-serif" font-size="10" fill="#c62828">+ retries of retries of retries...</text>
+
+      <!-- Cascade -->
+      <rect x="200" y="130" width="420" height="40" rx="8" fill="#c62828"/>
+      <text x="410" y="155" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#fff">CASCADING FAILURE: Auth service completely down → ALL services fail</text>
+
+      <!-- Solutions -->
+      <rect x="20" y="190" width="780" height="180" rx="12" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"/>
+      <text x="410" y="215" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="14" fill="#2e7d32">Prevention: The Five Defenses Against Retry Storms</text>
+
+      <text x="40" y="240" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#2e7d32">1. Exponential Backoff + Jitter</text>
+      <text x="45" y="258" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Retry after 1s, 2s, 4s, 8s (+ random 0-1s). Spreads retries over time.</text>
+
+      <text x="40" y="280" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#2e7d32">2. Circuit Breaker (Hystrix pattern)</text>
+      <text x="45" y="298" font-family="Inter,sans-serif" font-size="10" fill="#37352f">After 5 consecutive failures, STOP retrying for 30s. Serve cached/default response.</text>
+
+      <text x="40" y="320" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#2e7d32">3. Server-Side Load Shedding</text>
+      <text x="45" y="338" font-family="Inter,sans-serif" font-size="10" fill="#37352f">When at 80% CPU: reject low-priority requests with 503 + Retry-After header.</text>
+
+      <text x="430" y="240" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#2e7d32">4. Retry Budgets</text>
+      <text x="435" y="258" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Each client gets max 10% retry ratio. If &gt;10% of requests are retries, stop.</text>
+
+      <text x="430" y="280" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#2e7d32">5. Admission Control (Google's approach)</text>
+      <text x="435" y="298" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Client tracks its own success rate. If &lt;50%, probabilistically drop new requests.</text>
+      <text x="435" y="316" font-family="JetBrains Mono,monospace" font-size="9" fill="#37352f">P(accept) = max(0, (requests - K*accepts) / (requests+1))</text>
+      <text x="435" y="338" font-family="Inter,sans-serif" font-size="10" fill="#787774">From Google SRE Book Ch. 21: "Handling Overload"</text>
+    </svg>
+    <div class="caption">A retry storm turns a small failure (1 server dies) into a global outage (30K req/s overwhelms everything). Five defenses: backoff+jitter, circuit breaker, load shedding, retry budgets, admission control.</div>
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+</div>
+
+<footer>
+  <div class="container">
+    <p>Google SRE L7 System Design &mdash; <a href="/ddia-ch5.html">How Companies Handle Data</a> | <a href="/ddia-ch6.html">Caching</a> | <a href="/">Home</a></p>
+  </div>
+</footer>
+
+</body>
+</html>
