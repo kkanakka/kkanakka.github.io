@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<title>Caching &mdash; Data Intensive Systems</title>
+<style>
+  :root{--bg:#fff;--surface:#f7f6f3;--border:#e3e2de;--text:#37352f;--text-muted:#787774;--accent:#2383e2;--accent2:#0f7b0f;--accent3:#6940a5;--accent4:#d9730d;--red:#e03e3e;--code-bg:#f7f6f3;--card:#fff;--ch-color:#e65100}
+  *{margin:0;padding:0;box-sizing:border-box}body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;font-size:15px}
+  .container{max-width:900px;margin:0 auto;padding:0 24px}.hero{background:linear-gradient(180deg,#fafafa,#fff);border-bottom:1px solid var(--border);padding:48px 0 36px;text-align:center}.hero h1{font-size:2.2em;font-weight:700;margin-bottom:12px}.hero h1 span{color:var(--ch-color)}.hero p{font-size:1.05em;color:var(--text-muted);max-width:700px;margin:0 auto 30px}.hero .badge{display:inline-block;background:var(--surface);border:1px solid var(--border);padding:6px 16px;border-radius:20px;font-size:.8em;color:var(--text-muted)}
+  .nav-links{margin-top:20px}.nav-links a{display:inline-block;background:var(--surface);border:1px solid var(--border);padding:8px 20px;border-radius:8px;color:var(--accent);text-decoration:none;margin:4px;font-size:.9em;transition:.2s}.nav-links a:hover{border-color:var(--accent);background:rgba(35,131,226,.06)}.nav-links a.ch{color:var(--ch-color);border-color:var(--ch-color)}
+  .toc{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:32px;margin:40px auto}.toc h2{font-size:1.2em;margin-bottom:16px;color:var(--ch-color)}.toc ol{padding-left:24px}.toc li{margin:8px 0}.toc a{color:var(--text);text-decoration:none;border-bottom:1px dashed var(--border);transition:.2s}.toc a:hover{color:var(--ch-color)}.toc .sub{padding-left:24px;list-style:disc}
+  .section{margin:40px 0;padding-top:16px;border-top:1px solid var(--border)}.section-num{font-size:.75em;font-weight:600;color:var(--ch-color);text-transform:uppercase;letter-spacing:2px;margin-bottom:8px}.section h2{font-size:1.6em;font-weight:600;margin-bottom:20px;color:var(--ch-color)}.section h3{font-size:1.15em;font-weight:600;margin:30px 0 12px;color:var(--accent);border-left:3px solid var(--accent);padding-left:12px}.section h4{font-size:1em;font-weight:600;margin:20px 0 10px;color:var(--accent3)}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px;margin:20px 0}.card.highlight{border-left:4px solid var(--accent)}.card.warn{border-left:4px solid var(--accent4)}.card.success{border-left:4px solid var(--accent2)}.card.danger{border-left:4px solid var(--red)}.card.interview{border-left:4px solid var(--ch-color);background:rgba(230,81,0,.02)}.card.linkedin{border-left:4px solid #0077b5;background:rgba(0,119,181,.02)}
+  .diagram{margin:30px 0;text-align:center}.diagram svg{max-width:100%;height:auto}.caption{font-size:.9em;color:var(--text-muted);margin-top:10px;font-style:italic}
+  code{background:var(--code-bg);border:1px solid var(--border);padding:2px 8px;border-radius:4px;font-family:'JetBrains Mono','SF Mono',monospace;font-size:.9em;color:var(--accent3)}pre{background:var(--code-bg);border:1px solid var(--border);padding:20px;border-radius:8px;overflow-x:auto;font-family:'JetBrains Mono','SF Mono',monospace;font-size:.85em;margin:14px 0;line-height:1.5}
+  table{width:100%;border-collapse:collapse;margin:16px 0;background:var(--card);border-radius:8px;overflow:hidden}th{background:rgba(230,81,0,.08);color:var(--ch-color);padding:12px 16px;text-align:left;font-weight:600;border-bottom:2px solid var(--border)}td{padding:10px 14px;border-bottom:1px solid var(--border);font-size:.92em}tr:last-child td{border-bottom:none}tr:hover td{background:rgba(230,81,0,.03)}
+  .interview-tag{display:inline-block;padding:2px 10px;border-radius:12px;font-size:.75em;font-weight:600;margin-left:8px}.interview-tag.meta{background:rgba(66,133,244,.1);color:#4285f4;border:1px solid #4285f4}.interview-tag.google{background:rgba(15,123,15,.1);color:#0f7b0f;border:1px solid #0f7b0f}.interview-tag.li{background:rgba(0,119,181,.1);color:#0077b5;border:1px solid #0077b5}.interview-tag.netflix{background:rgba(229,9,20,.1);color:#e50914;border:1px solid #e50914}
+  .back-top{display:block;text-align:right;margin-top:20px}.back-top a{color:var(--text-muted);text-decoration:none;font-size:.85em}.back-top a:hover{color:var(--ch-color)}
+  footer{text-align:center;padding:40px 0;border-top:1px solid var(--border);color:var(--text-muted);font-size:.9em;margin-top:60px}footer a{color:var(--ch-color);text-decoration:none}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="container">
+    <h1>Caching <span>Strategies</span></h1>
+    <p>Cache-aside, write-through, write-behind. How Memcached, Redis, and Couchbase work. Cache miss flows, eviction, persistence, and where each fits in production architectures.</p>
+    <div class="badge">Data Intensive Systems &bull; Chapter 6 &bull; Interview Guide</div>
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="/ddia-ch5.html" class="ch">Ch 5: How Companies Handle Data</a>
+      <a href="/ddia-ch4.html">Ch 4: TiDB &amp; Raft</a>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+<div class="toc" id="toc">
+  <h2>Table of Contents</h2>
+  <ol>
+    <li><a href="#sec-1">Why Cache? The Latency Pyramid</a></li>
+    <li><a href="#sec-2">Caching Patterns: Read Path</a></li>
+    <li><a href="#sec-3">Caching Patterns: Write Path</a></li>
+    <li><a href="#sec-4">Memcached Deep Dive</a></li>
+    <li><a href="#sec-5">Redis Deep Dive</a></li>
+    <li><a href="#sec-6">Couchbase Deep Dive</a></li>
+    <li><a href="#sec-7">Cache Invalidation &mdash; The Hard Problem</a></li>
+    <li><a href="#sec-8">When to Use What &mdash; Decision Guide</a></li>
+    <li><a href="#sec-9">Interview Questions</a></li>
+  </ol>
+</div>
+
+
+<!-- ======================= SECTION 1 ======================= -->
+<div class="section" id="sec-1">
+  <div class="section-num">Section 1</div>
+  <h2>Why Cache? The Latency Pyramid</h2>
+
+  <div class="diagram">
+    <svg viewBox="0 0 820 340" xmlns="http://www.w3.org/2000/svg" style="max-width:780px;">
+      <defs><filter id="sh1" x="-3%" y="-3%" width="106%" height="110%"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.06"/></filter></defs>
+
+      <text x="410" y="22" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="15" fill="#e65100">The Latency Pyramid — Why Caching Matters</text>
+
+      <!-- L1 Cache -->
+      <rect x="300" y="40" width="220" height="40" rx="8" fill="#c8e6c9" stroke="#2e7d32" stroke-width="2" filter="url(#sh1)"/>
+      <text x="410" y="58" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="11" fill="#2e7d32">L1 CPU Cache</text>
+      <text x="410" y="73" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#787774">~1 ns</text>
+      <text x="540" y="63" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#2e7d32">1x</text>
+
+      <!-- L2/L3 Cache -->
+      <rect x="260" y="88" width="300" height="40" rx="8" fill="#c8e6c9" stroke="#2e7d32" stroke-width="1.5"/>
+      <text x="410" y="106" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#2e7d32">L2/L3 CPU Cache</text>
+      <text x="410" y="121" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#787774">~10 ns</text>
+      <text x="580" y="111" font-family="Inter,sans-serif" font-size="10" fill="#2e7d32">10x</text>
+
+      <!-- RAM -->
+      <rect x="220" y="136" width="380" height="40" rx="8" fill="#bbdefb" stroke="#1565c0" stroke-width="1.5"/>
+      <text x="410" y="154" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#0d47a1">Main Memory (RAM)</text>
+      <text x="410" y="169" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#787774">~100 ns</text>
+      <text x="620" y="159" font-family="Inter,sans-serif" font-size="10" fill="#0d47a1">100x</text>
+
+      <!-- In-memory cache (Redis/Memcached) -->
+      <rect x="180" y="184" width="460" height="40" rx="8" fill="#e3f2fd" stroke="#1565c0" stroke-width="2"/>
+      <text x="410" y="202" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="11" fill="#0d47a1">In-Memory Cache (Redis/Memcached/Couchbase)</text>
+      <text x="410" y="217" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#787774">~0.1-1 ms (network + RAM)</text>
+      <text x="660" y="207" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#0d47a1">100K-1M x</text>
+
+      <!-- SSD -->
+      <rect x="140" y="232" width="540" height="40" rx="8" fill="#fff3e0" stroke="#e65100" stroke-width="1.5"/>
+      <text x="410" y="250" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#e65100">SSD Random Read</text>
+      <text x="410" y="265" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#787774">~0.1-0.5 ms</text>
+      <text x="700" y="255" font-family="Inter,sans-serif" font-size="10" fill="#e65100">100K x</text>
+
+      <!-- Database query -->
+      <rect x="100" y="280" width="620" height="45" rx="8" fill="#fce4ec" stroke="#c62828" stroke-width="2"/>
+      <text x="410" y="298" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="11" fill="#c62828">Database Query (MySQL/Espresso/Spanner)</text>
+      <text x="410" y="318" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#787774">~2-50 ms (network + disk + query processing)</text>
+      <text x="740" y="305" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#c62828">2M-50M x</text>
+    </svg>
+    <div class="caption">An in-memory cache (Redis/Memcached) is 100-1000x faster than a database query. For hot data read thousands of times/second, caching transforms economics: one DB read fills cache, then thousands of reads are served from RAM.</div>
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+
+<!-- ======================= SECTION 2 ======================= -->
+<div class="section" id="sec-2">
+  <div class="section-num">Section 2</div>
+  <h2>Caching Patterns: Read Path <span class="interview-tag meta">Meta</span><span class="interview-tag google">Google</span></h2>
+
+  <!-- DIAGRAM: Cache-Aside (Lazy Loading) -->
+  <div class="diagram">
+    <svg viewBox="0 0 820 500" xmlns="http://www.w3.org/2000/svg" style="max-width:800px;">
+      <defs><marker id="aC" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#546e7a"/></marker>
+      <marker id="aG" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e7d32"/></marker>
+      <marker id="aR" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#c62828"/></marker>
+      <filter id="sh2" x="-3%" y="-3%" width="106%" height="110%"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.06"/></filter></defs>
+
+      <!-- CACHE HIT -->
+      <rect x="10" y="10" width="800" height="190" rx="12" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"/>
+      <rect x="20" y="15" width="150" height="22" rx="4" fill="#2e7d32"/>
+      <text x="95" y="31" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="11" fill="#fff">CACHE HIT (~0.5ms)</text>
+
+      <rect x="40" y="50" width="100" height="50" rx="10" fill="#fff" stroke="#2e7d32" stroke-width="1.5" filter="url(#sh2)"/>
+      <text x="90" y="73" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#37352f">App</text>
+      <text x="90" y="90" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" fill="#787774">Server</text>
+
+      <line x1="140" y1="75" x2="240" y2="75" stroke="#2e7d32" stroke-width="2" marker-end="url(#aG)"/>
+      <text x="190" y="67" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#2e7d32">1. GET key</text>
+
+      <rect x="240" y="50" width="150" height="50" rx="10" fill="#c8e6c9" stroke="#2e7d32" stroke-width="2" filter="url(#sh2)"/>
+      <text x="315" y="73" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#2e7d32">Cache</text>
+      <text x="315" y="90" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" fill="#787774">Redis / Memcached</text>
+
+      <line x1="390" y1="75" x2="490" y2="75" stroke="#2e7d32" stroke-width="2" marker-end="url(#aG)"/>
+      <text x="440" y="67" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#2e7d32">2. HIT! Return data</text>
+
+      <rect x="490" y="50" width="130" height="50" rx="10" fill="#c8e6c9" stroke="#2e7d32" stroke-width="1.5"/>
+      <text x="555" y="80" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#2e7d32">Done!</text>
+
+      <text x="650" y="75" font-family="Inter,sans-serif" font-size="9" fill="#787774">Database never touched.</text>
+      <text x="650" y="90" font-family="Inter,sans-serif" font-size="9" fill="#787774">Sub-millisecond response.</text>
+
+      <text x="40" y="130" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#2e7d32">Cache hit rate goal: 95-99%+ for hot data</text>
+      <text x="40" y="150" font-family="Inter,sans-serif" font-size="10" fill="#37352f">If 99% hit rate: only 1 in 100 requests touches the database.</text>
+      <text x="40" y="168" font-family="Inter,sans-serif" font-size="10" fill="#37352f">10,000 req/s → only 100 DB queries/s (the rest served from cache at ~0.5ms each).</text>
+      <text x="40" y="190" font-family="Inter,sans-serif" font-size="10" fill="#787774">LinkedIn Espresso: 95%+ hit rate on hot profiles via OHC (L1) + Couchbase (L2).</text>
+
+      <!-- CACHE MISS -->
+      <rect x="10" y="215" width="800" height="280" rx="12" fill="#fce4ec" stroke="#c62828" stroke-width="2"/>
+      <rect x="20" y="220" width="170" height="22" rx="4" fill="#c62828"/>
+      <text x="105" y="236" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="11" fill="#fff">CACHE MISS (~5-50ms)</text>
+
+      <!-- Step 1: App checks cache -->
+      <rect x="40" y="255" width="100" height="50" rx="10" fill="#fff" stroke="#c62828" stroke-width="1.5" filter="url(#sh2)"/>
+      <text x="90" y="278" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#37352f">App</text>
+      <text x="90" y="295" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" fill="#787774">Server</text>
+
+      <line x1="140" y1="280" x2="240" y2="280" stroke="#c62828" stroke-width="1.5" marker-end="url(#aR)"/>
+      <text x="190" y="272" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#c62828">1. GET key</text>
+
+      <rect x="240" y="255" width="150" height="50" rx="10" fill="#ef9a9a" stroke="#c62828" stroke-width="2" filter="url(#sh2)"/>
+      <text x="315" y="278" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#c62828">Cache</text>
+      <text x="315" y="295" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#c62828">MISS! (nil)</text>
+
+      <line x1="315" y1="305" x2="315" y2="335" stroke="#c62828" stroke-width="1.5" marker-end="url(#aR)"/>
+      <text x="330" y="322" font-family="Inter,sans-serif" font-size="9" fill="#c62828">2. MISS</text>
+
+      <!-- Step 3: App queries DB -->
+      <rect x="40" y="335" width="100" height="40" rx="8" fill="#fff" stroke="#37352f" stroke-width="1"/>
+      <text x="90" y="360" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#37352f">App</text>
+
+      <line x1="140" y1="355" x2="440" y2="355" stroke="#1565c0" stroke-width="2" marker-end="url(#aC)"/>
+      <text x="290" y="347" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#1565c0">3. Query Database</text>
+
+      <rect x="440" y="335" width="180" height="40" rx="10" fill="#e3f2fd" stroke="#1565c0" stroke-width="2" filter="url(#sh2)"/>
+      <text x="530" y="355" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#0d47a1">Database</text>
+      <text x="530" y="370" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" fill="#787774">Espresso / MySQL</text>
+
+      <line x1="530" y1="375" x2="530" y2="395" stroke="#1565c0" stroke-width="1" marker-end="url(#aC)"/>
+      <text x="545" y="390" font-family="Inter,sans-serif" font-size="8" fill="#1565c0">4. Return data</text>
+
+      <!-- Step 5: Populate cache -->
+      <rect x="40" y="400" width="100" height="35" rx="8" fill="#fff" stroke="#37352f" stroke-width="1"/>
+      <text x="90" y="422" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#37352f">App</text>
+
+      <line x1="140" y1="418" x2="240" y2="418" stroke="#e65100" stroke-width="2" marker-end="url(#aC)"/>
+      <text x="190" y="410" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="9" fill="#e65100">5. SET key → cache</text>
+
+      <rect x="240" y="400" width="150" height="35" rx="10" fill="#c8e6c9" stroke="#2e7d32" stroke-width="1.5"/>
+      <text x="315" y="422" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#2e7d32">Cache (populated!)</text>
+
+      <text x="420" y="422" font-family="Inter,sans-serif" font-size="10" fill="#37352f">6. Return data to client. Next read = cache hit!</text>
+
+      <!-- TTL note -->
+      <text x="40" y="465" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#e65100">SET with TTL (Time-To-Live):</text>
+      <text x="40" y="483" font-family="JetBrains Mono,monospace" font-size="10" fill="#37352f">SET user:12345 "{...}" EX 3600    // expires in 1 hour</text>
+    </svg>
+    <div class="caption">Cache-Aside (Lazy Loading): App checks cache first. On miss, queries DB, then populates cache with TTL. This is the most common caching pattern — used by LinkedIn (Espresso + Couchbase), Facebook (MySQL + Memcache), Netflix (Cassandra + EVCache).</div>
+  </div>
+
+  <div class="card highlight">
+    <h4>Read-Through vs Cache-Aside</h4>
+    <pre>CACHE-ASIDE (most common — app manages cache):
+  App → cache? miss → App → DB → App → populate cache → return
+  App is responsible for both reading and populating the cache.
+  Used by: most custom apps, LinkedIn, Facebook
+
+READ-THROUGH (cache manages DB access):
+  App → cache? miss → Cache → DB → Cache stores → return
+  The CACHE itself fetches from DB on miss. App only talks to cache.
+  Used by: Couchbase (with XDCR), some CDN configurations
+
+Difference: who owns the "go fetch from DB" logic.
+  Cache-Aside: the application code
+  Read-Through: the cache infrastructure</pre>
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+
+<!-- ======================= SECTION 3 ======================= -->
+<div class="section" id="sec-3">
+  <div class="section-num">Section 3</div>
+  <h2>Caching Patterns: Write Path <span class="interview-tag meta">Meta</span><span class="interview-tag google">Google</span></h2>
+
+  <!-- DIAGRAM: Three Write Strategies -->
+  <div class="diagram">
+    <svg viewBox="0 0 820 480" xmlns="http://www.w3.org/2000/svg" style="max-width:800px;">
+      <defs><marker id="aW" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#546e7a"/></marker>
+      <filter id="sh3" x="-3%" y="-3%" width="106%" height="110%"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.06"/></filter></defs>
+
+      <!-- Strategy 1: Write-Through -->
+      <rect x="10" y="10" width="260" height="460" rx="12" fill="#e3f2fd" stroke="#1565c0" stroke-width="2"/>
+      <text x="140" y="38" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#0d47a1">Write-Through</text>
+      <text x="140" y="55" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#787774">Write to cache AND DB synchronously</text>
+
+      <rect x="30" y="70" width="220" height="130" rx="8" fill="#fff" stroke="#90caf9" stroke-width="1"/>
+      <text x="45" y="88" font-family="Inter,sans-serif" font-size="9" fill="#37352f">1. App writes to Cache</text>
+      <text x="45" y="104" font-family="Inter,sans-serif" font-size="9" fill="#37352f">2. Cache writes to DB</text>
+      <text x="45" y="120" font-family="Inter,sans-serif" font-size="9" fill="#37352f">3. Both succeed → ACK client</text>
+      <text x="45" y="145" font-family="Inter,sans-serif" font-size="9" fill="#2e7d32">✓ Cache always consistent</text>
+      <text x="45" y="161" font-family="Inter,sans-serif" font-size="9" fill="#2e7d32">✓ No stale reads ever</text>
+      <text x="45" y="180" font-family="Inter,sans-serif" font-size="9" fill="#c62828">✗ Higher write latency (2 writes)</text>
+      <text x="45" y="196" font-family="Inter,sans-serif" font-size="9" fill="#c62828">✗ Cache stores data nobody reads</text>
+
+      <rect x="30" y="210" width="220" height="55" rx="6" fill="#bbdefb"/>
+      <text x="140" y="232" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#0d47a1">Used by:</text>
+      <text x="45" y="250" font-family="Inter,sans-serif" font-size="9" fill="#37352f">Facebook (memcache + MySQL)</text>
+      <text x="45" y="260" font-family="Inter,sans-serif" font-size="9" fill="#37352f">DynamoDB Accelerator (DAX)</text>
+
+      <!-- Strategy 2: Write-Behind (Write-Back) -->
+      <rect x="280" y="10" width="260" height="460" rx="12" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"/>
+      <text x="410" y="38" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#2e7d32">Write-Behind (Write-Back)</text>
+      <text x="410" y="55" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#787774">Write to cache, async flush to DB</text>
+
+      <rect x="300" y="70" width="220" height="130" rx="8" fill="#fff" stroke="#a5d6a7" stroke-width="1"/>
+      <text x="315" y="88" font-family="Inter,sans-serif" font-size="9" fill="#37352f">1. App writes to Cache only</text>
+      <text x="315" y="104" font-family="Inter,sans-serif" font-size="9" fill="#37352f">2. ACK client immediately</text>
+      <text x="315" y="120" font-family="Inter,sans-serif" font-size="9" fill="#37352f">3. Cache async flushes to DB</text>
+      <text x="315" y="136" font-family="Inter,sans-serif" font-size="9" fill="#37352f">   (batched, every N seconds)</text>
+      <text x="315" y="161" font-family="Inter,sans-serif" font-size="9" fill="#2e7d32">✓ Fastest writes (only cache)</text>
+      <text x="315" y="177" font-family="Inter,sans-serif" font-size="9" fill="#2e7d32">✓ Batch DB writes (efficient)</text>
+      <text x="315" y="196" font-family="Inter,sans-serif" font-size="9" fill="#c62828">✗ Data loss risk if cache crashes</text>
+      <text x="315" y="212" font-family="Inter,sans-serif" font-size="9" fill="#c62828">   before flush!</text>
+
+      <rect x="300" y="225" width="220" height="40" rx="6" fill="#c8e6c9"/>
+      <text x="410" y="247" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#2e7d32">Used by: CPU caches, Redis AOF</text>
+      <text x="410" y="260" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#37352f">Write-heavy analytics counters</text>
+
+      <!-- Strategy 3: Write-Around + Invalidate -->
+      <rect x="550" y="10" width="260" height="460" rx="12" fill="#fff3e0" stroke="#e65100" stroke-width="2"/>
+      <text x="680" y="38" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#e65100">Write-Around + Invalidate</text>
+      <text x="680" y="55" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#787774">Write to DB, DELETE from cache</text>
+
+      <rect x="570" y="70" width="220" height="145" rx="8" fill="#fff" stroke="#ffcc80" stroke-width="1"/>
+      <text x="585" y="88" font-family="Inter,sans-serif" font-size="9" fill="#37352f">1. App writes to DB directly</text>
+      <text x="585" y="104" font-family="Inter,sans-serif" font-size="9" fill="#37352f">2. App DELETEs key from cache</text>
+      <text x="585" y="120" font-family="Inter,sans-serif" font-size="9" fill="#37352f">3. Next read = cache miss →</text>
+      <text x="590" y="136" font-family="Inter,sans-serif" font-size="9" fill="#37352f">   fetches fresh data from DB</text>
+      <text x="585" y="161" font-family="Inter,sans-serif" font-size="9" fill="#2e7d32">✓ Cache only stores read data</text>
+      <text x="585" y="177" font-family="Inter,sans-serif" font-size="9" fill="#2e7d32">✓ Simple, hard to get wrong</text>
+      <text x="585" y="196" font-family="Inter,sans-serif" font-size="9" fill="#c62828">✗ First read after write = slow</text>
+      <text x="585" y="212" font-family="Inter,sans-serif" font-size="9" fill="#c62828">   (cache miss penalty)</text>
+
+      <rect x="570" y="225" width="220" height="55" rx="6" fill="#ffcc80"/>
+      <text x="680" y="247" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#e65100">Used by:</text>
+      <text x="585" y="265" font-family="Inter,sans-serif" font-size="9" fill="#37352f">LinkedIn Espresso (write → invalidate</text>
+      <text x="585" y="275" font-family="Inter,sans-serif" font-size="9" fill="#37352f">L1 OHC + L2 Couchbase)</text>
+
+      <!-- Bottom: Decision -->
+      <rect x="30" y="300" width="220" height="65" rx="8" fill="#f7f6f3" stroke="#e3e2de" stroke-width="1"/>
+      <text x="140" y="320" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#37352f">Best for: read-heavy data that</text>
+      <text x="140" y="335" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#37352f">MUST be consistent (sessions,</text>
+      <text x="140" y="350" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#37352f">user profiles)</text>
+
+      <rect x="300" y="300" width="220" height="65" rx="8" fill="#f7f6f3" stroke="#e3e2de" stroke-width="1"/>
+      <text x="410" y="320" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#37352f">Best for: write-heavy data where</text>
+      <text x="410" y="335" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#37352f">brief inconsistency is OK (analytics</text>
+      <text x="410" y="350" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#37352f">counters, leaderboards)</text>
+
+      <rect x="570" y="300" width="220" height="65" rx="8" fill="#f7f6f3" stroke="#e3e2de" stroke-width="1"/>
+      <text x="680" y="320" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#37352f">Best for: general purpose, simplest</text>
+      <text x="680" y="335" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#37352f">to reason about. Accept one slow</text>
+      <text x="680" y="350" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#37352f">read after each write.</text>
+    </svg>
+    <div class="caption">Three write strategies: Write-Through (consistent but slow), Write-Behind (fast but data-loss risk), Write-Around + Invalidate (simplest, most common at LinkedIn and Facebook).</div>
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+
+<!-- ======================= SECTION 4 ======================= -->
+<div class="section" id="sec-4">
+  <div class="section-num">Section 4</div>
+  <h2>Memcached Deep Dive <span class="interview-tag meta">Meta</span></h2>
+
+  <div class="card highlight">
+    <pre>MEMCACHED ARCHITECTURE:
+
+┌────────────────────────────────────────────────────────────┐
+│  Memcached = distributed in-memory hash table              │
+│                                                            │
+│  ✓ Simple: GET / SET / DELETE / INCREMENT                  │
+│  ✓ Multi-threaded (scales on multi-core)                   │
+│  ✓ No data structures (just strings)                       │
+│  ✓ No persistence (RAM only — crash = lose everything)     │
+│  ✓ No replication (each key on exactly ONE server)         │
+│  ✓ Consistent hashing for key distribution                 │
+│  ✓ LRU eviction when memory full                          │
+│                                                            │
+│  Client hashes key → picks server → talks directly.        │
+│  Servers don't talk to each other. No cluster protocol.    │
+│                                                            │
+│  Slab allocator: memory divided into classes (64B, 128B,   │
+│  256B...). Reduces fragmentation. Items stored in slabs.   │
+└────────────────────────────────────────────────────────────┘
+
+WHEN TO USE MEMCACHED:
+  ✓ Simple key-value caching (sessions, rendered HTML, API responses)
+  ✓ Multi-threaded workloads (Memcached scales better per-node than Redis)
+  ✓ You don't need data structures (lists, sets, sorted sets)
+  ✓ You don't need persistence (cache is disposable)
+
+Facebook runs the world's largest Memcached deployment:
+  - Hundreds of thousands of Memcached instances
+  - Regional pools (each region has full cache)
+  - mcrouter (proxy) for consistent hashing + replication
+  - The "lease" mechanism prevents thundering herd on cache miss</pre>
+  </div>
+
+  <div class="card warn">
+    <h4>Facebook's Thundering Herd Solution</h4>
+    <pre>PROBLEM: 10,000 requests hit the same cache miss simultaneously.
+All 10,000 queries the database. Database dies.
+
+FACEBOOK'S FIX: Memcache Leases
+  1. First client gets a cache miss → Memcached gives it a LEASE TOKEN
+  2. Other clients hitting the same key see "someone has a lease" → WAIT
+  3. First client queries DB, gets data, SETs cache with lease token
+  4. All waiting clients get the cached value
+  Result: only 1 DB query instead of 10,000.
+
+Also: "stale" flag — on delete, mark as stale instead of removing.
+  Readers can optionally use stale data while fresh data is being fetched.</pre>
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+
+<!-- ======================= SECTION 5 ======================= -->
+<div class="section" id="sec-5">
+  <div class="section-num">Section 5</div>
+  <h2>Redis Deep Dive <span class="interview-tag meta">Meta</span><span class="interview-tag netflix">Netflix</span></h2>
+
+  <div class="card highlight">
+    <pre>REDIS ARCHITECTURE:
+
+┌────────────────────────────────────────────────────────────┐
+│  Redis = in-memory data structure store                    │
+│                                                            │
+│  ✓ Rich data structures:                                   │
+│    String, List, Set, Sorted Set, Hash, HyperLogLog,       │
+│    Stream, Bitmap, Geospatial index                        │
+│  ✓ Single-threaded event loop (no lock contention)         │
+│  ✓ Persistence options: RDB snapshots + AOF append log     │
+│  ✓ Replication: leader-follower async                      │
+│  ✓ Redis Cluster: hash slots (16384 slots) for sharding    │
+│  ✓ Pub/Sub, Lua scripting, transactions (MULTI/EXEC)       │
+│  ✓ Redis Sentinel: automatic failover                      │
+└────────────────────────────────────────────────────────────┘
+
+PERSISTENCE OPTIONS:
+  RDB (snapshots):
+    BGSAVE → fork child → child writes all data to .rdb file
+    Point-in-time snapshot. Fast recovery. Data loss = since last snapshot.
+
+  AOF (Append-Only File):
+    Every write command appended to a log file.
+    fsync options: always (safest, slowest), everysec (default), never (fastest)
+    AOF rewrite: compact the log periodically (like LSM compaction)
+
+  RDB + AOF combined: AOF for durability, RDB for fast restart.</pre>
+  </div>
+
+  <div class="card linkedin">
+    <h4>Redis Use Cases by Company</h4>
+    <pre>TWITTER:
+  Home timelines stored in Redis Sorted Sets.
+  Key: timeline:{userId}, Value: sorted set of tweetIds by timestamp.
+  ZRANGEBYSCORE timeline:12345 -inf +inf LIMIT 0 50 → latest 50 tweets.
+  Fan-out on write: ZADD to each follower's timeline.
+
+NETFLIX:
+  EVCache (Netflix's Memcached fork, not Redis, but same concept).
+  Session storage, personalization, recommendation scores.
+
+UBER:
+  Geospatial: GEOADD drivers:{city} lon lat driverId
+  GEORADIUS drivers:sf 37.77 -122.41 5 km → all drivers within 5km.
+
+INSTAGRAM:
+  Redis for "like" counts, follower counts, media IDs.
+  HyperLogLog for unique visitor counting (12KB per counter!).
+
+WHEN TO USE REDIS (vs Memcached):
+  ✓ You need data structures (sorted sets for leaderboards, lists for queues)
+  ✓ You need persistence (RDB/AOF)
+  ✓ You need pub/sub or streams
+  ✓ You need Lua scripting for atomic operations
+  ✗ NOT for multi-threaded scale-up (Redis is single-threaded per shard)</pre>
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+
+<!-- ======================= SECTION 6 ======================= -->
+<div class="section" id="sec-6">
+  <div class="section-num">Section 6</div>
+  <h2>Couchbase Deep Dive <span class="interview-tag li">LinkedIn</span></h2>
+
+  <div class="card linkedin">
+    <pre>COUCHBASE AT LINKEDIN (Espresso L2 Cache):
+
+┌─────────────────────────────────────────────────────────────┐
+│  Couchbase = distributed document store + cache             │
+│                                                             │
+│  Unlike Memcached/Redis (pure in-memory):                   │
+│  ✓ Memory-first with async disk persistence                 │
+│  ✓ Built-in clustering (auto-sharding via vBuckets)         │
+│  ✓ Cross-datacenter replication (XDCR)                      │
+│  ✓ N1QL query language (SQL-like for JSON docs)             │
+│  ✓ Sub-document operations (update one field, not whole doc) │
+│  ✓ TTL-based expiration                                     │
+│  ✓ Survives node restart (data persisted to disk async)     │
+│                                                             │
+│  LinkedIn uses Couchbase as Espresso's L2 cache:            │
+│    L1: OHC (Off-Heap Cache) — per-router, ~100MB, nanosecs  │
+│    L2: Couchbase — shared pool, ~100GB, microsecs            │
+│                                                             │
+│  Cache key: hash(database + table + primary_key + schemaVer)│
+│  Schema version in key → auto-invalidation on schema change │
+└─────────────────────────────────────────────────────────────┘
+
+HOW COUCHBASE STORES DATA:
+  1. Write arrives → stored in RAM (managed cache)
+  2. Async: flushed to disk (append-only, like LSM)
+  3. Replication: async to other nodes in cluster
+
+  Memory quota per bucket (e.g., 10GB per node)
+  When quota full → LRU eviction (eject least-recently-used items from RAM)
+  But data stays on disk! Re-accessed items loaded from disk ("warm-up")
+
+VS MEMCACHED:
+  Memcached: crash = all data lost. No disk. No replication.
+  Couchbase: crash = reload from disk. Data persisted. XDCR replication.
+  Couchbase is "Memcached that doesn't lose your data."
+
+VS REDIS:
+  Redis: rich data structures (sorted sets, streams). Single-threaded.
+  Couchbase: JSON documents with sub-doc ops. Multi-threaded. Built-in SQL.
+  Couchbase better for document caching. Redis better for data structure ops.</pre>
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+
+<!-- ======================= SECTION 7 ======================= -->
+<div class="section" id="sec-7">
+  <div class="section-num">Section 7</div>
+  <h2>Cache Invalidation &mdash; The Hard Problem <span class="interview-tag meta">Meta</span><span class="interview-tag google">Google</span></h2>
+
+  <div class="card danger">
+    <pre>"There are only two hard things in Computer Science:
+ cache invalidation and naming things." — Phil Karlton
+
+THE PROBLEM: Cache has stale data. DB has new data. User sees old data.
+
+STRATEGIES:
+
+1. TTL-based expiration (simplest):
+   SET key value EX 3600  → cache auto-expires after 1 hour
+   ✓ Simple, always eventually consistent
+   ✗ Stale for up to TTL duration. Short TTL = more DB load.
+
+2. Event-driven invalidation (most precise):
+   DB write → Kafka CDC event → cache invalidation consumer → DELETE key
+   ✓ Invalidates within seconds of DB write
+   ✗ Requires CDC infrastructure (Kafka, consumers)
+   Used by: LinkedIn (Espresso binlog → Kafka → invalidate Couchbase)
+
+3. Write-through invalidation (synchronous):
+   App writes to DB → App DELETEs from cache → done
+   ✓ Immediate invalidation
+   ✗ Race condition: between DELETE and next SET, concurrent read
+      can populate cache with stale data (the "dogpile" problem)
+
+4. Version-based cache keys:
+   Cache key = hash(table + key + schema_version)
+   Schema change → new key → old entries naturally ignored
+   ✓ Zero-cost invalidation on schema changes
+   Used by: LinkedIn Espresso (schema_version in cache key)
+
+LINKEDIN ESPRESSO CACHE INVALIDATION:
+  Write → Leader commits to MySQL
+       → Router invalidates L1 (OHC) entry
+       → Router invalidates L2 (Couchbase) entry
+       → Next read = cache miss → fresh data fetched → cache repopulated
+  This is "Write-Around + Invalidate" — the simplest correct approach.</pre>
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+
+<!-- ======================= SECTION 8 ======================= -->
+<div class="section" id="sec-8">
+  <div class="section-num">Section 8</div>
+  <h2>When to Use What &mdash; Decision Guide</h2>
+
+  <table>
+    <tr><th>Scenario</th><th>Best Cache</th><th>Why</th></tr>
+    <tr><td>Simple key-value caching, disposable</td><td><strong>Memcached</strong></td><td>Multi-threaded, no overhead of persistence. Pure speed.</td></tr>
+    <tr><td>Leaderboards, ranked feeds</td><td><strong>Redis</strong> (Sorted Sets)</td><td><code>ZADD</code> + <code>ZRANGE</code> gives O(log N) ranked operations natively.</td></tr>
+    <tr><td>Rate limiting</td><td><strong>Redis</strong></td><td><code>INCR</code> + <code>EXPIRE</code> = atomic counter with TTL. Lua for sliding window.</td></tr>
+    <tr><td>Session storage</td><td><strong>Redis</strong> (with AOF)</td><td>Persistence survives restart. Hash type for session fields.</td></tr>
+    <tr><td>Message queues (lightweight)</td><td><strong>Redis</strong> (Streams/Lists)</td><td><code>XADD</code>/<code>XREAD</code> for pub/sub with persistence. Not for Kafka-scale.</td></tr>
+    <tr><td>Geospatial queries (nearby drivers)</td><td><strong>Redis</strong> (Geo)</td><td><code>GEOADD</code> + <code>GEORADIUS</code> for proximity search. Uber uses this.</td></tr>
+    <tr><td>Document cache for Espresso</td><td><strong>Couchbase</strong></td><td>Shared L2 cache, survives restart, sub-doc updates, XDCR.</td></tr>
+    <tr><td>Huge cache pool (100GB+ shared)</td><td><strong>Couchbase</strong></td><td>Memory + disk tiering. LRU ejects from RAM, reloads on access.</td></tr>
+    <tr><td>Facebook-scale object cache</td><td><strong>Memcached</strong> (+ mcrouter)</td><td>Simplest, multi-threaded, battle-tested at billions of req/s.</td></tr>
+    <tr><td>Netflix personalization</td><td><strong>EVCache</strong> (Memcached fork)</td><td>AWS-optimized, zone-aware replication, tuned for Netflix scale.</td></tr>
+    <tr><td>CDN / edge caching</td><td><strong>Varnish / Nginx</strong></td><td>HTTP cache at edge. Not a database cache — caches entire responses.</td></tr>
+    <tr><td>Per-process local cache</td><td><strong>OHC / Caffeine / Guava</strong></td><td>In-process, nanosecond access, no network. LinkedIn L1 uses OHC.</td></tr>
+  </table>
+
+  <div class="card interview">
+    <h4>The Multi-Tier Cache Architecture (LinkedIn)</h4>
+    <pre>Request arrives at Espresso Router:
+
+┌─ L0: Application-level cache (in-process, Caffeine/Guava)
+│  Hit? → return in nanoseconds
+│  Miss ↓
+├─ L1: OHC (Off-Heap Cache, per-router, ~100MB)
+│  Hit? → return in microseconds (no GC pressure, off-heap)
+│  Miss ↓
+├─ L2: Couchbase (shared across routers, ~100GB)
+│  Hit? → return in ~0.5ms (network + RAM lookup)
+│  Miss ↓
+├─ L3: Database (Espresso Storage Node → MySQL/InnoDB)
+│  B-tree lookup → return in ~2-5ms
+│  Populate L2 → Populate L1 on the way back up
+└─ Response to client
+
+Combined hit rate: 95-99% for hot data.
+Celebrity profiles (Satya, Bill Gates): always in L1.
+Regular profiles: usually in L2.
+Inactive profiles: L2 miss → L3 (database), then cached.</pre>
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+
+<!-- ======================= SECTION 9 ======================= -->
+<div class="section" id="sec-9">
+  <div class="section-num">Section 9</div>
+  <h2>Interview Questions</h2>
+
+  <div class="card interview">
+    <h4>Q1: "What happens on a cache miss?" <span class="interview-tag meta">Meta</span><span class="interview-tag google">Google</span></h4>
+    <p><strong>Answer:</strong> In cache-aside (most common): App checks cache → MISS → App queries database → DB returns data → App writes data to cache with TTL → returns to client. Next identical request = cache hit. Key concern: thundering herd (1000 simultaneous misses for same key → 1000 DB queries). Fix: leases (Facebook) or lock-and-load (only first miss queries DB, others wait).</p>
+  </div>
+
+  <div class="card interview">
+    <h4>Q2: "Redis vs Memcached — when to use which?" <span class="interview-tag meta">Meta</span><span class="interview-tag netflix">Netflix</span></h4>
+    <p><strong>Answer:</strong> Memcached for simple key-value at massive scale (multi-threaded, no persistence overhead — Facebook). Redis when you need data structures (sorted sets for leaderboards, geospatial for Uber, streams for queues), persistence (AOF/RDB), or pub/sub. Redis is single-threaded per shard; Memcached scales better per-node for simple GET/SET.</p>
+  </div>
+
+  <div class="card interview">
+    <h4>Q3: "How do you keep cache consistent with the database?" <span class="interview-tag meta">Meta</span><span class="interview-tag google">Google</span></h4>
+    <p><strong>Answer:</strong> Write-around + invalidate is simplest and most common: write to DB, then DELETE from cache. Next read = cache miss → fresh data. For stronger guarantees: event-driven invalidation via CDC (LinkedIn: Espresso binlog → Kafka → invalidate Couchbase). Version-based keys for schema changes. TTL as a safety net — even if invalidation fails, cache expires eventually.</p>
+  </div>
+
+  <div class="card interview">
+    <h4>Q4: "Design a multi-tier cache" <span class="interview-tag li">LinkedIn</span><span class="interview-tag google">Google</span></h4>
+    <p><strong>Answer:</strong> L0: in-process (Caffeine, nanoseconds, tiny). L1: per-instance off-heap (OHC, microseconds, 100MB). L2: distributed shared cache (Couchbase/Redis, 0.5ms, 100GB). L3: database (2-5ms). Each tier is 10-100x slower but 10-100x larger. Hit rates compound: if L1=80% and L2=90% of L1 misses, effective hit rate = 80% + (20% × 90%) = 98%. Only 2% reaches the database.</p>
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to Contents</a></div>
+</div>
+
+</div>
+
+<footer>
+  <div class="container">
+    <p>Data Intensive Systems &mdash; Chapter 6 &mdash; <a href="/ddia-ch5.html">Ch 5: Companies</a> | <a href="/ddia-ch4.html">Ch 4: TiDB</a> | <a href="/ddia-ch3.html">Ch 3: Storage</a> | <a href="/">Home</a></p>
+  </div>
+</footer>
+
+</body>
+</html>
