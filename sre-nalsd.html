@@ -4,37 +4,70 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<title>NALSD Practice &mdash; 18 War-Room Scenarios</title>
+<title>Google SRE NALSD Practice Playbook &mdash; 18 War-Room Scenarios</title>
 <style>
   :root{--bg:#fff;--surface:#f7f6f3;--border:#e3e2de;--text:#37352f;--text-muted:#787774;--accent:#2383e2;--accent2:#0f7b0f;--accent3:#6940a5;--accent4:#d9730d;--red:#e03e3e;--code-bg:#f7f6f3;--card:#fff;--ch-color:#1565c0}
-  *{margin:0;padding:0;box-sizing:border-box}body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;font-size:15px}
-  .container{max-width:900px;margin:0 auto;padding:0 24px}.hero{background:linear-gradient(180deg,#fafafa,#fff);border-bottom:1px solid var(--border);padding:48px 0 36px;text-align:center}.hero h1{font-size:2.1em;font-weight:700;margin-bottom:12px}.hero h1 span{color:var(--ch-color)}.hero p{font-size:1.05em;color:var(--text-muted);max-width:700px;margin:0 auto 30px}.hero .badge{display:inline-block;background:var(--surface);border:1px solid var(--border);padding:6px 16px;border-radius:20px;font-size:.8em;color:var(--text-muted)}
+  *{margin:0;padding:0;box-sizing:border-box}body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;font-size:15px}
+  .container{max-width:900px;margin:0 auto;padding:0 24px}
+  .hero{background:linear-gradient(180deg,#fafafa,#fff);border-bottom:1px solid var(--border);padding:48px 0 36px;text-align:center}.hero h1{font-size:2.1em;font-weight:700;margin-bottom:12px}.hero h1 span{color:var(--ch-color)}.hero p{font-size:1.05em;color:var(--text-muted);max-width:700px;margin:0 auto 30px}.hero .badge{display:inline-block;background:var(--surface);border:1px solid var(--border);padding:6px 16px;border-radius:20px;font-size:.8em;color:var(--text-muted)}
   .nav-links{margin-top:20px}.nav-links a{display:inline-block;background:var(--surface);border:1px solid var(--border);padding:8px 20px;border-radius:8px;color:var(--accent);text-decoration:none;margin:4px;font-size:.9em;transition:.2s}.nav-links a:hover{border-color:var(--accent)}.nav-links a.ch{color:var(--ch-color);border-color:var(--ch-color)}
   .toc{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:32px;margin:40px auto}.toc h2{font-size:1.2em;margin-bottom:16px;color:var(--ch-color)}.toc ol{padding-left:24px}.toc li{margin:5px 0;font-size:.95em}.toc a{color:var(--text);text-decoration:none;border-bottom:1px dashed var(--border)}.toc a:hover{color:var(--ch-color)}
-  .scenario{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin:24px 0;border-left:4px solid var(--ch-color)}
-  .scenario h3{font-size:1.15em;font-weight:700;color:var(--ch-color);margin-bottom:12px}
-  .scenario .symptom{background:#fce4ec;border-radius:8px;padding:14px;margin:10px 0}.scenario .symptom h4{color:#c62828;margin:0 0 6px;font-size:.95em}
-  .scenario .diag{background:#e3f2fd;border-radius:8px;padding:14px;margin:10px 0}.scenario .diag h4{color:#1565c0;margin:0 0 6px;font-size:.95em}
-  .scenario .root{background:#fff3e0;border-radius:8px;padding:14px;margin:10px 0}.scenario .root h4{color:#e65100;margin:0 0 6px;font-size:.95em}
-  .scenario .fix{background:#e8f5e9;border-radius:8px;padding:14px;margin:10px 0}.scenario .fix h4{color:#2e7d32;margin:0 0 6px;font-size:.95em}
-  .scenario .signal{background:#f3e5f5;border-radius:8px;padding:12px;margin:8px 0;font-size:.9em}.scenario .signal h4{color:#6a1b9a;margin:0 0 4px;font-size:.9em}
-  .scenario .pitfall{background:#fff3e0;border-radius:6px;padding:10px;margin:8px 0;font-size:.88em;border-left:3px solid #e65100}
-  .scenario .reflect{background:#e8eaf6;border-radius:6px;padding:10px;margin:8px 0;font-size:.88em;border-left:3px solid #283593}
+
+  /* Overview section */
+  .overview{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:28px;margin:24px 0}
+  .overview h2{font-size:1.3em;font-weight:700;color:var(--ch-color);margin-bottom:16px}
+  .overview h3{font-size:1.1em;font-weight:600;color:var(--text);margin:20px 0 10px}
+  .overview p{margin:8px 0}
+  .overview ul,.overview ol{margin:8px 0 8px 24px}
+  .overview li{margin:4px 0}
+
+  /* Scenario cards */
+  .scenario{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:28px;margin:28px 0;border-left:4px solid var(--ch-color)}
+  .scenario h3{font-size:1.2em;font-weight:700;color:var(--ch-color);margin-bottom:14px}
+  .scenario h4{font-size:.95em;font-weight:600;margin:0 0 8px}
+  .scenario p{margin:6px 0}
+  .scenario ul,.scenario ol{margin:6px 0 6px 20px;font-size:.93em}.scenario li{margin:4px 0}
+
+  .scenario .symptom{background:#fce4ec;border-radius:8px;padding:16px;margin:12px 0}.scenario .symptom h4{color:#c62828}
+  .scenario .clarify{background:#fff8e1;border-radius:8px;padding:16px;margin:12px 0}.scenario .clarify h4{color:#f57f17}
+  .scenario .diag{background:#e3f2fd;border-radius:8px;padding:16px;margin:12px 0}.scenario .diag h4{color:#1565c0}
+  .scenario .hypo{background:#f3e5f5;border-radius:8px;padding:16px;margin:12px 0}.scenario .hypo h4{color:#6a1b9a}
+  .scenario .root{background:#fff3e0;border-radius:8px;padding:16px;margin:12px 0}.scenario .root h4{color:#e65100}
+  .scenario .fix{background:#e8f5e9;border-radius:8px;padding:16px;margin:12px 0}.scenario .fix h4{color:#2e7d32}
+  .scenario .pitfall{background:#fff3e0;border-radius:6px;padding:12px;margin:10px 0;font-size:.9em;border-left:3px solid #e65100}
+  .scenario .signal{background:#f3e5f5;border-radius:8px;padding:14px;margin:10px 0;font-size:.9em}.scenario .signal h4{color:#6a1b9a;font-size:.9em}
+  .scenario .reflect{background:#e8eaf6;border-radius:6px;padding:12px;margin:10px 0;font-size:.9em;border-left:3px solid #283593}
+  .scenario .why{background:#e0f2f1;border-radius:6px;padding:12px;margin:10px 0;font-size:.9em;border-left:3px solid #00695c}
+
   pre{background:var(--code-bg);border:1px solid var(--border);padding:14px;border-radius:8px;overflow-x:auto;font-family:'JetBrains Mono','SF Mono',monospace;font-size:.82em;margin:8px 0;line-height:1.5}
   code{background:var(--code-bg);border:1px solid var(--border);padding:2px 6px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:.88em;color:var(--accent3)}
-  .cat-header{background:var(--ch-color);color:#fff;padding:12px 20px;border-radius:10px;margin:30px 0 20px;font-size:1.05em;font-weight:700}
+  .cat-header{background:var(--ch-color);color:#fff;padding:14px 22px;border-radius:10px;margin:36px 0 22px;font-size:1.1em;font-weight:700}
+  .section-header{background:#37352f;color:#fff;padding:16px 22px;border-radius:10px;margin:40px 0 22px;font-size:1.15em;font-weight:700}
+
   table{width:100%;border-collapse:collapse;margin:16px 0;background:var(--card);border-radius:8px;overflow:hidden}th{background:rgba(21,101,192,.08);color:var(--ch-color);padding:10px 14px;text-align:left;font-weight:600;border-bottom:2px solid var(--border);font-size:.9em}td{padding:10px 14px;border-bottom:1px solid var(--border);font-size:.88em}tr:last-child td{border-bottom:none}
+
   .back-top{display:block;text-align:right;margin-top:12px}.back-top a{color:var(--text-muted);text-decoration:none;font-size:.85em}.back-top a:hover{color:var(--ch-color)}
   footer{text-align:center;padding:40px 0;border-top:1px solid var(--border);color:var(--text-muted);font-size:.9em;margin-top:60px}footer a{color:var(--ch-color);text-decoration:none}
+
+  /* Diagram styles */
+  .diagram{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;margin:16px 0;text-align:center;overflow-x:auto}
+  .diagram svg{max-width:100%;height:auto}
+  .diagram .caption{font-size:.85em;color:var(--text-muted);margin-top:10px;font-style:italic}
+
+  /* Collapsible */
+  details{margin:10px 0}
+  details summary{cursor:pointer;font-weight:600;font-size:.95em;color:var(--ch-color);padding:8px 0;user-select:none}
+  details summary:hover{color:#0d47a1}
+  details[open] summary{margin-bottom:8px}
 </style>
 </head>
 <body>
 
 <div class="hero">
   <div class="container">
-    <h1>NALSD <span>War-Room Scenarios</span></h1>
-    <p>18 Non-Abstract Large Systems Design scenarios — the exact format Google SRE uses. Diagnose running global infrastructure, not abstract whiteboard designs.</p>
-    <div class="badge">Google SRE &bull; NALSD Practice &bull; 18 Scenarios &bull; 65 Pages</div>
+    <h1>Google SRE <span>NALSD Practice Playbook</span></h1>
+    <p>18 Non-Abstract Large Systems Design scenarios &mdash; the exact format Google SRE uses. Diagnose running global infrastructure, not abstract whiteboard designs.</p>
+    <div class="badge">Google SRE &bull; NALSD Practice &bull; 18 Scenarios &bull; Full Playbook</div>
     <div class="nav-links">
       <a href="/">Home</a>
       <a href="/sd-google-sre.html" class="ch">NALSD System Design</a>
@@ -45,6 +78,75 @@
 
 <div class="container">
 
+<!-- ======================== SECTION 1: OVERVIEW ======================== -->
+<div class="section-header" id="overview">Section 1: NALSD Overview &mdash; How It Works &amp; Why Google Tests It</div>
+
+<div class="overview">
+  <h2>What is NALSD?</h2>
+  <p>The <strong>Non-Abstract Large Systems Design (NALSD)</strong> round is a signature Google SRE interview. It is not about designing shiny new architectures, and not about single-node debugging.</p>
+  <p><strong>NALSD = diagnosing, reasoning, and improving a real-world, Internet-scale system that is already in production.</strong></p>
+  <p>Think of it as a <em>war-room simulation</em>: a system works fine in general, but something is off &mdash; latency spike, partial outage, stale cache, cert failures. You're dropped into the middle of it, and the interviewer watches how you investigate, explain, and stabilize.</p>
+
+  <table>
+    <tr><th>Round</th><th>System Design</th><th>Troubleshooting</th><th>NALSD</th></tr>
+    <tr><td><strong>Mindset</strong></td><td>Architect from scratch</td><td>Debug single machine/service</td><td>Diagnose running global infra</td></tr>
+    <tr><td><strong>Example Prompt</strong></td><td>"Design a global metrics pipeline."</td><td>"Why is this server's CPU pegged at 90%?"</td><td>"Metrics pipeline works, but South America is 500ms slower &mdash; why?"</td></tr>
+    <tr><td><strong>Primary Skills</strong></td><td>Abstraction, scalability, feature tradeoffs</td><td>Debugging depth, root cause finding</td><td>Layered reasoning, reliability mindset, prioritization</td></tr>
+  </table>
+  <p><em>The NALSD distinction: you don't "invent" a system, you autopsy and stabilize a real one.</em></p>
+
+  <h3>Why Google Tests NALSD</h3>
+  <ol>
+    <li><strong>SRE &ne; pure SWE:</strong> SREs are operators of massive distributed systems. Google needs proof you can reason about failures at every layer.</li>
+    <li><strong>Systems thinking:</strong> Can you navigate the stack (browser &rarr; DNS &rarr; CDN &rarr; LB &rarr; service &rarr; DB) without panicking?</li>
+    <li><strong>Judgment under partial data:</strong> In real outages, logs and graphs are incomplete. Do you form hypotheses, not guesses?</li>
+    <li><strong>Reliability vs. speed tradeoffs:</strong> Do you stabilize the system first, then chase root cause?</li>
+    <li><strong>Communication:</strong> Can you explain your reasoning clearly, so others could follow in a war-room?</li>
+  </ol>
+
+  <h3>Anatomy of a NALSD Scenario</h3>
+  <p>A typical NALSD question looks like: <em>"Our global photo-sharing service is healthy in most regions, but uploads from South America are suddenly 500ms slower. The rest of the world is fine. What do you do?"</em></p>
+
+  <div class="diagram">
+    <svg width="780" height="110" viewBox="0 0 780 110" xmlns="http://www.w3.org/2000/svg">
+      <defs><marker id="ah" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#1565c0"/></marker></defs>
+      <g font-family="Inter,sans-serif" font-size="13" fill="#37352f">
+        <rect x="5" y="30" width="90" height="50" rx="8" fill="#e3f2fd" stroke="#1565c0" stroke-width="1.5"/><text x="50" y="60" text-anchor="middle" font-weight="600">1. Clarify</text>
+        <line x1="95" y1="55" x2="125" y2="55" stroke="#1565c0" stroke-width="1.5" marker-end="url(#ah)"/>
+        <rect x="130" y="30" width="110" height="50" rx="8" fill="#e3f2fd" stroke="#1565c0" stroke-width="1.5"/><text x="185" y="60" text-anchor="middle" font-weight="600">2. Check Layers</text>
+        <line x1="240" y1="55" x2="270" y2="55" stroke="#1565c0" stroke-width="1.5" marker-end="url(#ah)"/>
+        <rect x="275" y="30" width="110" height="50" rx="8" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="1.5"/><text x="330" y="60" text-anchor="middle" font-weight="600">3. Hypothesize</text>
+        <line x1="385" y1="55" x2="415" y2="55" stroke="#1565c0" stroke-width="1.5" marker-end="url(#ah)"/>
+        <rect x="420" y="30" width="90" height="50" rx="8" fill="#fff3e0" stroke="#e65100" stroke-width="1.5"/><text x="465" y="60" text-anchor="middle" font-weight="600">4. Prioritize</text>
+        <line x1="510" y1="55" x2="540" y2="55" stroke="#1565c0" stroke-width="1.5" marker-end="url(#ah)"/>
+        <rect x="545" y="30" width="90" height="50" rx="8" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1.5"/><text x="590" y="60" text-anchor="middle" font-weight="600">5. Stabilize</text>
+        <line x1="635" y1="55" x2="665" y2="55" stroke="#1565c0" stroke-width="1.5" marker-end="url(#ah)"/>
+        <rect x="670" y="30" width="90" height="50" rx="8" fill="#e8eaf6" stroke="#283593" stroke-width="1.5"/><text x="715" y="60" text-anchor="middle" font-weight="600">6. Prevent</text>
+      </g>
+    </svg>
+    <div class="caption">Fig 1: The 6-step NALSD reasoning flow</div>
+  </div>
+
+  <h3>Scoring Lens (What Google Looks For)</h3>
+  <ul>
+    <li><strong>Clarity:</strong> Asks the right clarifying questions before diving in.</li>
+    <li><strong>Layered depth:</strong> Can "zoom in" and "zoom out" across networking, systems, app.</li>
+    <li><strong>Reliability mindset:</strong> First priority = restore service, then analyze root cause.</li>
+    <li><strong>Tradeoff reasoning:</strong> Weighs cost, performance, and reliability, not just "fixes."</li>
+    <li><strong>Communication:</strong> Explains thinking calmly, step by step.</li>
+  </ul>
+
+  <h3>Common Pitfalls in NALSD</h3>
+  <ul>
+    <li>Jumping to root cause without ruling out simpler explanations.</li>
+    <li>Treating it like a coding round (it's not about implementing algorithms).</li>
+    <li>Ignoring the stack (focusing only on app/db, forgetting DNS/CDN/network).</li>
+    <li>Neglecting stabilization (great diagnosis but no plan to keep service alive).</li>
+    <li>Over-engineering (proposing new architectures instead of pragmatic fixes).</li>
+  </ul>
+</div>
+
+<!-- ======================== TABLE OF CONTENTS ======================== -->
 <div class="toc" id="toc">
   <h2>18 Scenarios + Rubric</h2>
   <ol>
@@ -71,216 +173,652 @@
   </ol>
 </div>
 
-<!-- Generate all 18 scenarios in compact format -->
+<!-- ======================== SCENARIOS 1-5 ======================== -->
+<div class="cat-header">Scenarios 1&ndash;5: Network, CDN, DNS</div>
 
-<div class="cat-header">Scenarios 1-5: Network, CDN, DNS</div>
-
+<!-- ===== S1 ===== -->
 <div class="scenario" id="s1">
-  <h3>S1 — Regional Latency Spike (South America 500ms Slower)</h3>
-  <div class="symptom"><h4>Symptom</h4><p>Photo-sharing uploads from SA consistently 500ms slower than other regions. No errors, just slowness. Rest of world normal.</p></div>
-  <div class="diag"><h4>Diagnostic Path</h4><p><strong>Layers to check:</strong> Client → DNS (correct CDN edge?) → CDN (São Paulo PoP hit or routed to Miami?) → LB (BGP routing asymmetry?) → App (SA cluster healthy?) → DB (writes routed cross-continent?)</p><p><strong>Key question:</strong> Is 500ms constant (misrouting) or intermittent (congested ISP link)?</p></div>
-  <div class="root"><h4>Root Cause (Example)</h4><p>CDN config change invalidated São Paulo upload caching tier → 40% of requests proxied back to US-East → +500ms RTT cross-continent.</p></div>
-  <div class="fix"><h4>Mitigation</h4><p><strong>Now:</strong> Route traffic to nearest working CDN edges. Roll back config. <strong>Long-term:</strong> Synthetic per-region latency checks. Alerts on CDN config drift. Fail-safe fallback so CDN never reverts to US-East for uploads.</p></div>
-  <div class="signal"><h4>Senior Signal</h4><p>Strong: diagnoses CDN misconfig + proposes rollback. Exceptional: adds monitoring, DNS TTL tradeoffs, automation.</p></div>
-  <div class="pitfall"><strong>Pitfalls:</strong> Blaming app/DB. Not asking scope questions. Only proposing fixes, not mitigations (interviewers want restore first).</div>
+  <h3>S1 &mdash; Regional Latency Spike (South America 500ms Slower)</h3>
+
+  <div class="symptom"><h4>Symptom</h4>
+    <p>Global photo-sharing platform. Users in South America: uploads consistently 500ms slower than other regions. Rest of world: normal latency. No obvious errors, just slowness.</p>
+  </div>
+
+  <div class="clarify"><h4>Step 1: Clarify Requirements</h4>
+    <ul>
+      <li>Is it all users in South America or specific ISPs/carriers?</li>
+      <li>Is the latency constant (always +500ms) or spiky (some requests)?</li>
+      <li>When did this start &mdash; after a rollout, or gradual?</li>
+      <li>Is it only uploads or also downloads?</li>
+      <li>Is the latency in DNS resolution, TLS handshake, request latency, or DB writes?</li>
+    </ul>
+    <p><em>Interviewer Lens: They want to see if you narrow scope before diving in.</em></p>
+  </div>
+
+  <div class="diag"><h4>Step 2: Layered Diagnostic Path</h4>
+    <div class="diagram">
+      <svg width="740" height="90" viewBox="0 0 740 90" xmlns="http://www.w3.org/2000/svg">
+        <defs><marker id="a1" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#1565c0"/></marker></defs>
+        <g font-family="Inter,sans-serif" font-size="12" fill="#37352f">
+          <rect x="5" y="25" width="80" height="40" rx="6" fill="#e3f2fd" stroke="#1565c0"/><text x="45" y="49" text-anchor="middle">Client</text>
+          <line x1="85" y1="45" x2="105" y2="45" stroke="#1565c0" stroke-width="1.5" marker-end="url(#a1)"/>
+          <rect x="110" y="25" width="80" height="40" rx="6" fill="#e3f2fd" stroke="#1565c0"/><text x="150" y="49" text-anchor="middle">DNS</text>
+          <line x1="190" y1="45" x2="210" y2="45" stroke="#1565c0" stroke-width="1.5" marker-end="url(#a1)"/>
+          <rect x="215" y="25" width="100" height="40" rx="6" fill="#fff3e0" stroke="#e65100" stroke-width="2"/><text x="265" y="49" text-anchor="middle" font-weight="600">CDN Edge</text>
+          <line x1="315" y1="45" x2="335" y2="45" stroke="#1565c0" stroke-width="1.5" marker-end="url(#a1)"/>
+          <rect x="340" y="25" width="80" height="40" rx="6" fill="#e3f2fd" stroke="#1565c0"/><text x="380" y="49" text-anchor="middle">LB / BGP</text>
+          <line x1="420" y1="45" x2="440" y2="45" stroke="#1565c0" stroke-width="1.5" marker-end="url(#a1)"/>
+          <rect x="445" y="25" width="80" height="40" rx="6" fill="#e3f2fd" stroke="#1565c0"/><text x="485" y="49" text-anchor="middle">App</text>
+          <line x1="525" y1="45" x2="545" y2="45" stroke="#1565c0" stroke-width="1.5" marker-end="url(#a1)"/>
+          <rect x="550" y="25" width="80" height="40" rx="6" fill="#e3f2fd" stroke="#1565c0"/><text x="590" y="49" text-anchor="middle">DB</text>
+        </g>
+        <text x="265" y="82" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#e65100" font-weight="600">&uarr; Likely culprit</text>
+      </svg>
+      <div class="caption">Fig 2: Request path layers &mdash; CDN edge is the likely failure point</div>
+    </div>
+    <ol>
+      <li><strong>Client &rarr; DNS:</strong> Are users resolving to the correct regional CDN edge? Misconfigured DNS TTLs causing cross-region resolution?</li>
+      <li><strong>DNS &rarr; CDN:</strong> Which CDN PoP are they hitting? S&atilde;o Paulo edge? Or routed to Miami by mistake?</li>
+      <li><strong>CDN &rarr; LB:</strong> Requests balanced to correct regional LBs? Routing asymmetry (BGP leak, congested transit)?</li>
+      <li><strong>LB &rarr; App:</strong> SA app cluster healthy? CPU/memory saturation? Connection queues?</li>
+      <li><strong>App &rarr; DB:</strong> Multi-region DB replication delay? Writes routed cross-continent?</li>
+    </ol>
+    <p><strong>Key question:</strong> Is 500ms constant (misrouting) or intermittent (congested ISP link)?</p>
+  </div>
+
+  <div class="hypo"><h4>Step 3: Hypothesis Formation</h4>
+    <ul>
+      <li><strong>H1:</strong> If 500ms constant &rarr; network round-trip misrouting (probably cross-region).</li>
+      <li><strong>H2:</strong> If intermittent &rarr; CDN cache miss or congested ISP link.</li>
+      <li><strong>H3:</strong> If upload-only &rarr; writes routed to US-East DB instead of Brazil replica.</li>
+    </ul>
+  </div>
+
+  <div class="root"><h4>Step 4: Root Cause Walkthrough</h4>
+    <p>Trace metrics: SA users resolve DNS correctly (S&atilde;o Paulo CDN). CDN logs show 40% of requests proxied back to US-East instead of served locally. A recent CDN config change invalidated S&atilde;o Paulo's upload caching tier &rarr; defaulted to upstream US-East. Result: +500ms RTT due to cross-continent upload path.</p>
+  </div>
+
+  <div class="fix"><h4>Step 5: Mitigation vs. Fix</h4>
+    <p><strong>Mitigation (now):</strong> Route traffic temporarily to nearest working CDN edges (Miami + S&atilde;o Paulo). Roll back faulty config, force re-propagation to CDN edge.</p>
+    <p><strong>Fix (long-term):</strong></p>
+    <ul>
+      <li>Synthetic monitoring: per-region latency checks (upload + download).</li>
+      <li>Automate alerts on CDN config drift.</li>
+      <li>Shorten DNS TTLs to allow quicker correction.</li>
+      <li>Add "fail-safe" fallback so CDN never silently reverts to US-East for uploads.</li>
+    </ul>
+  </div>
+
+  <div class="pitfall"><strong>Common Pitfalls:</strong> Blaming the app/DB immediately. Not asking scope questions. Treating "South America slow" as identical to "global outage." Only proposing fixes, not mitigations &mdash; interviewers want restore first.</div>
+
+  <div class="signal"><h4>Interviewer Scoring Signals</h4>
+    <p><strong>Strong:</strong> Diagnoses CDN misconfig + proposes rollback.</p>
+    <p><strong>Exceptional:</strong> Adds monitoring, explains DNS TTL tradeoffs, proposes automation. Narrates calmly like leading an incident bridge.</p>
+  </div>
+
+  <div class="reflect"><strong>Reflection:</strong> If instead of uploads, it was TLS handshakes slower in SA, how would your reasoning path differ? What metrics &amp; logs would you request first? How would you prevent this from silently impacting users again?</div>
+  <div class="why"><strong>Why this works:</strong> Realistic (CDN misconfigs cause actual region-specific slowdowns). Layered (forces DNS/CDN/network/app/DB checks). Google-style war-room autopsy.</div>
+  <div class="back-top"><a href="#toc">&uarr; Back to top</a></div>
 </div>
 
+<!-- ===== S2 ===== -->
 <div class="scenario" id="s2">
-  <h3>S2 — Load Balancer Connection Storm (SYN Flood / Flash Crowd)</h3>
-  <div class="symptom"><h4>Symptom</h4><p>LB connection queues at max. Spike in half-open TCP connections (SYN_RECV). Users see intermittent timeouts. App servers underutilized (CPU fine).</p></div>
-  <div class="diag"><h4>Diagnostic Path</h4><pre>netstat -s | grep SYN    # SYN backlog
-cat /proc/net/nf_conntrack | wc -l  # conntrack table
-ethtool -S eth0 | grep drop</pre><p>Check: SYN backlog → conntrack → LB timeout config → app rejecting connections → DDoS vs flash crowd (handshake completion ratio).</p></div>
-  <div class="root"><h4>Root Cause</h4><p>SYN flood: 80% of connections never complete handshake. Source IPs randomized, no valid ACKs. LB TCP backlog saturated.</p></div>
-  <div class="fix"><h4>Mitigation</h4><p><strong>Now:</strong> Enable SYN cookies (<code>net.ipv4.tcp_syncookies=1</code>). Rate-limit suspicious IPs. Autoscale LBs. <strong>Long-term:</strong> DDoS mitigation at edge. Tune <code>tcp_max_syn_backlog</code>, reduce <code>tcp_synack_retries</code>. Scrubbing layer before LBs.</p></div>
-  <div class="signal"><h4>Senior Signal</h4><p>Strong: quickly identifies LB/kernel-level, not app. Talks SYN backlog, conntrack. Exceptional: explains SYN flood vs legit flash crowd. Layered defense: kernel tuning, scrubbing, monitoring.</p></div>
+  <h3>S2 &mdash; Load Balancer Connection Storm (SYN Flood / Flash Crowd)</h3>
+
+  <div class="symptom"><h4>Symptom</h4>
+    <p>LB connection queues spiking to max capacity. Sudden increase in half-open TCP connections (SYN_RECV state). Users see intermittent timeouts / dropped requests. App servers underutilized (CPU fine, memory fine).</p>
+  </div>
+
+  <div class="clarify"><h4>Step 1: Clarify</h4>
+    <ul>
+      <li>Is this a DDoS attack (external) or a flash crowd (legit traffic surge)?</li>
+      <li>Which regions / LBs are affected &mdash; just one PoP or global?</li>
+      <li>Is it all protocols or only TCP/HTTP?</li>
+      <li>What's the scale: 2x, 10x, 100x connections above baseline?</li>
+      <li>Any recent config changes to LB / kernel parameters / firewall rules?</li>
+    </ul>
+  </div>
+
+  <div class="diag"><h4>Step 2: Layered Diagnostic Path</h4>
+    <pre>netstat -s | grep SYN              # SYN backlog
+cat /proc/net/nf_conntrack | wc -l # conntrack table
+ethtool -S eth0 | grep drop        # NIC drops</pre>
+    <ol>
+      <li><strong>Network Layer (TCP):</strong> SYN backlog, <code>net.ipv4.tcp_max_syn_backlog</code> exhausted? Abnormal handshake completion ratio?</li>
+      <li><strong>LB OS / Kernel:</strong> Conntrack table usage, LB CPU (I/O-bound, IRQ-bound, or packet-drop bound).</li>
+      <li><strong>LB Software / Config:</strong> Timeouts too high (connections linger)? Health checks overwhelming backend?</li>
+      <li><strong>Application Servers:</strong> Rejecting connections &rarr; LBs retry endlessly?</li>
+      <li><strong>External / Attack Vector:</strong> Sudden flood from small IP set? Concentrated botnet or organic surge?</li>
+    </ol>
+  </div>
+
+  <div class="hypo"><h4>Step 3: Hypotheses</h4>
+    <ul>
+      <li><strong>H1:</strong> SYN Flood Attack &mdash; half-open TCP connections overwhelming LBs.</li>
+      <li><strong>H2:</strong> Flash Crowd Event &mdash; legit surge (product launch, viral traffic).</li>
+      <li><strong>H3:</strong> Misconfigured LB Timeout &mdash; connections stuck too long &rarr; backlog fills.</li>
+      <li><strong>H4:</strong> Kernel Resource Limits &mdash; conntrack table or SYN backlog too small.</li>
+    </ul>
+  </div>
+
+  <div class="root"><h4>Step 4: Root Cause</h4>
+    <p>SYN backlog filled to 100%. 80% of connections never complete handshake (SYN_RECV stuck). Source IPs randomized, no valid ACKs. LB CPU fine, app servers fine. <strong>Conclusion: SYN flood attack saturating LB TCP backlog.</strong></p>
+  </div>
+
+  <div class="fix"><h4>Step 5: Mitigation vs. Fix</h4>
+    <p><strong>Mitigation (now):</strong></p>
+    <ul>
+      <li>Enable SYN cookies (<code>net.ipv4.tcp_syncookies=1</code>).</li>
+      <li>Rate-limit suspicious IPs at edge firewall. Geo-block abusive regions if possible.</li>
+      <li>Autoscale additional LBs to absorb load.</li>
+    </ul>
+    <p><strong>Fix (long-term):</strong></p>
+    <ul>
+      <li>Deploy DDoS mitigation at network edge (Cloud Armor, Akamai, etc.).</li>
+      <li>Tune kernel: increase <code>tcp_max_syn_backlog</code>, reduce <code>tcp_synack_retries</code>.</li>
+      <li>Add scrubbing layer before LBs. Synthetic monitoring for SYN backlog saturation.</li>
+    </ul>
+  </div>
+
+  <div class="pitfall"><strong>Pitfalls:</strong> Jumping straight to scaling apps (apps aren't the bottleneck). Assuming all traffic is legit without checking handshake ratios. Ignoring kernel parameters.</div>
+  <div class="signal"><h4>Scoring</h4><p><strong>Strong:</strong> Quickly identifies LB/kernel-level, not app. Talks SYN backlog, conntrack. <strong>Exceptional:</strong> Explains how SYN flood differs from legit flash crowd. Layered defense: kernel tuning, scrubbing, monitoring.</p></div>
+  <div class="reflect"><strong>Reflection:</strong> If it was a legit traffic surge (viral event), how would your mitigation differ? Which Linux kernel params would you tune?</div>
+  <div class="back-top"><a href="#toc">&uarr; Back to top</a></div>
 </div>
 
+<!-- ===== S3 ===== -->
 <div class="scenario" id="s3">
-  <h3>S3 — TLS Certificate Rotation Failure</h3>
-  <div class="symptom"><h4>Symptom</h4><p>TLS handshake latency +2s. Some regions: complete failures. Logs: "certificate expired." Service itself healthy.</p></div>
-  <div class="root"><h4>Root Cause</h4><p>Cert rotation job failed on ~20% of global LBs (still serving expired cert). Where updated, cipher preference change caused negotiation retries → latency spike.</p></div>
-  <div class="fix"><h4>Mitigation</h4><p><strong>Now:</strong> Force cert rollout to all LBs. Revert cipher config. <strong>Long-term:</strong> Fully automate cert rotation (ACME). Synthetic TLS handshake tests per region/browser. Pre-rotation overlap. Auto-rollback on latency spike post-rotation.</p></div>
+  <h3>S3 &mdash; TLS Handshake Latency &amp; Certificate Rotation Failure</h3>
+  <div class="symptom"><h4>Symptom</h4><p>Latency spike during TLS handshakes (clients see ~2s extra delay). Some regions: complete failures (TLS handshake timeout). Error logs: "certificate expired." Service itself healthy.</p></div>
+  <div class="clarify"><h4>Step 1: Clarify</h4>
+    <ul>
+      <li>All clients or specific regions/browsers/devices?</li>
+      <li>Did this begin after a cert rotation event?</li>
+      <li>Which TLS versions in play (1.2 vs 1.3)? Internal or external CA?</li>
+      <li>Is the problem latency (handshake slow) or availability (cert expired)?</li>
+    </ul>
+  </div>
+  <div class="diag"><h4>Step 2: Diagnostic Path</h4>
+    <ol>
+      <li><strong>Client Layer:</strong> All browsers/devices fail equally? Specific OS/browser rejecting cert chain?</li>
+      <li><strong>TLS Handshake:</strong> Measure handshake latency (Wireshark/tcpdump). Defaulting to slow cipher suite?</li>
+      <li><strong>Certificate &amp; CA Chain:</strong> Intermediate or root CA expired? Wrong intermediate cert in chain?</li>
+      <li><strong>LB / Proxy Layer:</strong> Did LB get the updated cert? Cert propagation complete across all regions?</li>
+      <li><strong>Automation:</strong> Was rotation automated? Any failures logged?</li>
+    </ol>
+  </div>
+  <div class="root"><h4>Root Cause</h4><p>Cert rotation job ran but failed on ~20% of global LBs. Those LBs still present the expired cert. In regions with the updated cert, cipher preference list changed, causing negotiation retries &rarr; latency spike.</p></div>
+  <div class="fix"><h4>Mitigation vs. Fix</h4>
+    <p><strong>Now:</strong> Force cert rollout to all LBs. Revert cipher config. Redirect users to healthy PoPs.</p>
+    <p><strong>Long-term:</strong> Fully automate cert rotation (ACME). Synthetic TLS handshake tests per region/browser. Pre-rotation overlap (new cert deployed days before old one expires). Auto-rollback on latency spike post-rotation.</p>
+  </div>
+  <div class="signal"><h4>Scoring</h4><p><strong>Exceptional:</strong> Shows layered debugging. Explains security vs reliability trade-off. Proposes cert lifecycle automation. Asks "What prevents the next cert expiry fire drill?"</p></div>
+  <div class="reflect"><strong>Reflection:</strong> How would you design zero-downtime cert rotation at global scale? What metrics would you monitor during TLS rotation?</div>
+  <div class="back-top"><a href="#toc">&uarr; Back to top</a></div>
 </div>
 
+<!-- ===== S4 ===== -->
 <div class="scenario" id="s4">
-  <h3>S4 — DNS Resolution Degradation (30% NXDOMAIN)</h3>
-  <div class="symptom"><h4>Symptom</h4><p>~30% of global users: "site not reachable." Others fine. Pattern: NXDOMAIN or SERVFAIL. Not uniform across ISPs.</p></div>
-  <div class="root"><h4>Root Cause</h4><p>Authoritative DNS cluster has 4 servers. Zone propagation automation bug → 2 servers correctly updated, 2 still serve old data. Recursive resolvers hit "good" or "stale" servers randomly.</p></div>
-  <div class="fix"><h4>Mitigation</h4><p><strong>Now:</strong> Force zone reload on all auth servers. Lower TTL temporarily. <strong>Long-term:</strong> Validate all auth servers before completing push. Synthetic tests from multiple resolvers. Dual-push with pre-validation. Alert on zone drift.</p></div>
-  <div class="signal"><h4>Senior Signal</h4><p>Exceptional: explains why some users fail (cache + server inconsistency). Mentions propagation validation, drift detection, toil reduction.</p></div>
+  <h3>S4 &mdash; DNS Resolution Degradation (30% NXDOMAIN)</h3>
+  <div class="symptom"><h4>Symptom</h4><p>~30% of global users: "site not reachable." Others fine. Pattern: NXDOMAIN or SERVFAIL. Not uniform across ISPs. Service itself healthy.</p></div>
+  <div class="clarify"><h4>Step 1: Clarify</h4>
+    <ul>
+      <li>Which DNS resolvers impacted? (ISP-specific or global like Google DNS / Cloudflare?)</li>
+      <li>All services under domain or just one subdomain?</li>
+      <li>Did this start after a zone file update or config change?</li>
+      <li>Are failures NXDOMAIN (record missing) vs SERVFAIL (authoritative failure)?</li>
+    </ul>
+  </div>
+  <div class="diag"><h4>Step 2: Diagnostic Path</h4>
+    <ol>
+      <li><strong>Client &rarr; Recursive Resolver:</strong> Can clients resolve via different resolvers? Caching stale/broken data?</li>
+      <li><strong>Recursive &rarr; Authoritative DNS:</strong> Auth servers responding correctly? Packet loss, timeouts, inconsistent answers?</li>
+      <li><strong>Auth DNS &rarr; Zone Data:</strong> Zone file misconfigured? Split-horizon misconfig?</li>
+      <li><strong>TTL &amp; Caching:</strong> Resolvers holding stale records due to high TTL?</li>
+    </ol>
+  </div>
+  <div class="hypo"><h4>Hypotheses</h4>
+    <ul>
+      <li><strong>H1:</strong> Misconfigured DNS zone file &mdash; wrong record pushed.</li>
+      <li><strong>H2:</strong> Partial propagation failure &mdash; only some auth servers updated.</li>
+      <li><strong>H3:</strong> Expired/removed glue records at parent zone.</li>
+      <li><strong>H4:</strong> Recursive resolver caching bad data due to long TTL.</li>
+    </ul>
+  </div>
+  <div class="root"><h4>Root Cause</h4><p>Authoritative DNS cluster has 4 servers. Zone propagation automation bug &rarr; 2 servers correctly updated, 2 still serve old data. Recursive resolvers hit "good" or "stale" servers randomly.</p></div>
+  <div class="fix"><h4>Mitigation vs. Fix</h4>
+    <p><strong>Now:</strong> Force zone reload on all auth servers. Lower TTL temporarily (1h &rarr; 5m).</p>
+    <p><strong>Long-term:</strong> Validate all auth servers before completing push. Synthetic tests from multiple resolvers. Dual-push with pre-validation. Alert on zone drift.</p>
+  </div>
+  <div class="signal"><h4>Scoring</h4><p><strong>Exceptional:</strong> Explains why some users fail while others succeed (cache + server inconsistency). Mentions propagation validation, drift detection, toil reduction.</p></div>
+  <div class="back-top"><a href="#toc">&uarr; Back to top</a></div>
 </div>
 
+<!-- ===== S5 ===== -->
 <div class="scenario" id="s5">
-  <h3>S5 — CDN Cache Invalidation Delay</h3>
-  <div class="symptom"><h4>Symptom</h4><p>New frontend release: blank screens, misaligned buttons. 404s for versioned assets. Some users old assets, others new. Backend healthy.</p></div>
-  <div class="root"><h4>Root Cause</h4><p>Cache invalidation API timeout → ~15% of PoPs never got purge. Those serve old JS → broken UX.</p></div>
-  <div class="fix"><h4>Mitigation</h4><p><strong>Now:</strong> Manual global purge. Cache-busting query params. <strong>Long-term:</strong> Content-hash versioning (<code>app.&lt;sha&gt;.js</code>). Post-deploy synthetic PoP checks. Retry purge failures. Staged PoP rollout.</p></div>
+  <h3>S5 &mdash; CDN Cache Invalidation Delay</h3>
+  <div class="symptom"><h4>Symptom</h4><p>New frontend release: blank screens, misaligned buttons. 404s for versioned assets. Some users see old assets, others new. Backend healthy.</p></div>
+  <div class="diag"><h4>Diagnostic Path</h4>
+    <ol>
+      <li><strong>Client:</strong> Browser dev tools show requests hitting correct URLs? Old versions of assets?</li>
+      <li><strong>CDN Edges:</strong> Still serving stale JS/CSS? Was cache purge triggered across all PoPs?</li>
+      <li><strong>Origin:</strong> New static assets present at origin?</li>
+      <li><strong>Pipeline:</strong> Cache invalidation scripted or manual? Completed across all CDN nodes?</li>
+      <li><strong>Headers:</strong> Correct cache headers (max-age, ETag, Last-Modified)?</li>
+    </ol>
+  </div>
+  <div class="root"><h4>Root Cause</h4><p>Cache invalidation triggered, but API timeout &rarr; ~15% of PoPs never got purge command. Those PoPs serve old JS &rarr; broken UX.</p></div>
+  <div class="fix"><h4>Mitigation vs. Fix</h4>
+    <p><strong>Now:</strong> Manual global purge. Cache-busting query params (<code>app.js?v=20251024</code>). Lower cache TTL temporarily.</p>
+    <p><strong>Long-term:</strong> Content-hash versioning (<code>app.&lt;sha&gt;.js</code>). Post-deploy synthetic PoP checks. Retry purge failures. Staged PoP rollout.</p>
+  </div>
+  <div class="signal"><h4>Scoring</h4><p><strong>Exceptional:</strong> Explains CDN internals: distributed PoPs, purge API failures, TTL tradeoffs. Proposes validation + automation.</p></div>
+  <div class="back-top"><a href="#toc">&uarr; Back to top</a></div>
 </div>
 
 
-<div class="cat-header" style="background:#e65100;">Scenarios 6-9: Database, Memory, Network Internals</div>
+<!-- ======================== SCENARIOS 6-9 ======================== -->
+<div class="cat-header" style="background:#e65100;">Scenarios 6&ndash;9: Database, Memory, Network Internals</div>
 
+<!-- ===== S6 ===== -->
 <div class="scenario" id="s6">
-  <h3>S6 — Database Replica Lag in Multi-Region Service</h3>
-  <div class="symptom"><h4>Symptom</h4><p>Users in EU + SA see stale data after posting. Replication lag 30-60s behind primary (US-East). App metrics healthy.</p></div>
-  <div class="root"><h4>Root Cause</h4><p>Write traffic spiked 3x (new feature). Replicas on slower disks → WAL replay can't keep up. App still routing reads to lagging replicas.</p></div>
-  <div class="fix"><h4>Mitigation</h4><p><strong>Now:</strong> Route fresh reads to primary. Degrade gracefully for non-critical features. <strong>Long-term:</strong> Upgrade replica I/O. Lag-aware read-routing (if lag > 5s → failover to primary). Semi-sync replication. Regional primaries.</p></div>
-  <div class="signal"><h4>Senior Signal</h4><p>Exceptional: walks through binlog/WAL replay mechanics. Proposes lag-threshold routing. Balances consistency vs performance tradeoffs.</p></div>
+  <h3>S6 &mdash; Database Replica Lag in Multi-Region Service</h3>
+  <div class="symptom"><h4>Symptom</h4><p>Users in EU + SA see stale data after posting. Replication lag 30&ndash;60s behind primary (US-East). App metrics healthy. No backend failures.</p></div>
+  <div class="clarify"><h4>Step 1: Clarify</h4>
+    <ul>
+      <li>Replication model: async, semi-sync, multi-master?</li>
+      <li>All replicas lagging or specific regions?</li>
+      <li>Lag constant or growing over time?</li>
+      <li>Read/write routing: reads local, writes centralized?</li>
+    </ul>
+  </div>
+  <div class="diag"><h4>Diagnostic Path</h4>
+    <ol>
+      <li><strong>Replication Mode:</strong> Async &rarr; lag expected under load. Semi-sync &rarr; ack misconfigured?</li>
+      <li><strong>Primary &rarr; Replica Link:</strong> Network bandwidth, packet loss?</li>
+      <li><strong>Replica Performance:</strong> WAL/binlog replay slower than expected? Disk I/O saturation?</li>
+      <li><strong>Traffic Patterns:</strong> Write volume recently spiked?</li>
+      <li><strong>Failover/Consistency:</strong> App reading stale replicas even when lag &gt; threshold?</li>
+    </ol>
+  </div>
+  <div class="root"><h4>Root Cause</h4><p>Write traffic spiked 3x due to new feature. Replicas on slower disks &rarr; WAL replay can't keep up. App config still routing reads to local replicas even when lag &gt; 10s.</p></div>
+  <div class="fix"><h4>Mitigation vs. Fix</h4>
+    <p><strong>Now:</strong> Route all fresh reads to US-East primary. Degrade gracefully for non-critical features.</p>
+    <p><strong>Long-term:</strong> Upgrade replica I/O (SSDs). Lag-aware read-routing (if lag &gt; 5s &rarr; failover to primary). Semi-sync replication. Regional primaries for global low-latency writes.</p>
+  </div>
+  <div class="signal"><h4>Scoring</h4><p><strong>Exceptional:</strong> Walks through binlog/WAL replay mechanics. Proposes lag-threshold routing. Balances consistency vs performance tradeoffs.</p></div>
+  <div class="back-top"><a href="#toc">&uarr; Back to top</a></div>
 </div>
 
+<!-- ===== S7 ===== -->
 <div class="scenario" id="s7">
-  <h3>S7 — Memory Leak in Go Service (Heap Bloat)</h3>
-  <div class="symptom"><h4>Symptom</h4><p>Go API service: rising memory over days, hits OOM → restart every ~48h. GC spikes before crash. CPU normal. Latency climbs before OOM.</p></div>
-  <div class="diag"><h4>Diagnostic</h4><pre>go tool pprof http://pod:6060/debug/pprof/heap
-pprof> top
-3.07GB 80% .../search/cache.go:45</pre></div>
-  <div class="root"><h4>Root Cause</h4><p>Request logging buffer never cleared after last release. Memory accumulates until OOM.</p></div>
-  <div class="fix"><h4>Mitigation</h4><p><strong>Now:</strong> Restart every 12h. Flush buffers. Increase memory limit. <strong>Long-term:</strong> Fix buffer rotation code. Unit tests for memory under load. Heap monitoring + SLO alert on memory growth rate.</p></div>
-  <div class="signal"><h4>Senior Signal</h4><p>Juniors: "Add more memory." Strong: "pprof the leak." Senior: "Every OOM is user-visible availability hit. New cache features must pass leak-test before rollout."</p></div>
+  <h3>S7 &mdash; Memory Leak in Go Service (Heap Bloat)</h3>
+  <div class="symptom"><h4>Symptom</h4><p>Go API service: rising memory over days, hits OOM &rarr; restart every ~48h. GC spikes before crash. CPU normal. Latency climbs before OOM.</p></div>
+  <div class="diag"><h4>Diagnostic</h4>
+    <pre>go tool pprof http://pod:6060/debug/pprof/heap
+pprof&gt; top
+3.07GB 80% .../search/cache.go:45</pre>
+    <ol>
+      <li><strong>Runtime (Go):</strong> Collect heap profiles (pprof). Goroutines/objects that never free?</li>
+      <li><strong>GC Behavior:</strong> GC running more frequently but unable to reclaim?</li>
+      <li><strong>Application Logic:</strong> Objects retained in global maps/caches? Long-lived connections?</li>
+      <li><strong>Infra:</strong> Container memory limit too low? Host overcommitting?</li>
+      <li><strong>Release History:</strong> Leak appear after a particular deployment?</li>
+    </ol>
+  </div>
+  <div class="root"><h4>Root Cause</h4><p>Request logging buffer never cleared after last release. Memory accumulates until OOM kills the service.</p></div>
+  <div class="fix"><h4>Mitigation vs. Fix</h4>
+    <p><strong>Now:</strong> Restart service instances more aggressively (every 12h). Flush buffers. Increase container memory limit temporarily.</p>
+    <p><strong>Long-term:</strong> Fix buffer rotation code. Unit tests for memory under load. Heap monitoring (pprof, Prometheus). SLO alert on memory growth rate.</p>
+  </div>
+  <div class="signal"><h4>Scoring</h4><p><strong>Juniors:</strong> "Add more memory." <strong>Strong:</strong> "pprof the leak." <strong>Senior:</strong> "Every OOM is user-visible availability hit. New cache features must pass leak-test before rollout."</p></div>
+  <div class="back-top"><a href="#toc">&uarr; Back to top</a></div>
 </div>
 
+<!-- ===== S8 ===== -->
 <div class="scenario" id="s8">
-  <h3>S8 — Packet Drops Under Kernel Resource Contention</h3>
-  <div class="symptom"><h4>Symptom</h4><p>Front-end proxies: sporadic 5xx during traffic spikes. CPU 40-55% but network RX drops climbing. SYN_RECV and retransmits jump.</p></div>
-  <div class="diag"><h4>Diagnostic</h4><pre>ethtool -S ens5          # rx_no_buffer, rx_dropped
-cat /proc/net/softnet_stat  # dropped, squeezed per CPU
-cat /proc/interrupts        # All NIC IRQs on CPU0!
-ethtool -g ens5             # RX ring size (too small?)</pre></div>
-  <div class="root"><h4>Root Cause</h4><p>irqbalance disabled after kernel upgrade → all NIC IRQs land on CPU0 → single-core choke. RX ring at conservative default. Packet path: NIC → ring → NAPI → softirq → qdisc → socket. Softirq saturated on CPU0.</p></div>
-  <div class="fix"><h4>Mitigation</h4><p><strong>Now:</strong> Spread IRQ affinity. Enable RSS/RPS/XPS. Increase RX ring + netdev_max_backlog. <strong>Long-term:</strong> NUMA locality enforcement. fq_codel qdisc. eBPF observability. Golden image validation for RSS/IRQ post-upgrade.</p></div>
-  <div class="signal"><h4>Senior Signal</h4><p>Exceptional: explains packet path NIC→ring→NAPI→softirq→qdisc→socket. Brings in NUMA, fq_codel, eBPF. Proposes golden image CI.</p></div>
+  <h3>S8 &mdash; Packet Drops Under Kernel Resource Contention</h3>
+  <div class="symptom"><h4>Symptom</h4><p>Front-end proxies: sporadic 5xx during traffic spikes. CPU 40&ndash;55% but network RX drops climbing. SYN_RECV and retransmits jump. No clear DDoS signal; traffic mostly legit.</p></div>
+  <div class="diag"><h4>Diagnostic</h4>
+    <pre>ethtool -S ens5            # rx_no_buffer, rx_dropped
+cat /proc/net/softnet_stat # dropped, squeezed per CPU
+cat /proc/interrupts       # All NIC IRQs on CPU0!
+ethtool -g ens5            # RX ring size (too small?)</pre>
+    <div class="diagram">
+      <svg width="700" height="70" viewBox="0 0 700 70" xmlns="http://www.w3.org/2000/svg">
+        <defs><marker id="a8" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#1565c0"/></marker></defs>
+        <g font-family="Inter,sans-serif" font-size="12" fill="#37352f">
+          <rect x="5" y="15" width="70" height="40" rx="6" fill="#e3f2fd" stroke="#1565c0"/><text x="40" y="39" text-anchor="middle" font-weight="600">NIC</text>
+          <line x1="75" y1="35" x2="95" y2="35" stroke="#1565c0" stroke-width="1.5" marker-end="url(#a8)"/>
+          <rect x="100" y="15" width="80" height="40" rx="6" fill="#e3f2fd" stroke="#1565c0"/><text x="140" y="39" text-anchor="middle">RX Ring</text>
+          <line x1="180" y1="35" x2="200" y2="35" stroke="#1565c0" stroke-width="1.5" marker-end="url(#a8)"/>
+          <rect x="205" y="15" width="70" height="40" rx="6" fill="#e3f2fd" stroke="#1565c0"/><text x="240" y="39" text-anchor="middle">NAPI</text>
+          <line x1="275" y1="35" x2="295" y2="35" stroke="#1565c0" stroke-width="1.5" marker-end="url(#a8)"/>
+          <rect x="300" y="15" width="80" height="40" rx="6" fill="#fce4ec" stroke="#c62828" stroke-width="2"/><text x="340" y="39" text-anchor="middle" font-weight="600">softirq</text>
+          <line x1="380" y1="35" x2="400" y2="35" stroke="#1565c0" stroke-width="1.5" marker-end="url(#a8)"/>
+          <rect x="405" y="15" width="70" height="40" rx="6" fill="#e3f2fd" stroke="#1565c0"/><text x="440" y="39" text-anchor="middle">qdisc</text>
+          <line x1="475" y1="35" x2="495" y2="35" stroke="#1565c0" stroke-width="1.5" marker-end="url(#a8)"/>
+          <rect x="500" y="15" width="80" height="40" rx="6" fill="#e8f5e9" stroke="#2e7d32"/><text x="540" y="39" text-anchor="middle">Socket</text>
+        </g>
+      </svg>
+      <div class="caption">Fig 3: Linux packet receive path &mdash; softirq saturated on CPU0 is the choke point</div>
+    </div>
+  </div>
+  <div class="root"><h4>Root Cause</h4><p><code>irqbalance</code> disabled after kernel upgrade &rarr; all NIC IRQs land on CPU0 &rarr; single-core choke. RX ring at conservative default. Softirq saturated on CPU0.</p></div>
+  <div class="fix"><h4>Mitigation vs. Fix</h4>
+    <p><strong>Now:</strong> Spread IRQ affinity. Enable RSS/RPS/XPS. Increase RX ring + <code>netdev_max_backlog</code>. Scale out LB instances.</p>
+    <p><strong>Long-term:</strong> NUMA locality enforcement. <code>fq_codel</code> qdisc. eBPF observability. Golden image validation for RSS/IRQ post-upgrade.</p>
+  </div>
+  <div class="signal"><h4>Scoring</h4><p><strong>Exceptional:</strong> Explains full packet path NIC&rarr;ring&rarr;NAPI&rarr;softirq&rarr;qdisc&rarr;socket. Brings in NUMA, fq_codel, eBPF. Proposes golden image CI.</p></div>
+  <div class="back-top"><a href="#toc">&uarr; Back to top</a></div>
 </div>
 
+<!-- ===== S9 ===== -->
 <div class="scenario" id="s9">
-  <h3>S9 — Cross-Region Data Transfer Bottleneck (BDP)</h3>
-  <div class="symptom"><h4>Symptom</h4><p>Single TCP flows cap ~120-200 Mbps on 1-10 Gbps links. RTT 120-220ms. Low loss (0.05-0.2%). Intra-region transfers saturate links fine.</p></div>
-  <div class="diag"><h4>Diagnostic</h4><pre>BDP = bandwidth × RTT
-1 Gbps × 200ms = 25 MB in-flight required
-If rwin/cwnd < 25 MB → never hit line rate
+  <h3>S9 &mdash; Cross-Region Data Transfer Bottleneck (BDP)</h3>
+  <div class="symptom"><h4>Symptom</h4><p>Single TCP flows cap ~120&ndash;200 Mbps on 1&ndash;10 Gbps links. RTT 120&ndash;220ms. Low loss (0.05&ndash;0.2%). Intra-region transfers fine.</p></div>
+  <div class="diag"><h4>Diagnostic &mdash; The BDP Math</h4>
+    <pre>BDP = bandwidth &times; RTT
+1 Gbps &times; 200ms = 25 MB in-flight required
+If rwin/cwnd &lt; 25 MB &rarr; never hit line rate
 
 sysctl net.ipv4.tcp_rmem   # Check max receive buffer
-sysctl net.ipv4.tcp_congestion_control  # CUBIC? BBR?</pre></div>
-  <div class="root"><h4>Root Cause</h4><p>tcp_rmem max = 4MB (far below BDP of 25MB). CUBIC + tiny losses depress cwnd further. Per-flow policer at ~200 Mbps. Single stream = capped.</p></div>
-  <div class="fix"><h4>Mitigation</h4><p><strong>Now:</strong> Parallelize streams (8-16 TCP). Increase rmem/wmem to 32MB. Switch to BBR. Enable jumbo MTU. <strong>Long-term:</strong> Negotiate per-flow policer raise. Self-tuning transfer service. Goodput-centric SLOs.</p></div>
-  <div class="signal"><h4>Senior Signal</h4><p>Exceptional: does BDP math. Calls out per-flow shaping. Proposes auto-tuning transfer service with SLOs for goodput (not link rate).</p></div>
+sysctl net.ipv4.tcp_congestion_control  # CUBIC? BBR?</pre>
+    <div class="diagram">
+      <svg width="500" height="120" viewBox="0 0 500 120" xmlns="http://www.w3.org/2000/svg">
+        <g font-family="Inter,sans-serif" font-size="13" fill="#37352f">
+          <rect x="20" y="10" width="200" height="45" rx="8" fill="#e3f2fd" stroke="#1565c0" stroke-width="1.5"/>
+          <text x="120" y="37" text-anchor="middle" font-weight="600">BDP = 1 Gbps &times; 200ms</text>
+          <text x="120" y="70" text-anchor="middle" font-size="20" font-weight="700" fill="#1565c0">= 25 MB</text>
+          <rect x="280" y="10" width="200" height="45" rx="8" fill="#fce4ec" stroke="#c62828" stroke-width="1.5"/>
+          <text x="380" y="37" text-anchor="middle" font-weight="600">tcp_rmem max = 4 MB</text>
+          <text x="380" y="70" text-anchor="middle" font-size="14" font-weight="700" fill="#c62828">&lt;&lt; BDP &mdash; pipe underfilled!</text>
+          <text x="250" y="105" text-anchor="middle" font-size="12" fill="#787774">Window too small = throughput capped at ~180 Mbps</text>
+        </g>
+      </svg>
+      <div class="caption">Fig 4: BDP analysis &mdash; undersized TCP windows = throughput cap</div>
+    </div>
+  </div>
+  <div class="root"><h4>Root Cause</h4><p><code>tcp_rmem</code> max = 4MB (far below BDP of 25MB). CUBIC + tiny losses depress cwnd further. Per-flow policer at ~200 Mbps. Single stream = capped.</p></div>
+  <div class="fix"><h4>Mitigation vs. Fix</h4>
+    <p><strong>Now:</strong> Parallelize streams (8&ndash;16 TCP). Increase rmem/wmem to 32MB. Switch to BBR. Enable jumbo MTU.</p>
+    <p><strong>Long-term:</strong> Negotiate per-flow policer raise. Build self-tuning transfer service. Goodput-centric SLOs.</p>
+  </div>
+  <div class="signal"><h4>Scoring</h4><p><strong>Exceptional:</strong> Does BDP math. Calls out per-flow shaping. Proposes auto-tuning transfer service with SLOs for goodput (not link rate).</p></div>
+  <div class="back-top"><a href="#toc">&uarr; Back to top</a></div>
 </div>
 
 
-<div class="cat-header" style="background:#2e7d32;">Scenarios 10-13: Control Plane, Time, Storage, Discovery</div>
+<!-- ======================== SCENARIOS 10-13 ======================== -->
+<div class="cat-header" style="background:#2e7d32;">Scenarios 10&ndash;13: Control Plane, Time, Storage, Discovery</div>
 
+<!-- ===== S10 ===== -->
 <div class="scenario" id="s10">
-  <h3>S10 — Control-Plane Failure Bleeding into Data Plane</h3>
+  <h3>S10 &mdash; Control-Plane Failure Bleeding into Data Plane</h3>
   <div class="symptom"><h4>Symptom</h4><p>Config/feature-flag service degraded (quorum lost). Healthy pods deny requests: "policy fetch failed." New pods fail to start (init waiting on config). Backends + DBs healthy.</p></div>
-  <div class="root"><h4>Root Cause</h4><p>Client-lib update changed config fetch from background refresh to on-demand per-request validation for "high-risk flags." Fail-closed policy. TTL=30s with hard revalidation. Control-plane hiccup → cascaded into data plane.</p></div>
-  <div class="fix"><h4>Mitigation</h4><p><strong>Now:</strong> Force fail-open. Raise cache TTLs. Enable serve-stale. Un-gate init. Circuit break + backoff control-plane clients. <strong>Long-term:</strong> Decouple data plane from control plane by design. Out-of-band background refresh with sticky last-known-good (LKG). Signed snapshots via CDN. Game days: disable CP and prove DP meets SLOs.</p></div>
-  <div class="signal"><h4>Senior Signal</h4><p>Exceptional: principled resilience model (LKG + signed snapshots + strict retry budgets). Differentiates security-critical vs non-critical. Adds SLOs for degraded mode.</p></div>
+  <div class="diag"><h4>Diagnostic Path</h4>
+    <div class="diagram">
+      <svg width="600" height="140" viewBox="0 0 600 140" xmlns="http://www.w3.org/2000/svg">
+        <g font-family="Inter,sans-serif" font-size="12" fill="#37352f">
+          <rect x="200" y="5" width="200" height="40" rx="8" fill="#fce4ec" stroke="#c62828" stroke-width="2"/><text x="300" y="30" text-anchor="middle" font-weight="700" fill="#c62828">Control Plane (degraded)</text>
+          <text x="300" y="18" text-anchor="middle" font-size="10" fill="#c62828">Config / Flags / Auth</text>
+          <line x1="300" y1="45" x2="150" y2="75" stroke="#c62828" stroke-width="1.5" stroke-dasharray="5,3"/>
+          <line x1="300" y1="45" x2="300" y2="75" stroke="#c62828" stroke-width="1.5" stroke-dasharray="5,3"/>
+          <line x1="300" y1="45" x2="450" y2="75" stroke="#c62828" stroke-width="1.5" stroke-dasharray="5,3"/>
+          <rect x="80" y="75" width="140" height="40" rx="8" fill="#e8f5e9" stroke="#2e7d32"/><text x="150" y="100" text-anchor="middle">Service A (healthy)</text>
+          <rect x="230" y="75" width="140" height="40" rx="8" fill="#fff3e0" stroke="#e65100" stroke-width="2"/><text x="300" y="100" text-anchor="middle" font-weight="600">Service B (failing)</text>
+          <rect x="380" y="75" width="140" height="40" rx="8" fill="#e8f5e9" stroke="#2e7d32"/><text x="450" y="100" text-anchor="middle">Service C (healthy)</text>
+          <text x="300" y="132" text-anchor="middle" font-size="11" fill="#c62828">Per-request sync config checks = CP in hot path &rarr; cascade</text>
+        </g>
+      </svg>
+      <div class="caption">Fig 5: Control-plane failure bleeding into data plane serving</div>
+    </div>
+    <ol>
+      <li>Which products/regions break? Only deploying/scaling or steady state too?</li>
+      <li>Client libraries: fail-open or fail-closed? Local cache enabled? TTL?</li>
+      <li>Config delivery: pull vs push; regional mirrors? Write path blocks reads?</li>
+      <li>Timeouts &amp; retries: thundering herd on recovery?</li>
+    </ol>
+  </div>
+  <div class="root"><h4>Root Cause</h4><p>Client-lib update changed config fetch from background refresh to on-demand per-request validation for "high-risk flags." Fail-closed policy. TTL=30s with hard revalidation. Control-plane hiccup &rarr; cascaded into data plane.</p></div>
+  <div class="fix"><h4>Mitigation vs. Fix</h4>
+    <p><strong>Now:</strong> Force fail-open. Raise cache TTLs. Enable serve-stale. Un-gate init. Circuit break + backoff CP clients.</p>
+    <p><strong>Long-term:</strong> Decouple data plane from control plane by design. Out-of-band background refresh with sticky last-known-good (LKG). Signed snapshots via CDN. Game days: disable CP and prove DP meets SLOs.</p>
+  </div>
+  <div class="signal"><h4>Scoring</h4><p><strong>Exceptional:</strong> Principled resilience model (LKG + signed snapshots + strict retry budgets). Differentiates security-critical vs non-critical. Adds SLOs for degraded mode.</p></div>
+  <div class="back-top"><a href="#toc">&uarr; Back to top</a></div>
 </div>
 
+<!-- ===== S11 ===== -->
 <div class="scenario" id="s11">
-  <h3>S11 — Time Skew &amp; NTP Failure</h3>
-  <div class="symptom"><h4>Symptom</h4><p>Auth failures (tokens "expired"/"not yet valid"). TLS handshakes fail. Crons run twice or skip. Logs out of order. Negative latencies on dashboards.</p></div>
-  <div class="root"><h4>Root Cause</h4><p>EU NTP cluster lost GPS refclock (hardware fault). Drifted +4 minutes over 24h. Auth services rejected tokens from US ("not valid yet"). TLS certs looked expired. Logs showed negative durations.</p></div>
-  <div class="fix"><h4>Mitigation</h4><p><strong>Now:</strong> Resync against healthy external NTP. Widen time tolerance for auth/TLS. Gradual slew (not step). <strong>Long-term:</strong> Redundant NTP (GPS + multiple upstreams). Chrony/TrueTime-style. Use CLOCK_MONOTONIC for durations. Bounded skew for token validation. Game days: simulate NTP loss.</p></div>
-  <div class="signal"><h4>Senior Signal</h4><p>Exceptional: discusses monotonic vs wall clocks. Mentions TrueTime. Frames time as a distributed systems dependency.</p></div>
+  <h3>S11 &mdash; Time Skew &amp; NTP Failure</h3>
+  <div class="symptom"><h4>Symptom</h4><p>Auth failures (tokens "expired"/"not yet valid"). TLS handshakes fail. Crons run twice or skip. Logs out of order. Negative latencies on dashboards. Infra otherwise healthy.</p></div>
+  <div class="diag"><h4>Diagnostic</h4>
+    <ol>
+      <li><strong>System logs:</strong> <code>dmesg | grep -i time</code>, <code>ntpq -p</code> / <code>chronyc tracking</code> &rarr; sync status, offsets.</li>
+      <li><strong>Compare against reference:</strong> Cross-check against GPS stratum-1, trusted external NTP pool.</li>
+      <li><strong>Auth systems:</strong> Token issuance vs validation timestamps. Cert validity intervals.</li>
+      <li><strong>Schedulers/Jobs:</strong> Crons firing early/late, jobs missed due to backwards jump.</li>
+      <li><strong>Distributed logs:</strong> Event ordering broken. Negative latencies in tracing.</li>
+    </ol>
+  </div>
+  <div class="root"><h4>Root Cause</h4><p>EU NTP cluster lost GPS refclock (hardware fault). Drifted +4 minutes over 24h. Auth services rejected tokens from US ("not valid yet"). TLS certs looked expired.</p></div>
+  <div class="fix"><h4>Mitigation vs. Fix</h4>
+    <p><strong>Now:</strong> Force resync against healthy external NTP. Widen time tolerance for auth/TLS. Gradual slew (not step).</p>
+    <p><strong>Long-term:</strong> Redundant NTP (GPS + multiple upstreams). Chrony/TrueTime-style. Use <code>CLOCK_MONOTONIC</code> for durations. Bounded skew for token validation. Game days: simulate NTP loss.</p>
+  </div>
+  <div class="signal"><h4>Scoring</h4><p><strong>Exceptional:</strong> Discusses monotonic vs wall clocks. Mentions TrueTime. Frames time as a distributed systems dependency.</p></div>
+  <div class="back-top"><a href="#toc">&uarr; Back to top</a></div>
 </div>
 
+<!-- ===== S12 ===== -->
 <div class="scenario" id="s12">
-  <h3>S12 — Disk I/O Saturation (IOPS vs Throughput)</h3>
+  <h3>S12 &mdash; Disk I/O Saturation (IOPS vs Throughput)</h3>
   <div class="symptom"><h4>Symptom</h4><p>Latency spikes on reads/writes. IOPS pegged but throughput well below capacity (150 MB/s on 500 MB/s disks). Errors only under spiky workloads.</p></div>
-  <div class="diag"><h4>The Math</h4><pre>Disks: 10K IOPS quota, 500 MB/s throughput
+  <div class="diag"><h4>The Math</h4>
+    <pre>Disks: 10K IOPS quota, 500 MB/s throughput
 Workload: 4 KB random writes
-Max throughput = 10K IOPS × 4 KB = 40 MB/s
-(NOT 500 MB/s — IOPS is the bottleneck, not throughput!)</pre></div>
-  <div class="root"><h4>Root Cause</h4><p>Small 4KB random writes from DB logs. Hit per-volume IOPS cap. Queue depth grows → await latency spikes → replicas marked "unhealthy."</p></div>
-  <div class="fix"><h4>Mitigation</h4><p><strong>Now:</strong> Stripe across volumes. Cache hot reads. Throttle background jobs. <strong>Long-term:</strong> NVMe/provisioned IOPS. Redesign for sequential batching. Tiered storage. I/O admission control.</p></div>
-  <div class="signal"><h4>Senior Signal</h4><p>Exceptional: shows math (10K IOPS × 4KB = 40 MB/s). Talks retry storms and admission control. Proposes tiered storage + log-structured designs.</p></div>
+Max throughput = 10K IOPS &times; 4 KB = 40 MB/s
+(NOT 500 MB/s &mdash; IOPS is the bottleneck, not throughput!)</pre>
+  </div>
+  <div class="root"><h4>Root Cause</h4><p>Small 4KB random writes from DB logs. Hit per-volume IOPS cap. Queue depth grows &rarr; await latency spikes &rarr; replicas marked "unhealthy."</p></div>
+  <div class="fix"><h4>Mitigation vs. Fix</h4>
+    <p><strong>Now:</strong> Stripe across volumes. Cache hot reads. Throttle background jobs.</p>
+    <p><strong>Long-term:</strong> NVMe/provisioned IOPS. Redesign for sequential batching. Tiered storage. I/O admission control.</p>
+  </div>
+  <div class="signal"><h4>Scoring</h4><p><strong>Exceptional:</strong> Shows math (10K IOPS &times; 4KB = 40 MB/s). Talks retry storms and admission control. Proposes tiered storage + log-structured designs.</p></div>
+  <div class="back-top"><a href="#toc">&uarr; Back to top</a></div>
 </div>
 
+<!-- ===== S13 ===== -->
 <div class="scenario" id="s13">
-  <h3>S13 — Service Discovery Failure (CoreDNS/etcd/Mesh Crash)</h3>
+  <h3>S13 &mdash; Service Discovery Failure (CoreDNS/etcd/Mesh Crash)</h3>
   <div class="symptom"><h4>Symptom</h4><p>Hundreds of services return 503. Logs: "host not found" or "no healthy backends." Backends themselves healthy. Services can't locate each other.</p></div>
-  <div class="root"><h4>Root Cause</h4><p>K8s upgrade deployed new CoreDNS config with bug → crashloop on invalid zone file. All DNS lookups for <code>svc.cluster.local</code> fail. Services with cached IPs worked until TTL expired (~30s).</p></div>
-  <div class="fix"><h4>Mitigation</h4><p><strong>Now:</strong> Rollback CoreDNS config. Extend DNS TTL. Inject static DNS for critical services. <strong>Long-term:</strong> Decouple discovery from main cluster. Redundant layers (DNS fallback, LKG in sidecars). Canary CoreDNS changes. Game days: simulate discovery outage.</p></div>
+  <div class="diag"><h4>Diagnostic Path</h4>
+    <ol>
+      <li><strong>Clients:</strong> DNS resolution errors (NXDOMAIN/SERVFAIL)? Or "no healthy backends" from service mesh?</li>
+      <li><strong>Local Agent:</strong> Check sidecars, kube-dns/CoreDNS agents &mdash; are they up?</li>
+      <li><strong>Discovery Control Plane:</strong> etcd/Consul health? K8s API health? Updates propagating to endpoints?</li>
+      <li><strong>Cached State:</strong> Do Envoy sidecars still have last-known config? TTL on DNS records?</li>
+      <li><strong>Dependencies:</strong> Discovery infra on same cluster as user traffic? Circular dependency?</li>
+    </ol>
+  </div>
+  <div class="root"><h4>Root Cause</h4><p>K8s upgrade deployed new CoreDNS config with bug &rarr; crashloop on invalid zone file. All DNS lookups for <code>svc.cluster.local</code> fail. Services with cached IPs worked until TTL expired (~30s).</p></div>
+  <div class="fix"><h4>Mitigation vs. Fix</h4>
+    <p><strong>Now:</strong> Rollback CoreDNS config. Extend DNS TTL. Inject static DNS for critical services.</p>
+    <p><strong>Long-term:</strong> Decouple discovery from main cluster. Redundant layers (DNS fallback, LKG in sidecars). Canary CoreDNS changes. Game days: simulate discovery outage.</p>
+  </div>
+  <div class="signal"><h4>Scoring</h4><p><strong>Exceptional:</strong> Maps control plane vs data plane. Proposes resilient designs: regionalized discovery, signed snapshots, circuit breakers.</p></div>
+  <div class="back-top"><a href="#toc">&uarr; Back to top</a></div>
 </div>
 
 
-<div class="cat-header" style="background:#6a1b9a;">Scenarios 14-18: Rate Limiting, Queues, Observability, Quotas</div>
+<!-- ======================== SCENARIOS 14-18 ======================== -->
+<div class="cat-header" style="background:#6a1b9a;">Scenarios 14&ndash;18: Rate Limiting, Queues, Observability, Quotas</div>
 
+<!-- ===== S14 ===== -->
 <div class="scenario" id="s14">
-  <h3>S14 — Rate-Limiter Gone Rogue</h3>
+  <h3>S14 &mdash; Rate-Limiter Gone Rogue</h3>
   <div class="symptom"><h4>Symptom</h4><p>Surge of 429s. Traffic dropped 40%. Backends healthy. Rate-limiter update rolled out earlier.</p></div>
-  <div class="root"><h4>Root Cause</h4><p>Config parsed "1000 req/s per tenant" as "1000 req/minute" (off by 60x). All tenants exceeded quota instantly → majority of requests rejected.</p></div>
-  <div class="fix"><h4>Mitigation</h4><p><strong>Now:</strong> Roll back config. Temporarily fail-open if rollback blocked. <strong>Long-term:</strong> Config validation with unit checks. Canary with synthetic traffic. Fail-open for limiter backend outages. Per-tenant fairness. Alerts: if rejection >5% globally, block rollout.</p></div>
-  <div class="signal"><h4>Senior Signal</h4><p>Exceptional: explains limiter algorithms (token/leaky bucket). Proposes synthetic pre-flight validation. SLOs for rate-limiter (<1% unexpected 429s). Security vs availability trade-off.</p></div>
+  <div class="diag"><h4>Diagnostic Path</h4>
+    <ol>
+      <li><strong>Client:</strong> All clients failing or specific tenants/users?</li>
+      <li><strong>Rate-Limiter:</strong> Rejection % by region/tenant. Current configured limit vs baseline?</li>
+      <li><strong>Rollout History:</strong> Config push lower quotas? Unit mismatch (per-second vs per-minute)?</li>
+      <li><strong>Data Plane vs CP:</strong> Gateways rejecting due to stale/bad quota sync?</li>
+      <li><strong>Fail-Safe:</strong> Fail-open or closed if backend state unavailable?</li>
+    </ol>
+  </div>
+  <div class="root"><h4>Root Cause</h4><p>Config parsed "1000 req/s per tenant" as "1000 req/minute" (off by 60x). All tenants exceeded quota instantly &rarr; majority of requests rejected.</p></div>
+  <div class="fix"><h4>Mitigation vs. Fix</h4>
+    <p><strong>Now:</strong> Roll back config. Temporarily fail-open if rollback blocked. Manual overrides for critical tenants.</p>
+    <p><strong>Long-term:</strong> Config validation with unit checks. Canary with synthetic traffic. Fail-open for limiter backend outages. Per-tenant fairness. Alerts: if rejection &gt;5% globally, block rollout.</p>
+  </div>
+  <div class="signal"><h4>Scoring</h4><p><strong>Exceptional:</strong> Explains limiter algorithms (token/leaky bucket). Proposes synthetic pre-flight validation. SLOs for rate-limiter (&lt;1% unexpected 429s). Security vs availability trade-off.</p></div>
+  <div class="back-top"><a href="#toc">&uarr; Back to top</a></div>
 </div>
 
+<!-- ===== S15 ===== -->
 <div class="scenario" id="s15">
-  <h3>S15 — Queue Backpressure Cascade</h3>
-  <div class="symptom"><h4>Symptom</h4><p>Multi-tier: API → Orchestrator → Worker → DB. p95/p99 explodes. Retry rates climb. Queue depths rise. OOMs in workers. System self-amplifying.</p></div>
-  <div class="root"><h4>Root Cause</h4><p>New feature doubled writes to hot DB partition → worker throughput drops 50% → Kafka lag grows → API retries 3x with no jitter (synchronized storm) → producers buffer in RAM → OOM → replayed messages → amplifying loop.</p></div>
-  <div class="fix"><h4>Mitigation</h4><p><strong>Now:</strong> Trip circuit breakers on slow downstream. Reduce retry count, enforce backoff+jitter. Per-tenant rate limits. Drain: pause feature causing hot-spot. Cap producer buffers. <strong>Long-term:</strong> Idempotent handlers + dedup keys. Hedged requests with budgets. Shard hot keys. Queue SLOs for lag. Auto-circuit on threshold. Game days.</p></div>
-  <div class="signal"><h4>Senior Signal</h4><p>Exceptional: systemic blueprint — idempotency, hedged requests, budgeted concurrency, priority queues. Control-theory: negative feedback loops to dampen oscillations.</p></div>
+  <h3>S15 &mdash; Queue Backpressure Cascade</h3>
+  <div class="symptom"><h4>Symptom</h4><p>Multi-tier: API &rarr; Orchestrator &rarr; Worker &rarr; DB. p95/p99 explodes. Retry rates climb. Queue depths rise. OOMs in workers. System self-amplifying.</p></div>
+  <div class="diag"><h4>Diagnostic Path</h4>
+    <div class="diagram">
+      <svg width="700" height="160" viewBox="0 0 700 160" xmlns="http://www.w3.org/2000/svg">
+        <defs><marker id="a15" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#1565c0"/></marker><marker id="a15r" markerWidth="7" markerHeight="5" refX="0" refY="2.5" orient="auto"><polygon points="7 0,0 2.5,7 5" fill="#c62828"/></marker></defs>
+        <g font-family="Inter,sans-serif" font-size="12" fill="#37352f">
+          <rect x="10" y="30" width="80" height="40" rx="6" fill="#e3f2fd" stroke="#1565c0"/><text x="50" y="55" text-anchor="middle">API</text>
+          <line x1="90" y1="50" x2="130" y2="50" stroke="#1565c0" stroke-width="1.5" marker-end="url(#a15)"/>
+          <rect x="135" y="30" width="100" height="40" rx="6" fill="#e3f2fd" stroke="#1565c0"/><text x="185" y="55" text-anchor="middle">Orchestrator</text>
+          <line x1="235" y1="50" x2="275" y2="50" stroke="#1565c0" stroke-width="1.5" marker-end="url(#a15)"/>
+          <rect x="280" y="30" width="100" height="40" rx="6" fill="#fff3e0" stroke="#e65100"/><text x="330" y="46" text-anchor="middle">Kafka</text><text x="330" y="60" text-anchor="middle" font-size="10" fill="#e65100">lag growing</text>
+          <line x1="380" y1="50" x2="420" y2="50" stroke="#1565c0" stroke-width="1.5" marker-end="url(#a15)"/>
+          <rect x="425" y="30" width="80" height="40" rx="6" fill="#fce4ec" stroke="#c62828" stroke-width="2"/><text x="465" y="46" text-anchor="middle" font-weight="600">Worker</text><text x="465" y="60" text-anchor="middle" font-size="10" fill="#c62828">OOM</text>
+          <line x1="505" y1="50" x2="545" y2="50" stroke="#1565c0" stroke-width="1.5" marker-end="url(#a15)"/>
+          <rect x="550" y="30" width="80" height="40" rx="6" fill="#fce4ec" stroke="#c62828" stroke-width="2"/><text x="590" y="46" text-anchor="middle" font-weight="600">DB</text><text x="590" y="60" text-anchor="middle" font-size="10" fill="#c62828">hot partition</text>
+          <!-- Retry arrow back -->
+          <path d="M 130 80 Q 60 110 50 80" fill="none" stroke="#c62828" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#a15r)"/>
+          <text x="75" y="115" text-anchor="middle" font-size="11" fill="#c62828">retries &times;3 (no jitter)</text>
+          <text x="350" y="145" text-anchor="middle" font-size="11" fill="#787774">DB hot-spot &rarr; worker slowdown &rarr; queue backlog &rarr; synchronized retries &rarr; cascade</text>
+        </g>
+      </svg>
+      <div class="caption">Fig 6: Queue backpressure cascade &mdash; retry storms amplify the original slowdown</div>
+    </div>
+  </div>
+  <div class="root"><h4>Root Cause</h4><p>New feature doubled writes to hot DB partition &rarr; worker throughput drops 50% &rarr; Kafka lag grows &rarr; API retries 3x with no jitter (synchronized storm) &rarr; producers buffer in RAM &rarr; OOM &rarr; replayed messages &rarr; amplifying loop.</p></div>
+  <div class="fix"><h4>Mitigation vs. Fix</h4>
+    <p><strong>Now:</strong> Trip circuit breakers. Reduce retry count, enforce backoff+jitter. Per-tenant rate limits. Pause feature causing hot-spot. Cap producer buffers.</p>
+    <p><strong>Long-term:</strong> Idempotent handlers + dedup keys. Hedged requests with budgets. Shard hot keys. Queue SLOs for lag. Auto-circuit on threshold. Game days.</p>
+  </div>
+  <div class="signal"><h4>Scoring</h4><p><strong>Exceptional:</strong> Systemic blueprint &mdash; idempotency, hedged requests, budgeted concurrency, priority queues. Control-theory: negative feedback loops to dampen oscillations.</p></div>
+  <div class="back-top"><a href="#toc">&uarr; Back to top</a></div>
 </div>
 
+<!-- ===== S16 ===== -->
 <div class="scenario" id="s16">
-  <h3>S16 — Log Pipeline Collapse (Observability Outage)</h3>
-  <div class="symptom"><h4>Symptom</h4><p>Service serves normally — no user impact. But: central log pipeline hours behind. Dashboards show flatline/old data. Alerts: "no data received." On-call engineers blind.</p></div>
-  <div class="root"><h4>Root Cause</h4><p>New release added large debug field → log size 5x → Kafka partition disk I/O limit → consumer lag grew from minutes to hours. Metrics pipeline also slowed (shared brokers).</p></div>
-  <div class="fix"><h4>Mitigation</h4><p><strong>Now:</strong> Drop non-critical log fields. Throttle debug logging. Increase Kafka partitions. Create side-channel lightweight synthetic metrics. <strong>Long-term:</strong> Log budgets per service. Separate serving metrics from debug logs. Canary log schema changes. SLOs for observability ("95% logs ingested <5m"). Graceful shedding (drop debug first).</p></div>
-  <div class="signal"><h4>Senior Signal</h4><p>Exceptional: treats observability as production-critical system with its own SLOs. Prioritized: serving metrics > logs > debug. Side-channel synthetic probes when blind.</p></div>
+  <h3>S16 &mdash; Log Pipeline Collapse (Observability Outage)</h3>
+  <div class="symptom"><h4>Symptom</h4><p>Service serves normally &mdash; no user impact. But: central log pipeline hours behind. Dashboards show flatline/old data. Alerts: "no data received." On-call engineers blind.</p></div>
+  <div class="diag"><h4>Diagnostic Path</h4>
+    <ol>
+      <li><strong>Agent Layer:</strong> CPU/memory on log shippers (Fluentd, Vector). Backlogged or crashing?</li>
+      <li><strong>Transport:</strong> Kafka/Queue lag, partition skew, replication health.</li>
+      <li><strong>Processing:</strong> Parsing errors (schema change?). Resource bottlenecks (heap, GC, disk).</li>
+      <li><strong>Storage:</strong> Elasticsearch/BigQuery ingestion failures. Shard imbalance.</li>
+      <li><strong>Alerting:</strong> Alert rules break because they rely on fresh logs?</li>
+    </ol>
+  </div>
+  <div class="root"><h4>Root Cause</h4><p>New release added large debug field &rarr; log size 5x &rarr; Kafka partition disk I/O limit &rarr; consumer lag grew from minutes to hours. Metrics pipeline also slowed (shared brokers).</p></div>
+  <div class="fix"><h4>Mitigation vs. Fix</h4>
+    <p><strong>Now:</strong> Drop non-critical log fields. Throttle debug logging. Increase Kafka partitions. Create side-channel lightweight synthetic metrics.</p>
+    <p><strong>Long-term:</strong> Log budgets per service. Separate serving metrics from debug logs. Canary log schema changes. SLOs for observability ("95% logs ingested &lt;5m"). Graceful shedding (drop debug first).</p>
+  </div>
+  <div class="signal"><h4>Scoring</h4><p><strong>Exceptional:</strong> Treats observability as production-critical system with its own SLOs. Prioritized: serving metrics &gt; logs &gt; debug. Side-channel synthetic probes when blind.</p></div>
+  <div class="back-top"><a href="#toc">&uarr; Back to top</a></div>
 </div>
 
+<!-- ===== S17 ===== -->
 <div class="scenario" id="s17">
-  <h3>S17 — Cloud Resource Quota Exhaustion</h3>
-  <div class="symptom"><h4>Symptom</h4><p>Traffic surge → autoscaler kicks in → new VMs/pods fail: "Quota exceeded." API Gateway 503s. Some regions scale fine, others flatline. Existing instances healthy but overloaded.</p></div>
-  <div class="root"><h4>Root Cause</h4><p>GCP CPU quota per project per region = 2,000. Current usage = 2,000. Autoscaler requested 200 more → API error. No quota alerts had been set up.</p></div>
-  <div class="fix"><h4>Mitigation</h4><p><strong>Now:</strong> Reroute traffic to other regions. Emergency quota raise request. Throttle traffic. Scale down batch jobs to free quota. <strong>Long-term:</strong> Quota-aware autoscaler. Pre-provisioned 20% headroom. Quota monitoring + alerting. Multi-project pooling. Synthetic drills.</p></div>
+  <h3>S17 &mdash; Cloud Resource Quota Exhaustion</h3>
+  <div class="symptom"><h4>Symptom</h4><p>Traffic surge &rarr; autoscaler kicks in &rarr; new VMs/pods fail: "Quota exceeded." API Gateway 503s. Some regions scale fine, others flatline. Existing instances healthy but overloaded.</p></div>
+  <div class="diag"><h4>Diagnostic Path</h4>
+    <ol>
+      <li><strong>Autoscaler logs:</strong> "Insufficient quota" or "resource exhausted"?</li>
+      <li><strong>Quota dashboard:</strong> Per-region usage. API call failures?</li>
+      <li><strong>Distribution:</strong> Failures localized to region/AZ or global? Skew?</li>
+      <li><strong>Service impact:</strong> Critical tiers starved first?</li>
+      <li><strong>Workarounds:</strong> Spare quota in other regions/projects?</li>
+    </ol>
+  </div>
+  <div class="root"><h4>Root Cause</h4><p>GCP CPU quota per project per region = 2,000. Current usage = 2,000. Autoscaler requested 200 more &rarr; API error. No quota alerts set up.</p></div>
+  <div class="fix"><h4>Mitigation vs. Fix</h4>
+    <p><strong>Now:</strong> Reroute traffic to other regions. Emergency quota raise. Throttle traffic. Scale down batch jobs.</p>
+    <p><strong>Long-term:</strong> Quota-aware autoscaler. Pre-provisioned 20% headroom. Quota monitoring + alerting. Multi-project pooling. Synthetic drills.</p>
+  </div>
+  <div class="signal"><h4>Scoring</h4><p><strong>Exceptional:</strong> Mentions quota-aware autoscaling. Proposes multi-project, multi-region, pooled scaling. Discusses headroom policies and synthetic failure drills.</p></div>
+  <div class="back-top"><a href="#toc">&uarr; Back to top</a></div>
 </div>
 
+<!-- ===== S18 ===== -->
 <div class="scenario" id="s18">
-  <h3>S18 — API Gateway Token Bucket Bug</h3>
+  <h3>S18 &mdash; API Gateway Token Bucket Bug</h3>
   <div class="symptom"><h4>Symptom</h4><p>Surge of 503s and 429s. Even low-traffic clients rejected. Backends healthy. New Gateway release rolled out.</p></div>
-  <div class="root"><h4>Root Cause</h4><p>Gateway config parser: refill rate "1000 tokens per second" interpreted as "1000 per minute." All clients exhausted quota instantly → 70% of traffic rejected.</p></div>
-  <div class="fix"><h4>Mitigation</h4><p><strong>Now:</strong> Roll back release. Fail-open if rollback blocked. <strong>Long-term:</strong> Config schema validation with explicit units. Canary with synthetic load. Per-tenant token buckets (not global). Fail-open for availability-critical, fail-closed only for security. Chaos drills for quota backend outage.</p></div>
+  <div class="diag"><h4>Diagnostic Path</h4>
+    <ol>
+      <li><strong>Client view:</strong> 429 distribution by tenant &mdash; even single-test clients hit?</li>
+      <li><strong>Gateway:</strong> Token bucket refill rate vs consumption rate. Counters resetting correctly?</li>
+      <li><strong>Limiter backend:</strong> Redis/etcd degraded? Retries/timeouts causing "reject" default?</li>
+      <li><strong>Deployment:</strong> Config/unit changed (per-second vs per-minute)? Precision errors?</li>
+      <li><strong>Fail-safe:</strong> Gateways fail-open or closed? Clock skew between distributed limiters?</li>
+    </ol>
+  </div>
+  <div class="root"><h4>Root Cause</h4><p>Gateway config parser: refill rate "1000 tokens per second" interpreted as "1000 per minute." All clients exhausted quota instantly &rarr; 70% of traffic rejected.</p></div>
+  <div class="fix"><h4>Mitigation vs. Fix</h4>
+    <p><strong>Now:</strong> Roll back release. Fail-open if rollback blocked. Manual whitelist for critical clients.</p>
+    <p><strong>Long-term:</strong> Config schema validation with explicit units. Canary with synthetic load. Per-tenant token buckets (not global). Fail-open for availability-critical, fail-closed only for security. Chaos drills for quota backend outage.</p>
+  </div>
+  <div class="signal"><h4>Scoring</h4><p><strong>Exceptional:</strong> Explains limiter algorithms (token vs leaky bucket vs sliding window). Proposes tenant-aware quotas and fail-safe design. Frames as availability vs abuse-prevention trade-off.</p></div>
+  <div class="back-top"><a href="#toc">&uarr; Back to top</a></div>
 </div>
 
 
-<!-- ======================= RUBRIC ======================= -->
-<div class="cat-header" style="background:#283593;" id="rubric">NALSD Evaluation Rubric</div>
+<!-- ======================== RUBRIC ======================== -->
+<div class="section-header" id="rubric">Section 3: NALSD Evaluation Rubric</div>
 
-<table>
-  <tr><th>Dimension</th><th>Strong Candidate</th><th>Exceptional Candidate</th></tr>
-  <tr><td><strong>Depth Across Stack</strong></td><td>Identifies likely failing layer, checks 2-3 layers deep</td><td>Walks full request path (Client→Network→LB→Service→DB→Infra), pivots when evidence contradicts</td></tr>
-  <tr><td><strong>Prioritization</strong></td><td>Reasonable first checks. May chase rabbit holes.</td><td>Frames by user impact + probability. Articulates why one check comes before another.</td></tr>
-  <tr><td><strong>Calm + Communication</strong></td><td>Explains clearly, asks clarifying questions</td><td>Guides like leading an incident bridge: summarizes, proposes hypotheses, states next steps, explains trade-offs</td></tr>
-  <tr><td><strong>Long-Term Thinking</strong></td><td>Mitigation + some design fixes ("add monitoring")</td><td>Short-term stabilization + systemic prevention: SLOs, automation, canaries, chaos drills. Thinks like writing a postmortem.</td></tr>
-</table>
+<div class="overview">
+  <p>Google interviewers don't just score "correct" vs "wrong." They measure <strong>how you think under uncertainty</strong>.</p>
 
-<div style="margin:16px 0;padding:16px;background:#e8eaf6;border-radius:10px;border-left:4px solid #283593;">
-  <strong>Strong answer:</strong> "Looks like DNS TTL issue. I'd flush caches, lower TTLs, monitor."<br>
-  <strong>Exceptional answer:</strong> "Users in SA slow → path diverges at DNS/CDN. First, check authoritative vs recursive resolution. Mitigation: cache purge + lower TTL. Long-term: synthetic probes per region, automated TTL validation, route health checks to fail over bad edges."<br><br>
-  <em>Strong is technically competent. Exceptional shows systemic ownership.</em>
+  <table>
+    <tr><th>Dimension</th><th>Strong Candidate</th><th>Exceptional Candidate</th></tr>
+    <tr><td><strong>Depth Across Stack</strong></td><td>Identifies likely failing layer, checks 2&ndash;3 layers deep</td><td>Walks full request path (Client&rarr;Network&rarr;LB&rarr;Service&rarr;DB&rarr;Infra), pivots when evidence contradicts</td></tr>
+    <tr><td><strong>Prioritization</strong></td><td>Reasonable first checks. May chase rabbit holes.</td><td>Frames by user impact + probability. Articulates why one check comes before another.</td></tr>
+    <tr><td><strong>Calm + Communication</strong></td><td>Explains clearly, asks clarifying questions</td><td>Guides like leading an incident bridge: summarizes, proposes hypotheses, states next steps, explains trade-offs</td></tr>
+    <tr><td><strong>Long-Term Thinking</strong></td><td>Mitigation + some design fixes ("add monitoring")</td><td>Short-term stabilization + systemic prevention: SLOs, automation, canaries, chaos drills. Thinks like writing a postmortem.</td></tr>
+  </table>
+
+  <div style="margin:16px 0;padding:16px;background:#e8eaf6;border-radius:10px;border-left:4px solid #283593;">
+    <strong>Strong answer:</strong> "Looks like DNS TTL issue. I'd flush caches, lower TTLs, monitor."<br>
+    <strong>Exceptional answer:</strong> "Users in SA slow &rarr; path diverges at DNS/CDN. First, check authoritative vs recursive resolution. Mitigation: cache purge + lower TTL. Long-term: synthetic probes per region, automated TTL validation, route health checks to fail over bad edges."<br><br>
+    <em>Strong is technically competent. Exceptional shows systemic ownership.</em>
+  </div>
 </div>
 
 
-<!-- ======================= TEMPLATE ======================= -->
-<div class="cat-header" style="background:#37352f;" id="template">Self-Practice Template</div>
+<!-- ======================== TEMPLATE ======================== -->
+<div class="section-header" id="template">Section 4: Self-Practice Templates</div>
 
-<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;margin:20px 0;">
-  <pre style="border:none;background:transparent;padding:0;">BLANK NALSD TEMPLATE (10-12 min per scenario):
-
-Symptom:         (Write the user-facing symptom)
-Layers to Check: Client → Network → Infra → Service → Data → OS/Kernel
+<div class="overview">
+  <h3>Blank NALSD Template (10&ndash;12 min per scenario)</h3>
+  <pre style="border:none;background:var(--code-bg);padding:16px;border-radius:8px;">Symptom:         (Write the user-facing symptom)
+Layers to Check: Client &rarr; Network &rarr; Infra &rarr; Service &rarr; Data &rarr; OS/Kernel
 Hypotheses:      H1: ... H2: ... H3: ...
 Stabilization:   (What you'd do right now as on-call)
 Prevention:      (Design change, automation, monitoring, chaos test)
 Reflection:      What did you prioritize first, and why?
                  What trade-offs did you face?
-                 Did you propose both now-fix AND long-term prevention?
+                 Did you propose both now-fix AND long-term prevention?</pre>
 
-MINI DRILL (one-liner):
-Symptom → Hypotheses → First Check → Mitigation → Long-term Fix
+  <h3>Mini Drill (One-Liner)</h3>
+  <pre style="border:none;background:var(--code-bg);padding:16px;border-radius:8px;">Symptom &rarr; Hypotheses &rarr; First Check &rarr; Mitigation &rarr; Long-term Fix
 
 Example:
   Symptom: Some users see stale CSS after deploy.
@@ -288,13 +826,22 @@ Example:
   First Check: Inspect CDN edge vs origin headers.
   Mitigation: Force purge, serve cache-busted URLs.
   Long-term: Content-hash filenames, canary purge test.</pre>
+
+  <h3>How to Use</h3>
+  <ol>
+    <li><strong>Pick a Symptom:</strong> Flip through war stories (e.g., "TLS expired," "NTP drift," "Disk IOPS capped").</li>
+    <li><strong>Walk the Layers:</strong> Don't jump to the answer &mdash; map the full stack.</li>
+    <li><strong>Timebox Yourself:</strong> 10&ndash;12 minutes per scenario, like in the real interview.</li>
+    <li><strong>Score Yourself:</strong> Use the NALSD Rubric &mdash; did your answer show Depth, Prioritization, Calm, and Long-Term Thinking?</li>
+    <li><strong>Iterate:</strong> Create your own scenarios or swap with peers.</li>
+  </ol>
 </div>
 
 </div>
 
 <footer>
   <div class="container">
-    <p>NALSD Practice Scenarios &mdash; <a href="/sre-debugging.html">Debugging Handbook</a> | <a href="/sd-google-sre.html">NALSD System Design</a> | <a href="/">Home</a></p>
+    <p>Google SRE NALSD Practice Playbook &mdash; <a href="/sre-debugging.html">Debugging Handbook</a> | <a href="/sd-google-sre.html">NALSD System Design</a> | <a href="/">Home</a></p>
   </div>
 </footer>
 
