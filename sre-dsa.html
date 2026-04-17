@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<title>SRE DS/Algo Drills &mdash; 20 Problems with SRE Lens</title>
+<style>
+  :root{--bg:#fff;--surface:#f7f6f3;--border:#e3e2de;--text:#37352f;--text-muted:#787774;--accent:#2383e2;--accent2:#0f7b0f;--accent3:#6940a5;--accent4:#d9730d;--red:#e03e3e;--code-bg:#f7f6f3;--card:#fff;--ch-color:#0d47a1}
+  *{margin:0;padding:0;box-sizing:border-box}body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;font-size:15px}
+  .container{max-width:900px;margin:0 auto;padding:0 24px}.hero{background:linear-gradient(180deg,#fafafa,#fff);border-bottom:1px solid var(--border);padding:48px 0 36px;text-align:center}.hero h1{font-size:2.1em;font-weight:700;margin-bottom:12px}.hero h1 span{color:var(--ch-color)}.hero p{font-size:1.05em;color:var(--text-muted);max-width:700px;margin:0 auto 30px}.hero .badge{display:inline-block;background:var(--surface);border:1px solid var(--border);padding:6px 16px;border-radius:20px;font-size:.8em;color:var(--text-muted)}
+  .nav-links{margin-top:20px}.nav-links a{display:inline-block;background:var(--surface);border:1px solid var(--border);padding:8px 20px;border-radius:8px;color:var(--accent);text-decoration:none;margin:4px;font-size:.9em;transition:.2s}.nav-links a:hover{border-color:var(--accent)}.nav-links a.ch{color:var(--ch-color);border-color:var(--ch-color)}
+  .toc{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;margin:40px auto}.toc h2{font-size:1.1em;margin-bottom:10px;color:var(--ch-color)}.toc h3{font-size:.92em;margin:10px 0 4px;color:var(--accent3)}.toc ol{padding-left:24px}.toc li{margin:3px 0;font-size:.88em}.toc a{color:var(--text);text-decoration:none;border-bottom:1px dashed var(--border)}.toc a:hover{color:var(--ch-color)}
+  .prob{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin:18px 0;border-left:4px solid var(--ch-color)}
+  .prob h3{font-size:1.05em;font-weight:700;color:var(--ch-color);margin-bottom:4px}
+  .prob .q{background:#e3f2fd;border-radius:6px;padding:10px;margin:6px 0;font-size:.92em}
+  .prob .tests{background:#e8f5e9;border-radius:6px;padding:8px;margin:6px 0;font-size:.88em}
+  .prob .tests strong{color:#2e7d32}
+  .prob .mistakes{background:#fce4ec;border-radius:6px;padding:8px;margin:6px 0;font-size:.88em}
+  .prob .mistakes strong{color:#c62828}
+  .prob .framework{background:#fff3e0;border-radius:6px;padding:8px;margin:6px 0;font-size:.88em}
+  .prob .framework strong{color:#e65100}
+  .prob .google{background:#f3e5f5;border-radius:6px;padding:8px;margin:6px 0;font-size:.85em}
+  .prob .google strong{color:#6a1b9a}
+  .prob .cx{background:#e8eaf6;border-radius:6px;padding:6px 10px;margin:6px 0;font-size:.85em}
+  pre{background:var(--code-bg);border:1px solid var(--border);padding:12px;border-radius:8px;overflow-x:auto;font-family:'JetBrains Mono','SF Mono',monospace;font-size:.8em;margin:6px 0;line-height:1.5}
+  .cat-header{background:var(--ch-color);color:#fff;padding:10px 20px;border-radius:10px;margin:26px 0 14px;font-size:.95em;font-weight:700}
+  .back-top{display:block;text-align:right;margin-top:12px}.back-top a{color:var(--text-muted);text-decoration:none;font-size:.85em}
+  footer{text-align:center;padding:40px 0;border-top:1px solid var(--border);color:var(--text-muted);font-size:.9em;margin-top:60px}footer a{color:var(--ch-color);text-decoration:none}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="container">
+    <h1>SRE <span>DS/Algo Drills</span></h1>
+    <p>20 algorithmic problems with SRE reliability lens — invariants, bounded memory, tail latency, and Google infrastructure mappings. Not LeetCode — SRE-native.</p>
+    <div class="badge">Google SRE &bull; 20 Problems &bull; 30 Pages &bull; Python + Go</div>
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="/sre-python.html" class="ch">Python 38 Problems</a>
+      <a href="/sre-debugging.html">Debugging</a>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- Interview narration blueprint -->
+<div style="background:#e8eaf6;border:1px solid #283593;border-radius:12px;padding:20px;margin:24px 0;">
+  <h3 style="color:#283593;margin-bottom:8px;">Interview Narration Blueprint (Use Every Time)</h3>
+  <pre style="border-color:#9fa8da;">1. RESTATE the problem + constraints (1-2 lines)
+2. NAME the data structure + STATE THE INVARIANT
+3. OUTLINE the 3-4 steps
+4. CODE the core (≤ 10 lines), preserving invariant after each mutation
+5. STATE complexity and WHY space is bounded
+6. EDGE CASES (empties, ties, duplicates, degenerate)
+7. RELIABILITY NOTE (one sentence tying to production)
+
+SENIOR VOCABULARY: invariant, monotonic, amortized, idempotent,
+backpressure, bounded cardinality, cardinality control</pre>
+</div>
+
+<div class="toc" id="toc">
+  <h2>20 Problems — 6 Sections</h2>
+  <h3>Arrays &amp; Strings (1-5)</h3>
+  <ol><li><a href="#p1">Reverse Words In-Place</a></li><li><a href="#p2">First Non-Repeating Character</a></li><li><a href="#p3">Merge Overlapping Intervals</a></li><li><a href="#p4">Substring Search (KMP)</a></li><li><a href="#p5">Sliding Window Maximum</a></li></ol>
+  <h3>Hashmaps &amp; Sets (6-8)</h3>
+  <ol start="6"><li><a href="#p6">Top-K Most Frequent Elements</a></li><li><a href="#p7">Near-Duplicates Within Distance k</a></li><li><a href="#p8">Group Anagrams</a></li></ol>
+  <h3>Stacks &amp; Queues (9-11)</h3>
+  <ol start="9"><li><a href="#p9">Min-Stack O(1) getMin</a></li><li><a href="#p10">Evaluate Reverse Polish Notation</a></li><li><a href="#p11">Rate Limiter (Sliding Window)</a></li></ol>
+  <h3>Trees &amp; Graphs (12-15)</h3>
+  <ol start="12"><li><a href="#p12">Serialize/Deserialize Binary Tree</a></li><li><a href="#p13">Lowest Common Ancestor</a></li><li><a href="#p14">BFS Shortest Path</a></li><li><a href="#p15">Detect Cycle in Directed Graph</a></li></ol>
+  <h3>Concurrency &amp; Scheduling (16-18)</h3>
+  <ol start="16"><li><a href="#p16">Thread-Safe Counter</a></li><li><a href="#p17">Dining Philosophers</a></li><li><a href="#p18">Task Scheduler (Least Interval)</a></li></ol>
+  <h3>Dynamic Programming (19-20)</h3>
+  <ol start="19"><li><a href="#p19">Longest Increasing Subsequence</a></li><li><a href="#p20">Edit Distance</a></li></ol>
+</div>
+
+
+<!-- ===== SECTION 1 ===== -->
+<div class="cat-header">Arrays &amp; Strings (Problems 1-5)</div>
+
+<div class="prob" id="p1">
+  <h3>1. Reverse Words In-Place</h3>
+  <div class="q">"the sky is blue" → "blue is sky the". In-place, O(1) extra space.</div>
+  <div class="framework"><strong>Framework:</strong> 1. Reverse entire array 2. Reverse each word segment 3. Collapse spaces. Invariant: "words before i are reversed and correctly ordered."</div>
+  <pre>s = list("the sky is blue")
+s.reverse()
+i = 0
+for j in range(len(s)+1):
+    if j == len(s) or s[j] == " ":
+        s[i:j] = reversed(s[i:j])
+        i = j + 1</pre>
+  <div class="google"><strong>Google SRE Mapping:</strong> In-place suffix manipulation for search index building. Avoids TB-level allocations in log pipelines.</div>
+  <div class="cx">O(n) time, O(1) space. Bounded memory during 500GB file manipulation.</div>
+</div>
+
+<div class="prob" id="p2">
+  <h3>2. First Non-Repeating Character</h3>
+  <div class="q">"google" → "l" (first unique char).</div>
+  <div class="framework"><strong>Framework:</strong> Pass 1: count frequencies. Pass 2: return first with freq==1. Invariant: "counts reflect exact multiplicity up to index i."</div>
+  <pre>def firstUnique(s):
+    freq = {}
+    for c in s: freq[c] = freq.get(c, 0) + 1
+    for c in s:
+        if freq[c] == 1: return c
+    return ' '</pre>
+  <div class="google"><strong>Google:</strong> Error-stream anomaly detection. Most error codes repeat; first novel error signals regression. Bounded by alphabet size.</div>
+  <div class="cx">O(n) time, O(Σ) space. Bounded memory on high-volume log streams.</div>
+</div>
+
+<div class="prob" id="p3">
+  <h3>3. Merge Overlapping Intervals</h3>
+  <div class="q">[[1,3],[2,6],[8,10],[15,18]] → [[1,6],[8,10],[15,18]]</div>
+  <div class="framework"><strong>Framework:</strong> Sort by start. Scan: if overlap → extend end; else push new. Invariant: "result contains disjoint, maximally merged intervals up to i."</div>
+  <pre>intervals.sort()
+res = [intervals[0]]
+for s, e in intervals[1:]:
+    if s <= res[-1][1]:
+        res[-1][1] = max(res[-1][1], e)
+    else:
+        res.append([s, e])</pre>
+  <div class="google"><strong>Google:</strong> Deployment window scheduling. Overlapping rollout windows must merge before pushing to 10K machines. Wrong merge → double-deploy or missed blackout.</div>
+  <div class="cx">O(n log n) sort + O(n) scan. Memory ≤ O(n).</div>
+</div>
+
+<div class="prob" id="p4">
+  <h3>4. Substring Search (KMP)</h3>
+  <div class="q">Find needle in haystack. O(n+m) vs naive O(n*m).</div>
+  <div class="framework"><strong>Framework:</strong> Build prefix function (LPS). On mismatch, shift by longest prefix==suffix. Invariant: "never re-scan characters."</div>
+  <pre>def kmp(s, p):
+    lps = [0]*len(p); j = 0
+    for i in range(1, len(p)):
+        while j > 0 and p[i] != p[j]: j = lps[j-1]
+        if p[i] == p[j]: j += 1; lps[i] = j
+    j = 0
+    for i, c in enumerate(s):
+        while j > 0 and c != p[j]: j = lps[j-1]
+        if c == p[j]: j += 1
+        if j == len(p): return i - j + 1
+    return -1</pre>
+  <div class="google"><strong>Google:</strong> Log scanning for crash signatures in Borgmon/Monarch. Naive O(n*m) stalls on adversarial patterns. KMP guarantees O(n+m) — critical for SLO-driven monitoring queries.</div>
+</div>
+
+<div class="prob" id="p5">
+  <h3>5. Sliding Window Maximum</h3>
+  <div class="q">Given array + window size k, output max of each sliding window.</div>
+  <div class="framework"><strong>Framework:</strong> Monotonic deque of indices (values strictly decreasing). Insert: pop back while smaller. Evict front if out of window. Front = max. Invariant: "deque candidates in descending order."</div>
+  <pre>from collections import deque
+def maxSliding(nums, k):
+    dq, res = deque(), []
+    for i, x in enumerate(nums):
+        while dq and nums[dq[-1]] <= x: dq.pop()
+        dq.append(i)
+        if dq[0] == i - k: dq.popleft()
+        if i >= k - 1: res.append(nums[dq[0]])
+    return res</pre>
+  <div class="google"><strong>Google:</strong> Rolling p99 latency in Bigtable/Borgmon. Monotonic deque gives O(n) time, O(k) space — bounded real-time tail percentile tracking for SLO alerts.</div>
+  <div class="cx">O(n) time, O(k) space. Each element enqueued/dequeued at most once (amortized).</div>
+</div>
+
+
+<!-- ===== SECTION 2 ===== -->
+<div class="cat-header" style="background:#2e7d32;">Hashmaps &amp; Sets (Problems 6-8)</div>
+
+<div class="prob" id="p6">
+  <h3>6. Top-K Most Frequent Elements</h3>
+  <div class="q">nums=[1,1,1,2,2,3], k=2 → [1,2]</div>
+  <div class="framework"><strong>Framework:</strong> Count frequencies (hashmap). Push (freq,num) into min-heap. If heap > k, pop. Invariant: "heap never exceeds k → space bounded."</div>
+  <pre>import heapq
+from collections import Counter
+def topK(nums, k):
+    freq = Counter(nums)
+    return heapq.nlargest(k, freq.keys(), key=freq.get)</pre>
+  <div class="google"><strong>Google:</strong> Top-K error codes during incident — bounded-memory frequency summaries on billions of trace IDs. Core SRE survival skill.</div>
+  <div class="cx">O(n log k) time, O(k) space. Memory bounded regardless of stream size.</div>
+</div>
+
+<div class="prob" id="p7">
+  <h3>7. Near-Duplicates Within Distance k</h3>
+  <div class="q">Return true if any value appears at two indices ≤ k apart.</div>
+  <pre>def near_dup(nums, k):
+    win = set()
+    for i, x in enumerate(nums):
+        if x in win: return True
+        win.add(x)
+        if i >= k: win.remove(nums[i-k])
+    return False</pre>
+  <div class="google"><strong>Google:</strong> Alert de-dup in Alertmanager. Sliding window set ensures bounded memory under millions of alerts/min.</div>
+  <div class="cx">O(n) time, O(k) space. "Evict before grow" prevents heap blowups.</div>
+</div>
+
+<div class="prob" id="p8">
+  <h3>8. Group Anagrams</h3>
+  <div class="q">Group words that are anagrams. Canonical key = count-vector.</div>
+  <pre>from collections import defaultdict
+def group_anagrams(words):
+    g = defaultdict(list)
+    for w in words:
+        cnt = [0]*26
+        for ch in w: cnt[ord(ch)-97] += 1
+        g[tuple(cnt)].append(w)
+    return list(g.values())</pre>
+  <div class="google"><strong>Google:</strong> Crash-signature canonicalization. Stack traces differ by register offsets; canonical multiset key coalesces identical failures.</div>
+</div>
+
+
+<!-- ===== SECTION 3 ===== -->
+<div class="cat-header" style="background:#e65100;">Stacks &amp; Queues (Problems 9-11)</div>
+
+<div class="prob" id="p9">
+  <h3>9. Min-Stack with O(1) getMin</h3>
+  <div class="q">Stack supporting push, pop, top, getMin — all O(1).</div>
+  <div class="framework"><strong>Framework:</strong> Two stacks: S (values) + M (mins). Push x: push to S; if x ≤ M.top, push to M. Pop: if popped == M.top, pop M. getMin = M.top.</div>
+  <div class="google"><strong>Google:</strong> Hierarchical quota enforcement in Borg/cgroups. Min-stack gives O(1) effective resource cap during scheduler descent/ascent.</div>
+</div>
+
+<div class="prob" id="p10">
+  <h3>10. Evaluate Reverse Polish Notation</h3>
+  <div class="q">["2","1","+","3","*"] → 9</div>
+  <pre>def evalRPN(tokens):
+    s = []
+    for t in tokens:
+        if t not in "+-*/": s.append(int(t))
+        else:
+            b, a = s.pop(), s.pop()
+            s.append(int(eval(f"{a}{t}{b}")))
+    return s[0]</pre>
+  <div class="google"><strong>Google:</strong> Borg config evaluators use postfix-style evaluation for scheduling policies. Bounded stack prevents recursion depth explosions.</div>
+</div>
+
+<div class="prob" id="p11">
+  <h3>11. Rate Limiter (Fixed Window + Sliding Log)</h3>
+  <div class="q">Allow at most N requests per T seconds.</div>
+  <pre># Sliding log: keep timestamps in deque
+from collections import deque
+import time
+
+class RateLimiter:
+    def __init__(self, n, t):
+        self.q, self.n, self.t = deque(), n, t
+    def allow(self):
+        now = time.time()
+        while self.q and self.q[0] < now - self.t:
+            self.q.popleft()
+        if len(self.q) < self.n:
+            self.q.append(now)
+            return True
+        return False</pre>
+  <div class="google"><strong>Google:</strong> GFE traffic-shaping. Sliding-window rate limiters enforce per-user caps to protect backend SLOs. Invariant: bounded memory O(N) even under adversarial clients.</div>
+</div>
+
+
+<!-- ===== SECTION 4 ===== -->
+<div class="cat-header" style="background:#6a1b9a;">Trees &amp; Graphs (Problems 12-15)</div>
+
+<div class="prob" id="p12">
+  <h3>12. Serialize/Deserialize Binary Tree</h3>
+  <div class="q">Encode tree to string, decode back. Use BFS level-order with "null" for missing children.</div>
+  <div class="google"><strong>Google:</strong> Lossless encoding of dependency trees for Borg job DAGs. Must reconstruct exact structure from serialized form.</div>
+</div>
+
+<div class="prob" id="p13">
+  <h3>13. Lowest Common Ancestor (Binary Tree)</h3>
+  <div class="q">Find LCA of two nodes. Recursive: if current is p or q, return it; else recurse left+right; if both non-null, current is LCA.</div>
+  <div class="google"><strong>Google:</strong> Failure propagation in service DAGs — "which shared dependency caused both service A and B to fail?" = LCA in the dependency tree.</div>
+</div>
+
+<div class="prob" id="p14">
+  <h3>14. BFS Shortest Path (Unweighted Graph)</h3>
+  <div class="q">Find shortest path in unweighted graph. BFS with queue. Mark visited on ENQUEUE, not dequeue.</div>
+  <pre>from collections import deque
+def bfs_shortest(graph, start, end):
+    q = deque([(start, [start])])
+    visited = {start}
+    while q:
+        node, path = q.popleft()
+        if node == end: return path
+        for nb in graph[node]:
+            if nb not in visited:
+                visited.add(nb)  # mark on ENQUEUE!
+                q.append((nb, path + [nb]))
+    return None</pre>
+  <div class="google"><strong>Google:</strong> Network hop-count between services. "What's the shortest dependency chain from GFE to Spanner?" BFS on service graph with O(V+E).</div>
+  <div class="mistakes"><strong>Critical mistake:</strong> Marking visited on DEQUEUE instead of ENQUEUE → duplicates in queue → O(V²) blowup. "Mark visited on enqueue to uphold single-enqueue invariant."</div>
+</div>
+
+<div class="prob" id="p15">
+  <h3>15. Detect Cycle in Directed Graph (Kahn's / DFS)</h3>
+  <div class="q">Detect cycle using Kahn's topological sort (BFS) or DFS with colors (white/gray/black).</div>
+  <div class="framework"><strong>Kahn's:</strong> Count in-degrees. Queue all with in-degree=0. Process: decrement neighbors' in-degree; if 0, enqueue. If processed count &lt; total nodes → cycle exists.<br><strong>DFS:</strong> Gray back-edge → cycle detected.</div>
+  <div class="google"><strong>Google:</strong> Build/deploy dependency DAGs. Circular dependencies cause infinite loops in Borg scheduling. Must detect before job submission.</div>
+</div>
+
+
+<!-- ===== SECTION 5 ===== -->
+<div class="cat-header" style="background:#37352f;">Concurrency &amp; Scheduling (Problems 16-18)</div>
+
+<div class="prob" id="p16">
+  <h3>16. Thread-Safe Counter (Locks / Atomics)</h3>
+  <div class="q">Implement a counter safe under concurrent access. Use lock or atomic increment.</div>
+  <pre>import threading
+class SafeCounter:
+    def __init__(self):
+        self.val = 0
+        self.lock = threading.Lock()
+    def inc(self):
+        with self.lock:
+            self.val += 1
+    def get(self):
+        return self.val</pre>
+  <div class="google"><strong>Google:</strong> Prometheus-style metric counters. Must be thread-safe under thousands of concurrent goroutines/threads updating the same metric.</div>
+</div>
+
+<div class="prob" id="p17">
+  <h3>17. Dining Philosophers (Deadlock-Free)</h3>
+  <div class="q">5 philosophers, 5 forks. Prevent deadlock. Solution: resource ordering (always pick lower-numbered fork first) or limit concurrent diners to N-1.</div>
+  <div class="google"><strong>Google:</strong> Resource allocation in Borg. Multiple tasks competing for shared resources. Resource ordering prevents deadlock in scheduler lock acquisition.</div>
+</div>
+
+<div class="prob" id="p18">
+  <h3>18. Task Scheduler (Least Interval)</h3>
+  <div class="q">Given tasks and cooldown n, find minimum intervals. Greedy: schedule most frequent first; idle slots = (maxFreq-1) * n - fill with other tasks.</div>
+  <div class="google"><strong>Google:</strong> Borg job scheduling with preemption cooldowns. Must minimize total time while respecting anti-affinity constraints.</div>
+</div>
+
+
+<!-- ===== SECTION 6 ===== -->
+<div class="cat-header" style="background:#b71c1c;">Dynamic Programming (Problems 19-20)</div>
+
+<div class="prob" id="p19">
+  <h3>19. Longest Increasing Subsequence</h3>
+  <div class="q">Find LIS length. DP: dp[i] = longest ending at i. Binary search optimization: O(n log n).</div>
+  <pre>import bisect
+def lis(nums):
+    tails = []
+    for x in nums:
+        pos = bisect.bisect_left(tails, x)
+        if pos == len(tails): tails.append(x)
+        else: tails[pos] = x
+    return len(tails)</pre>
+  <div class="google"><strong>Google:</strong> Detecting monotonic capacity growth trends in time-series data. LIS on metric values identifies the longest sustained growth period for capacity planning.</div>
+  <div class="cx">O(n log n) time, O(n) space. "Subproblem ordering guarantees dependencies solved first."</div>
+</div>
+
+<div class="prob" id="p20">
+  <h3>20. Edit Distance (Levenshtein)</h3>
+  <div class="q">Minimum insertions, deletions, substitutions to transform word1 → word2.</div>
+  <pre>def editDistance(s1, s2):
+    m, n = len(s1), len(s2)
+    dp = [[0]*(n+1) for _ in range(m+1)]
+    for i in range(m+1): dp[i][0] = i
+    for j in range(n+1): dp[0][j] = j
+    for i in range(1, m+1):
+        for j in range(1, n+1):
+            if s1[i-1] == s2[j-1]: dp[i][j] = dp[i-1][j-1]
+            else: dp[i][j] = 1 + min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1])
+    return dp[m][n]</pre>
+  <div class="google"><strong>Google:</strong> Config diff scoring. When a config drifts, edit distance quantifies "how far from golden." Lucene uses Levenshtein automata for fuzzy search (typo tolerance within edit distance 1-2).</div>
+  <div class="cx">O(m*n) time and space. Can optimize to O(min(m,n)) space with row-only DP.</div>
+</div>
+
+<!-- Practice Plan -->
+<div style="background:#e8f5e9;border:1px solid #2e7d32;border-radius:12px;padding:20px;margin:30px 0;">
+  <h3 style="color:#2e7d32;margin-bottom:8px;">7-Day Practice Plan</h3>
+  <pre style="border-color:#a5d6a7;">Day 1-2: Arrays/Strings (1-5) — 25 min each, narrate aloud
+Day 3:   Hashmaps/Sets (6-8)
+Day 4:   Stacks/Queues (9-11)
+Day 5:   Trees/Graphs (12-15)
+Day 6:   Concurrency/Scheduling (16-18)
+Day 7:   DP/Advanced (19-20) + full review
+
+Each problem: framework → code (≤10 lines) → complexity → SRE note
+If you can't state the invariant, DON'T START TYPING.</pre>
+</div>
+
+</div>
+
+<footer>
+  <div class="container">
+    <p>SRE DS/Algo Drills &mdash; <a href="/sre-python.html">Python 38</a> | <a href="/sre-debugging.html">Debugging</a> | <a href="/sre-nalsd.html">NALSD</a> | <a href="/">Home</a></p>
+  </div>
+</footer>
+
+</body>
+</html>
