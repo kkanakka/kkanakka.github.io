@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<title>SRE Python Coding &mdash; 38 Production Problems</title>
+<style>
+  :root{--bg:#fff;--surface:#f7f6f3;--border:#e3e2de;--text:#37352f;--text-muted:#787774;--accent:#2383e2;--accent2:#0f7b0f;--accent3:#6940a5;--accent4:#d9730d;--red:#e03e3e;--code-bg:#f7f6f3;--card:#fff;--ch-color:#1565c0}
+  *{margin:0;padding:0;box-sizing:border-box}body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;font-size:15px}
+  .container{max-width:900px;margin:0 auto;padding:0 24px}.hero{background:linear-gradient(180deg,#fafafa,#fff);border-bottom:1px solid var(--border);padding:48px 0 36px;text-align:center}.hero h1{font-size:2.1em;font-weight:700;margin-bottom:12px}.hero h1 span{color:var(--ch-color)}.hero p{font-size:1.05em;color:var(--text-muted);max-width:700px;margin:0 auto 30px}.hero .badge{display:inline-block;background:var(--surface);border:1px solid var(--border);padding:6px 16px;border-radius:20px;font-size:.8em;color:var(--text-muted)}
+  .nav-links{margin-top:20px}.nav-links a{display:inline-block;background:var(--surface);border:1px solid var(--border);padding:8px 20px;border-radius:8px;color:var(--accent);text-decoration:none;margin:4px;font-size:.9em;transition:.2s}.nav-links a:hover{border-color:var(--accent)}.nav-links a.ch{color:var(--ch-color);border-color:var(--ch-color)}
+  .toc{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;margin:40px auto}.toc h2{font-size:1.1em;margin-bottom:12px;color:var(--ch-color)}.toc h3{font-size:.95em;margin:12px 0 6px;color:var(--accent3)}.toc ol{padding-left:24px}.toc li{margin:3px 0;font-size:.9em}.toc a{color:var(--text);text-decoration:none;border-bottom:1px dashed var(--border)}.toc a:hover{color:var(--ch-color)}
+  .problem{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin:20px 0;border-left:4px solid var(--ch-color)}
+  .problem h3{font-size:1.1em;font-weight:700;color:var(--ch-color);margin-bottom:8px}
+  .problem .prompt{background:#e3f2fd;border-radius:8px;padding:12px;margin:8px 0;font-size:.92em}
+  .problem .why{background:#e8f5e9;border-radius:8px;padding:12px;margin:8px 0;font-size:.9em}
+  .problem .why h4{color:#2e7d32;margin:0 0 4px;font-size:.9em}
+  .problem .checklist{background:#fff3e0;border-radius:6px;padding:10px;margin:8px 0;font-size:.85em}
+  pre{background:var(--code-bg);border:1px solid var(--border);padding:14px;border-radius:8px;overflow-x:auto;font-family:'JetBrains Mono','SF Mono',monospace;font-size:.8em;margin:8px 0;line-height:1.5}
+  code{background:var(--code-bg);border:1px solid var(--border);padding:2px 6px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:.85em;color:var(--accent3)}
+  .cat-header{background:var(--ch-color);color:#fff;padding:10px 20px;border-radius:10px;margin:30px 0 16px;font-size:1em;font-weight:700}
+  .evolution{background:#f3e5f5;border-radius:8px;padding:12px;margin:8px 0;font-size:.88em}
+  .evolution h4{color:#6a1b9a;margin:0 0 4px;font-size:.9em}
+  .back-top{display:block;text-align:right;margin-top:12px}.back-top a{color:var(--text-muted);text-decoration:none;font-size:.85em}
+  footer{text-align:center;padding:40px 0;border-top:1px solid var(--border);color:var(--text-muted);font-size:.9em;margin-top:60px}footer a{color:var(--ch-color);text-decoration:none}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="container">
+    <h1>SRE Python <span>Coding</span></h1>
+    <p>38 production-flavored Python problems — from log dedupers to circuit breakers. Baseline → Improved → Production-grade, with Google SRE context for each.</p>
+    <div class="badge">Google SRE &bull; Python Workbook &bull; 38 Problems &bull; 153 Pages</div>
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="/sre-debugging.html" class="ch">Debugging Handbook</a>
+      <a href="/sre-nalsd.html">NALSD Scenarios</a>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+<div class="toc" id="toc">
+  <h2>38 Problems — 5 Sections</h2>
+  <h3>Section 1: Core Infrastructure Utilities (1-8)</h3>
+  <ol>
+    <li><a href="#p1">Log Deduper Script</a></li>
+    <li><a href="#p2">Disk Usage Monitor</a></li>
+    <li><a href="#p3">Rolling Log Compressor</a></li>
+    <li><a href="#p4">File Integrity Checker</a></li>
+    <li><a href="#p5">Temp File Cleaner</a></li>
+    <li><a href="#p6">Port Scanner Utility</a></li>
+    <li><a href="#p7">Service Restart Automator</a></li>
+    <li><a href="#p8">Config Drift Detector</a></li>
+  </ol>
+  <h3>Section 2: Networking &amp; APIs (9-16)</h3>
+  <ol start="9">
+    <li><a href="#p9">HTTP Health Checker</a></li>
+    <li><a href="#p10">DNS Resolver Tool</a></li>
+    <li><a href="#p11">Simple TCP Proxy</a></li>
+    <li><a href="#p12">API Pagination Fetcher</a></li>
+    <li><a href="#p13">gRPC Health Check Client</a></li>
+    <li><a href="#p14">Latency Distribution Tool</a></li>
+    <li><a href="#p15">SSL Expiry Checker</a></li>
+    <li><a href="#p16">Cloud API Inventory Tool</a></li>
+  </ol>
+  <h3>Section 3: Data Handling &amp; Parsing (17-23)</h3>
+  <ol start="17">
+    <li><a href="#p17">JSON Log Parser</a></li>
+    <li><a href="#p18">CSV Aggregator</a></li>
+    <li><a href="#p19">Streaming Median Calculator</a></li>
+    <li><a href="#p20">Log Window Aggregator</a></li>
+    <li><a href="#p21">XML Config Parser</a></li>
+    <li><a href="#p22">Streaming Join of Two Logs</a></li>
+    <li><a href="#p23">Text Metrics Extractor</a></li>
+  </ol>
+  <h3>Section 4: Reliability Automation (24-31)</h3>
+  <ol start="24">
+    <li><a href="#p24">Canary Rollout Script</a></li>
+    <li><a href="#p25">Retry with Exponential Backoff</a></li>
+    <li><a href="#p26">Quota Enforcer</a></li>
+    <li><a href="#p27">Dead-Letter Queue Reprocessor</a></li>
+    <li><a href="#p28">Auto-Scaler Simulator</a></li>
+    <li><a href="#p29">Feature Flag Simulator</a></li>
+    <li><a href="#p30">Chaos Monkey</a></li>
+    <li><a href="#p31">IAM Policy Analyzer</a></li>
+  </ol>
+  <h3>Section 5: Advanced / Stretch (32-38)</h3>
+  <ol start="32">
+    <li><a href="#p32">Distributed Lock (File-Based)</a></li>
+    <li><a href="#p33">Simple Metrics Exporter</a></li>
+    <li><a href="#p34">Circuit Breaker Wrapper</a></li>
+    <li><a href="#p35">Distributed Cache Client</a></li>
+    <li><a href="#p36">Backup Pruner</a></li>
+    <li><a href="#p37">Alert Simulator</a></li>
+    <li><a href="#p38">Secret/Key Rotation Script</a></li>
+  </ol>
+</div>
+
+<!-- SRE MANTRA -->
+<div style="background:#fce4ec;border:1px solid #c62828;border-radius:12px;padding:20px;margin:24px 0;">
+  <h3 style="color:#c62828;margin-bottom:8px;">The SRE Coding Mantra — Before Every Problem</h3>
+  <pre style="border-color:#ef9a9a;">1. ASSUME HOSTILE SCALE: Your code will run on data 1,000,000x larger. Stream, don't load.
+2. ASSUME HOSTILE ENVIRONMENTS: Every I/O call will eventually fail. Handle exceptions, retry with backoff.
+3. ASSUME HOSTILE ACTIONS: Script may run concurrently. Design for idempotency. Include dry-run mode.
+4. ASSUME A BLIND OPERATOR: Code must log its actions, emit metrics, make state visible.
+
+"Your goal is not the most clever algorithm, but the most robust, observable, and trustworthy utility."</pre>
+</div>
+
+
+<!-- ===== SECTION 1: CORE INFRASTRUCTURE ===== -->
+<div class="cat-header">Section 1: Core Infrastructure Utilities (Problems 1-8)</div>
+
+<div class="problem" id="p1">
+  <h3>Problem 1: Log Deduper Script</h3>
+  <div class="prompt"><strong>Prompt:</strong> Write a Python script that reads a log file and removes duplicate lines while preserving order. Must handle 10GB+ logs.</div>
+  <div class="why"><h4>Why Google Asks This</h4><p>Duplicate log entries waste storage, flood monitoring, and overwhelm operators. Tests stream processing, memory-efficient hashing, and production awareness.</p></div>
+  <div class="evolution"><h4>Evolution: Naive → Streaming → Production</h4></div>
+  <pre>## BASELINE (naive — fails at scale)
+def dedupe_log(file_path, output_path):
+    seen = set()
+    with open(file_path, "r") as infile, open(output_path, "w") as outfile:
+        for line in infile:
+            if line not in seen:
+                seen.add(line)
+                outfile.write(line)
+
+## IMPROVED (streaming + hashing — handles 10GB+)
+import hashlib
+def dedupe_log_stream(file_path, output_path):
+    seen = set()
+    with open(file_path, "r") as infile, open(output_path, "w") as outfile:
+        for line in infile:
+            digest = hashlib.sha256(line.encode()).hexdigest()
+            if digest not in seen:
+                seen.add(digest)
+                outfile.write(line)
+# Stores only 64-byte hashes, not full lines. Much better.
+# For billions of unique lines → swap to Bloom filter.
+
+## ADVANCED (follow mode — live log cleaning like tail -f)
+import hashlib, os, time
+def dedupe_tail(file_path):
+    seen = set()
+    with open(file_path, "r") as f:
+        f.seek(0, os.SEEK_END)
+        while True:
+            line = f.readline()
+            if not line:
+                time.sleep(0.5)
+                continue
+            digest = hashlib.sha256(line.encode()).hexdigest()
+            if digest not in seen:
+                seen.add(digest)
+                print(line.strip())</pre>
+  <div class="checklist"><strong>Checklist:</strong> Works for arbitrarily large files? Preserves first occurrence order? Handles empty files, binary lines? Modular and documented? Would another SRE trust this in production?</div>
+</div>
+
+<div class="problem" id="p2">
+  <h3>Problem 2: Disk Usage Monitor</h3>
+  <div class="prompt"><strong>Prompt:</strong> Build a script that alerts if disk usage crosses a configurable threshold. Support multiple mount points.</div>
+  <pre>## PRODUCTION VERSION (multi-mount + JSON + Slack alert)
+import shutil, json, sys, requests
+
+def check_disk_usage(mounts, threshold=80):
+    results = {}
+    for path in mounts:
+        try:
+            total, used, free = shutil.disk_usage(path)
+            usage_pct = (used / total) * 100
+            results[path] = round(usage_pct, 2)
+            if usage_pct > threshold:
+                print(f"ALERT: {path} at {usage_pct:.1f}%", file=sys.stderr)
+        except FileNotFoundError:
+            results[path] = "ERROR: mount not found"
+    return results
+
+if __name__ == "__main__":
+    mounts = ["/", "/var", "/tmp", "/mnt/data"]
+    results = check_disk_usage(mounts, threshold=80)
+    print(json.dumps(results, indent=2))</pre>
+  <div class="why"><h4>Senior Signal</h4><p>Don't alert at 80% blindly — predict <strong>time-to-fill (TTF)</strong> given current write rate. Much smarter, fewer false alarms.</p></div>
+</div>
+
+<div class="problem" id="p3"><h3>Problem 3: Rolling Log Compressor</h3><div class="prompt"><strong>Prompt:</strong> Rotate logs: keep last N uncompressed, gzip older ones. Use atomic tmp + rename to avoid corruption. Exclude the active log file being written.</div><pre>import os, gzip, shutil
+from pathlib import Path
+
+def safe_rotate(log_dir, keep=3):
+    logs = sorted(Path(log_dir).glob("*.log"), key=os.path.getmtime, reverse=True)
+    logs = logs[1:]  # exclude active (latest) file
+    for i, log in enumerate(logs):
+        if i >= keep - 1:
+            tmp = log.with_suffix(log.suffix + ".gz.tmp")
+            final = log.with_suffix(log.suffix + ".gz")
+            with open(log, "rb") as f_in, gzip.open(tmp, "wb") as f_out:
+                shutil.copyfileobj(f_in, f_out)
+            os.rename(tmp, final)  # atomic!
+            os.remove(log)</pre></div>
+
+<div class="problem" id="p4"><h3>Problem 4: File Integrity Checker</h3><div class="prompt"><strong>Prompt:</strong> SHA-256 hash all files in a directory tree. Stream in chunks (64KB) for large files. Output JSON. Parallelize with multiprocessing.</div><pre>import os, hashlib, json
+from multiprocessing import Pool
+
+def hash_file(path, block_size=65536):
+    sha = hashlib.sha256()
+    try:
+        with open(path, "rb") as f:
+            while chunk := f.read(block_size):
+                sha.update(chunk)
+        return (path, sha.hexdigest())
+    except Exception as e:
+        return (path, f"ERROR: {e}")
+
+def parallel_hash_dir(directory):
+    paths = [os.path.join(r, f) for r, _, fs in os.walk(directory) for f in fs]
+    with Pool(8) as pool:
+        return dict(pool.map(hash_file, paths))</pre></div>
+
+<div class="problem" id="p5"><h3>Problem 5: Temp File Cleaner</h3><div class="prompt"><strong>Prompt:</strong> Delete files in /tmp older than N days. Skip symlinks. Dry-run mode. Structured JSON logging.</div></div>
+
+<div class="problem" id="p6"><h3>Problem 6: Port Scanner Utility</h3><div class="prompt"><strong>Prompt:</strong> Scan a host for open TCP ports. Sequential → ThreadPool → asyncio. Handle timeouts.</div><pre>## ASYNCIO VERSION (thousands of concurrent connections)
+import asyncio
+
+async def scan_port(host, port):
+    try:
+        conn = asyncio.open_connection(host, port)
+        reader, writer = await asyncio.wait_for(conn, timeout=1)
+        writer.close(); await writer.wait_closed()
+        return port, True
+    except:
+        return port, False
+
+async def main():
+    tasks = [scan_port("scanme.nmap.org", p) for p in range(20, 1024)]
+    results = await asyncio.gather(*tasks)
+    for port, is_open in results:
+        if is_open: print(f"Port {port}: OPEN")</pre></div>
+
+<div class="problem" id="p7"><h3>Problem 7: Service Restart Automator</h3><div class="prompt"><strong>Prompt:</strong> Auto-restart a flaky service if health check fails. Exponential backoff. Prometheus metrics. Circuit breaker: stop after 5 failures.</div><pre>import time, requests, subprocess, logging
+
+def restart_with_backoff(service="myapp", url="http://localhost:8080/healthz", attempts=5):
+    for i in range(attempts):
+        try:
+            if requests.get(url, timeout=2).status_code == 200:
+                logging.info("Service healthy")
+                return
+        except: pass
+        wait = 2 ** i
+        logging.warning(f"Attempt {i+1}: restart {service}, wait {wait}s")
+        subprocess.run(["systemctl", "restart", service], check=False)
+        time.sleep(wait)
+    logging.error(f"CIRCUIT OPEN: {service} failed {attempts}x → escalate to human")</pre></div>
+
+<div class="problem" id="p8"><h3>Problem 8: Config Drift Detector</h3><div class="prompt"><strong>Prompt:</strong> Compare two JSON configs recursively. Detect missing keys, different values, type mismatches. Generate patch JSON.</div><pre>def recursive_diff(d1, d2, path=""):
+    diffs = {}
+    for key in set(d1.keys()).union(d2.keys()):
+        p = f"{path}.{key}" if path else key
+        if key not in d1:      diffs[p] = ("MISSING", d2[key])
+        elif key not in d2:    diffs[p] = (d1[key], "MISSING")
+        elif isinstance(d1[key], dict) and isinstance(d2[key], dict):
+            diffs.update(recursive_diff(d1[key], d2[key], p))
+        elif d1[key] != d2[key]:
+            diffs[p] = (d1[key], d2[key])
+    return diffs</pre></div>
+
+
+<!-- ===== SECTION 2: NETWORKING & APIS ===== -->
+<div class="cat-header" style="background:#2e7d32;">Section 2: Networking &amp; APIs (Problems 9-16)</div>
+
+<div class="problem" id="p9"><h3>P9: HTTP Health Checker</h3><div class="prompt">Check multiple endpoints concurrently. Measure response time. Report status + latency in JSON. Alert on failures. ThreadPoolExecutor.</div></div>
+<div class="problem" id="p10"><h3>P10: DNS Resolver Tool</h3><div class="prompt">Resolve A/AAAA/MX/CNAME records. Compare against multiple resolvers (8.8.8.8, 1.1.1.1, authoritative). Detect propagation inconsistencies. Uses <code>dns.resolver</code> (dnspython).</div></div>
+<div class="problem" id="p11"><h3>P11: Simple TCP Proxy</h3><div class="prompt">Forward TCP connections from one port to another. Bidirectional data relay with threading. Useful for debugging service-to-service communication.</div></div>
+<div class="problem" id="p12"><h3>P12: API Pagination Fetcher</h3><div class="prompt">Fetch all pages from a paginated REST API. Handle rate limits (429 + Retry-After). Exponential backoff. Stream results to file/stdout.</div></div>
+<div class="problem" id="p13"><h3>P13: gRPC Health Check Client</h3><div class="prompt">Call the standard gRPC health check endpoint. Report SERVING/NOT_SERVING/UNKNOWN. Uses <code>grpcio-health-checking</code>.</div></div>
+<div class="problem" id="p14"><h3>P14: Latency Distribution Tool</h3><div class="prompt">Hit an endpoint N times, collect latencies, compute p50/p95/p99/p999. Display histogram. Concurrent load with ThreadPool.</div></div>
+<div class="problem" id="p15"><h3>P15: SSL Expiry Checker</h3><div class="prompt">Check TLS certificate expiry for multiple hosts. Alert if expiring within N days. Uses <code>ssl</code> + <code>socket</code>. Output JSON.</div></div>
+<div class="problem" id="p16"><h3>P16: Cloud API Inventory Tool</h3><div class="prompt">List all GCP/AWS resources (VMs, disks, LBs) via API. Detect unused resources (unattached disks, idle VMs). Output cost-saving recommendations.</div></div>
+
+
+<!-- ===== SECTION 3: DATA HANDLING ===== -->
+<div class="cat-header" style="background:#e65100;">Section 3: Data Handling &amp; Parsing (Problems 17-23)</div>
+
+<div class="problem" id="p17"><h3>P17: JSON Log Parser</h3><div class="prompt">Parse structured JSON logs. Filter by severity/timestamp/field. Stream processing for large files. Output matching lines or aggregate counts.</div></div>
+<div class="problem" id="p18"><h3>P18: CSV Aggregator</h3><div class="prompt">Aggregate a large CSV: GROUP BY + SUM/AVG/COUNT. Stream without loading entire file. Uses <code>csv.DictReader</code> + <code>collections.defaultdict</code>.</div></div>
+<div class="problem" id="p19"><h3>P19: Streaming Median Calculator</h3><div class="prompt">Compute running median of a data stream. Two-heap approach (max-heap + min-heap). O(log n) per insert, O(1) median query. Uses <code>heapq</code>.</div></div>
+<div class="problem" id="p20"><h3>P20: Log Window Aggregator</h3><div class="prompt">Sliding time window aggregation: count events per 5-min bucket. Handles out-of-order events. Watermark-based flushing. SRE metric pipeline mini-sim.</div></div>
+<div class="problem" id="p21"><h3>P21: XML Config Parser</h3><div class="prompt">Parse XML configs safely (<code>defusedxml</code> for XXE protection). Extract nested values. Compare old vs new configs. Handle malformed XML gracefully.</div></div>
+<div class="problem" id="p22"><h3>P22: Streaming Join of Two Logs</h3><div class="prompt">Merge two timestamp-sorted log files into one sorted stream. Handles different time formats. O(1) memory (two file pointers + merge sort).</div></div>
+<div class="problem" id="p23"><h3>P23: Text Metrics Extractor</h3><div class="prompt">Extract numeric metrics from unstructured text (log lines like "latency=42ms"). Regex extraction + statistical summary (mean, p95, p99).</div></div>
+
+
+<!-- ===== SECTION 4: RELIABILITY AUTOMATION ===== -->
+<div class="cat-header" style="background:#6a1b9a;">Section 4: Reliability Automation (Problems 24-31)</div>
+
+<div class="problem" id="p24"><h3>P24: Canary Rollout Script</h3><div class="prompt">Simulate progressive rollout: 1% → 5% → 25% → 100%. At each stage, check error rate. Auto-rollback if errors > threshold. Sleep between stages.</div></div>
+<div class="problem" id="p25"><h3>P25: Retry with Exponential Backoff</h3><div class="prompt">Generic retry decorator. Exponential backoff + jitter. Configurable max retries, base delay. Respects Retry-After header. The most reusable SRE pattern.</div><pre>import time, random
+
+def retry_with_backoff(func, max_retries=5, base_delay=1):
+    for attempt in range(max_retries):
+        try:
+            return func()
+        except Exception as e:
+            if attempt == max_retries - 1:
+                raise
+            delay = base_delay * (2 ** attempt) + random.uniform(0, 1)
+            print(f"Retry {attempt+1}/{max_retries} in {delay:.1f}s: {e}")
+            time.sleep(delay)</pre></div>
+<div class="problem" id="p26"><h3>P26: Quota Enforcer</h3><div class="prompt">Token bucket rate limiter in Python. Track requests per tenant. Return 429 when quota exceeded. Configurable refill rate. Thread-safe.</div></div>
+<div class="problem" id="p27"><h3>P27: Dead-Letter Queue Reprocessor</h3><div class="prompt">Read failed messages from DLQ. Attempt re-delivery with backoff. Move permanently failed to archive. Track success/failure metrics.</div></div>
+<div class="problem" id="p28"><h3>P28: Auto-Scaler Simulator</h3><div class="prompt">Simulate auto-scaling: monitor request rate, scale up/down instances. Cooldown period between scale events. Print instance count over time.</div></div>
+<div class="problem" id="p29"><h3>P29: Feature Flag Simulator</h3><div class="prompt">In-memory feature flag system. Percentage-based rollout. Override per user. Evaluate flags with consistent hashing (user always gets same result).</div></div>
+<div class="problem" id="p30"><h3>P30: Chaos Monkey</h3><div class="prompt">Randomly kill processes/pods from a target list. Configurable probability. Dry-run mode. Structured logging. Exclude protected services. Cooldown between kills.</div></div>
+<div class="problem" id="p31"><h3>P31: IAM Policy Analyzer</h3><div class="prompt">Parse IAM/RBAC policies (JSON). Detect overprivileged roles (e.g., admin on prod). Flag wildcards (* in actions/resources). Output risk report.</div></div>
+
+
+<!-- ===== SECTION 5: ADVANCED ===== -->
+<div class="cat-header" style="background:#37352f;">Section 5: Advanced / Stretch (Problems 32-38)</div>
+
+<div class="problem" id="p32"><h3>P32: Distributed Lock (File-Based)</h3><div class="prompt">File-based locking using <code>fcntl.flock()</code>. Prevent concurrent script execution. Timeout + stale lock detection. Critical for cron job safety.</div></div>
+<div class="problem" id="p33"><h3>P33: Simple Metrics Exporter</h3><div class="prompt">Expose Prometheus-compatible <code>/metrics</code> endpoint. Counter, Gauge, Histogram. Uses <code>prometheus_client</code>. Push custom SRE metrics from any script.</div></div>
+<div class="problem" id="p34"><h3>P34: Circuit Breaker Wrapper</h3><div class="prompt">Three states: CLOSED (normal) → OPEN (fail fast) → HALF-OPEN (test recovery). Track failure rate. Configurable threshold + reset timeout.</div><pre>import time
+
+class CircuitBreaker:
+    def __init__(self, failure_threshold=5, reset_timeout=30):
+        self.failure_threshold = failure_threshold
+        self.reset_timeout = reset_timeout
+        self.failures = 0
+        self.state = "CLOSED"
+        self.last_failure_time = 0
+
+    def call(self, func, *args, **kwargs):
+        if self.state == "OPEN":
+            if time.time() - self.last_failure_time > self.reset_timeout:
+                self.state = "HALF_OPEN"
+            else:
+                raise Exception("Circuit OPEN — failing fast")
+        try:
+            result = func(*args, **kwargs)
+            if self.state == "HALF_OPEN":
+                self.state = "CLOSED"
+                self.failures = 0
+            return result
+        except Exception as e:
+            self.failures += 1
+            self.last_failure_time = time.time()
+            if self.failures >= self.failure_threshold:
+                self.state = "OPEN"
+            raise</pre></div>
+<div class="problem" id="p35"><h3>P35: Distributed Cache Client</h3><div class="prompt">Client wrapper for Redis/Memcached. GET/SET with TTL. Cache-aside pattern. Handle connection failures gracefully (serve without cache). Metrics.</div></div>
+<div class="problem" id="p36"><h3>P36: Backup Pruner</h3><div class="prompt">Implement retention policy: keep daily for 7 days, weekly for 4 weeks, monthly for 12 months. Delete the rest. Dry-run mode. Works on S3/GCS/local.</div></div>
+<div class="problem" id="p37"><h3>P37: Alert Simulator</h3><div class="prompt">Generate synthetic alerts at configurable rates. Test alert pipelines, PagerDuty routing, Slack integration. Useful for game days.</div></div>
+<div class="problem" id="p38"><h3>P38: Secret/Key Rotation Script</h3><div class="prompt">Generate new secret, update in secret manager (Vault/GCP KMS), update service config, verify service health, rollback on failure. Zero-downtime rotation.</div></div>
+
+</div>
+
+<footer>
+  <div class="container">
+    <p>SRE Python Coding &mdash; <a href="/sre-debugging.html">Debugging</a> | <a href="/sre-nalsd.html">NALSD</a> | <a href="/sd-google-sre.html">System Design</a> | <a href="/">Home</a></p>
+  </div>
+</footer>
+
+</body>
+</html>
