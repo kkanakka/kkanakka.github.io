@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<title>SRE Design Interview Framework &mdash; From Requirements to Trade-offs</title>
+<style>
+  :root{--bg:#fff;--surface:#f7f6f3;--border:#e3e2de;--text:#37352f;--text-muted:#787774;--accent:#2383e2;--accent2:#0f7b0f;--accent3:#6940a5;--accent4:#d9730d;--red:#e03e3e;--code-bg:#f7f6f3;--card:#fff;--ch-color:#1a73e8;--success:#2e7d32;--warning:#f57c00;--error:#d32f2f}
+  *{margin:0;padding:0;box-sizing:border-box}body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;font-size:15px}
+  .container{max-width:950px;margin:0 auto;padding:0 24px}.hero{background:linear-gradient(180deg,#fafafa,#fff);border-bottom:1px solid var(--border);padding:48px 0 36px;text-align:center}.hero h1{font-size:2.2em;font-weight:700;margin-bottom:12px}.hero h1 span{color:var(--ch-color)}.hero p{font-size:1.05em;color:var(--text-muted);max-width:750px;margin:0 auto 30px}.hero .badge{display:inline-block;background:var(--surface);border:1px solid var(--border);padding:6px 16px;border-radius:20px;font-size:.8em;color:var(--text-muted)}
+  .nav-links{margin-top:20px}.nav-links a{display:inline-block;background:var(--surface);border:1px solid var(--border);padding:8px 20px;border-radius:8px;color:var(--accent);text-decoration:none;margin:4px;font-size:.9em;transition:.2s}.nav-links a:hover{border-color:var(--accent)}.nav-links a.ch{color:var(--ch-color);border-color:var(--ch-color)}
+  
+  .framework{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin:24px 0;border-left:4px solid var(--ch-color)}
+  .framework h2{font-size:1.3em;font-weight:700;color:var(--ch-color);margin-bottom:12px}
+  .framework h3{font-size:1.1em;font-weight:600;color:var(--text);margin:20px 0 8px}
+  
+  .step{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;margin:12px 0;border-left:3px solid var(--success)}
+  .step h4{color:var(--success);margin:0 0 6px;font-size:.95em;font-weight:600}
+  .step .question{font-style:italic;color:var(--accent3);margin:4px 0}
+  .step .output{background:#e8f5e9;padding:8px;border-radius:4px;margin:6px 0;font-size:.9em}
+  
+  .flow{background:#e3f2fd;border:1px solid var(--ch-color);border-radius:12px;padding:20px;margin:20px 0;text-align:center}
+  .flow h3{color:var(--ch-color);margin-bottom:12px}
+  .flow-diagram{font-family:'JetBrains Mono',monospace;font-size:.9em;line-height:1.8;color:var(--ch-color)}
+  .arrow{color:var(--warning);font-weight:bold}
+  
+  .example{background:#fff8e1;border:1px solid var(--warning);border-radius:12px;padding:20px;margin:20px 0}
+  .example h3{color:var(--warning);margin-bottom:12px}
+  .example .mini-step{margin:8px 0;padding:8px;background:#fffbf0;border-radius:4px;border-left:3px solid var(--warning)}
+  .example .mini-step strong{color:var(--warning)}
+  
+  .checklist{background:#f3e5f5;border:1px solid var(--accent3);border-radius:12px;padding:20px;margin:20px 0}
+  .checklist h3{color:var(--accent3);margin-bottom:12px}
+  .checklist ol{padding-left:24px}
+  .checklist li{margin:8px 0;font-weight:500}
+  .checklist .detail{font-weight:normal;color:var(--text-muted);margin-top:4px}
+  
+  .scoring{background:#ffebee;border:1px solid var(--error);border-radius:12px;padding:20px;margin:20px 0}
+  .scoring h3{color:var(--error);margin-bottom:12px}
+  .scoring .green{color:var(--success);font-weight:600}
+  .scoring .red{color:var(--error);font-weight:600}
+  
+  .reflection{background:#e8eaf6;border:1px solid #3f51b5;border-radius:12px;padding:20px;margin:20px 0}
+  .reflection h3{color:#303f9f;margin-bottom:12px}
+  .reflection ol{padding-left:24px}
+  .reflection li{margin:8px 0;font-style:italic;color:#303f9f}
+  
+  pre{background:var(--code-bg);border:1px solid var(--border);padding:12px;border-radius:8px;overflow-x:auto;font-family:'JetBrains Mono','SF Mono',monospace;font-size:.85em;margin:8px 0;line-height:1.5}
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-size:.9em}th{background:rgba(26,115,232,.08);color:var(--ch-color);padding:10px 12px;text-align:left;font-weight:600;border-bottom:2px solid var(--border)}td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:top}tr:last-child td{border-bottom:none}
+  .highlight{background:#e3f2fd;padding:2px 6px;border-radius:3px;color:var(--ch-color);font-weight:500}
+  
+  footer{text-align:center;padding:40px 0;border-top:1px solid var(--border);color:var(--text-muted);font-size:.9em;margin-top:60px}footer a{color:var(--ch-color);text-decoration:none}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="container">
+    <h1>SRE Design Interview <span>Framework</span></h1>
+    <p>The systematic Google-style approach for any system design interview — from requirements to trade-offs. Master the reliability-first reasoning that distinguishes senior SRE candidates.</p>
+    <div class="badge">Google SRE &bull; Design Framework &bull; Universal Template</div>
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="/sre-sysdesign.html" class="ch">10 Classic Problems</a>
+      <a href="/sre-debugging.html">Debugging Guide</a>
+      <a href="/sre-nalsd.html">NALSD Scenarios</a>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- Core Principle -->
+<div style="background:#e8f5e9;border:1px solid #4caf50;border-radius:12px;padding:24px;margin:30px 0;">
+  <h2 style="color:#2e7d32;margin-bottom:12px;">Step 0 — Frame the Problem Like an SRE</h2>
+  <div style="font-size:1.1em;text-align:center;margin:16px 0;color:#2e7d32;font-weight:600;">
+    "What is the service trying to guarantee, and to whom?"
+  </div>
+  <p style="margin-bottom:12px;">Every architecture exists to honor a <strong>Service Level Objective (SLO)</strong> that expresses user trust in measurable form. Before you draw a single box or arrow, you must translate the problem statement into a reliability-anchored specification.</p>
+  
+  <table style="margin-top:16px;">
+    <tr><th>Question</th><th>Example Output</th></tr>
+    <tr><td>"What does failure look like to them?"</td><td>"Alert arrives > 30s late"</td></tr>
+    <tr><td>"What risk tolerance do we have?"</td><td>"≤ 0.1% missed alerts per quarter"</td></tr>
+    <tr><td>"What metric captures that?"</td><td>"p99 alert latency < 30s"</td></tr>
+  </table>
+  
+  <div style="background:#c8e6c9;padding:12px;border-radius:6px;margin-top:16px;font-weight:600;color:#1b5e20;">
+    ➡️ Always define SLOs before designing components.
+  </div>
+</div>
+
+<!-- The SRE Design Flow -->
+<div class="flow">
+  <h3>The SRE Design Flow — Your Systematic Path</h3>
+  <div class="flow-diagram">
+    Requirements <span class="arrow">→</span> SLO Contract <span class="arrow">→</span> Baseline Design <span class="arrow">→</span> Stressors<br>
+    <span class="arrow">→</span> Resilient Architecture <span class="arrow">→</span> Observability & Ops <span class="arrow">→</span> Trade-offs
+  </div>
+</div>
+
+<!-- The 7 Steps Framework -->
+<div class="framework">
+  <h2>Section 1 — Design Framework: "From Requirements → Metrics → Trade-offs"</h2>
+  <p>This section teaches the repeatable, Google-style reasoning flow used in every successful design interview.</p>
+
+  <div class="step">
+    <h4>1. Requirements → SLO Contract</h4>
+    <div class="question">"How reliable, fast, and scalable must this system be?"</div>
+    <div class="output"><strong>Output:</strong> Availability (99.99%), Latency (p95 ≤ 200ms), Throughput (10K RPS), Consistency guarantees</div>
+  </div>
+
+  <div class="step">
+    <h4>2. SLO Contract → Baseline Design</h4>
+    <div class="question">"What minimal set of components meets those guarantees?"</div>
+    <div class="output"><strong>Output:</strong> Happy path architecture — load balancer → app servers → database. Focus on core data flow.</div>
+  </div>
+
+  <div class="step">
+    <h4>3. Baseline Design → Stressors</h4>
+    <div class="question">"What happens when scale ×10 or a dependency fails?"</div>
+    <div class="output"><strong>Output:</strong> 5 failure modes — DB overload, network partition, memory leak, cascade failure, human error</div>
+  </div>
+
+  <div class="step">
+    <h4>4. Stressors → Resilient Architecture</h4>
+    <div class="question">"Which reliability patterns (replication, circuit breaker, queues) mitigate them?"</div>
+    <div class="output"><strong>Output:</strong> Multi-AZ deployment + Circuit breakers + Retry with backoff + Health checks + Auto-scaling</div>
+  </div>
+
+  <div class="step">
+    <h4>5. Resilient Architecture → Observability & Ops</h4>
+    <div class="question">"How will we know it's healthy—and repair it safely?"</div>
+    <div class="output"><strong>Output:</strong> SLI metrics, dashboards, alerts, runbooks, deployment strategy, rollback plan</div>
+  </div>
+
+  <div class="step">
+    <h4>6. Observability & Ops → Trade-offs</h4>
+    <div class="question">"Where do we accept cost or complexity to meet SLOs?"</div>
+    <div class="output"><strong>Output:</strong> CAP theorem choice, consistency vs latency, cost vs reliability, operational complexity</div>
+  </div>
+
+  <div class="step" style="border-left-color:var(--accent3);">
+    <h4 style="color:var(--accent3);">7. Articulate Trade-offs & Reasoning</h4>
+    <div class="question">"Why this choice over alternatives? What are the second-order effects?"</div>
+    <div class="output"><strong>Output:</strong> "We chose eventual consistency over strong consistency because user experience degrades more from 500ms latency than from 1s data staleness. This saves 2 RTTs per request but requires conflict resolution logic."</div>
+  </div>
+</div>
+
+<!-- Mini Example -->
+<div class="example">
+  <h3>Mini-Example Walkthrough — Design a Health-Check Service</h3>
+  
+  <div class="mini-step">
+    <strong>Requirements:</strong> Detect instance failure within 10s; 99.99% detection reliability.
+  </div>
+  
+  <div class="mini-step">
+    <strong>SLO Contract:</strong> p95 latency ≤ 5s, availability ≥ 99.99%, false positive rate ≤ 0.1%
+  </div>
+  
+  <div class="mini-step">
+    <strong>Baseline Design:</strong> Scheduler → Ping Target → Report Result → Dashboard
+  </div>
+  
+  <div class="mini-step">
+    <strong>Stressors:</strong> Network partitions, false positives, checker overload, target flapping, cascading failures
+  </div>
+  
+  <div class="mini-step">
+    <strong>Resilient Architecture:</strong> Multiple checkers per target + majority vote; exponential backoff; circuit breaker for checker overload
+  </div>
+  
+  <div class="mini-step">
+    <strong>Observability:</strong> SLI = successful pings / total pings. Alert on checker success rate < 99.99%. Dashboard shows per-target health trends.
+  </div>
+  
+  <div class="mini-step">
+    <strong>Trade-offs:</strong><br>
+    • More checkers → higher cost but lower miss rate<br>
+    • Tighter timeout → faster detection but more false alarms<br>
+    • Majority vote → resilience to network issues but delayed detection
+  </div>
+</div>
+
+<!-- The Checklist -->
+<div class="checklist">
+  <h3>The 7-Step Checklist for Any Design Prompt</h3>
+  <ol>
+    <li><span class="highlight">Define User Impact → derive SLOs</span>
+      <div class="detail">Start with "What does the user experience when this fails?" Then quantify acceptable failure rates.</div>
+    </li>
+    <li><span class="highlight">Draw the Happy Path</span>
+      <div class="detail">Show the minimal viable architecture that meets basic functionality. Don't over-engineer yet.</div>
+    </li>
+    <li><span class="highlight">Identify 5 ways it can fail</span>
+      <div class="detail">Hardware faults, software bugs, network issues, overload, human errors. Be specific to your design.</div>
+    </li>
+    <li><span class="highlight">Apply reliability patterns to each</span>
+      <div class="detail">Circuit breakers, retries, bulkheads, health checks, graceful degradation, auto-scaling.</div>
+    </li>
+    <li><span class="highlight">Decide metrics & dashboards</span>
+      <div class="detail">Define SLIs that directly measure SLOs. Include both user-facing and internal health metrics.</div>
+    </li>
+    <li><span class="highlight">Prepare rollout & recovery plan</span>
+      <div class="detail">Canary deployment, feature flags, rollback strategy, incident response, capacity planning.</div>
+    </li>
+    <li><span class="highlight">Articulate trade-offs & reasoning</span>
+      <div class="detail">Explain why you chose this approach. What alternatives did you reject and why?</div>
+    </li>
+  </ol>
+</div>
+
+<!-- Common Reliability Patterns Quick Reference -->
+<div style="background:#f0f4ff;border:1px solid #3f51b5;border-radius:12px;padding:20px;margin:20px 0;">
+  <h3 style="color:#303f9f;margin-bottom:12px;">Common Reliability Patterns — Quick Reference</h3>
+  
+  <table>
+    <tr><th>Failure Mode</th><th>Pattern</th><th>Example</th></tr>
+    <tr><td>Service overload</td><td>Circuit Breaker</td><td>Stop calling failed service for 30s</td></tr>
+    <tr><td>Transient failures</td><td>Retry with Backoff</td><td>Retry 3x with exponential delay</td></tr>
+    <tr><td>Dependency failure</td><td>Graceful Degradation</td><td>Show cached data instead of real-time</td></tr>
+    <tr><td>Traffic spikes</td><td>Auto-scaling</td><td>Scale out on CPU > 70% for 2 minutes</td></tr>
+    <tr><td>Single point of failure</td><td>Replication</td><td>Multi-AZ deployment with failover</td></tr>
+    <tr><td>Resource exhaustion</td><td>Bulkhead Pattern</td><td>Separate thread pools per service</td></tr>
+    <tr><td>Slow dependencies</td><td>Timeout + Deadline</td><td>Abort requests after 5s</td></tr>
+    <tr><td>Bad deployments</td><td>Canary Rollout</td><td>Deploy to 5% → 25% → 100%</td></tr>
+  </table>
+</div>
+
+<!-- SLO Examples -->
+<div style="background:#e8f5e9;border:1px solid #4caf50;border-radius:12px;padding:20px;margin:20px 0;">
+  <h3 style="color:#2e7d32;margin-bottom:12px;">Common SLO Patterns by Service Type</h3>
+  
+  <pre style="border-color:#81c784;background:#f1f8e9;">🔗 API Service SLOs:
+  • Availability: 99.99% (HTTP 2xx responses)
+  • Latency: p95 ≤ 200ms, p99 ≤ 500ms
+  • Error Rate: ≤ 0.01% (excludes 4xx client errors)
+
+💾 Database SLOs:
+  • Availability: 99.95% (successful connections)
+  • Query Latency: p95 ≤ 10ms (simple queries)
+  • Data Durability: 99.999999999% (11 nines)
+
+📱 Frontend SLOs:
+  • Page Load: p95 ≤ 2s (Time to Interactive)
+  • Availability: 99.9% (successful page loads)
+  • Error Rate: ≤ 0.1% (JS errors, API failures)
+
+🔄 Async Processing SLOs:
+  • Processing Latency: p99 ≤ 5 minutes
+  • Success Rate: 99.9% (successful job completion)
+  • Throughput: ≥ 1000 jobs/minute sustained</pre>
+</div>
+
+<!-- Interviewer Scoring -->
+<div class="scoring">
+  <h3>What Interviewers Score</h3>
+  <p><span class="green">✅ Green Flags:</span></p>
+  <ul>
+    <li>Starts with user impact and SLOs before architecture</li>
+    <li>Systematically identifies failure modes and mitigations</li>
+    <li>Defines concrete metrics and observability strategy</li>
+    <li>Articulates trade-offs with clear reasoning</li>
+    <li>Shows understanding of CAP theorem and consistency models</li>
+    <li>Demonstrates production operational thinking</li>
+  </ul>
+  
+  <p style="margin-top:16px;"><span class="red">🚩 Red Flags:</span></p>
+  <ul>
+    <li>Designs components before clarifying requirements</li>
+    <li>Ignores failure modes or hand-waves reliability</li>
+    <li>No metrics or observability plan</li>
+    <li>Can't explain why they chose one approach over alternatives</li>
+    <li>Ignores operational complexity or cost implications</li>
+    <li>Uses buzzwords without understanding trade-offs</li>
+  </ul>
+</div>
+
+<!-- Reflection Questions -->
+<div class="reflection">
+  <h3>Reflection Prompts — Test Your SRE Mindset</h3>
+  <ol>
+    <li>When you design a system, do you start with user impact or with components?</li>
+    <li>How would you express your current project's SLO contract in one sentence?</li>
+    <li>Which failure mode from your last incident was unmeasured by any SLI?</li>
+    <li>If your system had 10x more traffic tomorrow, what would break first?</li>
+    <li>What's one trade-off you made recently where you chose reliability over cost?</li>
+  </ol>
+</div>
+
+<!-- Practice Template -->
+<div style="background:#fff3e0;border:1px solid #ff9800;border-radius:12px;padding:20px;margin:20px 0;">
+  <h3 style="color:#ef6c00;margin-bottom:12px;">Practice Template — Fill This Out for Any Problem</h3>
+  <pre style="border-color:#ffb74d;background:#fffbf0;">Problem Statement: ________________________________
+
+1. USER IMPACT & SLOs:
+   - What does failure look like to users?
+   - Availability target: ____%
+   - Latency target: p95 ≤ ___ms, p99 ≤ ___ms  
+   - Throughput requirement: ___ RPS
+
+2. HAPPY PATH DESIGN:
+   [Draw your basic architecture here]
+
+3. FAILURE MODES (list 5):
+   - ________________________________
+   - ________________________________  
+   - ________________________________
+   - ________________________________
+   - ________________________________
+
+4. RELIABILITY PATTERNS:
+   [Map each failure mode to a mitigation]
+
+5. OBSERVABILITY:
+   - Key SLI: _________________________
+   - Alert conditions: ________________
+   - Dashboard metrics: _______________
+
+6. ROLLOUT PLAN:
+   - Deployment strategy: _____________
+   - Rollback criteria: _______________
+   - Capacity planning: _______________
+
+7. TRADE-OFFS:
+   - Chose _______ over _______ because _______
+   - Cost implication: ________________
+   - Operational complexity: __________</pre>
+</div>
+
+</div>
+
+<footer>
+  <div class="container">
+    <p>SRE Design Interview Framework &mdash; <a href="/sre-sysdesign.html">10 Classic Problems</a> | <a href="/sre-debugging.html">Debugging</a> | <a href="/sre-nalsd.html">NALSD</a> | <a href="/">Home</a></p>
+  </div>
+</footer>
+
+</body>
+</html>
