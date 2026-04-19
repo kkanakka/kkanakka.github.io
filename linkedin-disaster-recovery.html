@@ -100,6 +100,218 @@
   <h3>Business Continuity Philosophy: Automated Resilience</h3>
   
   <div class="disaster">
+    <h4>System Architecture — Multi-DC Disaster Recovery & Automated Failover</h4>
+    
+    <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 16px 0; border: 2px solid #dee2e6;">
+      <div style="text-align: center; margin-bottom: 20px;">
+        <h4 style="color: #c62828; margin-bottom: 10px;">🌍 Complete Multi-Region DR Architecture</h4>
+      </div>
+      
+      <!-- Health Probe Engine -->
+      <div style="background: #e3f2fd; border: 2px solid #2196f3; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+          <div style="background: #1976d2; color: white; padding: 8px 12px; border-radius: 6px; font-weight: 600;">
+            🔍 Health Probe Engine
+          </div>
+          <div style="font-size: 0.85em; color: #666;">Multi-dimensional monitoring</div>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+          <div style="background: white; border: 1px solid #90caf9; border-radius: 4px; padding: 6px; text-align: center; font-size: 0.8em;">
+            <strong>Active Ping</strong><br>
+            TCP/HTTP checks
+          </div>
+          <div style="background: white; border: 1px solid #90caf9; border-radius: 4px; padding: 6px; text-align: center; font-size: 0.8em;">
+            <strong>Synthetic TXN</strong><br>
+            End-to-end tests
+          </div>
+          <div style="background: white; border: 1px solid #90caf9; border-radius: 4px; padding: 6px; text-align: center; font-size: 0.8em;">
+            <strong>Dependency</strong><br>
+            Service mesh health
+          </div>
+          <div style="background: white; border: 1px solid #90caf9; border-radius: 4px; padding: 6px; text-align: center; font-size: 0.8em;">
+            <strong>Latency P99</strong><br>
+            Performance metrics
+          </div>
+        </div>
+        
+        <div style="margin: 15px 0; text-align: center;">
+          <span style="color: #1976d2; font-size: 1.2em;">⬇️</span>
+          <div style="font-size: 0.8em; color: #666;">1. Continuous health assessment of all regions</div>
+        </div>
+      </div>
+      
+      <!-- Decision Controller (Raft) -->
+      <div style="background: #f3e5f5; border: 2px solid #9c27b0; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+          <div style="background: #7b1fa2; color: white; padding: 8px 12px; border-radius: 6px; font-weight: 600;">
+            🧠 Decision Controller (Raft)
+          </div>
+          <div style="font-size: 0.85em; color: #666;">Split-brain prevention</div>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+          <div style="background: white; border: 1px solid #ce93d8; border-radius: 4px; padding: 6px; text-align: center; font-size: 0.8em;">
+            <strong>Raft Leader</strong><br>
+            LTX1 primary
+          </div>
+          <div style="background: white; border: 1px solid #ce93d8; border-radius: 4px; padding: 6px; text-align: center; font-size: 0.8em;">
+            <strong>Follower</strong><br>
+            LVA1 secondary
+          </div>
+          <div style="background: white; border: 1px solid #ce93d8; border-radius: 4px; padding: 6px; text-align: center; font-size: 0.8em;">
+            <strong>Follower</strong><br>
+            EI4 staging
+          </div>
+          <div style="background: white; border: 1px solid #ce93d8; border-radius: 4px; padding: 6px; text-align: center; font-size: 0.8em;">
+            <strong>Quorum</strong><br>
+            3 of 5 nodes
+          </div>
+        </div>
+        
+        <div style="margin: 15px 0; text-align: center;">
+          <span style="color: #7b1fa2; font-size: 1.2em;">⬇️</span>
+          <div style="font-size: 0.8em; color: #666;">2. Consensus-based failover decision (no split-brain)</div>
+        </div>
+      </div>
+      
+      <!-- Primary Region (Active) -->
+      <div style="background: #e8f5e8; border: 2px solid #4caf50; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+          <div style="background: #388e3c; color: white; padding: 8px 12px; border-radius: 6px; font-weight: 600;">
+            🌟 Primary Region (LTX1 - Active)
+          </div>
+          <div style="font-size: 0.85em; color: #666;">All traffic + writes</div>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+          <div style="background: white; border: 1px solid #81c784; border-radius: 4px; padding: 6px; text-align: center; font-size: 0.8em;">
+            <strong>Member API</strong><br>
+            ✅ Active
+          </div>
+          <div style="background: white; border: 1px solid #81c784; border-radius: 4px; padding: 6px; text-align: center; font-size: 0.8em;">
+            <strong>Feed Service</strong><br>
+            ✅ Active
+          </div>
+          <div style="background: white; border: 1px solid #81c784; border-radius: 4px; padding: 6px; text-align: center; font-size: 0.8em;">
+            <strong>Espresso DB</strong><br>
+            ✅ Primary
+          </div>
+          <div style="background: white; border: 1px solid #81c784; border-radius: 4px; padding: 6px; text-align: center; font-size: 0.8em;">
+            <strong>Traffic</strong><br>
+            100% serving
+          </div>
+        </div>
+        
+        <div style="margin: 15px 0; text-align: center;">
+          <span style="color: #388e3c; font-size: 1.2em;">⬇️</span>
+          <div style="font-size: 0.8em; color: #666;">3. Async replication to all standby regions</div>
+        </div>
+      </div>
+      
+      <!-- Standby Region (Hot) -->
+      <div style="background: #fff3e0; border: 2px solid #ff9800; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+          <div style="background: #f57c00; color: white; padding: 8px 12px; border-radius: 6px; font-weight: 600;">
+            🔥 Standby Region (LVA1 - Hot)
+          </div>
+          <div style="font-size: 0.85em; color: #666;">Ready for immediate failover</div>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+          <div style="background: white; border: 1px solid #ffb74d; border-radius: 4px; padding: 6px; text-align: center; font-size: 0.8em;">
+            <strong>Member API</strong><br>
+            ⏸️ Standby
+          </div>
+          <div style="background: white; border: 1px solid #ffb74d; border-radius: 4px; padding: 6px; text-align: center; font-size: 0.8em;">
+            <strong>Feed Service</strong><br>
+            ⏸️ Standby
+          </div>
+          <div style="background: white; border: 1px solid #ffb74d; border-radius: 4px; padding: 6px; text-align: center; font-size: 0.8em;">
+            <strong>Espresso DB</strong><br>
+            📄 Replica
+          </div>
+          <div style="background: white; border: 1px solid #ffb74d; border-radius: 4px; padding: 6px; text-align: center; font-size: 0.8em;">
+            <strong>Repl Lag</strong><br>
+            < 30s RPO
+          </div>
+        </div>
+        
+        <div style="margin: 15px 0; text-align: center;">
+          <span style="color: #f57c00; font-size: 1.2em;">⬇️</span>
+          <div style="font-size: 0.8em; color: #666;">4. Promote to active on failover signal</div>
+        </div>
+      </div>
+      
+      <!-- Orchestration Pipeline -->
+      <div style="background: #ffebee; border: 2px solid #f44336; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+          <div style="background: #d32f2f; color: white; padding: 8px 12px; border-radius: 6px; font-weight: 600;">
+            🔄 Orchestration Pipeline
+          </div>
+          <div style="font-size: 0.85em; color: #666;">Staged failover execution</div>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+          <div style="background: white; border: 1px solid #ef5350; border-radius: 4px; padding: 6px; text-align: center; font-size: 0.8em;">
+            <strong>DNS Switch</strong><br>
+            Route 53 update
+          </div>
+          <div style="background: white; border: 1px solid #ef5350; border-radius: 4px; padding: 6px; text-align: center; font-size: 0.8em;">
+            <strong>Traffic Drain</strong><br>
+            Load balancer
+          </div>
+          <div style="background: white; border: 1px solid #ef5350; border-radius: 4px; padding: 6px; text-align: center; font-size: 0.8em;">
+            <strong>DB Promote</strong><br>
+            Primary election
+          </div>
+          <div style="background: white; border: 1px solid #ef5350; border-radius: 4px; padding: 6px; text-align: center; font-size: 0.8em;">
+            <strong>Warm-up</strong><br>
+            Cache population
+          </div>
+        </div>
+      </div>
+      
+      <!-- Failover Timeline -->
+      <div style="background: #fafafa; border: 1px solid #dee2e6; border-radius: 4px; padding: 15px; margin-top: 15px;">
+        <h5 style="color: #c62828; margin-bottom: 10px;">⏱️ Automated Failover Timeline (5-min RTO)</h5>
+        <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.8em; margin-bottom: 10px;">
+          <div style="background: #e3f2fd; padding: 4px 8px; border-radius: 4px; border: 1px solid #90caf9;">
+            <strong>T0:</strong> Failure detected
+          </div>
+          <span style="color: #1976d2;">→</span>
+          <div style="background: #f3e5f5; padding: 4px 8px; border-radius: 4px; border: 1px solid #ce93d8;">
+            <strong>T1:</strong> Raft consensus
+          </div>
+          <span style="color: #7b1fa2;">→</span>
+          <div style="background: #fff3e0; padding: 4px 8px; border-radius: 4px; border: 1px solid #ffb74d;">
+            <strong>T2:</strong> DNS switch
+          </div>
+          <span style="color: #f57c00;">→</span>
+          <div style="background: #e8f5e8; padding: 4px 8px; border-radius: 4px; border: 1px solid #81c784;">
+            <strong>T5:</strong> Full recovery
+          </div>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; font-size: 0.8em; margin-top: 15px;">
+          <div>
+            <strong>DR Protocols:</strong><br>
+            • Raft consensus on TCP 8300<br>
+            • Async replication via Brooklin<br>
+            • DNS update via Route 53<br>
+            • Health checks on HTTPS 443
+          </div>
+          <div>
+            <strong>Key Flows:</strong><br>
+            • Detection: Probes → Decision Controller<br>
+            • Consensus: Raft quorum for failover<br>
+            • Execution: DNS → LB → DB → Apps<br>
+            • Validation: Synthetic tests confirm recovery
+          </div>
+        </div>
+      </div>
+    </div>
+    
     <h4>Core DR Principles</h4>
     <ul>
       <li><strong>Zero Manual Intervention</strong> — Fully automated detection, failover, and recovery</li>
