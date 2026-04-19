@@ -144,6 +144,12 @@
   
   <h3>Detailed LinkedIn Build Cache Architecture — Production Implementation</h3>
 
+  <!-- 5-Phase Build Process with CAS Integration -->
+  <div style="text-align: center; margin: 20px 0;">
+    <img src="/images/build-cache-phases.png" alt="LinkedIn Build Cache 5-Phase Process" style="max-width: 100%; height: auto; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+    <p style="font-size: 0.9em; color: #666; margin-top: 10px; font-style: italic;">5-Phase Build Process: Code → Git → Hash Check → Build/Upload → CAS Integration</p>
+  </div>
+
   <!-- LinkedIn Build Artifact Cache - Detailed Architecture -->
   <div style="background: #f8f9fa; border: 2px solid #ff6f00; border-radius: 12px; padding: 25px; margin: 20px 0;">
     <!-- Title Section -->
@@ -522,6 +528,12 @@
   
   <h3>Artifactory Integration & Cache Layer</h3>
   
+  <!-- Build Cache & Artifactory Integration Diagram -->
+  <div style="text-align: center; margin: 20px 0;">
+    <img src="/images/build-cache-artifactory-flow.png" alt="LinkedIn Build Cache Artifactory Integration Flow" style="max-width: 100%; height: auto; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+    <p style="font-size: 0.9em; color: #666; margin-top: 10px; font-style: italic;">Build Artifact Cache Integration with Artifactory — CAS vs Final Artifacts</p>
+  </div>
+  
   <!-- Artifactory Integration Flow -->
   <div style="background: #e8f4f8; border: 2px solid #0277bd; border-radius: 8px; padding: 20px; margin: 20px 0;">
     <div style="text-align: center; margin-bottom: 15px;">
@@ -631,6 +643,12 @@
 <!-- PAGE 3: RELIABILITY & OPERATIONS -->
 <div class="section">
   <h2>Page 3 — Reliability Patterns & Operations</h2>
+  
+  <!-- Four Key Cache Mechanisms -->
+  <div style="text-align: center; margin: 20px 0;">
+    <img src="/images/build-cache-mechanisms.png" alt="LinkedIn Build Cache Four Key Mechanisms" style="max-width: 100%; height: auto; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+    <p style="font-size: 0.9em; color: #666; margin-top: 10px; font-style: italic;">Four Key Cache Mechanisms: Hit/Miss Paths, Two-Tier Promotion, Lease-Based Protection</p>
+  </div>
   
   <h3>Lease-Based Eviction Prevention</h3>
   
