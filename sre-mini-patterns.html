@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<title>SRE Mini Patterns — Reliability Design Building Blocks</title>
+<style>
+  :root{--bg:#fff;--surface:#f7f6f3;--border:#e3e2de;--text:#37352f;--text-muted:#787774;--accent:#2383e2;--accent2:#0f7b0f;--accent3:#6940a5;--accent4:#d9730d;--red:#e03e3e;--code-bg:#f7f6f3;--card:#fff;--linkedin:#0077b5;--success:#2e7d32;--warning:#f57c00;--error:#d32f2f;--pattern:#7b1fa2}
+  *{margin:0;padding:0;box-sizing:border-box}body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;font-size:15px}
+  .container{max-width:1200px;margin:0 auto;padding:0 24px}.hero{background:linear-gradient(135deg,#7b1fa2,#4a148c);color:#fff;padding:60px 0 40px;text-align:center}.hero h1{font-size:2.4em;font-weight:700;margin-bottom:16px}.hero .subtitle{font-size:1.2em;margin-bottom:20px;opacity:0.9}.hero p{font-size:1.05em;max-width:900px;margin:0 auto 30px;opacity:0.85}.hero .badge{display:inline-block;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);padding:8px 20px;border-radius:25px;font-size:.85em;margin:0 8px}
+  .nav-links{margin-top:25px}.nav-links a{display:inline-block;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);padding:10px 24px;border-radius:8px;color:#fff;text-decoration:none;margin:4px;font-size:.9em;transition:.2s}.nav-links a:hover{background:rgba(255,255,255,0.2)}
+  
+  .toc{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:28px;margin:28px 0;border-left:4px solid var(--pattern)}
+  .toc h2{font-size:1.4em;font-weight:700;color:var(--pattern);margin-bottom:20px}
+  .toc .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+  .toc a{display:block;background:#f8f9fa;border:1px solid #dee2e6;border-radius:8px;padding:12px 16px;text-decoration:none;color:var(--text);transition:all 0.2s}
+  .toc a:hover{background:#e9ecef;border-color:var(--pattern);transform:translateY(-2px)}
+  .toc .pattern-number{font-size:0.85em;font-weight:600;color:var(--pattern);margin-bottom:4px}
+  .toc .pattern-title{font-weight:600;color:var(--text);margin-bottom:6px}
+  .toc .pattern-desc{font-size:0.9em;color:var(--text-muted);line-height:1.4}
+  
+  .pattern{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:28px;margin:40px 0;border-left:4px solid var(--pattern);position:relative}
+  .pattern-header{margin-bottom:20px}
+  .pattern-number{font-size:0.9em;font-weight:600;color:var(--pattern);text-transform:uppercase;letter-spacing:1px}
+  .pattern h2{font-size:1.5em;font-weight:700;color:var(--pattern);margin:8px 0 16px}
+  
+  .incident{background:#ffebee;border:1px solid var(--error);border-radius:8px;padding:16px;margin:16px 0}
+  .incident h4{color:var(--error);margin:0 0 8px;font-size:1.05em}
+  
+  .params{background:#e3f2fd;border:1px solid var(--linkedin);border-radius:8px;padding:16px;margin:16px 0}
+  .params h4{color:var(--linkedin);margin:0 0 8px}
+  
+  .decision{background:#e8f5e9;border:1px solid var(--success);border-radius:8px;padding:16px;margin:16px 0}
+  .decision h4{color:var(--success);margin:0 0 8px}
+  
+  .before-after{background:#fff3e0;border:1px solid var(--warning);border-radius:8px;padding:16px;margin:16px 0}
+  .before-after h4{color:var(--warning);margin:0 0 8px}
+  .before-after .comparison{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:12px}
+  .before{background:#ffebee;padding:12px;border-radius:6px}
+  .before h5{color:var(--error);margin-bottom:8px}
+  .after{background:#e8f5e9;padding:12px;border-radius:6px}
+  .after h5{color:var(--success);margin-bottom:8px}
+  
+  .signal{background:#f3e5f5;border:1px solid var(--pattern);border-radius:8px;padding:16px;margin:16px 0}
+  .signal h4{color:var(--pattern);margin:0 0 8px}
+  .power-phrases{background:#e8eaf6;border:1px solid #3f51b5;border-radius:6px;padding:12px;margin:12px 0}
+  .power-phrases h5{color:#1a237e;margin-bottom:8px}
+  
+  .pitfalls{background:#fff8e1;border:1px solid var(--warning);border-radius:8px;padding:16px;margin:16px 0}
+  .pitfalls h4{color:var(--warning);margin:0 0 8px}
+  
+  .key-metric{background:#e0f2f1;border:1px solid #00695c;border-radius:6px;padding:8px 12px;margin:4px 0;font-family:'JetBrains Mono',monospace;font-size:0.9em}
+  .key-metric .label{color:#004d40;font-weight:600}
+  
+  .trade-off{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:12px 0;font-size:0.9em}
+  .trade-off div{padding:8px 12px;border-radius:6px;text-align:center}
+  .pro{background:#e8f5e9;color:#1b5e20}
+  .neutral{background:#f5f5f5;color:#333}
+  .con{background:#ffebee;color:#c62828}
+  
+  ul{margin:12px 0;padding-left:20px}li{margin:6px 0}
+  .highlight{background:#f3e5f5;padding:2px 6px;border-radius:3px;color:var(--pattern);font-weight:500}
+  code{background:var(--code-bg);border:1px solid var(--border);padding:2px 6px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:.9em}
+  
+  .evaluation{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:28px;margin:40px 0;border-left:4px solid #ff5722}
+  .evaluation h2{color:#d84315;margin-bottom:20px}
+  .score-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;margin-top:20px}
+  .score-item{background:#f8f9fa;border:1px solid #dee2e6;border-radius:8px;padding:16px}
+  .score-title{font-weight:600;color:#d84315;margin-bottom:8px}
+  .score-levels div{margin:4px 0;padding:4px 8px;border-radius:4px;font-size:0.9em}
+  .weak{background:#ffebee;color:#c62828}
+  .strong{background:#fff3e0;color:#e65100}
+  .exceptional{background:#e8f5e9;color:#1b5e20}
+  
+  footer{text-align:center;padding:40px 0;border-top:1px solid var(--border);color:var(--text-muted);font-size:.9em;margin-top:60px}footer a{color:var(--pattern);text-decoration:none}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="container">
+    <h1>SRE Mini Patterns</h1>
+    <div class="subtitle">Reliability Design Building Blocks — Google SRE Interview Essentials</div>
+    <p>Short-form, laser-focused reliability design exercises covering the breadth of building blocks Google expects candidates to know cold. Master these 14 patterns to demonstrate senior-level systems thinking in production incident scenarios.</p>
+    <div class="badge">Production Incidents</div>
+    <div class="badge">SLO-Driven Design</div>
+    <div class="badge">Senior SRE Signals</div>
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="/sre-design-framework.html">Design Framework</a>
+      <a href="/sre-sysdesign.html">SRE Systems</a>
+      <a href="/linkedin-cost-aware-alerting.html">Cost Alerting</a>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+<div class="toc">
+  <h2>📚 14 Essential Reliability Patterns</h2>
+  <div class="grid">
+    <a href="#pattern-1">
+      <div class="pattern-number">Pattern #1</div>
+      <div class="pattern-title">Rate Limiting & Load Shedding</div>
+      <div class="pattern-desc">Protect critical paths by dropping low-priority traffic first during overload</div>
+    </a>
+    <a href="#pattern-2">
+      <div class="pattern-number">Pattern #2</div>
+      <div class="pattern-title">Dead-Letter Queue Recovery</div>
+      <div class="pattern-desc">Isolate poison pills to prevent head-of-line blocking in message processing</div>
+    </a>
+    <a href="#pattern-3">
+      <div class="pattern-number">Pattern #3</div>
+      <div class="pattern-title">Circuit Breakers & Timeouts</div>
+      <div class="pattern-desc">Fail fast to prevent cascading failures when dependencies misbehave</div>
+    </a>
+    <a href="#pattern-4">
+      <div class="pattern-number">Pattern #4</div>
+      <div class="pattern-title">Bulkhead Isolation</div>
+      <div class="pattern-desc">Partition resources so failure in one domain doesn't sink the ship</div>
+    </a>
+    <a href="#pattern-5">
+      <div class="pattern-number">Pattern #5</div>
+      <div class="pattern-title">Multi-Region Replication</div>
+      <div class="pattern-desc">Balance availability vs consistency using CAP theorem in practice</div>
+    </a>
+    <a href="#pattern-6">
+      <div class="pattern-number">Pattern #6</div>
+      <div class="pattern-title">Idempotent Job Scheduling</div>
+      <div class="pattern-desc">At-least-once delivery with replay-safe logic prevents data corruption</div>
+    </a>
+    <a href="#pattern-7">
+      <div class="pattern-number">Pattern #7</div>
+      <div class="pattern-title">Backpressure Signaling</div>
+      <div class="parameter-desc">Producer-consumer coordination to prevent queue overflow and crashes</div>
+    </a>
+    <a href="#pattern-8">
+      <div class="pattern-number">Pattern #8</div>
+      <div class="pattern-title">Distributed Lease Locks</div>
+      <div class="pattern-desc">Leader election with fencing tokens to prevent split-brain scenarios</div>
+    </a>
+    <a href="#pattern-9">
+      <div class="pattern-number">Pattern #9</div>
+      <div class="pattern-title">Cache Warming & Eviction</div>
+      <div class="pattern-desc">Balance staleness vs latency with smart eviction and stampede prevention</div>
+    </a>
+    <a href="#pattern-10">
+      <div class="pattern-number">Pattern #10</div>
+      <div class="pattern-title">Graceful Degradation</div>
+      <div class="pattern-desc">Progressive feature disablement to keep core functionality alive</div>
+    </a>
+    <a href="#pattern-11">
+      <div class="pattern-number">Pattern #11</div>
+      <div class="pattern-title">Control/Data Plane Separation</div>
+      <div class="pattern-desc">Stale-but-available beats fresh-but-down for serving continuity</div>
+    </a>
+    <a href="#pattern-12">
+      <div class="pattern-number">Pattern #12</div>
+      <div class="pattern-title">Error-Budget-Aware Automation</div>
+      <div class="pattern-desc">SLO-driven rollouts that respect burn rates, not just binary failures</div>
+    </a>
+    <a href="#pattern-13">
+      <div class="pattern-number">Pattern #13</div>
+      <div class="pattern-title">Chaos Engineering</div>
+      <div class="pattern-desc">Validate resilience through controlled failure injection and testing</div>
+    </a>
+    <a href="#pattern-14">
+      <div class="pattern-number">Pattern #14</div>
+      <div class="pattern-title">Observability-Driven Design</div>
+      <div class="pattern-desc">Three pillars (logs, metrics, traces) for diagnosing SLO violations</div>
+    </a>
+  </div>
+</div>
+
+<!-- PATTERN 1: RATE LIMITING & LOAD SHEDDING -->
+<div class="pattern" id="pattern-1">
+  <div class="pattern-header">
+    <div class="pattern-number">Mini-Pattern #1</div>
+    <h2>Rate Limiting & Load Shedding</h2>
+  </div>
+  
+  <div class="incident">
+    <h4>🔥 The Production Incident</h4>
+    <p>At 2 AM, a misconfigured partner service starts sending <strong>10× normal request volume</strong> to your payments API. Within minutes, latency for all users spikes, queues back up, and critical checkout requests start timing out. Analytics and logging traffic, sharing the same pathway, consume half the available capacity. What should have been an isolated partner misfire now threatens global availability.</p>
+  </div>
+  
+  <div class="params">
+    <h4>🎯 Key Parameters & Metrics</h4>
+    <div class="key-metric"><span class="label">maxRequestsPerSecond:</span> Global capacity cap</div>
+    <div class="key-metric"><span class="label">perClientQuota:</span> Fair share enforcement per tenant</div>
+    <div class="key-metric"><span class="label">dropPolicy:</span> Priority order (analytics → recommendations → checkout = never)</div>
+    
+    <h5>Critical SLIs to Track:</h5>
+    <ul>
+      <li><strong>p95/p99 request latency</strong> — Primary user experience metric</li>
+      <li><strong>Error rate from throttled requests</strong> — Measure dropped vs served</li>
+      <li><strong>% critical vs non-critical traffic preserved</strong> — Load shedding effectiveness</li>
+    </ul>
+  </div>
+  
+  <div class="decision">
+    <h4>🧠 The Decision Framework</h4>
+    <p>A senior SRE frames rate limiting with these questions:</p>
+    <ul>
+      <li><strong>What is the reliability goal?</strong> Protect user-facing critical paths (checkout) at all costs</li>
+      <li><strong>Who should be protected?</strong> Should all clients be throttled equally, or do trusted/paid tenants get higher quota?</li>
+      <li><strong>How should limits adapt?</strong> Static caps often fail; should you tie quotas to observed system load?</li>
+      <li><strong>What happens to dropped requests?</strong> Are they logged, retried, or silently dropped?</li>
+    </ul>
+  </div>
+  
+  <div class="before-after">
+    <h4>🔄 Failure Simulation (Before vs After)</h4>
+    <div class="comparison">
+      <div class="before">
+        <h5>❌ BEFORE (No Rate Limiting)</h5>
+        <ul>
+          <li>Single client's flood consumes 80% of capacity</li>
+          <li>Critical API calls (checkout, login) see 30% errors</li>
+          <li>Error budget for entire quarter burned in one hour</li>
+          <li>SEV-1 global outage declared</li>
+        </ul>
+      </div>
+      <div class="after">
+        <h5>✅ AFTER (Smart Rate Limiting)</h5>
+        <ul>
+          <li>Rate limiter enforces per-client quotas</li>
+          <li>Excess requests from bad actor dropped first</li>
+          <li>Load shedding protects critical traffic (checkout)</li>
+          <li>Incident downgraded from SEV-1 to SEV-3</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  
+  <div class="signal">
+    <h4>🎯 The Senior SRE Signal: How to Talk About It</h4>
+    <p><strong>"I'd introduce rate limiting not just to cap load, but as a load-shedding mechanism. That means protecting critical user journeys (checkout, login) while gracefully dropping lower-priority traffic like analytics. I'd track this with per-client quotas and dashboards showing the % of traffic preserved by priority class. The goal isn't just survival — it's preserving reliability where it matters most."</strong></p>
+    
+    <div class="power-phrases">
+      <h5>💡 Interview Power Phrases</h5>
+      <ul>
+        <li>"Load shedding is about <span class="highlight">surgical precision</span>, not blunt rejection"</li>
+        <li>"Rate limits must be <span class="highlight">SLO-aware</span>, not just throughput-aware"</li>
+        <li>"Drop analytics before you drop revenue-generating traffic"</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- PATTERN 2: DEAD-LETTER QUEUE -->
+<div class="pattern" id="pattern-2">
+  <div class="pattern-header">
+    <div class="pattern-number">Mini-Pattern #2</div>
+    <h2>Dead-Letter Queue (DLQ) Recovery</h2>
+  </div>
+  
+  <div class="incident">
+    <h4>🔥 The Production Incident</h4>
+    <p>A tiny schema change slips into the payments producer: the <code>amount_cents</code> field moves from <code>int</code> to <code>string</code>. One malformed message lands on a hot partition. Your consumer tries to unmarshal, panics, restarts, immediately re-reads the same <strong>poison pill</strong>, panics again... repeat. The partition starves; valid payments queue behind the bad one, backpressure propagates upstream, and your "payments processed per minute" SLI craters.</p>
+  </div>
+  
+  <div class="params">
+    <h4>🎯 Key Parameters & Metrics</h4>
+    <div class="key-metric"><span class="label">maxRetries:</span> 3-5 tries before quarantining</div>
+    <div class="key-metric"><span class="label">retryBackoff:</span> Exponential with jitter (base=200ms, factor=2.0, ±20%)</div>
+    <div class="key-metric"><span class="label">classificationRules:</span> Deterministic predicates for retryable vs non-retryable</div>
+    <div class="key-metric"><span class="label">dlqTopic:</span> Separate, isolated destination with 7-14 day retention + encryption</div>
+    
+    <h5>Critical SLIs to Track:</h5>
+    <ul>
+      <li><strong>dlq_ingress_rate</strong> — Messages/min routed to DLQ</li>
+      <li><strong>dlq_oldest_message_age</strong> — Age of oldest unprocessed DLQ item</li>
+      <li><strong>main_pipeline_latency</strong> — Prove DLQ protects primary flow</li>
+      <li><strong>reprocess_success_rate</strong> — % of DLQ items successfully repaired</li>
+    </ul>
+  </div>
+  
+  <div class="decision">
+    <h4>🧠 The Decision Framework (Senior Engineer's Checklist)</h4>
+    <ol>
+      <li><strong>Correctness vs. Latency:</strong> Block until fixed, or quarantine and keep flowing?</li>
+      <li><strong>Deterministic vs. Transient Failures:</strong> Schema violations → DLQ fast; network blips → retry</li>
+      <li><strong>Idempotency on Reprocess:</strong> Can we safely re-insert without double-charging?</li>
+      <li><strong>Isolation of Remediation:</strong> Separate worker pool prevents noisy-neighbor effects</li>
+      <li><strong>Order Guarantees:</strong> Will DLQ detours affect business logic (updates before creates)?</li>
+    </ol>
+  </div>
+  
+  <div class="before-after">
+    <h4>🔄 Failure Simulation (Before vs After)</h4>
+    <div class="comparison">
+      <div class="before">
+        <h5>❌ BEFORE (No DLQ)</h5>
+        <ul>
+          <li>Poison message wedges hot partition</li>
+          <li>Consumer crash-loop → throughput collapses</li>
+          <li>Backpressure propagates; producers timeout</li>
+          <li>Several minutes of SLO burn; incident escalates</li>
+        </ul>
+      </div>
+      <div class="after">
+        <h5>✅ AFTER (With DLQ)</h5>
+        <ul>
+          <li>Consumer classifies error as non-retryable quickly</li>
+          <li>Message quarantined with full context</li>
+          <li>Main pipeline continues at full throughput</li>
+          <li>Separate DLQ-reprocessor handles remediation safely</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  
+  <div class="signal">
+    <h4>🎯 The Senior SRE Signal: How to Talk About It</h4>
+    <p><strong>"I use a DLQ to protect availability of the primary pipeline. We classify errors deterministically; non-retryables are routed to a DLQ quickly to prevent head-of-line blocking. The DLQ is isolated (own topic, workers, and quotas) and observable — we track ingress and oldest-age as SLIs with a runbook SLA. Reprocessing is idempotent by design, using keys so we don't double-charge. This turns a single bad message from a SEV-1 into routine hygiene without user impact."</strong></p>
+    
+    <div class="power-phrases">
+      <h5>💡 Interview Power Phrases</h5>
+      <ul>
+        <li>"DLQ isolates poison pills so <span class="highlight">healthy traffic never stalls</span>"</li>
+        <li>"We measure oldest-message age as the <span class="highlight">SLA for operational follow-up</span>"</li>
+        <li>"Reprocessing runs in a <span class="highlight">separate worker pool</span> with idempotency guarantees"</li>
+        <li>"Classification rules prevent <span class="highlight">infinite retry loops</span> and alert on schema regressions"</li>
+      </ul>
+    </div>
+  </div>
+  
+  <div class="pitfalls">
+    <h4>⚠️ Common Pitfalls to Avoid</h4>
+    <ul>
+      <li><strong>Same consumers read DLQ</strong> — They'll crash again on the same poison pill</li>
+      <li><strong>No alerting on DLQ growth</strong> — Silent failure mode, oldest age unbounded</li>
+      <li><strong>Re-injecting without idempotency</strong> — Duplicates create financial/compliance risk</li>
+      <li><strong>Treating DLQ as trashcan</strong> — Should be work queue with operational SLA</li>
+    </ul>
+  </div>
+</div>
+
+<!-- PATTERN 3: CIRCUIT BREAKERS -->
+<div class="pattern" id="pattern-3">
+  <div class="pattern-header">
+    <div class="pattern-number">Mini-Pattern #3</div>
+    <h2>Circuit Breakers & Adaptive Timeouts</h2>
+  </div>
+  
+  <div class="incident">
+    <h4>🔥 The Production Incident</h4>
+    <p>Your checkout service calls the payment processor API. One afternoon, the processor begins responding intermittently with <strong>5s latency</strong> instead of the usual 200ms. Your threads block, queues fill, and very quickly every call from checkout → payments is stuck waiting. The domino effect spreads: shopping cart updates, order confirmation, even inventory reservations all start timing out. Without a circuit breaker, you exhaust threads on cascading timeouts.</p>
+  </div>
+  
+  <div class="params">
+    <h4>🎯 Key Parameters & Metrics</h4>
+    <div class="key-metric"><span class="label">timeout:</span> Max wait per call (1-2× p99 latency of dependency)</div>
+    <div class="key-metric"><span class="label">failureThreshold:</span> Fraction of recent calls to fail before trip (>50% in last 20)</div>
+    <div class="key-metric"><span class="label">cooldownPeriod:</span> Time before allowing test retries (30s)</div>
+    <div class="key-metric"><span class="label">halfOpenRequests:</span> Number of test calls during recovery validation</div>
+    
+    <h5>Critical SLIs to Track:</h5>
+    <ul>
+      <li><strong>dependency_call_latency</strong> — p95/p99 to downstream service</li>
+      <li><strong>circuit_open_ratio</strong> — % of time breaker is open (SLO metric)</li>
+      <li><strong>fallback_success_rate</strong> — How often degraded logic succeeds</li>
+      <li><strong>timeout_miss</strong> — % requests exceeding breaker vs client timeout</li>
+    </ul>
+  </div>
+  
+  <div class="decision">
+    <h4>🧠 The Decision Framework</h4>
+    <p>Senior SRE questions before adding a circuit breaker:</p>
+    <ol>
+      <li><strong>Static vs. Adaptive Timeout:</strong> Use adaptive timeout based on rolling p99 of last 5 min</li>
+      <li><strong>Fail Fast vs. Retry:</strong> What's worse — dropping requests early, or retry storms?</li>
+      <li><strong>Fallback Strategy:</strong> Graceful degradation path?
+        <ul>
+          <li>Checkout: queue order for manual retry</li>
+          <li>Recommendations: return cached suggestions</li>
+          <li>Analytics: drop low-priority events</li>
+        </ul>
+      </li>
+      <li><strong>Blast Radius:</strong> Place breaker at edge of dependency, or upstream to prevent cascades?</li>
+    </ol>
+  </div>
+  
+  <div class="before-after">
+    <h4>🔄 Failure Simulation (Before vs After)</h4>
+    <div class="comparison">
+      <div class="before">
+        <h5>❌ BEFORE (No Breaker)</h5>
+        <ul>
+          <li>Dependency slows from 200ms → 5s</li>
+          <li>Threads exhaust waiting; upstream queues</li>
+          <li>Retries amplify load → both systems collapse</li>
+          <li>Full system outage in <10 minutes</li>
+        </ul>
+      </div>
+      <div class="after">
+        <h5>✅ AFTER (With Breaker)</h5>
+        <ul>
+          <li>Latency spike detected → breaker trips</li>
+          <li>New requests fail fast (<50ms) with graceful fallback</li>
+          <li>Dependency has time to recover</li>
+          <li>Half-open probes auto-heal when stable</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  
+  <div class="signal">
+    <h4>🎯 The Senior SRE Signal: How to Talk About It</h4>
+    <p><strong>"I'd implement a client-side circuit breaker with adaptive timeouts to prevent cascading failures. The timeout must be shorter than the client's to fail fast and avoid wasted waiting. Once failure rate crosses a threshold, the breaker opens, routing calls to a fallback handler that provides degraded but acceptable service. We'd monitor circuit_open_ratio as an SLI and alert if it exceeds our error budget."</strong></p>
+    
+    <div class="power-phrases">
+      <h5>💡 Interview Power Phrases</h5>
+      <ul>
+        <li>"Breaker isolates failure, preventing <span class="highlight">retry storms and thread exhaustion</span>"</li>
+        <li>"Timeouts should <span class="highlight">adapt to observed p99 latency</span>, not be hardcoded"</li>
+        <li>"A <span class="highlight">half-open state</span> is critical to verify recovery safely"</li>
+        <li>"Fallback logic must be safe and explicit, not silently skip <span class="highlight">critical business logic</span>"</li>
+      </ul>
+    </div>
+  </div>
+  
+  <div class="pitfalls">
+    <h4>⚠️ Common Pitfalls to Avoid</h4>
+    <ul>
+      <li><strong>Breaker timeout > client timeout</strong> — Pointless, client will timeout first</li>
+      <li><strong>No fallback</strong> — Breaker turns outage into instant failure without mitigation</li>
+      <li><strong>Silent bypasses</strong> — Approving payment without processor check</li>
+      <li><strong>Forgetting jitter on cooldown</strong> — Thundering herd when all instances probe together</li>
+    </ul>
+  </div>
+</div>
+
+<!-- PATTERN 4: BULKHEAD ISOLATION -->
+<div class="pattern" id="pattern-4">
+  <div class="pattern-header">
+    <div class="pattern-number">Mini-Pattern #4</div>
+    <h2>Bulkhead Isolation (Preventing Cascading Failures)</h2>
+  </div>
+  
+  <div class="incident">
+    <h4>🔥 The Production Incident</h4>
+    <p>Your multi-tenant service hosts both critical <strong>checkout traffic</strong> and background <strong>analytics jobs</strong> on the same thread pool. One day, analytics receives a sudden spike—millions of batch events from a partner's misconfigured ETL job. The threads saturate, queues balloon, and soon checkout requests are waiting behind analytics jobs. Your latency SLOs for checkout (p95 < 200ms) are obliterated, and customers can't purchase.</p>
+  </div>
+  
+  <div class="params">
+    <h4>🎯 Key Parameters & Metrics</h4>
+    <div class="key-metric"><span class="label">Thread pool segmentation:</span> Separate pools per service tier</div>
+    <div class="key-metric"><span class="label">Queue depth limits:</span> Independent max sizes per partition</div>
+    <div class="key-metric"><span class="label">Resource quotas:</span> CPU, memory, node pools by function</div>
+    
+    <h5>Critical SLIs to Track:</h5>
+    <ul>
+      <li><strong>checkout_latency_p95</strong> — Must remain within 200ms under stress</li>
+      <li><strong>analytics_queue_depth</strong> — Alert if backlog exceeds N messages</li>
+      <li><strong>bulkhead_violation_rate</strong> — % requests denied due to partition exhaustion</li>
+    </ul>
+  </div>
+  
+  <div class="decision">
+    <h4>🧠 The Decision Framework</h4>
+    <p>Before implementing bulkheads, senior SREs ask:</p>
+    <ol>
+      <li><strong>Which workloads can be co-located safely?</strong> Latency-critical vs batch must be split</li>
+      <li><strong>At what level to apply bulkheads?</strong>
+        <ul>
+          <li>Thread pools (per service process)</li>
+          <li>Containers (per workload type)</li>
+          <li>Entire clusters (prod-critical vs prod-noncritical)</li>
+        </ul>
+      </li>
+      <li><strong>What happens when partition exhausted?</strong> Reject immediately, defer to DLQ, or graceful degradation?</li>
+    </ol>
+  </div>
+  
+  <div class="before-after">
+    <h4>🔄 Failure Simulation (Before vs After)</h4>
+    <div class="comparison">
+      <div class="before">
+        <h5>❌ BEFORE (Shared Resources)</h5>
+        <ul>
+          <li>Analytics job spikes consume all threads</li>
+          <li>Checkout requests pile up → timeout</li>
+          <li>Revenue-impacting outage declared</li>
+          <li>SLO violation cascades globally</li>
+        </ul>
+      </div>
+      <div class="after">
+        <h5>✅ AFTER (With Bulkheads)</h5>
+        <ul>
+          <li>Analytics threads saturate only their pool</li>
+          <li>Checkout pool remains isolated at normal SLO</li>
+          <li>Analytics queue depth alert fires</li>
+          <li>Revenue flow protected during partner issue</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  
+  <div class="signal">
+    <h4>🎯 The Senior SRE Signal: How to Talk About It</h4>
+    <p><strong>"I'd enforce bulkhead isolation between latency-critical and best-effort workloads. For example, checkout would have a dedicated thread pool with strict queue depth limits. Even if analytics floods, checkout SLOs remain intact. We'd monitor per-partition queue depths and add alerting. Bulkheads act as blast radius limiters—they ensure that failure in one partition doesn't sink the entire service."</strong></p>
+    
+    <div class="power-phrases">
+      <h5>💡 Interview Power Phrases</h5>
+      <ul>
+        <li>"Bulkheads are about <span class="highlight">failure domain isolation</span>"</li>
+        <li>"Protect <span class="highlight">revenue-critical workloads</span> from best-effort ones"</li>
+        <li>"Apply at multiple layers: <span class="highlight">threads, containers, clusters</span>"</li>
+        <li>"Queue limits must be explicit, or bulkheads <span class="highlight">silently fail</span>"</li>
+      </ul>
+    </div>
+  </div>
+  
+  <div class="pitfalls">
+    <h4>⚠️ Common Pitfalls to Avoid</h4>
+    <ul>
+      <li><strong>No fallback for rejected requests</strong> — Bulkhead becomes a black hole</li>
+      <li><strong>Over-partitioning</strong> — Wasted capacity due to unused pool quotas</li>
+      <li><strong>Silent bleed-over</strong> — One service sneaks into another's pool via config drift</li>
+      <li><strong>No per-partition monitoring</strong> — Leaves you blind to queue depth problems</li>
+    </ul>
+  </div>
+</div>
+
+<!-- PATTERN 5: MULTI-REGION REPLICATION -->
+<div class="pattern" id="pattern-5">
+  <div class="pattern-header">
+    <div class="pattern-number">Mini-Pattern #5</div>
+    <h2>Multi-Region Replication (CAP Theorem in Practice)</h2>
+  </div>
+  
+  <div class="incident">
+    <h4>🔥 The Production Incident</h4>
+    <p>Google Photos experiences a regional datacenter outage in Europe. Users try to upload pictures, but replication is <strong>synchronous across three regions</strong>. The outage blocks consensus, causing writes to stall worldwide—uploads fail, and reliability SLOs are instantly violated. Alternatively, if replication were asynchronous, users could upload during the outage, but later some metadata updates might be missing. A user deletes a photo in Europe, but when they travel to the U.S., it still appears.</p>
+  </div>
+  
+  <div class="params">
+    <h4>🎯 Key Parameters & Metrics</h4>
+    <div class="key-metric"><span class="label">Synchronous:</span> Strong consistency - writes wait for all replicas</div>
+    <div class="key-metric"><span class="label">Asynchronous:</span> Eventual consistency - local ack, replicas catch up</div>
+    <div class="key-metric"><span class="label">Quorum:</span> Middle ground - majority acknowledgment (2 of 3)</div>
+    
+    <h5>Critical SLIs to Track:</h5>
+    <ul>
+      <li><strong>p95_write_latency</strong> — < 100ms global target</li>
+      <li><strong>replication_lag_seconds</strong> — < 5s for async mode</li>
+      <li><strong>data_consistency_error_rate</strong> — < 0.1% stale reads across regions</li>
+    </ul>
+  </div>
+  
+  <div class="decision">
+    <h4>🧠 The Decision Framework</h4>
+    <p>A senior SRE frames the trade-offs by asking:</p>
+    <ol>
+      <li><strong>What's the user impact of stale data?</strong> Bank balances must be consistent; profile photos can be eventual</li>
+      <li><strong>How much availability is acceptable?</strong> During outage: serve stale data (availability) or fail writes (consistency)?</li>
+      <li><strong>How do we measure and enforce this?</strong> Replication lag SLIs and error budgets must align with strategy</li>
+    </ol>
+  </div>
+  
+  <div class="before-after">
+    <h4>🔄 Failure Simulation (Before vs After)</h4>
+    <div class="comparison">
+      <div class="before">
+        <h5>❌ BEFORE (Synchronous-only)</h5>
+        <ul>
+          <li>Europe datacenter outage occurs</li>
+          <li>Global write traffic stalls waiting for consensus</li>
+          <li>write_latency_p95 spikes 80ms → 5s → timeouts</li>
+          <li>Global outage declared</li>
+        </ul>
+      </div>
+      <div class="after">
+        <h5>✅ AFTER (Quorum + Async Hybrid)</h5>
+        <ul>
+          <li>Europe datacenter outage occurs</li>
+          <li>Quorum of U.S. + Asia replicas accepts writes</li>
+          <li>Users continue uploading (availability preserved)</li>
+          <li>3s replication lag flagged; Europe catches up on recovery</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  
+  <div class="signal">
+    <h4>🎯 The Senior SRE Signal: How to Talk About It</h4>
+    <p><strong>"I'd apply multi-region replication with quorum writes. This ensures global availability even during a regional outage while keeping replication lag bounded. For user-facing features where consistency is non-critical, we'd allow async reads. For critical features like billing, we'd enforce strong consistency. The system's error budget policy would explicitly define when async consistency is acceptable."</strong></p>
+    
+    <div class="power-phrases">
+      <h5>💡 Interview Power Phrases</h5>
+      <ul>
+        <li>"We choose replication strategy based on <span class="highlight">user promise defined in SLOs</span>, not technology"</li>
+        <li>"<span class="highlight">Async replication buys availability</span> at the cost of staleness"</li>
+        <li>"<span class="highlight">Quorum-based consensus</span> is the middle ground"</li>
+        <li>"Every replication strategy must map to <span class="highlight">explicit SLOs and error budgets</span>"</li>
+      </ul>
+    </div>
+  </div>
+  
+  <div class="pitfalls">
+    <h4>⚠️ Common Pitfalls to Avoid</h4>
+    <ul>
+      <li><strong>Treating all data equally</strong> — Not everything needs strong consistency</li>
+      <li><strong>No replication lag monitoring</strong> — Async is useless without visibility</li>
+      <li><strong>Mixing critical/non-critical</strong> — Don't use same replication mode for billing and photos</li>
+      <li><strong>Undefined "eventual"</strong> — Must define what "eventual" means in measurable SLO terms</li>
+    </ul>
+  </div>
+</div>
+
+<!-- PATTERN 6: IDEMPOTENT JOB SCHEDULING -->
+<div class="pattern" id="pattern-6">
+  <div class="pattern-header">
+    <div class="pattern-number">Mini-Pattern #6</div>
+    <h2>Idempotent Job Scheduling (At-Least-Once vs. Exactly-Once)</h2>
+  </div>
+  
+  <div class="incident">
+    <h4>🔥 The Production Incident</h4>
+    <p>A global ad-serving system schedules jobs to bill advertisers for impressions. A transient network failure causes the scheduler to retry a billing event twice, and the advertiser gets <strong>double-billed</strong>. Outrage ensues. Conversely, imagine the job crashes mid-process and never retries—the advertiser isn't billed at all, costing millions in lost revenue. This is the classic distributed systems problem: you cannot guarantee "exactly-once" delivery in unreliable networks.</p>
+  </div>
+  
+  <div class="params">
+    <h4>🎯 Key Parameters & Metrics</h4>
+    <div class="key-metric"><span class="label">At-least-once:</span> Jobs may be retried; duplicates possible</div>
+    <div class="key-metric"><span class="label">At-most-once:</span> Jobs may be lost; no duplicates</div>
+    <div class="key-metric"><span class="label">Exactly-once:</span> The "holy grail" — theoretically impossible</div>
+    <div class="key-metric"><span class="label">Idempotency Keys:</span> Unique identifier for each job request</div>
+    <div class="key-metric"><span class="label">Deduplication Store:</span> Tracks processed keys</div>
+    
+    <h5>Critical SLIs to Track:</h5>
+    <ul>
+      <li><strong>duplicate_job_rate</strong> — < 0.01% of total jobs</li>
+      <li><strong>missed_job_rate</strong> — < 0.001% lost jobs</li>
+      <li><strong>processing_latency_p95</strong> — < 100ms including dedup lookup</li>
+    </ul>
+  </div>
+  
+  <div class="decision">
+    <h4>🧠 The Decision Framework</h4>
+    <p>When deciding how to schedule jobs, senior SREs ask:</p>
+    <ol>
+      <li><strong>What's the failure mode cost?</strong> Double-billing unacceptable → must design for idempotency</li>
+      <li><strong>How are jobs uniquely identified?</strong> Without strong identifiers, retries = duplicates</li>
+      <li><strong>Do retries introduce state corruption?</strong> Jobs updating shared state require idempotency design</li>
+    </ol>
+  </div>
+  
+  <div class="before-after">
+    <h4>🔄 Failure Simulation (Before vs After)</h4>
+    <div class="comparison">
+      <div class="before">
+        <h5>❌ BEFORE (Non-Idempotent)</h5>
+        <ul>
+          <li>Job: "increment ad balance by $10"</li>
+          <li>Scheduler retries twice due to timeout</li>
+          <li>Advertiser charged $30 instead of $10</li>
+          <li>Outage-level customer impact</li>
+        </ul>
+      </div>
+      <div class="after">
+        <h5>✅ AFTER (Idempotent with Keys)</h5>
+        <ul>
+          <li>Job includes idempotency_key=ABC123</li>
+          <li>Scheduler retries twice due to timeout</li>
+          <li>Deduplication layer sees ABC123 already processed</li>
+          <li>Advertiser charged correctly: $10</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  
+  <div class="signal">
+    <h4>🎯 The Senior SRE Signal: How to Talk About It</h4>
+    <p><strong>"The correct strategy is to design every scheduled job as idempotent. That means instead of saying 'increment balance by $10,' the job says 'set balance to $current + $10, identified by idempotency_key=ABC123.' The backend records processed keys in a deduplication store, ensuring retries don't corrupt state. This aligns with distributed system truth: at-least-once delivery with idempotent logic is the practical path to reliability."</strong></p>
+    
+    <div class="power-phrases">
+      <h5>💡 Interview Power Phrases</h5>
+      <ul>
+        <li>"True exactly-once is a myth; <span class="highlight">idempotency simulates it safely</span>"</li>
+        <li>"Retries are inevitable; design your jobs so <span class="highlight">retries are harmless</span>"</li>
+        <li>"Every job needs a <span class="highlight">unique key and replay-safe design</span>"</li>
+        <li>"Error budgets often tolerate retries but not <span class="highlight">missed state updates</span>"</li>
+      </ul>
+    </div>
+  </div>
+  
+  <div class="pitfalls">
+    <h4>⚠️ Common Pitfalls to Avoid</h4>
+    <ul>
+      <li><strong>Claiming exactly-once delivery</strong> — Immediate red flag for senior SREs</li>
+      <li><strong>No unique identifiers</strong> — Without idempotency keys, retries corrupt data</li>
+      <li><strong>Ignoring latency trade-offs</strong> — Deduplication adds cost; must measure impact</li>
+      <li><strong>Blanket idempotency</strong> — Not every job requires it, only critical state updates</li>
+    </ul>
+  </div>
+</div>
+
+<!-- PATTERN 7: BACKPRESSURE SIGNALING -->
+<div class="pattern" id="pattern-7">
+  <div class="pattern-header">
+    <div class="pattern-number">Mini-Pattern #7</div>
+    <h2>Backpressure Signaling (Producer–Consumer Coordination)</h2>
+  </div>
+  
+  <div class="incident">
+    <h4>🔥 The Production Incident</h4>
+    <p>At Google Cloud Pub/Sub, a producer floods a topic with <strong>1M messages per second</strong>, but consumers can only process 200K/sec. Queues grow uncontrollably, memory spikes, and eventually consumers crash under OOM errors. In another variant: a backend gRPC service under traffic surge keeps accepting requests until its thread pool is exhausted. Latency explodes, SLOs breach, and the entire dependency chain collapses.</p>
+  </div>
+  
+  <div class="params">
+    <h4>🎯 Key Parameters & Metrics</h4>
+    <div class="key-metric"><span class="label">Implicit Backpressure:</span> Queue length, TCP window, resource saturation</div>
+    <div class="key-metric"><span class="label">Explicit Backpressure:</span> HTTP 429, gRPC RESOURCE_EXHAUSTED</div>
+    
+    <h5>Critical SLIs to Track:</h5>
+    <ul>
+      <li><strong>queue_length_p95</strong> — Should remain < 80% capacity threshold</li>
+      <li><strong>request_drop_rate</strong> — < 0.01% under traffic surge</li>
+      <li><strong>consumer_latency_p95</strong> — < 200ms processing time</li>
+    </ul>
+  </div>
+  
+  <div class="decision">
+    <h4>🧠 The Decision Framework</h4>
+    <p>When designing for backpressure, senior SREs ask:</p>
+    <ol>
+      <li><strong>What should the system do when overwhelmed?</strong> Queue messages, shed low-priority load, or fail fast?</li>
+      <li><strong>Is explicit feedback better than implicit?</strong> Can producers adapt to consumer signals (429)?</li>
+      <li><strong>How do we prevent cascading failures?</strong> Can surge in one region kill global availability?</li>
+    </ol>
+  </div>
+  
+  <div class="before-after">
+    <h4>🔄 Failure Simulation (Before vs After)</h4>
+    <div class="comparison">
+      <div class="before">
+        <h5>❌ BEFORE (No Backpressure)</h5>
+        <ul>
+          <li>Producers overwhelm consumers with unbounded requests</li>
+          <li>Queue grows unbounded → memory spikes → crashes</li>
+          <li>Latency SLO breach → global outage</li>
+        </ul>
+      </div>
+      <div class="after">
+        <h5>✅ AFTER (Explicit + Implicit)</h5>
+        <ul>
+          <li>Consumers return 429 once queue > 80% capacity</li>
+          <li>Producers throttle or shed low-priority traffic</li>
+          <li>Consumer stays healthy, processes 200K/sec steady</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  
+  <div class="signal">
+    <h4>🎯 The Senior SRE Signal: How to Talk About It</h4>
+    <p><strong>"I'd design for explicit backpressure — when a consumer queue exceeds a safe threshold, it returns HTTP 429 or gRPC RESOURCE_EXHAUSTED. Producers must respect this signal and throttle. We'd complement with implicit signals (queue length, CPU utilization) to shed load gracefully. The goal isn't just keeping the consumer alive — it's protecting the system's overall reliability under surge."</strong></p>
+    
+    <div class="power-phrases">
+      <h5>💡 Interview Power Phrases</h5>
+      <ul>
+        <li>"Backpressure is about <span class="highlight">safe failure under overload</span>"</li>
+        <li>"<span class="highlight">429 isn't an error</span>; it's a reliability tool"</li>
+        <li>"You must prevent <span class="highlight">cascading failures</span> across the dependency graph"</li>
+        <li>"<span class="highlight">Load shedding low-value traffic first</span> is a senior-level move"</li>
+      </ul>
+    </div>
+  </div>
+  
+  <div class="pitfalls">
+    <h4>⚠️ Common Pitfalls to Avoid</h4>
+    <ul>
+      <li><strong>Implicit backpressure only</strong> — TCP queues alone are too opaque</li>
+      <li><strong>Not shedding load selectively</strong> — Dropping critical before analytics = red flag</li>
+      <li><strong>No upstream propagation</strong> — Backpressure must flow to the source</li>
+      <li><strong>Treating 429 as failure</strong> — Actually a controlled reliability mechanism</li>
+    </ul>
+  </div>
+</div>
+
+<!-- Continue with remaining patterns in similar format... -->
+
+<!-- PATTERN 8: DISTRIBUTED LEASE LOCKS -->
+<div class="pattern" id="pattern-8">
+  <div class="pattern-header">
+    <div class="pattern-number">Mini-Pattern #8</div>
+    <h2>Distributed Lease Locks (Leader Election & Split-Brain Prevention)</h2>
+  </div>
+  
+  <div class="incident">
+    <h4>🔥 The Production Incident</h4>
+    <p>Consider Google Spanner or Borg cluster managers. Two nodes simultaneously believe they are the <strong>primary leader</strong> for scheduling jobs. Both issue commands to the same worker pool: one schedules batch jobs, the other schedules user-facing requests. The result? Conflicting writes, duplicate work, and potential data corruption. This is the split-brain problem: multiple nodes act as leaders due to network partitions, clock drift, or failed heartbeats.</p>
+  </div>
+  
+  <div class="params">
+    <h4>🎯 Key Parameters & Metrics</h4>
+    <div class="key-metric"><span class="label">Lease Duration (TTL):</span> How long leadership is valid (10s)</div>
+    <div class="key-metric"><span class="label">Renewal Interval:</span> How often leader refreshes lease</div>
+    <div class="key-metric"><span class="label">Fencing Tokens:</span> Monotonic version numbers prevent stale leaders</div>
+    
+    <h5>Critical SLIs to Track:</h5>
+    <ul>
+      <li><strong>leader_election_time_p95</strong> — < 2s during failover</li>
+      <li><strong>split_brain_incidents</strong> — 0 tolerated</li>
+      <li><strong>availability_during_failover</strong> — > 99.9%</li>
+    </ul>
+  </div>
+  
+  <div class="signal">
+    <h4>🎯 The Senior SRE Signal: How to Talk About It</h4>
+    <p><strong>"Leader election isn't just about choosing a leader — it's about preventing split-brain scenarios. I'd implement lease-based locks with short TTLs and enforce fencing tokens so that even if an old leader comes back after a partition, its commands are rejected by workers that only honor the latest fencing token. This pattern ensures consistency, availability, and safety under failure."</strong></p>
+  </div>
+</div>
+
+<!-- PATTERN 9: CACHE WARMING & EVICTION -->
+<div class="pattern" id="pattern-9">
+  <div class="pattern-header">
+    <div class="pattern-number">Mini-Pattern #9</div>
+    <h2>Cache Warming & Eviction (Staleness vs. Latency Trade-off)</h2>
+  </div>
+  
+  <div class="incident">
+    <h4>🔥 The Production Incident</h4>
+    <p>A Google Search autocomplete service relies heavily on caching hot queries. Suddenly, the cache evicts too aggressively (using LRU), and every keystroke query hits the backend database. Latency spikes from <strong>20ms → 500ms</strong>, and global CPU usage on the DB tier jumps to 90%. SLOs breach in under a minute. In the opposite case, cache entries linger too long—a user changes their email, but the cache serves the old address for hours.</p>
+  </div>
+  
+  <div class="signal">
+    <h4>🎯 The Senior SRE Signal: How to Talk About It</h4>
+    <p><strong>"Caching isn't just about performance — it's a reliability strategy. I'd implement hybrid eviction (LFU+TTL) and enforce stale-while-revalidate so users see consistent performance while data refreshes. To prevent outages, we'd use pre-warming of hot keys and cache stampede protection. Every cache design must explicitly tie back to SLIs like hit ratio, latency, and staleness error rate."</strong></p>
+  </div>
+</div>
+
+<!-- PATTERN 10: GRACEFUL DEGRADATION -->
+<div class="pattern" id="pattern-10">
+  <div class="pattern-header">
+    <div class="pattern-number">Mini-Pattern #10</div>
+    <h2>Graceful Degradation (Progressive Feature Disablement)</h2>
+  </div>
+  
+  <div class="incident">
+    <h4>🔥 The Production Incident</h4>
+    <p>Picture YouTube during a sudden global surge (breaking news livestream). Traffic spikes <strong>5× in under 10 minutes</strong>. Without graceful degradation, the backend fails uniformly: watch pages don't load, thumbnails vanish, and the entire site goes down. Instead, with graceful degradation, YouTube can sacrifice non-critical features (recommendations, comments, HD streams) while keeping core video playback alive.</p>
+  </div>
+  
+  <div class="signal">
+    <h4>🎯 The Senior SRE Signal: How to Talk About It</h4>
+    <p><strong>"Graceful degradation is about failing safely. I'd design tiered services where Tier 1 features (core path) are isolated and protected. Using feature flags, we can progressively disable Tier 2 and Tier 3 features under surge, ensuring the site still delivers essential functionality. The goal is: better a degraded service than a dead service."</strong></p>
+  </div>
+</div>
+
+<!-- PATTERN 11: CONTROL/DATA PLANE SEPARATION -->
+<div class="pattern" id="pattern-11">
+  <div class="pattern-header">
+    <div class="pattern-number">Mini-Pattern #11</div>
+    <h2>Control Plane / Data Plane Separation</h2>
+  </div>
+  
+  <div class="incident">
+    <h4>🔥 The Production Incident</h4>
+    <p>In 2019, a global cloud provider experienced a severe outage. The cause? A misconfiguration in the <strong>control plane API</strong> (where engineers pushed configs) propagated incorrectly and made the <strong>data plane</strong> (system serving live traffic) unavailable. A bug in the "admin portal" took down production serving for millions of users. This highlighted why control-plane failures must never compromise data-plane availability.</p>
+  </div>
+  
+  <div class="signal">
+    <h4>🎯 The Senior SRE Signal: How to Talk About It</h4>
+    <p><strong>"I would architect the system so that control-plane unavailability never impacts the data-plane. Config pushes would be versioned and cached locally by data-plane workers. If the control-plane goes down, the worst-case impact is config staleness, not service outage. This mirrors how systems like Envoy separate 'write configs' from 'serve requests.'"</strong></p>
+    
+    <div class="power-phrases">
+      <h5>💡 Killer Phrase</h5>
+      <p><strong>"<span class="highlight">Stale-but-available is always better than fresh-but-down.</span>"</strong></p>
+    </div>
+  </div>
+</div>
+
+<!-- PATTERN 12: ERROR-BUDGET-AWARE AUTOMATION -->
+<div class="pattern" id="pattern-12">
+  <div class="pattern-header">
+    <div class="pattern-number">Mini-Pattern #12</div>
+    <h2>Error-Budget-Aware Automation</h2>
+  </div>
+  
+  <div class="incident">
+    <h4>🔥 The Production Incident</h4>
+    <p>A team launched automated canary deployment. It looked solid—rollouts were automated, failures triggered rollbacks. But the system was tuned only for hard failures (HTTP 500s). One night, a "non-fatal" latency regression (requests jumped from <strong>100ms → 1s at p95</strong>) shipped to prod. The service didn't fail, so automation didn't roll back. Within hours, the entire <strong>weekly error budget</strong> was burned, violating SLOs and triggering VP-level escalation.</p>
+  </div>
+  
+  <div class="signal">
+    <h4>🎯 The Senior SRE Signal: How to Talk About It</h4>
+    <p><strong>"At Google scale, the only definition of 'success' that matters is compliance with SLOs. Our automation must enforce error-budget policies. For example, I'd configure the canary controller to monitor not just failures, but also latency and burn rates. If we're projected to burn the weekly budget in less than 12 hours, the rollout pauses automatically. This ties release velocity directly to reliability."</strong></p>
+    
+    <div class="power-phrases">
+      <h5>💡 Killer Phrase</h5>
+      <p><strong>"<span class="highlight">Velocity must be gated by SLO health, not by binary error counts.</span>"</strong></p>
+    </div>
+  </div>
+</div>
+
+<!-- PATTERN 13: CHAOS ENGINEERING -->
+<div class="pattern" id="pattern-13">
+  <div class="pattern-header">
+    <div class="pattern-number">Mini-Pattern #13</div>
+    <h2>Chaos Engineering & Resilience Testing</h2>
+  </div>
+  
+  <div class="incident">
+    <h4>🔥 The Production Incident</h4>
+    <p>Google had a service that was supposedly "highly available" with redundancy, failover, and retries. But during a regional outage, operators discovered the system failed cascadingly—timeouts stacked, retries amplified load, and the <strong>failover logic was never actually tested at scale</strong>. What looked perfect on paper turned into a 15-minute customer outage. The postmortem conclusion? The architecture was fine—the problem was untested assumptions.</p>
+  </div>
+  
+  <div class="signal">
+    <h4>🎯 The Senior SRE Signal: How to Talk About It</h4>
+    <p><strong>"Designing for resilience is only half the battle. A system that isn't tested for failure is unreliable by definition. I'd embed chaos engineering into the CI/CD cycle and operational calendar. Every Friday we run pod-kill experiments, and every quarter we simulate regional failover. The key is ensuring our SLIs are measured during chaos—availability, latency, error budget burn."</strong></p>
+    
+    <div class="power-phrases">
+      <h5>💡 Killer Phrase</h5>
+      <p><strong>"<span class="highlight">Resilience is not a design property; it's a tested property.</span>"</strong></p>
+    </div>
+  </div>
+</div>
+
+<!-- PATTERN 14: OBSERVABILITY-DRIVEN DESIGN -->
+<div class="pattern" id="pattern-14">
+  <div class="pattern-header">
+    <div class="pattern-number">Mini-Pattern #14</div>
+    <h2>Observability-Driven Design (The Three Pillars)</h2>
+  </div>
+  
+  <div class="incident">
+    <h4>🔥 The Production Incident</h4>
+    <p>A Google Ads service had intermittent 500 errors. The system had metrics showing CPU/memory were fine, logs with generic "request failed," and traces... well, <strong>there were none</strong>. Engineers couldn't pinpoint where requests died. Hours later, they discovered a downstream dependency was intermittently stalling, but client retries masked the issue. The service looked "healthy" in dashboards but was bleeding user trust.</p>
+  </div>
+  
+  <div class="signal">
+    <h4>🎯 The Senior SRE Signal: How to Talk About It</h4>
+    <p><strong>"Monitoring tells you when something breaks. Observability tells you why. At Google scale, I'd design every new service with observability-first principles: structured logs with correlation IDs, metrics exposed with cardinality control, and traces propagated through all RPCs. This ensures any SLO violation has a diagnosable root cause. Without this, you're blind in production."</strong></p>
+    
+    <div class="power-phrases">
+      <h5>💡 Killer Phrases</h5>
+      <ul>
+        <li><strong>"<span class="highlight">If you can't measure it, you can't SLO it.</span>"</strong></li>
+        <li><strong>"<span class="highlight">Observability is not an add-on — it's a design requirement.</span>"</strong></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- EVALUATION SECTION -->
+<div class="evaluation">
+  <h2>📊 How Google Scores System Design</h2>
+  <p>At Google, system design interviews are graded on <strong>how you think, prioritize, and communicate</strong> — not "getting it right." Here's the internal rubric:</p>
+  
+  <div class="score-grid">
+    <div class="score-item">
+      <div class="score-title">1. Clarity of Problem Definition</div>
+      <div class="score-levels">
+        <div class="weak"><strong>Weak (2/5):</strong> Jumps into architecture without clarifying questions</div>
+        <div class="strong"><strong>Strong (3/5):</strong> Asks about scale and users, defines inputs/outputs</div>
+        <div class="exceptional"><strong>Exceptional (5/5):</strong> Frames around SLOs first (p99, 99.99%) like an SRE</div>
+      </div>
+    </div>
+    
+    <div class="score-item">
+      <div class="score-title">2. Handling Stressors & Failures</div>
+      <div class="score-levels">
+        <div class="weak"><strong>Weak:</strong> Doesn't consider failures until prompted</div>
+        <div class="strong"><strong>Strong:</strong> Mentions redundancy, retries, or replication</div>
+        <div class="exceptional"><strong>Exceptional:</strong> Proactively stress-tests design with real failure scenarios</div>
+      </div>
+    </div>
+    
+    <div class="score-item">
+      <div class="score-title">3. Production-Grade Architecture</div>
+      <div class="score-levels">
+        <div class="weak"><strong>Weak:</strong> Basic design with hand-wavy "make it scalable"</div>
+        <div class="strong"><strong>Strong:</strong> Adds multi-region, monitoring, rollback safety</div>
+        <div class="exceptional"><strong>Exceptional:</strong> Explains patterns (circuit breakers, DLQ, quorum)</div>
+      </div>
+    </div>
+    
+    <div class="score-item">
+      <div class="score-title">4. Communication & Trade-Offs</div>
+      <div class="score-levels">
+        <div class="weak"><strong>Weak:</strong> Talks only in features or buzzwords</div>
+        <div class="strong"><strong>Strong:</strong> Uses trade-off table (cost, complexity, reliability)</div>
+        <div class="exceptional"><strong>Exceptional:</strong> Explains business impact of trade-offs</div>
+      </div>
+    </div>
+    
+    <div class="score-item">
+      <div class="score-title">5. Operational Ownership</div>
+      <div class="score-levels">
+        <div class="weak"><strong>Weak:</strong> Designs system but doesn't consider rollout</div>
+        <div class="strong"><strong>Strong:</strong> Mentions canaries, config flags, monitoring</div>
+        <div class="exceptional"><strong>Exceptional:</strong> Speaks like owner: "1% canary, chaos tests, error budgets"</div>
+      </div>
+    </div>
+    
+    <div class="score-item">
+      <div class="score-title">6. Systems Thinking & Composability</div>
+      <div class="score-levels">
+        <div class="weak"><strong>Weak:</strong> Random components with no reasoning</div>
+        <div class="strong"><strong>Strong:</strong> Simple, functional baseline that works</div>
+        <div class="exceptional"><strong>Exceptional:</strong> Explains why each building block exists and composability</div>
+      </div>
+    </div>
+  </div>
+  
+  <div style="background:#e8f5e9;border:1px solid #4caf50;border-radius:8px;padding:20px;margin:20px 0;">
+    <h3 style="color:#1b5e20;margin-bottom:12px;">🎯 Key Success Signal</h3>
+    <p><strong>If you consistently anchor answers in SLOs + trade-offs + operational thinking, you land in the Strong Hire category.</strong></p>
+    <p>Candidates at Google are scored across <span class="highlight">Clarity, Depth, Systems Thinking, Composure, and Prevention Mindset</span>.</p>
+  </div>
+</div>
+
+</div>
+
+<footer>
+  <div class="container">
+    <p>SRE Mini Patterns — <a href="/sre-design-framework.html">Design Framework</a> | <a href="/sre-sysdesign.html">SRE Systems</a> | <a href="/linkedin-cost-aware-alerting.html">Cost Alerting</a> | <a href="/">Home</a></p>
+  </div>
+</footer>
+
+</body>
+</html>
