@@ -74,6 +74,105 @@ RED FLAG: designing before clarifying requirements
 GREEN FLAG: starting with "let me define the SLO contract first"</pre>
 </div>
 
+<!-- SLA/Uptime Reference Section -->
+<div style="background:#e8f5e9;border:1px solid #4caf50;border-radius:12px;padding:24px;margin:30px 0;">
+  <h2 style="color:#2e7d32;margin-bottom:12px;">SLA Uptime Reference — The "Nines" Cheat Sheet</h2>
+  
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
+    
+    <!-- Downtime Table -->
+    <div>
+      <h3 style="color:#2e7d32;margin-bottom:8px;font-size:1.1em;">Allowed Downtime (99.99% SLA)</h3>
+      <table style="font-size:0.9em;">
+        <tr><th>Period</th><th>Total Time</th><th>Allowed Downtime</th></tr>
+        <tr><td>Year</td><td>525,600 min</td><td><strong>52.56 min</strong></td></tr>
+        <tr><td>Month</td><td>43,800 min</td><td><strong>4.38 min</strong></td></tr>
+        <tr><td>Week</td><td>10,080 min</td><td><strong>1.008 min (~60 sec)</strong></td></tr>
+        <tr><td>Day</td><td>1,440 min</td><td><strong>8.64 sec</strong></td></tr>
+        <tr><td>Hour</td><td>60 min</td><td><strong>0.36 sec</strong></td></tr>
+      </table>
+    </div>
+    
+    <!-- Nines Table -->
+    <div>
+      <h3 style="color:#2e7d32;margin-bottom:8px;font-size:1.1em;">The "Nines" Cheat Sheet</h3>
+      <table style="font-size:0.9em;">
+        <tr><th>SLA</th><th>Annual Downtime</th></tr>
+        <tr><td>99% (2 nines)</td><td>~3.65 days</td></tr>
+        <tr><td>99.9% (3 nines)</td><td>~8.77 hours</td></tr>
+        <tr><td style="background:#c8e6c9;"><strong>99.99% (4 nines)</strong></td><td style="background:#c8e6c9;"><strong>~52.6 minutes ✅</strong></td></tr>
+        <tr><td>99.999% (5 nines)</td><td>~5.26 minutes</td></tr>
+        <tr><td>99.9999% (6 nines)</td><td>~31.5 seconds</td></tr>
+      </table>
+    </div>
+  </div>
+  
+  <h3 style="color:#2e7d32;margin-bottom:8px;font-size:1.1em;">How to Calculate (Step by Step)</h3>
+  <pre style="border-color:#a5d6a7;background:#f1f8e9;">1. Pick your time window in minutes
+   e.g. 1 year = 365 × 24 × 60 = 525,600 min
+
+2. Multiply by the downtime fraction  
+   downtime fraction = 1 − 0.9999 = 0.0001
+
+3. Result
+   525,600 × 0.0001 = 52.56 minutes/year</pre>
+   
+  <h3 style="color:#2e7d32;margin-bottom:8px;font-size:1.1em;">SRE Interview Pro Tips</h3>
+  <div style="font-size:0.92em;line-height:1.5;">
+    <p><strong>🎯 99.99% is the Google SRE sweet spot</strong> — reliable enough for most services, achievable without heroics</p>
+    <p><strong>📊 Error Budget Math:</strong> 99.99% uptime = 0.01% error budget = 1 error per 10,000 requests</p>
+    <p><strong>⚡ Failure Impact:</strong> 1 minute outage in 99.99% system consumes ~20% of monthly error budget</p>
+    <p><strong>🚨 Five 9s Reality Check:</strong> 5.26 min/year means every deploy, restart, or incident must be ≤1 minute</p>
+    <p><strong>💰 Cost vs Reliability:</strong> Each additional 9 typically costs 10x more (99.9% → 99.99% → 99.999%)</p>
+  </div>
+  
+  <!-- Error Budget Calculator -->
+  <div style="background:#fff3e0;border:1px solid #ff9800;border-radius:8px;padding:16px;margin-top:16px;">
+    <h4 style="color:#ef6c00;margin-bottom:8px;">Error Budget Calculator</h4>
+    <pre style="font-size:0.85em;border-color:#ffcc02;background:#fffbf0;">// JavaScript for SRE interviews
+function calculateErrorBudget(sla, requests_per_month) {
+    const uptime = sla / 100;
+    const error_budget = 1 - uptime;
+    const allowed_errors = requests_per_month * error_budget;
+    
+    return {
+        error_budget_percent: error_budget * 100,
+        allowed_errors: Math.floor(allowed_errors),
+        errors_per_day: Math.floor(allowed_errors / 30),
+        mtbf_minutes: (30 * 24 * 60) / Math.floor(allowed_errors / 30)
+    };
+}
+
+// Example: 1M requests/month at 99.99% SLA
+calculateErrorBudget(99.99, 1000000);
+→ {error_budget: 0.01%, allowed_errors: 100, errors_per_day: 3, mtbf: 480min}</pre>
+  </div>
+  
+  <!-- Real-world SLO Examples -->
+  <div style="background:#e8eaf6;border:1px solid #3f51b5;border-radius:8px;padding:16px;margin-top:16px;">
+    <h4 style="color:#303f9f;margin-bottom:8px;">Real-World SLO Examples (Google/Netflix Pattern)</h4>
+    <pre style="font-size:0.82em;border-color:#9fa8da;background:#f5f5ff;">📊 API Service SLOs:
+  • Availability: 99.99% (measured by HTTP 200-299 responses)
+  • Latency: p95 ≤ 200ms, p99 ≤ 500ms (measured at load balancer)
+  • Throughput: ≥ 10K RPS sustained (measured per region)
+
+🛒 E-commerce Checkout SLOs:
+  • Success Rate: 99.95% (measured by payment completion)
+  • Latency: p95 ≤ 1s, p99.9 ≤ 3s (end-to-end user experience)
+  • Data Durability: 99.999999999% (11 nines for order data)
+
+📱 Mobile API SLOs:
+  • Availability: 99.9% (mobile apps handle degradation better)
+  • Latency: p90 ≤ 500ms (mobile networks are slower)
+  • Error Rate: ≤ 0.5% (includes 4xx client errors)
+
+🔍 Search Service SLOs:
+  • Recall: ≥ 95% (find relevant results)
+  • Latency: p99 ≤ 100ms (user expectation for search)
+  • Freshness: 90% of updates reflected within 10 minutes</pre>
+  </div>
+</div>
+
 <div class="toc" id="toc">
   <h2>10 Classic Design Problems</h2>
   <ol>
