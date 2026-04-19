@@ -1,0 +1,1221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Caching Deep Dive - System Design Patterns</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f8f9fa;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .hero {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 60px 0;
+            text-align: center;
+        }
+
+        .hero h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .nav-tabs {
+            background: white;
+            border-bottom: 2px solid #e9ecef;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-tabs ul {
+            list-style: none;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .nav-tabs li {
+            margin: 0 10px;
+        }
+
+        .nav-tabs a {
+            display: block;
+            padding: 15px 20px;
+            text-decoration: none;
+            color: #666;
+            font-weight: 500;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .nav-tabs a:hover {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .section {
+            padding: 60px 0;
+            background: white;
+            margin-bottom: 2px;
+        }
+
+        .section h2 {
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+            text-align: center;
+            color: #2c3e50;
+        }
+
+        .section h3 {
+            font-size: 1.8rem;
+            margin: 2rem 0 1rem 0;
+            color: #34495e;
+        }
+
+        .cache-patterns {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 30px;
+            margin: 30px 0;
+        }
+
+        .cache-pattern {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 25px;
+            border: 2px solid #e9ecef;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .cache-pattern:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .cache-pattern h4 {
+            font-size: 1.4rem;
+            margin-bottom: 15px;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .pattern-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .cache-aside { background: #e3f2fd; color: #1976d2; }
+        .read-through { background: #e8f5e8; color: #388e3c; }
+        .write-through { background: #fff3e0; color: #f57c00; }
+        .write-behind { background: #fce4ec; color: #c2185b; }
+
+        .diagram {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .flow-diagram {
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .flow-step {
+            background: #667eea;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 25px;
+            font-weight: 500;
+            min-width: 120px;
+            position: relative;
+        }
+
+        .flow-step.app { background: #34495e; }
+        .flow-step.cache { background: #27ae60; }
+        .flow-step.db { background: #8e44ad; }
+        .flow-step.miss { background: #e74c3c; }
+
+        .arrow {
+            font-size: 1.2rem;
+            color: #666;
+            margin: 0 10px;
+        }
+
+        .miss-types {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin: 30px 0;
+        }
+
+        .miss-type {
+            background: white;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .miss-type.cold { border-left-color: #3498db; }
+        .miss-type.eviction { border-left-color: #f39c12; }
+        .miss-type.invalidation { border-left-color: #e74c3c; }
+
+        .rebuild-strategies {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            margin: 30px 0;
+        }
+
+        .rebuild-strategy {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            border: 2px solid #e9ecef;
+            text-align: center;
+        }
+
+        .strategy-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            margin: 0 auto 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            color: white;
+        }
+
+        .lazy { background: #95a5a6; }
+        .eager { background: #3498db; }
+        .cdc { background: #2ecc71; }
+
+        .persistence-comparison {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin: 30px 0;
+        }
+
+        .persistence-option {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            border: 2px solid #e9ecef;
+            text-align: center;
+        }
+
+        .persistence-option h4 {
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+
+        .pros-cons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .pros, .cons {
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .pros {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+        }
+
+        .cons {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+        }
+
+        .pros h5, .cons h5 {
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+
+        .pros h5 { color: #155724; }
+        .cons h5 { color: #721c24; }
+
+        .comparison-table {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin: 30px 0;
+        }
+
+        .comparison-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .comparison-table th {
+            background: #667eea;
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .comparison-table td {
+            padding: 15px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .comparison-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        .highlight {
+            background: linear-gradient(120deg, #a8e6cf 0%, #dcedc8 100%);
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #4caf50;
+        }
+
+        .code-block {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            overflow-x: auto;
+            font-family: 'Monaco', 'Courier New', monospace;
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2rem;
+            }
+            
+            .cache-patterns,
+            .miss-types,
+            .rebuild-strategies,
+            .persistence-comparison {
+                grid-template-columns: 1fr;
+            }
+            
+            .flow-diagram {
+                flex-direction: column;
+            }
+            
+            .arrow {
+                transform: rotate(90deg);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="hero">
+        <div class="container">
+            <h1>Caching Deep Dive</h1>
+            <p>Complete guide to caching patterns, miss handling, rebuilding strategies, and persistence options in production systems</p>
+        </div>
+    </div>
+
+    <nav class="nav-tabs">
+        <div class="container">
+            <ul>
+                <li><a href="#patterns">Cache Patterns</a></li>
+                <li><a href="#misses">Cache Misses</a></li>
+                <li><a href="#rebuilding">Rebuilding</a></li>
+                <li><a href="#persistence">Persistence</a></li>
+                <li><a href="#comparison">Comparison</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <section id="patterns" class="section">
+        <div class="container">
+            <h2>1. The Four Ways to Write to Cache</h2>
+            <p style="text-align: center; font-size: 1.1rem; color: #666; margin-bottom: 40px;">
+                How data gets into cache depends on who you want to be responsible. Different patterns offer different trade-offs between control, latency, and consistency.
+            </p>
+
+            <div class="cache-patterns">
+                <div class="cache-pattern">
+                    <h4>
+                        <span class="pattern-badge cache-aside">Cache-Aside</span>
+                        (Lazy Loading)
+                    </h4>
+                    <p><strong>App manages cache manually</strong></p>
+                    
+                    <div class="diagram">
+                        <div class="flow-diagram">
+                            <div class="flow-step app">App</div>
+                            <span class="arrow">➜</span>
+                            <div class="flow-step miss">❌ miss</div>
+                            <span class="arrow">➜</span>
+                            <div class="flow-step">📖 fetch</div>
+                            <span class="arrow">➜</span>
+                            <div class="flow-step cache">🏪 Cache</div>
+                        </div>
+                        <div class="flow-diagram" style="margin-top: 10px;">
+                            <div class="flow-step app">App</div>
+                            <span class="arrow">➜</span>
+                            <div class="flow-step">✍️ write</div>
+                            <span class="arrow">➜</span>
+                            <div class="flow-step db">DB</div>
+                        </div>
+                        <p style="margin-top: 15px; font-size: 0.9rem; color: #666;">
+                            App owns DB fetch + cache populate on miss
+                        </p>
+                    </div>
+
+                    <div class="pros-cons">
+                        <div class="pros">
+                            <h5>✅ Pros</h5>
+                            <ul style="margin: 0; padding-left: 20px;">
+                                <li>Full app control</li>
+                                <li>Simple to understand</li>
+                                <li>Most common pattern</li>
+                            </ul>
+                        </div>
+                        <div class="cons">
+                            <h5>❌ Cons</h5>
+                            <ul style="margin: 0; padding-left: 20px;">
+                                <li>Manual cache management</li>
+                                <li>Cache-DB sync issues</li>
+                                <li>Higher complexity</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="cache-pattern">
+                    <h4>
+                        <span class="pattern-badge read-through">Read-Through</span>
+                    </h4>
+                    <p><strong>Cache fetches from DB automatically on miss</strong></p>
+                    
+                    <div class="diagram">
+                        <div class="flow-diagram">
+                            <div class="flow-step app">App</div>
+                            <span class="arrow">➜</span>
+                            <div class="flow-step cache">🏪 Cache</div>
+                            <span class="arrow">➜</span>
+                            <div class="flow-step">🔄 auto-fetch</div>
+                            <span class="arrow">➜</span>
+                            <div class="flow-step db">DB</div>
+                        </div>
+                        <p style="margin-top: 15px; font-size: 0.9rem; color: #666;">
+                            Cache library/proxy handles DB fetch transparently
+                        </p>
+                    </div>
+
+                    <div class="pros-cons">
+                        <div class="pros">
+                            <h5>✅ Pros</h5>
+                            <ul style="margin: 0; padding-left: 20px;">
+                                <li>Transparent to app</li>
+                                <li>Consistent interface</li>
+                                <li>Reduced complexity</li>
+                            </ul>
+                        </div>
+                        <div class="cons">
+                            <h5>❌ Cons</h5>
+                            <ul style="margin: 0; padding-left: 20px;">
+                                <li>Less control</li>
+                                <li>Framework dependency</li>
+                                <li>Harder debugging</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="cache-pattern">
+                    <h4>
+                        <span class="pattern-badge write-through">Write-Through</span>
+                    </h4>
+                    <p><strong>Every write goes to cache AND DB synchronously</strong></p>
+                    
+                    <div class="diagram">
+                        <div class="flow-diagram">
+                            <div class="flow-step app">App</div>
+                            <span class="arrow">➜</span>
+                            <div class="flow-step">✍️ write</div>
+                        </div>
+                        <div class="flow-diagram" style="margin-top: 10px;">
+                            <div class="flow-step cache">🏪 Cache</div>
+                            <span class="arrow">➜</span>
+                            <div class="flow-step">🔄 sync</div>
+                            <span class="arrow">➜</span>
+                            <div class="flow-step db">DB</div>
+                        </div>
+                        <p style="margin-top: 15px; font-size: 0.9rem; color: #666;">
+                            Always consistent. Write latency is higher.
+                        </p>
+                    </div>
+
+                    <div class="pros-cons">
+                        <div class="pros">
+                            <h5>✅ Pros</h5>
+                            <ul style="margin: 0; padding-left: 20px;">
+                                <li>Always consistent</li>
+                                <li>No stale data</li>
+                                <li>Safe pattern</li>
+                            </ul>
+                        </div>
+                        <div class="cons">
+                            <h5>❌ Cons</h5>
+                            <ul style="margin: 0; padding-left: 20px;">
+                                <li>Higher write latency</li>
+                                <li>Cache always written</li>
+                                <li>Slower writes</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="cache-pattern">
+                    <h4>
+                        <span class="pattern-badge write-behind">Write-Behind</span>
+                        (Write-Back)
+                    </h4>
+                    <p><strong>Write to cache immediately, flush DB async later</strong></p>
+                    
+                    <div class="diagram">
+                        <div class="flow-diagram">
+                            <div class="flow-step app">App</div>
+                            <span class="arrow">➜</span>
+                            <div class="flow-step">✍️ write</div>
+                            <span class="arrow">➜</span>
+                            <div class="flow-step cache">🏪 Cache</div>
+                        </div>
+                        <div class="flow-diagram" style="margin-top: 10px;">
+                            <div class="flow-step cache">🏪 Cache</div>
+                            <span class="arrow">➜</span>
+                            <div class="flow-step">🔄 async flush</div>
+                            <span class="arrow">➜</span>
+                            <div class="flow-step db">DB</div>
+                        </div>
+                        <p style="margin-top: 15px; font-size: 0.9rem; color: #666;">
+                            Fastest writes. Risk of data loss if cache crashes.
+                        </p>
+                    </div>
+
+                    <div class="pros-cons">
+                        <div class="pros">
+                            <h5>✅ Pros</h5>
+                            <ul style="margin: 0; padding-left: 20px;">
+                                <li>Fastest writes</li>
+                                <li>Lower DB load</li>
+                                <li>Better performance</li>
+                            </ul>
+                        </div>
+                        <div class="cons">
+                            <h5>❌ Cons</h5>
+                            <ul style="margin: 0; padding-left: 20px;">
+                                <li>Data loss risk</li>
+                                <li>Complex recovery</li>
+                                <li>Eventual consistency</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="highlight">
+                <strong>Production Reality:</strong> Most production systems use <strong>cache-aside</strong> because it's simple and gives the app full control. The app knows best when to invalidate, what to cache, and how to handle failures.
+            </div>
+
+            <div class="comparison-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Pattern</th>
+                            <th>Write Latency</th>
+                            <th>Consistency</th>
+                            <th>Who Writes Cache</th>
+                            <th>Best For</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Cache-aside</strong></td>
+                            <td>Low</td>
+                            <td>Eventual</td>
+                            <td>App code</td>
+                            <td>Read-heavy</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Read-through</strong></td>
+                            <td>Low</td>
+                            <td>Eventual</td>
+                            <td>Cache itself</td>
+                            <td>Read-heavy</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Write-through</strong></td>
+                            <td>High</td>
+                            <td>Strong</td>
+                            <td>Cache → DB</td>
+                            <td>Write+read</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Write-behind</strong></td>
+                            <td>Low</td>
+                            <td>Eventual</td>
+                            <td>Cache → DB later</td>
+                            <td>Write-heavy</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <section id="misses" class="section">
+        <div class="container">
+            <h2>2. Cache Miss — What Actually Happens</h2>
+            <p style="text-align: center; font-size: 1.1rem; color: #666; margin-bottom: 40px;">
+                Cache miss is always the same three steps — detect miss, go to DB, populate cache — but the <strong>cause</strong> differs.
+            </p>
+
+            <div class="diagram">
+                <h3>Universal Cache Miss Flow</h3>
+                <div class="flow-diagram">
+                    <div class="flow-step app">App request</div>
+                    <span class="arrow">➜</span>
+                    <div class="flow-step">GET x</div>
+                    <span class="arrow">➜</span>
+                    <div class="flow-step miss">Cache: MISS</div>
+                    <span class="arrow">➜</span>
+                    <div class="flow-step db">DB fetch</div>
+                    <span class="arrow">➜</span>
+                    <div class="flow-step">SET x</div>
+                    <span class="arrow">➜</span>
+                    <div class="flow-step cache">Cache warm</div>
+                </div>
+                <p style="margin-top: 15px; font-size: 0.9rem; color: #666;">
+                    Happens once per key. Normal and expected.
+                </p>
+            </div>
+
+            <div class="miss-types">
+                <div class="miss-type cold">
+                    <h4>🥶 Cold Miss</h4>
+                    <p><strong>Key never loaded before</strong></p>
+                    <ul>
+                        <li>Cache restart/empty</li>
+                        <li>First access to new data</li>
+                        <li>Unavoidable at startup</li>
+                    </ul>
+                    <div style="margin-top: 15px; padding: 10px; background: #e8f4fd; border-radius: 5px;">
+                        <strong>Normal and expected.</strong> Every key experiences this once.
+                    </div>
+                </div>
+
+                <div class="miss-type eviction">
+                    <h4>🗑️ Capacity/Eviction Miss</h4>
+                    <p><strong>Key was evicted (LRU/LFU/TTL)</strong></p>
+                    <ul>
+                        <li>Cache too small for working set</li>
+                        <li>TTL expired</li>
+                        <li>Random eviction in Redis</li>
+                    </ul>
+                    <div style="margin-top: 15px; padding: 10px; background: #fff3cd; border-radius: 5px;">
+                        <strong>Tune maxmemory</strong> and eviction policy. Monitor hit rate.
+                    </div>
+                </div>
+
+                <div class="miss-type invalidation">
+                    <h4>🗂️ Invalidation Miss</h4>
+                    <p><strong>Key was deleted on DB write</strong></p>
+                    <ul>
+                        <li>Delete on write (cache-aside)</li>
+                        <li>Update on write (write-through)</li>
+                        <li>TTL-based invalidation</li>
+                    </ul>
+                    <div style="margin-top: 15px; padding: 10px; background: #f8d7da; border-radius: 5px;">
+                        <strong>By design.</strong> Strategies: delete vs update vs TTL.
+                    </div>
+                </div>
+            </div>
+
+            <div class="highlight">
+                <strong>Cache Stampede Risk:</strong> Many requests miss at once → all hit DB simultaneously. 
+                <br><strong>Fix:</strong> Mutex lock, probabilistic early expiry (PER), or request coalescing (only 1 thread fetches, rest wait).
+            </div>
+
+            <div class="diagram">
+                <h3>Cache Stampede Problem</h3>
+                <div style="text-align: left; background: #fff5f5; padding: 20px; border-radius: 8px; border: 1px solid #fed7d7;">
+                    <p><strong>Problem:</strong> Cache stampede: many requests miss at once → all hit DB simultaneously</p>
+                    <div class="flow-diagram" style="justify-content: flex-start; margin: 15px 0;">
+                        <div class="flow-step miss">Cache: MISS</div>
+                        <span class="arrow">→</span>
+                        <div class="flow-step db">100x DB requests</div>
+                    </div>
+                    <p><strong>Solutions:</strong></p>
+                    <ul style="margin-left: 20px; margin-top: 10px;">
+                        <li><strong>Mutex lock:</strong> Only 1 thread fetches, others wait</li>
+                        <li><strong>Probabilistic early expiry (PER):</strong> Refresh before TTL</li>
+                        <li><strong>Request coalescing:</strong> Combine identical requests</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="rebuilding" class="section">
+        <div class="container">
+            <h2>3. Cache Rebuilding Strategies</h2>
+            <p style="text-align: center; font-size: 1.1rem; color: #666; margin-bottom: 40px;">
+                Rebuilding cache after a restart is the problem Memcache was solving. Different strategies offer different trade-offs between complexity and performance.
+            </p>
+
+            <div class="rebuild-strategies">
+                <div class="rebuild-strategy">
+                    <div class="strategy-icon lazy">🐌</div>
+                    <h4>Lazy Rebuild</h4>
+                    <p><strong>Fill on first miss</strong></p>
+                    
+                    <div class="diagram">
+                        <div style="margin: 20px 0;">
+                            <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px;">
+                                <div style="background: #e74c3c; color: white; padding: 8px 15px; border-radius: 20px;">Cache empty</div>
+                            </div>
+                            <div style="font-size: 1.5rem; margin: 10px 0;">⬇️</div>
+                            <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px;">
+                                <div style="background: #3498db; color: white; padding: 8px 15px; border-radius: 20px;">miss</div>
+                                <span>→</span>
+                                <div style="background: #8e44ad; color: white; padding: 8px 15px; border-radius: 20px;">DB fetch</div>
+                            </div>
+                            <div style="font-size: 1.5rem; margin: 10px 0;">⬇️</div>
+                            <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+                                <div style="background: #27ae60; color: white; padding: 8px 15px; border-radius: 20px;">Key cached</div>
+                            </div>
+                        </div>
+                        <p style="font-size: 0.9rem; color: #666; margin-top: 15px;">
+                            Repeat per key until warm
+                        </p>
+                    </div>
+
+                    <div class="pros-cons">
+                        <div class="pros">
+                            <h5>✅ Simple</h5>
+                            <ul style="margin: 0; padding-left: 20px; font-size: 0.9rem;">
+                                <li>No setup needed</li>
+                                <li>Works everywhere</li>
+                            </ul>
+                        </div>
+                        <div class="cons">
+                            <h5>❌ Slow Cold Start</h5>
+                            <ul style="margin: 0; padding-left: 20px; font-size: 0.9rem;">
+                                <li>High miss rate initially</li>
+                                <li>Poor performance</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 5px; font-size: 0.9rem;">
+                        <strong>Good for:</strong> Low-traffic or small datasets
+                    </div>
+                </div>
+
+                <div class="rebuild-strategy">
+                    <div class="strategy-icon eager">🚀</div>
+                    <h4>Eager Pre-warm</h4>
+                    <p><strong>Batch load at startup</strong></p>
+                    
+                    <div class="diagram">
+                        <div style="margin: 20px 0;">
+                            <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px;">
+                                <div style="background: #f39c12; color: white; padding: 8px 15px; border-radius: 20px;">Startup/deploy</div>
+                            </div>
+                            <div style="font-size: 1.5rem; margin: 10px 0;">⬇️</div>
+                            <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px;">
+                                <div style="background: #3498db; color: white; padding: 8px 15px; border-radius: 20px;">Warm job runs</div>
+                            </div>
+                            <div style="font-size: 1.5rem; margin: 10px 0;">⬇️</div>
+                            <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+                                <div style="background: #27ae60; color: white; padding: 8px 15px; border-radius: 20px;">bulk SET</div>
+                                <span>→</span>
+                                <div style="background: #27ae60; color: white; padding: 8px 15px; border-radius: 20px;">Cache pre-loaded</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pros-cons">
+                        <div class="pros">
+                            <h5>✅ Fast Start</h5>
+                            <ul style="margin: 0; padding-left: 20px; font-size: 0.9rem;">
+                                <li>No cold start</li>
+                                <li>Predictable performance</li>
+                            </ul>
+                        </div>
+                        <div class="cons">
+                            <h5>❌ Complex Setup</h5>
+                            <ul style="margin: 0; padding-left: 20px; font-size: 0.9rem;">
+                                <li>Needs warm job/script</li>
+                                <li>Must know hot keys</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 15px; padding: 10px; background: #e3f2fd; border-radius: 5px; font-size: 0.9rem;">
+                        <strong>Used by:</strong> Memcache pattern. Control Plane does this.
+                    </div>
+                </div>
+
+                <div class="rebuild-strategy">
+                    <div class="strategy-icon cdc">⚡</div>
+                    <h4>Event-driven (CDC)</h4>
+                    <p><strong>Stream DB changes into cache</strong></p>
+                    
+                    <div class="diagram">
+                        <div style="margin: 20px 0;">
+                            <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px;">
+                                <div style="background: #8e44ad; color: white; padding: 8px 15px; border-radius: 20px;">DB write log</div>
+                            </div>
+                            <div style="font-size: 1.5rem; margin: 10px 0;">⬇️</div>
+                            <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px;">
+                                <div style="background: #e67e22; color: white; padding: 8px 15px; border-radius: 20px;">CDC consumer</div>
+                                <div style="font-size: 0.8rem;">(Debezium/Kafka)</div>
+                            </div>
+                            <div style="font-size: 1.5rem; margin: 10px 0;">⬇️</div>
+                            <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+                                <div style="background: #27ae60; color: white; padding: 8px 15px; border-radius: 20px;">SET/DEL</div>
+                                <span>→</span>
+                                <div style="background: #27ae60; color: white; padding: 8px 15px; border-radius: 20px;">Cache updated</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pros-cons">
+                        <div class="pros">
+                            <h5>✅ Always Current</h5>
+                            <ul style="margin: 0; padding-left: 20px; font-size: 0.9rem;">
+                                <li>Auto-sync</li>
+                                <li>No rebuild needed</li>
+                            </ul>
+                        </div>
+                        <div class="cons">
+                            <h5>❌ Complex</h5>
+                            <ul style="margin: 0; padding-left: 20px; font-size: 0.9rem;">
+                                <li>CDC pipeline required</li>
+                                <li>Hard to set up</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 15px; padding: 10px; background: #e8f5e8; border-radius: 5px; font-size: 0.9rem;">
+                        <strong>Most sophisticated.</strong> Cache stays current automatically.
+                    </div>
+                </div>
+            </div>
+
+            <div class="highlight">
+                <strong>Cache Invalidation: The Hard Part</strong>
+                <br><br>
+                <strong>Strategy 1 — Delete on write:</strong> Remove key when DB updates. Next read refills it (stale window = 0).
+                <br><strong>Strategy 2 — TTL expiry:</strong> Let old data serve until it expires. Simple, but data can be stale up to TTL.
+            </div>
+        </div>
+    </section>
+
+    <section id="persistence" class="section">
+        <div class="container">
+            <h2>4. Persistence Options — Redis vs Memcached</h2>
+            <p style="text-align: center; font-size: 1.1rem; color: #666; margin-bottom: 40px;">
+                The fundamental difference: Memcached has no persistence, Redis offers two options. In production, you typically run both together.
+            </p>
+
+            <div class="persistence-comparison">
+                <div class="persistence-option" style="border: 2px solid #95a5a6;">
+                    <h4>🧠 Memcached — No Disk</h4>
+                    <div style="background: #ecf0f1; padding: 20px; border-radius: 8px; margin: 15px 0;">
+                        <p><strong>RAM only</strong></p>
+                        <p>All data lives in memory</p>
+                        <div style="margin: 15px 0; font-size: 1.5rem;">💥</div>
+                        <p style="color: #c0392b; font-weight: bold;">crash</p>
+                        <div style="margin: 15px 0; font-size: 1.5rem;">⬇️</div>
+                        <div style="background: #e74c3c; color: white; padding: 8px; border-radius: 5px;">
+                            <strong>Everything lost</strong><br>
+                            <small>No recovery possible</small>
+                        </div>
+                        <div style="margin: 15px 0; font-size: 1.5rem;">⬇️</div>
+                        <div style="background: #f39c12; color: white; padding: 8px; border-radius: 5px;">
+                            <strong>Rebuild from DB</strong><br>
+                            <small>Cold start every restart</small>
+                        </div>
+                    </div>
+                    
+                    <div style="background: #d5dbdb; padding: 15px; border-radius: 5px; margin-top: 15px;">
+                        <p><strong>Pure cache — never a primary store.</strong> Restart = cold start. Only use warm-up job to refill.</p>
+                    </div>
+                </div>
+
+                <div class="persistence-option" style="border: 2px solid #3498db;">
+                    <h4>📸 Redis — RDB Snapshot</h4>
+                    <p><strong>Periodic full snapshot to disk</strong><br><small>(every N seconds or every M writes)</small></p>
+                    
+                    <div style="margin: 20px 0;">
+                        <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin: 10px 0;">
+                            <div style="background: #3498db; color: white; padding: 8px 15px; border-radius: 5px; font-size: 0.9rem;">snap 1</div>
+                            <div style="background: #3498db; color: white; padding: 8px 15px; border-radius: 5px; font-size: 0.9rem;">snap 2</div>
+                            <div style="background: #3498db; color: white; padding: 8px 15px; border-radius: 5px; font-size: 0.9rem;">...</div>
+                        </div>
+                        <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin: 10px 0; font-size: 0.9rem;">
+                            <div>t=0s</div>
+                            <div>t=60s</div>
+                            <div>t=120s</div>
+                        </div>
+                        <div style="font-size: 1.5rem; margin: 15px 0;">⬇️</div>
+                        <div style="background: #27ae60; color: white; padding: 10px; border-radius: 5px;">
+                            <strong>reload</strong> → <strong>Restore snap 2</strong><br>
+                            <small>~60s of writes lost</small>
+                        </div>
+                    </div>
+
+                    <div class="pros-cons">
+                        <div class="pros">
+                            <h5>✅ Fast Restart</h5>
+                            <ul style="margin: 0; padding-left: 20px; font-size: 0.9rem;">
+                                <li>Compact file</li>
+                                <li>Quick restore</li>
+                            </ul>
+                        </div>
+                        <div class="cons">
+                            <h5>❌ Data Loss</h5>
+                            <ul style="margin: 0; padding-left: 20px; font-size: 0.9rem;">
+                                <li>Lose writes since last snap</li>
+                                <li>Snapshot interval trade-off</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 15px; padding: 10px; background: #e3f2fd; border-radius: 5px; font-size: 0.9rem;">
+                        <strong>Good for analytics cache.</strong> Accepts data loss equal to snapshot interval.
+                    </div>
+                </div>
+
+                <div class="persistence-option" style="border: 2px solid #27ae60;">
+                    <h4>📝 Redis — AOF Log</h4>
+                    <p><strong>Append every write to log file</strong><br><small>(fsync every write or every sec)</small></p>
+                    
+                    <div style="margin: 20px 0;">
+                        <div style="background: #ecf0f1; padding: 15px; border-radius: 8px;">
+                            <div style="font-family: monospace; font-size: 0.8rem; line-height: 1.6;">
+                                SET user:1 "Alice"<br>
+                                INCR counter<br>
+                                DEL session:x<br>
+                                ... every write logged ...
+                            </div>
+                        </div>
+                        <div style="font-size: 1.5rem; margin: 15px 0;">⬇️</div>
+                        <div style="background: #27ae60; color: white; padding: 10px; border-radius: 5px;">
+                            <strong>Replay all ops</strong><br>
+                            <small>0-1s of data loss</small>
+                        </div>
+                    </div>
+
+                    <div class="pros-cons">
+                        <div class="pros">
+                            <h5>✅ Durable</h5>
+                            <ul style="margin: 0; padding-left: 20px; font-size: 0.9rem;">
+                                <li>Near-zero loss</li>
+                                <li>Every write preserved</li>
+                            </ul>
+                        </div>
+                        <div class="cons">
+                            <h5>❌ Slower</h5>
+                            <ul style="margin: 0; padding-left: 20px; font-size: 0.9rem;">
+                                <li>Larger file</li>
+                                <li>Longer restart (replay all ops)</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 15px; padding: 10px; background: #e8f5e8; border-radius: 5px; font-size: 0.9rem;">
+                        <strong>Use with RDB.</strong> Best of both worlds for production standard.
+                    </div>
+                </div>
+            </div>
+
+            <div class="highlight">
+                <strong>Production Standard: RDB + AOF Together</strong>
+                <br><br>
+                RDB for fast restart, AOF for durability. Use both together:
+                <br>• <strong>0-1s data loss</strong> (AOF fsync frequency)  
+                <br>• <strong>Full data restored</strong> (RDB snapshot + AOF replay)
+                <br>• <strong>Reasonable restart time</strong> (RDB loads fast, AOF fills gaps)
+            </div>
+
+            <div class="comparison-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>When to Use Which</th>
+                            <th>Persistence</th>
+                            <th>Data Loss</th>
+                            <th>Restart Speed</th>
+                            <th>Best For</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Memcached</strong></td>
+                            <td>None</td>
+                            <td>100% on restart</td>
+                            <td>Instant (empty)</td>
+                            <td>Pure cache, simple data, no persistence needed</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Redis RDB</strong></td>
+                            <td>Snapshots</td>
+                            <td>Snapshot interval</td>
+                            <td>Fast</td>
+                            <td>Analytics cache, can tolerate some data loss</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Redis AOF</strong></td>
+                            <td>Write log</td>
+                            <td>0-1s</td>
+                            <td>Slower (replay)</td>
+                            <td>Session store, queues, counters, feature flags</td>
+                        </tr>
+                        <tr style="background: #e8f5e8;">
+                            <td><strong>Redis RDB+AOF</strong></td>
+                            <td>Both</td>
+                            <td>0-1s</td>
+                            <td>Good</td>
+                            <td><strong>Production standard</strong> - best of both</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <section id="comparison" class="section">
+        <div class="container">
+            <h2>5. Cache vs Database — Complete Decision Matrix</h2>
+            <p style="text-align: center; font-size: 1.1rem; color: #666; margin-bottom: 40px;">
+                Does the cache know about your DB? The answer determines your architecture and trade-offs.
+            </p>
+
+            <div class="comparison-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Feature</th>
+                            <th>Memcached<br><small>Pure in-memory</small></th>
+                            <th>Redis<br><small>Data structure server</small></th>
+                            <th>Couchbase<br><small>Cache + document DB</small></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Data model</strong></td>
+                            <td>String key-value only</td>
+                            <td>String, Hash, List, Set, Sorted Set, Streams, HyperLogLog, JSON</td>
+                            <td>JSON documents</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Persistence</strong></td>
+                            <td>❌ None</td>
+                            <td>✅ RDB snapshots<br>✅ AOF write log</td>
+                            <td>✅ Full persistence<br>✅ Cross-datacenter sync</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Query language</strong></td>
+                            <td>❌ Key access only</td>
+                            <td>✅ Redis commands<br>✅ Lua scripting</td>
+                            <td>✅ N1QL (SQL++)<br>✅ MapReduce views</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Clustering</strong></td>
+                            <td>❌ No built-in clustering<br>✅ Client-side sharding</td>
+                            <td>✅ Redis Cluster (16k slots)<br>✅ Sentinel for HA failover</td>
+                            <td>✅ XDCR cross-datacenter<br>✅ Auto-rebalancing</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Wire protocol</strong></td>
+                            <td>Memcached protocol<br>TCP port 11211</td>
+                            <td>RESP (Redis protocol)<br>TCP port 6379</td>
+                            <td>HTTP/REST + binary<br>TCP port 8091/11210</td>
+                        </tr>
+                        <tr>
+                            <td><strong>TTL / Expiry</strong></td>
+                            <td>✅ Per-key TTL<br>✅ LRU eviction</td>
+                            <td>✅ Per-key TTL<br>✅ 8 eviction policies</td>
+                            <td>✅ Per-document TTL<br>✅ Memory-based eviction</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Best for</strong></td>
+                            <td>Simple object caching<br>Session storage<br>High-throughput reads</td>
+                            <td>Leaderboards, counters<br>Queues, pub/sub, sessions<br>Real-time features</td>
+                            <td>Full app data layer<br>Cache that outlives restarts<br>Mobile/offline-first</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Identity</strong></td>
+                            <td>Dumb fast bucket</td>
+                            <td>Smart data structure server</td>
+                            <td>Cache that is also a DB</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div style="background: #f8f9fa; padding: 30px; border-radius: 12px; margin: 30px 0;">
+                <h3 style="color: #2c3e50; margin-bottom: 20px;">The Cache Has Zero DB Knowledge — Here's What Actually Happens</h3>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 20px;">
+                    <div>
+                        <h4 style="color: #e74c3c; margin-bottom: 15px;">❌ Common Myth</h4>
+                        <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #f5c6cb;">
+                            <div class="flow-diagram">
+                                <div class="flow-step app">App</div>
+                                <span class="arrow">→</span>
+                                <div class="flow-step cache">🏪 Cache</div>
+                                <span class="arrow">→</span>
+                                <div class="flow-step db">DB</div>
+                            </div>
+                            <p style="font-size: 0.9rem; margin-top: 15px; color: #666;">
+                                ❌ "Cache automatically fetches from DB"<br>
+                                ❌ "This is something cache libraries do on their own."
+                            </p>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h4 style="color: #27ae60; margin-bottom: 15px;">✅ Reality</h4>
+                        <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #c3e6cb;">
+                            <div style="font-family: monospace; font-size: 0.9rem; background: #2c3e50; color: #ecf0f1; padding: 15px; border-radius: 5px; margin-bottom: 15px;">
+                                App code (in controller):<br>
+                                <span style="color: #3498db;">val</span> = <span style="color: #e74c3c;">redis.get</span>(key)<br>
+                                <span style="color: #f39c12;">if</span> val is None:<br>
+                                &nbsp;&nbsp;<span style="color: #3498db;">val</span> = <span style="color: #27ae60;">db.find</span>(id)<br>
+                                &nbsp;&nbsp;<span style="color: #e74c3c;">redis.set</span>(key, val)<br>
+                                <span style="color: #f39c12;">return</span> val
+                            </div>
+                            <p style="font-size: 0.9rem; color: #666;">
+                                App fetches from DB on cache miss.<br>
+                                Framework intercepts call in proxy layer.<br>
+                                Query lib handles it transparently.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 20px; margin-top: 25px;">
+                    <h4 style="color: #856404; margin-bottom: 10px;">Three Implementation Approaches — Same Result, Different Writers</h4>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 15px;">
+                        <div>
+                            <h5 style="color: #2c3e50;">1. App Cache-aside (manual)</h5>
+                            <p style="font-size: 0.9rem;">You write the DB query.<br>You call cache.set() to populate.<br>Framework: <em>your own</em></p>
+                        </div>
+                        <div>
+                            <h5 style="color: #2c3e50;">2. Cache client with loader</h5>
+                            <p style="font-size: 0.9rem;">Framework intercepts call.<br>Detects cache miss, calls your loader func.<br>Returns result to app your_loader = db.find(id)</p>
+                        </div>
+                        <div>
+                            <h5 style="color: #2c3e50;">3. Proxy (transparent)</h5>
+                            <p style="font-size: 0.9rem;">Rank App sees proxy as normal.<br>Proxy checks cache before DB.<br>Returns result to app Even the DB Proxy.</p>
+                        </div>
+                    </div>
+                    <p style="margin-top: 15px; font-weight: 600; color: #856404;">
+                        In all three cases, the cache only speaks GET/SET with your app. The loader function — written by you or your framework — decides the protocol: MySQL, gRPC, HTTP. Who actually opens the DB query?
+                    </p>
+                </div>
+            </div>
+
+            <div class="highlight">
+                <strong>Key Insight:</strong> Memcached and Redis are caches — they have no idea where your data originally came from. 
+                <br>Couchbase is a primary database that happens to keep everything in memory first. 
+                <br><br><strong>Choose based on:</strong> Do you need the cache to survive restarts? Do you need rich data types? Is this your only datastore?
+            </div>
+        </div>
+    </section>
+
+    <script>
+        // Smooth scrolling for navigation
+        document.querySelectorAll('.nav-tabs a').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                const offsetTop = target.offsetTop - 100;
+                
+                window.scrollTo({
+                    top: offsetTop,
+                    behavior: 'smooth'
+                });
+                
+                // Update active nav
+                document.querySelectorAll('.nav-tabs a').forEach(a => a.style.color = '#666');
+                this.style.color = '#667eea';
+                this.style.borderBottomColor = '#667eea';
+            });
+        });
+
+        // Update active nav on scroll
+        window.addEventListener('scroll', function() {
+            const sections = document.querySelectorAll('.section');
+            const navLinks = document.querySelectorAll('.nav-tabs a');
+            
+            let current = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop - 150;
+                if (window.pageYOffset >= sectionTop) {
+                    current = section.getAttribute('id');
+                }
+            });
+            
+            navLinks.forEach(a => {
+                a.style.color = '#666';
+                a.style.borderBottomColor = 'transparent';
+                if (a.getAttribute('href') === '#' + current) {
+                    a.style.color = '#667eea';
+                    a.style.borderBottomColor = '#667eea';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
