@@ -517,156 +517,114 @@
   
   <div class="implementation">
     <h4>SHA-256 Hash-Based Addressing</h4>
-    <p><strong>Integrity by Design:</strong> Every artifact addressable by its content hash</p>
-    <pre>// LinkedIn Build Cache with content addressing
-public class ContentAddressableCache {
-    
-    // Generate content-based address for any artifact
-    public String generateContentAddress(ArtifactMetadata artifact, byte[] content) {
-        MessageDigest sha256 = MessageDigest.getInstance("SHA-256");
-        
-        // Include metadata in hash for determinism
-        sha256.update(artifact.getBuildInputs().getBytes());
-        sha256.update(artifact.getToolchain().getBytes());
-        sha256.update(artifact.getCompilerFlags().getBytes());
-        sha256.update(content);
-        
-        byte[] hash = sha256.digest();
-        return "sha256:" + Hex.encodeHexString(hash);
-    }
-    
-    // Store artifact with CAS addressing
-    public void storeArtifact(BuildArtifact artifact) {
-        String contentAddress = generateContentAddress(artifact.getMetadata(), artifact.getContent());
-        
-        // Check if already exists (deduplication)
-        if (hashIndex.contains(contentAddress)) {
-            logger.info("Artifact already cached: {}", contentAddress);
-            return;
-        }
-        
-        // Store in both hot and cold tiers
-        hotCache.put(contentAddress, artifact.getContent());
-        coldStorage.put(contentAddress, artifact);
-        
-        // Update index with metadata
-        hashIndex.put(contentAddress, ArtifactIndex.builder()
-            .contentAddress(contentAddress)
-            .size(artifact.getContent().length)
-            .buildTimestamp(Instant.now())
-            .accessCount(0)
-            .leaseExpiresAt(null)
-            .build());
-        
-        logger.info("Stored artifact: {} size: {} bytes", contentAddress, artifact.getContent().length);
-    }
-    
-    // Retrieve artifact by content hash
-    public Optional&lt;BuildArtifact&gt; retrieveArtifact(String contentAddress) {
-        ArtifactIndex index = hashIndex.get(contentAddress);
-        if (index == null) {
-            return Optional.empty();
-        }
-        
-        // Try hot cache first (L1)
-        byte[] content = hotCache.get(contentAddress);
-        if (content != null) {
-            metricsClient.increment("cache.hit.hot");
-            return Optional.of(new BuildArtifact(index.getMetadata(), content));
-        }
-        
-        // Fallback to cold storage (L2)
-        BuildArtifact artifact = coldStorage.get(contentAddress);
-        if (artifact != null) {
-            // Promote to hot cache for future access
-            hotCache.put(contentAddress, artifact.getContent());
-            metricsClient.increment("cache.hit.cold");
-            return Optional.of(artifact);
-        }
-        
-        metricsClient.increment("cache.miss");
-        return Optional.empty();
-    }
-}</pre>
+    <p><strong>Integrity by Design:</strong> Every artifact addressable by its content hash for deterministic builds and automatic deduplication across the LinkedIn development ecosystem.</p>
   </div>
   
-  <h3>Two-Tier Cache Implementation</h3>
+  <h3>Artifactory Integration & Cache Layer</h3>
   
+  <!-- Artifactory Integration Flow -->
+  <div style="background: #e8f4f8; border: 2px solid #0277bd; border-radius: 8px; padding: 20px; margin: 20px 0;">
+    <div style="text-align: center; margin-bottom: 15px;">
+      <div style="background: #01579b; color: white; padding: 8px 16px; border-radius: 6px; display: inline-block; font-weight: 600;">
+        🏛️ ARTIFACTORY INTEGRATION — Cache Layer on Top
+      </div>
+    </div>
+
+    <!-- Integration Architecture -->
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 15px;">
+      <!-- Build Tools -->
+      <div style="background: white; border: 2px solid #2196f3; border-radius: 8px; padding: 15px; text-align: center;">
+        <div style="background: #2196f3; color: white; padding: 6px; border-radius: 4px; margin-bottom: 10px; font-weight: 600; font-size: 0.9em;">
+          🔨 BUILD TOOLS
+        </div>
+        <div style="font-size: 0.8em; margin-bottom: 8px;">
+          <strong>Gradle:</strong> Cache plugin<br>
+          <strong>Maven:</strong> Extension<br>
+          <strong>Docker:</strong> BuildKit integration<br>
+          <strong>Bazel:</strong> Remote cache
+        </div>
+      </div>
+      
+      <!-- LinkedIn Cache Layer -->
+      <div style="background: white; border: 2px solid #ff6f00; border-radius: 8px; padding: 15px; text-align: center;">
+        <div style="background: #ff6f00; color: white; padding: 6px; border-radius: 4px; margin-bottom: 10px; font-weight: 600; font-size: 0.9em;">
+          ⚡ LINKEDIN CACHE
+        </div>
+        <div style="font-size: 0.8em; margin-bottom: 8px;">
+          <strong>L1:</strong> SSD hot cache<br>
+          <strong>L2:</strong> Ambry warm store<br>
+          <strong>Features:</strong> Dedup, leases<br>
+          <strong>Latency:</strong> 45ms P95
+        </div>
+      </div>
+      
+      <!-- Artifactory Backend -->
+      <div style="background: white; border: 2px solid #4caf50; border-radius: 8px; padding: 15px; text-align: center;">
+        <div style="background: #4caf50; color: white; padding: 6px; border-radius: 4px; margin-bottom: 10px; font-weight: 600; font-size: 0.9em;">
+          📦 ARTIFACTORY
+        </div>
+        <div style="font-size: 0.8em; margin-bottom: 8px;">
+          <strong>Role:</strong> Source of truth<br>
+          <strong>Storage:</strong> All published artifacts<br>
+          <strong>Access:</strong> REST API<br>
+          <strong>Latency:</strong> 500-2000ms
+        </div>
+      </div>
+      
+      <!-- External Repos -->
+      <div style="background: white; border: 2px solid #9c27b0; border-radius: 8px; padding: 15px; text-align: center;">
+        <div style="background: #9c27b0; color: white; padding: 6px; border-radius: 4px; margin-bottom: 10px; font-weight: 600; font-size: 0.9em;">
+          🌐 EXTERNAL REPOS
+        </div>
+        <div style="font-size: 0.8em; margin-bottom: 8px;">
+          <strong>Maven Central:</strong> OSS deps<br>
+          <strong>Docker Hub:</strong> Base images<br>
+          <strong>NPM Registry:</strong> JS packages<br>
+          <strong>Via:</strong> Artifactory proxy
+        </div>
+      </div>
+    </div>
+
+    <!-- Cache Miss Flow with Artifactory -->
+    <div style="background: white; border: 1px solid #0277bd; border-radius: 6px; padding: 15px;">
+      <div style="font-size: 0.9em; font-weight: 600; margin-bottom: 10px; color: #01579b;">🔍 Cache Miss Flow — Fallback to Artifactory</div>
+      <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8em;">
+        <div style="background: #e1f5fe; padding: 8px; border-radius: 4px; text-align: center; width: 18%;">
+          <strong>Build Tool Query</strong><br>
+          <code>sha256:abc123</code><br>
+          LinkedIn Cache API
+        </div>
+        <span style="color: #0277bd;">→</span>
+        <div style="background: #ffecb3; padding: 8px; border-radius: 4px; text-align: center; width: 18%;">
+          <strong>Cache Miss</strong><br>
+          L1 + L2 = 404<br>
+          Fallback triggered
+        </div>
+        <span style="color: #0277bd;">→</span>
+        <div style="background: #e8f5e8; padding: 8px; border-radius: 4px; text-align: center; width: 18%;">
+          <strong>Query Artifactory</strong><br>
+          REST API call<br>
+          <code>/repo/path/artifact</code>
+        </div>
+        <span style="color: #0277bd;">→</span>
+        <div style="background: #f3e5f5; padding: 8px; border-radius: 4px; text-align: center; width: 18%;">
+          <strong>Populate Cache</strong><br>
+          Store in L1 + L2<br>
+          Return to build
+        </div>
+        <span style="color: #0277bd;">→</span>
+        <div style="background: #e1f5fe; padding: 8px; border-radius: 4px; text-align: center; width: 18%;">
+          <strong>Future Hits</strong><br>
+          45ms retrieval<br>
+          No Artifactory load
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="implementation">
     <h4>Hot SSD + Cold Object Storage Pattern</h4>
-    <pre>// Intelligent cache tier management
-public class TwoTierCacheManager {
-    
-    private final SSDCache hotTier;     // Fast SSD storage (limited capacity)
-    private final AmbryCold coldTier;   // LinkedIn Ambry object store (unlimited)
-    
-    // Hot tier: Recent and frequently accessed artifacts
-    public class SSDCache {
-        private final Map&lt;String, CacheEntry&gt; cache = new ConcurrentHashMap&lt;>();
-        private final long maxSizeBytes = 1_000_000_000_000L; // 1TB SSD
-        
-        // LRU eviction with lease protection
-        public void evictIfNeeded() {
-            long currentSize = calculateTotalSize();
-            
-            if (currentSize > maxSizeBytes * 0.9) { // 90% threshold
-                List&lt;CacheEntry&gt; candidates = cache.values().stream()
-                    .filter(entry -> !entry.hasActiveLease()) // Never evict leased artifacts
-                    .sorted(Comparator.comparing(CacheEntry::getLastAccessTime))
-                    .limit(100) // Evict in batches
-                    .collect(Collectors.toList());
-                
-                for (CacheEntry entry : candidates) {
-                    cache.remove(entry.getContentAddress());
-                    logger.info("Evicted from hot cache: {}", entry.getContentAddress());
-                }
-            }
-        }
-    }
-    
-    // Cold tier: All artifacts with slower access
-    public class AmbryColdStorage {
-        private final AmbryClient ambryClient;
-        
-        public void put(String contentAddress, BuildArtifact artifact) {
-            // Store in LinkedIn Ambry with CAS key
-            BlobId blobId = ambryClient.put(
-                contentAddress,
-                artifact.serialize(),
-                ArtifactTTL.DAYS_90 // 90-day retention
-            );
-            
-            // Update index mapping
-            casIndex.put(contentAddress, blobId);
-        }
-        
-        public BuildArtifact get(String contentAddress) {
-            BlobId blobId = casIndex.get(contentAddress);
-            if (blobId == null) return null;
-            
-            byte[] data = ambryClient.get(blobId);
-            return BuildArtifact.deserialize(data);
-        }
-    }
-    
-    // Retrieve with tier promotion
-    public Optional&lt;BuildArtifact&gt; get(String contentAddress) {
-        // Try hot tier first
-        Optional&lt;BuildArtifact&gt; hotResult = hotTier.get(contentAddress);
-        if (hotResult.isPresent()) {
-            return hotResult;
-        }
-        
-        // Fetch from cold tier and promote
-        Optional&lt;BuildArtifact&gt; coldResult = coldTier.get(contentAddress);
-        if (coldResult.isPresent()) {
-            hotTier.put(contentAddress, coldResult.get());
-            metricsClient.increment("cache.promotion");
-        }
-        
-        return coldResult;
-    }
-}</pre>
+    <p><strong>Two-Tier Architecture:</strong> LinkedIn Cache operates as a high-performance layer above Artifactory, with L1 SSD for hot artifacts (sub-100ms) and L2 Ambry for comprehensive storage, while Artifactory serves as the authoritative source for published artifacts and proxy to external repositories.</p>
   </div>
 </div>
 
@@ -678,329 +636,32 @@ public class TwoTierCacheManager {
   
   <div class="buildcache">
     <h4>Active Build Protection</h4>
-    <p>Prevents artifacts from being evicted while builds are actively using them</p>
-    <pre>// Lease system to prevent eviction races
-public class LeaseBasedEvictionController {
-    
-    private final Map&lt;String, Set&lt;LeaseToken&gt;&gt; activeLeases = new ConcurrentHashMap&lt;>();
-    
-    // Acquire lease before using artifact in build
-    public LeaseToken acquireLease(String contentAddress, String buildId, Duration leaseTTL) {
-        LeaseToken lease = LeaseToken.builder()
-            .contentAddress(contentAddress)
-            .buildId(buildId)
-            .acquiredAt(Instant.now())
-            .expiresAt(Instant.now().plus(leaseTTL))
-            .build();
-        
-        activeLeases.computeIfAbsent(contentAddress, k -> ConcurrentHashMap.newKeySet()).add(lease);
-        
-        logger.info("Acquired lease for artifact {} build {}", contentAddress, buildId);
-        return lease;
-    }
-    
-    // Release lease when build completes
-    public void releaseLease(LeaseToken lease) {
-        Set&lt;LeaseToken&gt; leases = activeLeases.get(lease.getContentAddress());
-        if (leases != null) {
-            leases.remove(lease);
-            logger.info("Released lease for artifact {} build {}", 
-                       lease.getContentAddress(), lease.getBuildId());
-        }
-    }
-    
-    // Check if artifact can be safely evicted
-    public boolean canEvictArtifact(String contentAddress) {
-        Set&lt;LeaseToken&gt; leases = activeLeases.get(contentAddress);
-        if (leases == null || leases.isEmpty()) {
-            return true;
-        }
-        
-        // Check for expired leases
-        Instant now = Instant.now();
-        leases.removeIf(lease -> lease.getExpiresAt().isBefore(now));
-        
-        return leases.isEmpty();
-    }
-    
-    // Periodic cleanup of expired leases
-    @Scheduled(fixedDelay = 60000) // every minute
-    public void cleanupExpiredLeases() {
-        Instant now = Instant.now();
-        int cleanedUp = 0;
-        
-        for (Map.Entry&lt;String, Set&lt;LeaseToken&gt;&gt; entry : activeLeases.entrySet()) {
-            Set&lt;LeaseToken&gt; leases = entry.getValue();
-            int sizeBefore = leases.size();
-            
-            leases.removeIf(lease -> lease.getExpiresAt().isBefore(now));
-            
-            cleanedUp += sizeBefore - leases.size();
-            
-            // Remove empty lease sets
-            if (leases.isEmpty()) {
-                activeLeases.remove(entry.getKey());
-            }
-        }
-        
-        if (cleanedUp > 0) {
-            logger.info("Cleaned up {} expired leases", cleanedUp);
-        }
-    }
-}</pre>
+    <p><strong>Lease-Based Coordination:</strong> Prevents artifacts from being evicted while builds are actively using them through a distributed lease system that tracks active references and TTL-based cleanup to avoid eviction races during parallel builds.</p>
   </div>
   
   <h3>Cross-Region Replication with Bloom Filters</h3>
   
   <div class="implementation">
     <h4>Intelligent Replication Strategy</h4>
-    <pre>// Async replication with Bloom filter optimization
-public class CrossRegionReplicationAgent {
-    
-    private final BloomFilter&lt;String&gt; replicatedHashes;
-    private final Map&lt;String, RegionalCache&gt; regionalCaches;
-    
-    // Replicate new artifacts across regions
-    public void replicateArtifact(String contentAddress, BuildArtifact artifact) {
-        CompletableFuture&lt;Void&gt;[] replicationTasks = regionalCaches.entrySet().stream()
-            .filter(entry -> !entry.getKey().equals(getCurrentRegion()))
-            .map(entry -> replicateToRegionAsync(entry.getValue(), contentAddress, artifact))
-            .toArray(CompletableFuture[]::new);
-        
-        // Fire and forget - don't block builds on replication
-        CompletableFuture.allOf(replicationTasks)
-            .thenRun(() -> {
-                replicatedHashes.put(contentAddress);
-                logger.info("Artifact replicated globally: {}", contentAddress);
-            })
-            .exceptionally(throwable -> {
-                logger.error("Replication failed for {}", contentAddress, throwable);
-                return null;
-            });
-    }
-    
-    private CompletableFuture&lt;Void&gt; replicateToRegionAsync(RegionalCache targetCache, 
-                                                          String contentAddress, 
-                                                          BuildArtifact artifact) {
-        return CompletableFuture.runAsync(() -> {
-            // Check if target region already has this artifact
-            if (targetCache.contains(contentAddress)) {
-                return;
-            }
-            
-            // Replicate both index and data
-            targetCache.storeArtifact(contentAddress, artifact);
-            
-            metricsClient.increment("replication.success", 
-                                  Map.of("target_region", targetCache.getRegion()));
-        });
-    }
-    
-    // Bloom filter check to avoid unnecessary replication queries
-    public boolean isLikelyReplicated(String contentAddress) {
-        return replicatedHashes.mightContain(contentAddress);
-    }
-    
-    // Periodic consistency check across regions
-    @Scheduled(fixedDelay = 300000) // every 5 minutes
-    public void performConsistencyCheck() {
-        String primaryRegion = "ltx1";
-        RegionalCache primaryCache = regionalCaches.get(primaryRegion);
-        
-        for (Map.Entry&lt;String, RegionalCache&gt; entry : regionalCaches.entrySet()) {
-            if (entry.getKey().equals(primaryRegion)) continue;
-            
-            RegionalCache secondaryCache = entry.getValue();
-            ConsistencyReport report = compareRegionalCaches(primaryCache, secondaryCache);
-            
-            if (report.getInconsistentArtifacts() > 10) {
-                alertManager.warn("High inconsistency between {} and {}: {} artifacts", 
-                                primaryRegion, entry.getKey(), report.getInconsistentArtifacts());
-            }
-            
-            // Auto-heal missing artifacts
-            healMissingArtifacts(primaryCache, secondaryCache, report.getMissingArtifacts());
-        }
-    }
-}</pre>
+    <p><strong>Cross-Region Async Replication:</strong> Bloom filter optimization prevents unnecessary replication queries while maintaining eventual consistency across LinkedIn's global build infrastructure with automatic conflict resolution and consistency validation.</p>
+  </div>
+  
+  <h3>Checksum Validation & Corruption Detection</h3>
   </div>
   
   <h3>Checksum Validation & Corruption Detection</h3>
   
   <div class="failure">
     <h4>Data Integrity Protection</h4>
-    <p>Comprehensive validation to detect and recover from silent corruption</p>
-    <pre>// Multi-layer integrity validation
-public class IntegrityValidationPipeline {
-    
-    // Validate artifact on retrieval
-    public ValidationResult validateArtifact(String contentAddress, byte[] content) {
-        ValidationResult result = new ValidationResult();
-        
-        // 1. SHA-256 content hash validation
-        String computedHash = "sha256:" + Hex.encodeHexString(
-            MessageDigest.getInstance("SHA-256").digest(content)
-        );
-        
-        if (!computedHash.equals(contentAddress)) {
-            result.addError("Content hash mismatch: expected " + contentAddress + 
-                          " got " + computedHash);
-        }
-        
-        // 2. CRC32 checksum for fast corruption detection
-        CRC32 crc = new CRC32();
-        crc.update(content);
-        long computedCRC = crc.getValue();
-        
-        ArtifactMetadata metadata = getMetadata(contentAddress);
-        if (metadata.getStoredCRC() != computedCRC) {
-            result.addError("CRC mismatch: expected " + metadata.getStoredCRC() + 
-                          " got " + computedCRC);
-        }
-        
-        // 3. Artifact-specific validation
-        if (contentAddress.endsWith(".jar")) {
-            result.merge(validateJarFile(content));
-        } else if (contentAddress.contains("docker-image")) {
-            result.merge(validateDockerImage(content));
-        }
-        
-        return result;
-    }
-    
-    // Periodic background integrity audit
-    @Scheduled(fixedDelay = 3600000) // every hour
-    public void performIntegrityAudit() {
-        // Sample 1% of cached artifacts for validation
-        List&lt;String&gt; sampleArtifacts = hashIndex.keySet().stream()
-            .filter(hash -> hash.hashCode() % 100 == 0) // 1% sample
-            .limit(1000) // Max 1000 per audit
-            .collect(Collectors.toList());
-        
-        int corruptionCount = 0;
-        
-        for (String contentAddress : sampleArtifacts) {
-            try {
-                Optional&lt;BuildArtifact&gt; artifact = retrieveArtifact(contentAddress);
-                if (artifact.isPresent()) {
-                    ValidationResult result = validateArtifact(contentAddress, 
-                                                             artifact.get().getContent());
-                    if (!result.isValid()) {
-                        handleCorruption(contentAddress, result);
-                        corruptionCount++;
-                    }
-                }
-            } catch (Exception e) {
-                logger.error("Validation failed for {}", contentAddress, e);
-            }
-        }
-        
-        double corruptionRate = (double) corruptionCount / sampleArtifacts.size();
-        metricsClient.gauge("cache.corruption_rate", corruptionRate);
-        
-        if (corruptionRate > 0.001) { // 0.1% threshold
-            alertManager.page("Cache corruption rate exceeded threshold: {}%", 
-                            corruptionRate * 100);
-        }
-    }
-    
-    // Handle detected corruption
-    private void handleCorruption(String contentAddress, ValidationResult result) {
-        logger.error("Corruption detected for {}: {}", contentAddress, result.getErrors());
-        
-        // 1. Remove corrupted artifact from all caches
-        hotCache.remove(contentAddress);
-        coldStorage.remove(contentAddress);
-        
-        // 2. Try to recover from other regions
-        Optional&lt;BuildArtifact&gt; recovered = recoverFromOtherRegions(contentAddress);
-        if (recovered.isPresent()) {
-            storeArtifact(recovered.get());
-            logger.info("Recovered corrupted artifact from remote region: {}", contentAddress);
-        }
-        
-        // 3. Alert and mark for rebuild
-        alertManager.warn("Artifact corruption detected and removed: {}", contentAddress);
-        markForRebuild(contentAddress);
-    }
-}</pre>
+    <p><strong>Multi-Layer Validation:</strong> Comprehensive SHA-256 + CRC32 validation pipeline with periodic background integrity audits, corruption detection, and automatic healing to ensure artifact consistency across LinkedIn's distributed build cache infrastructure.</p>
   </div>
   
   <h3>Cache Hit Rate Optimization</h3>
   
   <div class="monitoring">
     <h4>Intelligent Cache Management</h4>
-    <pre>// Hit rate optimization and monitoring
-public class CacheOptimizationService {
-    
-    // Monitor and optimize cache hit rates
-    @Scheduled(fixedDelay = 300000) // every 5 minutes
-    public void optimizeCachePerformance() {
-        CacheMetrics metrics = gatherCacheMetrics();
-        
-        // Global hit rate tracking
-        double globalHitRate = metrics.getHitRate();
-        metricsClient.gauge("cache.hit_rate", globalHitRate);
-        
-        if (globalHitRate < 0.8) { // Below 80%
-            alertManager.warn("Cache hit rate below target: {}%", globalHitRate * 100);
-            
-            // Analyze and take corrective action
-            analyzeCacheMisses(metrics);
-        }
-        
-        // Per-artifact-type hit rates
-        Map&lt;String, Double&gt; hitRateByType = metrics.getHitRateByArtifactType();
-        for (Map.Entry&lt;String, Double&gt; entry : hitRateByType.entrySet()) {
-            metricsClient.gauge("cache.hit_rate_by_type", entry.getValue(),
-                              Map.of("artifact_type", entry.getKey()));
-        }
-        
-        // Adaptive cache sizing based on hit rates
-        adaptCacheSizing(metrics);
-    }
-    
-    private void analyzeCacheMisses(CacheMetrics metrics) {
-        // Identify patterns in cache misses
-        Map&lt;String, Integer&gt; missByReason = metrics.getMissByReason();
-        
-        if (missByReason.get("EVICTED_TOO_EARLY") > 100) {
-            // Increase hot cache size
-            scalingController.scaleHotCache(1.2); // 20% increase
-            logger.info("Scaled up hot cache due to premature evictions");
-        }
-        
-        if (missByReason.get("NOT_REPLICATED") > 50) {
-            // Improve replication speed
-            replicationAgent.increaseReplicationWorkers();
-            logger.info("Increased replication workers due to replication lag");
-        }
-        
-        if (missByReason.get("FIRST_BUILD") > 200) {
-            // Normal - new builds expected
-            logger.info("High first-build miss rate: {} new artifacts", 
-                       missByReason.get("FIRST_BUILD"));
-        }
-    }
-    
-    // Adaptive cache sizing based on workload patterns
-    private void adaptCacheSizing(CacheMetrics metrics) {
-        // Adjust hot cache size based on access patterns
-        double accessSkewness = metrics.getAccessSkewness();
-        long currentHotCacheSize = metrics.getHotCacheSize();
-        
-        if (accessSkewness > 0.8) { // Very skewed access pattern
-            // Reduce hot cache size - most artifacts are rarely accessed
-            long newSize = (long) (currentHotCacheSize * 0.9);
-            hotCacheManager.resizeTo(newSize);
-            
-        } else if (accessSkewness < 0.4) { // More uniform access
-            // Increase hot cache size - more artifacts need fast access
-            long newSize = (long) (currentHotCacheSize * 1.1);
-            hotCacheManager.resizeTo(newSize);
-        }
-    }
-}</pre>
+    <p><strong>Automated Optimization:</strong> Continuous monitoring and adaptive cache sizing based on hit rate analysis, miss pattern detection, and predictive artifact popularity to maintain 90%+ hit rates across LinkedIn's build infrastructure.</p>
+  </div>
   </div>
   
   <div class="pros-cons">
