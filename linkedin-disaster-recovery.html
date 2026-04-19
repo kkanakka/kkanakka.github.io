@@ -102,211 +102,355 @@
   <div class="disaster">
     <h4>System Architecture — Multi-DC Disaster Recovery & Automated Failover</h4>
     
-    <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 16px 0; border: 2px solid #dee2e6;">
-      <div style="text-align: center; margin-bottom: 20px;">
-        <h4 style="color: #c62828; margin-bottom: 10px;">🌍 Complete Multi-Region DR Architecture</h4>
+    <div style="background: #f8f9fa; border: 2px solid #c62828; border-radius: 12px; padding: 25px; margin: 20px 0;">
+      <!-- Title Section -->
+      <div style="text-align: center; margin-bottom: 25px; padding: 15px; background: linear-gradient(135deg, #c62828, #8e24aa); border-radius: 8px; color: white;">
+        <h3 style="margin: 0; font-size: 1.3em;">🌍 LinkedIn Disaster Recovery Orchestrator</h3>
+        <p style="margin: 5px 0 0 0; opacity: 0.9; font-size: 0.9em;">Multi-Region Automated Failover Architecture</p>
       </div>
-      
-      <!-- Health Probe Engine -->
-      <div style="background: #e3f2fd; border: 2px solid #2196f3; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-          <div style="background: #1976d2; color: white; padding: 8px 12px; border-radius: 6px; font-weight: 600;">
-            🔍 Health Probe Engine
-          </div>
-          <div style="font-size: 0.85em; color: #666;">Multi-dimensional monitoring</div>
-        </div>
-        
-        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
-          <div style="background: white; border: 1px solid #90caf9; border-radius: 4px; padding: 6px; text-align: center; font-size: 0.8em;">
-            <strong>Active Ping</strong><br>
-            TCP/HTTP checks
-          </div>
-          <div style="background: white; border: 1px solid #90caf9; border-radius: 4px; padding: 6px; text-align: center; font-size: 0.8em;">
-            <strong>Synthetic TXN</strong><br>
-            End-to-end tests
-          </div>
-          <div style="background: white; border: 1px solid #90caf9; border-radius: 4px; padding: 6px; text-align: center; font-size: 0.8em;">
-            <strong>Dependency</strong><br>
-            Service mesh health
-          </div>
-          <div style="background: white; border: 1px solid #90caf9; border-radius: 4px; padding: 6px; text-align: center; font-size: 0.8em;">
-            <strong>Latency P99</strong><br>
-            Performance metrics
+
+      <!-- Normal Operations Flow -->
+      <div style="background: #e8f5e9; border: 2px solid #4caf50; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+        <div style="text-align: center; margin-bottom: 15px;">
+          <div style="background: #2e7d32; color: white; padding: 8px 16px; border-radius: 6px; display: inline-block; font-weight: 600;">
+            ✅ NORMAL OPERATIONS — All Regions Healthy
           </div>
         </div>
         
-        <div style="margin: 15px 0; text-align: center;">
-          <span style="color: #1976d2; font-size: 1.2em;">⬇️</span>
-          <div style="font-size: 0.8em; color: #666;">1. Continuous health assessment of all regions</div>
-        </div>
-      </div>
-      
-      <!-- Decision Controller (Raft) -->
-      <div style="background: #f3e5f5; border: 2px solid #9c27b0; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-          <div style="background: #7b1fa2; color: white; padding: 8px 12px; border-radius: 6px; font-weight: 600;">
-            🧠 Decision Controller (Raft)
+        <!-- Primary Region Details -->
+        <div style="display: grid; grid-template-columns: 1fr 2fr 1fr; gap: 15px; align-items: center; margin-bottom: 15px;">
+          <!-- LTX1 Primary -->
+          <div style="background: white; border: 2px solid #4caf50; border-radius: 8px; padding: 15px; text-align: center;">
+            <div style="background: #4caf50; color: white; padding: 6px; border-radius: 4px; margin-bottom: 10px; font-weight: 600; font-size: 0.9em;">
+              🌟 PRIMARY (LTX1)
+            </div>
+            <div style="font-size: 0.8em; margin-bottom: 8px;">
+              <strong>Member API:</strong> ✅ ACTIVE<br>
+              <strong>Feed Service:</strong> ✅ ACTIVE<br>
+              <strong>Espresso DB:</strong> ✅ PRIMARY<br>
+              <strong>Traffic:</strong> 100% serving
+            </div>
+            <div style="background: #e8f5e8; padding: 6px; border-radius: 4px; font-size: 0.75em;">
+              <strong>Health Score:</strong> 100%<br>
+              <strong>Latency P99:</strong> 45ms<br>
+              <strong>Error Rate:</strong> 0.01%
+            </div>
           </div>
-          <div style="font-size: 0.85em; color: #666;">Split-brain prevention</div>
-        </div>
-        
-        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
-          <div style="background: white; border: 1px solid #ce93d8; border-radius: 4px; padding: 6px; text-align: center; font-size: 0.8em;">
-            <strong>Raft Leader</strong><br>
-            LTX1 primary
+          
+          <!-- Data Flow Arrows -->
+          <div style="text-align: center; font-size: 0.8em;">
+            <div style="margin-bottom: 10px;">
+              <span style="background: #2196f3; color: white; padding: 4px 8px; border-radius: 4px;">1. Async Replication</span><br>
+              <span style="color: #2196f3; font-size: 1.5em;">⬇️</span><br>
+              <code style="background: #e3f2fd; padding: 2px 4px; border-radius: 2px;">Brooklin → Kafka</code><br>
+              <code style="background: #e3f2fd; padding: 2px 4px; border-radius: 2px;">TCP 9092</code>
+            </div>
+            <div>
+              <span style="background: #9c27b0; color: white; padding: 4px 8px; border-radius: 4px;">2. Health Probes</span><br>
+              <span style="color: #9c27b0; font-size: 1.5em;">⬇️</span><br>
+              <code style="background: #f3e5f5; padding: 2px 4px; border-radius: 2px;">HTTPS 443</code><br>
+              <code style="background: #f3e5f5; padding: 2px 4px; border-radius: 2px;">Every 10s</code>
+            </div>
           </div>
-          <div style="background: white; border: 1px solid #ce93d8; border-radius: 4px; padding: 6px; text-align: center; font-size: 0.8em;">
-            <strong>Follower</strong><br>
-            LVA1 secondary
-          </div>
-          <div style="background: white; border: 1px solid #ce93d8; border-radius: 4px; padding: 6px; text-align: center; font-size: 0.8em;">
-            <strong>Follower</strong><br>
-            EI4 staging
-          </div>
-          <div style="background: white; border: 1px solid #ce93d8; border-radius: 4px; padding: 6px; text-align: center; font-size: 0.8em;">
-            <strong>Quorum</strong><br>
-            3 of 5 nodes
-          </div>
-        </div>
-        
-        <div style="margin: 15px 0; text-align: center;">
-          <span style="color: #7b1fa2; font-size: 1.2em;">⬇️</span>
-          <div style="font-size: 0.8em; color: #666;">2. Consensus-based failover decision (no split-brain)</div>
-        </div>
-      </div>
-      
-      <!-- Primary Region (Active) -->
-      <div style="background: #e8f5e8; border: 2px solid #4caf50; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-          <div style="background: #388e3c; color: white; padding: 8px 12px; border-radius: 6px; font-weight: 600;">
-            🌟 Primary Region (LTX1 - Active)
-          </div>
-          <div style="font-size: 0.85em; color: #666;">All traffic + writes</div>
-        </div>
-        
-        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
-          <div style="background: white; border: 1px solid #81c784; border-radius: 4px; padding: 6px; text-align: center; font-size: 0.8em;">
-            <strong>Member API</strong><br>
-            ✅ Active
-          </div>
-          <div style="background: white; border: 1px solid #81c784; border-radius: 4px; padding: 6px; text-align: center; font-size: 0.8em;">
-            <strong>Feed Service</strong><br>
-            ✅ Active
-          </div>
-          <div style="background: white; border: 1px solid #81c784; border-radius: 4px; padding: 6px; text-align: center; font-size: 0.8em;">
-            <strong>Espresso DB</strong><br>
-            ✅ Primary
-          </div>
-          <div style="background: white; border: 1px solid #81c784; border-radius: 4px; padding: 6px; text-align: center; font-size: 0.8em;">
-            <strong>Traffic</strong><br>
-            100% serving
+          
+          <!-- LVA1 Hot Standby -->
+          <div style="background: white; border: 2px solid #ff9800; border-radius: 8px; padding: 15px; text-align: center;">
+            <div style="background: #ff9800; color: white; padding: 6px; border-radius: 4px; margin-bottom: 10px; font-weight: 600; font-size: 0.9em;">
+              🔥 HOT STANDBY (LVA1)
+            </div>
+            <div style="font-size: 0.8em; margin-bottom: 8px;">
+              <strong>Member API:</strong> ⏸️ STANDBY<br>
+              <strong>Feed Service:</strong> ⏸️ STANDBY<br>
+              <strong>Espresso DB:</strong> 📄 REPLICA<br>
+              <strong>Traffic:</strong> 0% (ready)
+            </div>
+            <div style="background: #fff3e0; padding: 6px; border-radius: 4px; font-size: 0.75em;">
+              <strong>Repl Lag:</strong> 12s<br>
+              <strong>Last Sync:</strong> 2s ago<br>
+              <strong>Status:</strong> HEALTHY
+            </div>
           </div>
         </div>
-        
-        <div style="margin: 15px 0; text-align: center;">
-          <span style="color: #388e3c; font-size: 1.2em;">⬇️</span>
-          <div style="font-size: 0.8em; color: #666;">3. Async replication to all standby regions</div>
-        </div>
-      </div>
-      
-      <!-- Standby Region (Hot) -->
-      <div style="background: #fff3e0; border: 2px solid #ff9800; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-          <div style="background: #f57c00; color: white; padding: 8px 12px; border-radius: 6px; font-weight: 600;">
-            🔥 Standby Region (LVA1 - Hot)
+
+        <!-- Additional Regions -->
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; font-size: 0.8em;">
+          <div style="background: white; border: 1px solid #607d8b; border-radius: 4px; padding: 8px; text-align: center;">
+            <strong>❄️ COLD DR (EI4)</strong><br>
+            <span style="color: #666;">Snapshot: 4h old</span>
           </div>
-          <div style="font-size: 0.85em; color: #666;">Ready for immediate failover</div>
-        </div>
-        
-        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
-          <div style="background: white; border: 1px solid #ffb74d; border-radius: 4px; padding: 6px; text-align: center; font-size: 0.8em;">
-            <strong>Member API</strong><br>
-            ⏸️ Standby
+          <div style="background: white; border: 1px solid #795548; border-radius: 4px; padding: 8px; text-align: center;">
+            <strong>🌡️ WARM DR (CORP)</strong><br>
+            <span style="color: #666;">Repl Lag: 5min</span>
           </div>
-          <div style="background: white; border: 1px solid #ffb74d; border-radius: 4px; padding: 6px; text-align: center; font-size: 0.8em;">
-            <strong>Feed Service</strong><br>
-            ⏸️ Standby
-          </div>
-          <div style="background: white; border: 1px solid #ffb74d; border-radius: 4px; padding: 6px; text-align: center; font-size: 0.8em;">
-            <strong>Espresso DB</strong><br>
-            📄 Replica
-          </div>
-          <div style="background: white; border: 1px solid #ffb74d; border-radius: 4px; padding: 6px; text-align: center; font-size: 0.8em;">
-            <strong>Repl Lag</strong><br>
-            < 30s RPO
-          </div>
-        </div>
-        
-        <div style="margin: 15px 0; text-align: center;">
-          <span style="color: #f57c00; font-size: 1.2em;">⬇️</span>
-          <div style="font-size: 0.8em; color: #666;">4. Promote to active on failover signal</div>
-        </div>
-      </div>
-      
-      <!-- Orchestration Pipeline -->
-      <div style="background: #ffebee; border: 2px solid #f44336; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-          <div style="background: #d32f2f; color: white; padding: 8px 12px; border-radius: 6px; font-weight: 600;">
-            🔄 Orchestration Pipeline
-          </div>
-          <div style="font-size: 0.85em; color: #666;">Staged failover execution</div>
-        </div>
-        
-        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
-          <div style="background: white; border: 1px solid #ef5350; border-radius: 4px; padding: 6px; text-align: center; font-size: 0.8em;">
-            <strong>DNS Switch</strong><br>
-            Route 53 update
-          </div>
-          <div style="background: white; border: 1px solid #ef5350; border-radius: 4px; padding: 6px; text-align: center; font-size: 0.8em;">
-            <strong>Traffic Drain</strong><br>
-            Load balancer
-          </div>
-          <div style="background: white; border: 1px solid #ef5350; border-radius: 4px; padding: 6px; text-align: center; font-size: 0.8em;">
-            <strong>DB Promote</strong><br>
-            Primary election
-          </div>
-          <div style="background: white; border: 1px solid #ef5350; border-radius: 4px; padding: 6px; text-align: center; font-size: 0.8em;">
-            <strong>Warm-up</strong><br>
-            Cache population
+          <div style="background: white; border: 1px solid #9e9e9e; border-radius: 4px; padding: 8px; text-align: center;">
+            <strong>🏗️ STAGING (DEV)</strong><br>
+            <span style="color: #666;">Test traffic only</span>
           </div>
         </div>
       </div>
-      
-      <!-- Failover Timeline -->
-      <div style="background: #fafafa; border: 1px solid #dee2e6; border-radius: 4px; padding: 15px; margin-top: 15px;">
-        <h5 style="color: #c62828; margin-bottom: 10px;">⏱️ Automated Failover Timeline (5-min RTO)</h5>
-        <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.8em; margin-bottom: 10px;">
-          <div style="background: #e3f2fd; padding: 4px 8px; border-radius: 4px; border: 1px solid #90caf9;">
-            <strong>T0:</strong> Failure detected
-          </div>
-          <span style="color: #1976d2;">→</span>
-          <div style="background: #f3e5f5; padding: 4px 8px; border-radius: 4px; border: 1px solid #ce93d8;">
-            <strong>T1:</strong> Raft consensus
-          </div>
-          <span style="color: #7b1fa2;">→</span>
-          <div style="background: #fff3e0; padding: 4px 8px; border-radius: 4px; border: 1px solid #ffb74d;">
-            <strong>T2:</strong> DNS switch
-          </div>
-          <span style="color: #f57c00;">→</span>
-          <div style="background: #e8f5e8; padding: 4px 8px; border-radius: 4px; border: 1px solid #81c784;">
-            <strong>T5:</strong> Full recovery
+
+      <!-- Failure Detection & Decision Making -->
+      <div style="background: #ffebee; border: 2px solid #f44336; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+        <div style="text-align: center; margin-bottom: 15px;">
+          <div style="background: #d32f2f; color: white; padding: 8px 16px; border-radius: 6px; display: inline-block; font-weight: 600;">
+            🚨 FAILURE DETECTED — Primary Region Down
           </div>
         </div>
-        
-        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; font-size: 0.8em; margin-top: 15px;">
+
+        <!-- Detection Timeline -->
+        <div style="background: white; border: 1px solid #f44336; border-radius: 6px; padding: 15px; margin-bottom: 15px;">
+          <div style="font-size: 0.9em; font-weight: 600; margin-bottom: 10px; color: #d32f2f;">⏱️ Detection Timeline (90 seconds)</div>
+          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8em;">
+            <div style="background: #ffcdd2; padding: 6px; border-radius: 4px; text-align: center;">
+              <strong>T+0s</strong><br>
+              Health probe timeout<br>
+              <code>HTTP 503</code>
+            </div>
+            <span style="color: #f44336;">→</span>
+            <div style="background: #ffcdd2; padding: 6px; border-radius: 4px; text-align: center;">
+              <strong>T+30s</strong><br>
+              3 consecutive failures<br>
+              <code>Threshold breached</code>
+            </div>
+            <span style="color: #f44336;">→</span>
+            <div style="background: #ffcdd2; padding: 6px; border-radius: 4px; text-align: center;">
+              <strong>T+60s</strong><br>
+              Synthetic tests fail<br>
+              <code>End-to-end broken</code>
+            </div>
+            <span style="color: #f44336;">→</span>
+            <div style="background: #d32f2f; color: white; padding: 6px; border-radius: 4px; text-align: center;">
+              <strong>T+90s</strong><br>
+              FAILURE DECLARED<br>
+              <code>Initiate failover</code>
+            </div>
+          </div>
+        </div>
+
+        <!-- Raft Consensus Decision -->
+        <div style="background: #f3e5f5; border: 1px solid #9c27b0; border-radius: 6px; padding: 15px;">
+          <div style="font-size: 0.9em; font-weight: 600; margin-bottom: 10px; color: #7b1fa2;">🧠 Raft Consensus Decision (30 seconds)</div>
+          <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; font-size: 0.75em;">
+            <div style="background: #ce93d8; color: white; padding: 8px; border-radius: 4px; text-align: center;">
+              <strong>NODE 1</strong><br>
+              DR-Controller-LTX1<br>
+              <span style="background: rgba(255,255,255,0.3); padding: 2px 4px; border-radius: 2px;">LEADER</span><br>
+              Vote: FAILOVER ✅
+            </div>
+            <div style="background: #ba68c8; color: white; padding: 8px; border-radius: 4px; text-align: center;">
+              <strong>NODE 2</strong><br>
+              DR-Controller-LVA1<br>
+              <span style="background: rgba(255,255,255,0.3); padding: 2px 4px; border-radius: 2px;">FOLLOWER</span><br>
+              Vote: FAILOVER ✅
+            </div>
+            <div style="background: #ba68c8; color: white; padding: 8px; border-radius: 4px; text-align: center;">
+              <strong>NODE 3</strong><br>
+              DR-Controller-EI4<br>
+              <span style="background: rgba(255,255,255,0.3); padding: 2px 4px; border-radius: 2px;">FOLLOWER</span><br>
+              Vote: FAILOVER ✅
+            </div>
+            <div style="background: #ab47bc; color: white; padding: 8px; border-radius: 4px; text-align: center;">
+              <strong>NODE 4</strong><br>
+              DR-Controller-CORP<br>
+              <span style="background: rgba(255,255,255,0.3); padding: 2px 4px; border-radius: 2px;">FOLLOWER</span><br>
+              Vote: FAILOVER ✅
+            </div>
+            <div style="background: #9c27b0; color: white; padding: 8px; border-radius: 4px; text-align: center;">
+              <strong>NODE 5</strong><br>
+              DR-Controller-GRID<br>
+              <span style="background: rgba(255,255,255,0.3); padding: 2px 4px; border-radius: 2px;">FOLLOWER</span><br>
+              Vote: FAILOVER ✅
+            </div>
+          </div>
+          <div style="text-align: center; margin-top: 10px; padding: 8px; background: #e1bee7; border-radius: 4px; font-weight: 600;">
+            🎯 QUORUM ACHIEVED: 5/5 nodes agree → FAILOVER TO LVA1 AUTHORIZED
+          </div>
+        </div>
+      </div>
+
+      <!-- Automated Failover Execution -->
+      <div style="background: #e3f2fd; border: 2px solid #2196f3; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+        <div style="text-align: center; margin-bottom: 15px;">
+          <div style="background: #1976d2; color: white; padding: 8px 16px; border-radius: 6px; display: inline-block; font-weight: 600;">
+            🔄 AUTOMATED FAILOVER EXECUTION — 5 Minute RTO
+          </div>
+        </div>
+
+        <!-- 4-Stage Failover Process -->
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 15px;">
+          <!-- Stage 1: DNS Switch -->
+          <div style="background: white; border: 2px solid #2196f3; border-radius: 6px; padding: 12px;">
+            <div style="background: #2196f3; color: white; padding: 4px; border-radius: 3px; text-align: center; font-size: 0.8em; font-weight: 600; margin-bottom: 8px;">
+              STAGE 1: DNS SWITCH
+            </div>
+            <div style="font-size: 0.75em;">
+              <strong>Timeline:</strong> T+0 to T+60s<br>
+              <strong>Action:</strong> Route 53 update<br>
+              <strong>Old:</strong> api.linkedin.com → LTX1<br>
+              <strong>New:</strong> api.linkedin.com → LVA1<br>
+              <strong>TTL:</strong> 60 seconds<br>
+              <strong>Protocol:</strong> DNS over HTTPS
+            </div>
+            <div style="background: #e3f2fd; padding: 4px; border-radius: 3px; margin-top: 6px; font-size: 0.7em; text-align: center;">
+              Status: ✅ COMPLETED
+            </div>
+          </div>
+
+          <!-- Stage 2: Traffic Drain -->
+          <div style="background: white; border: 2px solid #ff9800; border-radius: 6px; padding: 12px;">
+            <div style="background: #ff9800; color: white; padding: 4px; border-radius: 3px; text-align: center; font-size: 0.8em; font-weight: 600; margin-bottom: 8px;">
+              STAGE 2: TRAFFIC DRAIN
+            </div>
+            <div style="font-size: 0.75em;">
+              <strong>Timeline:</strong> T+60 to T+120s<br>
+              <strong>Action:</strong> ALB connection drain<br>
+              <strong>Method:</strong> Graceful shutdown<br>
+              <strong>Wait:</strong> Active connections finish<br>
+              <strong>Timeout:</strong> 60s max<br>
+              <strong>Protocol:</strong> HTTP keep-alive
+            </div>
+            <div style="background: #fff3e0; padding: 4px; border-radius: 3px; margin-top: 6px; font-size: 0.7em; text-align: center;">
+              Status: ✅ COMPLETED
+            </div>
+          </div>
+
+          <!-- Stage 3: Database Promotion -->
+          <div style="background: white; border: 2px solid #9c27b0; border-radius: 6px; padding: 12px;">
+            <div style="background: #9c27b0; color: white; padding: 4px; border-radius: 3px; text-align: center; font-size: 0.8em; font-weight: 600; margin-bottom: 8px;">
+              STAGE 3: DB PROMOTE
+            </div>
+            <div style="font-size: 0.75em;">
+              <strong>Timeline:</strong> T+120 to T+180s<br>
+              <strong>Action:</strong> Espresso replica promote<br>
+              <strong>Method:</strong> Primary election<br>
+              <strong>Check:</strong> Replication lag < 30s<br>
+              <strong>Validate:</strong> Write test successful<br>
+              <strong>Protocol:</strong> HTTP + Avro
+            </div>
+            <div style="background: #f3e5f5; padding: 4px; border-radius: 3px; margin-top: 6px; font-size: 0.7em; text-align: center;">
+              Status: ✅ COMPLETED
+            </div>
+          </div>
+
+          <!-- Stage 4: Service Warmup -->
+          <div style="background: white; border: 2px solid #4caf50; border-radius: 6px; padding: 12px;">
+            <div style="background: #4caf50; color: white; padding: 4px; border-radius: 3px; text-align: center; font-size: 0.8em; font-weight: 600; margin-bottom: 8px;">
+              STAGE 4: WARMUP
+            </div>
+            <div style="font-size: 0.75em;">
+              <strong>Timeline:</strong> T+180 to T+300s<br>
+              <strong>Action:</strong> Cache population<br>
+              <strong>Method:</strong> Preload hot data<br>
+              <strong>Target:</strong> 80% cache hit rate<br>
+              <strong>Validate:</strong> Synthetic test pass<br>
+              <strong>Protocol:</strong> Memcached TCP 11211
+            </div>
+            <div style="background: #e8f5e8; padding: 4px; border-radius: 3px; margin-top: 6px; font-size: 0.7em; text-align: center;">
+              Status: ✅ COMPLETED
+            </div>
+          </div>
+        </div>
+
+        <!-- Final Status -->
+        <div style="background: #4caf50; color: white; padding: 12px; border-radius: 6px; text-align: center; font-weight: 600;">
+          🎉 FAILOVER COMPLETE — LVA1 NOW PRIMARY — RTO: 4m 32s — RPO: 18s — SUCCESS ✅
+        </div>
+      </div>
+
+      <!-- Post-Failover Operations -->
+      <div style="background: #e8f5e9; border: 2px solid #4caf50; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+        <div style="text-align: center; margin-bottom: 15px;">
+          <div style="background: #2e7d32; color: white; padding: 8px 16px; border-radius: 6px; display: inline-block; font-weight: 600;">
+            ✅ POST-FAILOVER OPERATIONS — New Normal State
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+          <!-- New Primary (LVA1) -->
+          <div style="background: white; border: 2px solid #4caf50; border-radius: 6px; padding: 15px; text-align: center;">
+            <div style="background: #4caf50; color: white; padding: 6px; border-radius: 4px; margin-bottom: 10px; font-weight: 600; font-size: 0.9em;">
+              🌟 NEW PRIMARY (LVA1)
+            </div>
+            <div style="font-size: 0.8em; margin-bottom: 8px;">
+              <strong>Member API:</strong> ✅ ACTIVE<br>
+              <strong>Feed Service:</strong> ✅ ACTIVE<br>
+              <strong>Espresso DB:</strong> ✅ PRIMARY<br>
+              <strong>Traffic:</strong> 100% serving
+            </div>
+            <div style="background: #e8f5e8; padding: 6px; border-radius: 4px; font-size: 0.75em;">
+              <strong>Health Score:</strong> 98%<br>
+              <strong>Latency P99:</strong> 52ms<br>
+              <strong>Error Rate:</strong> 0.02%
+            </div>
+          </div>
+
+          <!-- Failed Region (LTX1) -->
+          <div style="background: white; border: 2px solid #f44336; border-radius: 6px; padding: 15px; text-align: center;">
+            <div style="background: #f44336; color: white; padding: 6px; border-radius: 4px; margin-bottom: 10px; font-weight: 600; font-size: 0.9em;">
+              💀 FAILED REGION (LTX1)
+            </div>
+            <div style="font-size: 0.8em; margin-bottom: 8px;">
+              <strong>Member API:</strong> ❌ DOWN<br>
+              <strong>Feed Service:</strong> ❌ DOWN<br>
+              <strong>Espresso DB:</strong> ❌ UNREACHABLE<br>
+              <strong>Traffic:</strong> 0% (drained)
+            </div>
+            <div style="background: #ffebee; padding: 6px; border-radius: 4px; font-size: 0.75em;">
+              <strong>Status:</strong> INVESTIGATING<br>
+              <strong>ETA:</strong> Recovery TBD<br>
+              <strong>Action:</strong> Ops team paged
+            </div>
+          </div>
+
+          <!-- Monitoring & Alerts -->
+          <div style="background: white; border: 2px solid #2196f3; border-radius: 6px; padding: 15px; text-align: center;">
+            <div style="background: #2196f3; color: white; padding: 6px; border-radius: 4px; margin-bottom: 10px; font-weight: 600; font-size: 0.9em;">
+              📊 MONITORING ACTIVE
+            </div>
+            <div style="font-size: 0.8em; margin-bottom: 8px;">
+              <strong>Alerts Fired:</strong> 47 total<br>
+              <strong>Incidents Created:</strong> SEV-1<br>
+              <strong>War Room:</strong> ACTIVE<br>
+              <strong>Comms:</strong> Status page updated
+            </div>
+            <div style="background: #e3f2fd; padding: 6px; border-radius: 4px; font-size: 0.75em;">
+              <strong>Next Check:</strong> 10s<br>
+              <strong>Failback Ready:</strong> When LTX1 healthy<br>
+              <strong>Manual Override:</strong> Available
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Technical Implementation Details -->
+      <div style="background: white; border: 1px solid #dee2e6; border-radius: 6px; padding: 15px; font-size: 0.8em;">
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
           <div>
-            <strong>DR Protocols:</strong><br>
-            • Raft consensus on TCP 8300<br>
-            • Async replication via Brooklin<br>
-            • DNS update via Route 53<br>
-            • Health checks on HTTPS 443
+            <strong>🔧 Technical Protocols:</strong><br>
+            • Health probes: HTTPS/443 + TCP/80<br>
+            • Raft consensus: TCP/8300<br>
+            • DB replication: Brooklin + Kafka/9092<br>
+            • DNS updates: Route 53 API<br>
+            • Load balancer: ALB connection draining<br>
+            • Cache: Memcached/11211 + Redis/6379
           </div>
           <div>
-            <strong>Key Flows:</strong><br>
-            • Detection: Probes → Decision Controller<br>
-            • Consensus: Raft quorum for failover<br>
-            • Execution: DNS → LB → DB → Apps<br>
-            • Validation: Synthetic tests confirm recovery
+            <strong>📊 Key Metrics:</strong><br>
+            • RTO Target: ≤ 5 minutes<br>
+            • RPO Target: ≤ 30 seconds<br>
+            • Availability: 99.999% (5.26min/year)<br>
+            • MTTR: 4.5 minutes average<br>
+            • False positive rate: < 0.1%<br>
+            • Split-brain incidents: 0 (prevented)
+          </div>
+          <div>
+            <strong>🎯 Success Criteria:</strong><br>
+            • Zero data loss (within RPO)<br>
+            • No manual intervention required<br>
+            • All synthetic tests passing<br>
+            • Cache hit rate > 80%<br>
+            • Error rate < 0.05%<br>
+            • Customer impact < 5 minutes
           </div>
         </div>
       </div>
