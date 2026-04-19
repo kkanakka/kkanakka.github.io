@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Caching Deep Dive - System Design Patterns</title>
+    <title>Caching Systems - Deep Dive into Patterns, Strategies, and LinkedIn's 4.8M reads/sec</title>
     <style>
         * {
             margin: 0;
@@ -352,26 +352,113 @@
 <body>
     <div class="hero">
         <div class="container">
-            <h1>Caching Deep Dive</h1>
-            <p>Complete guide to caching patterns, miss handling, rebuilding strategies, and persistence options in production systems</p>
+            <h1>Caching Systems</h1>
+            <p>A deep dive into cache patterns, strategies, and systems — from bootstrap problems to LinkedIn's 4.8M reads/sec architecture</p>
         </div>
     </div>
 
     <nav class="nav-tabs">
         <div class="container">
             <ul>
+                <li><a href="#bootstrap">Bootstrap Problem</a></li>
                 <li><a href="#patterns">Cache Patterns</a></li>
                 <li><a href="#misses">Cache Misses</a></li>
                 <li><a href="#rebuilding">Rebuilding</a></li>
                 <li><a href="#persistence">Persistence</a></li>
                 <li><a href="#comparison">Comparison</a></li>
+                <li><a href="#protocols">DB Protocols</a></li>
+                <li><a href="#linkedin">LinkedIn Case Study</a></li>
             </ul>
         </div>
     </nav>
 
+    <section id="bootstrap" class="section">
+        <div class="container">
+            <h2>1. Why Two Caches? The Bootstrap Problem</h2>
+            <p style="text-align: center; font-size: 1.1rem; color: #666; margin-bottom: 40px;">
+                Many systems use two caching layers: a local in-process cache (populated via Kafka deltas) and a shared Memcache/Redis cluster. The question is <strong>why both are needed</strong>.
+            </p>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin: 30px 0;">
+                <div style="background: #fff5f5; border: 2px solid #fed7d7; border-radius: 12px; padding: 25px;">
+                    <h4 style="color: #c53030; margin-bottom: 15px; text-align: center;">❌ Without Memcache</h4>
+                    <div style="display: flex; flex-direction: column; gap: 15px;">
+                        <div style="background: white; padding: 15px; border-radius: 8px; border-left: 4px solid #e53e3e;">
+                            <strong>Step 1:</strong> New service starts
+                        </div>
+                        <div style="background: white; padding: 15px; border-radius: 8px; border-left: 4px solid #e53e3e;">
+                            <strong>Step 2:</strong> Empty local cache — nothing to serve
+                        </div>
+                        <div style="background: white; padding: 15px; border-radius: 8px; border-left: 4px solid #e53e3e;">
+                            <strong>Step 3:</strong> Wait for Kafka stream to deliver flags
+                        </div>
+                        <div style="background: white; padding: 15px; border-radius: 8px; border-left: 4px solid #e53e3e;">
+                            <strong>Step 4:</strong> Gradually receive flags (minutes)
+                        </div>
+                        <div style="background: #fed7d7; padding: 15px; border-radius: 8px; text-align: center; font-weight: 600;">
+                            <strong>Result:</strong> Cold start. Minutes of degraded service.
+                        </div>
+                    </div>
+                </div>
+
+                <div style="background: #f0fff4; border: 2px solid #9ae6b4; border-radius: 12px; padding: 25px;">
+                    <h4 style="color: #276749; margin-bottom: 15px; text-align: center;">✅ With Memcache</h4>
+                    <div style="display: flex; flex-direction: column; gap: 15px;">
+                        <div style="background: white; padding: 15px; border-radius: 8px; border-left: 4px solid #38a169;">
+                            <strong>Step 1:</strong> New service starts
+                        </div>
+                        <div style="background: white; padding: 15px; border-radius: 8px; border-left: 4px solid #38a169;">
+                            <strong>Step 2:</strong> Load full snapshot from Memcache (~100ms)
+                        </div>
+                        <div style="background: white; padding: 15px; border-radius: 8px; border-left: 4px solid #38a169;">
+                            <strong>Step 3:</strong> Already fully warm — start serving
+                        </div>
+                        <div style="background: white; padding: 15px; border-radius: 8px; border-left: 4px solid #38a169;">
+                            <strong>Step 4:</strong> Tail Kafka for real-time deltas only
+                        </div>
+                        <div style="background: #9ae6b4; padding: 15px; border-radius: 8px; text-align: center; font-weight: 600;">
+                            <strong>Result:</strong> Instant warm start. No cold window.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="comparison-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Cache Type</th>
+                            <th>Update Frequency</th>
+                            <th>Update Method</th>
+                            <th>Access Pattern</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Local cache</strong></td>
+                            <td>Real-time</td>
+                            <td>Kafka deltas</td>
+                            <td>Every request (millions/sec)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Memcache / Redis</strong></td>
+                            <td>Every 30s</td>
+                            <td>Control Plane batch write</td>
+                            <td>Only at startup / warm-up</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="highlight">
+                <strong>Key insight:</strong> These two caches are not redundant — they serve completely different jobs. The local cache handles millions of requests per second. Memcache exists only to eliminate the cold-start window when a new instance boots.
+            </div>
+        </div>
+    </section>
+
     <section id="patterns" class="section">
         <div class="container">
-            <h2>1. The Four Ways to Write to Cache</h2>
+            <h2>2. The Four Ways to Write to Cache</h2>
             <p style="text-align: center; font-size: 1.1rem; color: #666; margin-bottom: 40px;">
                 How data gets into cache depends on who you want to be responsible. Different patterns offer different trade-offs between control, latency, and consistency.
             </p>
@@ -385,6 +472,9 @@
                     <p><strong>App manages cache manually</strong></p>
                     
                     <div class="diagram">
+                        <div style="margin-bottom: 15px;">
+                            <strong>Read flow:</strong> On read: check cache → miss → app fetches from DB → app writes to cache.
+                        </div>
                         <div class="flow-diagram">
                             <div class="flow-step app">App</div>
                             <span class="arrow">➜</span>
@@ -394,6 +484,9 @@
                             <span class="arrow">➜</span>
                             <div class="flow-step cache">🏪 Cache</div>
                         </div>
+                        <div style="margin: 15px 0;">
+                            <strong>Write flow:</strong> Writes go directly to DB. Cache is populated on the next read miss.
+                        </div>
                         <div class="flow-diagram" style="margin-top: 10px;">
                             <div class="flow-step app">App</div>
                             <span class="arrow">➜</span>
@@ -402,7 +495,8 @@
                             <div class="flow-step db">DB</div>
                         </div>
                         <p style="margin-top: 15px; font-size: 0.9rem; color: #666;">
-                            App owns DB fetch + cache populate on miss
+                            <strong>Who writes cache:</strong> App code<br>
+                            <strong>Consistency:</strong> Eventual · <strong>Write latency:</strong> Low
                         </p>
                     </div>
 
@@ -433,6 +527,9 @@
                     <p><strong>Cache fetches from DB automatically on miss</strong></p>
                     
                     <div class="diagram">
+                        <div style="margin-bottom: 15px;">
+                            <strong>Read flow:</strong> On read: app asks cache → miss → cache library runs loader fn → populates itself.
+                        </div>
                         <div class="flow-diagram">
                             <div class="flow-step app">App</div>
                             <span class="arrow">➜</span>
@@ -442,8 +539,12 @@
                             <span class="arrow">➜</span>
                             <div class="flow-step db">DB</div>
                         </div>
+                        <div style="margin: 15px 0;">
+                            <strong>Write flow:</strong> App never touches DB directly. Cache library owns the loader logic.
+                        </div>
                         <p style="margin-top: 15px; font-size: 0.9rem; color: #666;">
-                            Cache library/proxy handles DB fetch transparently
+                            <strong>Who writes cache:</strong> Cache library<br>
+                            <strong>Consistency:</strong> Eventual · <strong>Write latency:</strong> Low
                         </p>
                     </div>
 
@@ -474,6 +575,9 @@
                     <p><strong>Every write goes to cache AND DB synchronously</strong></p>
                     
                     <div class="diagram">
+                        <div style="margin-bottom: 15px;">
+                            <strong>Write flow:</strong> On write: app writes to cache → cache writes to DB → both confirm → ack to app.
+                        </div>
                         <div class="flow-diagram">
                             <div class="flow-step app">App</div>
                             <span class="arrow">➜</span>
@@ -486,8 +590,12 @@
                             <span class="arrow">➜</span>
                             <div class="flow-step db">DB</div>
                         </div>
+                        <div style="margin: 15px 0;">
+                            <strong>Read flow:</strong> Cache and DB always in sync. Write is slower (waits for both).
+                        </div>
                         <p style="margin-top: 15px; font-size: 0.9rem; color: #666;">
-                            Always consistent. Write latency is higher.
+                            <strong>Who writes cache:</strong> Cache + app<br>
+                            <strong>Consistency:</strong> Strong · <strong>Write latency:</strong> Higher
                         </p>
                     </div>
 
@@ -519,6 +627,9 @@
                     <p><strong>Write to cache immediately, flush DB async later</strong></p>
                     
                     <div class="diagram">
+                        <div style="margin-bottom: 15px;">
+                            <strong>Write flow:</strong> On write: app writes to cache → instant ack → background job flushes to DB later.
+                        </div>
                         <div class="flow-diagram">
                             <div class="flow-step app">App</div>
                             <span class="arrow">➜</span>
@@ -533,8 +644,12 @@
                             <span class="arrow">➜</span>
                             <div class="flow-step db">DB</div>
                         </div>
+                        <div style="margin: 15px 0;">
+                            <strong>Read flow:</strong> Fastest writes. Risk: data loss if cache crashes before flush.
+                        </div>
                         <p style="margin-top: 15px; font-size: 0.9rem; color: #666;">
-                            Fastest writes. Risk of data loss if cache crashes.
+                            <strong>Who writes cache:</strong> Cache async job<br>
+                            <strong>Consistency:</strong> Risk of loss · <strong>Write latency:</strong> Fastest
                         </p>
                     </div>
 
@@ -611,7 +726,7 @@
 
     <section id="misses" class="section">
         <div class="container">
-            <h2>2. Cache Miss — What Actually Happens</h2>
+            <h2>3. Cache Miss — What Actually Happens</h2>
             <p style="text-align: center; font-size: 1.1rem; color: #666; margin-bottom: 40px;">
                 Cache miss is always the same three steps — detect miss, go to DB, populate cache — but the <strong>cause</strong> differs.
             </p>
@@ -636,6 +751,39 @@
                 </p>
             </div>
 
+            <div class="comparison-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Miss Type</th>
+                            <th>Cause</th>
+                            <th>How Often</th>
+                            <th>Prevention</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Cold miss</strong></td>
+                            <td>Key was never loaded into cache</td>
+                            <td>Once per key, on first access</td>
+                            <td>Eager pre-warm at startup</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Capacity/eviction miss</strong></td>
+                            <td>Key was evicted by LRU, LFU, or TTL expiry</td>
+                            <td>Ongoing if working set > cache size</td>
+                            <td>Increase maxmemory; tune eviction policy</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Invalidation miss</strong></td>
+                            <td>Key was deleted when DB was updated</td>
+                            <td>Intentional — by design</td>
+                            <td>Minimise by using write-through or short TTL</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
             <div class="miss-types">
                 <div class="miss-type cold">
                     <h4>🥶 Cold Miss</h4>
@@ -646,7 +794,7 @@
                         <li>Unavoidable at startup</li>
                     </ul>
                     <div style="margin-top: 15px; padding: 10px; background: #e8f4fd; border-radius: 5px;">
-                        <strong>Normal and expected.</strong> Every key experiences this once.
+                        <strong>Once per key, on first access.</strong> Eager pre-warm at startup.
                     </div>
                 </div>
 
@@ -659,7 +807,7 @@
                         <li>Random eviction in Redis</li>
                     </ul>
                     <div style="margin-top: 15px; padding: 10px; background: #fff3cd; border-radius: 5px;">
-                        <strong>Tune maxmemory</strong> and eviction policy. Monitor hit rate.
+                        <strong>Ongoing if working set > cache size.</strong> Increase maxmemory; tune eviction policy.
                     </div>
                 </div>
 
@@ -672,31 +820,31 @@
                         <li>TTL-based invalidation</li>
                     </ul>
                     <div style="margin-top: 15px; padding: 10px; background: #f8d7da; border-radius: 5px;">
-                        <strong>By design.</strong> Strategies: delete vs update vs TTL.
+                        <strong>Intentional — by design.</strong> Minimise by using write-through or short TTL.
                     </div>
                 </div>
             </div>
 
             <div class="highlight">
-                <strong>Cache Stampede Risk:</strong> Many requests miss at once → all hit DB simultaneously. 
-                <br><strong>Fix:</strong> Mutex lock, probabilistic early expiry (PER), or request coalescing (only 1 thread fetches, rest wait).
+                <strong>Cache stampede (thundering herd)</strong><br>
+                When many requests miss at the same time — e.g. after a restart or a mass expiry — they all hit the DB simultaneously, potentially overwhelming it. Three common fixes:
             </div>
 
             <div class="diagram">
-                <h3>Cache Stampede Problem</h3>
-                <div style="text-align: left; background: #fff5f5; padding: 20px; border-radius: 8px; border: 1px solid #fed7d7;">
-                    <p><strong>Problem:</strong> Cache stampede: many requests miss at once → all hit DB simultaneously</p>
-                    <div class="flow-diagram" style="justify-content: flex-start; margin: 15px 0;">
-                        <div class="flow-step miss">Cache: MISS</div>
-                        <span class="arrow">→</span>
-                        <div class="flow-step db">100x DB requests</div>
+                <h3>Cache Stampede Solutions</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+                    <div style="background: #e3f2fd; padding: 20px; border-radius: 8px; border: 1px solid #90caf9;">
+                        <h4 style="color: #1976d2; margin-bottom: 10px;">🔒 Mutex Lock</h4>
+                        <p style="font-size: 0.9rem;">Only one request fetches from DB; the rest wait and then read the now-warm key.</p>
                     </div>
-                    <p><strong>Solutions:</strong></p>
-                    <ul style="margin-left: 20px; margin-top: 10px;">
-                        <li><strong>Mutex lock:</strong> Only 1 thread fetches, others wait</li>
-                        <li><strong>Probabilistic early expiry (PER):</strong> Refresh before TTL</li>
-                        <li><strong>Request coalescing:</strong> Combine identical requests</li>
-                    </ul>
+                    <div style="background: #f3e5f5; padding: 20px; border-radius: 8px; border: 1px solid #ce93d8;">
+                        <h4 style="color: #7b1fa2; margin-bottom: 10px;">⏰ Probabilistic Early Expiry (PER)</h4>
+                        <p style="font-size: 0.9rem;">Re-compute a cache entry slightly before it expires, rather than waiting for a hard miss.</p>
+                    </div>
+                    <div style="background: #e8f5e8; padding: 20px; border-radius: 8px; border: 1px solid #a5d6a7;">
+                        <h4 style="color: #388e3c; margin-bottom: 10px;">🔄 Request Coalescing</h4>
+                        <p style="font-size: 0.9rem;">Deduplicate in-flight requests for the same key so only one goes to the DB.</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -704,7 +852,7 @@
 
     <section id="rebuilding" class="section">
         <div class="container">
-            <h2>3. Cache Rebuilding Strategies</h2>
+            <h2>4. Cache Rebuild Strategies</h2>
             <p style="text-align: center; font-size: 1.1rem; color: #666; margin-bottom: 40px;">
                 Rebuilding cache after a restart is the problem Memcache was solving. Different strategies offer different trade-offs between complexity and performance.
             </p>
@@ -850,18 +998,50 @@
                 </div>
             </div>
 
-            <div class="highlight">
-                <strong>Cache Invalidation: The Hard Part</strong>
-                <br><br>
-                <strong>Strategy 1 — Delete on write:</strong> Remove key when DB updates. Next read refills it (stale window = 0).
-                <br><strong>Strategy 2 — TTL expiry:</strong> Let old data serve until it expires. Simple, but data can be stale up to TTL.
+            <div class="comparison-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Strategy</th>
+                            <th>How it works</th>
+                            <th>Stale window</th>
+                            <th>Complexity</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Delete on write</strong></td>
+                            <td>When DB is updated, delete the cache key. Next read refills it.</td>
+                            <td>Zero — next read always fresh</td>
+                            <td>Low</td>
+                        </tr>
+                        <tr>
+                            <td><strong>TTL expiry</strong></td>
+                            <td>Set a time-to-live on each key. Serve stale until it expires.</td>
+                            <td>Up to TTL duration</td>
+                            <td>Very low</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Write-through</strong></td>
+                            <td>Write to cache and DB simultaneously on every mutation.</td>
+                            <td>Zero</td>
+                            <td>Medium</td>
+                        </tr>
+                        <tr>
+                            <td><strong>CDC invalidation</strong></td>
+                            <td>Watch binlog; delete/update cache key on every DB change.</td>
+                            <td>Near-zero (stream lag)</td>
+                            <td>High</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </section>
 
     <section id="persistence" class="section">
         <div class="container">
-            <h2>4. Persistence Options — Redis vs Memcached</h2>
+            <h2>5. Persistence Options — Redis vs Memcached</h2>
             <p style="text-align: center; font-size: 1.1rem; color: #666; margin-bottom: 40px;">
                 The fundamental difference: Memcached has no persistence, Redis offers two options. In production, you typically run both together.
             </p>
@@ -1035,7 +1215,7 @@
 
     <section id="comparison" class="section">
         <div class="container">
-            <h2>5. Cache vs Database — Complete Decision Matrix</h2>
+            <h2>6. Memcached vs Redis vs Couchbase — Complete Decision Matrix</h2>
             <p style="text-align: center; font-size: 1.1rem; color: #666; margin-bottom: 40px;">
                 Does the cache know about your DB? The answer determines your architecture and trade-offs.
             </p>
@@ -1166,10 +1346,389 @@
                 </div>
             </div>
 
+            <div style="background: #f8f9fa; padding: 30px; border-radius: 12px; margin: 30px 0;">
+                <h3 style="color: #2c3e50; margin-bottom: 20px; text-align: center;">Quick Decision Guide</h3>
+                
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Question</th>
+                                <th>Memcached</th>
+                                <th>Redis</th>
+                                <th>Couchbase</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Need persistence across restarts?</strong></td>
+                                <td>❌ No</td>
+                                <td>✅ Yes (opt-in)</td>
+                                <td>✅ Always</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Need rich data structures (sorted sets, streams)?</strong></td>
+                                <td>❌ No</td>
+                                <td>✅ Yes — best in class</td>
+                                <td>⚠️ Limited</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Need a primary DB (no separate DB)?</strong></td>
+                                <td>❌ No</td>
+                                <td>⚠️ With RDB+AOF, maybe</td>
+                                <td>✅ Yes — designed for this</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Need to query by field value?</strong></td>
+                                <td>❌ No</td>
+                                <td>❌ No</td>
+                                <td>✅ Yes — N1QL</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Need cross-datacenter active-active?</strong></td>
+                                <td>❌ No</td>
+                                <td>❌ No (active-passive)</td>
+                                <td>✅ Yes — XDCR</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Ecosystem / libraries?</strong></td>
+                                <td>Good</td>
+                                <td>Largest — de facto standard</td>
+                                <td>Smaller</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Raw throughput as pure cache?</strong></td>
+                                <td style="background: #d4edda;">✅ Fastest</td>
+                                <td>Excellent</td>
+                                <td>Good</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
             <div class="highlight">
                 <strong>Key Insight:</strong> Memcached and Redis are caches — they have no idea where your data originally came from. 
                 <br>Couchbase is a primary database that happens to keep everything in memory first. 
                 <br><br><strong>Choose based on:</strong> Do you need the cache to survive restarts? Do you need rich data types? Is this your only datastore?
+            </div>
+        </div>
+    </section>
+
+    <section id="protocols" class="section">
+        <div class="container">
+            <h2>7. How Cache Knows to Pull from DB</h2>
+            <p style="text-align: center; font-size: 1.1rem; color: #666; margin-bottom: 40px;">
+                <strong>Spoiler: it doesn't</strong> — the app does. The cache is a passive key-value store.
+            </p>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin: 30px 0;">
+                <div style="background: #fff5f5; border: 2px solid #fed7d7; border-radius: 12px; padding: 25px;">
+                    <h4 style="color: #c53030; margin-bottom: 15px; text-align: center;">❌ The Myth</h4>
+                    <p style="font-size: 1rem; margin-bottom: 15px;">"Cache somehow detects a miss and automatically queries MySQL."</p>
+                    <div class="flow-diagram">
+                        <div class="flow-step app">App</div>
+                        <span class="arrow">→</span>
+                        <div class="flow-step cache">🏪 Cache</div>
+                        <span class="arrow">→</span>
+                        <div class="flow-step db">DB</div>
+                    </div>
+                </div>
+
+                <div style="background: #f0fff4; border: 2px solid #9ae6b4; border-radius: 12px; padding: 25px;">
+                    <h4 style="color: #276749; margin-bottom: 15px; text-align: center;">✅ The Reality</h4>
+                    <p style="font-size: 1rem; margin-bottom: 15px;">Cache returns NIL. Your app code (or your framework's cache library) detects the miss, runs a loader function you wrote, fetches from DB, then calls redis.SET to populate the cache.</p>
+                </div>
+            </div>
+
+            <div class="comparison-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Approach</th>
+                            <th>Who writes the loader</th>
+                            <th>How it looks</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Manual (cache-aside)</strong></td>
+                            <td>You — in application code</td>
+                            <td>
+                                <div class="code-block" style="margin: 10px 0; font-size: 0.85rem;">
+val = redis.get(key)<br>
+if val is None:<br>
+&nbsp;&nbsp;val = db.query("SELECT ...")<br>
+&nbsp;&nbsp;redis.setex(key, ttl, val)<br>
+return val
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Framework (@Cacheable)</strong></td>
+                            <td>The framework — intercepts method calls</td>
+                            <td>
+                                <div class="code-block" style="margin: 10px 0; font-size: 0.85rem;">
+@Cacheable("users")<br>
+User getUser(Long id) {<br>
+&nbsp;&nbsp;// runs ONLY on cache miss<br>
+&nbsp;&nbsp;return db.findById(id);<br>
+}
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Proxy / sidecar</strong></td>
+                            <td>The proxy — sits between app and DB</td>
+                            <td style="font-size: 0.9rem;">App sends SQL to proxy. Proxy checks cache → miss → queries DB → populates cache → returns result. App sees nothing special.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div style="background: #e3f2fd; padding: 25px; border-radius: 12px; margin: 30px 0;">
+                <h3 style="color: #1976d2; margin-bottom: 15px;">8. Protocols Used on Cache Miss</h3>
+                <p style="margin-bottom: 20px;">The loader function in your app code uses whatever protocol the target database speaks. The cache is not involved — it only ever sees GET and SET on its own protocol.</p>
+
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Database</th>
+                                <th>Protocol / driver</th>
+                                <th>Port</th>
+                                <th>Example call</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>MySQL / MariaDB</td>
+                                <td>MySQL wire protocol</td>
+                                <td>TCP 3306</td>
+                                <td><code>SELECT * FROM users WHERE id = ?</code></td>
+                            </tr>
+                            <tr>
+                                <td>PostgreSQL</td>
+                                <td>PG frontend/backend protocol</td>
+                                <td>TCP 5432</td>
+                                <td><code>SELECT * FROM orders WHERE user_id = $1</code></td>
+                            </tr>
+                            <tr>
+                                <td>Microservice (gRPC)</td>
+                                <td>HTTP/2 + Protobuf</td>
+                                <td>TCP 443</td>
+                                <td><code>UserService.GetUser({user_id: "123"})</code></td>
+                            </tr>
+                            <tr>
+                                <td>REST API / 3rd party</td>
+                                <td>HTTP/1.1 or HTTP/2</td>
+                                <td>TCP 443</td>
+                                <td><code>GET /api/users/123 Authorization: Bearer ...</code></td>
+                            </tr>
+                            <tr>
+                                <td>MongoDB</td>
+                                <td>MongoDB wire protocol</td>
+                                <td>TCP 27017</td>
+                                <td><code>db.users.findOne({_id: ObjectId(...)})</code></td>
+                            </tr>
+                            <tr>
+                                <td>DynamoDB</td>
+                                <td>HTTPS + AWS Signature V4</td>
+                                <td>TCP 443</td>
+                                <td><code>dynamodb.get_item(Key={"id": "123"})</code></td>
+                            </tr>
+                            <tr>
+                                <td>Cassandra</td>
+                                <td>CQL binary protocol</td>
+                                <td>TCP 9042</td>
+                                <td><code>SELECT * FROM users WHERE id = ?</code></td>
+                            </tr>
+                            <tr style="background: #e8f5e8;">
+                                <td>Espresso (LinkedIn)</td>
+                                <td>HTTP REST + Avro</td>
+                                <td>TCP 80/443</td>
+                                <td><code>GET /espresso/profiles/{memberId}</code></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div style="background: white; padding: 15px; border-radius: 8px; margin-top: 20px; border: 1px solid #90caf9;">
+                    <p style="margin-bottom: 10px;"><strong>After the loader returns:</strong> regardless of which DB and protocol was used, your code always calls the same cache command:</p>
+                    <div class="code-block" style="font-size: 0.9rem;">
+redis.set(key, serialized_value, ex=TTL_SECONDS)<br>
+# or: memcache.set(key, value, time=TTL_SECONDS)
+                    </div>
+                    <p style="margin-top: 10px; font-size: 0.9rem; color: #666;">The cache only speaks its own protocol (RESP for Redis on TCP 6379, Memcached binary/text on TCP 11211). Everything else is your app's concern.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="linkedin" class="section">
+        <div class="container">
+            <h2>9. LinkedIn: Espresso + Couchbase</h2>
+            <p style="text-align: center; font-size: 1.1rem; color: #666; margin-bottom: 40px;">
+                A real-world case study in why you need both — LinkedIn reaches over <strong>4.8 million profile reads per second</strong>
+            </p>
+
+            <div class="comparison-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Layer</th>
+                            <th>System</th>
+                            <th>Role</th>
+                            <th>Protocol</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Application</td>
+                            <td>Profile backend service</td>
+                            <td>Business logic</td>
+                            <td>Internal RPC</td>
+                        </tr>
+                        <tr>
+                            <td>Cache (L1 hot keys)</td>
+                            <td>Off-heap cache (OHC) on Espresso router</td>
+                            <td>In-process hot key cache</td>
+                            <td>In-memory</td>
+                        </tr>
+                        <tr style="background: #e8f5e8;">
+                            <td>Cache (L2 full dataset)</td>
+                            <td><strong>Couchbase</strong></td>
+                            <td>Full profile dataset cached per DC</td>
+                            <td>Memcached protocol</td>
+                        </tr>
+                        <tr style="background: #e3f2fd;">
+                            <td>Primary database</td>
+                            <td><strong>Espresso (LinkedIn-internal)</strong></td>
+                            <td>Source of truth — disk-backed MySQL/InnoDB</td>
+                            <td>HTTP + Avro</td>
+                        </tr>
+                        <tr>
+                            <td>Change stream</td>
+                            <td>Kafka / Brooklin</td>
+                            <td>Propagates every write to all consumers</td>
+                            <td>Kafka protocol</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div style="background: #f8f9fa; padding: 25px; border-radius: 12px; margin: 30px 0;">
+                <h3 style="color: #2c3e50; margin-bottom: 20px;">Why Couchbase could not replace Espresso</h3>
+                
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Dimension</th>
+                                <th>Espresso</th>
+                                <th>Couchbase</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Availability</strong></td>
+                                <td>LinkedIn internal — not public</td>
+                                <td>Open source + Enterprise</td>
+                            </tr>
+                            <tr>
+                                <td><strong>CAP choice</strong></td>
+                                <td>CP — consistency + partition tolerance. Built on MySQL/InnoDB.</td>
+                                <td>AP by default — eventual consistency. Strong consistency costs latency.</td>
+                            </tr>
+                            <tr style="background: #fff3cd;">
+                                <td><strong>Change capture</strong></td>
+                                <td>First-class citizen. Every write produces an ordered SCN event via MySQL binlog → Kafka. 30+ downstream systems depend on this.</td>
+                                <td>DCP (Database Change Protocol) exists but is not integrated into the broader data ecosystem as a first-class feature.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Schema enforcement</strong></td>
+                                <td>Avro schemas strictly enforced. All consumers in the data ecosystem (search, ML, Hadoop) agree on document structure.</td>
+                                <td>Schemaless JSON by default. JSON Schema support is newer and optional.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Storage engine</strong></td>
+                                <td>MySQL / InnoDB — 30+ years of production trust. Binlog is the foundation of the change stream.</td>
+                                <td>Couchstore / Magma — proprietary, good but not as battle-tested.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>When chosen</strong></td>
+                                <td>Built in 2011, production June 2012. No existing system met LinkedIn's needs at that scale.</td>
+                                <td>Couchbase 1.0 also 2011 — immature, unproven at LinkedIn scale at that time.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div style="background: #e8f5e8; padding: 25px; border-radius: 12px; margin: 30px 0;">
+                <h3 style="color: #2e7d32; margin-bottom: 20px; text-align: center;">Results after adding Couchbase as cache</h3>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+                    <div class="comparison-table">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Metric</th>
+                                    <th>Before</th>
+                                    <th>After</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>Cache hit rate</strong></td>
+                                    <td>~70% (OHC only)</td>
+                                    <td style="background: #d4edda; font-weight: bold;">>99%</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>p99 latency</strong></td>
+                                    <td>31.6 ms</td>
+                                    <td style="background: #d4edda; font-weight: bold;">12.41 ms (−61%)</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>p99.9 latency</strong></td>
+                                    <td>66.87 ms</td>
+                                    <td style="background: #d4edda; font-weight: bold;">24.3 ms (−64%)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="comparison-table">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Metric</th>
+                                    <th>Before</th>
+                                    <th>After</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>Espresso storage nodes</strong></td>
+                                    <td>Baseline</td>
+                                    <td style="background: #d4edda; font-weight: bold;">Reduced by 90%</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Annual cost</strong></td>
+                                    <td>Baseline</td>
+                                    <td style="background: #d4edda; font-weight: bold;">−10%</td>
+                                </tr>
+                                <tr>
+                                    <td colspan="3" style="text-align: center; font-style: italic; color: #666;">Dramatic improvements across all metrics</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="highlight">
+                <strong>Key takeaway:</strong> Couchbase didn't replace Espresso — it became a tenant of the Espresso ecosystem, fed by the same Kafka change stream it could never have produced itself. The right question is never 'which cache system?' but <strong>'what role does each layer play, and what are the tradeoffs?'</strong>
             </div>
         </div>
     </section>
