@@ -496,6 +496,31 @@ public class CohortAssignment {
   <h3>Memcache Integration</h3>
   
   <div class="implementation">
+    <h4>Why Both Local Cache AND Memcache Are Needed</h4>
+    
+    <h5>The Bootstrap Problem</h5>
+    <p>Without Memcache, new services would have a "cold start" problem:</p>
+    
+    <div style="background:#ffebee;border:1px solid #f44336;border-radius:6px;padding:12px;margin:12px 0;">
+      <strong style="color:#d32f2f;">❌ Without Memcache:</strong><br>
+      <code>New Service Starts → Empty local cache → Wait for Kafka → Gradually receive flags</code><br>
+      <span style="color:#d32f2f;font-size:0.9em;">↑ Could take minutes to get all flags</span>
+    </div>
+    
+    <div style="background:#e8f5e9;border:1px solid #4caf50;border-radius:6px;padding:12px;margin:12px 0;">
+      <strong style="color:#2e7d32;">✅ With Memcache:</strong><br>
+      <code>New Service Starts → Load from Memcache → Full flag set in 100ms → Start Kafka for updates</code>
+    </div>
+    
+    <h5>Different Data Flow Patterns:</h5>
+    <table style="margin:16px 0;">
+      <tr><th>Cache Type</th><th>Update Frequency</th><th>Update Method</th><th>Access Pattern</th></tr>
+      <tr><td><strong>Local Cache</strong></td><td>Real-time</td><td>Kafka deltas</td><td>Every request (millions/sec)</td></tr>
+      <tr><td><strong>Memcache</strong></td><td>Every 30s</td><td>Control Plane batch</td><td>Only at startup</td></tr>
+    </table>
+  </div>
+  
+  <div class="implementation">
     <h4>Bootstrap & Warm Cache Strategy</h4>
     <p>New services bootstrap from Memcache before establishing Kafka connection</p>
     <pre>// Service startup sequence
