@@ -656,6 +656,232 @@
     <h4>Active Build Protection</h4>
     <p><strong>Lease-Based Coordination:</strong> Prevents artifacts from being evicted while builds are actively using them through a distributed lease system that tracks active references and TTL-based cleanup to avoid eviction races during parallel builds.</p>
   </div>
+
+  <h3>Distributed Lease Management System</h3>
+  
+  <!-- Mandatory Lease Registration -->
+  <div style="background: #ffebee; border: 2px solid #d32f2f; border-radius: 8px; padding: 20px; margin: 20px 0;">
+    <div style="text-align: center; margin-bottom: 15px;">
+      <div style="background: #c62828; color: white; padding: 8px 16px; border-radius: 6px; display: inline-block; font-weight: 600;">
+        🔐 MANDATORY LEASE REGISTRATION — No Artifact Access Without Lease
+      </div>
+    </div>
+
+    <!-- Lease Acquisition Flow -->
+    <div style="background: white; border: 1px solid #d32f2f; border-radius: 6px; padding: 15px; margin-bottom: 15px;">
+      <div style="font-size: 0.9em; font-weight: 600; margin-bottom: 10px; color: #c62828;">⚡ Lease Acquisition Flow (Every App Must Follow)</div>
+      <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8em;">
+        <div style="background: #ffcdd2; padding: 8px; border-radius: 4px; text-align: center; width: 18%;">
+          <strong>CI Job Starts</strong><br>
+          Requests artifact<br>
+          <code>sha256:abc123</code>
+        </div>
+        <span style="color: #d32f2f;">→</span>
+        <div style="background: #ffcdd2; padding: 8px; border-radius: 4px; text-align: center; width: 18%;">
+          <strong>❌ BLOCKED</strong><br>
+          No lease = no access<br>
+          <code>LeaseRequired</code>
+        </div>
+        <span style="color: #d32f2f;">→</span>
+        <div style="background: #c8e6c9; padding: 8px; border-radius: 4px; text-align: center; width: 18%;">
+          <strong>Acquire Lease</strong><br>
+          <code>acquireLease()</code><br>
+          TTL: 2-4 hours
+        </div>
+        <span style="color: #4caf50;">→</span>
+        <div style="background: #c8e6c9; padding: 8px; border-radius: 4px; text-align: center; width: 18%;">
+          <strong>✅ GRANTED</strong><br>
+          Download allowed<br>
+          Safe to use
+        </div>
+        <span style="color: #4caf50;">→</span>
+        <div style="background: #e3f2fd; padding: 8px; border-radius: 4px; text-align: center; width: 18%;">
+          <strong>Auto Release</strong><br>
+          Build completes<br>
+          Lease cleanup
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lease Registry Structure -->
+  <div style="background: #f3e5f5; border: 2px solid #9c27b0; border-radius: 8px; padding: 20px; margin: 20px 0;">
+    <div style="text-align: center; margin-bottom: 15px;">
+      <div style="background: #7b1fa2; color: white; padding: 8px 16px; border-radius: 6px; display: inline-block; font-weight: 600;">
+        📋 LEASE REGISTRY STRUCTURE — Real-Time Usage Tracking
+      </div>
+    </div>
+
+    <!-- Registry Entry Example -->
+    <div style="background: white; border: 1px solid #9c27b0; border-radius: 6px; padding: 15px; margin-bottom: 15px;">
+      <div style="font-size: 0.9em; font-weight: 600; margin-bottom: 10px; color: #7b1fa2;">📊 Live Registry Entry Example</div>
+      <div style="background: #f8f9fa; padding: 12px; border-radius: 4px; font-family: monospace; font-size: 0.75em;">
+        <strong>Artifact:</strong> sha256:abc123def456...<br>
+        <strong>Active Leases:</strong> 3 consumers<br>
+        <br>
+        <span style="color: #2196f3;">├── LEASE-001:</span> jenkins-build-47291 (CI_BUILD)<br>
+        <span style="color: #2196f3;">│   ├── Acquired:</span> 16:30:00 | <span style="color: #2196f3;">Expires:</span> 20:30:00<br>
+        <span style="color: #2196f3;">│   ├── Stage:</span> COMPILATION | <span style="color: #2196f3;">Heartbeat:</span> 2s ago<br>
+        <span style="color: #2196f3;">│</span><br>
+        <span style="color: #ff9800;">├── LEASE-002:</span> k8s-prod-api-deployment (DEPLOYMENT)<br>
+        <span style="color: #ff9800;">│   ├── Acquired:</span> 16:25:00 | <span style="color: #ff9800;">Expires:</span> 16:25:00+24h<br>
+        <span style="color: #ff9800;">│   ├── Stage:</span> RUNTIME | <span style="color: #ff9800;">Heartbeat:</span> 5s ago<br>
+        <span style="color: #ff9800;">│</span><br>
+        <span style="color: #4caf50;">└── LEASE-003:</span> integration-test-suite (TESTING)<br>
+        <span style="color: #4caf50;">    ├── Acquired:</span> 16:35:00 | <span style="color: #4caf50;">Expires:</span> 18:35:00<br>
+        <span style="color: #4caf50;">    ├── Stage:</span> TEST_EXECUTION | <span style="color: #4caf50;">Heartbeat:</span> 1s ago<br>
+        <br>
+        <strong style="color: #d32f2f;">🛡️ EVICTION_BLOCKED: true (3 active users)</strong>
+      </div>
+    </div>
+
+    <!-- Consumer Types -->
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; font-size: 0.8em;">
+      <div style="background: white; border: 1px solid #2196f3; border-radius: 4px; padding: 8px; text-align: center;">
+        <strong>🏗️ CI/CD Builds</strong><br>
+        Jenkins, Tekton<br>
+        <span style="color: #2196f3;">2-4h TTL</span>
+      </div>
+      <div style="background: white; border: 1px solid #ff9800; border-radius: 4px; padding: 8px; text-align: center;">
+        <strong>🚀 Deployments</strong><br>
+        Kubernetes, Docker<br>
+        <span style="color: #ff9800;">24-48h TTL</span>
+      </div>
+      <div style="background: white; border: 1px solid #4caf50; border-radius: 4px; padding: 8px; text-align: center;">
+        <strong>🧪 Testing</strong><br>
+        Integration, E2E<br>
+        <span style="color: #4caf50;">1-2h TTL</span>
+      </div>
+      <div style="background: white; border: 1px solid #9c27b0; border-radius: 4px; padding: 8px; text-align: center;">
+        <strong>💻 Development</strong><br>
+        Local builds, staging<br>
+        <span style="color: #9c27b0;">8h TTL</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Heartbeat & Updates -->
+  <div style="background: #e8f4f8; border: 2px solid #0277bd; border-radius: 8px; padding: 20px; margin: 20px 0;">
+    <div style="text-align: center; margin-bottom: 15px;">
+      <div style="background: #01579b; color: white; padding: 8px 16px; border-radius: 6px; display: inline-block; font-weight: 600;">
+        💓 HEARTBEAT & UPDATE SYSTEM — Real-Time Lease Maintenance
+      </div>
+    </div>
+
+    <!-- Heartbeat Process -->
+    <div style="background: white; border: 1px solid #0277bd; border-radius: 6px; padding: 15px; margin-bottom: 15px;">
+      <div style="font-size: 0.9em; font-weight: 600; margin-bottom: 10px; color: #01579b;">🔄 Automatic Heartbeat Updates (Every 30 seconds)</div>
+      <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8em;">
+        <div style="background: #e1f5fe; padding: 8px; border-radius: 4px; text-align: center; width: 23%;">
+          <strong>CI Job Running</strong><br>
+          Build in progress<br>
+          Progress: 45%
+        </div>
+        <span style="color: #0277bd;">→</span>
+        <div style="background: #e1f5fe; padding: 8px; border-radius: 4px; text-align: center; width: 23%;">
+          <strong>SDK Heartbeat</strong><br>
+          <code>renewLease()</code><br>
+          Every 30s
+        </div>
+        <span style="color: #0277bd;">→</span>
+        <div style="background: #e1f5fe; padding: 8px; border-radius: 4px; text-align: center; width: 23%;">
+          <strong>Registry Update</strong><br>
+          <code>expires_at += TTL</code><br>
+          <code>last_heartbeat = NOW()</code>
+        </div>
+        <span style="color: #0277bd;">→</span>
+        <div style="background: #c8e6c9; padding: 8px; border-radius: 4px; text-align: center; width: 23%;">
+          <strong>Lease Extended</strong><br>
+          Artifact protected<br>
+          No eviction risk
+        </div>
+      </div>
+    </div>
+
+    <!-- Cross-Region Sync -->
+    <div style="background: white; border: 1px solid #0277bd; border-radius: 6px; padding: 15px;">
+      <div style="font-size: 0.9em; font-weight: 600; margin-bottom: 10px; color: #01579b;">🌍 Cross-Region Lease Synchronization</div>
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; font-size: 0.75em;">
+        <div style="background: #c8e6c9; color: #2e7d32; padding: 10px; border-radius: 4px; text-align: center;">
+          <strong>LTX1 (PRIMARY)</strong><br>
+          Redis Cluster<br>
+          <span style="background: rgba(255,255,255,0.7); padding: 2px 4px; border-radius: 2px; margin-top: 4px; display: inline-block;">WRITE OPS</span><br>
+          Local leases: 15,847<br>
+          Update lag: < 10ms
+        </div>
+        <div style="background: #ffecb3; color: #f57c00; padding: 10px; border-radius: 4px; text-align: center;">
+          <strong>KAFKA SYNC</strong><br>
+          Topic: lease-updates<br>
+          <span style="background: rgba(255,255,255,0.7); padding: 2px 4px; border-radius: 2px; margin-top: 4px; display: inline-block;">CROSS-REGION</span><br>
+          Throughput: 2.3K msg/s<br>
+          Sync lag: < 60s
+        </div>
+        <div style="background: #ffcdd2; color: #c62828; padding: 10px; border-radius: 4px; text-align: center;">
+          <strong>LVA1 (REPLICA)</strong><br>
+          Redis Cluster<br>
+          <span style="background: rgba(255,255,255,0.7); padding: 2px 4px; border-radius: 2px; margin-top: 4px; display: inline-block;">READ + SYNC</span><br>
+          Synced leases: 15,834<br>
+          Consistency: 99.92%
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Safety Mechanisms -->
+  <div style="background: #fff3e0; border: 2px solid #f57c00; border-radius: 8px; padding: 20px; margin: 20px 0;">
+    <div style="text-align: center; margin-bottom: 15px;">
+      <div style="background: #e65100; color: white; padding: 8px 16px; border-radius: 6px; display: inline-block; font-weight: 600;">
+        🛡️ SAFETY MECHANISMS — Preventing Eviction Disasters
+      </div>
+    </div>
+
+    <!-- Failure Scenarios -->
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 15px;">
+      <!-- Heartbeat Failure -->
+      <div style="background: white; border: 2px solid #f44336; border-radius: 6px; padding: 12px;">
+        <div style="background: #f44336; color: white; padding: 4px; border-radius: 3px; text-align: center; font-size: 0.8em; font-weight: 600; margin-bottom: 8px;">
+          💔 HEARTBEAT FAILURE
+        </div>
+        <div style="font-size: 0.75em;">
+          <strong>Causes:</strong> Network partition, job crash, node failure<br>
+          <strong>Behavior:</strong> Lease expires automatically after TTL<br>
+          <strong>Safety:</strong> Conservative 24-48h grace period<br>
+          <strong>Recovery:</strong> New job acquires fresh lease
+        </div>
+      </div>
+
+      <!-- Registry Failure -->
+      <div style="background: white; border: 2px solid #ff9800; border-radius: 6px; padding: 12px;">
+        <div style="background: #ff9800; color: white; padding: 4px; border-radius: 3px; text-align: center; font-size: 0.8em; font-weight: 600; margin-bottom: 8px;">
+          🚨 REGISTRY FAILURE
+        </div>
+        <div style="font-size: 0.75em;">
+          <strong>Fallback:</strong> Backup Espresso-based store<br>
+          <strong>Safety:</strong> Disable ALL evictions<br>
+          <strong>Alert:</strong> Page on-call immediately<br>
+          <strong>Recovery:</strong> Rebuild from job telemetry
+        </div>
+      </div>
+
+      <!-- Split Brain -->
+      <div style="background: white; border: 2px solid #9c27b0; border-radius: 6px; padding: 12px;">
+        <div style="background: #9c27b0; color: white; padding: 4px; border-radius: 3px; text-align: center; font-size: 0.8em; font-weight: 600; margin-bottom: 8px;">
+          🧠 SPLIT-BRAIN PREVENTION
+        </div>
+        <div style="font-size: 0.75em;">
+          <strong>Scenario:</strong> Region connectivity lost<br>
+          <strong>Behavior:</strong> Each region maintains local leases<br>
+          <strong>Safety:</strong> Never evict if ANY region has lease<br>
+          <strong>Recovery:</strong> Reconcile when connectivity restored
+        </div>
+      </div>
+    </div>
+
+    <!-- Conservative Policy -->
+    <div style="background: #4caf50; color: white; padding: 12px; border-radius: 6px; text-align: center; font-weight: 600;">
+      🎯 CONSERVATIVE POLICY: "Better to cache too long than evict too early" — LinkedIn's #1 Build Cache Rule
+    </div>
+  </div>
   
   <h3>Cross-Region Replication with Bloom Filters</h3>
   
