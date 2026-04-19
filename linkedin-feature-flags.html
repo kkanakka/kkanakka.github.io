@@ -98,6 +98,193 @@
   <h3>Design Philosophy: Reliability First</h3>
   
   <div class="architecture">
+    <h4>System Architecture — Flag Evaluation & Propagation Flow</h4>
+    
+    <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 16px 0; border: 2px solid #dee2e6;">
+      <div style="text-align: center; margin-bottom: 20px;">
+        <h4 style="color: #0077b5; margin-bottom: 10px;">🏗️ Complete Feature Flag Architecture</h4>
+      </div>
+      
+      <!-- Control Plane -->
+      <div style="background: #e3f2fd; border: 2px solid #2196f3; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+          <div style="background: #1976d2; color: white; padding: 8px 12px; border-radius: 6px; font-weight: 600;">
+            🎛️ Control Plane
+          </div>
+          <div style="font-size: 0.85em; color: #666;">Admin UI + API Gateway</div>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+          <div style="background: white; border: 1px solid #90caf9; border-radius: 4px; padding: 8px; text-align: center;">
+            <strong>Web UI</strong><br>
+            <small>Flag Management</small>
+          </div>
+          <div style="background: white; border: 1px solid #90caf9; border-radius: 4px; padding: 8px; text-align: center;">
+            <strong>API Gateway</strong><br>
+            <small>REST + GraphQL</small>
+          </div>
+          <div style="background: white; border: 1px solid #90caf9; border-radius: 4px; padding: 8px; text-align: center;">
+            <strong>Auth Service</strong><br>
+            <small>LinkedIn SSO</small>
+          </div>
+        </div>
+        
+        <div style="margin: 15px 0; text-align: center;">
+          <span style="color: #1976d2; font-size: 1.2em;">⬇️</span>
+          <div style="font-size: 0.8em; color: #666;">1. Engineer updates flag via UI</div>
+        </div>
+      </div>
+      
+      <!-- Data Layer -->
+      <div style="background: #f3e5f5; border: 2px solid #9c27b0; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+          <div style="background: #7b1fa2; color: white; padding: 8px 12px; border-radius: 6px; font-weight: 600;">
+            💾 Data Persistence Layer
+          </div>
+          <div style="font-size: 0.85em; color: #666;">Espresso + Audit Log</div>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+          <div style="background: white; border: 1px solid #ce93d8; border-radius: 4px; padding: 8px; text-align: center;">
+            <strong>Espresso DB</strong><br>
+            <small>Flag definitions</small><br>
+            <code style="font-size: 0.7em;">HTTP + Avro</code>
+          </div>
+          <div style="background: white; border: 1px solid #ce93d8; border-radius: 4px; padding: 8px; text-align: center;">
+            <strong>Audit Store</strong><br>
+            <small>Immutable log</small><br>
+            <code style="font-size: 0.7em;">SHA-256 chain</code>
+          </div>
+          <div style="background: white; border: 1px solid #ce93d8; border-radius: 4px; padding: 8px; text-align: center;">
+            <strong>Version Control</strong><br>
+            <small>Git integration</small><br>
+            <code style="font-size: 0.7em;">JSON configs</code>
+          </div>
+        </div>
+        
+        <div style="margin: 15px 0; text-align: center;">
+          <span style="color: #7b1fa2; font-size: 1.2em;">⬇️</span>
+          <div style="font-size: 0.8em; color: #666;">2. Write to Espresso + audit log</div>
+        </div>
+      </div>
+      
+      <!-- Message Bus -->
+      <div style="background: #fff3e0; border: 2px solid #ff9800; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+          <div style="background: #f57c00; color: white; padding: 8px 12px; border-radius: 6px; font-weight: 600;">
+            📡 Message Bus (Kafka)
+          </div>
+          <div style="font-size: 0.85em; color: #666;">Real-time propagation</div>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+          <div style="background: white; border: 1px solid #ffb74d; border-radius: 4px; padding: 6px; text-align: center; font-size: 0.8em;">
+            <strong>Producer</strong><br>
+            Control Plane
+          </div>
+          <div style="background: white; border: 1px solid #ffb74d; border-radius: 4px; padding: 6px; text-align: center; font-size: 0.8em;">
+            <strong>Topic</strong><br>
+            flag-updates
+          </div>
+          <div style="background: white; border: 1px solid #ffb74d; border-radius: 4px; padding: 6px; text-align: center; font-size: 0.8em;">
+            <strong>Partitions</strong><br>
+            By flag ID
+          </div>
+          <div style="background: white; border: 1px solid #ffb74d; border-radius: 4px; padding: 6px; text-align: center; font-size: 0.8em;">
+            <strong>Retention</strong><br>
+            7 days
+          </div>
+        </div>
+        
+        <div style="margin: 15px 0; text-align: center;">
+          <span style="color: #f57c00; font-size: 1.2em;">⬇️</span>
+          <div style="font-size: 0.8em; color: #666;">3. Publish change event to Kafka</div>
+        </div>
+      </div>
+      
+      <!-- Edge Cache Layer -->
+      <div style="background: #e8f5e8; border: 2px solid #4caf50; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+          <div style="background: #388e3c; color: white; padding: 8px 12px; border-radius: 6px; font-weight: 600;">
+            🏪 Edge Cache Layer
+          </div>
+          <div style="font-size: 0.85em; color: #666;">Multi-tier caching</div>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+          <div style="background: white; border: 1px solid #81c784; border-radius: 4px; padding: 8px; text-align: center;">
+            <strong>Memcache</strong><br>
+            <small>L1 Cache</small><br>
+            <code style="font-size: 0.7em;">TCP 11211</code>
+          </div>
+          <div style="background: white; border: 1px solid #81c784; border-radius: 4px; padding: 8px; text-align: center;">
+            <strong>Local Cache</strong><br>
+            <small>In-process</small><br>
+            <code style="font-size: 0.7em;">HashMap</code>
+          </div>
+          <div style="background: white; border: 1px solid #81c784; border-radius: 4px; padding: 8px; text-align: center;">
+            <strong>CDN Edge</strong><br>
+            <small>Geographic</small><br>
+            <code style="font-size: 0.7em;">REST API</code>
+          </div>
+        </div>
+        
+        <div style="margin: 15px 0; text-align: center;">
+          <span style="color: #388e3c; font-size: 1.2em;">⬇️</span>
+          <div style="font-size: 0.8em; color: #666;">4. Update all cache layers</div>
+        </div>
+      </div>
+      
+      <!-- Application Runtime -->
+      <div style="background: #ffebee; border: 2px solid #f44336; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+          <div style="background: #d32f2f; color: white; padding: 8px 12px; border-radius: 6px; font-weight: 600;">
+            🚀 Application Runtime
+          </div>
+          <div style="font-size: 0.85em; color: #666;">Flag evaluation (< 2ms)</div>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+          <div style="background: white; border: 1px solid #ef5350; border-radius: 4px; padding: 6px; text-align: center; font-size: 0.8em;">
+            <strong>App A</strong><br>
+            Profile Service
+          </div>
+          <div style="background: white; border: 1px solid #ef5350; border-radius: 4px; padding: 6px; text-align: center; font-size: 0.8em;">
+            <strong>App B</strong><br>
+            Feed Service  
+          </div>
+          <div style="background: white; border: 1px solid #ef5350; border-radius: 4px; padding: 6px; text-align: center; font-size: 0.8em;">
+            <strong>App C</strong><br>
+            Search Service
+          </div>
+          <div style="background: white; border: 1px solid #ef5350; border-radius: 4px; padding: 6px; text-align: center; font-size: 0.8em;">
+            <strong>App N</strong><br>
+            All Services
+          </div>
+        </div>
+      </div>
+      
+      <!-- Flow Summary -->
+      <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 10px; margin-top: 15px;">
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; font-size: 0.8em;">
+          <div>
+            <strong>Protocols & Ports:</strong><br>
+            • Control Plane: HTTPS 443<br>
+            • Espresso: HTTP + Avro<br>
+            • Kafka: TCP 9092<br>
+            • Memcache: TCP 11211
+          </div>
+          <div>
+            <strong>Key Flows:</strong><br>
+            • Flag update: UI → API → Espresso → Kafka<br>
+            • Propagation: Kafka → Cache → Apps<br>
+            • Evaluation: Local cache lookup (0 network)<br>
+            • Kill switch: Broadcast via Kafka
+          </div>
+        </div>
+      </div>
+    </div>
+    
     <h4>Core Design Principles</h4>
     <ul>
       <li><strong>Edge-First Evaluation</strong> — Flag checks never touch the network. Services evaluate against local cache.</li>
