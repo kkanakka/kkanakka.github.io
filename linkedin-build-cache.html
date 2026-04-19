@@ -142,115 +142,376 @@
 <div class="section">
   <h2>Page 2 — Architecture & LinkedIn Integration</h2>
   
-  <h3>System Architecture Overview</h3>
-  
-  <!-- Build Cache Architecture Diagram -->
-  <svg width="100%" height="600" style="background:#fafafa;border:1px solid #ddd;border-radius:8px;margin:16px 0;">
-    <!-- CI/CD Pipeline -->
-    <rect x="50" y="50" width="200" height="100" fill="#e3f2fd" stroke="#1976d2" stroke-width="2" rx="8"/>
-    <text x="150" y="80" text-anchor="middle" font-size="14" font-weight="bold" fill="#1976d2">LinkedIn CI/CD Pipeline</text>
-    <text x="150" y="100" text-anchor="middle" font-size="10" fill="#1976d2">Gradle, Maven, Docker</text>
-    <text x="150" y="115" text-anchor="middle" font-size="10" fill="#1976d2">Buck, Bazel Builds</text>
-    <text x="150" y="130" text-anchor="middle" font-size="10" fill="#1976d2">Jenkins, Tekton</text>
-    
-    <!-- Ingestion API -->
-    <rect x="300" y="50" width="150" height="100" fill="#fff3e0" stroke="#ff6f00" stroke-width="2" rx="8"/>
-    <text x="375" y="80" text-anchor="middle" font-size="14" font-weight="bold" fill="#e65100">Ingestion API</text>
-    <text x="375" y="100" text-anchor="middle" font-size="10" fill="#e65100">SHA-256 Hashing</text>
-    <text x="375" y="115" text-anchor="middle" font-size="10" fill="#e65100">Metadata Extraction</text>
-    <text x="375" y="130" text-anchor="middle" font-size="10" fill="#e65100">Deduplication Check</text>
-    
-    <!-- Hash Index Service -->
-    <rect x="500" y="50" width="150" height="100" fill="#f3e5f5" stroke="#7b1fa2" stroke-width="2" rx="8"/>
-    <text x="575" y="80" text-anchor="middle" font-size="14" font-weight="bold" fill="#4a148c">Hash Index</text>
-    <text x="575" y="100" text-anchor="middle" font-size="10" fill="#4a148c">Content Address</text>
-    <text x="575" y="115" text-anchor="middle" font-size="10" fill="#4a148c">Bloom Filter</text>
-    <text x="575" y="130" text-anchor="middle" font-size="10" fill="#4a148c">Lease Tracking</text>
-    
-    <!-- Hot SSD Cache (L1) -->
-    <rect x="50" y="200" width="180" height="80" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2" rx="8"/>
-    <text x="140" y="225" text-anchor="middle" font-size="12" font-weight="bold" fill="#1b5e20">Hot SSD Cache (L1)</text>
-    <text x="140" y="245" text-anchor="middle" font-size="10" fill="#1b5e20">Recent Artifacts</text>
-    <text x="140" y="260" text-anchor="middle" font-size="10" fill="#1b5e20">Sub-100ms Access</text>
-    <text x="140" y="275" text-anchor="middle" font-size="10" fill="#1b5e20">LRU + Lease Eviction</text>
-    
-    <!-- Cold Object Storage (L2) -->
-    <rect x="250" y="200" width="180" height="80" fill="#e1f5fe" stroke="#0277bd" stroke-width="2" rx="8"/>
-    <text x="340" y="225" text-anchor="middle" font-size="12" font-weight="bold" fill="#01579b">Ambry Storage (L2)</text>
-    <text x="340" y="245" text-anchor="middle" font-size="10" fill="#01579b">All Artifacts</text>
-    <text x="340" y="260" text-anchor="middle" font-size="10" fill="#01579b">CAS Addressing</text>
-    <text x="340" y="275" text-anchor="middle" font-size="10" fill="#01579b">Multi-DC Replication</text>
-    
-    <!-- Replication Agent -->
-    <rect x="450" y="200" width="180" height="80" fill="#fff8e1" stroke="#fbc02d" stroke-width="2" rx="8"/>
-    <text x="540" y="225" text-anchor="middle" font-size="12" font-weight="bold" fill="#f57c00">Replication Agent</text>
-    <text x="540" y="245" text-anchor="middle" font-size="10" fill="#f57c00">Cross-Region Sync</text>
-    <text x="540" y="260" text-anchor="middle" font-size="10" fill="#f57c00">Index Propagation</text>
-    <text x="540" y="275" text-anchor="middle" font-size="10" fill="#f57c00">Consistency Check</text>
-    
-    <!-- Regional Deployments -->
-    <rect x="50" y="320" width="150" height="60" fill="#e8f5e9" stroke="#4caf50" stroke-width="2" rx="4"/>
-    <text x="125" y="340" text-anchor="middle" font-size="11" font-weight="bold" fill="#2e7d32">LTX1 Cache</text>
-    <text x="125" y="355" text-anchor="middle" font-size="9" fill="#2e7d32">Primary Region</text>
-    <text x="125" y="370" text-anchor="middle" font-size="9" fill="#2e7d32">95% Hit Rate</text>
-    
-    <rect x="220" y="320" width="150" height="60" fill="#e8f5e9" stroke="#4caf50" stroke-width="2" rx="4"/>
-    <text x="295" y="340" text-anchor="middle" font-size="11" font-weight="bold" fill="#2e7d32">LVA1 Cache</text>
-    <text x="295" y="355" text-anchor="middle" font-size="9" fill="#2e7d32">Secondary Region</text>
-    <text x="295" y="370" text-anchor="middle" font-size="9" fill="#2e7d32">90% Hit Rate</text>
-    
-    <rect x="390" y="320" width="150" height="60" fill="#e8f5e9" stroke="#4caf50" stroke-width="2" rx="4"/>
-    <text x="465" y="340" text-anchor="middle" font-size="11" font-weight="bold" fill="#2e7d32">EI4 Cache</text>
-    <text x="465" y="355" text-anchor="middle" font-size="9" fill="#2e7d32">Dev/Test Region</text>
-    <text x="465" y="370" text-anchor="middle" font-size="9" fill="#2e7d32">85% Hit Rate</text>
-    
-    <!-- CI Client SDK -->
-    <rect x="50" y="420" width="490" height="60" fill="#ffebee" stroke="#d32f2f" stroke-width="2" rx="8"/>
-    <text x="295" y="440" text-anchor="middle" font-size="14" font-weight="bold" fill="#c62828">CI Client SDK</text>
-    <text x="295" y="460" text-anchor="middle" font-size="10" fill="#c62828">Hash-before-build → Cache Query → Fetch or Build → Store Result</text>
-    <text x="295" y="475" text-anchor="middle" font-size="10" fill="#c62828">Gradle Plugin, Maven Extension, Docker BuildKit Integration</text>
-    
-    <!-- Monitoring & Validation -->
-    <rect x="50" y="520" width="240" height="50" fill="#f3e5f5" stroke="#9c27b0" stroke-width="2" rx="4"/>
-    <text x="170" y="540" text-anchor="middle" font-size="11" font-weight="bold" fill="#6a1b9a">Checksum Validation</text>
-    <text x="170" y="555" text-anchor="middle" font-size="9" fill="#6a1b9a">CRC Check + Periodic Audit</text>
-    
-    <rect x="310" y="520" width="240" height="50" fill="#f3e5f5" stroke="#9c27b0" stroke-width="2" rx="4"/>
-    <text x="430" y="540" text-anchor="middle" font-size="11" font-weight="bold" fill="#6a1b9a">Cache Metrics</text>
-    <text x="430" y="555" text-anchor="middle" font-size="9" fill="#6a1b9a">Hit Rate, Latency, Corruption</text>
-    
-    <!-- Arrows -->
-    <defs>
-      <marker id="arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-        <polygon points="0 0, 10 3.5, 0 7" fill="#666"/>
-      </marker>
-    </defs>
-    
-    <!-- Data flow arrows -->
-    <line x1="250" y1="100" x2="300" y2="100" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
-    <line x1="450" y1="100" x2="500" y2="100" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
-    <line x1="375" y1="150" x2="340" y2="200" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
-    <line x1="575" y1="150" x2="540" y2="200" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
-    
-    <!-- Cache hierarchy -->
-    <line x1="140" y1="280" x2="340" y2="280" stroke="#4caf50" stroke-width="2" stroke-dasharray="5,5"/>
-    
-    <!-- Regional sync -->
-    <line x1="125" y1="320" x2="295" y2="320" stroke="#fbc02d" stroke-width="2" stroke-dasharray="3,3"/>
-    <line x1="295" y1="320" x2="465" y2="320" stroke="#fbc02d" stroke-width="2" stroke-dasharray="3,3"/>
-    
-    <!-- Client connections -->
-    <line x1="125" y1="380" x2="125" y2="420" stroke="#d32f2f" stroke-width="2"/>
-    <line x1="295" y1="380" x2="295" y2="420" stroke="#d32f2f" stroke-width="2"/>
-    <line x1="465" y1="380" x2="465" y2="420" stroke="#d32f2f" stroke-width="2"/>
-    
-    <!-- Labels -->
-    <text x="275" y="95" font-size="9" fill="#666">upload</text>
-    <text x="475" y="95" font-size="9" fill="#666">index</text>
-    <text x="240" y="295" font-size="9" fill="#4caf50">promote</text>
-    <text x="210" y="315" font-size="9" fill="#fbc02d">sync</text>
-    <text x="170" y="410" font-size="9" fill="#d32f2f">query</text>
-  </svg>
+  <h3>Detailed LinkedIn Build Cache Architecture — Production Implementation</h3>
+
+  <!-- LinkedIn Build Artifact Cache - Detailed Architecture -->
+  <div style="background: #f8f9fa; border: 2px solid #ff6f00; border-radius: 12px; padding: 25px; margin: 20px 0;">
+    <!-- Title Section -->
+    <div style="text-align: center; margin-bottom: 25px; padding: 15px; background: linear-gradient(135deg, #ff6f00, #e65100); border-radius: 8px; color: white;">
+      <h3 style="margin: 0; font-size: 1.3em;">🏗️ LinkedIn Build Artifact Cache</h3>
+      <p style="margin: 5px 0 0 0; opacity: 0.9; font-size: 0.9em;">Content-Addressable Distributed Caching Architecture</p>
+    </div>
+
+    <!-- Normal Build Flow -->
+    <div style="background: #e8f5e9; border: 2px solid #4caf50; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+      <div style="text-align: center; margin-bottom: 15px;">
+        <div style="background: #2e7d32; color: white; padding: 8px 16px; border-radius: 6px; display: inline-block; font-weight: 600;">
+          ✅ NORMAL BUILD FLOW — Cache Hit Scenario
+        </div>
+      </div>
+      
+      <!-- Build Pipeline Flow -->
+      <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; align-items: center; margin-bottom: 15px;">
+        <!-- Developer Commit -->
+        <div style="background: white; border: 2px solid #2196f3; border-radius: 8px; padding: 12px; text-align: center;">
+          <div style="background: #2196f3; color: white; padding: 6px; border-radius: 4px; margin-bottom: 8px; font-weight: 600; font-size: 0.8em;">
+            👨‍💻 DEVELOPER
+          </div>
+          <div style="font-size: 0.75em;">
+            <strong>Action:</strong> git push<br>
+            <strong>Trigger:</strong> Jenkins pipeline<br>
+            <strong>Build:</strong> Gradle/Maven/Buck<br>
+            <strong>Target:</strong> JAR, Docker, Tests
+          </div>
+        </div>
+        
+        <span style="color: #4caf50; font-size: 1.2em; text-align: center;">→</span>
+        
+        <!-- Pre-Build Hash -->
+        <div style="background: white; border: 2px solid #ff9800; border-radius: 8px; padding: 12px; text-align: center;">
+          <div style="background: #ff9800; color: white; padding: 6px; border-radius: 4px; margin-bottom: 8px; font-weight: 600; font-size: 0.8em;">
+            🔍 HASH COMPUTE
+          </div>
+          <div style="font-size: 0.75em;">
+            <strong>Input Hash:</strong><br>
+            <code style="background: #fff3e0; padding: 2px 4px; border-radius: 2px; font-size: 0.7em;">sha256(src+deps)</code><br>
+            <strong>Cache Key:</strong><br>
+            <code style="background: #fff3e0; padding: 2px 4px; border-radius: 2px; font-size: 0.7em;">abc123def456</code>
+          </div>
+        </div>
+        
+        <span style="color: #4caf50; font-size: 1.2em; text-align: center;">→</span>
+        
+        <!-- Cache Query -->
+        <div style="background: white; border: 2px solid #9c27b0; border-radius: 8px; padding: 12px; text-align: center;">
+          <div style="background: #9c27b0; color: white; padding: 6px; border-radius: 4px; margin-bottom: 8px; font-weight: 600; font-size: 0.8em;">
+            💾 CACHE QUERY
+          </div>
+          <div style="font-size: 0.75em;">
+            <strong>L1 SSD:</strong> ✅ HIT 45ms<br>
+            <strong>Protocol:</strong> HTTP/gRPC<br>
+            <strong>Size:</strong> 127MB JAR<br>
+            <strong>Verification:</strong> SHA-256
+          </div>
+        </div>
+        
+        <span style="color: #4caf50; font-size: 1.2em; text-align: center;">→</span>
+        
+        <!-- Build Complete -->
+        <div style="background: white; border: 2px solid #4caf50; border-radius: 8px; padding: 12px; text-align: center;">
+          <div style="background: #4caf50; color: white; padding: 6px; border-radius: 4px; margin-bottom: 8px; font-weight: 600; font-size: 0.8em;">
+            ⚡ SKIP BUILD
+          </div>
+          <div style="font-size: 0.75em;">
+            <strong>Result:</strong> Artifact retrieved<br>
+            <strong>Time Saved:</strong> 8m 32s<br>
+            <strong>Status:</strong> Build SUCCESS<br>
+            <strong>Next:</strong> Deploy/Test
+          </div>
+        </div>
+      </div>
+
+      <!-- Performance Metrics -->
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; font-size: 0.8em;">
+        <div style="background: white; border: 1px solid #4caf50; border-radius: 4px; padding: 8px; text-align: center;">
+          <strong>💨 Retrieval Time</strong><br>
+          <span style="color: #4caf50; font-weight: 600;">45ms (P95)</span>
+        </div>
+        <div style="background: white; border: 1px solid #2196f3; border-radius: 4px; padding: 8px; text-align: center;">
+          <strong>🎯 Hit Rate</strong><br>
+          <span style="color: #2196f3; font-weight: 600;">92.3%</span>
+        </div>
+        <div style="background: white; border: 1px solid #ff9800; border-radius: 4px; padding: 8px; text-align: center;">
+          <strong>💰 Cost Savings</strong><br>
+          <span style="color: #ff9800; font-weight: 600;">87% CPU reduction</span>
+        </div>
+        <div style="background: white; border: 1px solid #9c27b0; border-radius: 4px; padding: 8px; text-align: center;">
+          <strong>🔒 Integrity</strong><br>
+          <span style="color: #9c27b0; font-weight: 600;">0.001% corruption</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cache Miss & Build Flow -->
+    <div style="background: #fff3e0; border: 2px solid #ff9800; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+      <div style="text-align: center; margin-bottom: 15px;">
+        <div style="background: #f57c00; color: white; padding: 8px 16px; border-radius: 6px; display: inline-block; font-weight: 600;">
+          🔧 CACHE MISS FLOW — Build & Store Scenario
+        </div>
+      </div>
+
+      <!-- Miss Detection & Build Process -->
+      <div style="background: white; border: 1px solid #ff9800; border-radius: 6px; padding: 15px; margin-bottom: 15px;">
+        <div style="font-size: 0.9em; font-weight: 600; margin-bottom: 10px; color: #f57c00;">⏱️ Miss Detection & Build Pipeline</div>
+        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8em;">
+          <div style="background: #ffecb3; padding: 8px; border-radius: 4px; text-align: center; width: 18%;">
+            <strong>T+0s</strong><br>
+            Hash computed<br>
+            <code style="font-size: 0.7em;">abcd5678ef</code>
+          </div>
+          <span style="color: #ff9800;">→</span>
+          <div style="background: #ffecb3; padding: 8px; border-radius: 4px; text-align: center; width: 18%;">
+            <strong>T+50ms</strong><br>
+            L1 + L2 MISS<br>
+            <code style="font-size: 0.7em;">404 Not Found</code>
+          </div>
+          <span style="color: #ff9800;">→</span>
+          <div style="background: #ffecb3; padding: 8px; border-radius: 4px; text-align: center; width: 18%;">
+            <strong>T+100ms</strong><br>
+            Acquire build lease<br>
+            <code style="font-size: 0.7em;">lease-id-9912</code>
+          </div>
+          <span style="color: #ff9800;">→</span>
+          <div style="background: #ffecb3; padding: 8px; border-radius: 4px; text-align: center; width: 18%;">
+            <strong>T+9m</strong><br>
+            Build completes<br>
+            <code style="font-size: 0.7em;">artifact.jar</code>
+          </div>
+          <span style="color: #ff9800;">→</span>
+          <div style="background: #f57c00; color: white; padding: 8px; border-radius: 4px; text-align: center; width: 18%;">
+            <strong>T+9m 30s</strong><br>
+            STORED & INDEXED<br>
+            <code style="font-size: 0.7em;">ready for reuse</code>
+          </div>
+        </div>
+      </div>
+
+      <!-- Lease-Based Coordination -->
+      <div style="background: #f3e5f5; border: 1px solid #9c27b0; border-radius: 6px; padding: 15px;">
+        <div style="font-size: 0.9em; font-weight: 600; margin-bottom: 10px; color: #7b1fa2;">🔒 Lease-Based Build Coordination</div>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; font-size: 0.75em;">
+          <div style="background: #ce93d8; color: white; padding: 10px; border-radius: 4px; text-align: center;">
+            <strong>FIRST BUILDER</strong><br>
+            Jenkins-Build-47291<br>
+            <span style="background: rgba(255,255,255,0.3); padding: 2px 4px; border-radius: 2px; margin-top: 4px; display: inline-block;">LEASE HOLDER</span><br>
+            Status: Building JAR<br>
+            TTL: 15 minutes
+          </div>
+          <div style="background: #ba68c8; color: white; padding: 10px; border-radius: 4px; text-align: center;">
+            <strong>SECOND BUILDER</strong><br>
+            Jenkins-Build-47292<br>
+            <span style="background: rgba(255,255,255,0.3); padding: 2px 4px; border-radius: 2px; margin-top: 4px; display: inline-block;">WAITING</span><br>
+            Status: Polling for result<br>
+            Poll interval: 5s
+          </div>
+          <div style="background: #ab47bc; color: white; padding: 10px; border-radius: 4px; text-align: center;">
+            <strong>THIRD BUILDER</strong><br>
+            Jenkins-Build-47293<br>
+            <span style="background: rgba(255,255,255,0.3); padding: 2px 4px; border-radius: 2px; margin-top: 4px; display: inline-block;">WAITING</span><br>
+            Status: Polling for result<br>
+            Poll interval: 5s
+          </div>
+        </div>
+        <div style="text-align: center; margin-top: 10px; padding: 8px; background: #e1bee7; border-radius: 4px; font-weight: 600;">
+          💡 RESULT: Only 1 build executes, 2 builders wait and reuse the artifact (deduplication)
+        </div>
+      </div>
+    </div>
+
+    <!-- Multi-Tier Storage Architecture -->
+    <div style="background: #e3f2fd; border: 2px solid #2196f3; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+      <div style="text-align: center; margin-bottom: 15px;">
+        <div style="background: #1976d2; color: white; padding: 8px 16px; border-radius: 6px; display: inline-block; font-weight: 600;">
+          🏗️ MULTI-TIER STORAGE ARCHITECTURE — Hot/Warm/Cold
+        </div>
+      </div>
+
+      <!-- Storage Tier Details -->
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 15px;">
+        <!-- L1 Hot SSD Cache -->
+        <div style="background: white; border: 2px solid #4caf50; border-radius: 8px; padding: 15px; text-align: center;">
+          <div style="background: #4caf50; color: white; padding: 8px; border-radius: 4px; margin-bottom: 10px; font-weight: 600; font-size: 0.9em;">
+            ⚡ L1 HOT SSD CACHE
+          </div>
+          <div style="font-size: 0.8em; margin-bottom: 8px;">
+            <strong>Capacity:</strong> 2TB NVMe per node<br>
+            <strong>Retention:</strong> 7 days LRU + leases<br>
+            <strong>Access Time:</strong> 15-50ms P95<br>
+            <strong>Hit Rate:</strong> 78% (recent builds)
+          </div>
+          <div style="background: #e8f5e8; padding: 6px; border-radius: 4px; font-size: 0.75em;">
+            <strong>Protocol:</strong> gRPC/HTTP<br>
+            <strong>Replication:</strong> Local only<br>
+            <strong>Consistency:</strong> Read-your-writes
+          </div>
+        </div>
+        
+        <!-- L2 Warm Object Store -->
+        <div style="background: white; border: 2px solid #ff9800; border-radius: 8px; padding: 15px; text-align: center;">
+          <div style="background: #ff9800; color: white; padding: 8px; border-radius: 4px; margin-bottom: 10px; font-weight: 600; font-size: 0.9em;">
+            🔥 L2 AMBRY STORE
+          </div>
+          <div style="font-size: 0.8em; margin-bottom: 8px;">
+            <strong>Capacity:</strong> 500TB per DC<br>
+            <strong>Retention:</strong> 30 days + ref counting<br>
+            <strong>Access Time:</strong> 200-800ms P95<br>
+            <strong>Hit Rate:</strong> 14% (older builds)
+          </div>
+          <div style="background: #fff3e0; padding: 6px; border-radius: 4px; font-size: 0.75em;">
+            <strong>Protocol:</strong> HTTP REST<br>
+            <strong>Replication:</strong> 3x within DC<br>
+            <strong>Consistency:</strong> Eventually consistent
+          </div>
+        </div>
+        
+        <!-- L3 Cold Archive -->
+        <div style="background: white; border: 2px solid #9c27b0; border-radius: 8px; padding: 15px; text-align: center;">
+          <div style="background: #9c27b0; color: white; padding: 8px; border-radius: 4px; margin-bottom: 10px; font-weight: 600; font-size: 0.9em;">
+            ❄️ L3 ARCHIVE (HDFS)
+          </div>
+          <div style="font-size: 0.8em; margin-bottom: 8px;">
+            <strong>Capacity:</strong> Unlimited (compressed)<br>
+            <strong>Retention:</strong> 1 year (compliance)<br>
+            <strong>Access Time:</strong> 5-30s (rare)<br>
+            <strong>Hit Rate:</strong> 0.1% (forensics)
+          </div>
+          <div style="background: #f3e5f5; padding: 6px; border-radius: 4px; font-size: 0.75em;">
+            <strong>Protocol:</strong> HDFS / S3<br>
+            <strong>Replication:</strong> 3x cross-DC<br>
+            <strong>Consistency:</strong> Strong
+          </div>
+        </div>
+      </div>
+
+      <!-- Cache Promotion Flow -->
+      <div style="background: white; border: 1px solid #2196f3; border-radius: 6px; padding: 15px;">
+        <div style="font-size: 0.9em; font-weight: 600; margin-bottom: 10px; color: #1976d2;">📈 Cache Promotion & Eviction Flow</div>
+        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8em;">
+          <div style="background: #e1f5fe; padding: 8px; border-radius: 4px; text-align: center;">
+            <strong>Build Completes</strong><br>
+            New artifact (127MB)<br>
+            <code>sha256:abc123</code>
+          </div>
+          <span style="color: #2196f3;">→</span>
+          <div style="background: #e1f5fe; padding: 8px; border-radius: 4px; text-align: center;">
+            <strong>Store in L2</strong><br>
+            Ambry replication<br>
+            <code>3x copies</code>
+          </div>
+          <span style="color: #2196f3;">→</span>
+          <div style="background: #e1f5fe; padding: 8px; border-radius: 4px; text-align: center;">
+            <strong>Index Update</strong><br>
+            Bloom filter + hash map<br>
+            <code>Global index</code>
+          </div>
+          <span style="color: #2196f3;">→</span>
+          <div style="background: #e1f5fe; padding: 8px; border-radius: 4px; text-align: center;">
+            <strong>Promote to L1</strong><br>
+            If requested again<br>
+            <code>Access-based</code>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Global Consistency & Replication -->
+    <div style="background: #f3e5f5; border: 2px solid #9c27b0; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+      <div style="text-align: center; margin-bottom: 15px;">
+        <div style="background: #7b1fa2; color: white; padding: 8px 16px; border-radius: 6px; display: inline-block; font-weight: 600;">
+          🌍 GLOBAL CONSISTENCY & REPLICATION
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+        <!-- LTX1 Primary -->
+        <div style="background: white; border: 2px solid #4caf50; border-radius: 6px; padding: 15px; text-align: center;">
+          <div style="background: #4caf50; color: white; padding: 6px; border-radius: 4px; margin-bottom: 10px; font-weight: 600; font-size: 0.9em;">
+            🌟 LTX1 (PRIMARY)
+          </div>
+          <div style="font-size: 0.8em; margin-bottom: 8px;">
+            <strong>Role:</strong> Primary build region<br>
+            <strong>Cache Size:</strong> 50TB hot + 500TB warm<br>
+            <strong>Build Load:</strong> 15,000 builds/day<br>
+            <strong>Hit Rate:</strong> 94.2%
+          </div>
+          <div style="background: #e8f5e8; padding: 6px; border-radius: 4px; font-size: 0.75em;">
+            <strong>Status:</strong> ACTIVE<br>
+            <strong>Replication:</strong> Source for all<br>
+            <strong>Consistency:</strong> Read-your-writes
+          </div>
+        </div>
+        
+        <!-- LVA1 Secondary -->
+        <div style="background: white; border: 2px solid #ff9800; border-radius: 6px; padding: 15px; text-align: center;">
+          <div style="background: #ff9800; color: white; padding: 6px; border-radius: 4px; margin-bottom: 10px; font-weight: 600; font-size: 0.9em;">
+            🔥 LVA1 (SECONDARY)
+          </div>
+          <div style="font-size: 0.8em; margin-bottom: 8px;">
+            <strong>Role:</strong> Failover + EU builds<br>
+            <strong>Cache Size:</strong> 30TB hot + 300TB warm<br>
+            <strong>Build Load:</strong> 8,000 builds/day<br>
+            <strong>Hit Rate:</strong> 89.1%
+          </div>
+          <div style="background: #fff3e0; padding: 6px; border-radius: 4px; font-size: 0.75em;">
+            <strong>Status:</strong> ACTIVE<br>
+            <strong>Replication:</strong> 45s lag from LTX1<br>
+            <strong>Consistency:</strong> Eventually consistent
+          </div>
+        </div>
+        
+        <!-- EI4 Dev -->
+        <div style="background: white; border: 2px solid #607d8b; border-radius: 6px; padding: 15px; text-align: center;">
+          <div style="background: #607d8b; color: white; padding: 6px; border-radius: 4px; margin-bottom: 10px; font-weight: 600; font-size: 0.9em;">
+            🧪 EI4 (DEV/TEST)
+          </div>
+          <div style="font-size: 0.8em; margin-bottom: 8px;">
+            <strong>Role:</strong> Development builds<br>
+            <strong>Cache Size:</strong> 10TB hot + 100TB warm<br>
+            <strong>Build Load:</strong> 5,000 builds/day<br>
+            <strong>Hit Rate:</strong> 82.7%
+          </div>
+          <div style="background: #eceff1; padding: 6px; border-radius: 4px; font-size: 0.75em;">
+            <strong>Status:</strong> ACTIVE<br>
+            <strong>Replication:</strong> Subset of prod<br>
+            <strong>Consistency:</strong> Best effort
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Technical Implementation Details -->
+    <div style="background: white; border: 1px solid #dee2e6; border-radius: 6px; padding: 15px; font-size: 0.8em;">
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+        <div>
+          <strong>🔧 Content Addressing:</strong><br>
+          • Hash algorithm: SHA-256<br>
+          • Deduplication: Content-based<br>
+          • Integrity: CRC32 + periodic audit<br>
+          • Addressing: `/cache/sha256/ab/cd/abcd1234...`<br>
+          • Metadata: Size, build time, refs, lease TTL<br>
+          • Bloom filters: False positive < 0.1%
+        </div>
+        <div>
+          <strong>📊 Performance Metrics:</strong><br>
+          • L1 cache hit rate: 78%<br>
+          • L2 cache hit rate: 14%<br>
+          • Overall hit rate: 92%<br>
+          • P95 retrieval latency: 95ms<br>
+          • Build time reduction: 87%<br>
+          • Cost reduction: $2.1M/year
+        </div>
+        <div>
+          <strong>🛡️ Reliability Features:</strong><br>
+          • Lease-based coordination<br>
+          • Multi-tier fallback<br>
+          • Cross-region replication<br>
+          • Checksum validation<br>
+          • Graceful degradation<br>
+          • Monitoring & alerting
+        </div>
+      </div>
+    </div>
+  </div>
   
   <h3>Content-Addressable Storage (CAS) Implementation</h3>
   
