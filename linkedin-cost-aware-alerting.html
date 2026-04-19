@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-0">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<title>LinkedIn Cost-Aware Alerting System — Budget Burn vs Reliability</title>
+<style>
+  :root{--bg:#fff;--surface:#f7f6f3;--border:#e3e2de;--text:#37352f;--text-muted:#787774;--accent:#2383e2;--accent2:#0f7b0f;--accent3:#6940a5;--accent4:#d9730d;--red:#e03e3e;--code-bg:#f7f6f3;--card:#fff;--linkedin:#0077b5;--success:#2e7d32;--warning:#f57c00;--error:#d32f2f;--cost:#ff5722}
+  *{margin:0;padding:0;box-sizing:border-box}body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;font-size:15px}
+  .container{max-width:1000px;margin:0 auto;padding:0 24px}.hero{background:linear-gradient(135deg,#ff5722,#d84315);color:#fff;padding:60px 0 40px;text-align:center}.hero h1{font-size:2.4em;font-weight:700;margin-bottom:16px}.hero .subtitle{font-size:1.2em;margin-bottom:20px;opacity:0.9}.hero p{font-size:1.05em;max-width:800px;margin:0 auto 30px;opacity:0.85}.hero .badge{display:inline-block;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);padding:8px 20px;border-radius:25px;font-size:.85em;margin:0 8px}
+  .nav-links{margin-top:25px}.nav-links a{display:inline-block;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);padding:10px 24px;border-radius:8px;color:#fff;text-decoration:none;margin:4px;font-size:.9em;transition:.2s}.nav-links a:hover{background:rgba(255,255,255,0.2)}
+  
+  .section{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:28px;margin:28px 0;border-left:4px solid var(--cost)}
+  .section h2{font-size:1.4em;font-weight:700;color:var(--cost);margin-bottom:16px}
+  .section h3{font-size:1.2em;font-weight:600;color:var(--text);margin:24px 0 12px}
+  .section h4{font-size:1.05em;font-weight:600;color:var(--accent3);margin:16px 0 8px}
+  
+  .architecture{background:#fff3e0;border:1px solid var(--cost);border-radius:8px;padding:20px;margin:16px 0}
+  .slo{background:#e8f5e9;border:1px solid var(--success);border-radius:8px;padding:16px;margin:12px 0}
+  .slo h4{color:var(--success);margin:0 0 8px}
+  .failure{background:#ffebee;border:1px solid var(--error);border-radius:8px;padding:16px;margin:12px 0}
+  .failure h4{color:var(--error);margin:0 0 8px}
+  .implementation{background:#fff3e0;border:1px solid var(--warning);border-radius:8px;padding:16px;margin:12px 0}
+  .implementation h4{color:var(--warning);margin:0 0 8px}
+  .monitoring{background:#e8f4f8;border:1px solid var(--linkedin);border-radius:8px;padding:16px;margin:12px 0}
+  .monitoring h4{color:var(--linkedin);margin:0 0 8px}
+  .costing{background:#fff3e0;border:1px solid var(--cost);border-radius:8px;padding:16px;margin:12px 0}
+  .costing h4{color:var(--cost);margin:0 0 8px}
+  
+  pre{background:var(--code-bg);border:1px solid var(--border);padding:16px;border-radius:8px;overflow-x:auto;font-family:'JetBrains Mono','SF Mono',monospace;font-size:.85em;margin:12px 0;line-height:1.5}
+  code{background:var(--code-bg);border:1px solid var(--border);padding:2px 6px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:.85em;color:var(--accent3)}
+  
+  table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.9em}th{background:rgba(255,87,34,.08);color:var(--cost);padding:12px;text-align:left;font-weight:600;border-bottom:2px solid var(--border)}td{padding:12px;border-bottom:1px solid var(--border);vertical-align:top}tr:last-child td{border-bottom:none}
+  
+  .highlight{background:#fff3e0;padding:2px 6px;border-radius:3px;color:var(--cost);font-weight:500}
+  .pros-cons{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:16px 0}
+  .pros{background:#e8f5e9;border:1px solid var(--success);border-radius:6px;padding:12px}
+  .cons{background:#ffebee;border:1px solid var(--error);border-radius:6px;padding:12px}
+  .pros h5{color:var(--success);margin-bottom:8px}
+  .cons h5{color:var(--error);margin-bottom:8px}
+  
+  footer{text-align:center;padding:40px 0;border-top:1px solid var(--border);color:var(--text-muted);font-size:.9em;margin-top:60px}footer a{color:var(--cost);text-decoration:none}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="container">
+    <h1>LinkedIn Cost-Aware Alerting System</h1>
+    <div class="subtitle">Budget Burn vs Reliability — Sustainable Operations at Scale</div>
+    <p>An intelligent cost monitoring platform that makes cloud spend an operational signal as important as latency: 2-minute alert latency for cost anomalies, 95% service coverage, SLO integration for business impact correlation, and budget burn rate management with ML-based anomaly detection.</p>
+    <div class="badge">Cost as SLO</div>
+    <div class="badge">Budget Burn Rate</div>
+    <div class="badge">Sustainable Ops</div>
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="/sre-design-framework.html">Design Framework</a>
+      <a href="/sre-sysdesign.html">SRE Systems</a>
+      <a href="/linkedin-incident-simulator.html">Incident Simulator</a>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- PAGE 1: SYSTEM OVERVIEW -->
+<div class="section">
+  <h2>Page 1 — System Overview & Cost-as-SRE-Signal Philosophy</h2>
+  
+  <h3>What This System Is</h3>
+  <p>A <strong>"Mission-Critical Cost Operations Platform"</strong> that integrates cloud spending with LinkedIn's SLO dashboards and alerting systems. The platform treats cost as an operational signal equal to latency or availability, alerting teams on budget burn anomalies, inefficient resource usage, and cost spikes that correlate with user-facing performance impacts.</p>
+  
+  <div class="slo">
+    <h4>Cost-Aware Alerting Service Level Objectives (SLOs)</h4>
+    <table>
+      <tr><th>Objective</th><th>Target</th><th>Measurement</th></tr>
+      <tr><td>Alert Latency (Cost Anomaly)</td><td>≤ 2 min</td><td>From anomaly detection to alert generation</td></tr>
+      <tr><td>Cost Coverage</td><td>≥ 95%</td><td>Percentage of billable services monitored</td></tr>
+      <tr><td>False Positive Rate</td><td>≤ 5%</td><td>Avoid alert fatigue with high precision</td></tr>
+      <tr><td>Reliability Impact Detection</td><td>≥ 99%</td><td>Must tie cost alerts to user-facing SLO impacts</td></tr>
+      <tr><td>Alert Pipeline Uptime</td><td>≥ 99.99%</td><td>Cannot fail silently during cost incidents</td></tr>
+      <tr><td>Budget Attribution Accuracy</td><td>≥ 98%</td><td>Correct cost assignment to services/teams</td></tr>
+    </table>
+  </div>
+  
+  <h3>Cost-as-SRE-Signal Philosophy: Sustainable Operations</h3>
+  
+  <div class="costing">
+    <h4>Core Cost-Reliability Integration Principles</h4>
+    <ul>
+      <li><strong>Anomaly Detection with Context</strong> — Detect cost spikes but correlate with SLI changes</li>
+      <li><strong>Budget Burn Rate</strong> — Model similar to error budgets (20% monthly budget → alert)</li>
+      <li><strong>Multi-Window Alerting</strong> — Short (5 min) for spikes, long (7 days) for drift</li>
+      <li><strong>Cost Attribution Tree</strong> — Tag-based breakdown by service/team/project</li>
+      <li><strong>Guardrails & Policies</strong> — Rules like "$/1000 RPS must ≤ $0.02"</li>
+      <li><strong>Slack/ChatOps Integration</strong> — Show cost burn + remediation suggestions inline</li>
+    </ul>
+  </div>
+  
+  <h3>Six Core Components</h3>
+  
+  <div style="background:#f8f9fa;border:1px solid #dee2e6;border-radius:8px;padding:16px;margin:16px 0;">
+    <ol>
+      <li><strong>Billing Ingestor</strong> — Streams cost data from cloud billing APIs (AWS, Azure, GCP)</li>
+      <li><strong>Metrics Normalizer</strong> — Aligns cost metrics with service SLIs/SLOs ($/RPS, $/query)</li>
+      <li><strong>Anomaly Detector</strong> — ML-based detection of cost spikes, drifts, waste patterns</li>
+      <li><strong>Policy Engine</strong> — Maps cost anomalies to SLO/budget rules and business impact</li>
+      <li><strong>Alert Router</strong> — Integrates with oncall systems (PagerDuty, ChatOps workflows)</li>
+      <li><strong>Dashboard & Budget Burn Charts</strong> — Visualize spend vs error budget style tracking</li>
+    </ol>
+  </div>
+  
+  <h3>LinkedIn Cost Categories & Alerting Sensitivity</h3>
+  
+  <h4>Service Types by Cost Profile & Alert Thresholds</h4>
+  <table>
+    <tr><th>Service Category</th><th>Cost Profile</th><th>Alert Threshold</th><th>Correlation SLI</th></tr>
+    <tr><td><strong>Feed Generation</strong></td><td>Compute-heavy, predictable</td><td>20% deviation</td><td>Processing latency, throughput</td></tr>
+    <tr><td><strong>Search & Discovery</strong></td><td>Memory + compute spikes</td><td>30% deviation</td><td>Search latency, relevance score</td></tr>
+    <tr><td><strong>Data Storage</strong></td><td>Storage + I/O driven</td><td>15% deviation</td><td>Read/write latency, availability</td></tr>
+    <tr><td><strong>ML Training</strong></td><td>GPU-heavy, batch patterns</td><td>50% deviation</td><td>Training job completion, accuracy</td></tr>
+    <tr><td><strong>CDN & Edge</strong></td><td>Bandwidth + egress costs</td><td>25% deviation</td><td>Cache hit rate, edge latency</td></tr>
+    <tr><td><strong>Analytics/Reporting</strong></td><td>Scheduled, predictable</td><td>10% deviation</td><td>Report generation time, freshness</td></tr>
+  </table>
+  
+  <h4>Reliability Stressors (What Can Break)</h4>
+  <div class="failure">
+    <h4>Critical Cost Alerting Failure Modes</h4>
+    <ul>
+      <li><strong>Anomaly Flood:</strong> False alarms on normal weekly cycles → alert fatigue</li>
+      <li><strong>Laggy Billing Data:</strong> Billing feeds delayed 6+ hours → stale cost alerts</li>
+      <li><strong>Noisy Cost Signals:</strong> Cost anomalies without user impact → unnecessary pages</li>
+      <li><strong>Unlinked Budgets:</strong> Alerts fire but service has no defined cost guardrails</li>
+      <li><strong>Shared Infrastructure Attribution:</strong> Network egress, storage costs hard to attribute</li>
+      <li><strong>Budget Gaming:</strong> Teams game system with artificial budget splits or transfers</li>
+    </ul>
+  </div>
+</div>
+
+<!-- PAGE 2: ARCHITECTURE & ANOMALY DETECTION -->
+<div class="section">
+  <h2>Page 2 — Architecture & ML-Driven Cost Anomaly Detection</h2>
+  
+  <h3>System Architecture Overview</h3>
+  
+  <!-- Cost Alerting Architecture Diagram -->
+  <svg width="100%" height="650" style="background:#fafafa;border:1px solid #ddd;border-radius:8px;margin:16px 0;">
+    <!-- Cloud Billing Sources -->
+    <rect x="50" y="50" width="110" height="70" fill="#fff3e0" stroke="#f57c00" stroke-width="2" rx="4"/>
+    <text x="105" y="70" text-anchor="middle" font-size="11" font-weight="bold" fill="#e65100">AWS Billing</text>
+    <text x="105" y="85" text-anchor="middle" font-size="9" fill="#e65100">Cost & Usage</text>
+    <text x="105" y="100" text-anchor="middle" font-size="9" fill="#e65100">Reserved Instance</text>
+    <text x="105" y="115" text-anchor="middle" font-size="9" fill="#e65100">Spot pricing</text>
+    
+    <rect x="180" y="50" width="110" height="70" fill="#e3f2fd" stroke="#1976d2" stroke-width="2" rx="4"/>
+    <text x="235" y="70" text-anchor="middle" font-size="11" font-weight="bold" fill="#0d47a1">Azure Billing</text>
+    <text x="235" y="85" text-anchor="middle" font-size="9" fill="#0d47a1">Resource usage</text>
+    <text x="235" y="100" text-anchor="middle" font-size="9" fill="#0d47a1">Subscription costs</text>
+    <text x="235" y="115" text-anchor="middle" font-size="9" fill="#0d47a1">Reserved capacity</text>
+    
+    <rect x="310" y="50" width="110" height="70" fill="#e0f2f1" stroke="#00695c" stroke-width="2" rx="4"/>
+    <text x="365" y="70" text-anchor="middle" font-size="11" font-weight="bold" fill="#004d40">GCP Billing</text>
+    <text x="365" y="85" text-anchor="middle" font-size="9" fill="#004d40">BigQuery usage</text>
+    <text x="365" y="100" text-anchor="middle" font-size="9" fill="#004d40">Compute Engine</text>
+    <text x="365" y="115" text-anchor="middle" font-size="9" fill="#004d40">Network egress</text>
+    
+    <rect x="440" y="50" width="110" height="70" fill="#ffebee" stroke="#d32f2f" stroke-width="2" rx="4"/>
+    <text x="495" y="70" text-anchor="middle" font-size="11" font-weight="bold" fill="#c62828">Internal Costs</text>
+    <text x="495" y="85" text-anchor="middle" font-size="9" fill="#c62828">Datacenter costs</text>
+    <text x="495" y="100" text-anchor="middle" font-size="9" fill="#c62828">Private cloud</text>
+    <text x="495" y="115" text-anchor="middle" font-size="9" fill="#c62828">Shared services</text>
+    
+    <!-- Billing Ingestor -->
+    <rect x="50" y="150" width="500" height="60" fill="#fff3e0" stroke="#ff5722" stroke-width="2" rx="8"/>
+    <text x="300" y="170" text-anchor="middle" font-size="14" font-weight="bold" fill="#d84315">Billing Ingestor & Data Pipeline</text>
+    <text x="300" y="190" text-anchor="middle" font-size="10" fill="#d84315">Real-time streaming • Data quality validation • Currency normalization • Tag enrichment</text>
+    <text x="300" y="205" text-anchor="middle" font-size="10" fill="#d84315">15-minute billing data refresh • Cost attribution • Service mapping</text>
+    
+    <!-- Metrics Normalizer -->
+    <rect x="50" y="240" width="180" height="80" fill="#f3e5f5" stroke="#7b1fa2" stroke-width="2" rx="8"/>
+    <text x="140" y="265" text-anchor="middle" font-size="12" font-weight="bold" fill="#4a148c">Metrics Normalizer</text>
+    <text x="140" y="285" text-anchor="middle" font-size="10" fill="#4a148c">• $/RPS calculation</text>
+    <text x="140" y="300" text-anchor="middle" font-size="10" fill="#4a148c">• Cost per SLI</text>
+    <text x="140" y="315" text-anchor="middle" font-size="10" fill="#4a148c">• Usage efficiency</text>
+    
+    <!-- Anomaly Detector -->
+    <rect x="260" y="240" width="180" height="80" fill="#e1f5fe" stroke="#0288d1" stroke-width="2" rx="8"/>
+    <text x="350" y="265" text-anchor="middle" font-size="12" font-weight="bold" fill="#01579b">ML Anomaly Detector</text>
+    <text x="350" y="285" text-anchor="middle" font-size="10" fill="#01579b">• Time-series models</text>
+    <text x="350" y="300" text-anchor="middle" font-size="10" fill="#01579b">• Seasonal adjustment</text>
+    <text x="350" y="315" text-anchor="middle" font-size="10" fill="#01579b">• Multi-window analysis</text>
+    
+    <!-- Policy Engine -->
+    <rect x="470" y="240" width="180" height="80" fill="#fff8e1" stroke="#fbc02d" stroke-width="2" rx="8"/>
+    <text x="560" y="265" text-anchor="middle" font-size="12" font-weight="bold" fill="#f57c00">Policy Engine</text>
+    <text x="560" y="285" text-anchor="middle" font-size="10" fill="#f57c00">• Budget guardrails</text>
+    <text x="560" y="300" text-anchor="middle" font-size="10" fill="#f57c00">• SLO correlation</text>
+    <text x="560" y="315" text-anchor="middle" font-size="10" fill="#f57c00">• Business impact</text>
+    
+    <!-- Cost Attribution -->
+    <rect x="50" y="350" width="200" height="80" fill="#e8eaf6" stroke="#3f51b5" stroke-width="2" rx="8"/>
+    <text x="150" y="375" text-anchor="middle" font-size="12" font-weight="bold" fill="#1a237e">Cost Attribution</text>
+    <text x="150" y="395" text-anchor="middle" font-size="10" fill="#1a237e">• Service tagging</text>
+    <text x="150" y="410" text-anchor="middle" font-size="10" fill="#1a237e">• Team ownership</text>
+    <text x="150" y="425" text-anchor="middle" font-size="10" fill="#1a237e">• Project allocation</text>
+    
+    <!-- Alert Router -->
+    <rect x="280" y="350" width="180" height="80" fill="#ffebee" stroke="#d32f2f" stroke-width="2" rx="8"/>
+    <text x="370" y="375" text-anchor="middle" font-size="12" font-weight="bold" fill="#c62828">Alert Router</text>
+    <text x="370" y="395" text-anchor="middle" font-size="10" fill="#c62828">• PagerDuty integration</text>
+    <text x="370" y="410" text-anchor="middle" font-size="10" fill="#c62828">• Slack notifications</text>
+    <text x="370" y="425" text-anchor="middle" font-size="10" fill="#c62828">• Escalation policies</text>
+    
+    <!-- Budget Burn Charts -->
+    <rect x="490" y="350" width="180" height="80" fill="#e0f2f1" stroke="#00695c" stroke-width="2" rx="8"/>
+    <text x="580" y="375" text-anchor="middle" font-size="12" font-weight="bold" fill="#004d40">Budget Dashboards</text>
+    <text x="580" y="395" text-anchor="middle" font-size="10" fill="#004d40">• Burn rate charts</text>
+    <text x="580" y="410" text-anchor="middle" font-size="10" fill="#004d40">• Cost forecasting</text>
+    <text x="580" y="425" text-anchor="middle" font-size="10" fill="#004d40">• Efficiency trends</text>
+    
+    <!-- SLO Integration -->
+    <rect x="50" y="460" width="240" height="70" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2" rx="4"/>
+    <text x="170" y="485" text-anchor="middle" font-size="12" font-weight="bold" fill="#1b5e20">SLO Integration</text>
+    <text x="170" y="505" text-anchor="middle" font-size="10" fill="#1b5e20">Latency correlation • Error budget impact</text>
+    <text x="170" y="520" text-anchor="middle" font-size="10" fill="#1b5e20">Performance vs cost trade-offs</text>
+    
+    <!-- ChatOps & Remediation -->
+    <rect x="310" y="460" width="240" height="70" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2" rx="4"/>
+    <text x="430" y="485" text-anchor="middle" font-size="12" font-weight="bold" fill="#1b5e20">ChatOps Integration</text>
+    <text x="430" y="505" text-anchor="middle" font-size="10" fill="#1b5e20">Slack remediation • Cost recommendations</text>
+    <text x="430" y="520" text-anchor="middle" font-size="10" fill="#1b5e20">Automated resource optimization</text>
+    
+    <!-- Machine Learning Models -->
+    <rect x="50" y="560" width="620" height="50" fill="#e1f5fe" stroke="#0288d1" stroke-width="2" rx="8"/>
+    <text x="360" y="580" text-anchor="middle" font-size="14" font-weight="bold" fill="#01579b">ML Cost Forecasting & Anomaly Models</text>
+    <text x="360" y="600" text-anchor="middle" font-size="10" fill="#01579b">Prophet time-series • Isolation Forest • LSTM autoencoders • Ensemble anomaly detection • Seasonal decomposition</text>
+    
+    <!-- Arrows -->
+    <defs>
+      <marker id="arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+        <polygon points="0 0, 10 3.5, 0 7" fill="#666"/>
+      </marker>
+    </defs>
+    
+    <!-- Data ingestion -->
+    <line x1="300" y1="120" x2="300" y2="150" stroke="#666" stroke-width="3" marker-end="url(#arrow)"/>
+    
+    <!-- Processing pipeline -->
+    <line x1="140" y1="210" x2="140" y2="240" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+    <line x1="350" y1="210" x2="350" y2="240" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+    <line x1="560" y1="210" x2="560" y2="240" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+    
+    <!-- Attribution and alerting -->
+    <line x1="300" y1="320" x2="300" y2="350" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+    
+    <!-- Integration flows -->
+    <line x1="230" y1="280" x2="260" y2="280" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+    <line x1="440" y1="280" x2="470" y2="280" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+    
+    <!-- Dashboard and SLO connections -->
+    <line x1="300" y1="430" x2="300" y2="460" stroke="#2e7d32" stroke-width="2" marker-end="url(#arrow)"/>
+    
+    <!-- ML feedback -->
+    <line x1="360" y1="560" x2="350" y2="320" stroke="#0288d1" stroke-width="2" stroke-dasharray="5,5"/>
+    
+    <!-- Labels -->
+    <text x="320" y="135" font-size="9" fill="#666">ingest</text>
+    <text x="245" y="275" font-size="9" fill="#666">normalize</text>
+    <text x="455" y="275" font-size="9" fill="#666">correlate</text>
+    <text x="320" y="445" font-size="9" fill="#2e7d32">integrate</text>
+    <text x="400" y="550" font-size="9" fill="#0288d1">learn</text>
+  </svg>
+  
+  <h3>ML-Driven Cost Anomaly Detection</h3>
+  
+  <div class="implementation">
+    <h4>Multi-Model Ensemble Approach</h4>
+    <p><strong>Time-Series + Behavioral Models:</strong> Detect both statistical and contextual cost anomalies</p>
+    
+    <h5>Model Portfolio for Anomaly Detection</h5>
+    <ul>
+      <li><strong>Prophet Time-Series (40% weight):</strong> Handles seasonality, holidays, trend changes</li>
+      <li><strong>Isolation Forest (25% weight):</strong> Multivariate outlier detection across cost dimensions</li>
+      <li><strong>LSTM Autoencoder (20% weight):</strong> Learns complex temporal patterns, reconstruction error</li>
+      <li><strong>Statistical Control Charts (15% weight):</strong> Traditional SPC for known cost baselines</li>
+    </ul>
+    
+    <h5>Feature Engineering for Cost Patterns</h5>
+    <ul>
+      <li><strong>Temporal Features:</strong> Hour, day, week, month patterns, holiday effects</li>
+      <li><strong>Service Features:</strong> Request rate, user activity, deployment events</li>
+      <li><strong>Resource Features:</strong> CPU utilization, memory usage, storage growth</li>
+      <li><strong>External Features:</strong> Marketing campaigns, product launches, seasonality</li>
+      <li><strong>Cross-Service Features:</strong> Upstream dependencies, shared infrastructure usage</li>
+    </ul>
+    
+    <h5>Multi-Window Anomaly Detection</h5>
+    <ul>
+      <li><strong>Short Window (5 min):</strong> Detect sudden cost spikes, resource explosions</li>
+      <li><strong>Medium Window (1 hour):</strong> Traffic pattern changes, configuration updates</li>
+      <li><strong>Long Window (7 days):</strong> Gradual drift, efficiency degradation, budget overruns</li>
+      <li><strong>Seasonal Window (30 days):</strong> Compare to same period last month/quarter</li>
+    </ul>
+  </div>
+  
+  <h3>SLO-Cost Correlation Engine</h3>
+  
+  <div class="costing">
+    <h4>Business Impact Assessment</h4>
+    <p><strong>Context-Aware Alerting:</strong> Only page when cost anomalies correlate with user impact</p>
+    
+    <h5>Correlation Detection Logic</h5>
+    <ul>
+      <li><strong>Latency Correlation:</strong> Cost spike + latency increase = performance-driven cost</li>
+      <li><strong>Error Rate Correlation:</strong> Cost spike + error decrease = successful scaling response</li>
+      <li><strong>Throughput Correlation:</strong> Cost increase + RPS increase = traffic-driven scaling</li>
+      <li><strong>SLO Burn Correlation:</strong> Cost efficiency vs SLO error budget consumption</li>
+    </ul>
+    
+    <h5>Alert Prioritization Matrix</h5>
+    <div style="background:#f0f0f0;border:1px solid #ccc;padding:12px;border-radius:6px;margin:12px 0;">
+      <table style="width:100%;font-size:0.85em;">
+        <tr><th>Cost Change</th><th>SLO Impact</th><th>Alert Priority</th><th>Action</th></tr>
+        <tr><td>+50% cost</td><td>Latency improved</td><td>🟢 Low</td><td>Slack notification</td></tr>
+        <tr><td>+30% cost</td><td>No SLO change</td><td>🟡 Medium</td><td>Investigation alert</td></tr>
+        <tr><td>+20% cost</td><td>Latency degraded</td><td>🔴 High</td><td>Page oncall</td></tr>
+        <tr><td>-20% cost</td><td>Errors increased</td><td>🔴 Critical</td><td>Immediate page</td></tr>
+      </table>
+    </div>
+  </div>
+  
+  <h3>Budget Burn Rate Management</h3>
+  
+  <div class="implementation">
+    <h4>Error Budget for Cost Management</h4>
+    <p><strong>Budget SLO Framework:</strong> Apply error budget concepts to cost management</p>
+    
+    <h5>Budget Burn Rate Calculation</h5>
+    <div style="background:#f0f0f0;border:1px solid #ccc;padding:12px;border-radius:6px;margin:12px 0;font-family:monospace;">
+      budget_burn_rate = (current_monthly_spend / monthly_budget) * days_remaining_ratio
+      
+      Example: $80K spent in 20 days with $100K budget
+      burn_rate = (80/100) * (30/10) = 0.8 * 3 = 2.4 (240% of expected rate)
+    </div>
+    
+    <h5>Burn Rate Alert Thresholds</h5>
+    <ul>
+      <li><strong>Healthy (50-90%):</strong> On track, no alerts needed</li>
+      <li><strong>Warning (91-120%):</strong> Slack notification to team, review spending</li>
+      <li><strong>Critical (121-150%):</strong> Alert oncall, implement cost controls</li>
+      <li><strong>Emergency (>150%):</strong> Page leadership, emergency budget review</li>
+    </ul>
+    
+    <h5>Service Tier Budget Allocation</h5>
+    <ul>
+      <li><strong>Tier 0 (Critical):</strong> Unlimited budget, cost secondary to SLO</li>
+      <li><strong>Tier 1 (Important):</strong> 120% of baseline budget allowed</li>
+      <li><strong>Tier 2 (Standard):</strong> 110% of baseline budget allowed</li>
+      <li><strong>Tier 3 (Best Effort):</strong> 100% of baseline budget, hard cap</li>
+    </ul>
+  </div>
+</div>
+
+<!-- PAGE 3: ATTRIBUTION & OPERATIONAL INTEGRATION -->
+<div class="section">
+  <h2>Page 3 — Cost Attribution & ChatOps Integration</h2>
+  
+  <h3>Tag-Based Cost Attribution System</h3>
+  
+  <div class="costing">
+    <h4>Multi-Dimensional Cost Breakdown</h4>
+    <p><strong>Granular Attribution:</strong> Track costs by service, team, project, and feature</p>
+    
+    <h5>LinkedIn Tagging Hierarchy</h5>
+    <ul>
+      <li><strong>Service Tags:</strong> `service:feed-mixer`, `component:ranking-service`</li>
+      <li><strong>Team Tags:</strong> `team:feed-platform`, `owner:feed-reliability`</li>
+      <li><strong>Project Tags:</strong> `project:personalization-v3`, `initiative:mobile-performance`</li>
+      <li><strong>Environment Tags:</strong> `env:production`, `env:staging`, `env:development`</li>
+      <li><strong>Region Tags:</strong> `region:ltx1`, `region:lva1`, `datacenter:grid2`</li>
+      <li><strong>Cost Center Tags:</strong> `cost-center:engineering`, `budget:growth-2024`</li>
+    </ul>
+    
+    <h5>Shared Infrastructure Cost Allocation</h5>
+    <ul>
+      <li><strong>Network Egress:</strong> Proportional to service bandwidth usage</li>
+      <li><strong>Load Balancers:</strong> Weighted by request volume per service</li>
+      <li><strong>DNS Services:</strong> Distributed equally across all services</li>
+      <li><strong>Monitoring Infrastructure:</strong> Based on metrics ingestion volume</li>
+      <li><strong>CI/CD Pipeline:</strong> Allocated by build frequency and duration</li>
+    </ul>
+  </div>
+  
+  <h3>Shared Infrastructure Cost Crisis Response</h3>
+  
+  <div class="failure">
+    <h4>External Repository Cost Spike Scenario</h4>
+    <p><strong>Problem:</strong> Kubernetes cluster pulls from external repo at 10× rate → $20K daily surge, latency SLO green</p>
+    
+    <h5>Automated Detection & Response</h5>
+    <ol>
+      <li><strong>Anomaly Detection (2 min):</strong> Budget burn rate alarm triggers on egress spike</li>
+      <li><strong>Correlation Analysis (5 min):</strong> Policy engine links egress bandwidth to container pulls</li>
+      <li><strong>Impact Assessment (8 min):</strong> No latency degradation, isolated to infrastructure cost</li>
+      <li><strong>Alert Routing (10 min):</strong> Routed to shared-infra team with cost + metric context</li>
+      <li><strong>Mitigation (30 min):</strong> Block external pulls, rollback deployment causing surge</li>
+    </ol>
+    
+    <h5>Post-Incident Improvements</h5>
+    <ul>
+      <li><strong>Preventive Guardrail:</strong> Add policy "$ per GB egress ≤ $0.01"</li>
+      <li><strong>Early Warning System:</strong> Alert on 3× bandwidth increase before cost impact</li>
+      <li><strong>Dry-Run Calibration:</strong> Test new cost thresholds without paging</li>
+      <li><strong>Automation:</strong> Auto-block egress when cost rate exceeds threshold</li>
+    </ul>
+  </div>
+  
+  <h3>ChatOps Integration & Remediation</h3>
+  
+  <div class="monitoring">
+    <h4>Slack-First Cost Operations</h4>
+    <p><strong>Actionable Notifications:</strong> Cost alerts with context and remediation suggestions</p>
+    
+    <h5>Slack Alert Message Format</h5>
+    <div style="background:#f0f0f0;border:1px solid #ccc;padding:12px;border-radius:6px;margin:12px 0;">
+      <strong>🚨 Cost Anomaly Alert - feed-mixer-service</strong><br>
+      <strong>💰 Cost Impact:</strong> +45% ($2,400 → $3,480/day)<br>
+      <strong>📊 SLO Correlation:</strong> Latency unchanged (good), RPS +60% (traffic spike)<br>
+      <strong>🎯 Root Cause:</strong> Auto-scaling triggered by high queue depth<br>
+      <strong>⚡ Recommendations:</strong><br>
+      • Scale-in after traffic subsides (Est. savings: $800/day)<br>
+      • Tune HPA thresholds to prevent over-scaling<br>
+      • Consider reserved instance for base capacity<br>
+      <br>
+      <strong>🔧 Actions:</strong> [Investigate] [Scale Down] [Acknowledge] [Snooze 1h]
+    </div>
+    
+    <h5>Interactive Remediation Workflows</h5>
+    <ul>
+      <li><strong>Resource Right-Sizing:</strong> Slack button to trigger VPA recommendation review</li>
+      <li><strong>Reserved Instance Analysis:</strong> Show potential savings from RI purchases</li>
+      <li><strong>Idle Resource Detection:</strong> List underutilized resources with termination options</li>
+      <li><strong>Auto-Scaling Tuning:</strong> Suggest HPA/VPA parameter adjustments</li>
+      <li><strong>Budget Rebalancing:</strong> Propose budget transfers between services</li>
+    </ul>
+  </div>
+  
+  <h3>Cost Guardrails & Policy Enforcement</h3>
+  
+  <div class="implementation">
+    <h4>Proactive Cost Control Policies</h4>
+    <p><strong>Prevention Over Reaction:</strong> Define and enforce cost efficiency policies</p>
+    
+    <h5>Cost Efficiency Guardrail Rules</h5>
+    <ul>
+      <li><strong>Cost per Request:</strong> `$/1000 RPS ≤ $0.02` for API services</li>
+      <li><strong>Resource Utilization:</strong> `CPU utilization ≥ 60%` for non-batch workloads</li>
+      <li><strong>Storage Growth Rate:</strong> `Storage growth ≤ 20%/month` without business justification</li>
+      <li><strong>Idle Resource Time:</strong> `Auto-terminate resources idle > 4 hours`</li>
+      <li><strong>Scaling Velocity:</strong> `Max 100% scale-out in 10 minutes` to prevent cost explosions</li>
+      <li><strong>Reserved Instance Ratio:</strong> `≥80% base capacity via RI` for predictable workloads</li>
+    </ul>
+    
+    <h5>Policy Violation Response</h5>
+    <ul>
+      <li><strong>Soft Violations (110-120%):</strong> Slack notification, efficiency recommendations</li>
+      <li><strong>Hard Violations (121-150%):</strong> Block new resource provisioning, alert oncall</li>
+      <li><strong>Critical Violations (>150%):</strong> Auto-scale down, emergency review required</li>
+      <li><strong>Repeat Violations:</strong> Mandatory efficiency review with SRE team</li>
+    </ul>
+  </div>
+  
+  <h3>Cost Forecasting & Capacity Planning Integration</h3>
+  
+  <div class="costing">
+    <h4>Predictive Cost Management</h4>
+    <p><strong>Forward-Looking Optimization:</strong> Forecast cost trends and plan budget allocation</p>
+    
+    <h5>Cost Forecasting Models</h5>
+    <ul>
+      <li><strong>Historical Trend Analysis:</strong> Extrapolate current growth patterns</li>
+      <li><strong>Seasonal Pattern Recognition:</strong> Account for quarterly business cycles</li>
+      <li><strong>Feature Launch Impact:</strong> Model cost impact of planned product changes</li>
+      <li><strong>Infrastructure Migration:</strong> Predict cost changes from architecture updates</li>
+    </ul>
+    
+    <h5>Budget Planning Dashboard Features</h5>
+    <ul>
+      <li><strong>12-Month Cost Projection:</strong> Rolling forecast with confidence intervals</li>
+      <li><strong>Service Growth Trajectory:</strong> Individual service cost trends and efficiency</li>
+      <li><strong>Budget Variance Analysis:</strong> Actual vs planned spend by category</li>
+      <li><strong>ROI Tracking:</strong> Cost per user metric, revenue per dollar spent</li>
+      <li><strong>Optimization Opportunities:</strong> Reserved instances, right-sizing, scheduling</li>
+    </ul>
+  </div>
+  
+  <div class="pros-cons">
+    <div class="pros">
+      <h5>✅ System Benefits</h5>
+      <ul>
+        <li>2-minute cost anomaly detection with ML models</li>
+        <li>95% service coverage through comprehensive tagging</li>
+        <li>SLO correlation prevents false positive alerts</li>
+        <li>Budget burn rate management like error budgets</li>
+        <li>Slack-integrated remediation workflows</li>
+        <li>Proactive policy enforcement prevents cost explosions</li>
+      </ul>
+    </div>
+    <div class="cons">
+      <h5>⚠️ System Limitations</h5>
+      <ul>
+        <li>Billing data lag (6+ hours) delays real-time detection</li>
+        <li>Shared infrastructure attribution complexity</li>
+        <li>Cost anomalies may not correlate with immediate user impact</li>
+        <li>Alert fatigue from legitimate but expected cost increases</li>
+        <li>Policy gaming through artificial budget manipulation</li>
+        <li>Complex multi-cloud cost reconciliation challenges</li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+
+</div>
+
+<footer>
+  <div class="container">
+    <p>LinkedIn Cost-Aware Alerting System — <a href="/sre-design-framework.html">Design Framework</a> | <a href="/sre-sysdesign.html">SRE Systems</a> | <a href="/linkedin-incident-simulator.html">Incident Simulator</a> | <a href="/">Home</a></p>
+  </div>
+</footer>
+
+</body>
+</html>
