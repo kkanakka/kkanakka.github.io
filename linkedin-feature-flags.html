@@ -466,26 +466,6 @@
   <div class="implementation">
     <h4>Espresso Metadata Store</h4>
     <p><strong>Schema Design:</strong> Optimized for read-heavy workload with version history</p>
-    <pre>// Primary flag table
-CREATE TABLE feature_flags (
-    flag_key VARCHAR(255) PRIMARY KEY,
-    flag_version INT NOT NULL,
-    enabled BOOLEAN NOT NULL,
-    rollout_percentage INT DEFAULT 0,
-    targeting_rules JSON,
-    created_by VARCHAR(100),
-    created_at TIMESTAMP,
-    updated_at TIMESTAMP
-);
-
-// Version history for rollbacks
-CREATE TABLE flag_versions (
-    flag_key VARCHAR(255),
-    version INT,
-    flag_data JSON,
-    checksum VARCHAR(64),
-    PRIMARY KEY (flag_key, version)
-);</pre>
     <ul>
       <li><strong>Multi-DC Replication</strong> — Espresso's built-in async replication across LTX1, LVA1, EI4</li>
       <li><strong>Read Preference</strong> — Local DC reads, write to master with async propagation</li>
@@ -496,14 +476,6 @@ CREATE TABLE flag_versions (
   <div class="implementation">
     <h4>Kafka Distribution Plane</h4>
     <p><strong>Topic Design:</strong> Per-datacenter topics for regional isolation</p>
-    <pre>// Kafka topics per datacenter
-feature-flags-ltx1  (partitions: 16, replication: 3)
-feature-flags-lva1  (partitions: 16, replication: 3)
-feature-flags-ei4   (partitions: 16, replication: 3)
-feature-flags-grid2 (partitions: 16, replication: 3)
-
-// Cross-colo replication topics
-feature-flags-global-xdc (for cross-datacenter sync)</pre>
     <ul>
       <li><strong>Delta Events</strong> — Only flag changes produce Kafka messages, not periodic snapshots</li>
       <li><strong>Message Format</strong> — Avro schema with backward compatibility</li>
@@ -515,32 +487,6 @@ feature-flags-global-xdc (for cross-datacenter sync)</pre>
   <div class="implementation">
     <h4>Edge SDK Implementation</h4>
     <p><strong>Embedded Library:</strong> Zero-network evaluation with local caching</p>
-    <pre>// LinkedIn Java SDK
-public class LinkedInFeatureFlags {
-    private final ConcurrentHashMap&lt;String, FlagConfig&gt; flagCache;
-    private final KafkaConsumer&lt;String, FlagEvent&gt; consumer;
-    private final MemcacheClient memcache;
-    
-    // ≤2ms evaluation - pure in-memory hash lookup
-    public boolean isEnabled(String flagKey, String userId) {
-        FlagConfig flag = flagCache.get(flagKey);
-        if (flag == null) return false;
-        
-        // Consistent hashing for stable cohorts
-        long hash = hash(flagKey + userId);
-        return (hash % 100) &lt; flag.getRolloutPercentage();
-    }
-    
-    // Async background thread processes Kafka deltas
-    private void processKafkaDeltas() {
-        while (running) {
-            ConsumerRecords&lt;String, FlagEvent&gt; records = consumer.poll(100);
-            for (ConsumerRecord&lt;String, FlagEvent&gt; record : records) {
-                updateLocalCache(record.value());
-            }
-        }
-    }
-}</pre>
   </div>
   
   <h3>Cross-Datacenter Architecture</h3>
@@ -581,103 +527,14 @@ public class LinkedInFeatureFlags {
   
   <h3>Flag Configuration Data Model</h3>
   
-  <pre>// Avro schema for flag configuration
-{
-  "type": "record",
-  "name": "FlagConfig",
-  "fields": [
-    {"name": "flagKey", "type": "string"},
-    {"name": "version", "type": "int"},
-    {"name": "enabled", "type": "boolean"},
-    {"name": "rolloutPercentage", "type": "int", "default": 0},
-    {"name": "targetingRules", "type": {
-      "type": "record", 
-      "name": "TargetingRules",
-      "fields": [
-        {"name": "userSegments", "type": {"type": "array", "items": "string"}},
-        {"name": "geoRegions", "type": {"type": "array", "items": "string"}},
-        {"name": "deviceTypes", "type": {"type": "array", "items": "string"}},
-        {"name": "memberTiers", "type": {"type": "array", "items": "string"}}
-      ]
-    }},
-    {"name": "gradualRollout", "type": {
-      "type": "record",
-      "name": "GradualRollout", 
-      "fields": [
-        {"name": "stages", "type": {"type": "array", "items": "int"}},
-        {"name": "stageDuration", "type": "string"},
-        {"name": "metricGates", "type": {"type": "array", "items": "string"}}
-      ]
-    }},
-    {"name": "checksum", "type": "string"},
-    {"name": "createdBy", "type": "string"},
-    {"name": "updatedAt", "type": "long"}
-  ]
-}</pre>
   
   <h3>Delta Event Schema</h3>
   
-  <pre>// Kafka delta event schema
-{
-  "type": "record",
-  "name": "FlagDeltaEvent",
-  "fields": [
-    {"name": "eventType", "type": {"type": "enum", "symbols": ["CREATED", "UPDATED", "DELETED", "KILL_SWITCH"]}},
-    {"name": "flagKey", "type": "string"},
-    {"name": "oldVersion", "type": ["null", "int"]},
-    {"name": "newVersion", "type": ["null", "int"]},
-    {"name": "deltaFields", "type": {"type": "map", "values": "string"}},
-    {"name": "checksum", "type": "string"},
-    {"name": "timestamp", "type": "long"},
-    {"name": "causedBy", "type": "string"},
-    {"name": "datacenter", "type": "string"},
-    {"name": "sequenceId", "type": "long"}
-  ]
-}</pre>
   
   <h3>User Cohort Assignment Algorithm</h3>
   
   <div class="implementation">
     <h4>Consistent Hashing Implementation</h4>
-    <pre>// Ensures stable user assignment across sessions
-public class CohortAssignment {
-    
-    // SHA-256 based consistent hashing
-    public static boolean isUserInCohort(String flagKey, String userId, int rolloutPercentage) {
-        // Use flag key + user ID to ensure stability
-        String hashInput = flagKey + ":" + userId;
-        
-        // SHA-256 for uniform distribution
-        byte[] hash = MessageDigest.getInstance("SHA-256").digest(hashInput.getBytes());
-        
-        // Convert first 8 bytes to long
-        long hashLong = ByteBuffer.wrap(hash).getLong();
-        
-        // Modulo 100 for percentage bucket
-        int bucket = (int) Math.abs(hashLong % 100);
-        
-        return bucket < rolloutPercentage;
-    }
-    
-    // Support for multi-variate experiments
-    public static String getVariant(String flagKey, String userId, String[] variants, int[] weights) {
-        String hashInput = flagKey + ":" + userId;
-        byte[] hash = MessageDigest.getInstance("SHA-256").digest(hashInput.getBytes());
-        long hashLong = ByteBuffer.wrap(hash).getLong();
-        
-        int bucket = (int) Math.abs(hashLong % 100);
-        int cumulative = 0;
-        
-        for (int i = 0; i < variants.length; i++) {
-            cumulative += weights[i];
-            if (bucket < cumulative) {
-                return variants[i];
-            }
-        }
-        
-        return "control"; // default fallback
-    }
-}</pre>
   </div>
   
   <h3>Memcache Integration</h3>
@@ -710,34 +567,6 @@ public class CohortAssignment {
   <div class="implementation">
     <h4>Bootstrap & Warm Cache Strategy</h4>
     <p>New services bootstrap from Memcache before establishing Kafka connection</p>
-    <pre>// Service startup sequence
-public class FlagSDKInitializer {
-    
-    public void initialize() {
-        // Step 1: Bootstrap from Memcache (warm cache)
-        Map&lt;String, FlagConfig&gt; bootstrapFlags = loadFromMemcache();
-        flagCache.putAll(bootstrapFlags);
-        
-        // Step 2: Connect to Kafka for real-time updates
-        startKafkaConsumer();
-        
-        // Step 3: Background sync to catch any missed deltas
-        schedulePeriodicSync();
-    }
-    
-    private Map&lt;String, FlagConfig&gt; loadFromMemcache() {
-        // Fetch serialized flag snapshot from Memcache
-        byte[] snapshot = memcacheClient.get("feature_flags:snapshot");
-        return deserializeFlagSnapshot(snapshot);
-    }
-    
-    // Memcache gets updated every 30s by Control Plane
-    private void updateMemcacheSnapshot() {
-        Map&lt;String, FlagConfig&gt; allFlags = espressoClient.getAllFlags();
-        byte[] serialized = serializeFlagSnapshot(allFlags);
-        memcacheClient.set("feature_flags:snapshot", serialized, 300); // 5min TTL
-    }
-}</pre>
     
     <ul>
       <li><strong>Cache Key Strategy</strong> — <code>feature_flags:snapshot</code> contains full flag state</li>
@@ -752,49 +581,6 @@ public class FlagSDKInitializer {
   <div class="implementation">
     <h4>Automated Metric Gates</h4>
     <p>Integration with LinkedIn's metrics infrastructure for automated rollout control</p>
-    <pre>// Rollout controller with metric gates
-public class GradualRolloutController {
-    
-    // Defined rollout stages with safety gates
-    private final int[] ROLLOUT_STAGES = {1, 5, 25, 50, 100};
-    private final String[] METRIC_GATES = {
-        "error_rate_lt_0.1_percent",
-        "p99_latency_lt_500ms", 
-        "success_rate_gt_99.9_percent"
-    };
-    
-    public void executeGradualRollout(String flagKey) {
-        for (int i = 0; i < ROLLOUT_STAGES.length; i++) {
-            int stage = ROLLOUT_STAGES[i];
-            
-            // Update rollout percentage
-            updateFlagRollout(flagKey, stage);
-            
-            // Wait for propagation
-            Thread.sleep(Duration.ofMinutes(5));
-            
-            // Check metric gates
-            if (!allMetricGatesPassing(flagKey)) {
-                // Auto-rollback on metric violation
-                rollbackFlag(flagKey);
-                alertOnCall("Rollout failed metric gates for " + flagKey);
-                break;
-            }
-            
-            // Log progress
-            auditLog.info("Flag {} advanced to {}% rollout", flagKey, stage);
-        }
-    }
-    
-    private boolean allMetricGatesPassing(String flagKey) {
-        for (String gate : METRIC_GATES) {
-            if (!metricsClient.evaluateGate(gate, flagKey)) {
-                return false;
-            }
-        }
-        return true;
-    }
-}</pre>
   </div>
   
   <h3>Kill Switch Implementation</h3>
@@ -802,110 +588,12 @@ public class GradualRolloutController {
   <div class="implementation">
     <h4>Global Emergency Disable</h4>
     <p>10-second global flag disable across all LinkedIn datacenters</p>
-    <pre>// Kill switch with cross-DC propagation
-public class KillSwitchService {
-    
-    // Emergency disable flag across all DCs
-    public void emergencyDisableFlag(String flagKey, String reason, String operator) {
-        KillSwitchEvent event = KillSwitchEvent.builder()
-            .flagKey(flagKey)
-            .action("EMERGENCY_DISABLE")
-            .reason(reason)
-            .operator(operator)
-            .timestamp(System.currentTimeMillis())
-            .build();
-        
-        // Broadcast to all DC Kafka topics simultaneously
-        List&lt;String&gt; dcTopics = Arrays.asList(
-            "feature-flags-ltx1",
-            "feature-flags-lva1", 
-            "feature-flags-ei4",
-            "feature-flags-grid2"
-        );
-        
-        // Send to all DCs in parallel for speed
-        dcTopics.parallelStream().forEach(topic -> {
-            kafkaProducer.send(topic, flagKey, event);
-        });
-        
-        // Also update Espresso for durability
-        espressoClient.disableFlag(flagKey, reason);
-        
-        // Log for audit trail
-        auditLogger.emergency("KILL_SWITCH activated for {} by {} reason: {}", 
-                             flagKey, operator, reason);
-    }
-    
-    // Priority processing in Edge SDKs
-    public void processKillSwitchEvent(KillSwitchEvent event) {
-        if ("EMERGENCY_DISABLE".equals(event.getAction())) {
-            // Immediately disable in local cache
-            flagCache.put(event.getFlagKey(), 
-                         FlagConfig.disabled(event.getFlagKey()));
-            
-            // Skip normal processing queue - handle immediately
-            logger.warn("KILL SWITCH: Disabled {} - {}", 
-                       event.getFlagKey(), event.getReason());
-        }
-    }
-}</pre>
   </div>
   
   <h3>Audit Trail Implementation</h3>
   
   <div class="implementation">
     <h4>Hash-Chained Compliance Log</h4>
-    <pre>// Immutable audit records with hash chaining
-public class AuditService {
-    
-    // Every flag change produces signed audit record
-    public void recordFlagChange(String flagKey, FlagConfig oldConfig, FlagConfig newConfig, String operator) {
-        AuditRecord record = AuditRecord.builder()
-            .recordId(UUID.randomUUID().toString())
-            .flagKey(flagKey)
-            .operation(determineOperation(oldConfig, newConfig))
-            .oldValue(oldConfig != null ? serialize(oldConfig) : null)
-            .newValue(serialize(newConfig))
-            .operator(operator)
-            .timestamp(System.currentTimeMillis())
-            .previousRecordHash(getLastRecordHash(flagKey))
-            .build();
-        
-        // Calculate hash including previous record for chaining
-        String recordHash = calculateRecordHash(record);
-        record.setRecordHash(recordHash);
-        
-        // Store in Kafka for durability and Espresso for queries
-        kafkaProducer.send("audit-log", flagKey, record);
-        espressoClient.storeAuditRecord(record);
-    }
-    
-    private String calculateRecordHash(AuditRecord record) {
-        String hashInput = record.getFlagKey() + ":" + 
-                          record.getOperation() + ":" + 
-                          record.getNewValue() + ":" + 
-                          record.getTimestamp() + ":" + 
-                          record.getPreviousRecordHash();
-        
-        return DigestUtils.sha256Hex(hashInput);
-    }
-    
-    // Verify audit chain integrity
-    public boolean verifyAuditChain(String flagKey) {
-        List&lt;AuditRecord&gt; records = espressoClient.getAuditHistory(flagKey);
-        
-        for (int i = 1; i < records.size(); i++) {
-            AuditRecord current = records.get(i);
-            AuditRecord previous = records.get(i - 1);
-            
-            if (!current.getPreviousRecordHash().equals(previous.getRecordHash())) {
-                return false; // Chain broken
-            }
-        }
-        
-        return true;
-    }
-}</pre>
   </div>
 </div>
 
@@ -1015,65 +703,6 @@ public class AuditService {
   
   <div class="implementation">
     <h4>Cross-DC Failover Implementation</h4>
-    <pre>// Datacenter failover controller
-public class CrossDCFailoverController {
-    
-    private enum DCStatus { HEALTHY, DEGRADED, FAILED }
-    private final Map&lt;String, DCStatus&gt; dcHealthMap = new ConcurrentHashMap&lt;();
-    
-    // Continuous health monitoring
-    @Scheduled(fixedDelay = 30000) // every 30s
-    public void monitorDatacenterHealth() {
-        for (String dc : Arrays.asList("ltx1", "lva1", "ei4", "grid2")) {
-            DCStatus status = checkDatacenterHealth(dc);
-            DCStatus oldStatus = dcHealthMap.put(dc, status);
-            
-            if (status == DCStatus.FAILED && oldStatus != DCStatus.FAILED) {
-                handleDatacenterFailure(dc);
-            }
-        }
-    }
-    
-    private void handleDatacenterFailure(String failedDC) {
-        switch (failedDC) {
-            case "ltx1":
-                // Primary DC failed - promote LVA1 to primary
-                promoteSecondaryToPrimary("lva1");
-                updateDNSRouting("feature-flags.linkedin.com", "lva1");
-                break;
-                
-            case "lva1":
-                // Hot standby failed - update monitoring
-                alertOncall("LVA1 datacenter failed - no hot standby available");
-                break;
-                
-            default:
-                // Other DC failures are less critical
-                alertOncall(failedDC + " datacenter failed - services degraded");
-        }
-    }
-    
-    private DCStatus checkDatacenterHealth(String dc) {
-        try {
-            // Check Kafka cluster health
-            boolean kafkaHealthy = kafkaHealthCheck(dc);
-            // Check Espresso cluster health  
-            boolean espressoHealthy = espressoHealthCheck(dc);
-            // Check network connectivity
-            boolean networkHealthy = networkHealthCheck(dc);
-            
-            if (kafkaHealthy && espressoHealthy && networkHealthy) {
-                return DCStatus.HEALTHY;
-            } else if (kafkaHealthy || espressoHealthy) {
-                return DCStatus.DEGRADED;
-            } else {
-                return DCStatus.FAILED;
-            }
-        } catch (Exception e) {
-            return DCStatus.FAILED;
-        }
-    }
-}</pre>
   </div>
   
   <h3>Network Partition Resilience</h3>
@@ -1081,53 +710,6 @@ public class CrossDCFailoverController {
   <div class="implementation">
     <h4>Split-Brain Prevention</h4>
     <p>Prevent multiple Control Planes from accepting writes during network partition</p>
-    <pre>// Distributed lock using Espresso for write leadership
-public class WriteLeadershipController {
-    
-    private static final String LEADERSHIP_KEY = "feature_flags_write_leader";
-    private static final Duration LEASE_TTL = Duration.ofMinutes(2);
-    
-    // Acquire write leadership with renewable lease
-    public boolean acquireWriteLeadership(String datacenter) {
-        try {
-            LeadershipLease lease = LeadershipLease.builder()
-                .datacenter(datacenter)
-                .acquiredAt(System.currentTimeMillis())
-                .expiresAt(System.currentTimeMillis() + LEASE_TTL.toMillis())
-                .instanceId(getInstanceId())
-                .build();
-            
-            // Atomic compare-and-swap operation
-            boolean acquired = espressoClient.compareAndSet(
-                LEADERSHIP_KEY, 
-                null, // expected current value (null = no current leader)
-                lease,
-                LEASE_TTL
-            );
-            
-            if (acquired) {
-                scheduleLeaseRenewal();
-                logger.info("Acquired write leadership for datacenter: {}", datacenter);
-            }
-            
-            return acquired;
-        } catch (Exception e) {
-            logger.error("Failed to acquire write leadership", e);
-            return false;
-        }
-    }
-    
-    // Renew lease every 30 seconds (before expiration)
-    @Scheduled(fixedDelay = 30000)
-    private void renewLease() {
-        if (isWriteLeader()) {
-            LeadershipLease currentLease = getCurrentLease();
-            currentLease.setExpiresAt(System.currentTimeMillis() + LEASE_TTL.toMillis());
-            
-            espressoClient.put(LEADERSHIP_KEY, currentLease, LEASE_TTL);
-        }
-    }
-}</pre>
   </div>
   
   <h3>Performance & Scalability</h3>
@@ -1168,44 +750,6 @@ public class WriteLeadershipController {
   <div class="monitoring">
     <h4>Flag Health Monitoring</h4>
     <p><strong>Checkly Setup:</strong> Continuous flag evaluation testing from multiple regions</p>
-    <pre>// Checkly monitoring script for flag consistency
-const { check } = require('@checkly/cli')
-
-// Test flag evaluation consistency across regions
-check('flag-consistency-check', async () => {
-  const regions = ['ltx1', 'lva1', 'ei4']
-  const testFlag = 'homepage_redesign_v2'
-  const testUser = 'monitoring_user_123'
-  
-  const results = await Promise.all(
-    regions.map(region => 
-      evaluateFlag(testFlag, testUser, region)
-    )
-  )
-  
-  // All regions should return same result
-  const firstResult = results[0]
-  const allConsistent = results.every(r => r.enabled === firstResult.enabled)
-  
-  if (!allConsistent) {
-    throw new Error(`Flag drift detected: ${JSON.stringify(results)}`)
-  }
-  
-  // Check evaluation latency
-  const maxLatency = Math.max(...results.map(r => r.latencyMs))
-  if (maxLatency > 2) {
-    throw new Error(`Evaluation too slow: ${maxLatency}ms > 2ms SLO`)
-  }
-  
-  return { consistent: true, maxLatency }
-})
-
-// Run every 30 seconds from 5 global locations
-module.exports = {
-  frequency: 30,
-  locations: ['us-east-1', 'eu-west-1', 'ap-southeast-1'],
-  alertChannels: ['slack-sre', 'pagerduty-oncall']
-}</pre>
   </div>
   
   <h3>SLO Monitoring & Alerting</h3>
@@ -1223,39 +767,6 @@ module.exports = {
   
   <div class="monitoring">
     <h4>Error Budget & Burn Rate Alerts</h4>
-    <pre>// LinkedIn metrics for SLO tracking
-class SLOMonitoring {
-    
-    // 99.999% availability SLO = 0.001% error budget
-    private static final double ERROR_BUDGET = 0.00001; // 0.001%
-    
-    // Calculate error budget burn rate
-    public double calculateBurnRate(Duration window) {
-        long totalEvaluations = metricsClient.sum("flag_evaluations_total", window);
-        long errorEvaluations = metricsClient.sum("flag_evaluations_errors", window);
-        
-        double errorRate = (double) errorEvaluations / totalEvaluations;
-        double burnRate = errorRate / ERROR_BUDGET;
-        
-        return burnRate;
-    }
-    
-    // Multi-window burn rate alerting (Google SRE book pattern)
-    @Scheduled(fixedDelay = 60000) // every minute
-    public void checkSLOBurnRate() {
-        double oneHourBurn = calculateBurnRate(Duration.ofHours(1));
-        double fiveMinBurn = calculateBurnRate(Duration.ofMinutes(5));
-        
-        // Alert if burning budget too fast
-        if (oneHourBurn > 14.4 && fiveMinBurn > 14.4) {
-            // 14.4x = exhaust monthly budget in 2 hours
-            alertManager.page("SLO burn rate critical - budget exhausted in 2h");
-        } else if (oneHourBurn > 6 && fiveMinBurn > 6) {
-            // 6x = exhaust monthly budget in 5 hours  
-            alertManager.warn("SLO burn rate high - budget exhausted in 5h");
-        }
-    }
-}</pre>
   </div>
   
   <h3>Operational Dashboards</h3>
@@ -1377,63 +888,6 @@ class SLOMonitoring {
   
   <div class="implementation">
     <h4>Sub-2ms Evaluation Optimization</h4>
-    <pre>// Optimized flag evaluation with minimal allocations
-public final class OptimizedFlagEvaluator {
-    
-    // Pre-computed hash cache to avoid repeated SHA-256
-    private final ConcurrentHashMap&lt;String, Long&gt; hashCache = new ConcurrentHashMap&lt;>(10000);
-    
-    // Thread-local objects to avoid allocation
-    private static final ThreadLocal&lt;MessageDigest&gt; DIGEST = 
-        ThreadLocal.withInitial(() -> {
-            try {
-                return MessageDigest.getInstance("SHA-256");
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        });
-    
-    // Hot path: zero allocation flag evaluation
-    public boolean isEnabled(String flagKey, String userId) {
-        FlagConfig flag = flagCache.get(flagKey); // O(1) hash lookup
-        if (flag == null || !flag.enabled) {
-            return false; // Fast path for disabled flags
-        }
-        
-        // Use cached hash if available
-        String cacheKey = flagKey + ":" + userId;
-        Long cachedHash = hashCache.get(cacheKey);
-        
-        if (cachedHash == null) {
-            // Compute hash and cache for future use
-            cachedHash = computeUserHash(flagKey, userId);
-            hashCache.put(cacheKey, cachedHash);
-        }
-        
-        int bucket = (int) (Math.abs(cachedHash) % 100);
-        return bucket < flag.rolloutPercentage;
-    }
-    
-    // Batch evaluation for multiple flags (common pattern)
-    public Map&lt;String, Boolean&gt; evaluateFlags(String userId, String... flagKeys) {
-        Map&lt;String, Boolean&gt; results = new HashMap&lt;>(flagKeys.length);
-        
-        for (String flagKey : flagKeys) {
-            results.put(flagKey, isEnabled(flagKey, userId));
-        }
-        
-        return results;
-    }
-    
-    // Periodic cleanup of hash cache to prevent memory leaks
-    @Scheduled(fixedDelay = 300000) // 5 minutes
-    private void cleanupHashCache() {
-        if (hashCache.size() > 50000) {
-            // Remove oldest 25% of entries
-            hashCache.clear(); // Simple strategy - could use LRU
-        }
-    }
-}</pre>
   </div>
   
   <h3>Future Enhancements</h3>

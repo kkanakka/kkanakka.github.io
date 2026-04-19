@@ -543,135 +543,11 @@
   <div class="implementation">
     <h4>Raft-Based Decision Controller</h4>
     <p><strong>Split-Brain Prevention:</strong> Distributed consensus for failover decisions</p>
-    <pre>// LinkedIn DR Decision Controller with Raft consensus
-public class DRDecisionController implements RaftStateMachine {
-    
-    private enum DRState { STABLE, EVALUATING, FAILOVER_INITIATED, FAILOVER_COMPLETE }
-    private volatile DRState currentState = DRState.STABLE;
-    
-    // Raft cluster: 5 nodes across 3 DCs (2 in primary, 2 in standby, 1 in EI4)
-    private final RaftGroup raftGroup = RaftGroup.builder()
-        .addPeer("ltx1-dr-1", "ltx1-dr-2")  // Primary region
-        .addPeer("lva1-dr-1", "lva1-dr-2")  // Standby region  
-        .addPeer("ei4-dr-1")                // Neutral tiebreaker
-        .build();
-    
-    // Failover decision requires Raft consensus
-    public void evaluateFailover(HealthAssessment assessment) {
-        if (currentState != DRState.STABLE) {
-            return; // Already in progress
-        }
-        
-        if (assessment.shouldTriggerFailover()) {
-            // Propose failover to Raft cluster
-            FailoverProposal proposal = FailoverProposal.builder()
-                .timestamp(Instant.now())
-                .primaryRegion(assessment.getFailedRegion())
-                .targetRegion(assessment.getTargetRegion())
-                .healthEvidence(assessment.getEvidence())
-                .build();
-            
-            // Submit to Raft for consensus (majority vote required)
-            CompletableFuture&lt;Boolean&gt; consensus = raftGroup.propose(proposal);
-            
-            consensus.thenAccept(approved -> {
-                if (approved) {
-                    executeFailover(proposal);
-                } else {
-                    logger.warn("Failover proposal rejected by Raft consensus");
-                }
-            });
-        }
-    }
-    
-    // Raft state machine implementation
-    @Override
-    public void applyOperation(RaftOperation operation) {
-        if (operation instanceof FailoverProposal) {
-            FailoverProposal proposal = (FailoverProposal) operation;
-            
-            // Update state machine
-            currentState = DRState.FAILOVER_INITIATED;
-            
-            // Execute coordinated failover
-            orchestrationPipeline.executeFailover(proposal);
-            
-            // Audit decision
-            auditLogger.critical("DR failover initiated via Raft consensus: {}", proposal);
-        }
-    }
-}</pre>
   </div>
   
   <div class="implementation">
     <h4>Replication Manager Architecture</h4>
     <p><strong>Snapshot + Stream Pattern:</strong> Minimal RPO with efficient bandwidth usage</p>
-    <pre>// Replication strategy for different data stores
-public class ReplicationManager {
-    
-    // Espresso: Async replication with 30s RPO
-    public void configureEspressoReplication() {
-        EspressoReplicationConfig config = EspressoReplicationConfig.builder()
-            .primaryCluster("ltx1-espresso")
-            .replicaCluster("lva1-espresso")
-            .replicationMode(ASYNC)
-            .batchSize(1000)
-            .maxLagSeconds(30)
-            .snapshotFrequency(Duration.ofHours(6))
-            .build();
-            
-        espressoClient.enableReplication(config);
-    }
-    
-    // Venice: Change capture with RocksDB snapshots
-    public void configureVeniceReplication() {
-        VeniceReplicationConfig config = VeniceReplicationConfig.builder()
-            .primaryStore("ltx1-venice")
-            .replicaStore("lva1-venice")
-            .changelogTopic("venice-changelog-ltx1-to-lva1")
-            .snapshotStrategy(HOURLY_INCREMENTAL)
-            .compressionCodec(LZ4)
-            .build();
-            
-        veniceClient.enableReplication(config);
-    }
-    
-    // Kafka: Cross-region mirroring
-    public void configureKafkaReplication() {
-        MirrorMakerConfig config = MirrorMakerConfig.builder()
-            .sourceCluster("ltx1-kafka")
-            .targetCluster("lva1-kafka")
-            .topicWhitelist("member-events|feed-updates|job-applications")
-            .replicationFactor(3)
-            .acks("all")
-            .enableIdempotence(true)
-            .build();
-            
-        kafkaMirrorMaker.start(config);
-    }
-    
-    // Monitor replication lag across all systems
-    @Scheduled(fixedDelay = 15000) // every 15s
-    public void monitorReplicationHealth() {
-        Map&lt;String, Duration&gt; lagMetrics = Map.of(
-            "espresso", espressoClient.getReplicationLag(),
-            "venice", veniceClient.getReplicationLag(),  
-            "kafka", kafkaClient.getReplicationLag()
-        );
-        
-        for (Map.Entry&lt;String, Duration&gt; entry : lagMetrics.entrySet()) {
-            Duration lag = entry.getValue();
-            String system = entry.getKey();
-            
-            metricsClient.gauge("replication.lag.seconds", lag.getSeconds(),
-                              Map.of("system", system));
-            
-            if (lag.getSeconds() > 45) { // Approaching RPO limit
-                alertManager.warn("Replication lag high for {}: {}s", system, lag.getSeconds());
-            }
-        }
-    }
-}</pre>
   </div>
   
   <h3>Cross-Datacenter Topology</h3>
@@ -718,23 +594,6 @@ public class ReplicationManager {
     <h4>Four-Stage Failover Pipeline</h4>
     <p>Coordinated sequence minimizes blast radius and ensures dependency ordering</p>
     
-    <pre>// Orchestrated failover pipeline with dependency management
-public class FailoverOrchestrationPipeline {
-    
-    public void executeFailover(FailoverProposal proposal) {
-        // STAGE 1: DNS Cutover (30 seconds)
-        dnsManager.updateGlobalRecords(proposal.getTargetRegion());
-        
-        // STAGE 2: Traffic Drain (90 seconds)  
-        loadBalancer.drainTraffic(proposal.getPrimaryRegion());
-        
-        // STAGE 3: Data Promotion (120 seconds)
-        promoteDataStores(proposal.getTargetRegion());
-        
-        // STAGE 4: Service Validation (90 seconds)
-        validateServiceReadiness(proposal.getTargetRegion());
-    }
-}</pre>
   </div>
   
   <h3>Split-Brain Prevention with Raft</h3>
@@ -742,37 +601,12 @@ public class FailoverOrchestrationPipeline {
   <div class="implementation">
     <h4>Distributed Leadership Election</h4>
     <p>5-node Raft cluster ensures single primary region globally</p>
-    <pre>// Raft consensus for failover decisions
-public class DRLeaderElection {
-    // 5-node cluster: 2 in LTX1, 2 in LVA1, 1 in EI4
-    private final RaftClient raftClient = RaftClient.builder()
-        .cluster("dr-coordination")
-        .members(List.of("ltx1-dr-1", "ltx1-dr-2", "lva1-dr-1", "lva1-dr-2", "ei4-dr-1"))
-        .build();
-    
-    public CompletableFuture&lt;Boolean&gt; proposeRegionFailover(String from, String to) {
-        RegionFailoverCommand cmd = new RegionFailoverCommand(from, to);
-        return raftClient.propose(cmd); // Requires 3 of 5 votes
-    }
-}</pre>
   </div>
   
   <h3>Dependency-Aware Recovery</h3>
   
   <div class="implementation">
     <h4>Service Recovery Ordering</h4>
-    <pre>// Layer-based recovery respecting dependencies
-public void executeRecovery(String region) {
-    // Layer 0: Infrastructure (Espresso, Venice, Kafka)
-    // Layer 1: Core Services (auth, profiles)  
-    // Layer 2: Platform Services (search, notifications)
-    // Layer 3: Product Services (feed, jobs, messaging)
-    
-    for (int layer = 0; layer < 4; layer++) {
-        recoverServicesInLayer(region, layer);
-        validateLayerHealth(region, layer);
-    }
-}</pre>
   </div>
 </div>
 
@@ -825,18 +659,6 @@ public void executeRecovery(String region) {
   
   <div class="disaster">
     <h4>Monthly DR Validation</h4>
-    <pre>// Automated chaos testing
-@Scheduled(cron = "0 0 2 1 * ?") // Monthly at 2 AM
-public void monthlyDRTest() {
-    ChaosExperiment experiment = ChaosExperiment.builder()
-        .targetRegion("ei4")  // Staging environment
-        .failure(COMPLETE_REGION_OUTAGE)
-        .duration(Duration.ofMinutes(15))
-        .build();
-    
-    ChaosResult result = chaosEngine.execute(experiment);
-    validateSLOCompliance(result);
-}</pre>
   </div>
 </div>
 
@@ -874,24 +696,6 @@ public void monthlyDRTest() {
   
   <div class="monitoring">
     <h4>Real-time DR Metrics</h4>
-    <pre>// Comprehensive DR monitoring
-@Scheduled(fixedDelay = 30000)
-public void trackDRMetrics() {
-    // RTO/RPO tracking
-    metricsClient.gauge("dr.rto.current", calculateRTO().toMillis());
-    metricsClient.gauge("dr.rpo.current", calculateRPO().toMillis());
-    
-    // Replication lag
-    metricsClient.gauge("dr.replication.lag", getReplicationLag().getSeconds());
-    
-    // Readiness assessment
-    double readiness = assessFailoverReadiness();
-    metricsClient.gauge("dr.failover.readiness", readiness);
-    
-    if (readiness < 0.9) {
-        alertManager.warn("DR readiness below threshold: {}", readiness);
-    }
-}</pre>
   </div>
   
   <h3>Game Day Exercises</h3>
