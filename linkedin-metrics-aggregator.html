@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<title>LinkedIn Realtime Metrics Aggregator — Observability Reliability</title>
+<style>
+  :root{--bg:#fff;--surface:#f7f6f3;--border:#e3e2de;--text:#37352f;--text-muted:#787774;--accent:#2383e2;--accent2:#0f7b0f;--accent3:#6940a5;--accent4:#d9730d;--red:#e03e3e;--code-bg:#f7f6f3;--card:#fff;--linkedin:#0077b5;--success:#2e7d32;--warning:#f57c00;--error:#d32f2f;--metrics:#2196f3}
+  *{margin:0;padding:0;box-sizing:border-box}body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;font-size:15px}
+  .container{max-width:1000px;margin:0 auto;padding:0 24px}.hero{background:linear-gradient(135deg,#2196f3,#1976d2);color:#fff;padding:60px 0 40px;text-align:center}.hero h1{font-size:2.4em;font-weight:700;margin-bottom:16px}.hero .subtitle{font-size:1.2em;margin-bottom:20px;opacity:0.9}.hero p{font-size:1.05em;max-width:800px;margin:0 auto 30px;opacity:0.85}.hero .badge{display:inline-block;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);padding:8px 20px;border-radius:25px;font-size:.85em;margin:0 8px}
+  .nav-links{margin-top:25px}.nav-links a{display:inline-block;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);padding:10px 24px;border-radius:8px;color:#fff;text-decoration:none;margin:4px;font-size:.9em;transition:.2s}.nav-links a:hover{background:rgba(255,255,255,0.2)}
+  
+  .section{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:28px;margin:28px 0;border-left:4px solid var(--metrics)}
+  .section h2{font-size:1.4em;font-weight:700;color:var(--metrics);margin-bottom:16px}
+  .section h3{font-size:1.2em;font-weight:600;color:var(--text);margin:24px 0 12px}
+  .section h4{font-size:1.05em;font-weight:600;color:var(--accent3);margin:16px 0 8px}
+  
+  .architecture{background:#e3f2fd;border:1px solid var(--metrics);border-radius:8px;padding:20px;margin:16px 0}
+  .slo{background:#e8f5e9;border:1px solid var(--success);border-radius:8px;padding:16px;margin:12px 0}
+  .slo h4{color:var(--success);margin:0 0 8px}
+  .failure{background:#ffebee;border:1px solid var(--error);border-radius:8px;padding:16px;margin:12px 0}
+  .failure h4{color:var(--error);margin:0 0 8px}
+  .implementation{background:#fff3e0;border:1px solid var(--warning);border-radius:8px;padding:16px;margin:12px 0}
+  .implementation h4{color:var(--warning);margin:0 0 8px}
+  .monitoring{background:#e8f4f8;border:1px solid var(--linkedin);border-radius:8px;padding:16px;margin:12px 0}
+  .monitoring h4{color:var(--linkedin);margin:0 0 8px}
+  .metricsys{background:#e3f2fd;border:1px solid var(--metrics);border-radius:8px;padding:16px;margin:12px 0}
+  .metricsys h4{color:var(--metrics);margin:0 0 8px}
+  
+  pre{background:var(--code-bg);border:1px solid var(--border);padding:16px;border-radius:8px;overflow-x:auto;font-family:'JetBrains Mono','SF Mono',monospace;font-size:.85em;margin:12px 0;line-height:1.5}
+  code{background:var(--code-bg);border:1px solid var(--border);padding:2px 6px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:.85em;color:var(--accent3)}
+  
+  table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.9em}th{background:rgba(33,150,243,.08);color:var(--metrics);padding:12px;text-align:left;font-weight:600;border-bottom:2px solid var(--border)}td{padding:12px;border-bottom:1px solid var(--border);vertical-align:top}tr:last-child td{border-bottom:none}
+  
+  .highlight{background:#e3f2fd;padding:2px 6px;border-radius:3px;color:var(--metrics);font-weight:500}
+  .pros-cons{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:16px 0}
+  .pros{background:#e8f5e9;border:1px solid var(--success);border-radius:6px;padding:12px}
+  .cons{background:#ffebee;border:1px solid var(--error);border-radius:6px;padding:12px}
+  .pros h5{color:var(--success);margin-bottom:8px}
+  .cons h5{color:var(--error);margin-bottom:8px}
+  
+  footer{text-align:center;padding:40px 0;border-top:1px solid var(--border);color:var(--text-muted);font-size:.9em;margin-top:60px}footer a{color:var(--metrics);text-decoration:none}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="container">
+    <h1>LinkedIn Realtime Metrics Aggregator</h1>
+    <div class="subtitle">Observability Reliability — High-Cardinality Streams at Scale</div>
+    <p>The backbone of LinkedIn's monitoring culture: 10M metrics/sec ingestion, 2-second query latency, dynamic cardinality control, and SLO-driven alerting across millions of nodes worldwide with Gorilla compression and tiered storage.</p>
+    <div class="badge">High Cardinality</div>
+    <div class="badge">Real-time Processing</div>
+    <div class="badge">SLO Alerting</div>
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="/sre-design-framework.html">Design Framework</a>
+      <a href="/sre-sysdesign.html">SRE Systems</a>
+      <a href="/linkedin-config-management.html">Config Management</a>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- PAGE 1: SYSTEM OVERVIEW -->
+<div class="section">
+  <h2>Page 1 — System Overview & Observability Reliability Philosophy</h2>
+  
+  <h3>What This System Is</h3>
+  <p>A <strong>"Mission-Critical Observability Platform"</strong> that ingests telemetry data (CPU, memory, latency, request counts) from millions of LinkedIn nodes worldwide. The aggregator supports high-cardinality dimensions (per-host, per-region, per-service labels) while maintaining query speed and SLO-driven alerting pipelines — the backbone of LinkedIn's monitoring culture.</p>
+  
+  <div class="slo">
+    <h4>Metrics Platform Service Level Objectives (SLOs)</h4>
+    <table>
+      <tr><th>Objective</th><th>Target</th><th>Measurement</th></tr>
+      <tr><td>Ingestion Throughput</td><td>≥ 10M metrics/s</td><td>Globally with sustained bursts</td></tr>
+      <tr><td>Ingest Latency</td><td>p99 ≤ 1s</td><td>From node to aggregator</td></tr>
+      <tr><td>Query Latency</td><td>p99 ≤ 2s</td><td>Even under load</td></tr>
+      <tr><td>Availability</td><td>≥ 99.999%</td><td>Monitoring must never go dark</td></tr>
+      <tr><td>Metric Loss Rate</td><td>< 0.001%</td><td>Reliability of observability itself</td></tr>
+      <tr><td>Cardinality Growth</td><td>< 5% weekly</td><td>Prevent cardinality explosion</td></tr>
+    </table>
+  </div>
+  
+  <h3>Observability Reliability Philosophy: Monitoring is Infrastructure</h3>
+  
+  <div class="metricsys">
+    <h4>Core Metrics Platform Principles</h4>
+    <ul>
+      <li><strong>Sharded Ingestion with Consistent Hashing</strong> — Evenly distributes load across ingestion nodes</li>
+      <li><strong>Dynamic Cardinality Control</strong> — Drops high-cardinality labels above safety thresholds</li>
+      <li><strong>Backpressure + Autoscaling</strong> — Stream processor scales out with demand</li>
+      <li><strong>Tiered Storage</strong> — 24h hot storage (SSD), long-term cold archival (object store)</li>
+      <li><strong>Index Compaction & Compression</strong> — Delta + Gorilla compression for high volume</li>
+      <li><strong>Query Federation Layer</strong> — Routes queries to regional stores to avoid overload</li>
+      <li><strong>Clock Sync Protocols</strong> — NTP/chrony enforcement for accurate timestamps</li>
+    </ul>
+  </div>
+  
+  <h3>Seven Core Components</h3>
+  
+  <div style="background:#f8f9fa;border:1px solid #dee2e6;border-radius:8px;padding:16px;margin:16px 0;">
+    <ol>
+      <li><strong>Node Agent Exporter</strong> — Pushes raw metrics periodically from every host</li>
+      <li><strong>Ingestion Gateways</strong> — Regionally sharded, load-balanced endpoints</li>
+      <li><strong>Stream Processor</strong> — Aggregates, deduplicates, compresses in real-time</li>
+      <li><strong>Hot Storage (TSDB)</strong> — Recent metrics in memory/SSD (LinkedIn's InGraphs)</li>
+      <li><strong>Cold Storage</strong> — Historical data in object store (Ambry)</li>
+      <li><strong>Query Service</strong> — PromQL-style queries and dashboards</li>
+      <li><strong>Alert Engine</strong> — SLO evaluation and notification pipelines</li>
+    </ol>
+  </div>
+  
+  <h3>LinkedIn Metric Types & Cardinality</h3>
+  
+  <h4>Metric Categories by Volume & Cardinality</h4>
+  <table>
+    <tr><th>Metric Category</th><th>Volume/sec</th><th>Cardinality</th><th>Storage Strategy</th></tr>
+    <tr><td><strong>Infrastructure</strong></td><td>2M</td><td>Low (host, DC)</td><td>Hot storage + long retention</td></tr>
+    <tr><td><strong>Application</strong></td><td>5M</td><td>Medium (service, endpoint)</td><td>Hot storage + 30-day retention</td></tr>
+    <tr><td><strong>Business</strong></td><td>2M</td><td>High (user, experiment)</td><td>Aggressive compression + sampling</td></tr>
+    <tr><td><strong>Security</strong></td><td>500K</td><td>Medium (auth, audit)</td><td>Cold storage + compliance retention</td></tr>
+    <tr><td><strong>Network</strong></td><td>300K</td><td>Low (switches, routers)</td><td>Hot storage + alerting</td></tr>
+    <tr><td><strong>Debug/Tracing</strong></td><td>200K</td><td>Very High (trace, span)</td><td>Sampling + short retention</td></tr>
+  </table>
+  
+  <h4>Reliability Stressors (What Can Break)</h4>
+  <div class="failure">
+    <h4>Critical Metrics Platform Failure Modes</h4>
+    <ul>
+      <li><strong>Hot Shard Overload:</strong> One region floods with metrics → ingestion nodes choke</li>
+      <li><strong>Cardinality Explosion:</strong> New label → exponential series growth → memory exhaustion</li>
+      <li><strong>Backpressure Cascade:</strong> Downstream processor lags → queues overflow → data loss</li>
+      <li><strong>Query Hotspots:</strong> Same dashboard hammered by thousands → query service overload</li>
+      <li><strong>Clock Skew:</strong> Metrics misaligned in time windows → incorrect aggregations</li>
+      <li><strong>Storage Tier Overflow:</strong> Hot storage fills up → forced cold storage promotion</li>
+    </ul>
+  </div>
+</div>
+
+<!-- PAGE 2: ARCHITECTURE & IMPLEMENTATION -->
+<div class="section">
+  <h2>Page 2 — Architecture & LinkedIn Integration</h2>
+  
+  <h3>System Architecture Overview</h3>
+  
+  <!-- Metrics Architecture Diagram -->
+  <svg width="100%" height="650" style="background:#fafafa;border:1px solid #ddd;border-radius:8px;margin:16px 0;">
+    <!-- Node Agents (Exporters) -->
+    <rect x="50" y="50" width="150" height="80" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2" rx="8"/>
+    <text x="125" y="75" text-anchor="middle" font-size="12" font-weight="bold" fill="#1b5e20">Node Agents</text>
+    <text x="125" y="95" text-anchor="middle" font-size="10" fill="#1b5e20">50K+ Hosts</text>
+    <text x="125" y="110" text-anchor="middle" font-size="10" fill="#1b5e20">CPU, Memory, Disk</text>
+    <text x="125" y="125" text-anchor="middle" font-size="10" fill="#1b5e20">Network, Custom</text>
+    
+    <rect x="220" y="50" width="150" height="80" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2" rx="8"/>
+    <text x="295" y="75" text-anchor="middle" font-size="12" font-weight="bold" fill="#1b5e20">App Metrics</text>
+    <text x="295" y="95" text-anchor="middle" font-size="10" fill="#1b5e20">20K+ Services</text>
+    <text x="295" y="110" text-anchor="middle" font-size="10" fill="#1b5e20">Latency, Errors</text>
+    <text x="295" y="125" text-anchor="middle" font-size="10" fill="#1b5e20">Throughput, Custom</text>
+    
+    <rect x="390" y="50" width="150" height="80" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2" rx="8"/>
+    <text x="465" y="75" text-anchor="middle" font-size="12" font-weight="bold" fill="#1b5e20">Business Metrics</text>
+    <text x="465" y="95" text-anchor="middle" font-size="10" fill="#1b5e20">User Actions</text>
+    <text x="465" y="110" text-anchor="middle" font-size="10" fill="#1b5e20">Revenue, Growth</text>
+    <text x="465" y="125" text-anchor="middle" font-size="10" fill="#1b5e20">A/B Experiments</text>
+    
+    <!-- Ingestion Gateways -->
+    <rect x="50" y="170" width="120" height="60" fill="#e3f2fd" stroke="#1976d2" stroke-width="2" rx="4"/>
+    <text x="110" y="190" text-anchor="middle" font-size="11" font-weight="bold" fill="#0d47a1">LTX1 Gateway</text>
+    <text x="110" y="210" text-anchor="middle" font-size="9" fill="#0d47a1">Shard 0-15</text>
+    <text x="110" y="225" text-anchor="middle" font-size="9" fill="#0d47a1">4M metrics/s</text>
+    
+    <rect x="190" y="170" width="120" height="60" fill="#e3f2fd" stroke="#1976d2" stroke-width="2" rx="4"/>
+    <text x="250" y="190" text-anchor="middle" font-size="11" font-weight="bold" fill="#0d47a1">LVA1 Gateway</text>
+    <text x="250" y="210" text-anchor="middle" font-size="9" fill="#0d47a1">Shard 16-31</text>
+    <text x="250" y="225" text-anchor="middle" font-size="9" fill="#0d47a1">3M metrics/s</text>
+    
+    <rect x="330" y="170" width="120" height="60" fill="#e3f2fd" stroke="#1976d2" stroke-width="2" rx="4"/>
+    <text x="390" y="190" text-anchor="middle" font-size="11" font-weight="bold" fill="#0d47a1">EI4 Gateway</text>
+    <text x="390" y="210" text-anchor="middle" font-size="9" fill="#0d47a1">Shard 32-47</text>
+    <text x="390" y="225" text-anchor="middle" font-size="9" fill="#0d47a1">2M metrics/s</text>
+    
+    <rect x="470" y="170" width="120" height="60" fill="#e3f2fd" stroke="#1976d2" stroke-width="2" stroke-dasharray="5,5" rx="4"/>
+    <text x="530" y="190" text-anchor="middle" font-size="11" font-weight="bold" fill="#0d47a1">Auto-Scale</text>
+    <text x="530" y="210" text-anchor="middle" font-size="9" fill="#0d47a1">Dynamic</text>
+    <text x="530" y="225" text-anchor="middle" font-size="9" fill="#0d47a1">On-Demand</text>
+    
+    <!-- Stream Processor -->
+    <rect x="50" y="270" width="540" height="80" fill="#fff3e0" stroke="#f57c00" stroke-width="2" rx="8"/>
+    <text x="320" y="295" text-anchor="middle" font-size="14" font-weight="bold" fill="#e65100">Stream Processor (Kafka Streams + Samza)</text>
+    <text x="320" y="315" text-anchor="middle" font-size="10" fill="#e65100">Real-time Aggregation • Deduplication • Gorilla Compression • Cardinality Control</text>
+    <text x="320" y="330" text-anchor="middle" font-size="10" fill="#e65100">Backpressure Detection • Auto-scaling • Time Window Processing • Late Data Handling</text>
+    <text x="320" y="345" text-anchor="middle" font-size="10" fill="#e65100">10M+ metrics/sec → 2M aggregated series/sec</text>
+    
+    <!-- Hot Storage (InGraphs TSDB) -->
+    <rect x="50" y="380" width="180" height="80" fill="#f3e5f5" stroke="#7b1fa2" stroke-width="2" rx="8"/>
+    <text x="140" y="405" text-anchor="middle" font-size="12" font-weight="bold" fill="#4a148c">Hot Storage</text>
+    <text x="140" y="425" text-anchor="middle" font-size="10" fill="#4a148c">InGraphs TSDB</text>
+    <text x="140" y="440" text-anchor="middle" font-size="10" fill="#4a148c">SSD + Memory</text>
+    <text x="140" y="455" text-anchor="middle" font-size="10" fill="#4a148c">24h retention</text>
+    
+    <!-- Cold Storage (Ambry) -->
+    <rect x="250" y="380" width="180" height="80" fill="#e0f2f1" stroke="#00695c" stroke-width="2" rx="8"/>
+    <text x="340" y="405" text-anchor="middle" font-size="12" font-weight="bold" fill="#004d40">Cold Storage</text>
+    <text x="340" y="425" text-anchor="middle" font-size="10" fill="#004d40">Ambry Object Store</text>
+    <text x="340" y="440" text-anchor="middle" font-size="10" fill="#004d40">Compressed Archives</text>
+    <text x="340" y="455" text-anchor="middle" font-size="10" fill="#004d40">90-day retention</text>
+    
+    <!-- Query Service -->
+    <rect x="450" y="380" width="140" height="80" fill="#ffebee" stroke="#d32f2f" stroke-width="2" rx="8"/>
+    <text x="520" y="405" text-anchor="middle" font-size="12" font-weight="bold" fill="#c62828">Query Service</text>
+    <text x="520" y="425" text-anchor="middle" font-size="10" fill="#c62828">PromQL Engine</text>
+    <text x="520" y="440" text-anchor="middle" font-size="10" fill="#c62828">Query Federation</text>
+    <text x="520" y="455" text-anchor="middle" font-size="10" fill="#c62828">Caching Layer</text>
+    
+    <!-- Alert Engine -->
+    <rect x="50" y="490" width="200" height="60" fill="#fff8e1" stroke="#fbc02d" stroke-width="2" rx="8"/>
+    <text x="150" y="515" text-anchor="middle" font-size="12" font-weight="bold" fill="#f57c00">Alert Engine</text>
+    <text x="150" y="535" text-anchor="middle" font-size="10" fill="#f57c00">SLO Evaluation • Notification</text>
+    <text x="150" y="545" text-anchor="middle" font-size="10" fill="#f57c00">Escalation • Rate Limiting</text>
+    
+    <!-- Cardinality Controller -->
+    <rect x="270" y="490" width="160" height="60" fill="#fff8e1" stroke="#fbc02d" stroke-width="2" rx="8"/>
+    <text x="350" y="515" text-anchor="middle" font-size="12" font-weight="bold" fill="#f57c00">Cardinality Control</text>
+    <text x="350" y="535" text-anchor="middle" font-size="10" fill="#f57c00">Dynamic Sampling</text>
+    <text x="350" y="545" text-anchor="middle" font-size="10" fill="#f57c00">Label Dropping</text>
+    
+    <!-- Dashboards -->
+    <rect x="450" y="490" width="140" height="60" fill="#fff8e1" stroke="#fbc02d" stroke-width="2" rx="8"/>
+    <text x="520" y="515" text-anchor="middle" font-size="12" font-weight="bold" fill="#f57c00">Dashboards</text>
+    <text x="520" y="535" text-anchor="middle" font-size="10" fill="#f57c00">Grafana UI</text>
+    <text x="520" y="545" text-anchor="middle" font-size="10" fill="#f57c00">Real-time Charts</text>
+    
+    <!-- Arrows -->
+    <defs>
+      <marker id="arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+        <polygon points="0 0, 10 3.5, 0 7" fill="#666"/>
+      </marker>
+    </defs>
+    
+    <!-- Data flow -->
+    <line x1="125" y1="130" x2="110" y2="170" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+    <line x1="295" y1="130" x2="250" y2="170" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+    <line x1="465" y1="130" x2="390" y2="170" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+    
+    <!-- Gateway to processor -->
+    <line x1="320" y1="230" x2="320" y2="270" stroke="#666" stroke-width="3" marker-end="url(#arrow)"/>
+    
+    <!-- Processor to storage -->
+    <line x1="250" y1="350" x2="140" y2="380" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+    <line x1="320" y1="350" x2="340" y2="380" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+    <line x1="390" y1="350" x2="520" y2="380" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+    
+    <!-- Storage to services -->
+    <line x1="140" y1="460" x2="150" y2="490" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+    <line x1="340" y1="460" x2="350" y2="490" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+    <line x1="520" y1="460" x2="520" y2="490" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+    
+    <!-- Cardinality feedback -->
+    <line x1="350" y1="490" x2="350" y2="350" stroke="#fbc02d" stroke-width="2" stroke-dasharray="5,5"/>
+    
+    <!-- Labels -->
+    <text x="270" y="250" font-size="9" fill="#666">10M/s</text>
+    <text x="200" y="370" font-size="9" fill="#666">hot</text>
+    <text x="380" y="370" font-size="9" fill="#666">cold</text>
+    <text x="470" y="370" font-size="9" fill="#666">query</text>
+    <text x="370" y="480" font-size="9" fill="#fbc02d">feedback</text>
+  </svg>
+  
+  <h3>Sharded Ingestion with Consistent Hashing</h3>
+  
+  <div class="implementation">
+    <h4>Load Distribution Strategy</h4>
+    <p><strong>Consistent Hashing:</strong> Evenly distributes high-volume metrics across ingestion shards</p>
+    <pre>// LinkedIn Metrics Ingestion with consistent hashing
+public class ShardedMetricsIngestion {
+    
+    private final ConsistentHashRing&lt;IngestionShard&gt; hashRing;
+    private final Map&lt;String, IngestionShard&gt; activeShards;
+    
+    // Route metrics to appropriate shard based on series hash
+    public void ingestMetrics(List&lt;MetricSample&gt; metrics) {
+        // Group metrics by target shard for batching
+        Map&lt;IngestionShard, List&lt;MetricSample&gt;&gt; shardBatches = metrics.stream()
+            .collect(Collectors.groupingBy(this::selectShardForMetric));
+        
+        // Send batches to shards in parallel
+        shardBatches.entrySet().parallelStream().forEach(entry -> {
+            IngestionShard shard = entry.getKey();
+            List&lt;MetricSample&gt; batch = entry.getValue();
+            
+            try {
+                shard.ingestBatch(batch);
+                metricsClient.increment("metrics.ingested", 
+                                      Map.of("shard", shard.getId()),
+                                      batch.size());
+            } catch (Exception e) {
+                logger.error("Failed to ingest batch to shard {}", shard.getId(), e);
+                // Retry with different shard
+                retryWithAlternateShard(batch, shard);
+            }
+        });
+    }
+    
+    // Select shard using consistent hashing on series fingerprint
+    private IngestionShard selectShardForMetric(MetricSample metric) {
+        String seriesFingerprint = generateSeriesFingerprint(metric);
+        return hashRing.get(seriesFingerprint);
+    }
+    
+    // Generate stable fingerprint for metric series
+    private String generateSeriesFingerprint(MetricSample metric) {
+        // Sort labels for consistent ordering
+        Map&lt;String, String&gt; sortedLabels = metric.getLabels().entrySet().stream()
+            .sorted(Map.Entry.comparingByKey())
+            .collect(LinkedHashMap::new, 
+                    (map, entry) -> map.put(entry.getKey(), entry.getValue()),
+                    LinkedHashMap::putAll);
+        
+        StringBuilder fingerprint = new StringBuilder();
+        fingerprint.append(metric.getMetricName());
+        
+        for (Map.Entry&lt;String, String&gt; label : sortedLabels.entrySet()) {
+            fingerprint.append("|").append(label.getKey()).append("=").append(label.getValue());
+        }
+        
+        return DigestUtils.sha256Hex(fingerprint.toString());
+    }
+    
+    // Dynamic shard management based on load
+    @Scheduled(fixedDelay = 300000) // every 5 minutes
+    public void rebalanceShards() {
+        Map&lt;String, Double&gt; shardLoads = calculateShardLoads();
+        
+        // Find overloaded shards (>80% capacity)
+        List&lt;String&gt; overloadedShards = shardLoads.entrySet().stream()
+            .filter(entry -> entry.getValue() > 0.8)
+            .map(Map.Entry::getKey)
+            .collect(Collectors.toList());
+        
+        if (!overloadedShards.isEmpty()) {
+            logger.warn("Overloaded shards detected: {}", overloadedShards);
+            
+            // Scale out overloaded shards
+            for (String shardId : overloadedShards) {
+                scaleOutShard(shardId);
+            }
+        }
+        
+        // Find underloaded shards (<20% capacity)
+        List&lt;String&gt; underloadedShards = shardLoads.entrySet().stream()
+            .filter(entry -> entry.getValue() < 0.2)
+            .map(Map.Entry::getKey)
+            .collect(Collectors.toList());
+        
+        // Scale in underloaded shards (but maintain minimum)
+        if (underloadedShards.size() > MIN_SHARDS) {
+            for (String shardId : underloadedShards.subList(0, 
+                    Math.min(2, underloadedShards.size()))) {
+                scaleInShard(shardId);
+            }
+        }
+    }
+}</pre>
+  </div>
+  
+  <h3>Dynamic Cardinality Control</h3>
+  
+  <div class="implementation">
+    <h4>Cardinality Explosion Prevention</h4>
+    <pre>// Intelligent cardinality management to prevent system overload
+public class DynamicCardinalityController {
+    
+    private static final int MAX_SERIES_PER_METRIC = 10000;
+    private static final double CARDINALITY_GROWTH_THRESHOLD = 0.05; // 5% weekly
+    
+    // Monitor and control cardinality in real-time
+    public MetricSample processMetricSample(MetricSample sample) {
+        String metricName = sample.getMetricName();
+        
+        // Check current cardinality for this metric
+        CardinalityStats stats = getCardinalityStats(metricName);
+        
+        if (stats.getCurrentSeries() > MAX_SERIES_PER_METRIC) {
+            // Metric has too many series - apply cardinality reduction
+            return reduceCardinality(sample, stats);
+        }
+        
+        // Check growth rate
+        double weeklyGrowth = stats.getWeeklyGrowthRate();
+        if (weeklyGrowth > CARDINALITY_GROWTH_THRESHOLD) {
+            // Growing too fast - apply proactive sampling
+            return applySampling(sample, weeklyGrowth);
+        }
+        
+        // Update cardinality tracking
+        updateCardinalityStats(metricName, sample);
+        
+        return sample;
+    }
+    
+    // Reduce cardinality by dropping high-cardinality labels
+    private MetricSample reduceCardinality(MetricSample sample, CardinalityStats stats) {
+        Map&lt;String, String&gt; originalLabels = sample.getLabels();
+        Map&lt;String, String&gt; reducedLabels = new HashMap&lt;>(originalLabels);
+        
+        // Identify high-cardinality labels to drop
+        List&lt;String&gt; highCardinalityLabels = stats.getHighCardinalityLabels();
+        
+        for (String labelToRemove : highCardinalityLabels) {
+            if (reducedLabels.containsKey(labelToRemove)) {
+                String removedValue = reducedLabels.remove(labelToRemove);
+                
+                logger.debug("Dropped high-cardinality label: {}={} from metric {}", 
+                           labelToRemove, removedValue, sample.getMetricName());
+                
+                // Add to dropped labels tracking
+                metricsClient.increment("cardinality.labels_dropped",
+                                      Map.of("metric", sample.getMetricName(),
+                                            "label", labelToRemove));
+                
+                // Check if cardinality is now acceptable
+                if (estimateCardinalityAfterReduction(sample.getMetricName(), reducedLabels) 
+                    < MAX_SERIES_PER_METRIC) {
+                    break;
+                }
+            }
+        }
+        
+        return sample.withLabels(reducedLabels);
+    }
+    
+    // Apply statistical sampling for high-growth metrics
+    private MetricSample applySampling(MetricSample sample, double growthRate) {
+        // Calculate sampling rate inversely proportional to growth
+        double samplingRate = Math.min(1.0, CARDINALITY_GROWTH_THRESHOLD / growthRate);
+        
+        // Use consistent hashing for stable sampling
+        String seriesHash = generateSeriesFingerprint(sample);
+        double hashValue = (double) (Math.abs(seriesHash.hashCode()) % 10000) / 10000.0;
+        
+        if (hashValue > samplingRate) {
+            // Drop this sample
+            metricsClient.increment("cardinality.samples_dropped",
+                                  Map.of("metric", sample.getMetricName()));
+            return null;
+        }
+        
+        // Keep sample but add sampling metadata
+        Map&lt;String, String&gt; labelWithSampling = new HashMap&lt;>(sample.getLabels());
+        labelWithSampling.put("__sampling_rate__", String.format("%.4f", samplingRate));
+        
+        return sample.withLabels(labelWithSampling);
+    }
+    
+    // Periodic cardinality analysis and alerting
+    @Scheduled(fixedDelay = 3600000) // every hour
+    public void analyzeCardinalityTrends() {
+        Map&lt;String, CardinalityStats&gt; allStats = getAllCardinalityStats();
+        
+        for (Map.Entry&lt;String, CardinalityStats&gt; entry : allStats.entrySet()) {
+            String metricName = entry.getKey();
+            CardinalityStats stats = entry.getValue();
+            
+            // Alert on dangerous cardinality growth
+            if (stats.getWeeklyGrowthRate() > CARDINALITY_GROWTH_THRESHOLD * 2) {
+                alertManager.warn("Dangerous cardinality growth for metric {}: {}% weekly",
+                                metricName, stats.getWeeklyGrowthRate() * 100);
+            }
+            
+            // Auto-enable aggressive sampling for runaway metrics
+            if (stats.getCurrentSeries() > MAX_SERIES_PER_METRIC * 2) {
+                enableAggressiveSampling(metricName);
+                alertManager.page("Auto-enabled aggressive sampling for metric {} with {} series",
+                                metricName, stats.getCurrentSeries());
+            }
+        }
+    }
+}</pre>
+  </div>
+</div>
+
+<!-- PAGE 3: RELIABILITY & OPERATIONS -->
+<div class="section">
+  <h2>Page 3 — Stream Processing & Storage Reliability</h2>
+  
+  <h3>Real-Time Stream Processing with Backpressure</h3>
+  
+  <div class="metricsys">
+    <h4>Kafka Streams + Samza Processing Pipeline</h4>
+    <p>High-throughput stream processing with automatic backpressure and scaling</p>
+    <pre>// LinkedIn metrics stream processing with backpressure handling
+public class MetricsStreamProcessor {
+    
+    private final KafkaStreams streamsApp;
+    private final SamzaContainer samzaContainer;
+    private final BackpressureDetector backpressureDetector;
+    
+    // Process metrics stream with aggregation and compression
+    public StreamsBuilder buildProcessingTopology() {
+        StreamsBuilder builder = new StreamsBuilder();
+        
+        // Input: raw metrics from ingestion gateways
+        KStream&lt;String, MetricSample&gt; rawMetrics = builder.stream("metrics-raw");
+        
+        // Step 1: Deduplication within time window
+        KStream&lt;String, MetricSample&gt; dedupedMetrics = rawMetrics
+            .selectKey((key, sample) -> generateDeduplicationKey(sample))
+            .transform(DeduplicationTransformer::new, "dedup-store");
+        
+        // Step 2: Cardinality control
+        KStream&lt;String, MetricSample&gt; controlledMetrics = dedupedMetrics
+            .mapValues(this::applyCardinalityControl)
+            .filter((key, sample) -> sample != null); // Remove dropped samples
+        
+        // Step 3: Time-windowed aggregation
+        KGroupedStream&lt;String, MetricSample&gt; groupedMetrics = controlledMetrics
+            .selectKey((key, sample) -> generateAggregationKey(sample))
+            .groupByKey();
+        
+        // Step 4: Aggregate in 1-minute windows with Gorilla compression
+        KTable&lt;Windowed&lt;String&gt;, AggregatedMetric&gt; aggregatedMetrics = groupedMetrics
+            .windowedBy(TimeWindows.of(Duration.ofMinutes(1)))
+            .aggregate(
+                AggregatedMetric::new,
+                (key, sample, aggregate) -> aggregate.add(sample),
+                Named.as("metrics-aggregation"),
+                Materialized.with(Serdes.String(), aggregatedMetricSerde)
+            );
+        
+        // Step 5: Output to hot storage and cold archival
+        aggregatedMetrics.toStream()
+            .peek(this::detectBackpressure) // Monitor for processing lag
+            .mapValues(this::compressWithGorilla)
+            .to("metrics-hot-storage");
+        
+        // Step 6: Archive stream for cold storage
+        aggregatedMetrics.toStream()
+            .filter((key, metric) -> shouldArchive(metric))
+            .mapValues(this::prepareForArchival)
+            .to("metrics-cold-archive");
+        
+        return builder;
+    }
+    
+    // Backpressure detection and mitigation
+    private void detectBackpressure(Windowed&lt;String&gt; key, AggregatedMetric metric) {
+        long processingLag = System.currentTimeMillis() - metric.getTimestamp();
+        
+        if (processingLag > 30000) { // 30 second lag threshold
+            backpressureDetector.reportLag(processingLag);
+            
+            if (processingLag > 60000) { // 1 minute - critical
+                // Trigger aggressive mitigation
+                activateBackpressureMitigation();
+            }
+        }
+    }
+    
+    // Backpressure mitigation strategies
+    private void activateBackpressureMitigation() {
+        logger.warn("Activating backpressure mitigation due to processing lag");
+        
+        // Strategy 1: Increase sampling rate
+        cardinalityController.increaseSamplingRate(0.5); // Drop 50% of metrics temporarily
+        
+        // Strategy 2: Scale out processing capacity
+        autoscaler.scaleOutStreamProcessors(2); // Double the processors
+        
+        // Strategy 3: Prioritize high-value metrics
+        enableHighValueMetricPrioritization();
+        
+        // Strategy 4: Temporary disable expensive aggregations
+        disableComplexAggregations(Duration.ofMinutes(10));
+        
+        metricsClient.increment("backpressure.mitigation_activated");
+        alertManager.warn("Metrics backpressure mitigation activated - processing lag detected");
+    }
+    
+    // Gorilla compression for time series efficiency
+    private AggregatedMetric compressWithGorilla(AggregatedMetric metric) {
+        GorillaCompressor compressor = new GorillaCompressor();
+        
+        // Compress timestamp deltas
+        long baseTimestamp = metric.getWindowStart();
+        List&lt;Long&gt; timestampDeltas = metric.getDataPoints().stream()
+            .map(dp -> dp.getTimestamp() - baseTimestamp)
+            .collect(Collectors.toList());
+        
+        byte[] compressedTimestamps = compressor.compressTimestamps(timestampDeltas);
+        
+        // Compress value deltas
+        List&lt;Double&gt; values = metric.getDataPoints().stream()
+            .map(DataPoint::getValue)
+            .collect(Collectors.toList());
+        
+        byte[] compressedValues = compressor.compressValues(values);
+        
+        return metric.withCompression(compressedTimestamps, compressedValues, 
+                                     calculateCompressionRatio(metric));
+    }
+    
+    // Auto-scaling based on throughput and lag
+    @Scheduled(fixedDelay = 120000) // every 2 minutes
+    public void autoScaleProcessors() {
+        ProcessingMetrics metrics = gatherProcessingMetrics();
+        
+        // Scale up conditions
+        if (metrics.getAverageProcessingLag() > Duration.ofSeconds(30) ||
+            metrics.getCpuUtilization() > 0.8 ||
+            metrics.getMemoryUtilization() > 0.85) {
+            
+            int currentInstances = streamProcessorManager.getCurrentInstances();
+            int targetInstances = Math.min(currentInstances * 2, MAX_PROCESSORS);
+            
+            if (targetInstances > currentInstances) {
+                streamProcessorManager.scaleToInstances(targetInstances);
+                logger.info("Scaled up stream processors: {} -> {}", currentInstances, targetInstances);
+            }
+        }
+        
+        // Scale down conditions (be conservative)
+        else if (metrics.getAverageProcessingLag().compareTo(Duration.ofSeconds(5)) < 0 &&
+                metrics.getCpuUtilization() < 0.4 &&
+                metrics.getMemoryUtilization() < 0.5) {
+            
+            int currentInstances = streamProcessorManager.getCurrentInstances();
+            int targetInstances = Math.max(currentInstances / 2, MIN_PROCESSORS);
+            
+            if (targetInstances < currentInstances) {
+                // Wait for stable low load before scaling down
+                if (isLoadStableLow(Duration.ofMinutes(10))) {
+                    streamProcessorManager.scaleToInstances(targetInstances);
+                    logger.info("Scaled down stream processors: {} -> {}", currentInstances, targetInstances);
+                }
+            }
+        }
+    }
+}</pre>
+  </div>
+  
+  <h3>Tiered Storage Strategy</h3>
+  
+  <div class="implementation">
+    <h4>Hot SSD + Cold Object Store Architecture</h4>
+    <pre>// LinkedIn metrics tiered storage management
+public class TieredMetricsStorage {
+    
+    private final InGraphsTSDB hotStorage;    // LinkedIn's time-series DB
+    private final AmbryClient coldStorage;    // LinkedIn's object store
+    
+    // Intelligent data placement based on access patterns
+    public void storeMetric(AggregatedMetric metric) {
+        MetricMetadata metadata = analyzeMetricMetadata(metric);
+        
+        // Always store in hot storage initially
+        hotStorage.store(metric);
+        
+        // Decide on cold storage based on retention policy
+        if (shouldArchiveImmediately(metadata)) {
+            // High-volume, low-query metrics go to cold storage immediately
+            archiveToColdStorage(metric, metadata);
+        }
+        
+        // Update access tracking for future placement decisions
+        updateAccessPatterns(metric.getSeriesId(), AccessType.WRITE);
+    }
+    
+    // Query with automatic tier routing
+    public QueryResult queryMetrics(MetricsQuery query) {
+        QueryPlan plan = generateQueryPlan(query);
+        
+        // Try hot storage first for recent data
+        if (plan.requiresHotStorage()) {
+            QueryResult hotResult = queryHotStorage(query);
+            
+            if (hotResult.isComplete()) {
+                updateAccessPatterns(query.getSeriesIds(), AccessType.READ_HOT);
+                return hotResult;
+            }
+        }
+        
+        // Fall back to cold storage for historical data
+        if (plan.requiresColdStorage()) {
+            QueryResult coldResult = queryColdStorage(query);
+            
+            // Promote frequently accessed cold data to hot storage
+            if (shouldPromoteToHot(query, coldResult)) {
+                promoteToHotStorage(coldResult.getMetrics());
+            }
+            
+            updateAccessPatterns(query.getSeriesIds(), AccessType.READ_COLD);
+            return coldResult;
+        }
+        
+        // Federated query across both tiers
+        return executeFederatedQuery(query, plan);
+    }
+    
+    // Automated data lifecycle management
+    @Scheduled(fixedDelay = 3600000) // every hour
+    public void manageDataLifecycle() {
+        // Phase 1: Hot to cold migration based on age and access
+        List&lt;MetricSeries&gt; candidatesForArchival = hotStorage.findArchivalCandidates(
+            Duration.ofHours(24), // Older than 24 hours
+            0.1 // Less than 0.1 queries per hour
+        );
+        
+        for (MetricSeries series : candidatesForArchival) {
+            try {
+                archiveToColdStorage(series);
+                hotStorage.delete(series.getId());
+                
+                metricsClient.increment("storage.hot_to_cold_migration");
+            } catch (Exception e) {
+                logger.error("Failed to migrate series {} to cold storage", series.getId(), e);
+            }
+        }
+        
+        // Phase 2: Cold storage cleanup based on retention policies
+        List&lt;ArchivedMetric&gt; expiredMetrics = coldStorage.findExpiredMetrics();
+        
+        for (ArchivedMetric metric : expiredMetrics) {
+            try {
+                coldStorage.delete(metric.getBlobId());
+                metricsClient.increment("storage.expired_metric_deleted");
+            } catch (Exception e) {
+                logger.error("Failed to delete expired metric {}", metric.getId(), e);
+            }
+        }
+        
+        // Phase 3: Hot storage capacity management
+        manageHotStorageCapacity();
+    }
+    
+    private void manageHotStorageCapacity() {
+        StorageCapacity capacity = hotStorage.getCapacityMetrics();
+        
+        if (capacity.getUsagePercentage() > 0.85) { // 85% threshold
+            logger.warn("Hot storage approaching capacity: {}%", capacity.getUsagePercentage());
+            
+            // Aggressive archival of least accessed data
+            List&lt;MetricSeries&gt; leastAccessed = hotStorage.findLeastAccessedSeries(1000);
+            
+            for (MetricSeries series : leastAccessed) {
+                archiveToColdStorage(series);
+                hotStorage.delete(series.getId());
+            }
+            
+            alertManager.warn("Hot storage capacity management activated: {}% usage", 
+                            capacity.getUsagePercentage());
+        }
+    }
+    
+    // Intelligent data promotion from cold to hot
+    private boolean shouldPromoteToHot(MetricsQuery query, QueryResult result) {
+        // Promote if frequently queried
+        AccessStats stats = getAccessStats(query.getSeriesIds());
+        
+        if (stats.getQueriesPerHour() > 5) {
+            return true;
+        }
+        
+        // Promote if part of dashboard or alerting
+        if (query.getContext() == QueryContext.DASHBOARD || 
+            query.getContext() == QueryContext.ALERTING) {
+            return true;
+        }
+        
+        // Promote if recent data (last 7 days) is being queried
+        if (query.getTimeRange().isWithinLast(Duration.ofDays(7))) {
+            return true;
+        }
+        
+        return false;
+    }
+}</pre>
+  </div>
+  
+  <h3>Query Federation & Performance</h3>
+  
+  <div class="monitoring">
+    <h4>Sub-2s Query Performance at Scale</h4>
+    <pre>// High-performance query engine with federation
+public class MetricsQueryEngine {
+    
+    private final QueryCache queryCache;
+    private final QueryPlanner queryPlanner;
+    private final List&lt;QueryExecutor&gt; regionalExecutors;
+    
+    // Execute query with sub-2s latency SLO
+    public QueryResult executeQuery(MetricsQuery query) {
+        long startTime = System.currentTimeMillis();
+        
+        try {
+            // Step 1: Check query cache
+            Optional&lt;QueryResult&gt; cachedResult = queryCache.get(query.getCacheKey());
+            if (cachedResult.isPresent() && !cachedResult.get().isStale()) {
+                metricsClient.increment("query.cache_hit");
+                return cachedResult.get();
+            }
+            
+            // Step 2: Generate optimized query plan
+            QueryPlan plan = queryPlanner.generatePlan(query);
+            
+            // Step 3: Execute federated query across regions/tiers
+            QueryResult result = executeFederatedQuery(plan);
+            
+            // Step 4: Cache result for future queries
+            queryCache.put(query.getCacheKey(), result, plan.getCacheTTL());
+            
+            long latency = System.currentTimeMillis() - startTime;
+            metricsClient.timer("query.latency", latency);
+            
+            if (latency > 2000) { // SLO violation
+                alertManager.warn("Query latency SLO violation: {}ms for query {}", 
+                                latency, query.getSummary());
+            }
+            
+            return result;
+            
+        } catch (Exception e) {
+            metricsClient.increment("query.error");
+            throw new QueryExecutionException("Query failed: " + query.getSummary(), e);
+        }
+    }
+    
+    // Federated execution across multiple data sources
+    private QueryResult executeFederatedQuery(QueryPlan plan) {
+        List&lt;SubQuery&gt; subQueries = plan.getSubQueries();
+        
+        // Execute sub-queries in parallel
+        List&lt;CompletableFuture&lt;SubQueryResult&gt;&gt; futures = subQueries.stream()
+            .map(this::executeSubQueryAsync)
+            .collect(Collectors.toList());
+        
+        // Wait for all sub-queries to complete (with timeout)
+        try {
+            List&lt;SubQueryResult&gt; subResults = futures.stream()
+                .map(future -> future.get(1500, TimeUnit.MILLISECONDS)) // 1.5s timeout
+                .collect(Collectors.toList());
+            
+            // Merge results according to query plan
+            return plan.mergeResults(subResults);
+            
+        } catch (TimeoutException e) {
+            // Cancel remaining queries and return partial results
+            futures.forEach(future -> future.cancel(true));
+            
+            List&lt;SubQueryResult&gt; completedResults = futures.stream()
+                .filter(CompletableFuture::isDone)
+                .map(future -> {
+                    try {
+                        return future.get();
+                    } catch (Exception ex) {
+                        return null;
+                    }
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+            
+            metricsClient.increment("query.partial_timeout");
+            return plan.mergePartialResults(completedResults);
+        }
+    }
+    
+    // Intelligent query optimization
+    private class QueryOptimizer {
+        
+        public QueryPlan optimizeQuery(MetricsQuery query) {
+            QueryPlan plan = new QueryPlan(query);
+            
+            // Optimization 1: Push down filters to reduce data transfer
+            plan = pushDownFilters(plan);
+            
+            // Optimization 2: Use pre-aggregated data when possible
+            plan = usePreaggregatedData(plan);
+            
+            // Optimization 3: Parallel execution for independent sub-queries
+            plan = parallelizeExecution(plan);
+            
+            // Optimization 4: Cache-aware planning
+            plan = optimizeForCaching(plan);
+            
+            return plan;
+        }
+        
+        private QueryPlan pushDownFilters(QueryPlan plan) {
+            // Move time range and label filters to storage layer
+            for (SubQuery subQuery : plan.getSubQueries()) {
+                if (subQuery.hasTimeFilter()) {
+                    subQuery.addStorageFilter(subQuery.getTimeFilter());
+                }
+                
+                if (subQuery.hasLabelFilters()) {
+                    subQuery.addStorageFilters(subQuery.getLabelFilters());
+                }
+            }
+            
+            return plan;
+        }
+    }
+}</pre>
+  </div>
+  
+  <div class="pros-cons">
+    <div class="pros">
+      <h5>✅ System Benefits</h5>
+      <ul>
+        <li>10M metrics/sec ingestion with consistent hashing</li>
+        <li>Sub-2s query latency with federated architecture</li>
+        <li>Dynamic cardinality control prevents explosions</li>
+        <li>Tiered storage optimizes cost and performance</li>
+        <li>Gorilla compression reduces storage by 90%</li>
+        <li>Automatic backpressure and scaling</li>
+      </ul>
+    </div>
+    <div class="cons">
+      <h5>⚠️ System Limitations</h5>
+      <ul>
+        <li>1s ingestion latency may be slow for real-time alerts</li>
+        <li>Cardinality control can drop valuable high-detail metrics</li>
+        <li>Complex federation adds query latency overhead</li>
+        <li>Hot storage requires significant SSD investment</li>
+        <li>Clock skew across nodes affects time alignment</li>
+        <li>Backpressure mitigation can impact data quality</li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+
+</div>
+
+<footer>
+  <div class="container">
+    <p>LinkedIn Realtime Metrics Aggregator — <a href="/sre-design-framework.html">Design Framework</a> | <a href="/sre-sysdesign.html">SRE Systems</a> | <a href="/linkedin-config-management.html">Config Management</a> | <a href="/">Home</a></p>
+  </div>
+</footer>
+
+</body>
+</html>

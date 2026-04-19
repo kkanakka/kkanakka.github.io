@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<title>LinkedIn Build Artifact Cache — CI/CD Reliability Design</title>
+<style>
+  :root{--bg:#fff;--surface:#f7f6f3;--border:#e3e2de;--text:#37352f;--text-muted:#787774;--accent:#2383e2;--accent2:#0f7b0f;--accent3:#6940a5;--accent4:#d9730d;--red:#e03e3e;--code-bg:#f7f6f3;--card:#fff;--linkedin:#0077b5;--success:#2e7d32;--warning:#f57c00;--error:#d32f2f;--build:#ff6f00}
+  *{margin:0;padding:0;box-sizing:border-box}body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;font-size:15px}
+  .container{max-width:1000px;margin:0 auto;padding:0 24px}.hero{background:linear-gradient(135deg,#ff6f00,#e65100);color:#fff;padding:60px 0 40px;text-align:center}.hero h1{font-size:2.4em;font-weight:700;margin-bottom:16px}.hero .subtitle{font-size:1.2em;margin-bottom:20px;opacity:0.9}.hero p{font-size:1.05em;max-width:800px;margin:0 auto 30px;opacity:0.85}.hero .badge{display:inline-block;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);padding:8px 20px;border-radius:25px;font-size:.85em;margin:0 8px}
+  .nav-links{margin-top:25px}.nav-links a{display:inline-block;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);padding:10px 24px;border-radius:8px;color:#fff;text-decoration:none;margin:4px;font-size:.9em;transition:.2s}.nav-links a:hover{background:rgba(255,255,255,0.2)}
+  
+  .section{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:28px;margin:28px 0;border-left:4px solid var(--build)}
+  .section h2{font-size:1.4em;font-weight:700;color:var(--build);margin-bottom:16px}
+  .section h3{font-size:1.2em;font-weight:600;color:var(--text);margin:24px 0 12px}
+  .section h4{font-size:1.05em;font-weight:600;color:var(--accent3);margin:16px 0 8px}
+  
+  .architecture{background:#fff3e0;border:1px solid var(--build);border-radius:8px;padding:20px;margin:16px 0}
+  .slo{background:#e8f5e9;border:1px solid var(--success);border-radius:8px;padding:16px;margin:12px 0}
+  .slo h4{color:var(--success);margin:0 0 8px}
+  .failure{background:#ffebee;border:1px solid var(--error);border-radius:8px;padding:16px;margin:12px 0}
+  .failure h4{color:var(--error);margin:0 0 8px}
+  .implementation{background:#fff3e0;border:1px solid var(--warning);border-radius:8px;padding:16px;margin:12px 0}
+  .implementation h4{color:var(--warning);margin:0 0 8px}
+  .monitoring{background:#e8f4f8;border:1px solid var(--linkedin);border-radius:8px;padding:16px;margin:12px 0}
+  .monitoring h4{color:var(--linkedin);margin:0 0 8px}
+  .buildcache{background:#fff3e0;border:1px solid var(--build);border-radius:8px;padding:16px;margin:12px 0}
+  .buildcache h4{color:var(--build);margin:0 0 8px}
+  
+  pre{background:var(--code-bg);border:1px solid var(--border);padding:16px;border-radius:8px;overflow-x:auto;font-family:'JetBrains Mono','SF Mono',monospace;font-size:.85em;margin:12px 0;line-height:1.5}
+  code{background:var(--code-bg);border:1px solid var(--border);padding:2px 6px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:.85em;color:var(--accent3)}
+  
+  table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.9em}th{background:rgba(255,111,0,.08);color:var(--build);padding:12px;text-align:left;font-weight:600;border-bottom:2px solid var(--border)}td{padding:12px;border-bottom:1px solid var(--border);vertical-align:top}tr:last-child td{border-bottom:none}
+  
+  .highlight{background:#fff3e0;padding:2px 6px;border-radius:3px;color:var(--build);font-weight:500}
+  .pros-cons{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:16px 0}
+  .pros{background:#e8f5e9;border:1px solid var(--success);border-radius:6px;padding:12px}
+  .cons{background:#ffebee;border:1px solid var(--error);border-radius:6px;padding:12px}
+  .pros h5{color:var(--success);margin-bottom:8px}
+  .cons h5{color:var(--error);margin-bottom:8px}
+  
+  footer{text-align:center;padding:40px 0;border-top:1px solid var(--border);color:var(--text-muted);font-size:.9em;margin-top:60px}footer a{color:var(--build);text-decoration:none}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="container">
+    <h1>LinkedIn Build Artifact Cache</h1>
+    <div class="subtitle">CI/CD Reliability Design — Content-Addressable Deduplication</div>
+    <p>A mission-critical build cache for LinkedIn's distributed CI/CD pipeline: 100ms p95 retrieval, 90% hit rate, content-addressable storage with lease-based eviction and global consistency convergence under 60 seconds.</p>
+    <div class="badge">CI/CD Critical</div>
+    <div class="badge">Content Addressable</div>
+    <div class="badge">Global Consistency</div>
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="/sre-design-framework.html">Design Framework</a>
+      <a href="/sre-sysdesign.html">SRE Systems</a>
+      <a href="/linkedin-disaster-recovery.html">Disaster Recovery</a>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- PAGE 1: SYSTEM OVERVIEW -->
+<div class="section">
+  <h2>Page 1 — System Overview & CI/CD Reliability Philosophy</h2>
+  
+  <h3>What This System Is</h3>
+  <p>A <strong>"Mission-Critical Build Artifact Cache"</strong> for LinkedIn's distributed CI/CD pipeline that eliminates redundant rebuilds by caching previously compiled artifacts (binaries, Docker images, test results) and making them instantly retrievable across regions. The system ensures cache consistency, intelligent eviction policy, and high reliability under massive parallel builds.</p>
+  
+  <div class="slo">
+    <h4>Build Cache Service Level Objectives (SLOs)</h4>
+    <table>
+      <tr><th>Objective</th><th>Target</th><th>Measurement</th></tr>
+      <tr><td>Artifact Retrieval Latency</td><td>p95 ≤ 100ms</td><td>End-to-end fetch from regional cache</td></tr>
+      <tr><td>Cache Hit Rate</td><td>≥ 90%</td><td>Key indicator of reuse efficiency</td></tr>
+      <tr><td>Availability</td><td>≥ 99.99%</td><td>Service should never block CI pipelines</td></tr>
+      <tr><td>Stale Artifact Probability</td><td>≤ 0.1%</td><td>Build determinism must be preserved</td></tr>
+      <tr><td>Global Consistency Convergence</td><td>≤ 60s</td><td>Sync window for new artifacts</td></tr>
+      <tr><td>Corruption Rate</td><td>< 0.01%</td><td>Silent data corruption detection</td></tr>
+    </table>
+  </div>
+  
+  <h3>CI/CD Reliability Philosophy: Cache as Infrastructure</h3>
+  
+  <div class="buildcache">
+    <h4>Core Build Cache Principles</h4>
+    <ul>
+      <li><strong>Content-Addressable Storage (CAS)</strong> — Each artifact identified by SHA-256 hash for integrity</li>
+      <li><strong>Two-Tier Cache Pattern</strong> — SSD-based L1 hot cache + Object storage L2 cold retrieval</li>
+      <li><strong>Lease-Based Eviction</strong> — Prevents artifact removal while active builds reference it</li>
+      <li><strong>Async Replication + Bloom Filters</strong> — Avoids rebuilds during global sync lag</li>
+      <li><strong>Checksum Validation Pipeline</strong> — CRC + periodic audit to detect bit-rot</li>
+      <li><strong>Read-Your-Writes Consistency</strong> — Guarantee within region, eventual global consistency</li>
+    </ul>
+  </div>
+  
+  <h3>Six Core Components</h3>
+  
+  <div style="background:#f8f9fa;border:1px solid #dee2e6;border-radius:8px;padding:16px;margin:16px 0;">
+    <ol>
+      <li><strong>Artifact Ingestion API</strong> — Receives newly built artifacts + metadata hash</li>
+      <li><strong>Hash Index Service</strong> — Deduplicates artifacts by content hash (SHA-256)</li>
+      <li><strong>Storage Layer</strong> — Regional object stores (Ambry buckets with CAS addressing)</li>
+      <li><strong>Cache Layer</strong> — Tier-1 hot SSD nodes, Tier-2 cold archive</li>
+      <li><strong>Replication Agent</strong> — Syncs indexes + metadata across regions</li>
+      <li><strong>CI Client SDK</strong> — Queries hash before build, fetches if available</li>
+    </ol>
+  </div>
+  
+  <h3>LinkedIn Build Artifact Types</h3>
+  
+  <h4>Artifact Categories by Size & Frequency</h4>
+  <table>
+    <tr><th>Artifact Type</th><th>Size Range</th><th>Build Frequency</th><th>Cache Strategy</th></tr>
+    <tr><td><strong>Java JARs</strong></td><td>50MB - 500MB</td><td>Very High</td><td>Hot SSD cache, global replication</td></tr>
+    <tr><td><strong>Docker Images</strong></td><td>500MB - 2GB</td><td>High</td><td>Layer-based deduplication + cold storage</td></tr>
+    <tr><td><strong>Test Results</strong></td><td>1MB - 100MB</td><td>Very High</td><td>Hot cache, 7-day retention</td></tr>
+    <tr><td><strong>Node.js Modules</strong></td><td>100MB - 1GB</td><td>Medium</td><td>Package-level deduplication</td></tr>
+    <tr><td><strong>Native Binaries</strong></td><td>10MB - 200MB</td><td>Low</td><td>Cold storage, on-demand retrieval</td></tr>
+    <tr><td><strong>ML Models</strong></td><td>100MB - 10GB</td><td>Low</td><td>Cold archive, checksum validation</td></tr>
+  </table>
+  
+  <h4>Reliability Stressors (What Can Break)</h4>
+  <div class="failure">
+    <h4>Critical Failure Modes</h4>
+    <ul>
+      <li><strong>Stale/Wrong Artifacts:</strong> Bad hash computation → non-deterministic builds</li>
+      <li><strong>Eviction Race Condition:</strong> Artifact evicted mid-use → pipeline failure</li>
+      <li><strong>Replication Lag:</strong> Artifacts missing in remote region → rebuild storm</li>
+      <li><strong>Checksum Drift:</strong> Silent corruption in storage tier</li>
+      <li><strong>Cache Pollution:</strong> Temporary build artifacts flooding storage</li>
+      <li><strong>Hot Shard Overload:</strong> Popular artifacts causing cache hotspots</li>
+    </ul>
+  </div>
+</div>
+
+<!-- PAGE 2: ARCHITECTURE & IMPLEMENTATION -->
+<div class="section">
+  <h2>Page 2 — Architecture & LinkedIn Integration</h2>
+  
+  <h3>System Architecture Overview</h3>
+  
+  <!-- Build Cache Architecture Diagram -->
+  <svg width="100%" height="600" style="background:#fafafa;border:1px solid #ddd;border-radius:8px;margin:16px 0;">
+    <!-- CI/CD Pipeline -->
+    <rect x="50" y="50" width="200" height="100" fill="#e3f2fd" stroke="#1976d2" stroke-width="2" rx="8"/>
+    <text x="150" y="80" text-anchor="middle" font-size="14" font-weight="bold" fill="#1976d2">LinkedIn CI/CD Pipeline</text>
+    <text x="150" y="100" text-anchor="middle" font-size="10" fill="#1976d2">Gradle, Maven, Docker</text>
+    <text x="150" y="115" text-anchor="middle" font-size="10" fill="#1976d2">Buck, Bazel Builds</text>
+    <text x="150" y="130" text-anchor="middle" font-size="10" fill="#1976d2">Jenkins, Tekton</text>
+    
+    <!-- Ingestion API -->
+    <rect x="300" y="50" width="150" height="100" fill="#fff3e0" stroke="#ff6f00" stroke-width="2" rx="8"/>
+    <text x="375" y="80" text-anchor="middle" font-size="14" font-weight="bold" fill="#e65100">Ingestion API</text>
+    <text x="375" y="100" text-anchor="middle" font-size="10" fill="#e65100">SHA-256 Hashing</text>
+    <text x="375" y="115" text-anchor="middle" font-size="10" fill="#e65100">Metadata Extraction</text>
+    <text x="375" y="130" text-anchor="middle" font-size="10" fill="#e65100">Deduplication Check</text>
+    
+    <!-- Hash Index Service -->
+    <rect x="500" y="50" width="150" height="100" fill="#f3e5f5" stroke="#7b1fa2" stroke-width="2" rx="8"/>
+    <text x="575" y="80" text-anchor="middle" font-size="14" font-weight="bold" fill="#4a148c">Hash Index</text>
+    <text x="575" y="100" text-anchor="middle" font-size="10" fill="#4a148c">Content Address</text>
+    <text x="575" y="115" text-anchor="middle" font-size="10" fill="#4a148c">Bloom Filter</text>
+    <text x="575" y="130" text-anchor="middle" font-size="10" fill="#4a148c">Lease Tracking</text>
+    
+    <!-- Hot SSD Cache (L1) -->
+    <rect x="50" y="200" width="180" height="80" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2" rx="8"/>
+    <text x="140" y="225" text-anchor="middle" font-size="12" font-weight="bold" fill="#1b5e20">Hot SSD Cache (L1)</text>
+    <text x="140" y="245" text-anchor="middle" font-size="10" fill="#1b5e20">Recent Artifacts</text>
+    <text x="140" y="260" text-anchor="middle" font-size="10" fill="#1b5e20">Sub-100ms Access</text>
+    <text x="140" y="275" text-anchor="middle" font-size="10" fill="#1b5e20">LRU + Lease Eviction</text>
+    
+    <!-- Cold Object Storage (L2) -->
+    <rect x="250" y="200" width="180" height="80" fill="#e1f5fe" stroke="#0277bd" stroke-width="2" rx="8"/>
+    <text x="340" y="225" text-anchor="middle" font-size="12" font-weight="bold" fill="#01579b">Ambry Storage (L2)</text>
+    <text x="340" y="245" text-anchor="middle" font-size="10" fill="#01579b">All Artifacts</text>
+    <text x="340" y="260" text-anchor="middle" font-size="10" fill="#01579b">CAS Addressing</text>
+    <text x="340" y="275" text-anchor="middle" font-size="10" fill="#01579b">Multi-DC Replication</text>
+    
+    <!-- Replication Agent -->
+    <rect x="450" y="200" width="180" height="80" fill="#fff8e1" stroke="#fbc02d" stroke-width="2" rx="8"/>
+    <text x="540" y="225" text-anchor="middle" font-size="12" font-weight="bold" fill="#f57c00">Replication Agent</text>
+    <text x="540" y="245" text-anchor="middle" font-size="10" fill="#f57c00">Cross-Region Sync</text>
+    <text x="540" y="260" text-anchor="middle" font-size="10" fill="#f57c00">Index Propagation</text>
+    <text x="540" y="275" text-anchor="middle" font-size="10" fill="#f57c00">Consistency Check</text>
+    
+    <!-- Regional Deployments -->
+    <rect x="50" y="320" width="150" height="60" fill="#e8f5e9" stroke="#4caf50" stroke-width="2" rx="4"/>
+    <text x="125" y="340" text-anchor="middle" font-size="11" font-weight="bold" fill="#2e7d32">LTX1 Cache</text>
+    <text x="125" y="355" text-anchor="middle" font-size="9" fill="#2e7d32">Primary Region</text>
+    <text x="125" y="370" text-anchor="middle" font-size="9" fill="#2e7d32">95% Hit Rate</text>
+    
+    <rect x="220" y="320" width="150" height="60" fill="#e8f5e9" stroke="#4caf50" stroke-width="2" rx="4"/>
+    <text x="295" y="340" text-anchor="middle" font-size="11" font-weight="bold" fill="#2e7d32">LVA1 Cache</text>
+    <text x="295" y="355" text-anchor="middle" font-size="9" fill="#2e7d32">Secondary Region</text>
+    <text x="295" y="370" text-anchor="middle" font-size="9" fill="#2e7d32">90% Hit Rate</text>
+    
+    <rect x="390" y="320" width="150" height="60" fill="#e8f5e9" stroke="#4caf50" stroke-width="2" rx="4"/>
+    <text x="465" y="340" text-anchor="middle" font-size="11" font-weight="bold" fill="#2e7d32">EI4 Cache</text>
+    <text x="465" y="355" text-anchor="middle" font-size="9" fill="#2e7d32">Dev/Test Region</text>
+    <text x="465" y="370" text-anchor="middle" font-size="9" fill="#2e7d32">85% Hit Rate</text>
+    
+    <!-- CI Client SDK -->
+    <rect x="50" y="420" width="490" height="60" fill="#ffebee" stroke="#d32f2f" stroke-width="2" rx="8"/>
+    <text x="295" y="440" text-anchor="middle" font-size="14" font-weight="bold" fill="#c62828">CI Client SDK</text>
+    <text x="295" y="460" text-anchor="middle" font-size="10" fill="#c62828">Hash-before-build → Cache Query → Fetch or Build → Store Result</text>
+    <text x="295" y="475" text-anchor="middle" font-size="10" fill="#c62828">Gradle Plugin, Maven Extension, Docker BuildKit Integration</text>
+    
+    <!-- Monitoring & Validation -->
+    <rect x="50" y="520" width="240" height="50" fill="#f3e5f5" stroke="#9c27b0" stroke-width="2" rx="4"/>
+    <text x="170" y="540" text-anchor="middle" font-size="11" font-weight="bold" fill="#6a1b9a">Checksum Validation</text>
+    <text x="170" y="555" text-anchor="middle" font-size="9" fill="#6a1b9a">CRC Check + Periodic Audit</text>
+    
+    <rect x="310" y="520" width="240" height="50" fill="#f3e5f5" stroke="#9c27b0" stroke-width="2" rx="4"/>
+    <text x="430" y="540" text-anchor="middle" font-size="11" font-weight="bold" fill="#6a1b9a">Cache Metrics</text>
+    <text x="430" y="555" text-anchor="middle" font-size="9" fill="#6a1b9a">Hit Rate, Latency, Corruption</text>
+    
+    <!-- Arrows -->
+    <defs>
+      <marker id="arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+        <polygon points="0 0, 10 3.5, 0 7" fill="#666"/>
+      </marker>
+    </defs>
+    
+    <!-- Data flow arrows -->
+    <line x1="250" y1="100" x2="300" y2="100" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+    <line x1="450" y1="100" x2="500" y2="100" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+    <line x1="375" y1="150" x2="340" y2="200" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+    <line x1="575" y1="150" x2="540" y2="200" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+    
+    <!-- Cache hierarchy -->
+    <line x1="140" y1="280" x2="340" y2="280" stroke="#4caf50" stroke-width="2" stroke-dasharray="5,5"/>
+    
+    <!-- Regional sync -->
+    <line x1="125" y1="320" x2="295" y2="320" stroke="#fbc02d" stroke-width="2" stroke-dasharray="3,3"/>
+    <line x1="295" y1="320" x2="465" y2="320" stroke="#fbc02d" stroke-width="2" stroke-dasharray="3,3"/>
+    
+    <!-- Client connections -->
+    <line x1="125" y1="380" x2="125" y2="420" stroke="#d32f2f" stroke-width="2"/>
+    <line x1="295" y1="380" x2="295" y2="420" stroke="#d32f2f" stroke-width="2"/>
+    <line x1="465" y1="380" x2="465" y2="420" stroke="#d32f2f" stroke-width="2"/>
+    
+    <!-- Labels -->
+    <text x="275" y="95" font-size="9" fill="#666">upload</text>
+    <text x="475" y="95" font-size="9" fill="#666">index</text>
+    <text x="240" y="295" font-size="9" fill="#4caf50">promote</text>
+    <text x="210" y="315" font-size="9" fill="#fbc02d">sync</text>
+    <text x="170" y="410" font-size="9" fill="#d32f2f">query</text>
+  </svg>
+  
+  <h3>Content-Addressable Storage (CAS) Implementation</h3>
+  
+  <div class="implementation">
+    <h4>SHA-256 Hash-Based Addressing</h4>
+    <p><strong>Integrity by Design:</strong> Every artifact addressable by its content hash</p>
+    <pre>// LinkedIn Build Cache with content addressing
+public class ContentAddressableCache {
+    
+    // Generate content-based address for any artifact
+    public String generateContentAddress(ArtifactMetadata artifact, byte[] content) {
+        MessageDigest sha256 = MessageDigest.getInstance("SHA-256");
+        
+        // Include metadata in hash for determinism
+        sha256.update(artifact.getBuildInputs().getBytes());
+        sha256.update(artifact.getToolchain().getBytes());
+        sha256.update(artifact.getCompilerFlags().getBytes());
+        sha256.update(content);
+        
+        byte[] hash = sha256.digest();
+        return "sha256:" + Hex.encodeHexString(hash);
+    }
+    
+    // Store artifact with CAS addressing
+    public void storeArtifact(BuildArtifact artifact) {
+        String contentAddress = generateContentAddress(artifact.getMetadata(), artifact.getContent());
+        
+        // Check if already exists (deduplication)
+        if (hashIndex.contains(contentAddress)) {
+            logger.info("Artifact already cached: {}", contentAddress);
+            return;
+        }
+        
+        // Store in both hot and cold tiers
+        hotCache.put(contentAddress, artifact.getContent());
+        coldStorage.put(contentAddress, artifact);
+        
+        // Update index with metadata
+        hashIndex.put(contentAddress, ArtifactIndex.builder()
+            .contentAddress(contentAddress)
+            .size(artifact.getContent().length)
+            .buildTimestamp(Instant.now())
+            .accessCount(0)
+            .leaseExpiresAt(null)
+            .build());
+        
+        logger.info("Stored artifact: {} size: {} bytes", contentAddress, artifact.getContent().length);
+    }
+    
+    // Retrieve artifact by content hash
+    public Optional&lt;BuildArtifact&gt; retrieveArtifact(String contentAddress) {
+        ArtifactIndex index = hashIndex.get(contentAddress);
+        if (index == null) {
+            return Optional.empty();
+        }
+        
+        // Try hot cache first (L1)
+        byte[] content = hotCache.get(contentAddress);
+        if (content != null) {
+            metricsClient.increment("cache.hit.hot");
+            return Optional.of(new BuildArtifact(index.getMetadata(), content));
+        }
+        
+        // Fallback to cold storage (L2)
+        BuildArtifact artifact = coldStorage.get(contentAddress);
+        if (artifact != null) {
+            // Promote to hot cache for future access
+            hotCache.put(contentAddress, artifact.getContent());
+            metricsClient.increment("cache.hit.cold");
+            return Optional.of(artifact);
+        }
+        
+        metricsClient.increment("cache.miss");
+        return Optional.empty();
+    }
+}</pre>
+  </div>
+  
+  <h3>Two-Tier Cache Implementation</h3>
+  
+  <div class="implementation">
+    <h4>Hot SSD + Cold Object Storage Pattern</h4>
+    <pre>// Intelligent cache tier management
+public class TwoTierCacheManager {
+    
+    private final SSDCache hotTier;     // Fast SSD storage (limited capacity)
+    private final AmbryCold coldTier;   // LinkedIn Ambry object store (unlimited)
+    
+    // Hot tier: Recent and frequently accessed artifacts
+    public class SSDCache {
+        private final Map&lt;String, CacheEntry&gt; cache = new ConcurrentHashMap&lt;>();
+        private final long maxSizeBytes = 1_000_000_000_000L; // 1TB SSD
+        
+        // LRU eviction with lease protection
+        public void evictIfNeeded() {
+            long currentSize = calculateTotalSize();
+            
+            if (currentSize > maxSizeBytes * 0.9) { // 90% threshold
+                List&lt;CacheEntry&gt; candidates = cache.values().stream()
+                    .filter(entry -> !entry.hasActiveLease()) // Never evict leased artifacts
+                    .sorted(Comparator.comparing(CacheEntry::getLastAccessTime))
+                    .limit(100) // Evict in batches
+                    .collect(Collectors.toList());
+                
+                for (CacheEntry entry : candidates) {
+                    cache.remove(entry.getContentAddress());
+                    logger.info("Evicted from hot cache: {}", entry.getContentAddress());
+                }
+            }
+        }
+    }
+    
+    // Cold tier: All artifacts with slower access
+    public class AmbryColdStorage {
+        private final AmbryClient ambryClient;
+        
+        public void put(String contentAddress, BuildArtifact artifact) {
+            // Store in LinkedIn Ambry with CAS key
+            BlobId blobId = ambryClient.put(
+                contentAddress,
+                artifact.serialize(),
+                ArtifactTTL.DAYS_90 // 90-day retention
+            );
+            
+            // Update index mapping
+            casIndex.put(contentAddress, blobId);
+        }
+        
+        public BuildArtifact get(String contentAddress) {
+            BlobId blobId = casIndex.get(contentAddress);
+            if (blobId == null) return null;
+            
+            byte[] data = ambryClient.get(blobId);
+            return BuildArtifact.deserialize(data);
+        }
+    }
+    
+    // Retrieve with tier promotion
+    public Optional&lt;BuildArtifact&gt; get(String contentAddress) {
+        // Try hot tier first
+        Optional&lt;BuildArtifact&gt; hotResult = hotTier.get(contentAddress);
+        if (hotResult.isPresent()) {
+            return hotResult;
+        }
+        
+        // Fetch from cold tier and promote
+        Optional&lt;BuildArtifact&gt; coldResult = coldTier.get(contentAddress);
+        if (coldResult.isPresent()) {
+            hotTier.put(contentAddress, coldResult.get());
+            metricsClient.increment("cache.promotion");
+        }
+        
+        return coldResult;
+    }
+}</pre>
+  </div>
+</div>
+
+<!-- PAGE 3: RELIABILITY & OPERATIONS -->
+<div class="section">
+  <h2>Page 3 — Reliability Patterns & Operations</h2>
+  
+  <h3>Lease-Based Eviction Prevention</h3>
+  
+  <div class="buildcache">
+    <h4>Active Build Protection</h4>
+    <p>Prevents artifacts from being evicted while builds are actively using them</p>
+    <pre>// Lease system to prevent eviction races
+public class LeaseBasedEvictionController {
+    
+    private final Map&lt;String, Set&lt;LeaseToken&gt;&gt; activeLeases = new ConcurrentHashMap&lt;>();
+    
+    // Acquire lease before using artifact in build
+    public LeaseToken acquireLease(String contentAddress, String buildId, Duration leaseTTL) {
+        LeaseToken lease = LeaseToken.builder()
+            .contentAddress(contentAddress)
+            .buildId(buildId)
+            .acquiredAt(Instant.now())
+            .expiresAt(Instant.now().plus(leaseTTL))
+            .build();
+        
+        activeLeases.computeIfAbsent(contentAddress, k -> ConcurrentHashMap.newKeySet()).add(lease);
+        
+        logger.info("Acquired lease for artifact {} build {}", contentAddress, buildId);
+        return lease;
+    }
+    
+    // Release lease when build completes
+    public void releaseLease(LeaseToken lease) {
+        Set&lt;LeaseToken&gt; leases = activeLeases.get(lease.getContentAddress());
+        if (leases != null) {
+            leases.remove(lease);
+            logger.info("Released lease for artifact {} build {}", 
+                       lease.getContentAddress(), lease.getBuildId());
+        }
+    }
+    
+    // Check if artifact can be safely evicted
+    public boolean canEvictArtifact(String contentAddress) {
+        Set&lt;LeaseToken&gt; leases = activeLeases.get(contentAddress);
+        if (leases == null || leases.isEmpty()) {
+            return true;
+        }
+        
+        // Check for expired leases
+        Instant now = Instant.now();
+        leases.removeIf(lease -> lease.getExpiresAt().isBefore(now));
+        
+        return leases.isEmpty();
+    }
+    
+    // Periodic cleanup of expired leases
+    @Scheduled(fixedDelay = 60000) // every minute
+    public void cleanupExpiredLeases() {
+        Instant now = Instant.now();
+        int cleanedUp = 0;
+        
+        for (Map.Entry&lt;String, Set&lt;LeaseToken&gt;&gt; entry : activeLeases.entrySet()) {
+            Set&lt;LeaseToken&gt; leases = entry.getValue();
+            int sizeBefore = leases.size();
+            
+            leases.removeIf(lease -> lease.getExpiresAt().isBefore(now));
+            
+            cleanedUp += sizeBefore - leases.size();
+            
+            // Remove empty lease sets
+            if (leases.isEmpty()) {
+                activeLeases.remove(entry.getKey());
+            }
+        }
+        
+        if (cleanedUp > 0) {
+            logger.info("Cleaned up {} expired leases", cleanedUp);
+        }
+    }
+}</pre>
+  </div>
+  
+  <h3>Cross-Region Replication with Bloom Filters</h3>
+  
+  <div class="implementation">
+    <h4>Intelligent Replication Strategy</h4>
+    <pre>// Async replication with Bloom filter optimization
+public class CrossRegionReplicationAgent {
+    
+    private final BloomFilter&lt;String&gt; replicatedHashes;
+    private final Map&lt;String, RegionalCache&gt; regionalCaches;
+    
+    // Replicate new artifacts across regions
+    public void replicateArtifact(String contentAddress, BuildArtifact artifact) {
+        CompletableFuture&lt;Void&gt;[] replicationTasks = regionalCaches.entrySet().stream()
+            .filter(entry -> !entry.getKey().equals(getCurrentRegion()))
+            .map(entry -> replicateToRegionAsync(entry.getValue(), contentAddress, artifact))
+            .toArray(CompletableFuture[]::new);
+        
+        // Fire and forget - don't block builds on replication
+        CompletableFuture.allOf(replicationTasks)
+            .thenRun(() -> {
+                replicatedHashes.put(contentAddress);
+                logger.info("Artifact replicated globally: {}", contentAddress);
+            })
+            .exceptionally(throwable -> {
+                logger.error("Replication failed for {}", contentAddress, throwable);
+                return null;
+            });
+    }
+    
+    private CompletableFuture&lt;Void&gt; replicateToRegionAsync(RegionalCache targetCache, 
+                                                          String contentAddress, 
+                                                          BuildArtifact artifact) {
+        return CompletableFuture.runAsync(() -> {
+            // Check if target region already has this artifact
+            if (targetCache.contains(contentAddress)) {
+                return;
+            }
+            
+            // Replicate both index and data
+            targetCache.storeArtifact(contentAddress, artifact);
+            
+            metricsClient.increment("replication.success", 
+                                  Map.of("target_region", targetCache.getRegion()));
+        });
+    }
+    
+    // Bloom filter check to avoid unnecessary replication queries
+    public boolean isLikelyReplicated(String contentAddress) {
+        return replicatedHashes.mightContain(contentAddress);
+    }
+    
+    // Periodic consistency check across regions
+    @Scheduled(fixedDelay = 300000) // every 5 minutes
+    public void performConsistencyCheck() {
+        String primaryRegion = "ltx1";
+        RegionalCache primaryCache = regionalCaches.get(primaryRegion);
+        
+        for (Map.Entry&lt;String, RegionalCache&gt; entry : regionalCaches.entrySet()) {
+            if (entry.getKey().equals(primaryRegion)) continue;
+            
+            RegionalCache secondaryCache = entry.getValue();
+            ConsistencyReport report = compareRegionalCaches(primaryCache, secondaryCache);
+            
+            if (report.getInconsistentArtifacts() > 10) {
+                alertManager.warn("High inconsistency between {} and {}: {} artifacts", 
+                                primaryRegion, entry.getKey(), report.getInconsistentArtifacts());
+            }
+            
+            // Auto-heal missing artifacts
+            healMissingArtifacts(primaryCache, secondaryCache, report.getMissingArtifacts());
+        }
+    }
+}</pre>
+  </div>
+  
+  <h3>Checksum Validation & Corruption Detection</h3>
+  
+  <div class="failure">
+    <h4>Data Integrity Protection</h4>
+    <p>Comprehensive validation to detect and recover from silent corruption</p>
+    <pre>// Multi-layer integrity validation
+public class IntegrityValidationPipeline {
+    
+    // Validate artifact on retrieval
+    public ValidationResult validateArtifact(String contentAddress, byte[] content) {
+        ValidationResult result = new ValidationResult();
+        
+        // 1. SHA-256 content hash validation
+        String computedHash = "sha256:" + Hex.encodeHexString(
+            MessageDigest.getInstance("SHA-256").digest(content)
+        );
+        
+        if (!computedHash.equals(contentAddress)) {
+            result.addError("Content hash mismatch: expected " + contentAddress + 
+                          " got " + computedHash);
+        }
+        
+        // 2. CRC32 checksum for fast corruption detection
+        CRC32 crc = new CRC32();
+        crc.update(content);
+        long computedCRC = crc.getValue();
+        
+        ArtifactMetadata metadata = getMetadata(contentAddress);
+        if (metadata.getStoredCRC() != computedCRC) {
+            result.addError("CRC mismatch: expected " + metadata.getStoredCRC() + 
+                          " got " + computedCRC);
+        }
+        
+        // 3. Artifact-specific validation
+        if (contentAddress.endsWith(".jar")) {
+            result.merge(validateJarFile(content));
+        } else if (contentAddress.contains("docker-image")) {
+            result.merge(validateDockerImage(content));
+        }
+        
+        return result;
+    }
+    
+    // Periodic background integrity audit
+    @Scheduled(fixedDelay = 3600000) // every hour
+    public void performIntegrityAudit() {
+        // Sample 1% of cached artifacts for validation
+        List&lt;String&gt; sampleArtifacts = hashIndex.keySet().stream()
+            .filter(hash -> hash.hashCode() % 100 == 0) // 1% sample
+            .limit(1000) // Max 1000 per audit
+            .collect(Collectors.toList());
+        
+        int corruptionCount = 0;
+        
+        for (String contentAddress : sampleArtifacts) {
+            try {
+                Optional&lt;BuildArtifact&gt; artifact = retrieveArtifact(contentAddress);
+                if (artifact.isPresent()) {
+                    ValidationResult result = validateArtifact(contentAddress, 
+                                                             artifact.get().getContent());
+                    if (!result.isValid()) {
+                        handleCorruption(contentAddress, result);
+                        corruptionCount++;
+                    }
+                }
+            } catch (Exception e) {
+                logger.error("Validation failed for {}", contentAddress, e);
+            }
+        }
+        
+        double corruptionRate = (double) corruptionCount / sampleArtifacts.size();
+        metricsClient.gauge("cache.corruption_rate", corruptionRate);
+        
+        if (corruptionRate > 0.001) { // 0.1% threshold
+            alertManager.page("Cache corruption rate exceeded threshold: {}%", 
+                            corruptionRate * 100);
+        }
+    }
+    
+    // Handle detected corruption
+    private void handleCorruption(String contentAddress, ValidationResult result) {
+        logger.error("Corruption detected for {}: {}", contentAddress, result.getErrors());
+        
+        // 1. Remove corrupted artifact from all caches
+        hotCache.remove(contentAddress);
+        coldStorage.remove(contentAddress);
+        
+        // 2. Try to recover from other regions
+        Optional&lt;BuildArtifact&gt; recovered = recoverFromOtherRegions(contentAddress);
+        if (recovered.isPresent()) {
+            storeArtifact(recovered.get());
+            logger.info("Recovered corrupted artifact from remote region: {}", contentAddress);
+        }
+        
+        // 3. Alert and mark for rebuild
+        alertManager.warn("Artifact corruption detected and removed: {}", contentAddress);
+        markForRebuild(contentAddress);
+    }
+}</pre>
+  </div>
+  
+  <h3>Cache Hit Rate Optimization</h3>
+  
+  <div class="monitoring">
+    <h4>Intelligent Cache Management</h4>
+    <pre>// Hit rate optimization and monitoring
+public class CacheOptimizationService {
+    
+    // Monitor and optimize cache hit rates
+    @Scheduled(fixedDelay = 300000) // every 5 minutes
+    public void optimizeCachePerformance() {
+        CacheMetrics metrics = gatherCacheMetrics();
+        
+        // Global hit rate tracking
+        double globalHitRate = metrics.getHitRate();
+        metricsClient.gauge("cache.hit_rate", globalHitRate);
+        
+        if (globalHitRate < 0.8) { // Below 80%
+            alertManager.warn("Cache hit rate below target: {}%", globalHitRate * 100);
+            
+            // Analyze and take corrective action
+            analyzeCacheMisses(metrics);
+        }
+        
+        // Per-artifact-type hit rates
+        Map&lt;String, Double&gt; hitRateByType = metrics.getHitRateByArtifactType();
+        for (Map.Entry&lt;String, Double&gt; entry : hitRateByType.entrySet()) {
+            metricsClient.gauge("cache.hit_rate_by_type", entry.getValue(),
+                              Map.of("artifact_type", entry.getKey()));
+        }
+        
+        // Adaptive cache sizing based on hit rates
+        adaptCacheSizing(metrics);
+    }
+    
+    private void analyzeCacheMisses(CacheMetrics metrics) {
+        // Identify patterns in cache misses
+        Map&lt;String, Integer&gt; missByReason = metrics.getMissByReason();
+        
+        if (missByReason.get("EVICTED_TOO_EARLY") > 100) {
+            // Increase hot cache size
+            scalingController.scaleHotCache(1.2); // 20% increase
+            logger.info("Scaled up hot cache due to premature evictions");
+        }
+        
+        if (missByReason.get("NOT_REPLICATED") > 50) {
+            // Improve replication speed
+            replicationAgent.increaseReplicationWorkers();
+            logger.info("Increased replication workers due to replication lag");
+        }
+        
+        if (missByReason.get("FIRST_BUILD") > 200) {
+            // Normal - new builds expected
+            logger.info("High first-build miss rate: {} new artifacts", 
+                       missByReason.get("FIRST_BUILD"));
+        }
+    }
+    
+    // Adaptive cache sizing based on workload patterns
+    private void adaptCacheSizing(CacheMetrics metrics) {
+        // Adjust hot cache size based on access patterns
+        double accessSkewness = metrics.getAccessSkewness();
+        long currentHotCacheSize = metrics.getHotCacheSize();
+        
+        if (accessSkewness > 0.8) { // Very skewed access pattern
+            // Reduce hot cache size - most artifacts are rarely accessed
+            long newSize = (long) (currentHotCacheSize * 0.9);
+            hotCacheManager.resizeTo(newSize);
+            
+        } else if (accessSkewness < 0.4) { // More uniform access
+            // Increase hot cache size - more artifacts need fast access
+            long newSize = (long) (currentHotCacheSize * 1.1);
+            hotCacheManager.resizeTo(newSize);
+        }
+    }
+}</pre>
+  </div>
+  
+  <div class="pros-cons">
+    <div class="pros">
+      <h5>✅ System Benefits</h5>
+      <ul>
+        <li>100ms p95 retrieval with two-tier caching</li>
+        <li>90%+ hit rate with intelligent deduplication</li>
+        <li>Content-addressable integrity guarantees</li>
+        <li>Lease-based eviction prevents build failures</li>
+        <li>Async replication with Bloom filter optimization</li>
+        <li>Comprehensive corruption detection and recovery</li>
+      </ul>
+    </div>
+    <div class="cons">
+      <h5>⚠️ System Limitations</h5>
+      <ul>
+        <li>60s global consistency may affect fresh builds</li>
+        <li>Hot SSD cache requires significant storage investment</li>
+        <li>Complex lease management adds operational overhead</li>
+        <li>Large artifacts (>10GB) challenge cache efficiency</li>
+        <li>Cross-region replication bandwidth costs</li>
+        <li>Hash computation overhead for large artifacts</li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+
+</div>
+
+<footer>
+  <div class="container">
+    <p>LinkedIn Build Artifact Cache — <a href="/sre-design-framework.html">Design Framework</a> | <a href="/sre-sysdesign.html">SRE Systems</a> | <a href="/linkedin-disaster-recovery.html">Disaster Recovery</a> | <a href="/">Home</a></p>
+  </div>
+</footer>
+
+</body>
+</html>
