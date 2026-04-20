@@ -323,6 +323,221 @@
     <p><strong>Distributed Metric Schema Management:</strong> A comprehensive metadata store managing metric schemas, service registrations, cardinality budgets, and retention policies across LinkedIn's entire observability infrastructure, implemented as a distributed system using Espresso for primary storage with ZooKeeper for coordination and configuration management. **Why Separate Metadata Storage is Essential:** The metadata store is crucial because it maintains the relationship between metrics and services, tracks schema evolution over time, manages cardinality quotas per service, stores retention policies, and provides the service discovery mechanism that allows automatic metric registration when new services deploy. This separation enables the TSDB to focus on time-series data while delegating complex metadata operations to a system optimized for relational queries and ACID transactions. The metadata store integrates with LinkedIn's service mesh to automatically discover new services, validates metric schemas against organizational policies, and provides APIs for programmatic metric registration and schema evolution.</p>
   </div>
 
+  <h3>Schema Management & Distribution System</h3>
+  
+  <!-- Schema Storage Details -->
+  <div style="background: #f3e5f5; border: 2px solid #9c27b0; border-radius: 8px; padding: 20px; margin: 20px 0;">
+    <div style="text-align: center; margin-bottom: 15px;">
+      <div style="background: #7b1fa2; color: white; padding: 8px 16px; border-radius: 6px; display: inline-block; font-weight: 600;">
+        📋 LINKEDIN METRICS SCHEMA STORAGE — Espresso + ZooKeeper Architecture
+      </div>
+    </div>
+
+    <!-- Schema Storage Implementation -->
+    <div style="background: white; border: 1px solid #9c27b0; border-radius: 6px; padding: 15px; margin-bottom: 15px;">
+      <div style="font-size: 0.9em; font-weight: 600; margin-bottom: 10px; color: #7b1fa2;">🗄️ Distributed Schema Storage Implementation</div>
+      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; font-size: 0.8em;">
+        <!-- Espresso Primary Storage -->
+        <div style="background: #e8f5e9; padding: 12px; border-radius: 4px;">
+          <div style="font-weight: 600; color: #2e7d32; margin-bottom: 8px;">📊 ESPRESSO (Primary Storage)</div>
+          <div>
+            <strong>Stores:</strong> Metric schemas, service registrations, cardinality budgets<br>
+            <strong>Features:</strong> ACID transactions, relational queries, high-volume reads<br>
+            <strong>Scale:</strong> 20K+ services, millions of metric definitions<br>
+            <strong>Performance:</strong> Sub-millisecond schema lookups with heavy caching
+          </div>
+        </div>
+        
+        <!-- ZooKeeper Coordination -->
+        <div style="background: #fff3e0; padding: 12px; border-radius: 4px;">
+          <div style="font-weight: 600; color: #f57c00; margin-bottom: 8px;">⚙️ ZOOKEEPER (Coordination)</div>
+          <div>
+            <strong>Manages:</strong> Distributed consensus, configuration management<br>
+            <strong>Coordinates:</strong> Schema updates, service discovery across DCs<br>
+            <strong>Handles:</strong> Cardinality budgets, retention policy configs<br>
+            <strong>Ensures:</strong> Consistent schema state across all components
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Schema Structure Example -->
+    <div style="background: white; border: 1px solid #9c27b0; border-radius: 6px; padding: 15px;">
+      <div style="font-size: 0.9em; font-weight: 600; margin-bottom: 10px; color: #7b1fa2;">📝 Schema Definition Example</div>
+      <div style="background: #f8f9fa; padding: 12px; border-radius: 4px; font-family: monospace; font-size: 0.75em;">
+        <span style="color: #d73a49;">{</span><br>
+        &nbsp;&nbsp;<span style="color: #005cc5;">"metric_name"</span>: <span style="color: #032f62;">"cpu_usage_percent"</span>,<br>
+        &nbsp;&nbsp;<span style="color: #005cc5;">"service"</span>: <span style="color: #032f62;">"profile-service"</span>,<br>
+        &nbsp;&nbsp;<span style="color: #005cc5;">"labels"</span>: [<span style="color: #032f62;">"datacenter"</span>, <span style="color: #032f62;">"instance"</span>, <span style="color: #032f62;">"cpu_core"</span>],<br>
+        &nbsp;&nbsp;<span style="color: #005cc5;">"cardinality_budget"</span>: <span style="color: #005cc5;">10000</span>,<br>
+        &nbsp;&nbsp;<span style="color: #005cc5;">"retention_policy"</span>: <span style="color: #032f62;">"hot_24h_cold_90d"</span>,<br>
+        &nbsp;&nbsp;<span style="color: #005cc5;">"schema_version"</span>: <span style="color: #032f62;">"v2.1"</span>,<br>
+        &nbsp;&nbsp;<span style="color: #005cc5;">"created_at"</span>: <span style="color: #032f62;">"2026-01-15T10:30:00Z"</span><br>
+        <span style="color: #d73a49;">}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Schema Fetching Patterns -->
+  <div style="background: #e3f2fd; border: 2px solid #1976d2; border-radius: 8px; padding: 20px; margin: 20px 0;">
+    <div style="text-align: center; margin-bottom: 15px;">
+      <div style="background: #0d47a1; color: white; padding: 8px 16px; border-radius: 6px; display: inline-block; font-weight: 600;">
+        🔄 SCHEMA FETCH PATTERNS — Who Gets Schemas When
+      </div>
+    </div>
+
+    <!-- Primary Schema Consumers -->
+    <div style="background: white; border: 1px solid #1976d2; border-radius: 6px; padding: 15px; margin-bottom: 15px;">
+      <div style="font-size: 0.9em; font-weight: 600; margin-bottom: 10px; color: #0d47a1;">👥 Schema Consumer Components</div>
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; font-size: 0.75em;">
+        <div style="background: #ffcdd2; padding: 8px; border-radius: 4px; text-align: center;">
+          <strong>🚪 INGESTION GATEWAYS</strong><br>
+          <span style="color: #c62828;">Primary Consumers</span><br>
+          Validate every metric<br>
+          5-15min cache TTL
+        </div>
+        <div style="background: #f3e5f5; padding: 8px; border-radius: 4px; text-align: center;">
+          <strong>⚡ STREAM PROCESSOR</strong><br>
+          <span style="color: #7b1fa2;">Schema-Aware</span><br>
+          Cardinality control<br>
+          Event-driven updates
+        </div>
+        <div style="background: #e8f5e8; padding: 8px; border-radius: 4px; text-align: center;">
+          <strong>🔍 QUERY SERVICE</strong><br>
+          <span style="color: #2e7d32;">Query Planning</span><br>
+          Storage tier routing<br>
+          Metadata joins
+        </div>
+        <div style="background: #fff3e0; padding: 8px; border-radius: 4px; text-align: center;">
+          <strong>📡 NODE AGENTS</strong><br>
+          <span style="color: #f57c00;">Service Registration</span><br>
+          Startup validation<br>
+          Update subscriptions
+        </div>
+      </div>
+    </div>
+
+    <!-- Schema Fetch Flow -->
+    <div style="background: white; border: 1px solid #1976d2; border-radius: 6px; padding: 15px; margin-bottom: 15px;">
+      <div style="font-size: 0.9em; font-weight: 600; margin-bottom: 10px; color: #0d47a1;">🔄 Gateway Schema Validation Flow</div>
+      <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8em;">
+        <div style="background: #e1f5fe; padding: 8px; border-radius: 4px; text-align: center; width: 18%;">
+          <strong>New Metric Arrives</strong><br>
+          At ingestion gateway<br>
+          <code>cpu.usage{service=api}</code>
+        </div>
+        <span style="color: #1976d2;">→</span>
+        <div style="background: #e1f5fe; padding: 8px; border-radius: 4px; text-align: center; width: 18%;">
+          <strong>Check Local Cache</strong><br>
+          5-15 min TTL cache<br>
+          <code>schema_cache.get()</code>
+        </div>
+        <span style="color: #1976d2;">→</span>
+        <div style="background: #ffecb3; padding: 8px; border-radius: 4px; text-align: center; width: 18%;">
+          <strong>[CACHE MISS]</strong><br>
+          Fetch from Metadata Store<br>
+          <code>espresso.getSchema()</code>
+        </div>
+        <span style="color: #1976d2;">→</span>
+        <div style="background: #c8e6c9; padding: 8px; border-radius: 4px; text-align: center; width: 18%;">
+          <strong>Validate & Forward</strong><br>
+          Schema + budget check<br>
+          Cache for future use
+        </div>
+        <span style="color: #4caf50;">→</span>
+        <div style="background: #c8e6c9; padding: 8px; border-radius: 4px; text-align: center; width: 18%;">
+          <strong>Stream Processor</strong><br>
+          Validated metric<br>
+          Ready for aggregation
+        </div>
+      </div>
+    </div>
+
+    <!-- Performance Optimizations -->
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; font-size: 0.75em;">
+      <div style="background: white; border: 1px solid #4caf50; border-radius: 4px; padding: 8px;">
+        <div style="font-weight: 600; color: #2e7d32; margin-bottom: 4px;">⚡ Multi-Level Caching</div>
+        <div>
+          • Gateway local cache: 5-15min TTL<br>
+          • Regional Redis: Cross-gateway sharing<br>
+          • CDN layer: Static schema elements
+        </div>
+      </div>
+      <div style="background: white; border: 1px solid #ff9800; border-radius: 4px; padding: 8px;">
+        <div style="font-weight: 600; color: #f57c00; margin-bottom: 4px;">📡 Event-Driven Updates</div>
+        <div>
+          • Schema change events via Kafka<br>
+          • Incremental updates only<br>
+          • 30-60s propagation acceptable
+        </div>
+      </div>
+      <div style="background: white; border: 1px solid #9c27b0; border-radius: 4px; padding: 8px;">
+        <div style="font-weight: 600; color: #7b1fa2; margin-bottom: 4px;">📦 Bulk Operations</div>
+        <div>
+          • Batch schema fetches<br>
+          • Connection pooling<br>
+          • Compressed payloads
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Failure Handling -->
+  <div style="background: #ffebee; border: 2px solid #d32f2f; border-radius: 8px; padding: 20px; margin: 20px 0;">
+    <div style="text-align: center; margin-bottom: 15px;">
+      <div style="background: #c62828; color: white; padding: 8px 16px; border-radius: 6px; display: inline-block; font-weight: 600;">
+        🛡️ SCHEMA SYSTEM FAILURE HANDLING
+      </div>
+    </div>
+
+    <!-- Failure Scenarios -->
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 15px;">
+      <!-- Metadata Store Down -->
+      <div style="background: white; border: 2px solid #f44336; border-radius: 6px; padding: 12px;">
+        <div style="background: #f44336; color: white; padding: 4px; border-radius: 3px; text-align: center; font-size: 0.8em; font-weight: 600; margin-bottom: 8px;">
+          🚨 METADATA STORE DOWN
+        </div>
+        <div style="font-size: 0.75em;">
+          <strong>Policy:</strong> Fail-open with cached schemas<br>
+          <strong>Degraded Mode:</strong> Basic validation only<br>
+          <strong>Alert:</strong> Immediate page when fetches fail<br>
+          <strong>Recovery:</strong> Full validation when store returns
+        </div>
+      </div>
+
+      <!-- Cache Poisoning -->
+      <div style="background: white; border: 2px solid #ff9800; border-radius: 6px; padding: 12px;">
+        <div style="background: #ff9800; color: white; padding: 4px; border-radius: 3px; text-align: center; font-size: 0.8em; font-weight: 600; margin-bottom: 8px;">
+          ☠️ CACHE POISONING
+        </div>
+        <div style="font-size: 0.75em;">
+          <strong>Protection:</strong> Version numbers + checksums<br>
+          <strong>Validation:</strong> Schema integrity verification<br>
+          <strong>Rollback:</strong> Revert to previous versions<br>
+          <strong>Circuit Breaker:</strong> Stop bad schema propagation
+        </div>
+      </div>
+
+      <!-- Schema Evolution -->
+      <div style="background: white; border: 2px solid #4caf50; border-radius: 6px; padding: 12px;">
+        <div style="background: #4caf50; color: white; padding: 4px; border-radius: 3px; text-align: center; font-size: 0.8em; font-weight: 600; margin-bottom: 8px;">
+          🔄 SCHEMA EVOLUTION
+        </div>
+        <div style="font-size: 0.75em;">
+          <strong>Backward Compatibility:</strong> Version lineage tracking<br>
+          <strong>Gradual Rollout:</strong> Schema changes via canary<br>
+          <strong>Rollback Ready:</strong> Previous versions preserved<br>
+          <strong>Migration:</strong> Automated schema transformation
+        </div>
+      </div>
+    </div>
+
+    <!-- Critical Architecture Principle -->
+    <div style="background: #2e7d32; color: white; padding: 12px; border-radius: 6px; text-align: center; font-weight: 600;">
+      🎯 CRITICAL PRINCIPLE: Schema fetching optimized for 10M+ metrics/second validation with sub-millisecond lookup latency
+    </div>
+  </div>
+
   <h3>Technical Architecture Insights</h3>
   
   <div class="failure">
