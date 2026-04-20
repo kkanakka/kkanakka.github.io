@@ -591,6 +591,61 @@
                         </div>
                     </div>
                 </div>
+
+                <div style="background: #e8f5e8; border: 2px solid #a5d6a7; border-radius: 12px; padding: 25px; margin-top: 25px;">
+                    <h3 style="color: #2e7d32; margin-bottom: 20px;">🔔 Deep Dive: Notification Systems Architecture</h3>
+                    <p style="margin-bottom: 20px; color: #1b5e20; font-weight: 600;">Why different parts of a notification system need different caching strategies</p>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+                        <div style="background: white; padding: 20px; border-radius: 8px; border-left: 4px solid #e74c3c;">
+                            <h4 style="color: #c0392b; margin-bottom: 10px;">🔴 Notification Count (Red Badge)</h4>
+                            <p style="font-size: 0.9rem; margin-bottom: 10px;"><strong>Pattern:</strong> Write-behind (Redis as primary store)</p>
+                            <p style="font-size: 0.9rem; margin-bottom: 15px;">Every new notification fires <code>REDIS INCR user:456:unread_count</code>. The count lives in Redis as the primary store, not as a cache of anything. DB gets synced async.</p>
+                            <div style="background: #ffeaa7; padding: 10px; border-radius: 5px; font-size: 0.85rem;">
+                                <strong>Why not cache-aside?</strong> Too many writes would constantly invalidate the cache
+                            </div>
+                        </div>
+
+                        <div style="background: white; padding: 20px; border-radius: 8px; border-left: 4px solid #f39c12;">
+                            <h4 style="color: #d68910; margin-bottom: 10px;">📋 Notification List (Dropdown)</h4>
+                            <p style="font-size: 0.9rem; margin-bottom: 10px;"><strong>Pattern:</strong> Cache-aside with short TTL (30-60s) OR fanout-on-write</p>
+                            <p style="font-size: 0.9rem; margin-bottom: 15px;">Cache-aside can work but with very short TTL. <strong>Instagram/Facebook skip caching entirely</strong> — when someone likes your photo, a job immediately writes to your personal feed store (Cassandra/Redis).</p>
+                            <div style="background: #ffeaa7; padding: 10px; border-radius: 5px; font-size: 0.85rem;">
+                                <strong>Problem with cache-aside:</strong> Every new notification makes cached list stale immediately
+                            </div>
+                        </div>
+
+                        <div style="background: white; padding: 20px; border-radius: 8px; border-left: 4px solid #27ae60;">
+                            <h4 style="color: #229954; margin-bottom: 10px;">⚙️ Notification Preferences</h4>
+                            <p style="font-size: 0.9rem; margin-bottom: 10px;"><strong>Pattern:</strong> Cache-aside with long TTL</p>
+                            <p style="font-size: 0.9rem; margin-bottom: 15px;">Do you want email? Push? SMS? This data changes maybe once a month. Cache it with a long TTL, fetch from DB on miss.</p>
+                            <div style="background: #d4edda; padding: 10px; border-radius: 5px; font-size: 0.85rem;">
+                                <strong>Perfect fit:</strong> Low write frequency, high read volume, eventual consistency is fine
+                            </div>
+                        </div>
+
+                        <div style="background: white; padding: 20px; border-radius: 8px; border-left: 4px solid #8e44ad;">
+                            <h4 style="color: #7d3c98; margin-bottom: 10px;">✓ Mark as Read</h4>
+                            <p style="font-size: 0.9rem; margin-bottom: 10px;"><strong>Pattern:</strong> Write-through</p>
+                            <p style="font-size: 0.9rem; margin-bottom: 15px;">If you mark something read then refresh and it shows unread again, that's a trust-breaking UX bug. Consistency matters here — cache and DB update together synchronously.</p>
+                            <div style="background: #f4ecf7; padding: 10px; border-radius: 5px; font-size: 0.85rem;">
+                                <strong>Why write-through?</strong> UX consistency is more important than write speed here
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 20px; margin-top: 20px;">
+                        <h4 style="color: #856404; margin-bottom: 15px;">💡 Key Insight: One Feature, Four Patterns</h4>
+                        <p style="font-size: 0.9rem; margin-bottom: 10px;">A single "notification system" actually needs <strong>four different caching strategies</strong> because each component has different characteristics:</p>
+                        <ul style="margin: 0; padding-left: 20px; font-size: 0.9rem;">
+                            <li><strong>Count:</strong> Write-behind (high write volume, approximate OK)</li>
+                            <li><strong>List:</strong> Cache-aside + short TTL OR fanout-on-write (frequent invalidation)</li>
+                            <li><strong>Preferences:</strong> Cache-aside + long TTL (rare updates, eventual consistency fine)</li>
+                            <li><strong>Read status:</strong> Write-through (UX consistency critical)</li>
+                        </ul>
+                        <p style="margin-top: 15px; font-style: italic; color: #856404;">This is why cache architecture is complex — you can't pick one pattern for your entire app!</p>
+                    </div>
+                </div>
             </div>
         </div>
     </section>
