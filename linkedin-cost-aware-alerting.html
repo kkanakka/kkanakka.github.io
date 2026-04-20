@@ -524,6 +524,171 @@
 
 </div>
 
+<!-- PAGE 4: DATA SYSTEMS & ML FEEDBACK LOOP -->
+<div class="section">
+  <h2>Page 4 — Data Systems & ML Feedback Loop Architecture</h2>
+  
+  <h3>Two-Plane Architecture: Data vs Control</h3>
+  <p>Two planes run in parallel. The <strong>data plane</strong> moves billing events forward through Kafka topics with tight latency SLOs (2-minute alert latency). The <strong>control plane</strong> retrains ML models from historical stores and pushes new model artifacts back to the serving component. The feedback question — how does ML data get back to the Anomaly Detector — is a control-plane question, and the answer is a model registry pattern, not a real-time stream.</p>
+
+  <div style="text-align: center; margin: 30px 0;">
+    <img src="images/cost-alerting-data-systems.png" alt="Cost Alerting Data Systems Architecture" style="max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+  </div>
+
+  <h3>1. Data Systems Along the Flow</h3>
+  <p>Every component has its internal storage (shown as pills inside each box). Every transition between components rides on a named Kafka topic (shown as a pill on each arrow).</p>
+
+  <div class="architecture">
+    <h4>Storage Technologies by Component</h4>
+    <ul>
+      <li><strong>Kafka</strong> — All inter-component messaging and event streaming</li>
+      <li><strong>Redis</strong> — Hot caches, bloom filters, feature serving, session state</li>
+      <li><strong>PostgreSQL</strong> — Policy rules, SLO breach state, MLflow metadata</li>
+      <li><strong>Cassandra</strong> — Wide-column cost attribution, raw staging data</li>
+      <li><strong>Druid</strong> — TSDB for time-series cost data and dashboard queries</li>
+      <li><strong>S3 Object Store</strong> — Archive data, ML model artifacts, feature sets</li>
+    </ul>
+  </div>
+
+  <div class="monitoring">
+    <h4>Key Kafka Topics in the Data Flow</h4>
+    <ul>
+      <li><code>kafka: raw-billing-events</code> — Raw billing data from cloud providers</li>
+      <li><code>kafka: normalized-metrics</code> — $/RPS, $/query efficiency ratios</li>
+      <li><code>kafka: cost-anomalies</code> — ML-detected anomaly scores with windows</li>
+      <li><code>kafka: policy-violations</code> — Policy-scored violations with SLO context</li>
+      <li><code>kafka: alert-events</code> — Alert payloads to notification workers</li>
+      <li><code>kafka: model-updates</code> — Model version notifications (control plane)</li>
+    </ul>
+  </div>
+
+  <h3>2. The ML Feedback Loop — Control Plane Pattern</h3>
+  <p>The ML Anomaly Detector (serving) and ML Cost Forecasting (training) are decoupled. They never talk directly. Training reads historical data from Druid, produces new model artifacts in S3, registers them in MLflow, and emits a notification on a Kafka topic. The Detector watches that topic and hot-reloads. This is the industry-standard train/serve split — the same pattern used in LinkedIn's Pro-ML, Uber's Michelangelo, and Airbnb's Bighead.</p>
+
+  <div style="text-align: center; margin: 30px 0;">
+    <img src="images/cost-alerting-ml-feedback.png" alt="ML Feedback Loop - 7 Steps from Training to Hot-Reload" style="max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+  </div>
+
+  <div class="implementation">
+    <h4>Key Insight: ML Data Does Not Flow Back as Real-Time Stream</h4>
+    <p>Models are large (tens to hundreds of MB), retrained on a batch cadence (daily or hourly), and must be versioned for rollback. The feedback path is an <strong>object-store handoff + a notification</strong>, not a Kafka data stream of features or predictions.</p>
+  </div>
+
+  <h3>7-Step ML Model Update Process</h3>
+
+  <div class="costing">
+    <h4>Step 1: Collect Training Data from Historical Stores</h4>
+    <p>Airflow DAG (daily at 02:00 UTC) pulls the last 30–90 days of cost time-series from Druid, tag attribution from Cassandra, SLO breach history from PostgreSQL, and labeled past incidents from the feedback store.</p>
+    <ul>
+      <li><strong>Druid:</strong> Cost time-series data</li>
+      <li><strong>Cassandra:</strong> Service/team tag attribution</li>
+      <li><strong>PostgreSQL:</strong> SLO breach labels and correlations</li>
+    </ul>
+  </div>
+
+  <div class="monitoring">
+    <h4>Step 2: Feature Engineering to Feature Store</h4>
+    <p>Spark job computes temporal features (hour-of-day, day-of-week, holiday flags), service features (RPS trends, deployment markers), and cross-service features (upstream dependency cost). Features land in a feature store (Feast, backed by Redis for online serving and S3 for offline training sets).</p>
+    <ul>
+      <li><strong>S3:</strong> Offline feature sets for training</li>
+      <li><strong>Redis/Feast:</strong> Online features for real-time serving</li>
+    </ul>
+  </div>
+
+  <div class="implementation">
+    <h4>Step 3: Train Models in Parallel</h4>
+    <p>Spark on a GPU cluster trains Prophet (per service), Isolation Forest (global + per-tier), and LSTM autoencoders (per critical service). Each model writes metrics (MAE, precision, recall, FPR) to the experiment tracker during training.</p>
+    <ul>
+      <li><strong>S3:</strong> Model checkpoints during training</li>
+      <li><strong>MLflow:</strong> Experiment tracking and metrics</li>
+    </ul>
+  </div>
+
+  <div class="slo">
+    <h4>Step 4: Register & Validate in Model Registry</h4>
+    <p>New models get registered in MLflow with a version number and metadata (training window, feature schema, metrics). A validation job runs the new model against the last 7 days in <strong>shadow mode</strong> — it scores but doesn't alert. If precision ≥ old model and recall doesn't drop more than 2%, the model is promoted to production stage.</p>
+    <ul>
+      <li><strong>MLflow Registry:</strong> Model metadata and versioning</li>
+      <li><strong>S3:</strong> Binary model artifacts</li>
+      <li><strong>Shadow Testing:</strong> Validate before production promotion</li>
+    </ul>
+  </div>
+
+  <div class="monitoring">
+    <h4>Step 5: Publish Notification on kafka: model-updates</h4>
+    <p>Once promoted, the training pipeline emits a small message to a dedicated Kafka topic: <code>{model_name, version, s3_path, schema_hash, promoted_at}</code>. The message is tiny (hundreds of bytes) — just a pointer. The actual model binary stays in S3.</p>
+  </div>
+
+  <div class="costing">
+    <h4>Step 6: ML Anomaly Detector Hot-Reload</h4>
+    <p>Every Anomaly Detector replica subscribes to <code>model-updates</code>. On a new message, it downloads the new model from S3, loads it into memory, runs a sanity check (100 synthetic inferences), then atomically swaps the in-memory reference. Old model stays live until swap succeeds — <strong>zero-downtime reload</strong>. If the swap fails, it stays on the old model and emits an alert.</p>
+  </div>
+
+  <div class="failure">
+    <h4>Step 7: Automated Rollback Path</h4>
+    <p>If the new model produces a spike in false-positive rate within 1 hour of deployment (detected by the Policy Engine flagging too many low-impact alerts), an automated rollback publishes the previous version on <code>model-updates</code>. Detector re-loads the old version. MLflow marks the bad version as archived.</p>
+    <ul>
+      <li><strong>Automatic Detection:</strong> Policy Engine monitors false positive rate</li>
+      <li><strong>Instant Rollback:</strong> Previous model version restored via Kafka notification</li>
+      <li><strong>Audit Trail:</strong> MLflow tracks all version changes and rollbacks</li>
+    </ul>
+  </div>
+
+  <h3>3. Reference Table — What Data Flows Through What</h3>
+
+  <table>
+    <tr><th>Stage</th><th>Transport between components</th><th>Component's own storage</th><th>What's flowing</th></tr>
+    <tr><td><strong>Ingest</strong></td><td>Cloud billing REST APIs + S3 drops (CSV/Parquet)</td><td>Kafka (sink) + Cassandra (raw staging) + S3 (archive)</td><td>Raw line-item billing events</td></tr>
+    <tr><td><strong>Stream</strong></td><td><code>kafka: raw-billing-events</code></td><td>— (transport only)</td><td>Enriched, currency-normalized events</td></tr>
+    <tr><td><strong>Normalize</strong></td><td><code>kafka: normalized-metrics</code></td><td>Redis (5m TTL) for hot ratios</td><td>$/RPS, $/query, $/GB ratios</td></tr>
+    <tr><td><strong>Detect</strong></td><td><code>kafka: cost-anomalies</code></td><td>Druid (TSDB windows) + Redis (feature cache) + S3 (model pull)</td><td>Anomaly scores with windows</td></tr>
+    <tr><td><strong>Correlate</strong></td><td><code>kafka: policy-violations</code></td><td>PostgreSQL (rules) + Redis (30s policy cache)</td><td>Policy-scored violations + SLO context</td></tr>
+    <tr><td><strong>Route</strong></td><td><code>kafka: alert-events</code></td><td>Kafka (fan-out) + Redis (bloom filter dedup)</td><td>Alert payloads to notification workers</td></tr>
+    <tr><td><strong>Attribute</strong></td><td>Async Cassandra writes from Billing Ingestor</td><td>Cassandra (wide-column, schema-flexible)</td><td>Service/team/project cost breakdowns</td></tr>
+    <tr><td><strong>Dashboard</strong></td><td>Druid SQL queries + Redis query cache</td><td>Druid (reads only) + Redis (60s cache)</td><td>Burn-rate aggregations for Grafana</td></tr>
+    <tr><td><strong>Integrate</strong></td><td>Redis pub/sub + webhook APIs (Slack, PagerDuty)</td><td>PG + Redis (SLO state) / Redis + Kafka (ChatOps)</td><td>Breach status, interactive button sessions</td></tr>
+    <tr><td><strong>Learn (forward)</strong></td><td>Druid batch reads (Airflow) + S3 feature dumps</td><td>S3 + Redis/Feast + MLflow (PG)</td><td>Training data, features, model artifacts</td></tr>
+    <tr><td><strong>Feedback</strong></td><td><code>kafka: model-updates</code> (pointer) + S3 artifact download</td><td>S3 (shared model store) + MLflow registry</td><td>New model versions — binary in S3, notification in Kafka</td></tr>
+  </table>
+
+  <h3>Why This Pattern — Key Design Principles</h3>
+
+  <div class="architecture">
+    <h4>Data Plane vs Control Plane Separation</h4>
+    <ul>
+      <li><strong>Data Plane (Forward Flow):</strong> Ingest → detect → route. Tight latency SLOs (2-min alert latency). Every hop is Kafka because Kafka decouples producers and consumers, handles back-pressure, and is durable.</li>
+      <li><strong>Control Plane (Feedback Flow):</strong> Model updates. Loose latency requirements (daily retrain is fine) but strong correctness requirements (must be versioned, rollbackable, shadow-testable). Uses object storage + registry, not streaming topic for payload.</li>
+    </ul>
+  </div>
+
+  <div class="monitoring">
+    <h4>Why Kafka for Model-Update Notifications</h4>
+    <p>Every Anomaly Detector replica needs to know a new model is available. A Kafka topic with all replicas as consumers (using unique consumer group IDs) guarantees every replica gets every update, with replay if a replica crashes during the update. The alternative — polling S3 or MLflow — wastes requests and adds latency.</p>
+  </div>
+
+  <div class="costing">
+    <h4>Why Model Artifacts Don't Go on Kafka</h4>
+    <ul>
+      <li><strong>Size Problem:</strong> A Prophet model for one service might be 50 MB. An LSTM for a critical service might be 300 MB. Multiply by hundreds of services.</li>
+      <li><strong>Cost Efficiency:</strong> S3's per-byte cost is ~20× cheaper than Kafka's</li>
+      <li><strong>Access Pattern:</strong> S3 handles random-access reads while Kafka is sequential-only</li>
+      <li><strong>Purpose:</strong> Kafka topics are for small, frequent messages — not for multi-hundred-MB blobs</li>
+    </ul>
+  </div>
+
+  <div class="slo">
+    <h4>Industry Standard Train/Serve Split</h4>
+    <p>This pattern is used across the industry:</p>
+    <ul>
+      <li><strong>LinkedIn Pro-ML:</strong> Model registry with S3 artifacts + Kafka notifications</li>
+      <li><strong>Uber Michelangelo:</strong> Similar train/serve decoupling with model store</li>
+      <li><strong>Airbnb Bighead:</strong> Feature store + model registry pattern</li>
+    </ul>
+    <p><strong>Key benefit:</strong> Training and serving can scale independently, fail independently, and use different resource profiles (GPU clusters for training, CPU for serving).</p>
+  </div>
+
+</div>
+
 <footer>
   <div class="container">
     <p>LinkedIn Cost-Aware Alerting System — <a href="/sre-design-framework.html">Design Framework</a> | <a href="/sre-sysdesign.html">SRE Systems</a> | <a href="/linkedin-incident-simulator.html">Incident Simulator</a> | <a href="/">Home</a></p>
