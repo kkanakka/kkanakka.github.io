@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<title>Espresso — Architecture, Paths, Backup &amp; Recovery</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #f5f4f1;
+    --border: #e0ded8;
+    --text: #2d2a26;
+    --text-muted: #6b6560;
+    --accent: #0a66c2;
+    --accent2: #057642;
+    --accent3: #5c4033;
+    --red: #c41e3a;
+    --code-bg: #f7f6f3;
+    --espresso: #4a3728;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.65;
+    font-size: 15px;
+  }
+  .container { max-width: 920px; margin: 0 auto; padding: 0 24px 60px; }
+  .hero {
+    background: linear-gradient(180deg, #faf9f7 0%, #ffffff 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 40px 0 28px;
+    text-align: center;
+  }
+  .hero h1 { font-size: 2.05em; font-weight: 700; margin-bottom: 10px; }
+  .hero h1 span { color: var(--espresso); }
+  .hero p { color: var(--text-muted); max-width: 780px; margin: 0 auto 20px; }
+  .badge {
+    display: inline-block; background: var(--surface); border: 1px solid var(--border);
+    padding: 6px 14px; border-radius: 20px; font-size: 0.78em; color: var(--text-muted);
+  }
+
+  /* Tabs */
+  .tabs {
+    display: flex; flex-wrap: wrap; gap: 6px; justify-content: center;
+    margin: 24px 0 8px; padding: 0 12px;
+  }
+  .tabs button {
+    font-family: inherit; font-size: 0.88em; font-weight: 500;
+    padding: 10px 16px; border-radius: 8px; cursor: pointer;
+    border: 1px solid var(--border); background: var(--surface); color: var(--text-muted);
+    transition: all 0.15s;
+  }
+  .tabs button:hover { border-color: var(--accent); color: var(--accent); }
+  .tabs button.active {
+    background: var(--espresso); color: #fff; border-color: var(--espresso);
+  }
+  .panel { display: none; padding-top: 8px; }
+  .panel.active { display: block; }
+
+  .section { margin: 28px 0; padding-top: 12px; border-top: 1px solid var(--border); }
+  .section:first-of-type { border-top: none; }
+  .section h2 {
+    font-size: 1.45em; font-weight: 600; color: var(--espresso); margin-bottom: 14px;
+  }
+  .section h3 { font-size: 1.1em; color: var(--accent); margin: 22px 0 10px; }
+  .section-num { font-size: 0.72em; font-weight: 600; color: var(--accent3); text-transform: uppercase; letter-spacing: 1px; }
+
+  .card {
+    background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 18px; margin: 14px 0;
+  }
+  .card h4 { margin-top: 0; color: var(--espresso); font-size: 1em; }
+
+  table {
+    width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92em;
+    background: var(--surface); border-radius: 8px; overflow: hidden;
+  }
+  th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: #fff; color: var(--accent); font-weight: 600; }
+  tr:last-child td { border-bottom: none; }
+
+  pre, .mermaid {
+    background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px; overflow-x: auto; font-size: 0.84em; margin: 12px 0;
+  }
+  code { font-family: 'JetBrains Mono', monospace; font-size: 0.88em; background: var(--surface); padding: 2px 6px; border-radius: 4px; }
+
+  .callout {
+    border-left: 4px solid var(--espresso); background: rgba(74,55,40,0.06);
+    padding: 14px 18px; border-radius: 0 8px 8px 0; margin: 16px 0;
+  }
+  .callout.warn { border-left-color: var(--red); background: rgba(196,30,58,0.06); }
+
+  ul { padding-left: 22px; margin: 10px 0; }
+  li { margin: 6px 0; }
+  .footer { text-align: center; color: var(--text-muted); font-size: 0.88em; margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--border); }
+
+  .nav-links { margin-top: 16px; }
+  .nav-links a {
+    display: inline-block; margin: 4px; padding: 8px 16px; border-radius: 8px;
+    border: 1px solid var(--border); color: var(--accent); text-decoration: none; font-size: 0.9em;
+  }
+  .nav-links a:hover { background: rgba(10,102,194,0.06); }
+  @media (max-width: 640px) { .tabs { flex-direction: column; } .tabs button { width: 100%; } }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="container">
+    <h1><span>Espresso</span> — Document Store &amp; Backup Strategy</h1>
+    <p>Helix-partitioned MySQL, Kafka/Xinfra replication, GPFS/XtraBackup pipelines, snapshot service, and recovery tradeoffs — styled like the Venice architecture deep-dive, grounded in <code>espresso-storage-node</code> <code>BackupTask</code>, infra specs, and production incidents.</p>
+    <span class="badge">WIP · Internal engineering reference</span>
+    <div class="nav-links">
+      <a href="/linux-systems-guide/sd-venice.html">Venice architecture page →</a>
+      <a href="https://github.com/linkedin-multiproduct/nimbus-oncall-helper/blob/master/docs/architecture.md">Nimbus oncall helper (repo)</a>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <div class="tabs" role="tablist">
+    <button type="button" class="active" data-tab="t1">Overview</button>
+    <button type="button" data-tab="t2">Design</button>
+    <button type="button" data-tab="t3">Write path</button>
+    <button type="button" data-tab="t4">Read path</button>
+    <button type="button" data-tab="t5">Kafka &amp; topics</button>
+    <button type="button" data-tab="t6">Backup &amp; restore</button>
+    <button type="button" data-tab="t7">RPO / RTO</button>
+    <button type="button" data-tab="t8">Incidents</button>
+    <button type="button" data-tab="t9">Tombstones &amp; deletes</button>
+  </div>
+
+  <!-- PANEL 1 -->
+  <div class="panel active" id="t1">
+    <div class="section">
+      <div class="section-num">Overview</div>
+      <h2>What Espresso is</h2>
+      <p>Espresso is LinkedIn’s distributed document store: <strong>Database → Table → Document</strong>, Avro payloads in MySQL/InnoDB, Apache Helix for partition placement and leader election, D2 for routing, and asynchronous replication within and across fabrics via binlog-derived events published to Kafka or Xinfra.</p>
+      <div class="callout">
+        <strong>Primary reliability story</strong>
+        Multi-replica quorum-style operations plus continuous replication—not nightly backup alone. Scheduled <strong>XtraBackup</strong> streams to <strong>GPFS</strong> (with an <strong>Ambry</strong>-backed direction in design docs) feed bootstrap, rebalance, snapshot service, LDR/splitter workflows, and disaster recovery runbooks.
+      </div>
+      <h3>Diagram — logical components</h3>
+      <div class="mermaid">
+flowchart LR
+  subgraph clients["Clients"]
+    API["Services / Euler / clients"]
+  end
+  subgraph edge["Routing"]
+    R["espresso-router"]
+  end
+  subgraph sn["Storage"]
+    L["Leader SN"]
+    F["Follower SNs"]
+  end
+  subgraph mysql["Engine"]
+    M[("MySQL InnoDB")]
+  end
+  subgraph pipe["Change pipeline"]
+    BT["Binlog translator"]
+    K[("Kafka / Xinfra")]
+    DR["espresso-data-replicator"]
+  end
+  subgraph bk["Backup tier"]
+    GPFS[("GPFS / Ambry design")]
+    SS["snapshot-service"]
+  end
+  API --> R --> L
+  L --> M
+  L --> F
+  M --> BT --> K
+  K --> F
+  K --> DR
+  L --> GPFS
+  GPFS --> SS
+      </div>
+    </div>
+  </div>
+
+  <!-- PANEL 2 -->
+  <div class="panel" id="t2">
+    <div class="section">
+      <div class="section-num">Design</div>
+      <h2>Architecture anchors</h2>
+      <ul>
+        <li><strong>Partitioning:</strong> Each DB is a Helix resource; partitions map to storage nodes; leader serves strongly consistent writes and can serve leader reads.</li>
+        <li><strong>Consistency:</strong> Strong on leader reads within a partition; followers and remote fabrics are eventually consistent with typical cross-colo lag 50–500ms (specs).</li>
+        <li><strong>Checksums / CCDV:</strong> Periodic checksums and cross-colo validation detect divergence; SCN identifies change positions.</li>
+        <li><strong>Snapshot SLA:</strong> Snapshot service targets fresh DBImage/checksum/Lumos artifacts; normal snapshot cycle SLA is <strong>7 days</strong> (operations docs).</li>
+      </ul>
+      <h3>Code anchor — Helix backup task</h3>
+      <p>The storage node implements <code>com.linkedin.espresso.storagenode.backuprestore.backup.BackupTask</code> as a <strong>Helix task</strong> that drives Percona XtraBackup via pluggable <code>BackupRestorable</code>, streams through <code>StreamingHelper</code>/<code>BackupArchiverV2</code>, and resolves destinations with <code>BackupFileURIHandlerV2</code> (GPFS today; Ambry URIs in migration design).</p>
+    </div>
+  </div>
+
+  <!-- PANEL 3 -->
+  <div class="panel" id="t3">
+    <div class="section">
+      <div class="section-num">Write path</div>
+      <h2>End-to-end write</h2>
+      <ol>
+        <li>Client issues PUT/POST; <strong>router</strong> maps key → partition → leader storage node (via Helix view).</li>
+        <li>Leader executes SQL; InnoDB commits; response to client after local commit (followers are async).</li>
+        <li><strong>Binlog</strong> record is produced; <code>EspressoEventBinlogTranslator</code> builds events; <code>EspressoEventKafkaProducer</code> / Xinfra producer publishes.</li>
+        <li>Followers and remote consumers apply via replication applier components—catch-up is bounded by broker retention and consumer health.</li>
+      </ol>
+      <div class="mermaid">
+sequenceDiagram
+  participant C as Client
+  participant R as Router
+  participant L as Leader SN
+  participant My as MySQL
+  participant K as Kafka/Xinfra
+  participant F as Follower SN
+  C->>R: Write(key, doc)
+  R->>L: Routed write
+  L->>My: INSERT/UPDATE commit
+  My-->>L: OK
+  L-->>C: 200 OK
+  My-->>K: binlog → event
+  K->>F: consume & apply
+      </div>
+    </div>
+  </div>
+
+  <!-- PANEL 4 -->
+  <div class="panel" id="t4">
+    <div class="section">
+      <div class="section-num">Read path</div>
+      <h2>Reads &amp; routing</h2>
+      <ul>
+        <li><strong>Leader read:</strong> Lowest staleness; use when the product requires read-your-writes or linearizable partition semantics.</li>
+        <li><strong>Follower read:</strong> Lower load on leader; may lag replication; good for tolerate-stale use cases.</li>
+        <li><strong>Router + D2:</strong> Misconfiguration (e.g., stale Couchbase disco after migrations) can blackhole a fabric—see incident-5398 class failures.</li>
+        <li><strong>Index / search paths:</strong> Lucene secondary paths add latency; not covered in depth here.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- PANEL 5 -->
+  <div class="panel" id="t5">
+    <div class="section">
+      <div class="section-num">Kafka &amp; topics</div>
+      <h2>Topics &amp; retention</h2>
+      <p>Per-partition events are published to Kafka/Xinfra topics (naming typically includes database/partition context). <strong>Typical config from specs:</strong> <code>binlogRetentionDays=7</code>, <code>kafkaRetentionWindow=7</code> days.</p>
+      <div class="callout warn">
+        <strong>Retention gap risk</strong>
+        If you must replay farther back than retained logs, you cannot reconstruct incremental state from Kafka alone—you need a <strong>backup baseline</strong> plus bounded replay, or a <strong>source-of-truth</strong> rebuild (offline pipelines). Incident narratives referencing “10-day Kafka retention” alongside stale backups highlight this coupling.
+      </div>
+      <p><strong>Cross-fabric:</strong> <code>espresso-data-replicator</code> mirrors topics between fabrics; ordering, schema compatibility (USR), and Brooklin consumers must stay aligned—several incidents involved schema registration and backward compatibility.</p>
+    </div>
+  </div>
+
+  <!-- PANEL 6 -->
+  <div class="panel" id="t6">
+    <div class="section">
+      <div class="section-num">Backup &amp; recovery</div>
+      <h2>Backup options (current)</h2>
+      <table>
+        <tr><th>Layer</th><th>Mechanism</th><th>Purpose</th></tr>
+        <tr><td>Replication</td><td>Kafka/Xinfra + appliers</td><td>HA, DR, catch-up after restore</td></tr>
+        <tr><td>Partition backup</td><td>Helix <code>BackupTask</code>, XtraBackup stream</td><td>Point-in-time-ish baseline per partition on GPFS (Ambry in migration)</td></tr>
+        <tr><td>Metadata</td><td>ZK SCN / backup bookkeeping</td><td>Restore positioning, verification</td></tr>
+        <tr><td>Undo</td><td>Limited undo binlog (config)</td><td>Small SCN windows—not general PITR</td></tr>
+        <tr><td>Snapshot service</td><td>Workers restore backup → Avro artifacts</td><td>ETL, Brooklin bootstrap, Grid, checksum/Lumos</td></tr>
+        <tr><td>Cross-fabric DR</td><td>DisasterRestorer / rsync runbooks</td><td>Copy known-good backups between fabrics</td></tr>
+      </table>
+      <h3>Restore flow (simplified)</h3>
+      <ol>
+        <li>Fetch backup blob from GPFS/Ambry (throttled).</li>
+        <li>Decompress/import into MySQL on target.</li>
+        <li>Start replication consumer from recorded SCN / generation.</li>
+        <li>Bring partition ONLINE in Helix once caught up.</li>
+      </ol>
+      <p>Ops entry points: <code>esretool backup list</code>, <code>esretool backup take</code>, <code>esretool snapshots coordinator_status</code>; stale backups &gt; ~7 days break expectations for offline→slave transitions and snapshot SLAs (internal ITR docs).</p>
+    </div>
+  </div>
+
+  <!-- PANEL 7 -->
+  <div class="panel" id="t7">
+    <div class="section">
+      <div class="section-num">RPO / RTO</div>
+      <h2>Scenarios (order-of-magnitude)</h2>
+      <p>Numbers are <strong>indicative</strong>; each database has customer SLOs—use Espresso SRE runbooks for authoritative targets.</p>
+      <table>
+        <tr><th>Scenario</th><th>RPO</th><th>RTO</th><th>Notes</th></tr>
+        <tr><td>Replication healthy / router failover</td><td>Seconds–minutes lag</td><td>Minutes</td><td>Spec-style DR: &lt;1 min RPO, &lt;5 min RTO for route-level failover—not universal for all paths</td></tr>
+        <tr><td>Replica bootstrap from peer + log catch-up</td><td>Since peer snapshot</td><td>Minutes–hours</td><td>Depends on drift and load</td></tr>
+        <tr><td>GPFS backup restore + Kafka catch-up</td><td>Backup timestamp</td><td>Hours+</td><td>Throttle + partition size</td></tr>
+        <tr><td>Snapshot SLA miss only</td><td>Stale ETL</td><td>Hours–days</td><td>Until backups + workers recover</td></tr>
+        <tr><td>Logical mass delete (bug, tool)</td><td>Data lost to delete window</td><td>Days+</td><td>Snapshot restore + Flink/Kafka replay; product coordination</td></tr>
+        <tr><td>Retention exceeded / binlog gap</td><td>Unbounded</td><td>Days–weeks</td><td>Rebuild from external SOT or cold artifacts</td></tr>
+      </table>
+      <h3>Is the existing backup process “good enough”?</h3>
+      <p>For <strong>routine</strong> replica loss, yes—the combination of peers + logs + GPFS baselines is industry-standard. For <strong>infrastructure</strong> faults that stall GPFS, snapshot workers, HDFS, or tokens, incident history shows <strong>multi-day</strong> recovery times until infra mitigations land—so the weakness is operational coupling to GPFS/HDFS health and automation gaps (KSudo, IPv6 registration, TC), not a missing single code flag.</p>
+      <h3>Venice-style P2P here?</h3>
+      <p>Venice’s P2P is optimized <strong>RocksDB file</strong> transfer between servers. Espresso’s analog is <strong>Helix-managed partition recovery</strong> and <strong>catch-up from Kafka</strong>, not the same blob protocol. Shipping a “turn on P2P” feature would be a <strong>major product effort</strong> (peer seeding at scale, security, fairness)—feasible in principle but not equivalent to Venice’s mechanism.</p>
+    </div>
+  </div>
+
+  <!-- PANEL 8 -->
+  <div class="panel" id="t8">
+    <div class="section">
+      <div class="section-num">Incidents</div>
+      <h2>Past incidents — cause &amp; duration (summary)</h2>
+      <p>Ten-line style summaries you provided, consolidated into a scannable table. Severity and times come from your notes; treat as narrative aids, not an official Observe export.</p>
+      <div style="overflow-x:auto;font-size:0.82em;">
+      <table>
+        <tr><th>ID</th><th>Theme</th><th>Duration (approx)</th></tr>
+        <tr><td>10819</td><td>GDPR purger bug — mass delete; snapshot + replay</td><td>Ongoing</td></tr>
+        <tr><td>8108</td><td>GPFS snapshot perf regression</td><td>~2.5d</td></tr>
+        <tr><td>7594</td><td>Traffic Control bottleneck</td><td>~2.9d</td></tr>
+        <tr><td>7212</td><td>Hung GPFS mounts / rebuild storms</td><td>~2.9d</td></tr>
+        <tr><td>3694</td><td>WAGED scan / quotas</td><td>~2.2d</td></tr>
+        <tr><td>4791</td><td>Brooklin OOM</td><td>~28h</td></tr>
+        <tr><td>8012</td><td>Helix maintenance uneven load</td><td>~4.6h</td></tr>
+        <tr><td>8984</td><td>Manual recovery side effects</td><td>~5d</td></tr>
+        <tr><td>9209</td><td>Helix swap stuck — deploy block</td><td>~31d</td></tr>
+        <tr><td>5398</td><td>Stale Couchbase disco</td><td>~1.3h</td></tr>
+        <tr><td>8054</td><td>GDPR bulkload WCU / 429s</td><td>~12.6h</td></tr>
+        <tr><td>10180</td><td>IPv6 DataNode registration / snapshot age</td><td>~5.4d</td></tr>
+        <tr><td>8058</td><td>Helix UNKNOWN host swap</td><td>~6d</td></tr>
+        <tr><td>7683</td><td>Nuage/Kafka schema promotion</td><td>~91d</td></tr>
+        <tr><td>7105</td><td>KSudo SHDFS token</td><td>~3.1d</td></tr>
+        <tr><td>4148</td><td>GPFS hung / stale backups</td><td>~4.9d</td></tr>
+        <tr><td>9080</td><td>LCD/Nuage automated schema</td><td>~24.5d</td></tr>
+        <tr><td>7183</td><td>Liminal quota / N+1 risk</td><td>~4.6h</td></tr>
+        <tr><td>6985</td><td>SN HW failure handling</td><td>~1.6h</td></tr>
+        <tr><td>10320</td><td>DST CDC false alarm</td><td>~3.3h</td></tr>
+        <tr><td>7393</td><td>Dual-mount PV race</td><td>~8.2d</td></tr>
+        <tr><td>5330</td><td>NSS / kubelet</td><td>~28.7h</td></tr>
+        <tr><td>3003</td><td>Load test + viral traffic</td><td>~6.1d</td></tr>
+        <tr><td>3139</td><td>Malformed ACLs</td><td>~20.6d</td></tr>
+        <tr><td>5735</td><td>Flannel queue limit</td><td>~9.7h</td></tr>
+        <tr><td>8341</td><td>Backward-incompatible schema / USR</td><td>~53d</td></tr>
+        <tr><td>3617</td><td>429s unknown</td><td>~2.75h</td></tr>
+        <tr><td>3580</td><td>ZK DAG / format</td><td>~17m</td></tr>
+        <tr><td>5798</td><td>KSAP underscore / webhook</td><td>~4.2d</td></tr>
+      </table>
+      </div>
+      <p><strong>Why with “current code”?</strong> Most mass-outage themes are <strong>infra + ops + platform coupling</strong> (GPFS, Helix workflows, network stacks, K8s, schema pipelines)—application code paths (e.g., BackupTask) assume durable mounts and healthy Helix; when those fail together, symptoms surface as stale backups and snapshot SLA misses rather than a single bug in the backup routine.</p>
+    </div>
+  </div>
+
+  <!-- PANEL 9 -->
+  <div class="panel" id="t9">
+    <div class="section">
+      <div class="section-num">Deletes</div>
+      <h2>Tombstones &amp; accidental deletion</h2>
+      <ul>
+        <li><strong>Tombstones:</strong> Snapshot service docs describe counts of tombstone rows—logical deletes not yet physically purged—alongside expired and invalid rows.</li>
+        <li><strong>TTL / purge policies:</strong> Helix-driven expiry jobs remove eligible documents; backups still reflect “delete events” as mutations.</li>
+        <li><strong>Accidental deletion:</strong> Recovery is <strong>not</strong> automatic: select a backup generation predating the delete, restore, then replay forward cautiously; coordinate Brooklin/Opal/Grid consumers to avoid amplifying bad state.</li>
+        <li><strong>Compliance deletes:</strong> Must remain irreversible in the product sense—engineering guardrails belong in purge tools (typing, dry-run, rate limits) to prevent incident-10819 recurrence.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="footer">
+    Sources: LinkedIn infra specs (espresso/concepts/*), local clone <code>espresso-storage-node/…/BackupTask.java</code>, Confluence (Espresso Snapshot Service V2, Backup Debugging, DR Remote Fabric, Ambry migration design), Glean search hits.<br/>
+    Generated for nimbus-oncall-helper — pair with Desktop Word doc <em>Backup Strategy for Espresso Document Store [WIP].docx</em>
+  </div>
+</div>
+
+<script>
+  mermaid.initialize({ startOnLoad: true, theme: 'neutral', securityLevel: 'loose' });
+  document.querySelectorAll('.tabs button').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var id = btn.getAttribute('data-tab');
+      document.querySelectorAll('.tabs button').forEach(function(b) { b.classList.remove('active'); });
+      document.querySelectorAll('.panel').forEach(function(p) { p.classList.remove('active'); });
+      btn.classList.add('active');
+      var el = document.getElementById(id);
+      if (el) el.classList.add('active');
+    });
+  });
+</script>
+</body>
+</html>
