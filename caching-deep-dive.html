@@ -467,52 +467,130 @@
                 <img src="images/cache-four-patterns.png" alt="Four Cache Patterns - Cache-aside, Read-through, Write-through, and Write-behind" style="max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
             </div>
 
-            <div class="highlight">
-                <strong>Production Reality:</strong> Most production systems use <strong>cache-aside</strong> because it's simple and gives the app full control. The app knows best when to invalidate, what to cache, and how to handle failures.
+            <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 12px; padding: 25px; margin: 30px 0;">
+                <h3 style="color: #856404; margin-bottom: 20px;">💰 Real-World Trade-offs: When Stale Data Costs Money</h3>
+                
+                <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #e74c3c;">
+                    <h4 style="color: #c53030; margin-bottom: 15px;">❌ Cache-aside Risk: Amazon Price Update</h4>
+                    <p style="margin-bottom: 15px;">When a seller updates a price on Amazon, the write goes to DB only. The cache still has the old price. If another user loads that product page in the next few seconds, they read from cache and see the old price — potentially at checkout. <strong>That's a real-world dispute.</strong></p>
+                    <div style="display: flex; align-items: center; gap: 15px; font-size: 0.9rem; color: #666;">
+                        <span>1. Seller updates price → DB</span>
+                        <span>→</span>
+                        <span>2. Cache still has old price</span>
+                        <span>→</span>
+                        <span>3. Next buyer sees stale price</span>
+                        <span>→</span>
+                        <span style="background: #fee; padding: 4px 8px; border-radius: 4px; color: #c53030;"><strong>💸 Financial dispute</strong></span>
+                    </div>
+                </div>
+
+                <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #27ae60;">
+                    <h4 style="color: #2e7d32; margin-bottom: 15px;">✅ Write-through Protection</h4>
+                    <p style="margin-bottom: 15px;">Write-through says: <strong>before we ack the seller's save, we update both DB and cache atomically.</strong> The seller waits maybe 5–10ms more. But every reader from that moment on is guaranteed to see the new price.</p>
+                    <div style="display: flex; align-items: center; gap: 15px; font-size: 0.9rem; color: #666;">
+                        <span>1. Seller updates price</span>
+                        <span>→</span>
+                        <span>2. Write to DB + Cache</span>
+                        <span>→</span>
+                        <span>3. Both confirm</span>
+                        <span>→</span>
+                        <span style="background: #d4edda; padding: 4px 8px; border-radius: 4px; color: #2e7d32;"><strong>✅ Consistent reads</strong></span>
+                    </div>
+                </div>
+
+                <div style="background: #e3f2fd; padding: 20px; border-radius: 8px;">
+                    <p style="margin-bottom: 15px; font-weight: 600; color: #1976d2;">The Rule of Thumb:</p>
+                    <p style="margin-bottom: 10px;"><strong>Write-through:</strong> When stale reads have real consequences — financial data, stock levels, surge fares, account balances. You accept the write cost because <strong>being wrong is more expensive than being slow.</strong></p>
+                    <p><strong>Cache-aside/Write-behind:</strong> When approximate data is acceptable — view counts, likes, recommendations. Speed matters more than perfect accuracy.</p>
+                </div>
             </div>
 
-            <div class="comparison-table">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Pattern</th>
-                            <th>Write Latency</th>
-                            <th>Consistency</th>
-                            <th>Who Writes Cache</th>
-                            <th>Best For</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td><strong>Cache-aside</strong></td>
-                            <td>Low</td>
-                            <td>Eventual</td>
-                            <td>App code</td>
-                            <td>Read-heavy</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Read-through</strong></td>
-                            <td>Low</td>
-                            <td>Eventual</td>
-                            <td>Cache itself</td>
-                            <td>Read-heavy</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Write-through</strong></td>
-                            <td>High</td>
-                            <td>Strong</td>
-                            <td>Cache → DB</td>
-                            <td>Write+read</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Write-behind</strong></td>
-                            <td>Low</td>
-                            <td>Eventual</td>
-                            <td>Cache → DB later</td>
-                            <td>Write-heavy</td>
-                        </tr>
-                    </tbody>
-                </table>
+            <div style="text-align: center; margin: 40px 0;">
+                <img src="images/cache-real-world-patterns.png" alt="Real-world cache patterns - YouTube, Spotify, Netflix, Amazon examples showing when to use each pattern" style="max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+            </div>
+
+            <div style="background: #f8f9fa; padding: 30px; border-radius: 12px; margin: 30px 0;">
+                <h3 style="color: #2c3e50; margin-bottom: 25px; text-align: center;">🎯 Pattern Selection by Real-World Impact</h3>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px;">
+                    <div style="background: white; padding: 20px; border-radius: 8px; border: 2px solid #3498db;">
+                        <h4 style="color: #2980b9; margin-bottom: 15px;">💸 Write-Through: Money & Trust</h4>
+                        <p style="margin-bottom: 15px; font-weight: 600;">Use when stale data causes real harm</p>
+                        <ul style="margin: 0; padding-left: 20px; font-size: 0.9rem;">
+                            <li><strong>Amazon/Shopify:</strong> Product prices, stock levels</li>
+                            <li><strong>Uber/Grab:</strong> Surge pricing, fare calculations</li>
+                            <li><strong>Discord:</strong> User presence, status updates</li>
+                            <li><strong>Financial:</strong> Account balances, trading prices</li>
+                        </ul>
+                        <div style="background: #e3f2fd; padding: 10px; border-radius: 5px; margin-top: 15px; font-size: 0.85rem;">
+                            <strong>Trade-off:</strong> Slower writes (5-10ms penalty) for guaranteed consistency
+                        </div>
+                    </div>
+
+                    <div style="background: white; padding: 20px; border-radius: 8px; border: 2px solid #e74c3c;">
+                        <h4 style="color: #c0392b; margin-bottom: 15px;">⚡ Write-Behind: High Volume Counts</h4>
+                        <p style="margin-bottom: 15px; font-weight: 600;">Use when speed > perfect accuracy</p>
+                        <ul style="margin: 0; padding-left: 20px; font-size: 0.9rem;">
+                            <li><strong>YouTube:</strong> View counts, like buttons</li>
+                            <li><strong>Instagram/X:</strong> Likes, follower counts</li>
+                            <li><strong>Spotify:</strong> Play counts, stream stats</li>
+                            <li><strong>Gaming:</strong> Score counters, activity feeds</li>
+                        </ul>
+                        <div style="background: #ffeaa7; padding: 10px; border-radius: 5px; margin-top: 15px; font-size: 0.85rem;">
+                            <strong>Trade-off:</strong> Risk of data loss vs. handling millions of writes/sec
+                        </div>
+                    </div>
+
+                    <div style="background: white; padding: 20px; border-radius: 8px; border: 2px solid #27ae60;">
+                        <h4 style="color: #229954; margin-bottom: 15px;">📖 Cache-Aside: Metadata & Catalogs</h4>
+                        <p style="margin-bottom: 15px; font-weight: 600;">Default pattern for most read-heavy data</p>
+                        <ul style="margin: 0; padding-left: 20px; font-size: 0.9rem;">
+                            <li><strong>YouTube:</strong> Video metadata, thumbnails</li>
+                            <li><strong>Spotify:</strong> Song metadata, album art</li>
+                            <li><strong>Netflix:</strong> ML recommendations, catalog</li>
+                            <li><strong>General:</strong> User profiles, configuration</li>
+                        </ul>
+                        <div style="background: #d4edda; padding: 10px; border-radius: 5px; margin-top: 15px; font-size: 0.85rem;">
+                            <strong>Trade-off:</strong> Manual cache management for full control over DB protocols
+                        </div>
+                    </div>
+
+                    <div style="background: white; padding: 20px; border-radius: 8px; border: 2px solid #8e44ad;">
+                        <h4 style="color: #7d3c98; margin-bottom: 15px;">🔍 Read-Through: Proxy Layer</h4>
+                        <p style="margin-bottom: 15px; font-weight: 600;">Framework/proxy handles cache transparently</p>
+                        <ul style="margin: 0; padding-left: 20px; font-size: 0.9rem;">
+                            <li><strong>Google/Spotify:</strong> Search autocomplete</li>
+                            <li><strong>Spring @Cacheable:</strong> Method result caching</li>
+                            <li><strong>Envoy sidecar:</strong> API response caching</li>
+                            <li><strong>CDN:</strong> Static asset caching</li>
+                        </ul>
+                        <div style="background: #f4ecf7; padding: 10px; border-radius: 5px; margin-top: 15px; font-size: 0.85rem;">
+                            <strong>Trade-off:</strong> Less control but cleaner app code
+                        </div>
+                    </div>
+                </div>
+
+                <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 20px; margin-top: 25px;">
+                    <h4 style="color: #856404; margin-bottom: 15px;">🧠 Decision Framework</h4>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+                        <div>
+                            <p style="font-weight: 600; color: #2c3e50; margin-bottom: 8px;">Ask: "What happens if data is stale?"</p>
+                            <ul style="margin: 0; padding-left: 20px; font-size: 0.9rem;">
+                                <li><strong>Financial loss:</strong> Write-through</li>
+                                <li><strong>Nobody cares:</strong> Write-behind</li>
+                                <li><strong>Slightly annoying:</strong> Cache-aside</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <p style="font-weight: 600; color: #2c3e50; margin-bottom: 8px;">Ask: "What's the write volume?"</p>
+                            <ul style="margin: 0; padding-left: 20px; font-size: 0.9rem;">
+                                <li><strong>>10K writes/sec:</strong> Write-behind only</li>
+                                <li><strong>1K-10K writes/sec:</strong> Write-through maybe</li>
+                                <li><strong><1K writes/sec:</strong> Any pattern works</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </section>
