@@ -115,6 +115,11 @@
   .card-ddia:hover { border-color: #0d47a1; }
   .card-ddia .cta { color: #0d47a1; }
 
+  .card-net .icon { background: rgba(15,123,15,0.1); color: var(--accent2); }
+  .card-net h2 { color: var(--accent2); }
+  .card-net:hover { border-color: var(--accent2); }
+  .card-net .cta { color: var(--accent2); }
+
   .footer {
     text-align: center;
     padding: 32px 0;
@@ -172,6 +177,24 @@
         <span class="tag">JVM Internals</span>
       </div>
       <div class="cta">Explore guides &rarr;</div>
+    </a>
+
+    <!-- Networking -->
+    <a href="/linux-systems-guide/networking.html" class="card card-net">
+      <div class="icon">&#9783;</div>
+      <h2>Networking 101</h2>
+      <div class="subtitle">Browser &rarr; LinkedIn, packet by packet</div>
+      <p>What actually happens when you type <code style="background:#f7f6f3;padding:1px 5px;border-radius:3px;font-size:0.9em;">linkedin.com</code> &mdash; every file the OS reads, every router hop, every load balancer decision, all the way to bytes painting the screen.</p>
+      <div class="tag-row">
+        <span class="tag">DNS</span>
+        <span class="tag">ARP</span>
+        <span class="tag">DHCP</span>
+        <span class="tag">BGP</span>
+        <span class="tag">TCP/TLS</span>
+        <span class="tag">ECMP</span>
+        <span class="tag">ATS</span>
+      </div>
+      <div class="cta">Trace the journey &rarr;</div>
     </a>
 
     <!-- System Design -->
