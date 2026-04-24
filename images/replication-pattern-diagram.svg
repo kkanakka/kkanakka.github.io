@@ -1,0 +1,127 @@
+<svg width="1000" height="600" xmlns="http://www.w3.org/2000/svg">
+    <!-- Background -->
+    <rect width="1000" height="600" fill="#ffffff" stroke="#e0e0e0" stroke-width="2" rx="4"/>
+    
+    <!-- Title -->
+    <rect x="20" y="10" width="960" height="40" fill="#1e40af" rx="4"/>
+    <text x="500" y="35" text-anchor="middle" font-size="16" font-weight="bold" fill="white">
+        Replication Patterns: LinkedIn Espresso Data Store
+    </text>
+    
+    <!-- Master-Slave Section -->
+    <rect x="30" y="70" width="450" height="240" fill="#f0f9ff" stroke="#0ea5e9" stroke-width="2" rx="6"/>
+    <text x="50" y="95" font-size="14" font-weight="bold" fill="#0c4a6e">MASTER-SLAVE REPLICATION</text>
+    
+    <!-- Master node -->
+    <rect x="60" y="110" width="120" height="80" fill="#1e40af" stroke="#1e3a8a" stroke-width="2" rx="4"/>
+    <text x="120" y="135" text-anchor="middle" font-size="12" font-weight="bold" fill="white">MASTER</text>
+    <text x="120" y="150" text-anchor="middle" font-size="10" fill="white">Espresso Node</text>
+    <text x="120" y="165" text-anchor="middle" font-size="10" fill="white">Writes: 100%</text>
+    <text x="120" y="180" text-anchor="middle" font-size="10" fill="white">Reads: 30%</text>
+    
+    <!-- Slave nodes -->
+    <rect x="220" y="110" width="100" height="80" fill="#3b82f6" stroke="#2563eb" stroke-width="2" rx="4"/>
+    <text x="270" y="135" text-anchor="middle" font-size="11" font-weight="bold" fill="white">SLAVE 1</text>
+    <text x="270" y="150" text-anchor="middle" font-size="9" fill="white">US-East</text>
+    <text x="270" y="165" text-anchor="middle" font-size="9" fill="white">Read-only</text>
+    <text x="270" y="180" text-anchor="middle" font-size="9" fill="white">Async repl.</text>
+    
+    <rect x="340" y="110" width="100" height="80" fill="#3b82f6" stroke="#2563eb" stroke-width="2" rx="4"/>
+    <text x="390" y="135" text-anchor="middle" font-size="11" font-weight="bold" fill="white">SLAVE 2</text>
+    <text x="390" y="150" text-anchor="middle" font-size="9" fill="white">EU-West</text>
+    <text x="390" y="165" text-anchor="middle" font-size="9" fill="white">Read-only</text>
+    <text x="390" y="180" text-anchor="middle" font-size="9" fill="white">Async repl.</text>
+    
+    <!-- Replication arrows -->
+    <defs>
+        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto" fill="#374151">
+            <polygon points="0 0, 10 3.5, 0 7"/>
+        </marker>
+    </defs>
+    
+    <line x1="180" y1="140" x2="210" y2="140" stroke="#ef4444" stroke-width="3" marker-end="url(#arrowhead)"/>
+    <text x="195" y="135" text-anchor="middle" font-size="8" fill="#dc2626">WAL</text>
+    
+    <line x1="180" y1="160" x2="330" y2="160" stroke="#ef4444" stroke-width="3" marker-end="url(#arrowhead)"/>
+    <text x="255" y="155" text-anchor="middle" font-size="8" fill="#dc2626">Replication</text>
+    
+    <!-- Failure scenario -->
+    <rect x="60" y="210" width="380" height="80" fill="#fef2f2" stroke="#dc2626" stroke-width="1" rx="4"/>
+    <text x="70" y="230" font-size="11" font-weight="bold" fill="#991b1b">FAILURE SCENARIO: Master Down</text>
+    <text x="70" y="245" font-size="10" fill="#7f1d1d">1. Master node crashes (hardware failure)</text>
+    <text x="70" y="260" font-size="10" fill="#7f1d1d">2. Automatic failover promotes Slave 1 to Master (&lt;30s)</text>
+    <text x="70" y="275" font-size="10" fill="#7f1d1d">3. All writes redirect to new Master, zero data loss</text>
+    
+    <!-- Sharding Section -->
+    <rect x="520" y="70" width="450" height="240" fill="#f0fdf4" stroke="#22c55e" stroke-width="2" rx="6"/>
+    <text x="540" y="95" font-size="14" font-weight="bold" fill="#15803d">HORIZONTAL SHARDING</text>
+    
+    <!-- Shard 1 -->
+    <rect x="550" y="110" width="120" height="60" fill="#16a34a" stroke="#15803d" stroke-width="2" rx="4"/>
+    <text x="610" y="130" text-anchor="middle" font-size="11" font-weight="bold" fill="white">SHARD 1</text>
+    <text x="610" y="145" text-anchor="middle" font-size="9" fill="white">Members A-H</text>
+    <text x="610" y="160" text-anchor="middle" font-size="9" fill="white">25% of data</text>
+    
+    <!-- Shard 2 -->
+    <rect x="690" y="110" width="120" height="60" fill="#16a34a" stroke="#15803d" stroke-width="2" rx="4"/>
+    <text x="750" y="130" text-anchor="middle" font-size="11" font-weight="bold" fill="white">SHARD 2</text>
+    <text x="750" y="145" text-anchor="middle" font-size="9" fill="white">Members I-P</text>
+    <text x="750" y="160" text-anchor="middle" font-size="9" fill="white">25% of data</text>
+    
+    <!-- Shard 3 -->
+    <rect x="830" y="110" width="120" height="60" fill="#16a34a" stroke="#15803d" stroke-width="2" rx="4"/>
+    <text x="890" y="130" text-anchor="middle" font-size="11" font-weight="bold" fill="white">SHARD 3</text>
+    <text x="890" y="145" text-anchor="middle" font-size="9" fill="white">Members Q-Z</text>
+    <text x="890" y="160" text-anchor="middle" font-size="9" fill="white">25% of data</text>
+    
+    <!-- Hash ring -->
+    <rect x="620" y="180" width="120" height="40" fill="#bbf7d0" stroke="#16a34a" stroke-width="1" rx="4"/>
+    <text x="680" y="195" text-anchor="middle" font-size="10" font-weight="bold" fill="#14532d">Consistent Hashing</text>
+    <text x="680" y="210" text-anchor="middle" font-size="9" fill="#166534">hash(member_id) % 4</text>
+    
+    <!-- Failure impact -->
+    <rect x="550" y="240" width="380" height="60" fill="#fef2f2" stroke="#dc2626" stroke-width="1" rx="4"/>
+    <text x="560" y="260" font-size="11" font-weight="bold" fill="#991b1b">SHARD FAILURE IMPACT</text>
+    <text x="560" y="275" font-size="10" fill="#7f1d1d">If Shard 2 fails: Only 25% of users affected, 75% continue normally</text>
+    <text x="560" y="290" font-size="10" fill="#7f1d1d">Data redistribution happens automatically via consistent hashing</text>
+    
+    <!-- Client Layer -->
+    <rect x="200" y="330" width="600" height="80" fill="#fffbeb" stroke="#f59e0b" stroke-width="2" rx="6"/>
+    <text x="220" y="355" font-size="14" font-weight="bold" fill="#d97706">CLIENT LAYER (LinkedIn Application)</text>
+    
+    <rect x="230" y="370" width="140" height="30" fill="#fed7aa" stroke="#f59e0b" stroke-width="1" rx="4"/>
+    <text x="300" y="388" text-anchor="middle" font-size="10" fill="#92400e">Profile Service</text>
+    
+    <rect x="390" y="370" width="140" height="30" fill="#fed7aa" stroke="#f59e0b" stroke-width="1" rx="4"/>
+    <text x="460" y="388" text-anchor="middle" font-size="10" fill="#92400e">Feed Service</text>
+    
+    <rect x="550" y="370" width="140" height="30" fill="#fed7aa" stroke="#f59e0b" stroke-width="1" rx="4"/>
+    <text x="620" y="388" text-anchor="middle" font-size="10" fill="#92400e">Messaging Service</text>
+    
+    <!-- Arrows from clients to shards -->
+    <line x1="300" y1="370" x2="610" y2="170" stroke="#374151" stroke-width="2" marker-end="url(#arrowhead)"/>
+    <line x1="460" y1="370" x2="750" y2="170" stroke="#374151" stroke-width="2" marker-end="url(#arrowhead)"/>
+    <line x1="620" y1="370" x2="890" y2="170" stroke="#374151" stroke-width="2" marker-end="url(#arrowhead)"/>
+    
+    <!-- Key Benefits -->
+    <rect x="50" y="440" width="900" height="140" fill="#f8fafc" stroke="#64748b" stroke-width="1" rx="4"/>
+    <text x="70" y="465" font-size="14" font-weight="bold" fill="#1e293b">KEY BENEFITS & FAILURE MITIGATION</text>
+    
+    <rect x="80" y="480" width="260" height="80" fill="#ecfdf5" stroke="#10b981" stroke-width="1" rx="4"/>
+    <text x="90" y="500" font-size="11" font-weight="bold" fill="#047857">Data Availability</text>
+    <text x="90" y="515" font-size="9" fill="#059669">" Zero data loss during failures</text>
+    <text x="90" y="530" font-size="9" fill="#059669">" Automatic failover &lt; 30 seconds</text>
+    <text x="90" y="545" font-size="9" fill="#059669">" Cross-region disaster recovery</text>
+    
+    <rect x="360" y="480" width="260" height="80" fill="#eff6ff" stroke="#3b82f6" stroke-width="1" rx="4"/>
+    <text x="370" y="500" font-size="11" font-weight="bold" fill="#1d4ed8">Scalability</text>
+    <text x="370" y="515" font-size="9" fill="#2563eb">" Linear scaling with shards</text>
+    <text x="370" y="530" font-size="9" fill="#2563eb">" Load distribution across nodes</text>
+    <text x="370" y="545" font-size="9" fill="#2563eb">" Independent shard operations</text>
+    
+    <rect x="640" y="480" width="260" height="80" fill="#fef7ff" stroke="#a855f7" stroke-width="1" rx="4"/>
+    <text x="650" y="500" font-size="11" font-weight="bold" fill="#7e22ce">Fault Isolation</text>
+    <text x="650" y="515" font-size="9" fill="#8b5cf6">" Shard failures don't cascade</text>
+    <text x="650" y="530" font-size="9" fill="#8b5cf6">" Partial degradation vs total failure</text>
+    <text x="650" y="545" font-size="9" fill="#8b5cf6">" Blast radius containment</text>
+</svg>

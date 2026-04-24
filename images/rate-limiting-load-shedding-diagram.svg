@@ -1,0 +1,180 @@
+<svg width="1000" height="700" xmlns="http://www.w3.org/2000/svg">
+    <!-- Background -->
+    <rect width="1000" height="700" fill="#ffffff" stroke="#e0e0e0" stroke-width="2" rx="4"/>
+    
+    <!-- Title -->
+    <rect x="20" y="10" width="960" height="40" fill="#f59e0b" rx="4"/>
+    <text x="500" y="35" text-anchor="middle" font-size="16" font-weight="bold" fill="white">
+        Rate Limiting &amp; Load Shedding: LinkedIn API Gateway
+    </text>
+    
+    <!-- Client Types -->
+    <rect x="30" y="70" width="200" height="300" fill="#eff6ff" stroke="#3b82f6" stroke-width="2" rx="6"/>
+    <text x="50" y="95" font-size="14" font-weight="bold" fill="#1d4ed8">CLIENT TYPES</text>
+    
+    <!-- Mobile App -->
+    <rect x="50" y="110" width="160" height="50" fill="#3b82f6" stroke="#1e40af" stroke-width="2" rx="4"/>
+    <text x="130" y="130" text-anchor="middle" font-size="11" font-weight="bold" fill="white">Mobile App</text>
+    <text x="130" y="145" text-anchor="middle" font-size="9" fill="white">10M active users</text>
+    
+    <!-- Web App -->
+    <rect x="50" y="170" width="160" height="50" fill="#3b82f6" stroke="#1e40af" stroke-width="2" rx="4"/>
+    <text x="130" y="190" text-anchor="middle" font-size="11" font-weight="bold" fill="white">Web App</text>
+    <text x="130" y="205" text-anchor="middle" font-size="9" fill="white">5M active users</text>
+    
+    <!-- Third Party -->
+    <rect x="50" y="230" width="160" height="50" fill="#3b82f6" stroke="#1e40af" stroke-width="2" rx="4"/>
+    <text x="130" y="250" text-anchor="middle" font-size="11" font-weight="bold" fill="white">Third Party APIs</text>
+    <text x="130" y="265" text-anchor="middle" font-size="9" fill="white">100K integrations</text>
+    
+    <!-- Internal Services -->
+    <rect x="50" y="290" width="160" height="50" fill="#3b82f6" stroke="#1e40af" stroke-width="2" rx="4"/>
+    <text x="130" y="310" text-anchor="middle" font-size="11" font-weight="bold" fill="white">Internal Services</text>
+    <text x="130" y="325" text-anchor="middle" font-size="9" fill="white">1000 microservices</text>
+    
+    <!-- Rate Limiting Layers -->
+    <rect x="270" y="70" width="400" height="300" fill="#fef2f2" stroke="#dc2626" stroke-width="2" rx="6"/>
+    <text x="290" y="95" font-size="14" font-weight="bold" fill="#991b1b">RATE LIMITING LAYERS</text>
+    
+    <!-- Global Rate Limiter -->
+    <rect x="290" y="110" width="360" height="60" fill="#dc2626" stroke="#b91c1c" stroke-width="2" rx="4"/>
+    <text x="470" y="130" text-anchor="middle" font-size="12" font-weight="bold" fill="white">GLOBAL RATE LIMITER</text>
+    <text x="310" y="150" font-size="10" fill="white">" Platform: 1M requests/minute</text>
+    <text x="490" y="150" font-size="10" fill="white">" Emergency: 500K/min (load shed)</text>
+    
+    <!-- Per-Client Rate Limiter -->
+    <rect x="290" y="180" width="360" height="60" fill="#f59e0b" stroke="#d97706" stroke-width="2" rx="4"/>
+    <text x="470" y="200" text-anchor="middle" font-size="12" font-weight="bold" fill="white">PER-CLIENT RATE LIMITER</text>
+    <text x="310" y="220" font-size="10" fill="white">" Mobile: 10K requests/min</text>
+    <text x="490" y="220" font-size="10" fill="white">" Web: 5K/min " API: 1K/min</text>
+    
+    <!-- Per-User Rate Limiter -->
+    <rect x="290" y="250" width="360" height="60" fill="#ef4444" stroke="#dc2626" stroke-width="2" rx="4"/>
+    <text x="470" y="270" text-anchor="middle" font-size="12" font-weight="bold" fill="white">PER-USER RATE LIMITER</text>
+    <text x="310" y="290" font-size="10" fill="white">" Premium: 1000 requests/hour</text>
+    <text x="490" y="290" font-size="10" fill="white">" Free: 100/hour</text>
+    
+    <!-- Feature-Level Controls -->
+    <rect x="290" y="320" width="360" height="40" fill="#7c3aed" stroke="#6d28d9" stroke-width="2" rx="4"/>
+    <text x="470" y="340" text-anchor="middle" font-size="12" font-weight="bold" fill="white">FEATURE-LEVEL CONTROLS</text>
+    <text x="310" y="355" font-size="10" fill="white">Search: 20/min " Messaging: 100/min " Posts: 10/min</text>
+    
+    <!-- Load Shedding Engine -->
+    <rect x="710" y="70" width="260" height="300" fill="#f0fdf4" stroke="#22c55e" stroke-width="2" rx="6"/>
+    <text x="730" y="95" font-size="14" font-weight="bold" fill="#15803d">LOAD SHEDDING</text>
+    
+    <!-- Priority Levels -->
+    <rect x="730" y="110" width="220" height="40" fill="#22c55e" stroke="#16a34a" stroke-width="2" rx="4"/>
+    <text x="840" y="130" text-anchor="middle" font-size="11" font-weight="bold" fill="white">P0: Critical (Never Shed)</text>
+    <text x="840" y="145" text-anchor="middle" font-size="9" fill="white">Login, Messaging, Core Feed</text>
+    
+    <rect x="730" y="160" width="220" height="40" fill="#f59e0b" stroke="#d97706" stroke-width="2" rx="4"/>
+    <text x="840" y="180" text-anchor="middle" font-size="11" font-weight="bold" fill="white">P1: Important (Shed at 80%)</text>
+    <text x="840" y="195" text-anchor="middle" font-size="9" fill="white">Profile Views, Job Search</text>
+    
+    <rect x="730" y="210" width="220" height="40" fill="#ef4444" stroke="#dc2626" stroke-width="2" rx="4"/>
+    <text x="840" y="230" text-anchor="middle" font-size="11" font-weight="bold" fill="white">P2: Optional (Shed at 60%)</text>
+    <text x="840" y="245" text-anchor="middle" font-size="9" fill="white">Recommendations, Analytics</text>
+    
+    <rect x="730" y="260" width="220" height="40" fill="#64748b" stroke="#475569" stroke-width="2" rx="4"/>
+    <text x="840" y="280" text-anchor="middle" font-size="11" font-weight="bold" fill="white">P3: Background (Shed at 40%)</text>
+    <text x="840" y="295" text-anchor="middle" font-size="9" fill="white">ML Training, Batch Jobs</text>
+    
+    <!-- Load Monitoring -->
+    <rect x="730" y="310" width="220" height="50" fill="#fef7ff" stroke="#a855f7" stroke-width="1" rx="4"/>
+    <text x="840" y="330" text-anchor="middle" font-size="10" font-weight="bold" fill="#7e22ce">Current System Load</text>
+    <text x="840" y="345" text-anchor="middle" font-size="9" fill="#7c3aed">CPU: 85% | Memory: 78%</text>
+    <text x="840" y="360" text-anchor="middle" font-size="9" fill="#7c3aed">  P2 Load Shedding Active</text>
+    
+    <!-- Flow Arrows -->
+    <defs>
+        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto" fill="#374151">
+            <polygon points="0 0, 10 3.5, 0 7"/>
+        </marker>
+        <marker id="blockedArrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto" fill="#dc2626">
+            <polygon points="0 0, 10 3.5, 0 7"/>
+        </marker>
+        <marker id="allowedArrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto" fill="#22c55e">
+            <polygon points="0 0, 10 3.5, 0 7"/>
+        </marker>
+    </defs>
+    
+    <!-- Request flows -->
+    <line x1="230" y1="135" x2="270" y2="140" stroke="#22c55e" stroke-width="3" marker-end="url(#allowedArrow)"/>
+    <line x1="230" y1="195" x2="270" y2="210" stroke="#22c55e" stroke-width="3" marker-end="url(#allowedArrow)"/>
+    <line x1="230" y1="255" x2="270" y2="280" stroke="#dc2626" stroke-width="3" stroke-dasharray="5,5" marker-end="url(#blockedArrow)"/>
+    <line x1="230" y1="315" x2="270" y2="340" stroke="#22c55e" stroke-width="3" marker-end="url(#allowedArrow)"/>
+    
+    <!-- Rate limiter to load shedding -->
+    <line x1="670" y1="220" x2="710" y2="220" stroke="#374151" stroke-width="3" marker-end="url(#arrowhead)"/>
+    
+    <!-- Backend Services -->
+    <rect x="50" y="390" width="900" height="200" fill="#f8fafc" stroke="#64748b" stroke-width="2" rx="6"/>
+    <text x="70" y="415" font-size="14" font-weight="bold" fill="#1e293b">BACKEND SERVICES (PROTECTED BY RATE LIMITING)</text>
+    
+    <!-- Espresso -->
+    <rect x="80" y="430" width="160" height="60" fill="#7c3aed" stroke="#6d28d9" stroke-width="2" rx="4"/>
+    <text x="160" y="450" text-anchor="middle" font-size="11" font-weight="bold" fill="white">Espresso DB</text>
+    <text x="160" y="465" text-anchor="middle" font-size="9" fill="white">Profile Data</text>
+    <text x="160" y="480" text-anchor="middle" font-size="9" fill="white">Protected: 50K QPS</text>
+    
+    <!-- Feed Service -->
+    <rect x="260" y="430" width="160" height="60" fill="#16a34a" stroke="#15803d" stroke-width="2" rx="4"/>
+    <text x="340" y="450" text-anchor="middle" font-size="11" font-weight="bold" fill="white">Feed Service</text>
+    <text x="340" y="465" text-anchor="middle" font-size="9" fill="white">Personalization</text>
+    <text x="340" y="480" text-anchor="middle" font-size="9" fill="white">Protected: 30K QPS</text>
+    
+    <!-- Search -->
+    <rect x="440" y="430" width="160" height="60" fill="#f59e0b" stroke="#d97706" stroke-width="2" rx="4"/>
+    <text x="520" y="450" text-anchor="middle" font-size="11" font-weight="bold" fill="white">Search Service</text>
+    <text x="520" y="465" text-anchor="middle" font-size="9" fill="white">Elasticsearch</text>
+    <text x="520" y="480" text-anchor="middle" font-size="9" fill="white">Protected: 20K QPS</text>
+    
+    <!-- Messaging -->
+    <rect x="620" y="430" width="160" height="60" fill="#ef4444" stroke="#dc2626" stroke-width="2" rx="4"/>
+    <text x="700" y="450" text-anchor="middle" font-size="11" font-weight="bold" fill="white">Messaging</text>
+    <text x="700" y="465" text-anchor="middle" font-size="9" fill="white">Real-time Chat</text>
+    <text x="700" y="480" text-anchor="middle" font-size="9" fill="white">Protected: 40K QPS</text>
+    
+    <!-- ML Services -->
+    <rect x="800" y="430" width="160" height="60" fill="#64748b" stroke="#475569" stroke-width="2" rx="4"/>
+    <text x="880" y="450" text-anchor="middle" font-size="11" font-weight="bold" fill="white">ML Services</text>
+    <text x="880" y="465" text-anchor="middle" font-size="9" fill="white">Recommendations</text>
+    <text x="880" y="480" text-anchor="middle" font-size="9" fill="white">Load Shed: ACTIVE</text>
+    
+    <!-- Load Shedding Status -->
+    <rect x="80" y="510" width="840" height="70" fill="#fffbeb" stroke="#f59e0b" stroke-width="1" rx="4"/>
+    <text x="100" y="530" font-size="12" font-weight="bold" fill="#d97706">REAL-TIME LOAD SHEDDING STATUS</text>
+    
+    <rect x="100" y="540" width="180" height="30" fill="#ecfdf5" stroke="#10b981" stroke-width="1" rx="4"/>
+    <text x="190" y="558" text-anchor="middle" font-size="9" fill="#047857">P0: 100% Available </text>
+    
+    <rect x="300" y="540" width="180" height="30" fill="#fef3c7" stroke="#f59e0b" stroke-width="1" rx="4"/>
+    <text x="390" y="558" text-anchor="middle" font-size="9" fill="#d97706">P1: 95% Available  </text>
+    
+    <rect x="500" y="540" width="180" height="30" fill="#fef2f2" stroke="#dc2626" stroke-width="1" rx="4"/>
+    <text x="590" y="558" text-anchor="middle" font-size="9" fill="#991b1b">P2: 60% Available L</text>
+    
+    <rect x="700" y="540" width="180" height="30" fill="#f1f5f9" stroke="#64748b" stroke-width="1" rx="4"/>
+    <text x="790" y="558" text-anchor="middle" font-size="9" fill="#475569">P3: 0% Available L</text>
+    
+    <!-- Configuration Details -->
+    <rect x="50" y="610" width="900" height="80" fill="#f0f9ff" stroke="#0ea5e9" stroke-width="1" rx="4"/>
+    <text x="70" y="630" font-size="12" font-weight="bold" fill="#0c4a6e">LINKEDIN RATE LIMITING CONFIGURATION</text>
+    
+    <rect x="80" y="645" width="200" height="35" fill="#e0f2fe" stroke="#0891b2" stroke-width="1" rx="4"/>
+    <text x="90" y="660" font-size="10" font-weight="bold" fill="#0e7490">Token Bucket</text>
+    <text x="90" y="675" font-size="9" fill="#0369a1">Refill: 100 tokens/sec</text>
+    
+    <rect x="300" y="645" width="200" height="35" fill="#e0f2fe" stroke="#0891b2" stroke-width="1" rx="4"/>
+    <text x="310" y="660" font-size="10" font-weight="bold" fill="#0e7490">Sliding Window</text>
+    <text x="310" y="675" font-size="9" fill="#0369a1">Window: 1 minute</text>
+    
+    <rect x="520" y="645" width="200" height="35" fill="#e0f2fe" stroke="#0891b2" stroke-width="1" rx="4"/>
+    <text x="530" y="660" font-size="10" font-weight="bold" fill="#0e7490">Circuit Breaker</text>
+    <text x="530" y="675" font-size="9" fill="#0369a1">Threshold: 5% error rate</text>
+    
+    <rect x="740" y="645" width="200" height="35" fill="#e0f2fe" stroke="#0891b2" stroke-width="1" rx="4"/>
+    <text x="750" y="660" font-size="10" font-weight="bold" fill="#0e7490">Load Shedding</text>
+    <text x="750" y="675" font-size="9" fill="#0369a1">CPU &gt; 80% ’ Shed P2+</text>
+</svg>

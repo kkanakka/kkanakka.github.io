@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reliability Patterns at LinkedIn — Espresso & Infrastructure Examples</title>
+    <style>
+        /* Clean Document Theme */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            line-height: 1.6;
+            color: #000000;
+            background: #ffffff;
+            font-size: 16px;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 60px;
+        }
+
+        h1 {
+            font-size: 28px;
+            margin: 24px 0 16px 0;
+            color: #000000;
+            font-weight: bold;
+            text-align: center;
+            border-bottom: 2px solid #000000;
+            padding-bottom: 12px;
+        }
+
+        h2 {
+            font-size: 22px;
+            margin: 24px 0 12px 0;
+            color: #000000;
+            font-weight: bold;
+        }
+
+        h3 {
+            font-size: 18px;
+            margin: 18px 0 8px 0;
+            color: #000000;
+            font-weight: bold;
+        }
+
+        p {
+            margin-bottom: 12px;
+            text-align: justify;
+        }
+
+        strong {
+            font-weight: bold;
+        }
+
+        img {
+            max-width: 100%;
+            height: auto;
+            margin: 20px 0;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+            border: 1px solid #cccccc;
+        }
+
+        .diagram-caption {
+            text-align: center;
+            font-size: 14px;
+            color: #666666;
+            font-style: italic;
+            margin-top: -12px;
+            margin-bottom: 20px;
+        }
+
+        .nav-links {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .nav-links a {
+            color: #0066cc;
+            text-decoration: underline;
+            margin: 0 12px;
+            font-size: 14px;
+        }
+
+        .nav-links a:hover {
+            color: #004499;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 20px 30px;
+                font-size: 15px;
+            }
+            h1 { font-size: 24px; }
+            h2 { font-size: 20px; }
+            h3 { font-size: 17px; }
+        }
+    </style>
+</head>
+<body>
+    <h1>Reliability Patterns at LinkedIn</h1>
+    
+    <div class="nav-links">
+        <a href="index.html">← Back to Home</a>
+        <a href="google-sre-systems-design.html">SRE Systems Design</a>
+    </div>
+
+    <p style="text-align: center; font-style: italic; color: #666666; margin-bottom: 32px;">
+        "Which reliability patterns mitigate failure modes?" — Deep dive into LinkedIn's infrastructure patterns using Espresso as the primary example
+    </p>
+
+    <h2>1. Replication (Master-Slave, Master-Master, Sharding)</h2>
+
+    <p><strong>Pattern Explanation:</strong> Replication distributes data across multiple nodes to eliminate single points of failure. In LinkedIn's Espresso (distributed document store), data is replicated using a master-slave model where writes go to a master partition and are asynchronously replicated to slave replicas across different data centers. This ensures that if the master fails, a slave can be promoted to maintain availability. LinkedIn also uses sharding to horizontally partition data across multiple Espresso clusters, where each shard handles a subset of member profiles or feed data.</p>
+
+    <p><strong>Failure Mitigation:</strong> When a master Espresso node fails serving LinkedIn member profiles, the system automatically promotes a slave replica to master within seconds, preventing data loss and maintaining read/write availability. Sharding ensures that if an entire shard becomes unavailable (e.g., due to network partition), only a fraction of users are affected rather than the entire LinkedIn platform. The replication factor of 3 across geographic regions means LinkedIn can tolerate up to 2 simultaneous node failures per shard without data loss.</p>
+
+    <img src="images/replication-pattern-diagram.svg" alt="LinkedIn Espresso Replication Pattern">
+    <div class="diagram-caption">Figure 1: LinkedIn Espresso's master-slave replication and sharding strategy for member profile data</div>
+
+    <h2>2. Circuit Breakers and Bulkheads</h2>
+
+    <p><strong>Pattern Explanation:</strong> Circuit breakers act like electrical fuses, automatically cutting off calls to failing services to prevent cascade failures. In LinkedIn's architecture, when the Espresso database experiences high latency or error rates, circuit breakers in the profile service automatically "open" and stop sending requests, instead returning cached data or graceful error responses. Bulkheads provide resource isolation by partitioning system resources (like thread pools, connection pools, or compute resources) so that failure in one area doesn't consume all available resources and bring down the entire system.</p>
+
+    <p><strong>Failure Mitigation:</strong> When LinkedIn's recommendation service calls to Espresso start failing (e.g., due to database overload), the circuit breaker detects the 5% error rate threshold breach and opens within seconds, protecting Espresso from further load while allowing the recommendation service to serve cached results. Bulkheads ensure that if the messaging service thread pool becomes saturated due to a spam attack, it doesn't steal resources from the newsfeed service, maintaining overall platform stability. This prevents a localized failure from cascading into a full LinkedIn outage affecting all 900 million members.</p>
+
+    <img src="images/circuit-breaker-bulkhead-diagram.svg" alt="LinkedIn Circuit Breaker and Bulkhead Implementation">
+    <div class="diagram-caption">Figure 2: Circuit breaker states and bulkhead resource isolation in LinkedIn's application architecture</div>
+
+    <h2>3. Queue-based Decoupling and Backpressure</h2>
+
+    <p><strong>Pattern Explanation:</strong> Queue-based decoupling uses message queues to separate producers and consumers, allowing them to operate independently at different speeds. LinkedIn uses Kafka extensively for this pattern - when users publish posts, the content goes into a Kafka topic that feeds multiple downstream services (feed generation, search indexing, analytics) asynchronously. Backpressure mechanisms prevent fast producers from overwhelming slow consumers by implementing flow control. When LinkedIn's feed generation service can't keep up with the incoming stream of posts, it signals backpressure to slow down the publishing rate or buffer more data.</p>
+
+    <p><strong>Failure Mitigation:</strong> During LinkedIn's peak posting hours (like major news events), the post publishing service can generate 100,000 posts/minute, but the feed personalization service might only process 50,000/minute. Without queues, this mismatch would cause cascading failures and lost posts. Kafka acts as a shock absorber, buffering the excess load while backpressure mechanisms in the feed service trigger auto-scaling of additional processing instances. If the search indexing service fails completely, posts continue to flow to other consumers (feed generation, analytics) without interruption, ensuring core LinkedIn functionality remains available even when secondary features are degraded.</p>
+
+    <img src="images/queue-backpressure-diagram.svg" alt="LinkedIn Kafka-based Queue Decoupling">
+    <div class="diagram-caption">Figure 3: LinkedIn's content pipeline using Kafka for decoupling with backpressure control mechanisms</div>
+
+    <h2>4. Graceful Degradation and Fallbacks</h2>
+
+    <p><strong>Pattern Explanation:</strong> Graceful degradation allows systems to continue operating with reduced functionality when components fail, rather than complete failure. LinkedIn implements this by serving progressively simpler content when backend services are unavailable. For example, if the personalization engine fails, LinkedIn falls back to chronological feed ordering. If Espresso (the profile database) is slow, profile pages show cached basic information instead of real-time data. The system degrades gracefully through multiple fallback layers: personalized content → recent content → popular content → static content → error page.</p>
+
+    <p><strong>Failure Mitigation:</strong> When LinkedIn's recommendation service fails (which personalizes the feed for each user), instead of showing empty feeds to 900 million members, the system gracefully degrades to show a chronological timeline of connections' posts. If that fails, it shows trending industry content. If Espresso profile data is unavailable, profile views show cached basic information (name, headline, company) from Redis instead of real-time details. This multi-layer fallback strategy ensures that even during major outages, users still get valuable LinkedIn functionality - they can view content, send messages, and browse jobs, maintaining user engagement and business continuity.</p>
+
+    <img src="images/graceful-degradation-diagram.svg" alt="LinkedIn Feed Service Graceful Degradation">
+    <div class="diagram-caption">Figure 4: LinkedIn's feed service graceful degradation layers from full personalization to minimal static content</div>
+
+    <h2>5. Rate Limiting and Load Shedding</h2>
+
+    <p><strong>Pattern Explanation:</strong> Rate limiting controls the number of requests a client can make within a specific time window, preventing system overload from excessive traffic. LinkedIn implements multiple rate limiting layers: per-user limits (to prevent abuse), per-API limits (to protect backend services), and global limits (to maintain overall system stability). Load shedding complements this by dropping lower-priority requests when the system approaches capacity limits. For example, during viral content events, LinkedIn may rate-limit profile photo uploads while prioritizing core functions like messaging and feed access.</p>
+
+    <p><strong>Failure Mitigation:</strong> When LinkedIn experiences traffic spikes (like during major layoff announcements or viral posts), without rate limiting, the flood of requests would overwhelm Espresso and cause complete platform failure. Instead, rate limiting kicks in at multiple levels: individual users are limited to 1000 API calls/hour, the mobile app is limited to 10,000 feed requests/minute, and non-critical features like "People You May Know" are load-shed first. This ensures that core LinkedIn functionality (messaging, job searching, posting) remains available for all users even when traffic is 10x normal levels. The system gracefully handles millions of concurrent users by prioritizing business-critical operations and temporarily throttling less essential features.</p>
+
+    <img src="images/rate-limiting-load-shedding-diagram.svg" alt="LinkedIn Rate Limiting and Load Shedding">
+    <div class="diagram-caption">Figure 5: LinkedIn's multi-layer rate limiting and priority-based load shedding architecture</div>
+
+    <h2>Key Takeaways for SRE Interviews</h2>
+
+    <p><strong>Pattern Integration:</strong> These patterns work synergistically at LinkedIn. Circuit breakers prevent overload, queues provide buffering, replication ensures availability, graceful degradation maintains user experience, and rate limiting provides fine-grained control. During a major outage, all patterns activate together to minimize user impact.</p>
+
+    <p><strong>Business Impact Focus:</strong> Each pattern directly maps to business metrics - replication ensures zero revenue loss during failures, circuit breakers maintain user engagement during backend issues, queues enable feature independence, graceful degradation preserves user sessions, and rate limiting protects against abuse that could impact legitimate users. Understanding these business connections is crucial for SRE interviews at companies like Google, LinkedIn, and Meta.</p>
+
+    <div class="nav-links" style="margin-top: 40px;">
+        <a href="index.html">← Back to Home</a>
+        <a href="google-sre-systems-design.html">SRE Systems Design Guide</a>
+    </div>
+</body>
+</html>
