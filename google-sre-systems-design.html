@@ -781,119 +781,17 @@
             <div class="step">
                 <h4>🏗️ Production-Grade Monitoring & Alerting Platform</h4>
                 
-                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 3px; padding: 8px; margin: 8px 0; overflow-x: auto;">
-                    <div style="font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace; font-size: 9px; line-height: 1.1; white-space: pre; color: #2d3748;">
-┌─────────────────────────────────────────────────────────────────────────────────────────┐
-│                     GLOBAL MONITORING & ALERTING PLATFORM                              │
-│                                 (100M metrics/sec)                                      │
-└─────────────────────────────────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────────────────────────────────┐
-│ PRODUCERS (Services, Infra, Apps)                                                      │
-├─────────────────────────────────────────────────────────────────────────────────────────┤
-│  gRPC/HTTP Telemetry Agents │ Structured Metrics │ Authentication & TLS │ Batching     │
-│  ┌─────┐ ┌─────┐ ┌─────┐    │ (JSON/Protobuf)   │ Client Certificates  │ (1000/batch) │
-│  │App-1│ │App-2│ │Infra│    │                   │                      │              │
-│  └─────┘ └─────┘ └─────┘    │                   │                      │              │
-└─────────────────────────────────────────────────────────────────────────────────────────┘
-                                         │
-                                         ▼
-┌─────────────────────────────────────────────────────────────────────────────────────────┐
-│ REGIONAL INGRESS LAYER (Multi-DC)                                                      │
-├─────────────────────────────────────────────────────────────────────────────────────────┤
-│                      Global Load Balancer (99.99% SLA)                                 │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐                        │
-│  │   Region US-W   │  │   Region US-E   │  │   Region EU-W   │                        │
-│  │ ┌─────────────┐ │  │ ┌─────────────┐ │  │ ┌─────────────┐ │                        │
-│  │ │ API Gateway │ │  │ │ API Gateway │ │  │ │ API Gateway │ │                        │
-│  │ │ Rate Limit  │ │  │ │ Rate Limit  │ │  │ │ Rate Limit  │ │                        │
-│  │ │ Auth + TLS  │ │  │ │ Auth + TLS  │ │  │ │ Auth + TLS  │ │                        │
-│  │ └─────────────┘ │  │ └─────────────┘ │  │ └─────────────┘ │                        │
-│  └─────────────────┘  └─────────────────┘  └─────────────────┘                        │
-└─────────────────────────────────────────────────────────────────────────────────────────┘
-                                         │
-                                         ▼
-┌─────────────────────────────────────────────────────────────────────────────────────────┐
-│ DURABLE MESSAGE QUEUE (Multi-Region Kafka)                                             │
-├─────────────────────────────────────────────────────────────────────────────────────────┤
-│  Partitioned by: service_id, tenant_id, region                                        │
-│  ┌────────────────────────────────────────────────────────────────────────────────┐   │
-│  │ Topic: telemetry-raw    │ Retention: 7 days │ Replication: 3x │ Partitions: 1000│   │
-│  ├─────────────────────────┼────────────────────┼─────────────────┼─────────────────┤   │
-│  │ Partition 0: svc-auth   │ Partition 1: svc-web │ ... │ Partition 999: svc-db    │   │
-│  └────────────────────────────────────────────────────────────────────────────────┘   │
-│  Dead Letter Queue (DLQ) for malformed/oversized messages                             │
-└─────────────────────────────────────────────────────────────────────────────────────────┘
-                                         │
-                                         ▼
-┌─────────────────────────────────────────────────────────────────────────────────────────┐
-│ STREAM PROCESSING LAYER (Autoscaling Workers)                                          │
-├─────────────────────────────────────────────────────────────────────────────────────────┤
-│  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐                     │
-│  │ Aggregator-1     │  │ Aggregator-2     │  │ Aggregator-N     │                     │
-│  │ ┌──────────────┐ │  │ ┌──────────────┐ │  │ ┌──────────────┐ │                     │
-│  │ │ Deduplication│ │  │ │ Deduplication│ │  │ │ Deduplication│ │                     │
-│  │ │ Pre-aggregate│ │  │ │ Pre-aggregate│ │  │ │ Pre-aggregate│ │                     │
-│  │ │ SLI Compute  │ │  │ │ SLI Compute  │ │  │ │ SLI Compute  │ │                     │
-│  │ │ Rule Engine  │ │  │ │ Rule Engine  │ │  │ │ Rule Engine  │ │                     │
-│  │ └──────────────┘ │  │ └──────────────┘ │  │ └──────────────┘ │                     │
-│  └──────────────────┘  └──────────────────┘  └──────────────────┘                     │
-│       Checkpoints stored in durable store (for failover recovery)                     │
-└─────────────────────────────────────────────────────────────────────────────────────────┘
-                                         │
-                                         ▼
-┌─────────────────────────────────────────────────────────────────────────────────────────┐
-│ STORAGE LAYER                                                                           │
-├─────────────────────────────────────────────────────────────────────────────────────────┤
-│  ┌─────────────────────────┐              ┌─────────────────────────┐                  │
-│  │   HOT STORAGE (30d)     │              │  COLD STORAGE (3y)      │                  │
-│  │ ┌─────────────────────┐ │              │ ┌─────────────────────┐ │                  │
-│  │ │  Time-Series DB     │ │              │ │  Object Store       │ │                  │
-│  │ │  (Bigtable/DDB)     │ │              │ │  (GCS/S3)          │ │                  │
-│  │ │  Sharded by:        │ │◄────────────►│ │  Compressed         │ │                  │
-│  │ │  - service_id       │ │              │ │  Parquet Format     │ │                  │
-│  │ │  - time_bucket      │ │              │ │  Partitioned by:    │ │                  │
-│  │ │  - metric_name      │ │              │ │  - year/month/day   │ │                  │
-│  │ └─────────────────────┘ │              │ └─────────────────────┘ │                  │
-│  └─────────────────────────┘              └─────────────────────────┘                  │
-└─────────────────────────────────────────────────────────────────────────────────────────┘
-                                         │
-                                         ▼
-┌─────────────────────────────────────────────────────────────────────────────────────────┐
-│ ALERTING ENGINE (Rule Evaluation & Notification)                                       │
-├─────────────────────────────────────────────────────────────────────────────────────────┤
-│  ┌─────────────────────────┐  ┌─────────────────────────┐  ┌─────────────────────────┐ │
-│  │ Rule Evaluator          │  │ Deduplication Engine    │  │ Notification Router     │ │
-│  │ ┌─────────────────────┐ │  │ ┌─────────────────────┐ │  │ ┌─────────────────────┐ │ │
-│  │ │ SLO Breach Rules    │ │  │ │ Fingerprint Cache   │ │  │ │ PagerDuty API      │ │ │
-│  │ │ Error Budget Rules  │ │  │ │ Sliding Window      │ │  │ │ Slack Webhooks     │ │ │
-│  │ │ Threshold Rules     │ │  │ │ Alert Grouping      │ │  │ │ Email SMTP         │ │ │
-│  │ │ Burn Rate Rules     │ │  │ │ Storm Prevention    │ │  │ │ SMS Gateway        │ │ │
-│  │ └─────────────────────┘ │  │ └─────────────────────┘ │  │ └─────────────────────┘ │ │
-│  └─────────────────────────┘  └─────────────────────────┘  └─────────────────────────┘ │
-│                           Multi-channel delivery with retries                           │
-└─────────────────────────────────────────────────────────────────────────────────────────┘
-                                         │
-                                         ▼
-┌─────────────────────────────────────────────────────────────────────────────────────────┐
-│ OBSERVABILITY LAYER (Monitor the Monitor)                                              │
-├─────────────────────────────────────────────────────────────────────────────────────────┤
-│  ┌─────────────────────────┐  ┌─────────────────────────┐  ┌─────────────────────────┐ │
-│  │ Platform SLIs           │  │ Synthetic Monitoring    │  │ Chaos Engineering       │ │
-│  │ • Ingestion rate        │  │ • End-to-end tests      │  │ • Failure injection     │ │
-│  │ • Processing latency    │  │ • Alert delivery tests  │  │ • Dependency failure    │ │
-│  │ • Alert precision       │  │ • False positive rate   │  │ • Regional outage test  │ │
-│  │ • System availability   │  │ • Notification delivery │  │ • Scale testing         │ │
-│  └─────────────────────────┘  └─────────────────────────┘  └─────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────────────────────────────┘
-
-Key Reliability Patterns Applied:
-• Multi-region active-active (no single region failure)
-• Durable queues with DLQ (poison pill protection)
-• Autoscaling processors (burst capacity)
-• Deduplication engine (alert storm prevention)
-• Error budget aware alerting (precision over noise)
-• End-to-end synthetic monitoring (validate SLOs)
+                <div style="text-align: center; margin: 16px 0; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px;">
+                    <img src="images/monitoring-platform-architecture.svg" 
+                         alt="Global Monitoring & Alerting Platform Architecture" 
+                         style="max-width: 100%; height: auto; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                    <div style="margin-top: 12px; font-size: 11px; color: #64748b; text-align: center;">
+                        <strong>Production-Grade Monitoring Platform:</strong> Multi-region, 100M metrics/sec, 
+                        with durable message queues, auto-scaling stream processors, and comprehensive observability layer.
+                    </div>
+                    <div style="margin-top: 8px; font-size: 10px; color: #64748b;">
+                        <strong>Key Reliability Patterns:</strong> Multi-region active-active • Durable queues with DLQ • 
+                        Autoscaling processors • Deduplication engine • Error budget aware alerting • End-to-end synthetic monitoring
                     </div>
                 </div>
                 
