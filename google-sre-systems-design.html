@@ -1771,15 +1771,16 @@ Key Reliability Patterns Applied:
                 <h4>🏗️ Production-Grade Distributed Task Queue</h4>
                 
                 <div style="text-align: center; margin: 16px 0; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px;">
-                    <img src="images/distributed-task-queue-architecture.svg" 
-                         alt="Distributed Task Queue Architecture" 
+                    <img src="images/distributed-task-queue-detailed.svg" 
+                         alt="LinkedIn Distributed Task Queue Detailed Architecture" 
                          style="max-width: 100%; height: auto; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
                     <div style="margin-top: 12px; font-size: 11px; color: #64748b; text-align: center;">
-                        <strong>Distributed Task Queue:</strong> Multi-tenant processing at 10M tasks/sec with auto-scaling worker pools,
-                        priority routing, and comprehensive failure handling across CPU, I/O, GPU, and memory workloads.
+                        <strong>LinkedIn-Style Distributed Task Queue:</strong> Complete flow from producer enqueue → gateway admission → 
+                        Kafka partitioning → scheduler routing → specialized worker pools → success/failure paths with exactly-once semantics.
                     </div>
                     <div style="margin-top: 8px; font-size: 10px; color: #64748b;">
-                        <strong>Key Features:</strong> Priority routing • Auto-scaling workers • Dead letter queues • Multi-tenant isolation • Real-time monitoring
+                        <strong>Key Reliability Patterns:</strong> Idempotency keys • Lease-based claiming • CAS operations • Multi-pool routing • 
+                        Exponential backoff • Dead letter queues • Predictive auto-scaling • Circuit breakers
                     </div>
                 </div>
 
@@ -1803,10 +1804,12 @@ Key Reliability Patterns Applied:
                     <li><strong>Multi-tenant Isolation:</strong> Per-tenant resource quotas with fair scheduling and priority-based queue management</li>
                 </ul>
 
-                <h4>🎯 Advanced Queue Features:</h4>
-                <p><strong>Smart Worker Assignment:</strong> The system maintains different worker pools optimized for specific workload types. CPU-intensive tasks (image processing) route to high-compute instances, I/O-bound tasks (email sending) use smaller instances with high network bandwidth, GPU tasks route to specialized GPU-enabled nodes, and memory-intensive tasks use high-memory instances.</p>
+                <h4>🎯 LinkedIn-Style Flow Implementation:</h4>
+                <p><strong>Step 1-3: Producer → Gateway → Kafka:</strong> The LinkedIn image-upload service enqueues a thumbnail generation task with payload, tenant ID, priority class, and idempotency key (hash of input). The gateway performs authentication, schema validation, per-tenant token bucket checking, and crucially, a Spanner CAS operation: "insert this key if it doesn't exist." If the key exists, return the original task ID (preventing duplicate tasks from retries). Task lands in the appropriate Kafka topic (tasks.p0/p1/p2) partitioned by hash(tenant_id) for ordering within tenant while spreading tenants across partitions for parallelism.</p>
                 
-                <p><strong>Predictive Auto-scaling:</strong> The auto-scaler doesn't just react to queue depth. It uses ML models trained on historical patterns to predict task arrival rates, considering factors like time of day, day of week, and business events. This enables proactive scaling that prevents queue buildup during predictable traffic spikes.</p>
+                <p><strong>Step 4-6: Scheduler → Worker Claims → Completion:</strong> Stateless scheduler workers consume from Kafka and route tasks based on type: image_resize → CPU pool, send_email → I/O pool, run_inference → GPU pool. Workers claim tasks with leases (30s validity, 10s heartbeat renewal) rather than locks. No distributed lock manager prevents split-brain scenarios. Worker completion requires a conditional write to Spanner: "mark task=DONE only if status=RUNNING and my lease is valid." This CAS operation ensures exactly-once semantics - if the lease expired and another worker completed the task, the second worker's write fails harmlessly.</p>
+                
+                <p><strong>Step 7: Failure Paths & Control Loops:</strong> Worker crashes result in lease expiration and automatic task re-claiming by other workers. Task failures trigger exponential backoff requeuing (1s, 2s, 4s, 8s, 16s, 32s) with terminal failure after N retries moving tasks to DLQ. Background control loops include Kafka consumer lag feeding autoscalers, ML forecasting for 15-minute ahead capacity pre-warming, DLQ depth monitoring for systemic issues, and lease sweepers for edge case cleanup. Circuit breakers to downstream dependencies prevent cascading failures by failing fast and requeuing with backoff.</p>
             </div>
         </div>
     </section>
