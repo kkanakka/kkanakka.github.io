@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Diagram Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f8f9fa;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Visual Diagram Example - Like Kubernetes Reference</h1>
+        
+        <div class="architecture-diagram" style="background: #ffffff; border: 2px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 16px 0; position: relative;">
+            <div style="text-align: center; font-weight: bold; color: #1a202c; font-size: 16px; margin-bottom: 20px;">Global Monitoring & Alerting Platform (100M metrics/sec)</div>
+            
+            <!-- Producers Layer -->
+            <div style="background: #e6f3ff; border: 2px solid #4285f4; border-radius: 8px; padding: 12px; margin-bottom: 16px; position: relative;">
+                <div style="font-weight: bold; color: #1565c0; margin-bottom: 8px;">PRODUCERS (Services, Infrastructure, Applications)</div>
+                <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                    <div style="background: #bbdefb; border: 1px solid #1976d2; border-radius: 4px; padding: 8px; flex: 1; min-width: 120px;">
+                        <div style="font-weight: bold; font-size: 12px; color: #0d47a1;">App Services</div>
+                        <div style="font-size: 10px; color: #1565c0;">gRPC/HTTP</div>
+                    </div>
+                    <div style="background: #bbdefb; border: 1px solid #1976d2; border-radius: 4px; padding: 8px; flex: 1; min-width: 120px;">
+                        <div style="font-weight: bold; font-size: 12px; color: #0d47a1;">Infrastructure</div>
+                        <div style="font-size: 10px; color: #1565c0;">Telemetry Agents</div>
+                    </div>
+                    <div style="background: #bbdefb; border: 1px solid #1976d2; border-radius: 4px; padding: 8px; flex: 1; min-width: 120px;">
+                        <div style="font-weight: bold; font-size: 12px; color: #0d47a1;">Batch Jobs</div>
+                        <div style="font-size: 10px; color: #1565c0;">Scheduled Metrics</div>
+                    </div>
+                </div>
+                <div style="position: absolute; right: 8px; top: 8px; font-size: 10px; color: #1565c0;">
+                    • Auth & TLS<br>• Batching (1k/batch)
+                </div>
+            </div>
+            
+            <!-- Arrow Down -->
+            <div style="text-align: center; color: #4a5568; font-size: 20px; margin: 8px 0;">↓</div>
+            
+            <!-- Regional Ingress Layer -->
+            <div style="background: #e8f5e9; border: 2px solid #4caf50; border-radius: 8px; padding: 12px; margin-bottom: 16px;">
+                <div style="font-weight: bold; color: #2e7d32; margin-bottom: 8px;">MULTI-REGION INGRESS LAYER</div>
+                <div style="display: flex; gap: 12px; justify-content: space-between;">
+                    <div style="background: #c8e6c9; border: 1px solid #388e3c; border-radius: 4px; padding: 8px; flex: 1;">
+                        <div style="font-weight: bold; font-size: 12px; color: #1b5e20;">US-WEST-1</div>
+                        <div style="font-size: 10px; color: #2e7d32;">Load Balancer</div>
+                        <div style="font-size: 10px; color: #2e7d32;">Rate Limiting</div>
+                        <div style="font-size: 10px; color: #2e7d32;">Auth Gateway</div>
+                    </div>
+                    <div style="background: #c8e6c9; border: 1px solid #388e3c; border-radius: 4px; padding: 8px; flex: 1;">
+                        <div style="font-weight: bold; font-size: 12px; color: #1b5e20;">US-EAST-1</div>
+                        <div style="font-size: 10px; color: #2e7d32;">Load Balancer</div>
+                        <div style="font-size: 10px; color: #2e7d32;">Rate Limiting</div>
+                        <div style="font-size: 10px; color: #2e7d32;">Auth Gateway</div>
+                    </div>
+                    <div style="background: #c8e6c9; border: 1px solid #388e3c; border-radius: 4px; padding: 8px; flex: 1;">
+                        <div style="font-weight: bold; font-size: 12px; color: #1b5e20;">EU-WEST-1</div>
+                        <div style="font-size: 10px; color: #2e7d32;">Load Balancer</div>
+                        <div style="font-size: 10px; color: #2e7d32;">Rate Limiting</div>
+                        <div style="font-size: 10px; color: #2e7d32;">Auth Gateway</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Arrow Down -->
+            <div style="text-align: center; color: #4a5568; font-size: 20px; margin: 8px 0;">↓</div>
+            
+            <!-- Kafka Layer -->
+            <div style="background: #ffebee; border: 2px solid #f44336; border-radius: 8px; padding: 12px; margin-bottom: 16px;">
+                <div style="font-weight: bold; color: #c62828; margin-bottom: 8px;">DURABLE MESSAGE QUEUE (Multi-Region Kafka)</div>
+                <div style="display: flex; gap: 12px;">
+                    <div style="background: #ffcdd2; border: 1px solid #d32f2f; border-radius: 4px; padding: 8px; flex: 1;">
+                        <div style="font-weight: bold; font-size: 12px; color: #b71c1c;">telemetry-raw</div>
+                        <div style="font-size: 10px; color: #c62828;">1000 partitions</div>
+                        <div style="font-size: 10px; color: #c62828;">7d retention</div>
+                    </div>
+                    <div style="background: #ffcdd2; border: 1px solid #d32f2f; border-radius: 4px; padding: 8px; flex: 1;">
+                        <div style="font-weight: bold; font-size: 12px; color: #b71c1c;">Cross-Region Replication</div>
+                        <div style="font-size: 10px; color: #c62828;">3x replication</div>
+                        <div style="font-size: 10px; color: #c62828;">MirrorMaker 2.0</div>
+                    </div>
+                    <div style="background: #ffcdd2; border: 1px solid #d32f2f; border-radius: 4px; padding: 8px; flex: 1;">
+                        <div style="font-weight: bold; font-size: 12px; color: #b71c1c;">Dead Letter Queue</div>
+                        <div style="font-size: 10px; color: #c62828;">Malformed messages</div>
+                        <div style="font-size: 10px; color: #c62828;">Error handling</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Key Patterns -->
+            <div style="background: #f0f9ff; border: 1px solid #0ea5e9; border-radius: 4px; padding: 8px; margin-top: 16px;">
+                <div style="font-weight: bold; color: #0c4a6e; font-size: 12px; margin-bottom: 4px;">Key Reliability Patterns:</div>
+                <div style="font-size: 10px; color: #075985;">• Multi-region active-active (no SPOF) • Durable queues with DLQ • Auto-scaling processors</div>
+            </div>
+        </div>
+        
+        <p>This is how the visual diagrams should look - similar to the Kubernetes diagram you showed with colored boxes, clean layouts, and professional styling.</p>
+    </div>
+</body>
+</html>
