@@ -12,77 +12,80 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            background: #f8f9fa;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.5;
+            color: #37352f;
+            background: #ffffff;
+            font-size: 16px;
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 900px;
             margin: 0 auto;
-            padding: 0 20px;
+            padding: 0 24px;
         }
 
         .hero {
-            background: linear-gradient(135deg, #4285f4 0%, #ea4335 50%, #34a853 100%);
-            color: white;
-            padding: 60px 0;
-            text-align: center;
+            background: #ffffff;
+            border-bottom: 1px solid #e9ecef;
+            padding: 32px 0;
+            text-align: left;
         }
 
         .hero h1 {
-            font-size: 3rem;
-            margin-bottom: 1rem;
+            font-size: 2.25rem;
+            margin-bottom: 8px;
             font-weight: 700;
+            color: #1f2937;
         }
 
         .hero p {
-            font-size: 1.2rem;
-            opacity: 0.9;
-            max-width: 800px;
-            margin: 0 auto 20px;
+            font-size: 1.1rem;
+            color: #6b7280;
+            margin-bottom: 16px;
         }
 
         .hero .quote {
             font-style: italic;
-            font-size: 1.1rem;
-            margin: 20px auto;
-            padding: 20px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 8px;
-            max-width: 600px;
+            font-size: 1rem;
+            margin: 16px 0;
+            padding: 16px;
+            background: #f8f9fa;
+            border-left: 4px solid #4285f4;
+            border-radius: 4px;
+            color: #4b5563;
         }
 
         .nav-tabs {
             background: white;
-            border-bottom: 2px solid #e9ecef;
+            border-bottom: 1px solid #e5e7eb;
             position: sticky;
             top: 0;
             z-index: 100;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
 
         .nav-tabs ul {
             list-style: none;
             display: flex;
-            justify-content: center;
+            justify-content: flex-start;
             flex-wrap: wrap;
+            padding: 0 24px;
         }
 
         .nav-tabs li {
-            margin: 0 5px;
+            margin: 0;
         }
 
         .nav-tabs a {
             display: block;
             padding: 12px 16px;
             text-decoration: none;
-            color: #666;
+            color: #6b7280;
             font-weight: 500;
-            font-size: 0.9rem;
-            border-bottom: 3px solid transparent;
-            transition: all 0.3s ease;
+            font-size: 0.875rem;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s ease;
         }
 
         .nav-tabs a:hover {
@@ -91,72 +94,103 @@
         }
 
         .section {
-            padding: 60px 0;
+            padding: 32px 0;
             background: white;
-            margin-bottom: 2px;
         }
 
         .section h2 {
-            font-size: 2.5rem;
-            margin-bottom: 2rem;
-            text-align: center;
-            color: #2c3e50;
+            font-size: 1.875rem;
+            margin-bottom: 24px;
+            color: #1f2937;
+            font-weight: 700;
+            text-align: left;
         }
 
         .section h3 {
-            font-size: 1.8rem;
-            margin: 2rem 0 1rem 0;
-            color: #34495e;
+            font-size: 1.5rem;
+            margin: 32px 0 16px 0;
+            color: #1f2937;
+            font-weight: 600;
         }
 
         .section h4 {
-            font-size: 1.3rem;
-            margin: 1.5rem 0 0.8rem 0;
+            font-size: 1.25rem;
+            margin: 24px 0 12px 0;
             color: #4285f4;
+            font-weight: 600;
+        }
+
+        .section h5 {
+            font-size: 1.125rem;
+            margin: 16px 0 8px 0;
+            color: #374151;
+            font-weight: 600;
+        }
+
+        .section p {
+            margin-bottom: 16px;
+            line-height: 1.6;
+        }
+
+        .section ul, .section ol {
+            margin: 16px 0;
+            padding-left: 24px;
+        }
+
+        .section li {
+            margin-bottom: 8px;
+            line-height: 1.5;
         }
 
         .methodology {
-            background: #e8f5e9;
-            border-left: 4px solid #34a853;
-            border-radius: 8px;
-            padding: 25px;
-            margin: 30px 0;
+            background: #f0f9ff;
+            border: 1px solid #bfdbfe;
+            border-left: 4px solid #3b82f6;
+            border-radius: 6px;
+            padding: 20px;
+            margin: 24px 0;
         }
 
         .step {
-            background: white;
-            border-radius: 12px;
-            padding: 25px;
-            margin: 20px 0;
-            border: 2px solid #e9ecef;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            padding: 20px;
+            margin: 16px 0;
         }
 
         .step h4 {
             color: #4285f4;
-            margin-bottom: 15px;
-            font-size: 1.3rem;
+            margin-bottom: 12px;
+            font-size: 1.125rem;
         }
 
         .problem {
-            background: #fff3cd;
-            border: 1px solid #ffeaa7;
-            border-radius: 12px;
-            padding: 25px;
-            margin: 30px 0;
+            background: #fefce8;
+            border: 1px solid #fde047;
+            border-left: 4px solid #eab308;
+            border-radius: 6px;
+            padding: 20px;
+            margin: 24px 0;
         }
 
         .problem h3 {
-            color: #856404;
-            margin-bottom: 15px;
+            color: #92400e;
+            margin-bottom: 12px;
+            font-size: 1.25rem;
+        }
+
+        .problem h4 {
+            color: #92400e;
+            margin-bottom: 8px;
+            font-size: 1.125rem;
         }
 
         .slo-table {
-            background: white;
-            border-radius: 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
             overflow: hidden;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            margin: 30px 0;
+            margin: 20px 0;
         }
 
         .slo-table table {
@@ -165,83 +199,170 @@
         }
 
         .slo-table th {
-            background: #4285f4;
-            color: white;
-            padding: 15px;
+            background: #f9fafb;
+            color: #374151;
+            padding: 12px;
             text-align: left;
             font-weight: 600;
+            font-size: 0.875rem;
+            border-bottom: 1px solid #e5e7eb;
         }
 
         .slo-table td {
-            padding: 15px;
-            border-bottom: 1px solid #e9ecef;
+            padding: 12px;
+            border-bottom: 1px solid #f3f4f6;
             vertical-align: top;
+            font-size: 0.875rem;
         }
 
-        .slo-table tr:nth-child(even) {
-            background: #f8f9fa;
+        .slo-table tr:last-child td {
+            border-bottom: none;
         }
 
         .highlight {
-            background: linear-gradient(120deg, #a8e6cf 0%, #dcedc8 100%);
-            padding: 20px;
-            border-radius: 8px;
+            background: #ecfdf5;
+            border: 1px solid #86efac;
+            border-left: 4px solid #16a34a;
+            padding: 16px;
+            border-radius: 6px;
             margin: 20px 0;
-            border-left: 4px solid #4caf50;
         }
 
         .pro-tip {
-            background: #e3f2fd;
-            border: 1px solid #90caf9;
-            border-radius: 8px;
-            padding: 20px;
+            background: #eff6ff;
+            border: 1px solid #93c5fd;
+            border-left: 4px solid #3b82f6;
+            border-radius: 6px;
+            padding: 16px;
             margin: 20px 0;
         }
 
         .pro-tip h5 {
-            color: #1976d2;
-            margin-bottom: 10px;
+            color: #1e40af;
+            margin-bottom: 8px;
+            font-size: 1rem;
         }
 
         .interviewer-lens {
-            background: #f3e5f5;
-            border: 1px solid #ce93d8;
-            border-radius: 8px;
-            padding: 20px;
+            background: #fdf4ff;
+            border: 1px solid #d8b4fe;
+            border-left: 4px solid #a855f7;
+            border-radius: 6px;
+            padding: 16px;
             margin: 20px 0;
         }
 
         .interviewer-lens h5 {
-            color: #7b1fa2;
-            margin-bottom: 10px;
+            color: #7c2d12;
+            margin-bottom: 8px;
+            font-size: 1rem;
         }
 
         .challenge {
-            background: #ffebee;
-            border: 1px solid #f5c6cb;
-            border-radius: 8px;
-            padding: 20px;
-            margin: 15px 0;
+            background: #fef2f2;
+            border: 1px solid #fca5a5;
+            border-left: 4px solid #dc2626;
+            border-radius: 6px;
+            padding: 16px;
+            margin: 16px 0;
         }
 
         .challenge h5 {
-            color: #721c24;
-            margin-bottom: 10px;
+            color: #991b1b;
+            margin-bottom: 8px;
+            font-size: 1rem;
         }
 
         .code-block {
-            background: #2c3e50;
-            color: #ecf0f1;
-            padding: 20px;
-            border-radius: 8px;
+            background: #1f2937;
+            color: #f9fafb;
+            padding: 16px;
+            border-radius: 6px;
             margin: 20px 0;
             overflow-x: auto;
-            font-family: 'Monaco', 'Courier New', monospace;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.875rem;
+            line-height: 1.4;
         }
 
+        /* Architecture diagram styling */
+        .step > div[style*="monospace"] {
+            background: #f8fafc !important;
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 6px !important;
+            padding: 16px !important;
+            margin: 16px 0 !important;
+            font-size: 10px !important;
+            line-height: 1.2 !important;
+        }
+
+        .step > div[style*="monospace"] div {
+            color: #334155 !important;
+        }
+
+        /* Compact spacing for lists */
+        .step ul {
+            margin: 12px 0;
+        }
+
+        .step li {
+            margin-bottom: 6px;
+        }
+
+        .problem ul {
+            margin: 12px 0;
+        }
+
+        .problem li {
+            margin-bottom: 6px;
+        }
+
+        /* Responsive design */
         @media (max-width: 768px) {
-            .hero h1 { font-size: 2rem; }
-            .nav-tabs a { padding: 10px 12px; font-size: 0.8rem; }
+            .hero h1 { 
+                font-size: 1.875rem; 
+            }
+            .nav-tabs a { 
+                padding: 10px 12px; 
+                font-size: 0.8rem; 
+            }
+            .container {
+                padding: 0 16px;
+            }
+            .section {
+                padding: 24px 0;
+            }
+        }
+
+        /* Table responsiveness */
+        @media (max-width: 640px) {
+            .slo-table {
+                font-size: 0.8rem;
+            }
+            .slo-table th,
+            .slo-table td {
+                padding: 8px;
+            }
+        }
+
+        /* Improve readability */
+        strong {
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        em {
+            font-style: italic;
+            color: #4b5563;
+        }
+
+        code {
+            background: #f1f5f9;
+            color: #0f172a;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.875em;
         }
     </style>
 </head>
@@ -563,8 +684,8 @@
             <div class="step">
                 <h4>🏗️ Production-Grade Monitoring & Alerting Platform</h4>
                 
-                <div style="background: #f8f9fa; border: 2px solid #e9ecef; border-radius: 12px; padding: 25px; margin: 25px 0; overflow-x: auto;">
-                    <div style="font-family: monospace; font-size: 11px; line-height: 1.3; white-space: pre;">
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 16px; margin: 16px 0; overflow-x: auto;">
+                    <div style="font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace; font-size: 10px; line-height: 1.2; white-space: pre; color: #334155;">
 ┌─────────────────────────────────────────────────────────────────────────────────────────┐
 │                     GLOBAL MONITORING & ALERTING PLATFORM                              │
 │                                 (100M metrics/sec)                                      │
@@ -822,8 +943,8 @@ Key Reliability Patterns Applied:
             <div class="step">
                 <h4>🏗️ Production-Grade Distributed Logging Pipeline</h4>
                 
-                <div style="background: #f8f9fa; border: 2px solid #e9ecef; border-radius: 12px; padding: 25px; margin: 25px 0; overflow-x: auto;">
-                    <div style="font-family: monospace; font-size: 11px; line-height: 1.3; white-space: pre;">
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 16px; margin: 16px 0; overflow-x: auto;">
+                    <div style="font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace; font-size: 10px; line-height: 1.2; white-space: pre; color: #334155;">
 ┌─────────────────────────────────────────────────────────────────────────────────────────┐
 │                    DISTRIBUTED LOGGING PIPELINE (20TB/day)                              │
 │                        Query Freshness: 60s │ Retention: 30d hot, 1y cold              │
@@ -1045,8 +1166,8 @@ Key Reliability Patterns Applied:
             <div class="step">
                 <h4>🏗️ Production-Grade Global Distributed Cache</h4>
                 
-                <div style="background: #f8f9fa; border: 2px solid #e9ecef; border-radius: 12px; padding: 25px; margin: 25px 0; overflow-x: auto;">
-                    <div style="font-family: monospace; font-size: 11px; line-height: 1.3; white-space: pre;">
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 16px; margin: 16px 0; overflow-x: auto;">
+                    <div style="font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace; font-size: 10px; line-height: 1.2; white-space: pre; color: #334155;">
 ┌─────────────────────────────────────────────────────────────────────────────────────────┐
 │                     GLOBAL DISTRIBUTED CACHE SYSTEM                                    │
 │                   500M Users │ 10M RPS Read │ 1M RPS Write │ p99 < 5ms                │
@@ -1267,8 +1388,8 @@ Impacted Services: API Frontend (High error rate), Billing Service (High latency
             <div class="step">
                 <h4>🏗️ Production-Grade Global Incident Response System</h4>
                 
-                <div style="background: #f8f9fa; border: 2px solid #e9ecef; border-radius: 12px; padding: 25px; margin: 25px 0; overflow-x: auto;">
-                    <div style="font-family: monospace; font-size: 11px; line-height: 1.3; white-space: pre;">
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 16px; margin: 16px 0; overflow-x: auto;">
+                    <div style="font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace; font-size: 10px; line-height: 1.2; white-space: pre; color: #334155;">
 ┌─────────────────────────────────────────────────────────────────────────────────────────┐
 │                    GLOBAL INCIDENT RESPONSE SYSTEM                                      │
 │              5M Alerts/Day │ p99 < 30s Delivery │ 99.999% Reliability                  │
@@ -1493,8 +1614,8 @@ Key Reliability Patterns Applied:
             <div class="step">
                 <h4>🏗️ Production-Grade SLO Error Budget Tracker</h4>
                 
-                <div style="background: #f8f9fa; border: 2px solid #e9ecef; border-radius: 12px; padding: 25px; margin: 25px 0; overflow-x: auto;">
-                    <div style="font-family: monospace; font-size: 11px; line-height: 1.3; white-space: pre;">
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 16px; margin: 16px 0; overflow-x: auto;">
+                    <div style="font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace; font-size: 10px; line-height: 1.2; white-space: pre; color: #334155;">
 ┌─────────────────────────────────────────────────────────────────────────────────────────┐
 │                        SLO ERROR BUDGET TRACKER SYSTEM                                 │
 │                p95 < 60s Compute │ 99.99% Accuracy │ < 5min Alert Delay              │
