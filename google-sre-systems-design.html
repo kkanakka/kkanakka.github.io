@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google SRE Systems Design Playbook — Interview Practice Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f8f9fa;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .hero {
+            background: linear-gradient(135deg, #4285f4 0%, #34a853 100%);
+            color: white;
+            padding: 60px 0;
+            text-align: center;
+        }
+
+        .hero h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .nav-tabs {
+            background: white;
+            border-bottom: 2px solid #e9ecef;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-tabs ul {
+            list-style: none;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .nav-tabs li {
+            margin: 0 10px;
+        }
+
+        .nav-tabs a {
+            display: block;
+            padding: 15px 20px;
+            text-decoration: none;
+            color: #666;
+            font-weight: 500;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .nav-tabs a:hover {
+            color: #4285f4;
+            border-bottom-color: #4285f4;
+        }
+
+        .section {
+            padding: 60px 0;
+            background: white;
+            margin-bottom: 2px;
+        }
+
+        .section h2 {
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+            text-align: center;
+            color: #2c3e50;
+        }
+
+        .section h3 {
+            font-size: 1.8rem;
+            margin: 2rem 0 1rem 0;
+            color: #34495e;
+        }
+
+        .methodology {
+            background: #e8f5e9;
+            border-left: 4px solid #34a853;
+            border-radius: 8px;
+            padding: 25px;
+            margin: 30px 0;
+        }
+
+        .step {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin: 20px 0;
+            border: 2px solid #e9ecef;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .step h4 {
+            color: #4285f4;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .problem {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 12px;
+            padding: 25px;
+            margin: 30px 0;
+        }
+
+        .problem h3 {
+            color: #856404;
+            margin-bottom: 15px;
+        }
+
+        .slo-table {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin: 30px 0;
+        }
+
+        .slo-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .slo-table th {
+            background: #4285f4;
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .slo-table td {
+            padding: 15px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .slo-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        .diagram {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .flow-diagram {
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .flow-step {
+            background: #4285f4;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 25px;
+            font-weight: 500;
+            min-width: 120px;
+            position: relative;
+        }
+
+        .flow-step.success { background: #34a853; }
+        .flow-step.warning { background: #fbbc04; }
+        .flow-step.error { background: #ea4335; }
+
+        .arrow {
+            font-size: 1.2rem;
+            color: #666;
+            margin: 0 10px;
+        }
+
+        .highlight {
+            background: linear-gradient(120deg, #a8e6cf 0%, #dcedc8 100%);
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #4caf50;
+        }
+
+        .trade-offs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .pros {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .cons {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .pros h5 { color: #155724; }
+        .cons h5 { color: #721c24; }
+
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2rem; }
+            .trade-offs { grid-template-columns: 1fr; }
+            .flow-diagram { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <div class="hero">
+        <div class="container">
+            <h1>Google SRE Systems Design Playbook</h1>
+            <p>Complete interview preparation guide with 6-step methodology, real problems, and scaling strategies</p>
+        </div>
+    </div>
+
+    <nav class="nav-tabs">
+        <div class="container">
+            <ul>
+                <li><a href="#methodology">6-Step Method</a></li>
+                <li><a href="#healthcheck">Health Check Service</a></li>
+                <li><a href="#urlshortener">URL Shortener</a></li>
+                <li><a href="#chatservice">Chat Service</a></li>
+                <li><a href="#monitoring">Monitoring System</a></li>
+                <li><a href="#cdn">CDN Design</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <section id="methodology" class="section">
+        <div class="container">
+            <h2>The 6-Step SRE Design Methodology</h2>
+            
+            <div class="methodology">
+                <h3>Why This Framework Works</h3>
+                <p>Google SRE interviews focus on <strong>reliability engineering</strong> rather than just distributed systems. This means every design decision must be justified by SLOs, failure modes, and operational concerns. The 6-step approach ensures you cover all critical aspects systematically.</p>
+            </div>
+
+            <div class="step">
+                <h4>1. Requirements → SLO Contract</h4>
+                <p><strong>"How reliable, fast, and scalable must this system be?"</strong></p>
+                <ul>
+                    <li>Define availability targets (99.9%, 99.99%, 99.999%)</li>
+                    <li>Set latency requirements (p50, p95, p99)</li>
+                    <li>Establish throughput expectations (QPS, concurrent users)</li>
+                    <li>Determine data consistency needs (strong, eventual, session)</li>
+                    <li>Identify critical user journeys and their SLOs</li>
+                </ul>
+            </div>
+
+            <div class="step">
+                <h4>2. SLO Contract → Baseline Design</h4>
+                <p><strong>"What minimal set of components meets those guarantees?"</strong></p>
+                <ul>
+                    <li>Design the simplest architecture that meets SLOs</li>
+                    <li>Choose appropriate databases and caching layers</li>
+                    <li>Define API contracts and data models</li>
+                    <li>Estimate capacity and resource requirements</li>
+                    <li>Map components to specific SLO contributions</li>
+                </ul>
+            </div>
+
+            <div class="step">
+                <h4>3. Baseline Design → Stressors</h4>
+                <p><strong>"What happens when scale ×10 or a dependency fails?"</strong></p>
+                <ul>
+                    <li>Traffic spikes (10x normal load)</li>
+                    <li>Database failures (primary, replica, partition)</li>
+                    <li>Network issues (latency, packet loss, partitions)</li>
+                    <li>Dependency outages (external APIs, services)</li>
+                    <li>Resource exhaustion (CPU, memory, disk, network)</li>
+                </ul>
+            </div>
+
+            <div class="step">
+                <h4>4. Stressors → Resilient Architecture</h4>
+                <p><strong>"Which reliability patterns mitigate failure modes?"</strong></p>
+                <ul>
+                    <li>Replication (master-slave, master-master, sharding)</li>
+                    <li>Circuit breakers and bulkheads</li>
+                    <li>Queue-based decoupling and backpressure</li>
+                    <li>Graceful degradation and fallbacks</li>
+                    <li>Rate limiting and load shedding</li>
+                </ul>
+            </div>
+
+            <div class="step">
+                <h4>5. Resilient Architecture → Observability & Ops</h4>
+                <p><strong>"How will we know it's healthy—and repair it safely?"</strong></p>
+                <ul>
+                    <li>SLI metrics and monitoring dashboards</li>
+                    <li>Error budgets and burn rate alerts</li>
+                    <li>Distributed tracing and logging</li>
+                    <li>Health checks and synthetic monitoring</li>
+                    <li>Runbooks and incident response procedures</li>
+                </ul>
+            </div>
+
+            <div class="step">
+                <h4>6. Observability & Ops → Trade-offs</h4>
+                <p><strong>"Where do we accept cost or complexity to meet SLOs?"</strong></p>
+                <ul>
+                    <li>Performance vs consistency trade-offs</li>
+                    <li>Cost of over-provisioning for reliability</li>
+                    <li>Operational complexity vs automation</li>
+                    <li>Development velocity vs safety</li>
+                    <li>Regional deployment vs latency requirements</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <section id="healthcheck" class="section">
+        <div class="container">
+            <h2>Problem 1: Health Check Service</h2>
+            
+            <div class="problem">
+                <h3>Requirements</h3>
+                <p>Design a health check service that can monitor 100,000 instances across multiple regions. Detect instance failure within 10 seconds with 99.99% detection reliability. Handle network partitions gracefully.</p>
+            </div>
+
+            <div class="step">
+                <h4>1. SLO Contract</h4>
+                <div class="slo-table">
+                    <table>
+                        <tr><th>Metric</th><th>Target</th><th>Measurement</th></tr>
+                        <tr><td>Detection Latency</td><td>p95 ≤ 5s</td><td>Time from failure to alert</td></tr>
+                        <tr><td>Detection Reliability</td><td>≥ 99.99%</td><td>True positive rate</td></tr>
+                        <tr><td>False Positive Rate</td><td>≤ 0.1%</td><td>Unnecessary alerts</td></tr>
+                        <tr><td>Service Availability</td><td>≥ 99.95%</td><td>Health check service uptime</td></tr>
+                    </table>
+                </div>
+            </div>
+
+            <div class="step">
+                <h4>2. Baseline Design</h4>
+                <div class="diagram">
+                    <div class="flow-diagram">
+                        <div class="flow-step">Scheduler</div>
+                        <span class="arrow">→</span>
+                        <div class="flow-step success">Health Checker</div>
+                        <span class="arrow">→</span>
+                        <div class="flow-step">Target Instance</div>
+                        <span class="arrow">→</span>
+                        <div class="flow-step warning">Result Store</div>
+                        <span class="arrow">→</span>
+                        <div class="flow-step">Alert Manager</div>
+                    </div>
+                </div>
+                <ul>
+                    <li><strong>Scheduler:</strong> Distributes health check tasks every 5s</li>
+                    <li><strong>Health Checker:</strong> Executes HTTP/TCP checks</li>
+                    <li><strong>Result Store:</strong> Time-series database for check history</li>
+                    <li><strong>Alert Manager:</strong> Evaluates failure conditions</li>
+                </ul>
+            </div>
+
+            <div class="step">
+                <h4>3. Stressors</h4>
+                <ul>
+                    <li><strong>Network Partitions:</strong> Checker can't reach target but target is healthy</li>
+                    <li><strong>False Positives:</strong> Transient network issues trigger alerts</li>
+                    <li><strong>Checker Failure:</strong> Health checker instance crashes</li>
+                    <li><strong>Scale Issues:</strong> 100K instances × 5s interval = 20K checks/sec</li>
+                </ul>
+            </div>
+
+            <div class="step">
+                <h4>4. Resilient Architecture</h4>
+                <div class="diagram">
+                    <div class="flow-diagram">
+                        <div class="flow-step">Scheduler</div>
+                        <span class="arrow">→</span>
+                        <div class="flow-step success">Checker Pool A</div>
+                        <span class="arrow">→</span>
+                        <div class="flow-step">Target</div>
+                    </div>
+                    <div class="flow-diagram">
+                        <div class="flow-step">Scheduler</div>
+                        <span class="arrow">→</span>
+                        <div class="flow-step success">Checker Pool B</div>
+                        <span class="arrow">→</span>
+                        <div class="flow-step">Target</div>
+                    </div>
+                    <div class="flow-diagram">
+                        <div class="flow-step">Scheduler</div>
+                        <span class="arrow">→</span>
+                        <div class="flow-step success">Checker Pool C</div>
+                        <span class="arrow">→</span>
+                        <div class="flow-step">Target</div>
+                    </div>
+                </div>
+                <p><strong>Majority Vote Pattern:</strong> 3 checkers per target, 2/3 must agree on failure</p>
+                <ul>
+                    <li><strong>Multi-Region Checkers:</strong> Deploy in different AZs/regions</li>
+                    <li><strong>Exponential Backoff:</strong> Reduce check frequency for consistently failing targets</li>
+                    <li><strong>Circuit Breaker:</strong> Stop checking obviously dead instances</li>
+                    <li><strong>Consensus Algorithm:</strong> Require majority agreement for state changes</li>
+                </ul>
+            </div>
+
+            <div class="step">
+                <h4>5. Observability & Ops</h4>
+                <ul>
+                    <li><strong>SLI:</strong> successful_checks / total_checks</li>
+                    <li><strong>Metrics:</strong> Check latency, success rate, consensus conflicts</li>
+                    <li><strong>Alerts:</strong> Detection SLO violation, checker health issues</li>
+                    <li><strong>Dashboards:</strong> Per-region health maps, check latency distribution</li>
+                </ul>
+            </div>
+
+            <div class="step">
+                <h4>6. Trade-offs</h4>
+                <div class="trade-offs">
+                    <div class="pros">
+                        <h5>✅ More Checkers</h5>
+                        <ul>
+                            <li>Lower false positive rate</li>
+                            <li>Better network partition handling</li>
+                            <li>Higher detection reliability</li>
+                        </ul>
+                    </div>
+                    <div class="cons">
+                        <h5>❌ Cost Implications</h5>
+                        <ul>
+                            <li>3x compute cost for checker infrastructure</li>
+                            <li>3x network bandwidth usage</li>
+                            <li>More complex consensus logic</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="urlshortener" class="section">
+        <div class="container">
+            <h2>Problem 2: URL Shortener (like bit.ly)</h2>
+            
+            <div class="problem">
+                <h3>Requirements</h3>
+                <p>Design a URL shortener handling 100M URLs created daily, 1B redirects daily. 99.9% availability, p99 redirect latency < 100ms. Support custom aliases and analytics.</p>
+            </div>
+
+            <div class="step">
+                <h4>1. SLO Contract</h4>
+                <div class="slo-table">
+                    <table>
+                        <tr><th>Metric</th><th>Target</th><th>Measurement</th></tr>
+                        <tr><td>Redirect Latency</td><td>p99 ≤ 100ms</td><td>From request to 302 response</td></tr>
+                        <tr><td>Creation Latency</td><td>p95 ≤ 500ms</td><td>URL shortening time</td></tr>
+                        <tr><td>Availability</td><td>≥ 99.9%</td><td>Successful requests / total</td></tr>
+                        <tr><td>Durability</td><td>≥ 99.99%</td><td>URLs must not be lost</td></tr>
+                    </table>
+                </div>
+            </div>
+
+            <div class="step">
+                <h4>2. Baseline Design</h4>
+                <div class="diagram">
+                    <div class="flow-diagram">
+                        <div class="flow-step">Load Balancer</div>
+                        <span class="arrow">→</span>
+                        <div class="flow-step success">Web Servers</div>
+                        <span class="arrow">→</span>
+                        <div class="flow-step warning">Cache Layer</div>
+                        <span class="arrow">→</span>
+                        <div class="flow-step">Database</div>
+                    </div>
+                </div>
+                <ul>
+                    <li><strong>Encoding:</strong> Base62 encoding for short URLs (a-z, A-Z, 0-9)</li>
+                    <li><strong>ID Generation:</strong> Auto-incrementing counter or UUID</li>
+                    <li><strong>Database:</strong> MySQL with URL mappings table</li>
+                    <li><strong>Cache:</strong> Redis for hot URL lookups</li>
+                </ul>
+            </div>
+
+            <div class="step">
+                <h4>3. Stressors</h4>
+                <ul>
+                    <li><strong>Hot URLs:</strong> Viral links causing cache hot spots</li>
+                    <li><strong>Database Write Bottleneck:</strong> 100M creates/day = 1,157/sec</li>
+                    <li><strong>Cache Misses:</strong> New URLs not in cache cause DB load</li>
+                    <li><strong>Custom Alias Conflicts:</strong> Duplicate custom short codes</li>
+                </ul>
+            </div>
+
+            <div class="step">
+                <h4>4. Resilient Architecture</h4>
+                <div class="highlight">
+                    <h4>Scaling Strategy</h4>
+                    <div class="flow-diagram">
+                        <div class="flow-step">Read Replicas</div>
+                        <span class="arrow">+</span>
+                        <div class="flow-step success">Write Sharding</div>
+                        <span class="arrow">+</span>
+                        <div class="flow-step warning">CDN Caching</div>
+                    </div>
+                </div>
+                <ul>
+                    <li><strong>Database Sharding:</strong> Shard by short_url hash for write distribution</li>
+                    <li><strong>Read Replicas:</strong> Separate read traffic from writes</li>
+                    <li><strong>CDN Layer:</strong> Cache 302 redirects at edge locations</li>
+                    <li><strong>Bloom Filter:</strong> Quick existence check before DB lookup</li>
+                    <li><strong>Rate Limiting:</strong> Prevent abuse and ensure fair usage</li>
+                </ul>
+            </div>
+
+            <div class="step">
+                <h4>5. Observability & Ops</h4>
+                <ul>
+                    <li><strong>SLI:</strong> redirect_success_rate, creation_success_rate</li>
+                    <li><strong>Metrics:</strong> Cache hit ratio, DB query latency, URL creation rate</li>
+                    <li><strong>Alerts:</strong> High error rate, cache miss spikes, DB connection issues</li>
+                    <li><strong>Analytics:</strong> Click tracking, geographic distribution, referrer data</li>
+                </ul>
+            </div>
+
+            <div class="step">
+                <h4>6. Trade-offs</h4>
+                <div class="trade-offs">
+                    <div class="pros">
+                        <h5>✅ CDN Benefits</h5>
+                        <ul>
+                            <li>Sub-50ms redirect latency globally</li>
+                            <li>Reduced backend load (80%+ cache hit)</li>
+                            <li>DDoS protection</li>
+                        </ul>
+                    </div>
+                    <div class="cons">
+                        <h5>❌ CDN Challenges</h5>
+                        <ul>
+                            <li>Analytics data collection complexity</li>
+                            <li>Cache invalidation delays</li>
+                            <li>CDN costs for high traffic</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="chatservice" class="section">
+        <div class="container">
+            <h2>Problem 3: Real-time Chat Service</h2>
+            
+            <div class="problem">
+                <h3>Requirements</h3>
+                <p>Design WhatsApp-scale chat: 2B users, 100B messages daily. Real-time delivery, message ordering, presence status. Support group chats (500 members max).</p>
+            </div>
+
+            <div class="step">
+                <h4>1. SLO Contract</h4>
+                <div class="slo-table">
+                    <table>
+                        <tr><th>Metric</th><th>Target</th><th>Measurement</th></tr>
+                        <tr><td>Message Delivery</td><td>p99 ≤ 200ms</td><td>Send to all recipients</td></tr>
+                        <tr><td>Connection Availability</td><td>≥ 99.95%</td><td>WebSocket uptime</td></tr>
+                        <tr><td>Message Durability</td><td>≥ 99.999%</td><td>Zero message loss</td></tr>
+                        <tr><td>Ordering Guarantee</td><td>100%</td><td>Correct message sequence</td></tr>
+                    </table>
+                </div>
+            </div>
+
+            <div class="step">
+                <h4>2. Baseline Design</h4>
+                <div class="diagram">
+                    <div class="flow-diagram">
+                        <div class="flow-step">Client Apps</div>
+                        <span class="arrow">→</span>
+                        <div class="flow-step success">WebSocket Servers</div>
+                        <span class="arrow">→</span>
+                        <div class="flow-step warning">Message Queue</div>
+                        <span class="arrow">→</span>
+                        <div class="flow-step">Message DB</div>
+                    </div>
+                </div>
+                <ul>
+                    <li><strong>Connection Management:</strong> Persistent WebSocket connections</li>
+                    <li><strong>Message Storage:</strong> Cassandra for horizontal scaling</li>
+                    <li><strong>Real-time Delivery:</strong> Apache Kafka for message streaming</li>
+                    <li><strong>Presence Service:</strong> Redis for online status tracking</li>
+                </ul>
+            </div>
+
+            <div class="step">
+                <h4>3. Stressors</h4>
+                <ul>
+                    <li><strong>Connection Storms:</strong> Millions reconnecting after network issues</li>
+                    <li><strong>Hot Groups:</strong> Large groups causing message fan-out bottlenecks</li>
+                    <li><strong>Message Ordering:</strong> Cross-datacenter consistency challenges</li>
+                    <li><strong>Offline Users:</strong> Message accumulation for inactive users</li>
+                </ul>
+            </div>
+
+            <div class="step">
+                <h4>4. Resilient Architecture</h4>
+                <div class="highlight">
+                    <h4>Multi-Region Architecture</h4>
+                    <div class="flow-diagram">
+                        <div class="flow-step">US East</div>
+                        <span class="arrow">↔</span>
+                        <div class="flow-step success">Message Router</div>
+                        <span class="arrow">↔</span>
+                        <div class="flow-step">EU West</div>
+                    </div>
+                </div>
+                <ul>
+                    <li><strong>Consistent Hashing:</strong> Distribute users across connection servers</li>
+                    <li><strong>Message Ordering:</strong> Vector clocks or Lamport timestamps</li>
+                    <li><strong>Offline Message Storage:</strong> Per-user message boxes with TTL</li>
+                    <li><strong>Group Message Optimization:</strong> Single write, fan-out on read</li>
+                    <li><strong>Circuit Breakers:</strong> Graceful degradation during overload</li>
+                </ul>
+            </div>
+
+            <div class="step">
+                <h4>5. Observability & Ops</h4>
+                <ul>
+                    <li><strong>SLI:</strong> message_delivery_success_rate, connection_success_rate</li>
+                    <li><strong>Real-time Metrics:</strong> Active connections, messages/second, queue depth</li>
+                    <li><strong>Alerts:</strong> Message delivery delays, connection drops, storage issues</li>
+                    <li><strong>User Experience:</strong> Message delivery confirmations (sent/delivered/read)</li>
+                </ul>
+            </div>
+
+            <div class="step">
+                <h4>6. Trade-offs</h4>
+                <div class="trade-offs">
+                    <div class="pros">
+                        <h5>✅ Strong Consistency</h5>
+                        <ul>
+                            <li>Perfect message ordering</li>
+                            <li>No duplicate messages</li>
+                            <li>Reliable delivery guarantees</li>
+                        </ul>
+                    </div>
+                    <div class="cons">
+                        <h5>❌ Performance Impact</h5>
+                        <ul>
+                            <li>Higher latency for coordination</li>
+                            <li>Complex cross-region synchronization</li>
+                            <li>Reduced availability during partitions</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="monitoring" class="section">
+        <div class="container">
+            <h2>Problem 4: Monitoring & Alerting System</h2>
+            
+            <div class="problem">
+                <h3>Requirements</h3>
+                <p>Design a monitoring system like Prometheus for 100K services. Ingest 10M metrics/sec, support complex queries, alert within 30 seconds of SLO violations.</p>
+            </div>
+
+            <div class="step">
+                <h4>1. SLO Contract</h4>
+                <div class="slo-table">
+                    <table>
+                        <tr><th>Metric</th><th>Target</th><th>Measurement</th></tr>
+                        <tr><td>Ingestion Latency</td><td>p95 ≤ 10s</td><td>Metric collection to storage</td></tr>
+                        <tr><td>Query Response</td><td>p99 ≤ 5s</td><td>Dashboard query time</td></tr>
+                        <tr><td>Alert Latency</td><td>≤ 30s</td><td>Violation to notification</td></tr>
+                        <tr><td>Data Retention</td><td>99.9%</td><td>No data loss for 30 days</td></tr>
+                    </table>
+                </div>
+            </div>
+
+            <div class="step">
+                <h4>2. Baseline Design</h4>
+                <div class="diagram">
+                    <div class="flow-diagram">
+                        <div class="flow-step">Metric Exporters</div>
+                        <span class="arrow">→</span>
+                        <div class="flow-step success">Collection Agents</div>
+                        <span class="arrow">→</span>
+                        <div class="flow-step warning">TSDB</div>
+                        <span class="arrow">→</span>
+                        <div class="flow-step">Query Engine</div>
+                    </div>
+                </div>
+                <ul>
+                    <li><strong>Collection:</strong> Pull-based scraping every 15 seconds</li>
+                    <li><strong>Storage:</strong> Time-series database (InfluxDB/TimescaleDB)</li>
+                    <li><strong>Querying:</strong> PromQL-style query language</li>
+                    <li><strong>Alerting:</strong> Rule evaluation engine with notification routing</li>
+                </ul>
+            </div>
+
+            <div class="step">
+                <h4>3. Stressors</h4>
+                <ul>
+                    <li><strong>Metric Explosion:</strong> High-cardinality labels causing storage issues</li>
+                    <li><strong>Query Overload:</strong> Complex dashboard queries impacting ingestion</li>
+                    <li><strong>Storage Growth:</strong> Retention policies vs query performance</li>
+                    <li><strong>Alert Storms:</strong> Cascading failures triggering thousands of alerts</li>
+                </ul>
+            </div>
+
+            <div class="step">
+                <h4>4. Resilient Architecture</h4>
+                <div class="highlight">
+                    <h4>Federated Architecture</h4>
+                    <div class="flow-diagram">
+                        <div class="flow-step">Shard A</div>
+                        <span class="arrow">↘</span>
+                        <div class="flow-step success">Federation</div>
+                        <span class="arrow">↙</span>
+                        <div class="flow-step">Shard C</div>
+                    </div>
+                </div>
+                <ul>
+                    <li><strong>Horizontal Sharding:</strong> Distribute metrics by service/region</li>
+                    <li><strong>Downsampling:</strong> Reduce resolution for older data</li>
+                    <li><strong>Query Federation:</strong> Cross-shard queries with result aggregation</li>
+                    <li><strong>Alert Deduplication:</strong> Group related alerts to prevent storms</li>
+                    <li><strong>Circuit Breaker:</strong> Disable expensive queries during overload</li>
+                </ul>
+            </div>
+
+            <div class="step">
+                <h4>5. Observability & Ops</h4>
+                <ul>
+                    <li><strong>SLI:</strong> successful_ingestions/total, query_success_rate</li>
+                    <li><strong>Meta-monitoring:</strong> Monitor the monitoring system itself</li>
+                    <li><strong>Capacity Planning:</strong> Storage growth rate, query load trends</li>
+                    <li><strong>Performance Optimization:</strong> Index usage, query plan analysis</li>
+                </ul>
+            </div>
+
+            <div class="step">
+                <h4>6. Trade-offs</h4>
+                <div class="trade-offs">
+                    <div class="pros">
+                        <h5>✅ High Retention</h5>
+                        <ul>
+                            <li>Long-term trend analysis</li>
+                            <li>Capacity planning data</li>
+                            <li>Incident forensics</li>
+                        </ul>
+                    </div>
+                    <div class="cons">
+                        <h5>❌ Storage Costs</h5>
+                        <ul>
+                            <li>Exponential storage growth</li>
+                            <li>Query performance degradation</li>
+                            <li>Backup and recovery complexity</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="cdn" class="section">
+        <div class="container">
+            <h2>Problem 5: Content Delivery Network (CDN)</h2>
+            
+            <div class="problem">
+                <h3>Requirements</h3>
+                <p>Design a global CDN serving 1PB of content daily. Support video streaming, image optimization, and dynamic content. 95th percentile latency < 100ms globally.</p>
+            </div>
+
+            <div class="step">
+                <h4>1. SLO Contract</h4>
+                <div class="slo-table">
+                    <table>
+                        <tr><th>Metric</th><th>Target</th><th>Measurement</th></tr>
+                        <tr><td>Global Latency</td><td>p95 ≤ 100ms</td><td>First byte time</td></tr>
+                        <tr><td>Cache Hit Rate</td><td>≥ 90%</td><td>Edge cache efficiency</td></tr>
+                        <tr><td>Availability</td><td>≥ 99.99%</td><td>Content delivery success</td></tr>
+                        <tr><td>Bandwidth</td><td>10 Tbps</td><td>Peak traffic capacity</td></tr>
+                    </table>
+                </div>
+            </div>
+
+            <div class="step">
+                <h4>2. Baseline Design</h4>
+                <div class="diagram">
+                    <div class="flow-diagram">
+                        <div class="flow-step">Origin Servers</div>
+                        <span class="arrow">→</span>
+                        <div class="flow-step success">Regional PoPs</div>
+                        <span class="arrow">→</span>
+                        <div class="flow-step warning">Edge Servers</div>
+                        <span class="arrow">→</span>
+                        <div class="flow-step">End Users</div>
+                    </div>
+                </div>
+                <ul>
+                    <li><strong>Geographic Distribution:</strong> 200+ Points of Presence globally</li>
+                    <li><strong>Cache Hierarchy:</strong> Edge → Regional → Origin</li>
+                    <li><strong>Content Routing:</strong> Anycast DNS for nearest POP selection</li>
+                    <li><strong>Storage Tiering:</strong> SSD for hot content, HDD for warm content</li>
+                </ul>
+            </div>
+
+            <div class="step">
+                <h4>3. Stressors</h4>
+                <ul>
+                    <li><strong>Flash Crowds:</strong> Viral content causing cache storms</li>
+                    <li><strong>Large File Delivery:</strong> Video files exhausting bandwidth</li>
+                    <li><strong>Cache Invalidation:</strong> Stale content after origin updates</li>
+                    <li><strong>Geographic Hotspots:</strong> Regional traffic concentration</li>
+                </ul>
+            </div>
+
+            <div class="step">
+                <h4>4. Resilient Architecture</h4>
+                <div class="highlight">
+                    <h4>Multi-Tier Caching Strategy</h4>
+                    <div class="flow-diagram">
+                        <div class="flow-step">L1 Cache (SSD)</div>
+                        <span class="arrow">→</span>
+                        <div class="flow-step success">L2 Cache (HDD)</div>
+                        <span class="arrow">→</span>
+                        <div class="flow-step warning">Origin Shield</div>
+                    </div>
+                </div>
+                <ul>
+                    <li><strong>Consistent Hashing:</strong> Distribute content across cache nodes</li>
+                    <li><strong>Adaptive Bitrate:</strong> Multiple quality levels for video content</li>
+                    <li><strong>Prefetching:</strong> Predictive content loading based on patterns</li>
+                    <li><strong>Load Balancing:</strong> Weighted round-robin with health checks</li>
+                    <li><strong>DDoS Protection:</strong> Rate limiting and traffic filtering</li>
+                </ul>
+            </div>
+
+            <div class="step">
+                <h4>5. Observability & Ops</h4>
+                <ul>
+                    <li><strong>SLI:</strong> cache_hit_ratio, origin_latency, edge_availability</li>
+                    <li><strong>Real-time Monitoring:</strong> Traffic patterns, cache performance</li>
+                    <li><strong>Geographic Analytics:</strong> Per-region latency and throughput</li>
+                    <li><strong>Content Analytics:</strong> Popular content identification for prefetching</li>
+                </ul>
+            </div>
+
+            <div class="step">
+                <h4>6. Trade-offs</h4>
+                <div class="trade-offs">
+                    <div class="pros">
+                        <h5>✅ More Edge Locations</h5>
+                        <ul>
+                            <li>Lower latency globally</li>
+                            <li>Better user experience</li>
+                            <li>Reduced origin load</li>
+                        </ul>
+                    </div>
+                    <div class="cons">
+                        <h5>❌ Operational Complexity</h5>
+                        <ul>
+                            <li>Higher infrastructure costs</li>
+                            <li>Complex cache invalidation</li>
+                            <li>Content synchronization challenges</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        // Smooth scrolling for navigation
+        document.querySelectorAll('.nav-tabs a').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                const offsetTop = target.offsetTop - 100;
+                
+                window.scrollTo({
+                    top: offsetTop,
+                    behavior: 'smooth'
+                });
+                
+                // Update active nav
+                document.querySelectorAll('.nav-tabs a').forEach(a => a.style.color = '#666');
+                this.style.color = '#4285f4';
+                this.style.borderBottomColor = '#4285f4';
+            });
+        });
+
+        // Update active nav on scroll
+        window.addEventListener('scroll', function() {
+            const sections = document.querySelectorAll('.section');
+            const navLinks = document.querySelectorAll('.nav-tabs a');
+            
+            let current = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop - 150;
+                if (window.pageYOffset >= sectionTop) {
+                    current = section.getAttribute('id');
+                }
+            });
+            
+            navLinks.forEach(a => {
+                a.style.color = '#666';
+                a.style.borderBottomColor = 'transparent';
+                if (a.getAttribute('href') === '#' + current) {
+                    a.style.color = '#4285f4';
+                    a.style.borderBottomColor = '#4285f4';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
