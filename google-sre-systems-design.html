@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Google SRE Systems Design Playbook — Interview Practice Guide</title>
+    <title>Google SRE Systems Design Interview Guide — 9 Authentic Problems</title>
     <style>
         * {
             margin: 0;
@@ -25,7 +25,7 @@
         }
 
         .hero {
-            background: linear-gradient(135deg, #4285f4 0%, #34a853 100%);
+            background: linear-gradient(135deg, #4285f4 0%, #ea4335 50%, #34a853 100%);
             color: white;
             padding: 60px 0;
             text-align: center;
@@ -40,8 +40,18 @@
         .hero p {
             font-size: 1.2rem;
             opacity: 0.9;
+            max-width: 800px;
+            margin: 0 auto 20px;
+        }
+
+        .hero .quote {
+            font-style: italic;
+            font-size: 1.1rem;
+            margin: 20px auto;
+            padding: 20px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
             max-width: 600px;
-            margin: 0 auto;
         }
 
         .nav-tabs {
@@ -50,6 +60,7 @@
             position: sticky;
             top: 0;
             z-index: 100;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
         .nav-tabs ul {
@@ -60,15 +71,16 @@
         }
 
         .nav-tabs li {
-            margin: 0 10px;
+            margin: 0 5px;
         }
 
         .nav-tabs a {
             display: block;
-            padding: 15px 20px;
+            padding: 12px 16px;
             text-decoration: none;
             color: #666;
             font-weight: 500;
+            font-size: 0.9rem;
             border-bottom: 3px solid transparent;
             transition: all 0.3s ease;
         }
@@ -95,6 +107,12 @@
             font-size: 1.8rem;
             margin: 2rem 0 1rem 0;
             color: #34495e;
+        }
+
+        .section h4 {
+            font-size: 1.3rem;
+            margin: 1.5rem 0 0.8rem 0;
+            color: #4285f4;
         }
 
         .methodology {
@@ -157,48 +175,11 @@
         .slo-table td {
             padding: 15px;
             border-bottom: 1px solid #e9ecef;
+            vertical-align: top;
         }
 
         .slo-table tr:nth-child(even) {
             background: #f8f9fa;
-        }
-
-        .diagram {
-            background: white;
-            border-radius: 8px;
-            padding: 20px;
-            margin: 20px 0;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            text-align: center;
-        }
-
-        .flow-diagram {
-            display: flex;
-            align-items: center;
-            justify-content: space-around;
-            flex-wrap: wrap;
-            gap: 15px;
-            margin: 20px 0;
-        }
-
-        .flow-step {
-            background: #4285f4;
-            color: white;
-            padding: 12px 20px;
-            border-radius: 25px;
-            font-weight: 500;
-            min-width: 120px;
-            position: relative;
-        }
-
-        .flow-step.success { background: #34a853; }
-        .flow-step.warning { background: #fbbc04; }
-        .flow-step.error { background: #ea4335; }
-
-        .arrow {
-            font-size: 1.2rem;
-            color: #666;
-            margin: 0 10px;
         }
 
         .highlight {
@@ -209,67 +190,113 @@
             border-left: 4px solid #4caf50;
         }
 
-        .trade-offs {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
+        .pro-tip {
+            background: #e3f2fd;
+            border: 1px solid #90caf9;
+            border-radius: 8px;
+            padding: 20px;
             margin: 20px 0;
         }
 
-        .pros {
-            background: #d4edda;
-            border: 1px solid #c3e6cb;
-            padding: 15px;
-            border-radius: 8px;
+        .pro-tip h5 {
+            color: #1976d2;
+            margin-bottom: 10px;
         }
 
-        .cons {
-            background: #f8d7da;
+        .interviewer-lens {
+            background: #f3e5f5;
+            border: 1px solid #ce93d8;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .interviewer-lens h5 {
+            color: #7b1fa2;
+            margin-bottom: 10px;
+        }
+
+        .challenge {
+            background: #ffebee;
             border: 1px solid #f5c6cb;
-            padding: 15px;
             border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
         }
 
-        .pros h5 { color: #155724; }
-        .cons h5 { color: #721c24; }
+        .challenge h5 {
+            color: #721c24;
+            margin-bottom: 10px;
+        }
+
+        .code-block {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            overflow-x: auto;
+            font-family: 'Monaco', 'Courier New', monospace;
+        }
 
         @media (max-width: 768px) {
             .hero h1 { font-size: 2rem; }
-            .trade-offs { grid-template-columns: 1fr; }
-            .flow-diagram { flex-direction: column; }
+            .nav-tabs a { padding: 10px 12px; font-size: 0.8rem; }
         }
     </style>
 </head>
 <body>
     <div class="hero">
         <div class="container">
-            <h1>Google SRE Systems Design Playbook</h1>
-            <p>Complete interview preparation guide with 6-step methodology, real problems, and scaling strategies</p>
+            <h1>Google SRE Systems Design Interview</h1>
+            <p>Complete preparation guide with 9 authentic problems from Google's Site Reliability Engineering interviews</p>
+            <div class="quote">
+                "Don't just fix the bug. Design the system where the bug can't exist."
+            </div>
         </div>
     </div>
 
     <nav class="nav-tabs">
         <div class="container">
             <ul>
-                <li><a href="#methodology">6-Step Method</a></li>
-                <li><a href="#healthcheck">Health Check Service</a></li>
-                <li><a href="#urlshortener">URL Shortener</a></li>
-                <li><a href="#chatservice">Chat Service</a></li>
-                <li><a href="#monitoring">Monitoring System</a></li>
-                <li><a href="#cdn">CDN Design</a></li>
+                <li><a href="#overview">Overview</a></li>
+                <li><a href="#monitoring">Monitoring Platform</a></li>
+                <li><a href="#logging">Distributed Logging</a></li>
+                <li><a href="#cache">Global Cache</a></li>
+                <li><a href="#incident">Incident Response</a></li>
+                <li><a href="#slo">SLO Error Budget</a></li>
+                <li><a href="#canary">Canary Deployment</a></li>
+                <li><a href="#taskqueue">Task Queue</a></li>
+                <li><a href="#anomaly">Anomaly Detection</a></li>
+                <li><a href="#platform">Global Platform</a></li>
             </ul>
         </div>
     </nav>
 
-    <section id="methodology" class="section">
+    <section id="overview" class="section">
         <div class="container">
-            <h2>The 6-Step SRE Design Methodology</h2>
+            <h2>🕒 Round 3: System Design Interview Overview</h2>
             
             <div class="methodology">
-                <h3>Why This Framework Works</h3>
-                <p>Google SRE interviews focus on <strong>reliability engineering</strong> rather than just distributed systems. This means every design decision must be justified by SLOs, failure modes, and operational concerns. The 6-step approach ensures you cover all critical aspects systematically.</p>
+                <h3>Why This Round is Different</h3>
+                <p>This is often the most decisive round in the Google SRE loop, separating strong engineers from true SRE architects. Unlike a standard software engineering design interview that focuses on features and scale, the SRE version is a deep probe into <strong>reliability, observability, and operational maturity</strong>.</p>
+                
+                <p>The interviewer isn't just asking "How would you build it?" They are asking, <strong>"How would you build it to survive its worst day, and how would you prove it's meeting its promises?"</strong></p>
             </div>
 
+            <div class="step">
+                <h4>This round tests your ability to:</h4>
+                <ul>
+                    <li>✅ Reason about systems under stress and define SLOs first</li>
+                    <li>✅ Make difficult trade-offs between availability, latency, and cost</li>
+                    <li>✅ Design for failure, not just for the "happy path"</li>
+                    <li>✅ Demonstrate operational ownership over a complex, distributed service</li>
+                </ul>
+                <p><strong>Expect a dialogue, not a monologue.</strong> The goal isn't to draw a perfect diagram, but to narrate your architectural choices and justify them with production-grade reliability principles.</p>
+            </div>
+
+            <h3>The 6-Step SRE Design Methodology</h3>
+            
             <div class="step">
                 <h4>1. Requirements → SLO Contract</h4>
                 <p><strong>"How reliable, fast, and scalable must this system be?"</strong></p>
@@ -344,557 +371,191 @@
         </div>
     </section>
 
-    <section id="healthcheck" class="section">
-        <div class="container">
-            <h2>Problem 1: Health Check Service</h2>
-            
-            <div class="problem">
-                <h3>Requirements</h3>
-                <p>Design a health check service that can monitor 100,000 instances across multiple regions. Detect instance failure within 10 seconds with 99.99% detection reliability. Handle network partitions gracefully.</p>
-            </div>
-
-            <div class="step">
-                <h4>1. SLO Contract</h4>
-                <div class="slo-table">
-                    <table>
-                        <tr><th>Metric</th><th>Target</th><th>Measurement</th></tr>
-                        <tr><td>Detection Latency</td><td>p95 ≤ 5s</td><td>Time from failure to alert</td></tr>
-                        <tr><td>Detection Reliability</td><td>≥ 99.99%</td><td>True positive rate</td></tr>
-                        <tr><td>False Positive Rate</td><td>≤ 0.1%</td><td>Unnecessary alerts</td></tr>
-                        <tr><td>Service Availability</td><td>≥ 99.95%</td><td>Health check service uptime</td></tr>
-                    </table>
-                </div>
-            </div>
-
-            <div class="step">
-                <h4>2. Baseline Design</h4>
-                <div class="diagram">
-                    <div class="flow-diagram">
-                        <div class="flow-step">Scheduler</div>
-                        <span class="arrow">→</span>
-                        <div class="flow-step success">Health Checker</div>
-                        <span class="arrow">→</span>
-                        <div class="flow-step">Target Instance</div>
-                        <span class="arrow">→</span>
-                        <div class="flow-step warning">Result Store</div>
-                        <span class="arrow">→</span>
-                        <div class="flow-step">Alert Manager</div>
-                    </div>
-                </div>
-                <ul>
-                    <li><strong>Scheduler:</strong> Distributes health check tasks every 5s</li>
-                    <li><strong>Health Checker:</strong> Executes HTTP/TCP checks</li>
-                    <li><strong>Result Store:</strong> Time-series database for check history</li>
-                    <li><strong>Alert Manager:</strong> Evaluates failure conditions</li>
-                </ul>
-            </div>
-
-            <div class="step">
-                <h4>3. Stressors</h4>
-                <ul>
-                    <li><strong>Network Partitions:</strong> Checker can't reach target but target is healthy</li>
-                    <li><strong>False Positives:</strong> Transient network issues trigger alerts</li>
-                    <li><strong>Checker Failure:</strong> Health checker instance crashes</li>
-                    <li><strong>Scale Issues:</strong> 100K instances × 5s interval = 20K checks/sec</li>
-                </ul>
-            </div>
-
-            <div class="step">
-                <h4>4. Resilient Architecture</h4>
-                <div class="diagram">
-                    <div class="flow-diagram">
-                        <div class="flow-step">Scheduler</div>
-                        <span class="arrow">→</span>
-                        <div class="flow-step success">Checker Pool A</div>
-                        <span class="arrow">→</span>
-                        <div class="flow-step">Target</div>
-                    </div>
-                    <div class="flow-diagram">
-                        <div class="flow-step">Scheduler</div>
-                        <span class="arrow">→</span>
-                        <div class="flow-step success">Checker Pool B</div>
-                        <span class="arrow">→</span>
-                        <div class="flow-step">Target</div>
-                    </div>
-                    <div class="flow-diagram">
-                        <div class="flow-step">Scheduler</div>
-                        <span class="arrow">→</span>
-                        <div class="flow-step success">Checker Pool C</div>
-                        <span class="arrow">→</span>
-                        <div class="flow-step">Target</div>
-                    </div>
-                </div>
-                <p><strong>Majority Vote Pattern:</strong> 3 checkers per target, 2/3 must agree on failure</p>
-                <ul>
-                    <li><strong>Multi-Region Checkers:</strong> Deploy in different AZs/regions</li>
-                    <li><strong>Exponential Backoff:</strong> Reduce check frequency for consistently failing targets</li>
-                    <li><strong>Circuit Breaker:</strong> Stop checking obviously dead instances</li>
-                    <li><strong>Consensus Algorithm:</strong> Require majority agreement for state changes</li>
-                </ul>
-            </div>
-
-            <div class="step">
-                <h4>5. Observability & Ops</h4>
-                <ul>
-                    <li><strong>SLI:</strong> successful_checks / total_checks</li>
-                    <li><strong>Metrics:</strong> Check latency, success rate, consensus conflicts</li>
-                    <li><strong>Alerts:</strong> Detection SLO violation, checker health issues</li>
-                    <li><strong>Dashboards:</strong> Per-region health maps, check latency distribution</li>
-                </ul>
-            </div>
-
-            <div class="step">
-                <h4>6. Trade-offs</h4>
-                <div class="trade-offs">
-                    <div class="pros">
-                        <h5>✅ More Checkers</h5>
-                        <ul>
-                            <li>Lower false positive rate</li>
-                            <li>Better network partition handling</li>
-                            <li>Higher detection reliability</li>
-                        </ul>
-                    </div>
-                    <div class="cons">
-                        <h5>❌ Cost Implications</h5>
-                        <ul>
-                            <li>3x compute cost for checker infrastructure</li>
-                            <li>3x network bandwidth usage</li>
-                            <li>More complex consensus logic</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section id="urlshortener" class="section">
-        <div class="container">
-            <h2>Problem 2: URL Shortener (like bit.ly)</h2>
-            
-            <div class="problem">
-                <h3>Requirements</h3>
-                <p>Design a URL shortener handling 100M URLs created daily, 1B redirects daily. 99.9% availability, p99 redirect latency < 100ms. Support custom aliases and analytics.</p>
-            </div>
-
-            <div class="step">
-                <h4>1. SLO Contract</h4>
-                <div class="slo-table">
-                    <table>
-                        <tr><th>Metric</th><th>Target</th><th>Measurement</th></tr>
-                        <tr><td>Redirect Latency</td><td>p99 ≤ 100ms</td><td>From request to 302 response</td></tr>
-                        <tr><td>Creation Latency</td><td>p95 ≤ 500ms</td><td>URL shortening time</td></tr>
-                        <tr><td>Availability</td><td>≥ 99.9%</td><td>Successful requests / total</td></tr>
-                        <tr><td>Durability</td><td>≥ 99.99%</td><td>URLs must not be lost</td></tr>
-                    </table>
-                </div>
-            </div>
-
-            <div class="step">
-                <h4>2. Baseline Design</h4>
-                <div class="diagram">
-                    <div class="flow-diagram">
-                        <div class="flow-step">Load Balancer</div>
-                        <span class="arrow">→</span>
-                        <div class="flow-step success">Web Servers</div>
-                        <span class="arrow">→</span>
-                        <div class="flow-step warning">Cache Layer</div>
-                        <span class="arrow">→</span>
-                        <div class="flow-step">Database</div>
-                    </div>
-                </div>
-                <ul>
-                    <li><strong>Encoding:</strong> Base62 encoding for short URLs (a-z, A-Z, 0-9)</li>
-                    <li><strong>ID Generation:</strong> Auto-incrementing counter or UUID</li>
-                    <li><strong>Database:</strong> MySQL with URL mappings table</li>
-                    <li><strong>Cache:</strong> Redis for hot URL lookups</li>
-                </ul>
-            </div>
-
-            <div class="step">
-                <h4>3. Stressors</h4>
-                <ul>
-                    <li><strong>Hot URLs:</strong> Viral links causing cache hot spots</li>
-                    <li><strong>Database Write Bottleneck:</strong> 100M creates/day = 1,157/sec</li>
-                    <li><strong>Cache Misses:</strong> New URLs not in cache cause DB load</li>
-                    <li><strong>Custom Alias Conflicts:</strong> Duplicate custom short codes</li>
-                </ul>
-            </div>
-
-            <div class="step">
-                <h4>4. Resilient Architecture</h4>
-                <div class="highlight">
-                    <h4>Scaling Strategy</h4>
-                    <div class="flow-diagram">
-                        <div class="flow-step">Read Replicas</div>
-                        <span class="arrow">+</span>
-                        <div class="flow-step success">Write Sharding</div>
-                        <span class="arrow">+</span>
-                        <div class="flow-step warning">CDN Caching</div>
-                    </div>
-                </div>
-                <ul>
-                    <li><strong>Database Sharding:</strong> Shard by short_url hash for write distribution</li>
-                    <li><strong>Read Replicas:</strong> Separate read traffic from writes</li>
-                    <li><strong>CDN Layer:</strong> Cache 302 redirects at edge locations</li>
-                    <li><strong>Bloom Filter:</strong> Quick existence check before DB lookup</li>
-                    <li><strong>Rate Limiting:</strong> Prevent abuse and ensure fair usage</li>
-                </ul>
-            </div>
-
-            <div class="step">
-                <h4>5. Observability & Ops</h4>
-                <ul>
-                    <li><strong>SLI:</strong> redirect_success_rate, creation_success_rate</li>
-                    <li><strong>Metrics:</strong> Cache hit ratio, DB query latency, URL creation rate</li>
-                    <li><strong>Alerts:</strong> High error rate, cache miss spikes, DB connection issues</li>
-                    <li><strong>Analytics:</strong> Click tracking, geographic distribution, referrer data</li>
-                </ul>
-            </div>
-
-            <div class="step">
-                <h4>6. Trade-offs</h4>
-                <div class="trade-offs">
-                    <div class="pros">
-                        <h5>✅ CDN Benefits</h5>
-                        <ul>
-                            <li>Sub-50ms redirect latency globally</li>
-                            <li>Reduced backend load (80%+ cache hit)</li>
-                            <li>DDoS protection</li>
-                        </ul>
-                    </div>
-                    <div class="cons">
-                        <h5>❌ CDN Challenges</h5>
-                        <ul>
-                            <li>Analytics data collection complexity</li>
-                            <li>Cache invalidation delays</li>
-                            <li>CDN costs for high traffic</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section id="chatservice" class="section">
-        <div class="container">
-            <h2>Problem 3: Real-time Chat Service</h2>
-            
-            <div class="problem">
-                <h3>Requirements</h3>
-                <p>Design WhatsApp-scale chat: 2B users, 100B messages daily. Real-time delivery, message ordering, presence status. Support group chats (500 members max).</p>
-            </div>
-
-            <div class="step">
-                <h4>1. SLO Contract</h4>
-                <div class="slo-table">
-                    <table>
-                        <tr><th>Metric</th><th>Target</th><th>Measurement</th></tr>
-                        <tr><td>Message Delivery</td><td>p99 ≤ 200ms</td><td>Send to all recipients</td></tr>
-                        <tr><td>Connection Availability</td><td>≥ 99.95%</td><td>WebSocket uptime</td></tr>
-                        <tr><td>Message Durability</td><td>≥ 99.999%</td><td>Zero message loss</td></tr>
-                        <tr><td>Ordering Guarantee</td><td>100%</td><td>Correct message sequence</td></tr>
-                    </table>
-                </div>
-            </div>
-
-            <div class="step">
-                <h4>2. Baseline Design</h4>
-                <div class="diagram">
-                    <div class="flow-diagram">
-                        <div class="flow-step">Client Apps</div>
-                        <span class="arrow">→</span>
-                        <div class="flow-step success">WebSocket Servers</div>
-                        <span class="arrow">→</span>
-                        <div class="flow-step warning">Message Queue</div>
-                        <span class="arrow">→</span>
-                        <div class="flow-step">Message DB</div>
-                    </div>
-                </div>
-                <ul>
-                    <li><strong>Connection Management:</strong> Persistent WebSocket connections</li>
-                    <li><strong>Message Storage:</strong> Cassandra for horizontal scaling</li>
-                    <li><strong>Real-time Delivery:</strong> Apache Kafka for message streaming</li>
-                    <li><strong>Presence Service:</strong> Redis for online status tracking</li>
-                </ul>
-            </div>
-
-            <div class="step">
-                <h4>3. Stressors</h4>
-                <ul>
-                    <li><strong>Connection Storms:</strong> Millions reconnecting after network issues</li>
-                    <li><strong>Hot Groups:</strong> Large groups causing message fan-out bottlenecks</li>
-                    <li><strong>Message Ordering:</strong> Cross-datacenter consistency challenges</li>
-                    <li><strong>Offline Users:</strong> Message accumulation for inactive users</li>
-                </ul>
-            </div>
-
-            <div class="step">
-                <h4>4. Resilient Architecture</h4>
-                <div class="highlight">
-                    <h4>Multi-Region Architecture</h4>
-                    <div class="flow-diagram">
-                        <div class="flow-step">US East</div>
-                        <span class="arrow">↔</span>
-                        <div class="flow-step success">Message Router</div>
-                        <span class="arrow">↔</span>
-                        <div class="flow-step">EU West</div>
-                    </div>
-                </div>
-                <ul>
-                    <li><strong>Consistent Hashing:</strong> Distribute users across connection servers</li>
-                    <li><strong>Message Ordering:</strong> Vector clocks or Lamport timestamps</li>
-                    <li><strong>Offline Message Storage:</strong> Per-user message boxes with TTL</li>
-                    <li><strong>Group Message Optimization:</strong> Single write, fan-out on read</li>
-                    <li><strong>Circuit Breakers:</strong> Graceful degradation during overload</li>
-                </ul>
-            </div>
-
-            <div class="step">
-                <h4>5. Observability & Ops</h4>
-                <ul>
-                    <li><strong>SLI:</strong> message_delivery_success_rate, connection_success_rate</li>
-                    <li><strong>Real-time Metrics:</strong> Active connections, messages/second, queue depth</li>
-                    <li><strong>Alerts:</strong> Message delivery delays, connection drops, storage issues</li>
-                    <li><strong>User Experience:</strong> Message delivery confirmations (sent/delivered/read)</li>
-                </ul>
-            </div>
-
-            <div class="step">
-                <h4>6. Trade-offs</h4>
-                <div class="trade-offs">
-                    <div class="pros">
-                        <h5>✅ Strong Consistency</h5>
-                        <ul>
-                            <li>Perfect message ordering</li>
-                            <li>No duplicate messages</li>
-                            <li>Reliable delivery guarantees</li>
-                        </ul>
-                    </div>
-                    <div class="cons">
-                        <h5>❌ Performance Impact</h5>
-                        <ul>
-                            <li>Higher latency for coordination</li>
-                            <li>Complex cross-region synchronization</li>
-                            <li>Reduced availability during partitions</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
     <section id="monitoring" class="section">
         <div class="container">
-            <h2>Problem 4: Monitoring & Alerting System</h2>
+            <h2>Design Prompt #1 — Monitoring & Alerting Platform</h2>
             
             <div class="problem">
-                <h3>Requirements</h3>
-                <p>Design a monitoring system like Prometheus for 100K services. Ingest 10M metrics/sec, support complex queries, alert within 30 seconds of SLO violations.</p>
-            </div>
-
-            <div class="step">
-                <h4>1. SLO Contract</h4>
-                <div class="slo-table">
-                    <table>
-                        <tr><th>Metric</th><th>Target</th><th>Measurement</th></tr>
-                        <tr><td>Ingestion Latency</td><td>p95 ≤ 10s</td><td>Metric collection to storage</td></tr>
-                        <tr><td>Query Response</td><td>p99 ≤ 5s</td><td>Dashboard query time</td></tr>
-                        <tr><td>Alert Latency</td><td>≤ 30s</td><td>Violation to notification</td></tr>
-                        <tr><td>Data Retention</td><td>99.9%</td><td>No data loss for 30 days</td></tr>
-                    </table>
-                </div>
-            </div>
-
-            <div class="step">
-                <h4>2. Baseline Design</h4>
-                <div class="diagram">
-                    <div class="flow-diagram">
-                        <div class="flow-step">Metric Exporters</div>
-                        <span class="arrow">→</span>
-                        <div class="flow-step success">Collection Agents</div>
-                        <span class="arrow">→</span>
-                        <div class="flow-step warning">TSDB</div>
-                        <span class="arrow">→</span>
-                        <div class="flow-step">Query Engine</div>
-                    </div>
-                </div>
+                <h3>🎯 Scenario / Problem Statement</h3>
+                <p>You're asked to design a global monitoring & alerting platform for an organization that runs hundreds of services across multiple regions.</p>
+                
+                <h4>Requirements (high level):</h4>
                 <ul>
-                    <li><strong>Collection:</strong> Pull-based scraping every 15 seconds</li>
-                    <li><strong>Storage:</strong> Time-series database (InfluxDB/TimescaleDB)</li>
-                    <li><strong>Querying:</strong> PromQL-style query language</li>
-                    <li><strong>Alerting:</strong> Rule evaluation engine with notification routing</li>
+                    <li>Ingest metrics & events from producers at peak <strong>100M metrics/sec</strong> global ingestion</li>
+                    <li>Produce alerts to on-call within <strong>p99 latency < 30 seconds</strong> from metric event to notification</li>
+                    <li>Platform must provide <strong>SLIs, SLO tracking</strong>, and support error-budget based alerting and throttling</li>
+                    <li>Support <strong>multi-region availability</strong> (no single region outage should cause alerting blackout)</li>
                 </ul>
+                <p><strong>Goal:</strong> "Build something like Google's Stackdriver Logging or Cloud Logging service — reliable, fast, and cost-efficient."</p>
             </div>
 
-            <div class="step">
-                <h4>3. Stressors</h4>
-                <ul>
-                    <li><strong>Metric Explosion:</strong> High-cardinality labels causing storage issues</li>
-                    <li><strong>Query Overload:</strong> Complex dashboard queries impacting ingestion</li>
-                    <li><strong>Storage Growth:</strong> Retention policies vs query performance</li>
-                    <li><strong>Alert Storms:</strong> Cascading failures triggering thousands of alerts</li>
-                </ul>
-            </div>
-
-            <div class="step">
-                <h4>4. Resilient Architecture</h4>
-                <div class="highlight">
-                    <h4>Federated Architecture</h4>
-                    <div class="flow-diagram">
-                        <div class="flow-step">Shard A</div>
-                        <span class="arrow">↘</span>
-                        <div class="flow-step success">Federation</div>
-                        <span class="arrow">↙</span>
-                        <div class="flow-step">Shard C</div>
-                    </div>
-                </div>
-                <ul>
-                    <li><strong>Horizontal Sharding:</strong> Distribute metrics by service/region</li>
-                    <li><strong>Downsampling:</strong> Reduce resolution for older data</li>
-                    <li><strong>Query Federation:</strong> Cross-shard queries with result aggregation</li>
-                    <li><strong>Alert Deduplication:</strong> Group related alerts to prevent storms</li>
-                    <li><strong>Circuit Breaker:</strong> Disable expensive queries during overload</li>
-                </ul>
-            </div>
-
-            <div class="step">
-                <h4>5. Observability & Ops</h4>
-                <ul>
-                    <li><strong>SLI:</strong> successful_ingestions/total, query_success_rate</li>
-                    <li><strong>Meta-monitoring:</strong> Monitor the monitoring system itself</li>
-                    <li><strong>Capacity Planning:</strong> Storage growth rate, query load trends</li>
-                    <li><strong>Performance Optimization:</strong> Index usage, query plan analysis</li>
-                </ul>
-            </div>
-
-            <div class="step">
-                <h4>6. Trade-offs</h4>
-                <div class="trade-offs">
-                    <div class="pros">
-                        <h5>✅ High Retention</h5>
-                        <ul>
-                            <li>Long-term trend analysis</li>
-                            <li>Capacity planning data</li>
-                            <li>Incident forensics</li>
-                        </ul>
-                    </div>
-                    <div class="cons">
-                        <h5>❌ Storage Costs</h5>
-                        <ul>
-                            <li>Exponential storage growth</li>
-                            <li>Query performance degradation</li>
-                            <li>Backup and recovery complexity</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section id="cdn" class="section">
-        <div class="container">
-            <h2>Problem 5: Content Delivery Network (CDN)</h2>
+            <h3>Step 1 — Clarification Dialogue + SLO Contract</h3>
             
-            <div class="problem">
-                <h3>Requirements</h3>
-                <p>Design a global CDN serving 1PB of content daily. Support video streaming, image optimization, and dynamic content. 95th percentile latency < 100ms globally.</p>
+            <div class="step">
+                <h4>You (Candidate): Quick clarifying questions:</h4>
+                <ul>
+                    <li><strong>"Are producers pushing metrics in a structured format (proto/JSON) and are they authenticated?"</strong><br>
+                    Interviewer: "Yes—structured, authenticated telemetry via gRPC/HTTP."</li>
+                    <li><strong>"Do we require long-term retention for analytics?"</strong><br>
+                    Interviewer: "Yes. Hot retention for 30 days; cold storage for 3 years."</li>
+                    <li><strong>"Is alert delivery via SMS/Email/ChatOps required?"</strong><br>
+                    Interviewer: "Yes, integrate with on-call systems (PagerDuty/Google Ops)."</li>
+                    <li><strong>"What's the SRE org tolerance for false positives vs. missed alerts?"</strong><br>
+                    Interviewer: "Avoid alert storms — prioritize precision."</li>
+                </ul>
             </div>
 
             <div class="step">
-                <h4>1. SLO Contract</h4>
+                <h4>You (Candidate) — SLO Contract (the money move):</h4>
+                <p>"Before architecture, let's define the SLOs that will guide design tradeoffs. For this monitoring pipeline I propose:"</p>
+                
                 <div class="slo-table">
                     <table>
-                        <tr><th>Metric</th><th>Target</th><th>Measurement</th></tr>
-                        <tr><td>Global Latency</td><td>p95 ≤ 100ms</td><td>First byte time</td></tr>
-                        <tr><td>Cache Hit Rate</td><td>≥ 90%</td><td>Edge cache efficiency</td></tr>
-                        <tr><td>Availability</td><td>≥ 99.99%</td><td>Content delivery success</td></tr>
-                        <tr><td>Bandwidth</td><td>10 Tbps</td><td>Peak traffic capacity</td></tr>
+                        <tr><th>SLI</th><th>Target</th><th>Measurement</th></tr>
+                        <tr><td><strong>SLI A (Alert latency)</strong></td><td>p99 ≤ 30 seconds</td><td>End-to-end from metric ingestion → alert notification</td></tr>
+                        <tr><td><strong>SLI B (Pipeline availability)</strong></td><td>≥ 99.95% monthly</td><td>Ingestion & processing pipeline available</td></tr>
+                        <tr><td><strong>SLI C (Alert precision)</strong></td><td>< 2% false positive rate</td><td>For critical alerts</td></tr>
                     </table>
                 </div>
+                
+                <p><strong>"Do these targets reflect expectations?"</strong><br>
+                Interviewer: "Yes — those are reasonable targets."</p>
             </div>
 
+            <div class="interviewer-lens">
+                <h5>💡 Interviewer Lens:</h5>
+                <p>Declaring SLOs first reframes every decision: buffering, batching, retry, sampling, redundancy — all are justified by meeting these measurable targets.</p>
+            </div>
+
+            <h3>Step 2 — Baseline Functional Design (Happy Path)</h3>
+            
             <div class="step">
-                <h4>2. Baseline Design</h4>
-                <div class="diagram">
-                    <div class="flow-diagram">
-                        <div class="flow-step">Origin Servers</div>
-                        <span class="arrow">→</span>
-                        <div class="flow-step success">Regional PoPs</div>
-                        <span class="arrow">→</span>
-                        <div class="flow-step warning">Edge Servers</div>
-                        <span class="arrow">→</span>
-                        <div class="flow-step">End Users</div>
-                    </div>
-                </div>
+                <h4>Minimal components and dataflow:</h4>
+                <ol>
+                    <li><strong>Producers</strong> → push metrics/events (gRPC/HTTP) →</li>
+                    <li><strong>Ingress Load Balancer / API Gateway</strong> →</li>
+                    <li><strong>Sharded Ingest Brokers</strong> (Kafka-like) →</li>
+                    <li><strong>Stream Processors</strong> (stateless workers) → compute SLIs/aggregate metrics →</li>
+                    <li><strong>Time-series Storage</strong> (hot TSDB) for 30-day fast queries →</li>
+                    <li><strong>Alerting Engine</strong> (rules, thresholds, error budget checks) →</li>
+                    <li><strong>Notifier</strong> → on-call systems (Pager/ChatOps)</li>
+                    <li><strong>Cold Storage</strong> (object store) for long-term analytics</li>
+                </ol>
+                
+                <p><strong>Data flow:</strong> producers → ingest → durable queue → processing → TSDB + alert evaluation → notifications.</p>
+                
+                <p>This baseline meets functionality in an ideal world; no resilience or scale pressure yet.</p>
+            </div>
+
+            <h3>Step 3 — The Interviewer's Gauntlet (Add failure & scale constraints)</h3>
+            
+            <div class="challenge">
+                <h5>🔥 Gauntlet A — Scale: "Your baseline works for 1M metrics/sec. How to handle 100M?"</h5>
+                <p><strong>Candidate:</strong></p>
                 <ul>
-                    <li><strong>Geographic Distribution:</strong> 200+ Points of Presence globally</li>
-                    <li><strong>Cache Hierarchy:</strong> Edge → Regional → Origin</li>
-                    <li><strong>Content Routing:</strong> Anycast DNS for nearest POP selection</li>
-                    <li><strong>Storage Tiering:</strong> SSD for hot content, HDD for warm content</li>
+                    <li>Shard ingestion: partition by tenant/service into many topics</li>
+                    <li>Autoscale processors; use local aggregation (pre-aggregation at edge) to reduce cardinality</li>
+                    <li>Use adaptive sampling for high-cardinality metrics; push raw for critical signals only</li>
                 </ul>
             </div>
 
-            <div class="step">
-                <h4>3. Stressors</h4>
+            <div class="challenge">
+                <h5>🔥 Gauntlet B — Regional outage: "A whole region goes down — can on-call still be notified?"</h5>
+                <p><strong>Candidate:</strong></p>
                 <ul>
-                    <li><strong>Flash Crowds:</strong> Viral content causing cache storms</li>
-                    <li><strong>Large File Delivery:</strong> Video files exhausting bandwidth</li>
-                    <li><strong>Cache Invalidation:</strong> Stale content after origin updates</li>
-                    <li><strong>Geographic Hotspots:</strong> Regional traffic concentration</li>
+                    <li>Make ingest & processing geo-redundant: producers can fall back to nearest region; brokers are multi-region replication (active-active)</li>
+                    <li>Notifier must be multi-region — route notifications from healthy control plane region</li>
                 </ul>
             </div>
 
-            <div class="step">
-                <h4>4. Resilient Architecture</h4>
-                <div class="highlight">
-                    <h4>Multi-Tier Caching Strategy</h4>
-                    <div class="flow-diagram">
-                        <div class="flow-step">L1 Cache (SSD)</div>
-                        <span class="arrow">→</span>
-                        <div class="flow-step success">L2 Cache (HDD)</div>
-                        <span class="arrow">→</span>
-                        <div class="flow-step warning">Origin Shield</div>
-                    </div>
-                </div>
+            <div class="challenge">
+                <h5>🔥 Gauntlet C — Alert storms / Poison pill: "One malformed high-frequency metric generates thousands of alerts."</h5>
+                <p><strong>Candidate:</strong></p>
                 <ul>
-                    <li><strong>Consistent Hashing:</strong> Distribute content across cache nodes</li>
-                    <li><strong>Adaptive Bitrate:</strong> Multiple quality levels for video content</li>
-                    <li><strong>Prefetching:</strong> Predictive content loading based on patterns</li>
-                    <li><strong>Load Balancing:</strong> Weighted round-robin with health checks</li>
-                    <li><strong>DDoS Protection:</strong> Rate limiting and traffic filtering</li>
+                    <li>Add schema validation/ingress filters and a <strong>Dead-Letter Queue (DLQ)</strong> for malformed events</li>
+                    <li>Add alert deduplication & grouping logic and a rate limiter for downstream notification channels</li>
+                    <li>Introduce a verification window: require t consecutive breaches or error-budget burn before paging</li>
                 </ul>
             </div>
 
-            <div class="step">
-                <h4>5. Observability & Ops</h4>
+            <div class="challenge">
+                <h5>🔥 Gauntlet D — SLO enforcement: "How do we ensure critical alerts are not throttled during huge traffic bursts?"</h5>
+                <p><strong>Candidate:</strong></p>
                 <ul>
-                    <li><strong>SLI:</strong> cache_hit_ratio, origin_latency, edge_availability</li>
-                    <li><strong>Real-time Monitoring:</strong> Traffic patterns, cache performance</li>
-                    <li><strong>Geographic Analytics:</strong> Per-region latency and throughput</li>
-                    <li><strong>Content Analytics:</strong> Popular content identification for prefetching</li>
+                    <li><strong>Priority queueing:</strong> critical alerts bypass throttling and get dedicated capacity</li>
+                    <li>Implement error-budget aware alerting: non-critical alerts suppressed if error budget burn is high, preserving attention for critical signals</li>
                 </ul>
             </div>
 
+            <p>Each defense tied back to SLOs: latency (ingest+batches), availability (multi-region), precision (dedupe, DLQ).</p>
+
+            <h3>Step 4 — Production-Grade Architecture</h3>
+            
             <div class="step">
-                <h4>6. Trade-offs</h4>
-                <div class="trade-offs">
-                    <div class="pros">
-                        <h5>✅ More Edge Locations</h5>
+                <h4>Final architecture (key components & resilience patterns — each tied to SLO):</h4>
+                
+                <ol>
+                    <li><strong>Edge Agent / Ingress</strong>
                         <ul>
-                            <li>Lower latency globally</li>
-                            <li>Better user experience</li>
-                            <li>Reduced origin load</li>
+                            <li>gRPC endpoints + auth, TLS, client-side buffering & batching (minimize network overhead)</li>
+                            <li><em>SLO mapping:</em> reduces p99 latency by amortizing RPC overhead</li>
                         </ul>
-                    </div>
-                    <div class="cons">
-                        <h5>❌ Operational Complexity</h5>
+                    </li>
+                    
+                    <li><strong>Global Load Balancer + Regional Gateways</strong>
                         <ul>
-                            <li>Higher infrastructure costs</li>
-                            <li>Complex cache invalidation</li>
-                            <li>Content synchronization challenges</li>
+                            <li>Routes to healthy region; producers configured with fallback endpoints</li>
+                            <li><em>SLO mapping:</em> avoids single-region outage, supports 99.95% availability</li>
                         </ul>
-                    </div>
-                </div>
+                    </li>
+                    
+                    <li><strong>Durable, Sharded Ingest Queue (multi-region)</strong>
+                        <ul>
+                            <li>Kafka-like topics with geo-replication or log replication (active-active)</li>
+                            <li>Retains raw events for reprocessing (hot window + cold archive)</li>
+                            <li><em>SLO mapping:</em> durability ensures availability; replay supports correctness after failures</li>
+                        </ul>
+                    </li>
+                    
+                    <li><strong>Edge Aggregators</strong>
+                        <ul>
+                            <li>Run near producers to pre-aggregate and downsample high-cardinality metrics</li>
+                            <li><em>SLO mapping:</em> reduces ingestion load, helps meet latency SLO</li>
+                        </ul>
+                    </li>
+                    
+                    <li><strong>Stream Processing Layer</strong>
+                        <ul>
+                            <li>Stateless processors in autoscaling groups; process per-shard; apply dedupe, grouping, alert rules, and error-budget checks</li>
+                            <li>Maintain local state (sliding windows) and checkpoint to durable storage</li>
+                            <li><em>SLO mapping:</em> low-latency evaluation; state checkpoints support failover</li>
+                        </ul>
+                    </li>
+                </ol>
+            </div>
+
+            <h3>Step 5 — The Operational Playbook</h3>
+            
+            <div class="step">
+                <h4>Deployment Strategy (progressive & safe):</h4>
+                <ul>
+                    <li>Canary rollout: 1% traffic in single region → monitor SLOs for 24h → 10% → 50% → global</li>
+                    <li>Use traffic shaping to route a subset of producers to canary ingress; ensure canary runs with same config as prod</li>
+                    <li>Keep dynamic flags to disable new features instantly</li>
+                </ul>
+            </div>
+
+            <div class="step">
+                <h4>Resilience Testing (Runbook):</h4>
+                <ul>
+                    <li>Chaos experiments: kill processors, pause replication, inject high-latency to DB, and verify alerting pipeline still meets p99 latency target</li>
+                    <li>DLQ drills: inject malformed messages and verify DLQ handling, replay mechanics, and alerting on DLQ growth</li>
+                </ul>
+            </div>
+
+            <div class="pro-tip">
+                <h5>💡 Pro Tip:</h5>
+                <p>Always quantify: when you propose sampling or aggregation, state the expected reduction in ingest QPS (e.g., "apply 10x downsampling on low-cardinality metrics; reduces ingestion from 100M → 10M QPS"). Interviewers love concrete numbers.</p>
             </div>
         </div>
     </section>
@@ -918,29 +579,534 @@
                 this.style.borderBottomColor = '#4285f4';
             });
         });
-
-        // Update active nav on scroll
-        window.addEventListener('scroll', function() {
-            const sections = document.querySelectorAll('.section');
-            const navLinks = document.querySelectorAll('.nav-tabs a');
-            
-            let current = '';
-            sections.forEach(section => {
-                const sectionTop = section.offsetTop - 150;
-                if (window.pageYOffset >= sectionTop) {
-                    current = section.getAttribute('id');
-                }
-            });
-            
-            navLinks.forEach(a => {
-                a.style.color = '#666';
-                a.style.borderBottomColor = 'transparent';
-                if (a.getAttribute('href') === '#' + current) {
-                    a.style.color = '#4285f4';
-                    a.style.borderBottomColor = '#4285f4';
-                }
-            });
-        });
     </script>
+
+    <section id="logging" class="section">
+        <div class="container">
+            <h2>Design Prompt #2 — Distributed Logging Pipeline</h2>
+            
+            <div class="problem">
+                <h3>🎯 Scenario / Problem Statement</h3>
+                <p>Design a global distributed logging system for thousands of services generating logs at massive scale.</p>
+                
+                <h4>Requirements (interviewer brief):</h4>
+                <ul>
+                    <li>Must ingest up to <strong>20 TB/day</strong> of logs across regions</li>
+                    <li>Logs must be <strong>queryable within 60 seconds</strong> of ingestion</li>
+                    <li>Store raw logs for <strong>30 days hot, 1 year cold</strong>, with 99.9% durability</li>
+                    <li>Support <strong>multi-tenant isolation</strong> and cost-efficient storage</li>
+                    <li>Include error handling for malformed or oversized log entries</li>
+                </ul>
+                <p><strong>Goal:</strong> "Build something like Google's Stackdriver Logging or Cloud Logging service — reliable, fast, and cost-efficient."</p>
+            </div>
+
+            <h3>Step 1 — Clarification Dialogue + SLO Contract</h3>
+            
+            <div class="step">
+                <h4>Proposed SLOs:</h4>
+                <div class="slo-table">
+                    <table>
+                        <tr><th>SLI</th><th>Target</th><th>Measurement</th></tr>
+                        <tr><td><strong>SLI A – Ingestion Latency</strong></td><td>p99 ≤ 10 seconds</td><td>Time from log emission → durable write</td></tr>
+                        <tr><td><strong>SLI B – Query Freshness</strong></td><td>≤ 60 seconds</td><td>Logs visible for querying post-ingest</td></tr>
+                        <tr><td><strong>SLI C – Pipeline Availability</strong></td><td>≥ 99.95% monthly</td><td>Multi-region uptime</td></tr>
+                        <tr><td><strong>SLI D – Storage Durability</strong></td><td>≥ 99.999999999%</td><td>(11 9s) object durability (hot+cold tiers)</td></tr>
+                    </table>
+                </div>
+            </div>
+
+            <div class="interviewer-lens">
+                <h5>💡 Interviewer Lens:</h5>
+                <p>This "SLO-first" framing is the senior signal. The candidate isn't designing a system; they're defining what success means for reliability before designing anything.</p>
+            </div>
+
+            <h3>Step 2 — Baseline Functional Design (Happy Path)</h3>
+            
+            <div class="step">
+                <h4>Minimal architecture (functional view):</h4>
+                <ol>
+                    <li><strong>Log Producers</strong> → send structured JSON over gRPC/HTTPS</li>
+                    <li><strong>Regional Ingestion Service</strong> — authenticates, batches, and writes to a Durable Log Queue (Kafka/PubSub) for async decoupling</li>
+                    <li><strong>Indexing Workers</strong> — consume logs, extract metadata (service, timestamp, severity)</li>
+                    <li><strong>Storage Layers:</strong>
+                        <ul>
+                            <li>Hot Store: fast SSD-backed TSDB or log store (30-day retention)</li>
+                            <li>Cold Store: object storage (compressed, partitioned by day/service)</li>
+                        </ul>
+                    </li>
+                    <li><strong>Query API:</strong> indexes logs in search backend (e.g., Elastic/Loki-like) for real-time queries</li>
+                    <li><strong>Management Plane:</strong> retention policies, schema, multi-tenant quotas</li>
+                </ol>
+                
+                <p><strong>Happy Path:</strong> Logs flow in, persist durably, index, and become queryable within seconds. No failures yet — only correctness and latency considered.</p>
+            </div>
+
+            <h3>Step 3 — The Interviewer's Gauntlet</h3>
+            
+            <div class="challenge">
+                <h5>🔥 Challenge A – Scale Explosion</h5>
+                <p><strong>Interviewer:</strong> "That works at 2M logs/sec. What if it's 20M?"</p>
+                <p><strong>Candidate:</strong></p>
+                <ul>
+                    <li>Partition logs by service ID and region, shard ingestion</li>
+                    <li>Apply pre-aggregation and compression at edge agents</li>
+                    <li>Use tiered queues: edge → regional buffer → global merge</li>
+                    <li>Implement load shedding for non-critical debug-level logs</li>
+                </ul>
+                <p>"I'd define sampling rules: critical severity always stored, info/debug rate-limited."</p>
+            </div>
+
+            <div class="challenge">
+                <h5>🔥 Challenge B – Cost & Retention Trade-offs</h5>
+                <p><strong>Interviewer:</strong> "Storing raw logs for a year is expensive — how do you balance cost vs durability?"</p>
+                <p><strong>Candidate:</strong></p>
+                <ul>
+                    <li>Hot tier (30 days): SSD-backed distributed store for query freshness</li>
+                    <li>Cold tier (1 year): compressed object storage (GCS/S3) with infrequent access</li>
+                    <li>Lifecycle policies auto-transition logs from hot to cold after 30 days</li>
+                    <li>Apply columnar compression (Snappy/Zstd) for 80–90% reduction</li>
+                </ul>
+                <p>"That's the sweet spot: cost down, SLOs preserved for query freshness and durability."</p>
+            </div>
+
+            <div class="pro-tip">
+                <h5>💡 Pro Tip:</h5>
+                <p>Whenever you mention "durable queues," emphasize backpressure. Google interviewers love hearing: "We protect downstream systems by applying backpressure instead of uncontrolled retries."</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="cache" class="section">
+        <div class="container">
+            <h2>Design Prompt #3 — Distributed Cache (Global Scale)</h2>
+            
+            <div class="problem">
+                <h3>🎯 Scenario / Problem Statement</h3>
+                <p>You're designing a global distributed cache that serves user profile and session data to latency-sensitive applications across multiple regions.</p>
+                
+                <h4>Requirements (interviewer brief):</h4>
+                <ul>
+                    <li>Global user base (~<strong>500M active users</strong>)</li>
+                    <li><strong>p99 read latency target < 5ms</strong> from regional cache</li>
+                    <li>Writes must propagate globally within <strong>1s</strong> for critical data (e.g., session invalidation)</li>
+                    <li><strong>Cache hit ratio ≥ 95%</strong></li>
+                    <li>Support multi-region resilience (no single-region dependency)</li>
+                    <li>Handle <strong>10M RPS read and 1M RPS write</strong> workload</li>
+                </ul>
+                <p><strong>Goal:</strong> "Design something like Google's Memcache/Spanner hybrid caching tier — low latency, reliable, globally aware."</p>
+            </div>
+
+            <h3>Step 1 — SLO Contract</h3>
+            
+            <div class="slo-table">
+                <table>
+                    <tr><th>Metric</th><th>Target</th></tr>
+                    <tr><td><strong>SLI A – Read Latency</strong></td><td>p99 < 5ms from regional cache</td></tr>
+                    <tr><td><strong>SLI B – Global Write Propagation</strong></td><td>≤ 1s to all regions</td></tr>
+                    <tr><td><strong>SLI C – Availability</strong></td><td>≥ 99.99% read path uptime</td></tr>
+                    <tr><td><strong>SLI D – Hit Ratio</strong></td><td>≥ 95% sustained</td></tr>
+                    <tr><td><strong>SLI E – Data Integrity</strong></td><td>< 0.001% stale-read beyond SLO window</td></tr>
+                    <tr><td><strong>SLI F – Cost Efficiency</strong></td><td>≤ $0.05 per million reads (example target)</td></tr>
+                </table>
+            </div>
+
+            <div class="interviewer-lens">
+                <h5>💡 Interviewer Lens:</h5>
+                <p>Defining these numbers first is the "Google move." The conversation now has measurable targets: latency, staleness, availability and even cost.</p>
+            </div>
+
+            <h3>Step 4 — Production-Grade Architecture</h3>
+            
+            <div class="slo-table">
+                <table>
+                    <tr><th>Layer</th><th>Key Responsibilities</th><th>Reliability Pattern</th></tr>
+                    <tr><td><strong>Ingestion Tier</strong></td><td>Multi-region API front-ends</td><td>Active-active load balancing</td></tr>
+                    <tr><td><strong>Queue Layer</strong></td><td>Buffering & prioritization</td><td>Replicated Kafka clusters with MirrorMaker</td></tr>
+                    <tr><td><strong>Deduplication & Aggregation</strong></td><td>Collapses repeated alerts</td><td>Sliding-window hashing + in-memory cache</td></tr>
+                    <tr><td><strong>Notification Service</strong></td><td>Multi-channel dispatch</td><td>Circuit breakers & multi-path delivery</td></tr>
+                    <tr><td><strong>Ack Tracker DB</strong></td><td>State management</td><td>Multi-primary Spanner/Cloud SQL HA</td></tr>
+                    <tr><td><strong>Monitoring & SLIs</strong></td><td>End-to-end delivery metrics</td><td>Synthetic alert tests every minute</td></tr>
+                </table>
+            </div>
+
+            <h3>Step 6 — Trade-offs & Final Justification</h3>
+            
+            <div class="slo-table">
+                <table>
+                    <tr><th>Decision</th><th>Reliability</th><th>Latency</th><th>Complexity</th><th>Cost</th><th>Reason</th></tr>
+                    <tr><td><strong>Active-active ingestion</strong></td><td>99.999%</td><td>< 30s</td><td>High</td><td>High</td><td>Ensures no regional SPOF</td></tr>
+                    <tr><td><strong>Dedup in memory</strong></td><td>High</td><td>10ms avg</td><td>Medium</td><td>Low</td><td>Prevents paging storms</td></tr>
+                    <tr><td><strong>Multi-channel notify</strong></td><td>99.999%</td><td>Slightly slower</td><td>Medium</td><td>Medium</td><td>Eliminates alert loss</td></tr>
+                    <tr><td><strong>Global ACK sync</strong></td><td>High</td><td>10s</td><td>Medium</td><td>Medium</td><td>Maintains auditability</td></tr>
+                </table>
+            </div>
+
+            <div class="highlight">
+                <strong>Final Verdict:</strong> Final design achieves p99 alert latency < 25s, five-nines reliability, and audit-grade traceability with moderate complexity. Trade-offs favor redundancy over cost — appropriate for critical incident systems.
+            </div>
+        </div>
+    </section>
+
+    <section id="incident" class="section">
+        <div class="container">
+            <h2>Design Prompt #4 — Global Incident Response System</h2>
+            
+            <div class="problem">
+                <h3>🎯 Key Requirements</h3>
+                <ul>
+                    <li>Collect alerts from multiple monitoring systems (Prometheus, Stackdriver, Datadog)</li>
+                    <li><strong>Deduplicate similar alerts</strong> (avoid paging storms)</li>
+                    <li>Deliver critical alerts to on-call engineers reliably <strong>within 30s (p99)</strong></li>
+                    <li>Support <strong>regional failover</strong> and redundancy</li>
+                    <li>Provide <strong>audit trails</strong> and acknowledgment tracking</li>
+                    <li>Scale to <strong>5M alerts/day</strong> globally</li>
+                </ul>
+                <p><strong>Goal:</strong> "Think of something like Google's internal Alertmanager + PagerDuty hybrid — ultra-reliable and globally consistent."</p>
+            </div>
+
+            <div class="step">
+                <h4>SLO Contract:</h4>
+                <div class="slo-table">
+                    <table>
+                        <tr><th>SLI / Metric</th><th>Target</th></tr>
+                        <tr><td><strong>Alert Delivery Latency</strong></td><td>p99 < 30s</td></tr>
+                        <tr><td><strong>Alert Delivery Reliability</strong></td><td>≥ 99.999% ("five nines")</td></tr>
+                        <tr><td><strong>Deduplication Accuracy</strong></td><td>≥ 99.5% identical-alert collapse</td></tr>
+                        <tr><td><strong>Acknowledgment Propagation Delay</strong></td><td>≤ 10s global sync</td></tr>
+                        <tr><td><strong>System Availability</strong></td><td>≥ 99.99%</td></tr>
+                    </table>
+                </div>
+            </div>
+
+            <div class="challenge">
+                <h5>🔥 Challenge E – Alert Intelligence & Semantic Grouping</h5>
+                <p><strong>Interviewer:</strong> "Your deduplication handles identical alerts perfectly. But in a real outage, we don't get 10,000 identical alerts; we get 10,000 related but different alerts. For example, 'Database CPU high,' 'Query latency p99 high,' and 'API error rate high' for the same service. How would you handle this 'pattern collapse'?"</p>
+                
+                <p><strong>Candidate (Staff-Level Response):</strong></p>
+                <p>"This requires moving beyond simple fingerprinting to semantic grouping. I'd introduce a <strong>causality engine or alert correlation service</strong> as a new layer in our pipeline. It would work in three steps:</p>
+                
+                <ol>
+                    <li><strong>Service Dependency Graph:</strong> This system would maintain a real-time graph of our service dependencies (e.g., API Frontend → Billing Service → Customer DB), ingested from our service mesh or configuration files.</li>
+                    
+                    <li><strong>Temporal & Topological Correlation:</strong> When an alert for a foundational service like the Customer DB fires, the engine opens a short time window (e.g., 60 seconds). Any subsequent alerts from upstream services that depend on the database (like the Billing Service) are topologically correlated to the root cause alert.</li>
+                    
+                    <li><strong>Composite Alerting:</strong> Instead of paging for all three issues, the system would generate a single, enriched composite alert that provides immediate context to the on-call engineer:
+                        <div class="code-block">
+Title: [P0] Multiple correlated alerts for Billing Service.
+Root Cause (Inferred): Customer DB CPU high.
+Impacted Services: API Frontend (High error rate), Billing Service (High latency).
+                        </div>
+                    </li>
+                </ol>
+            </div>
+
+            <div class="interviewer-lens">
+                <h5>💡 Interviewer Lens:</h5>
+                <p>This is next-level thinking. The candidate is no longer just processing alerts; they are interpreting them. By designing a system that reduces the cognitive load on the on-call engineer, they are demonstrating a deep empathy for operations and a proactive approach to incident management. This is a core trait of SRE leadership at Google.</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="slo" class="section">
+        <div class="container">
+            <h2>Design Prompt #5 — SLO Error Budget Tracker</h2>
+            
+            <div class="problem">
+                <h3>🎯 Most Authentically "Google" Prompt</h3>
+                <p>Google teams track SLOs (Service Level Objectives) to measure reliability and manage error budgets. You're asked to design a system that:</p>
+                
+                <ul>
+                    <li>Ingests raw <strong>SLIs</strong> (Service Level Indicators) such as success rate, latency, and availability from multiple services</li>
+                    <li>Computes <strong>SLO compliance</strong> (e.g., 99.9% success) continuously</li>
+                    <li>Tracks <strong>error budget burn rate</strong> over multiple time windows (1h, 6h, 30d)</li>
+                    <li>Triggers alerts when burn rate <strong>exceeds thresholds</strong> (e.g., 2× expected)</li>
+                    <li>Exposes <strong>dashboards and APIs</strong> for SREs and product owners</li>
+                </ul>
+                
+                <p><strong>Essentially:</strong> "Build the backend brain of Google's reliability measurement stack — the system that decides when a service is burning through its reliability budget."</p>
+            </div>
+
+            <div class="step">
+                <h4>SLO Contract for the Tracker itself:</h4>
+                <div class="slo-table">
+                    <table>
+                        <tr><th>SLI / Metric</th><th>Target</th></tr>
+                        <tr><td><strong>SLO computation latency</strong></td><td>< 60s p95</td></tr>
+                        <tr><td><strong>Computation accuracy</strong></td><td>≥ 99.99% data consistency</td></tr>
+                        <tr><td><strong>System availability</strong></td><td>99.99%</td></tr>
+                        <tr><td><strong>Error budget alert delay</strong></td><td>< 5 min</td></tr>
+                    </table>
+                </div>
+            </div>
+
+            <div class="interviewer-lens">
+                <h5>💡 Interviewer Lens:</h5>
+                <p>They've not only defined SLOs for the services being tracked but also for the tracker itself — a subtle, senior-level move.</p>
+            </div>
+
+            <div class="step">
+                <h4>Production-Grade Architecture:</h4>
+                
+                <div class="slo-table">
+                    <table>
+                        <tr><th>Component</th><th>Tech / Pattern</th><th>SLO Benefit</th></tr>
+                        <tr><td><strong>Data Ingestion</strong></td><td>Kafka + Pub/Sub + Checkpointing</td><td>Reliable stream processing</td></tr>
+                        <tr><td><strong>Compute Engine</strong></td><td>Apache Beam / Dataflow</td><td>Low-latency, fault-tolerant aggregation</td></tr>
+                        <tr><td><strong>Alert Engine</strong></td><td>Bigtable for rolling windows + Spanner for SLO configs</td><td>Burn-rate rule evaluation + deduplication</td></tr>
+                        <tr><td><strong>API / UI</strong></td><td>Serves aggregated SLO state with filters</td><td>Transparency / observability</td></tr>
+                    </table>
+                </div>
+            </div>
+
+            <div class="pro-tip">
+                <h5>🍀 Pro Tip Box</h5>
+                <p><strong>For the System:</strong> "An SLO system is only useful if its own SLOs are measurable and reliable. Instrument the tracker as ruthlessly as you would a user-facing service."</p>
+                
+                <p><strong>For the Business:</strong> "An SLO system's ultimate purpose is to serve as a data-driven contract between product and reliability. When the error budget is green, product teams have the explicit freedom to launch features and take risks. When the budget turns red, the contract dictates that engineering effort must pivot to reliability work. This tracker isn't just for alerts; it's for automating strategic decision-making."</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="canary" class="section">
+        <div class="container">
+            <h2>Design Prompt #6 — Canary Deployment Controller</h2>
+            
+            <div class="problem">
+                <h3>🎯 Progressive Delivery at Scale</h3>
+                <p>Google wants a system that safely deploys new service versions globally with minimal risk. Your task: design a Canary Deployment Controller that can:</p>
+                
+                <ul>
+                    <li><strong>Gradually roll out</strong> new versions across clusters or regions</li>
+                    <li><strong>Route a small %</strong> of production traffic to canary instances</li>
+                    <li><strong>Measure key SLIs</strong> (latency, error rate, CPU, memory) for both canary and baseline</li>
+                    <li><strong>Automatically promote or rollback</strong> based on statistical comparison</li>
+                    <li>Integrate with existing CI/CD pipelines (e.g., Spinnaker, Borg, or Kubernetes)</li>
+                </ul>
+                
+                <p><strong>Goal:</strong> "Build the control brain that decides whether a release is healthy enough to go 100%."</p>
+            </div>
+
+            <div class="step">
+                <h4>SLO Contract for the Controller:</h4>
+                <div class="slo-table">
+                    <table>
+                        <tr><th>SLI / Metric</th><th>Target</th></tr>
+                        <tr><td><strong>Deployment failure detection latency</strong></td><td>< 60s p95</td></tr>
+                        <tr><td><strong>Rollback success rate</strong></td><td>99.99%</td></tr>
+                        <tr><td><strong>Promotion decision accuracy (false positive rate)</strong></td><td>< 0.1%</td></tr>
+                        <tr><td><strong>Controller availability</strong></td><td>99.99%</td></tr>
+                        <tr><td><strong>Canary vs. Baseline metric parity</strong></td><td>± 5% tolerance</td></tr>
+                    </table>
+                </div>
+            </div>
+
+            <div class="interviewer-lens">
+                <h5>💡 Interviewer Lens:</h5>
+                <p>Starting with SLOs for the deployment system itself shows real Google DNA — reliability as a product, not an afterthought.</p>
+            </div>
+
+            <div class="step">
+                <h4>Enhanced Decision Module</h4>
+                <p>"The Decision Module would be more sophisticated than simple thresholds. It would be <strong>error-budget-aware</strong>. A deployment would only be allowed to proceed if the service's current error budget for the quarter is healthy. If a canary deployment starts burning the error budget at an accelerated rate (e.g., 5% of the monthly budget in one hour), the controller would trigger an automatic rollback, even if no single metric has crossed a hard red line. This aligns our release velocity directly with user-facing reliability."</p>
+            </div>
+
+            <div class="pro-tip">
+                <h5>💡 Pro Tip:</h5>
+                <p>"A canary controller is not a deployment tool — it's a risk management system with code as the interface."</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="taskqueue" class="section">
+        <div class="container">
+            <h2>Design Prompt #7 — Distributed Task Queue</h2>
+            
+            <div class="problem">
+                <h3>🎯 Background Processing at Scale</h3>
+                <p>Design a global distributed task queue used by multiple teams for background processing (jobs like image processing, email sending, data enrichment).</p>
+                
+                <h4>Requirements:</h4>
+                <ul>
+                    <li>Support <strong>10M tasks/sec ingest</strong> across regions at peak</li>
+                    <li>Guarantee <strong>at-least-once delivery</strong> and optionally support idempotent exactly-once semantics</li>
+                    <li>Provide visibility: <strong>per-task status, retries, failures, and DLQ</strong></li>
+                    <li>Provide latency SLIs: <strong>p95 enqueue→start ≤ 2s</strong> for regional tasks (local), p99 ≤ 10s global</li>
+                    <li>Support controlled <strong>retry/backoff policies</strong>, exponential backoff, and maximum retries before DLQ</li>
+                </ul>
+            </div>
+
+            <div class="step">
+                <h4>SLO Contract (for the queue):</h4>
+                <div class="slo-table">
+                    <table>
+                        <tr><th>Metric</th><th>Target</th></tr>
+                        <tr><td><strong>Enqueue → Start Latency (regional)</strong></td><td>p95 ≤ 2s</td></tr>
+                        <tr><td><strong>Enqueue → Start Latency (global)</strong></td><td>p99 ≤ 10s</td></tr>
+                        <tr><td><strong>Delivery Reliability</strong></td><td>≥ 99.999% (at-least-once delivered or moved to DLQ)</td></tr>
+                        <tr><td><strong>Task visibility latency</strong></td><td>p95 ≤ 5s (status updates)</td></tr>
+                        <tr><td><strong>Queue availability</strong></td><td>99.99%</td></tr>
+                    </table>
+                </div>
+            </div>
+
+            <div class="step">
+                <h4>Key Challenges & Solutions:</h4>
+                
+                <div class="challenge">
+                    <h5>Challenge B — Exactly-once vs At-least-once semantics</h5>
+                    <p><strong>Interviewer:</strong> "Some tasks need exactly-once delivery. How do you support that?"</p>
+                    <p><strong>Candidate:</strong></p>
+                    <ul>
+                        <li><strong>Default model:</strong> at-least-once (simple, scalable)</li>
+                        <li><strong>Exactly-once:</strong> require idempotency key + idempotent worker logic + dedupe table (transactional store keyed by idempotency key)</li>
+                        <li>Use compare-and-set or conditional writes in transactional DB (Spanner/Bigtable) during task completion to avoid double-apply</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="anomaly" class="section">
+        <div class="container">
+            <h2>Design Prompt #8 — AI-Infused Anomaly Detection System</h2>
+            
+            <div class="problem">
+                <h3>🎯 The Showstopper Prompt</h3>
+                <p>Your mission: design an AI-driven anomaly detection platform that continuously monitors SLO metrics across thousands of services and automatically detects, classifies, and prioritizes anomalies before they cause SLO breaches.</p>
+                
+                <h4>Requirements:</h4>
+                <ul>
+                    <li>Ingest <strong>millions of time series</strong> from services across Google-scale systems</li>
+                    <li>Identify anomalies (spikes, drifts, trends) with <strong>minimal false positives</strong></li>
+                    <li>Integrate with SLO Error Budget Tracker to predict <strong>burn-rate acceleration</strong></li>
+                    <li>Trigger human notifications only for <strong>meaningful anomalies</strong> (SLO-impacting)</li>
+                    <li>Target latency for anomaly detection: <strong>≤ 2 minutes</strong> for high-priority SLO metrics</li>
+                </ul>
+                
+                <p><strong>Goal:</strong> "Build the system that catches an outage before your pager does."</p>
+            </div>
+
+            <div class="step">
+                <h4>SLO Contract (for the Anomaly Detection System itself):</h4>
+                <div class="slo-table">
+                    <table>
+                        <tr><th>Metric</th><th>Target</th></tr>
+                        <tr><td><strong>Detection latency</strong></td><td>p95 ≤ 2 min</td></tr>
+                        <tr><td><strong>False positive rate</strong></td><td>≤ 1%</td></tr>
+                        <tr><td><strong>False negative rate</strong></td><td>≤ 2%</td></tr>
+                        <tr><td><strong>System uptime</strong></td><td>≥ 99.99%</td></tr>
+                        <tr><td><strong>Detection coverage (monitored SLIs)</strong></td><td>≥ 95% of SLO metrics</td></tr>
+                    </table>
+                </div>
+            </div>
+
+            <div class="interviewer-lens">
+                <h5>💡 Interviewer Lens:</h5>
+                <p>The best candidates define SLOs for the AI system itself. That's the meta-signal of an SRE mindset — ML is a component of reliability, not an exception to it.</p>
+            </div>
+
+            <div class="pro-tip">
+                <h5>💡 Pro Tip:</h5>
+                <p>"In SRE, an ML detector is just another production system. Monitor it, canary it, and page it when it drifts. Its most important SLI is the trust of the on-call engineer."</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="platform" class="section">
+        <div class="container">
+            <h2>🏆 Master Summary Sheet — All 9 Design Prompts</h2>
+            
+            <div class="slo-table">
+                <table>
+                    <tr><th>Prompt #</th><th>Design Challenge</th><th>Core SLOs / Targets</th><th>Key Components & Reliability Patterns</th><th>Unique Learning Hook</th></tr>
+                    <tr>
+                        <td><strong>1</strong></td>
+                        <td>Monitoring & Alerting Platform</td>
+                        <td>p99 alert latency < 30s, 99.999% reliability</td>
+                        <td>Multi-region ingestion, deduplication, multi-channel notification</td>
+                        <td>"Reliability is a spec" — alert systems themselves have SLOs</td>
+                    </tr>
+                    <tr>
+                        <td><strong>2</strong></td>
+                        <td>Distributed Logging Pipeline</td>
+                        <td>p99 ingest < 5s, 99.99% delivery</td>
+                        <td>Sharded queues, backpressure, DLQ, cold-storage indexing</td>
+                        <td>Cost–reliability trade-off, streaming backpressure logic</td>
+                    </tr>
+                    <tr>
+                        <td><strong>3</strong></td>
+                        <td>Distributed Cache (Global Scale)</td>
+                        <td>p95 read < 10ms, p99 availability 99.99%</td>
+                        <td>Sharding, consistent hashing, replication, TTL eviction</td>
+                        <td>Balancing latency vs. consistency under failure</td>
+                    </tr>
+                    <tr>
+                        <td><strong>4</strong></td>
+                        <td>Global Incident Response System</td>
+                        <td>p99 alert ≤ 30s, 5-nines reliability</td>
+                        <td>Dedup, geo-failover, multi-channel escalation, ACK tracking</td>
+                        <td>Human-in-the-loop reliability — the pager has an SLO</td>
+                    </tr>
+                    <tr>
+                        <td><strong>5</strong></td>
+                        <td>SLO Error Budget Tracker</td>
+                        <td>< 1 min compute latency, 99.99% accuracy</td>
+                        <td>Stream aggregation, burn-rate calculation, SLO config registry</td>
+                        <td>Operationalizes SRE Book Chapter 4 — reliability math as service</td>
+                    </tr>
+                    <tr>
+                        <td><strong>6</strong></td>
+                        <td>Canary Deployment Controller</td>
+                        <td>Rollback < 2 min, promotion accuracy > 99.9%</td>
+                        <td>Progressive rollout, metrics-based decisioning, rollback journal</td>
+                        <td>"Deployment = reliability event" — ML + SLO-based release safety</td>
+                    </tr>
+                    <tr>
+                        <td><strong>7</strong></td>
+                        <td>Distributed Task Queue</td>
+                        <td>p95 enqueue→start < 2s, 99.999% delivery</td>
+                        <td>Sharded brokers, retry + DLQ, idempotency keys</td>
+                        <td>Classic "reliability vs throughput" design under concurrency</td>
+                    </tr>
+                    <tr>
+                        <td><strong>8</strong></td>
+                        <td>Anomaly Detection System (AI-Infused)</td>
+                        <td>p95 detect latency < 2 min, FP ≤ 1%</td>
+                        <td>Streaming ML inference, ensemble detection, feedback loop</td>
+                        <td>Modern trend: ML reliability measured like any other service</td>
+                    </tr>
+                    <tr>
+                        <td><strong>9</strong></td>
+                        <td>Global Monitoring Platform</td>
+                        <td>Ingest 100M metrics/s, query p99 ≤ 2s</td>
+                        <td>Edge pre-aggregation, multi-tier storage, SLO-driven architecture</td>
+                        <td>"Monitor the monitor" — self-observing, SLO-governed observability</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="highlight">
+                <h3>🎯 What This Section Accomplishes</h3>
+                <p>Each prompt follows the 7-Step "Undefeatable Blueprint," blending:</p>
+                <ul>
+                    <li><strong>Architecture clarity</strong> (SWE)</li>
+                    <li><strong>Reliability reasoning</strong> (SRE)</li>
+                    <li><strong>Operational empathy</strong> (Google production culture)</li>
+                </ul>
+                <p>By the end of this section, you don't just know how to design systems — you know how to <strong>think like a Google SRE</strong>.</p>
+            </div>
+
+            <div class="methodology">
+                <h3>🚀 Key Interview Success Patterns</h3>
+                <ul>
+                    <li><strong>Start with SLOs:</strong> Every architectural decision must be justified by measurable reliability targets</li>
+                    <li><strong>Design for failure:</strong> Always consider what happens when components fail or scale 10x</li>
+                    <li><strong>Operational ownership:</strong> Include runbooks, chaos testing, and observability for the system itself</li>
+                    <li><strong>Quantify trade-offs:</strong> State specific numbers (latency, throughput, error rates) not just concepts</li>
+                    <li><strong>Think in production:</strong> Consider human factors, cost efficiency, and operational complexity</li>
+                </ul>
+            </div>
+        </div>
+    </section>
 </body>
 </html>
