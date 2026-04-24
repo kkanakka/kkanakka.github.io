@@ -410,6 +410,57 @@
         .problem ol + p {
             margin-top: 6px;
         }
+
+        /* Enhanced diagram styling */
+        .interactive-diagram {
+            background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 16px 0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .interactive-diagram:hover {
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .interactive-diagram svg {
+            width: 100%;
+            height: auto;
+            max-height: 500px;
+        }
+
+        /* ASCII diagram enhancement */
+        .step > div[style*="monospace"] {
+            background: linear-gradient(135deg, #f1f5f9 0%, #f8fafc 100%) !important;
+            border: 2px solid #cbd5e0 !important;
+            border-radius: 8px !important;
+            padding: 12px !important;
+            margin: 12px 0 !important;
+            font-size: 8px !important;
+            line-height: 1.1 !important;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
+            position: relative !important;
+            overflow: hidden !important;
+        }
+
+        .step > div[style*="monospace"]::before {
+            content: "System Architecture Diagram";
+            position: absolute;
+            top: 4px;
+            right: 8px;
+            font-size: 10px;
+            color: #718096;
+            font-weight: 600;
+        }
+
+        .step > div[style*="monospace"] div {
+            color: #1a202c !important;
+            font-weight: 500 !important;
+        }
     </style>
 </head>
 <body>
@@ -876,7 +927,7 @@ Key Reliability Patterns Applied:
             anchor.addEventListener('click', function (e) {
                 e.preventDefault();
                 const target = document.querySelector(this.getAttribute('href'));
-                const offsetTop = target.offsetTop - 100;
+                const offsetTop = target.offsetTop - 60;
                 
                 window.scrollTo({
                     top: offsetTop,
@@ -884,11 +935,123 @@ Key Reliability Patterns Applied:
                 });
                 
                 // Update active nav
-                document.querySelectorAll('.nav-tabs a').forEach(a => a.style.color = '#666');
-                this.style.color = '#4285f4';
-                this.style.borderBottomColor = '#4285f4';
+                document.querySelectorAll('.nav-tabs a').forEach(a => {
+                    a.style.color = '#718096';
+                    a.style.borderBottomColor = 'transparent';
+                });
+                this.style.color = '#4299e1';
+                this.style.borderBottomColor = '#4299e1';
             });
         });
+
+        // Enhanced diagram interactions
+        function enhanceDiagrams() {
+            // Add hover effects to ASCII diagrams
+            const asciiDiagrams = document.querySelectorAll('.step > div[style*="monospace"]');
+            asciiDiagrams.forEach(diagram => {
+                diagram.addEventListener('mouseenter', function() {
+                    this.style.transform = 'scale(1.02)';
+                    this.style.transition = 'transform 0.3s ease';
+                });
+                
+                diagram.addEventListener('mouseleave', function() {
+                    this.style.transform = 'scale(1)';
+                });
+                
+                // Add copy functionality
+                diagram.addEventListener('dblclick', function() {
+                    const text = this.textContent;
+                    navigator.clipboard.writeText(text).then(() => {
+                        // Show brief feedback
+                        const feedback = document.createElement('div');
+                        feedback.textContent = 'Copied!';
+                        feedback.style.cssText = `
+                            position: absolute;
+                            top: 10px;
+                            right: 10px;
+                            background: #4299e1;
+                            color: white;
+                            padding: 4px 8px;
+                            border-radius: 4px;
+                            font-size: 10px;
+                            z-index: 1000;
+                        `;
+                        this.appendChild(feedback);
+                        setTimeout(() => feedback.remove(), 1000);
+                    });
+                });
+            });
+            
+            // Add expand/collapse for large diagrams
+            asciiDiagrams.forEach(diagram => {
+                if (diagram.scrollHeight > 300) {
+                    diagram.style.maxHeight = '300px';
+                    diagram.style.overflow = 'hidden';
+                    
+                    const expandBtn = document.createElement('button');
+                    expandBtn.textContent = 'Expand ↓';
+                    expandBtn.style.cssText = `
+                        position: absolute;
+                        bottom: 8px;
+                        right: 8px;
+                        background: #4299e1;
+                        color: white;
+                        border: none;
+                        padding: 4px 8px;
+                        border-radius: 4px;
+                        font-size: 10px;
+                        cursor: pointer;
+                        z-index: 100;
+                    `;
+                    
+                    let expanded = false;
+                    expandBtn.addEventListener('click', function() {
+                        if (!expanded) {
+                            diagram.style.maxHeight = 'none';
+                            expandBtn.textContent = 'Collapse ↑';
+                            expanded = true;
+                        } else {
+                            diagram.style.maxHeight = '300px';
+                            expandBtn.textContent = 'Expand ↓';
+                            expanded = false;
+                        }
+                    });
+                    
+                    diagram.style.position = 'relative';
+                    diagram.appendChild(expandBtn);
+                }
+            });
+        }
+
+        // Initialize enhancements
+        document.addEventListener('DOMContentLoaded', enhanceDiagrams);
+
+        // Add progress indicator
+        function addProgressIndicator() {
+            const sections = document.querySelectorAll('.section');
+            const progress = document.createElement('div');
+            progress.id = 'progress';
+            progress.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 0%;
+                height: 3px;
+                background: linear-gradient(90deg, #4299e1, #38a169);
+                z-index: 1000;
+                transition: width 0.3s ease;
+            `;
+            document.body.appendChild(progress);
+            
+            window.addEventListener('scroll', () => {
+                const totalHeight = document.documentElement.scrollHeight - window.innerHeight;
+                const scrolled = window.scrollY;
+                const percentage = (scrolled / totalHeight) * 100;
+                progress.style.width = percentage + '%';
+            });
+        }
+
+        addProgressIndicator();
     </script>
 
     <section id="logging" class="section">
