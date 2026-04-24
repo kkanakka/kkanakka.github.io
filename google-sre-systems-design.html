@@ -557,6 +557,149 @@
                 <h5>💡 Pro Tip:</h5>
                 <p>Always quantify: when you propose sampling or aggregation, state the expected reduction in ingest QPS (e.g., "apply 10x downsampling on low-cardinality metrics; reduces ingestion from 100M → 10M QPS"). Interviewers love concrete numbers.</p>
             </div>
+
+            <h3>Step 6 — Complete Architecture Solution</h3>
+            
+            <div class="step">
+                <h4>🏗️ Production-Grade Monitoring & Alerting Platform</h4>
+                
+                <div style="background: #f8f9fa; border: 2px solid #e9ecef; border-radius: 12px; padding: 25px; margin: 25px 0; overflow-x: auto;">
+                    <div style="font-family: monospace; font-size: 11px; line-height: 1.3; white-space: pre;">
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                     GLOBAL MONITORING & ALERTING PLATFORM                              │
+│                                 (100M metrics/sec)                                      │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│ PRODUCERS (Services, Infra, Apps)                                                      │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│  gRPC/HTTP Telemetry Agents │ Structured Metrics │ Authentication & TLS │ Batching     │
+│  ┌─────┐ ┌─────┐ ┌─────┐    │ (JSON/Protobuf)   │ Client Certificates  │ (1000/batch) │
+│  │App-1│ │App-2│ │Infra│    │                   │                      │              │
+│  └─────┘ └─────┘ └─────┘    │                   │                      │              │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+                                         │
+                                         ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│ REGIONAL INGRESS LAYER (Multi-DC)                                                      │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│                      Global Load Balancer (99.99% SLA)                                 │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐                        │
+│  │   Region US-W   │  │   Region US-E   │  │   Region EU-W   │                        │
+│  │ ┌─────────────┐ │  │ ┌─────────────┐ │  │ ┌─────────────┐ │                        │
+│  │ │ API Gateway │ │  │ │ API Gateway │ │  │ │ API Gateway │ │                        │
+│  │ │ Rate Limit  │ │  │ │ Rate Limit  │ │  │ │ Rate Limit  │ │                        │
+│  │ │ Auth + TLS  │ │  │ │ Auth + TLS  │ │  │ │ Auth + TLS  │ │                        │
+│  │ └─────────────┘ │  │ └─────────────┘ │  │ └─────────────┘ │                        │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘                        │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+                                         │
+                                         ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│ DURABLE MESSAGE QUEUE (Multi-Region Kafka)                                             │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│  Partitioned by: service_id, tenant_id, region                                        │
+│  ┌────────────────────────────────────────────────────────────────────────────────┐   │
+│  │ Topic: telemetry-raw    │ Retention: 7 days │ Replication: 3x │ Partitions: 1000│   │
+│  ├─────────────────────────┼────────────────────┼─────────────────┼─────────────────┤   │
+│  │ Partition 0: svc-auth   │ Partition 1: svc-web │ ... │ Partition 999: svc-db    │   │
+│  └────────────────────────────────────────────────────────────────────────────────┘   │
+│  Dead Letter Queue (DLQ) for malformed/oversized messages                             │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+                                         │
+                                         ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│ STREAM PROCESSING LAYER (Autoscaling Workers)                                          │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐                     │
+│  │ Aggregator-1     │  │ Aggregator-2     │  │ Aggregator-N     │                     │
+│  │ ┌──────────────┐ │  │ ┌──────────────┐ │  │ ┌──────────────┐ │                     │
+│  │ │ Deduplication│ │  │ │ Deduplication│ │  │ │ Deduplication│ │                     │
+│  │ │ Pre-aggregate│ │  │ │ Pre-aggregate│ │  │ │ Pre-aggregate│ │                     │
+│  │ │ SLI Compute  │ │  │ │ SLI Compute  │ │  │ │ SLI Compute  │ │                     │
+│  │ │ Rule Engine  │ │  │ │ Rule Engine  │ │  │ │ Rule Engine  │ │                     │
+│  │ └──────────────┘ │  │ └──────────────┘ │  │ └──────────────┘ │                     │
+│  └──────────────────┘  └──────────────────┘  └──────────────────┘                     │
+│       Checkpoints stored in durable store (for failover recovery)                     │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+                                         │
+                                         ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│ STORAGE LAYER                                                                           │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────────────┐              ┌─────────────────────────┐                  │
+│  │   HOT STORAGE (30d)     │              │  COLD STORAGE (3y)      │                  │
+│  │ ┌─────────────────────┐ │              │ ┌─────────────────────┐ │                  │
+│  │ │  Time-Series DB     │ │              │ │  Object Store       │ │                  │
+│  │ │  (Bigtable/DDB)     │ │              │ │  (GCS/S3)          │ │                  │
+│  │ │  Sharded by:        │ │◄────────────►│ │  Compressed         │ │                  │
+│  │ │  - service_id       │ │              │ │  Parquet Format     │ │                  │
+│  │ │  - time_bucket      │ │              │ │  Partitioned by:    │ │                  │
+│  │ │  - metric_name      │ │              │ │  - year/month/day   │ │                  │
+│  │ └─────────────────────┘ │              │ └─────────────────────┘ │                  │
+│  └─────────────────────────┘              └─────────────────────────┘                  │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+                                         │
+                                         ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│ ALERTING ENGINE (Rule Evaluation & Notification)                                       │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────────────┐  ┌─────────────────────────┐  ┌─────────────────────────┐ │
+│  │ Rule Evaluator          │  │ Deduplication Engine    │  │ Notification Router     │ │
+│  │ ┌─────────────────────┐ │  │ ┌─────────────────────┐ │  │ ┌─────────────────────┐ │ │
+│  │ │ SLO Breach Rules    │ │  │ │ Fingerprint Cache   │ │  │ │ PagerDuty API      │ │ │
+│  │ │ Error Budget Rules  │ │  │ │ Sliding Window      │ │  │ │ Slack Webhooks     │ │ │
+│  │ │ Threshold Rules     │ │  │ │ Alert Grouping      │ │  │ │ Email SMTP         │ │ │
+│  │ │ Burn Rate Rules     │ │  │ │ Storm Prevention    │ │  │ │ SMS Gateway        │ │ │
+│  │ └─────────────────────┘ │  │ └─────────────────────┘ │  │ └─────────────────────┘ │ │
+│  └─────────────────────────┘  └─────────────────────────┘  └─────────────────────────┘ │
+│                           Multi-channel delivery with retries                           │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+                                         │
+                                         ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│ OBSERVABILITY LAYER (Monitor the Monitor)                                              │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────────────┐  ┌─────────────────────────┐  ┌─────────────────────────┐ │
+│  │ Platform SLIs           │  │ Synthetic Monitoring    │  │ Chaos Engineering       │ │
+│  │ • Ingestion rate        │  │ • End-to-end tests      │  │ • Failure injection     │ │
+│  │ • Processing latency    │  │ • Alert delivery tests  │  │ • Dependency failure    │ │
+│  │ • Alert precision       │  │ • False positive rate   │  │ • Regional outage test  │ │
+│  │ • System availability   │  │ • Notification delivery │  │ • Scale testing         │ │
+│  └─────────────────────────┘  └─────────────────────────┘  └─────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+Key Reliability Patterns Applied:
+• Multi-region active-active (no single region failure)
+• Durable queues with DLQ (poison pill protection)
+• Autoscaling processors (burst capacity)
+• Deduplication engine (alert storm prevention)
+• Error budget aware alerting (precision over noise)
+• End-to-end synthetic monitoring (validate SLOs)
+                    </div>
+                </div>
+                
+                <h4>🔧 Technical Implementation Details:</h4>
+                <div class="slo-table">
+                    <table>
+                        <tr><th>Component</th><th>Technology Choice</th><th>Scaling Strategy</th><th>Failure Mode Mitigation</th></tr>
+                        <tr><td><strong>API Gateway</strong></td><td>Envoy/NGINX with rate limiting</td><td>Autoscaling groups per region</td><td>Circuit breakers, health checks</td></tr>
+                        <tr><td><strong>Message Queue</strong></td><td>Kafka with MirrorMaker 2.0</td><td>Dynamic partition scaling</td><td>Cross-region replication, DLQ</td></tr>
+                        <tr><td><strong>Stream Processors</strong></td><td>Apache Beam/Dataflow</td><td>Horizontal autoscaling</td><td>Checkpointing, replay capability</td></tr>
+                        <tr><td><strong>Hot Storage</strong></td><td>Bigtable/DynamoDB</td><td>Automatic sharding</td><td>Multi-region replication</td></tr>
+                        <tr><td><strong>Alert Engine</strong></td><td>Custom Go/Java service</td><td>Stateless, load balanced</td><td>Rule versioning, canary deployment</td></tr>
+                    </table>
+                </div>
+            </div>
+
+            <div class="highlight">
+                <h4>💰 SLO Achievement Strategy:</h4>
+                <ul>
+                    <li><strong>p99 Alert Latency < 30s:</strong> Achieved through regional processing + priority queuing for critical alerts</li>
+                    <li><strong>99.95% Pipeline Availability:</strong> Multi-region active-active + automatic failover</li>
+                    <li><strong>< 2% False Positive Rate:</strong> Deduplication engine + error budget aware throttling</li>
+                </ul>
+            </div>
         </div>
     </section>
 
@@ -673,6 +816,158 @@
                 <h5>💡 Pro Tip:</h5>
                 <p>Whenever you mention "durable queues," emphasize backpressure. Google interviewers love hearing: "We protect downstream systems by applying backpressure instead of uncontrolled retries."</p>
             </div>
+
+            <h3>Step 6 — Complete Architecture Solution</h3>
+            
+            <div class="step">
+                <h4>🏗️ Production-Grade Distributed Logging Pipeline</h4>
+                
+                <div style="background: #f8f9fa; border: 2px solid #e9ecef; border-radius: 12px; padding: 25px; margin: 25px 0; overflow-x: auto;">
+                    <div style="font-family: monospace; font-size: 11px; line-height: 1.3; white-space: pre;">
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                    DISTRIBUTED LOGGING PIPELINE (20TB/day)                              │
+│                        Query Freshness: 60s │ Retention: 30d hot, 1y cold              │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│ LOG PRODUCERS (Microservices Fleet)                                                    │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐                 │
+│  │   Service A  │ │   Service B  │ │   Service C  │ │   Service N  │                 │
+│  │ ┌──────────┐ │ │ ┌──────────┐ │ │ ┌──────────┐ │ │ ┌──────────┐ │                 │
+│  │ │Log Agent │ │ │ │Log Agent │ │ │ │Log Agent │ │ │ │Log Agent │ │                 │
+│  │ │(FluentD) │ │ │ │(FluentD) │ │ │ │(FluentD) │ │ │ │(FluentD) │ │                 │
+│  │ │Buffer    │ │ │ │Buffer    │ │ │ │Buffer    │ │ │ │Buffer    │ │                 │
+│  │ │Compress  │ │ │ │Compress  │ │ │ │Compress  │ │ │ │Compress  │ │                 │
+│  │ └──────────┘ │ │ └──────────┘ │ │ └──────────┘ │ │ └──────────┘ │                 │
+│  └──────────────┘ └──────────────┘ └──────────────┘ └──────────────┘                 │
+│  Structured JSON logs │ Authentication │ Compression │ Batching (1MB chunks)          │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+                                         │ gRPC/HTTPS
+                                         ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│ REGIONAL INGESTION LAYER                                                                │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐                        │
+│  │   US-WEST-1     │  │   US-EAST-1     │  │    EU-WEST-1    │                        │
+│  │ ┌─────────────┐ │  │ ┌─────────────┐ │  │ ┌─────────────┐ │                        │
+│  │ │Load Balancer│ │  │ │Load Balancer│ │  │ │Load Balancer│ │                        │
+│  │ │Rate Limiter │ │  │ │Rate Limiter │ │  │ │Rate Limiter │ │                        │
+│  │ │Schema Valid.│ │  │ │Schema Valid.│ │  │ │Schema Valid.│ │                        │
+│  │ │Multi-tenant │ │  │ │Multi-tenant │ │  │ │Multi-tenant │ │                        │
+│  │ │Auth Gateway │ │  │ │Auth Gateway │ │  │ │Auth Gateway │ │                        │
+│  │ └─────────────┘ │  │ └─────────────┘ │  │ └─────────────┘ │                        │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘                        │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+                                         │
+                                         ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│ DURABLE LOG STREAM (Multi-Region Pub/Sub)                                              │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│  ┌────────────────────────────────────────────────────────────────────────────────┐   │
+│  │ Topic: raw-logs-stream    │ Partitions by: tenant_id, service_name              │   │
+│  ├───────────────────────────┼─────────────────────────────────────────────────────┤   │
+│  │ Retention: 7 days         │ Compression: Snappy (3:1 ratio)                    │   │
+│  │ Replication: Cross-region │ Throughput: 2M msgs/sec sustained                  │   │
+│  │ DLQ: malformed-logs       │ Ordering: per-partition (service-level)            │   │
+│  └────────────────────────────────────────────────────────────────────────────────┘   │
+│  Backpressure: 503 responses when buffer >95% full                                    │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+                                         │
+                                         ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│ PARALLEL PROCESSING PIPELINE                                                            │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│  ┌──────────────────────────┐ ┌──────────────────────────┐ ┌──────────────────────────┐ │
+│  │    INDEXING WORKERS      │ │   STORAGE WORKERS        │ │   ANALYTICS WORKERS      │ │
+│  │ ┌──────────────────────┐ │ │ ┌──────────────────────┐ │ │ ┌──────────────────────┐ │ │
+│  │ │ Parse & Enrich       │ │ │ │ Hot Storage Writer   │ │ │ │ Aggregation Engine   │ │ │
+│  │ │ • Extract metadata   │ │ │ │ • Elasticsearch      │ │ │ │ • Error rate calc    │ │ │
+│  │ │ • Add timestamps     │ │ │ │ • Inverted index     │ │ │ │ • Log volume metrics │ │ │
+│  │ │ • Classify severity  │ │ │ │ • 30-day retention   │ │ │ │ • Anomaly detection  │ │ │
+│  │ │ • Extract traces     │ │ │ └──────────────────────┘ │ │ └──────────────────────┘ │ │
+│  │ └──────────────────────┘ │ │ ┌──────────────────────┐ │ │ ┌──────────────────────┐ │ │
+│  │ ┌──────────────────────┐ │ │ │ Cold Storage Writer  │ │ │ │ SLI Computation      │ │ │
+│  │ │ Search Index Builder │ │ │ │ • Columnar (Parquet) │ │ │ │ • Service health     │ │ │
+│  │ │ • Service mapping    │ │ │ │ • S3/GCS buckets     │ │ │ │ • Error budgets      │ │ │
+│  │ │ • Full-text index    │ │ │ │ • 1-year retention   │ │ │ │ • Alert triggers     │ │ │
+│  │ │ • Field extraction   │ │ │ │ • Lifecycle policies │ │ │ │ • Dashboard feeds    │ │ │
+│  │ │ • Schema inference   │ │ │ └──────────────────────┘ │ │ └──────────────────────┘ │ │
+│  │ └──────────────────────┘ │ └──────────────────────────┘ └──────────────────────────┘ │
+│  Autoscaling: CPU-based │ Memory checkpoints │ Failure isolation │ Circuit breakers    │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+                                         │
+                                         ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│ MULTI-TIER STORAGE ARCHITECTURE                                                        │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────────────┐              ┌─────────────────────────┐                  │
+│  │     HOT TIER (30d)      │              │    COLD TIER (1y)       │                  │
+│  │ ┌─────────────────────┐ │              │ ┌─────────────────────┐ │                  │
+│  │ │ Elasticsearch       │ │              │ │ Object Storage      │ │                  │
+│  │ │ ┌─────────────────┐ │ │              │ │ ┌─────────────────┐ │ │                  │
+│  │ │ │ Primary Shards  │ │ │              │ │ │ Partitioned by: │ │ │                  │
+│  │ │ │ - service_name  │ │ │              │ │ │ - year/month    │ │ │                  │
+│  │ │ │ - timestamp     │ │ │              │ │ │ - service_name  │ │ │                  │
+│  │ │ │ - tenant_id     │ │ │◄────────────►│ │ │ - log_level     │ │ │                  │
+│  │ │ └─────────────────┘ │ │              │ │ └─────────────────┘ │ │                  │
+│  │ │ Replica Shards: 2x  │ │              │ │ Format: Parquet     │ │                  │
+│  │ │ SSD-backed storage  │ │              │ │ Compression: Zstd   │ │                  │
+│  │ │ Query cache layer   │ │              │ │ 80% space reduction │ │                  │
+│  │ └─────────────────────┘ │              │ └─────────────────────┘ │                  │
+│  └─────────────────────────┘              └─────────────────────────┘                  │
+│         Query p95: 200ms                      Query p95: 30s (batch)                  │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+                                         │
+                                         ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│ QUERY API & OBSERVABILITY LAYER                                                        │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────────────┐  ┌─────────────────────────┐  ┌─────────────────────────┐ │
+│  │    Query Router         │  │   Pipeline Monitoring   │  │   Cost Optimization     │ │
+│  │ ┌─────────────────────┐ │  │ ┌─────────────────────┐ │  │ ┌─────────────────────┐ │ │
+│  │ │ GraphQL/REST API    │ │  │ │ Ingestion Rate SLI  │ │  │ │ Intelligent Sampling│ │ │
+│  │ │ Query optimization  │ │  │ │ Processing Lag SLI  │ │  │ │ • Debug: 10% sample │ │ │
+│  │ │ Caching layer       │ │  │ │ Query Latency SLI   │ │  │ │ • Info: 5% sample   │ │ │
+│  │ │ Rate limiting       │ │  │ │ Storage Usage SLI   │ │  │ │ • Error: 100% kept  │ │ │
+│  │ │ Multi-tenant auth   │ │  │ │ Alert on SLO breach │ │  │ │ • Critical: 100%    │ │ │
+│  │ └─────────────────────┘ │  │ └─────────────────────┘ │  │ └─────────────────────┘ │ │
+│  └─────────────────────────┘  └─────────────────────────┘  └─────────────────────────┘ │
+│  Real-time dashboards │ Synthetic log tests │ End-to-end latency monitoring           │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+Key Reliability Patterns Applied:
+• Regional hot-standby (failover in <30s)
+• Durable streams with replay capability
+• Multi-tier storage (cost vs. speed trade-off)
+• Intelligent sampling (preserve critical data)
+• Schema evolution (backward compatibility)
+• Circuit breakers (cascading failure prevention)
+                    </div>
+                </div>
+                
+                <h4>🔧 Technical Implementation Details:</h4>
+                <div class="slo-table">
+                    <table>
+                        <tr><th>Component</th><th>Technology Choice</th><th>Scaling Strategy</th><th>Cost Optimization</th></tr>
+                        <tr><td><strong>Log Agents</strong></td><td>Fluent Bit/Vector</td><td>Per-node deployment</td><td>Local buffering + compression</td></tr>
+                        <tr><td><strong>Stream Store</strong></td><td>Kafka/Pulsar</td><td>Auto-partition scaling</td><td>Tiered storage (hot/warm/cold)</td></tr>
+                        <tr><td><strong>Hot Storage</strong></td><td>Elasticsearch/OpenSearch</td><td>Shard rebalancing</td><td>Index lifecycle management</td></tr>
+                        <tr><td><strong>Cold Storage</strong></td><td>S3/GCS with Parquet</td><td>Unlimited capacity</td><td>80-90% compression + lifecycle</td></tr>
+                        <tr><td><strong>Query Engine</strong></td><td>GraphQL + caching</td><td>Read replicas</td><td>Query result caching</td></tr>
+                    </table>
+                </div>
+            </div>
+
+            <div class="highlight">
+                <h4>💰 SLO Achievement Strategy:</h4>
+                <ul>
+                    <li><strong>p99 Ingestion < 10s:</strong> Regional processing + durable buffering prevents data loss</li>
+                    <li><strong>60s Query Freshness:</strong> Real-time indexing pipeline with <30s end-to-end latency</li>
+                    <li><strong>99.95% Pipeline Availability:</strong> Multi-region active-passive with automatic failover</li>
+                    <li><strong>99.999999999% Durability:</strong> Cross-region replication + object storage redundancy</li>
+                </ul>
+            </div>
         </div>
     </section>
 
@@ -744,6 +1039,168 @@
             <div class="highlight">
                 <strong>Final Verdict:</strong> Final design achieves p99 alert latency < 25s, five-nines reliability, and audit-grade traceability with moderate complexity. Trade-offs favor redundancy over cost — appropriate for critical incident systems.
             </div>
+
+            <h3>Step 6 — Complete Architecture Solution</h3>
+            
+            <div class="step">
+                <h4>🏗️ Production-Grade Global Distributed Cache</h4>
+                
+                <div style="background: #f8f9fa; border: 2px solid #e9ecef; border-radius: 12px; padding: 25px; margin: 25px 0; overflow-x: auto;">
+                    <div style="font-family: monospace; font-size: 11px; line-height: 1.3; white-space: pre;">
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                     GLOBAL DISTRIBUTED CACHE SYSTEM                                    │
+│                   500M Users │ 10M RPS Read │ 1M RPS Write │ p99 < 5ms                │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│ CLIENT APPLICATIONS (Multi-Region)                                                      │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐                 │
+│  │ Web Frontend │ │ Mobile APIs  │ │ Backend Svc  │ │ Batch Jobs   │                 │
+│  │ ┌──────────┐ │ │ ┌──────────┐ │ │ ┌──────────┐ │ │ ┌──────────┐ │                 │
+│  │ │Cache Lib │ │ │ │Cache Lib │ │ │ │Cache Lib │ │ │ │Cache Lib │ │                 │
+│  │ │Circuit   │ │ │ │Circuit   │ │ │ │Circuit   │ │ │ │Circuit   │ │                 │
+│  │ │Breaker   │ │ │ │Breaker   │ │ │ │Breaker   │ │ │ │Breaker   │ │                 │
+│  │ │Retry Logic│ │ │ │Retry Logic│ │ │ │Retry Logic│ │ │ │Retry Logic│ │                 │
+│  │ └──────────┘ │ │ └──────────┘ │ │ └──────────┘ │ │ └──────────┘ │                 │
+│  └──────────────┘ └──────────────┘ └──────────────┘ └──────────────┘                 │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+                                         │ gRPC/HTTP
+                                         ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│ REGIONAL CACHE PROXY LAYER                                                              │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐                        │
+│  │   US-WEST-1     │  │   US-EAST-1     │  │    EU-WEST-1    │                        │
+│  │ ┌─────────────┐ │  │ ┌─────────────┐ │  │ ┌─────────────┐ │                        │
+│  │ │Load Balancer│ │  │ │Load Balancer│ │  │ │Load Balancer│ │                        │
+│  │ │Consistent   │ │  │ │Consistent   │ │  │ │Consistent   │ │                        │
+│  │ │Hashing      │ │  │ │Hashing      │ │  │ │Hashing      │ │                        │
+│  │ │Rate Limiting│ │  │ │Rate Limiting│ │  │ │Rate Limiting│ │                        │
+│  │ │Health Checks│ │  │ │Health Checks│ │  │ │Health Checks│ │                        │
+│  │ └─────────────┘ │  │ └─────────────┘ │  │ └─────────────┘ │                        │
+│  │   Latency SLO:  │  │   Latency SLO:  │  │   Latency SLO:  │                        │
+│  │   p99 < 2ms     │  │   p99 < 2ms     │  │   p99 < 2ms     │                        │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘                        │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+                                         │
+                                         ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│ CACHE CLUSTER MESH (Per-Region)                                                        │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                         │
+│  US-WEST-1 Cache Cluster:                                                              │
+│  ┌─────────────────────────────────────────────────────────────────────────────────┐   │
+│  │ ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐       │   │
+│  │ │Shard-01 │ │Shard-02 │ │Shard-03 │ │Shard-04 │ │Shard-05 │ │Shard-N  │       │   │
+│  │ │Redis    │ │Redis    │ │Redis    │ │Redis    │ │Redis    │ │Redis    │       │   │
+│  │ │Master   │ │Master   │ │Master   │ │Master   │ │Master   │ │Master   │       │   │
+│  │ │+ 2 Rep  │ │+ 2 Rep  │ │+ 2 Rep  │ │+ 2 Rep  │ │+ 2 Rep  │ │+ 2 Rep  │       │   │
+│  │ └─────────┘ └─────────┘ └─────────┘ └─────────┘ └─────────┘ └─────────┘       │   │
+│  │ Hash Ring: CRC32(key) mod N | Auto-failover | Memory: 64GB per shard          │   │
+│  └─────────────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                         │
+│  US-EAST-1 & EU-WEST-1: Similar cluster topology                                      │
+│                                                                                         │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+                                         │
+                                         ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│ CROSS-REGION COORDINATION LAYER                                                         │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────────────┐              ┌─────────────────────────┐                  │
+│  │  WRITE COORDINATION     │              │  INVALIDATION BUS       │                  │
+│  │ ┌─────────────────────┐ │              │ ┌─────────────────────┐ │                  │
+│  │ │ Global Write Router │ │              │ │ Kafka/Pulsar Stream │ │                  │
+│  │ │ ┌─────────────────┐ │ │              │ │ ┌─────────────────┐ │ │                  │
+│  │ │ │ Write-through   │ │ │              │ │ │ Topic: cache-   │ │ │                  │
+│  │ │ │ Coordinator     │ │ │◄────────────►│ │ │ invalidations   │ │ │                  │
+│  │ │ │ • Primary Region│ │ │              │ │ │ Partitions: key │ │ │                  │
+│  │ │ │ • Async Fanout  │ │ │              │ │ │ Retention: 24h  │ │ │                  │
+│  │ │ │ • Conflict Res. │ │ │              │ │ └─────────────────┘ │ │                  │
+│  │ │ └─────────────────┘ │ │              │ └─────────────────────┘ │                  │
+│  │ └─────────────────────┘ │              └─────────────────────────┘                  │
+│  └─────────────────────────┘                                                           │
+│  Write Latency Target: p95 < 10ms global propagation within 1s                        │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+                                         │
+                                         ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│ FALLBACK & WARMING LAYER                                                                │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────────────┐              ┌─────────────────────────┐                  │
+│  │    CACHE MISS HANDLER   │              │    WARMING SYSTEM       │                  │
+│  │ ┌─────────────────────┐ │              │ ┌─────────────────────┐ │                  │
+│  │ │ Database Fallback   │ │              │ │ Predictive Warmer   │ │                  │
+│  │ │ ┌─────────────────┐ │ │              │ │ ┌─────────────────┐ │ │                  │
+│  │ │ │ Read Replicas   │ │ │              │ │ │ ML-based Cache  │ │ │                  │
+│  │ │ │ (Postgres/     │ │ │              │ │ │ Key Prediction  │ │ │                  │
+│  │ │ │  Spanner)      │ │ │              │ │ │ • Usage patterns│ │ │                  │
+│  │ │ │ Connection Pool │ │ │◄────────────►│ │ │ • Time-based    │ │ │                  │
+│  │ │ │ Circuit Breaker │ │ │              │ │ │ • User-based    │ │ │                  │
+│  │ │ │ Bulkhead Pattern│ │ │              │ │ │ Preload Cache   │ │ │                  │
+│  │ │ └─────────────────┘ │ │              │ │ └─────────────────┘ │ │                  │
+│  │ └─────────────────────┘ │              │ └─────────────────────┘ │                  │
+│  └─────────────────────────┘              └─────────────────────────┘                  │
+│  Hit Ratio Target: ≥ 95% │ Miss Latency: p99 < 50ms │ Warming Success: 80%             │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+                                         │
+                                         ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│ OBSERVABILITY & OPERATIONS LAYER                                                        │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────────────┐  ┌─────────────────────────┐  ┌─────────────────────────┐ │
+│  │   METRICS & ALERTING    │  │   CHAOS ENGINEERING     │  │   CAPACITY PLANNING     │ │
+│  │ ┌─────────────────────┐ │  │ ┌─────────────────────┐ │  │ ┌─────────────────────┐ │ │
+│  │ │ Cache Hit Rate      │ │  │ │ Shard Failure Tests │ │  │ │ Memory Utilization  │ │ │
+│  │ │ • Per-region        │ │  │ │ Network Partition   │ │  │ │ • Growth prediction │ │ │
+│  │ │ • Per-service       │ │  │ │ Master-Replica Lag  │ │  │ │ • Auto-scaling      │ │ │
+│  │ │ • Per-key-pattern   │ │  │ │ Write Conflict Res  │ │  │ │ Key Distribution    │ │ │
+│  │ │ Latency P50/P95/P99 │ │  │ │ Cache Invalidation  │ │  │ │ • Hotspot detection │ │ │
+│  │ │ Error Rates         │ │  │ │ Fallback DB Load    │ │  │ │ • Shard rebalance   │ │ │
+│  │ │ Memory Pressure     │ │  │ │ Regional Failover   │ │  │ │ Cost Analysis       │ │ │
+│  │ └─────────────────────┘ │  │ └─────────────────────┘ │  │ └─────────────────────┘ │ │
+│  └─────────────────────────┘  └─────────────────────────┘  └─────────────────────────┘ │
+│  SLI Dashboard │ Synthetic tests every 30s │ Auto-remediation playbooks                 │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+Data Flow Patterns:
+• READ: Client → Regional Proxy → Consistent Hash → Cache Shard → [Cache Miss → DB]
+• WRITE: Client → Write Coordinator → Primary Region → Async Fanout → Global Invalidation
+• INVALIDATE: Write Event → Kafka Stream → Regional Subscribers → Local Cache Eviction
+• WARM: ML Predictor → Identified Keys → Background Fetch → Cache Population
+
+Key Reliability Patterns Applied:
+• Multi-master with conflict resolution (CRDTs/Last-Writer-Wins)
+• Regional read replicas with async global writes  
+• Circuit breakers prevent DB overload on cache failure
+• Consistent hashing enables graceful shard addition/removal
+• Background warming maintains high hit ratios
+                    </div>
+                </div>
+                
+                <h4>🔧 Technical Implementation Details:</h4>
+                <div class="slo-table">
+                    <table>
+                        <tr><th>Component</th><th>Technology Choice</th><th>Scaling Strategy</th><th>Consistency Model</th></tr>
+                        <tr><td><strong>Cache Engine</strong></td><td>Redis Cluster/Memcached</td><td>Horizontal sharding</td><td>Eventually consistent</td></tr>
+                        <tr><td><strong>Proxy Layer</strong></td><td>Envoy/HAProxy</td><td>Autoscaling groups</td><td>Session affinity</td></tr>
+                        <tr><td><strong>Coordination</strong></td><td>Kafka + Custom Service</td><td>Multi-region brokers</td><td>Async replication</td></tr>
+                        <tr><td><strong>DB Fallback</strong></td><td>PostgreSQL/Spanner</td><td>Read replicas</td><td>Strong consistency</td></tr>
+                        <tr><td><strong>Warming System</strong></td><td>ML Pipeline + Workers</td><td>Batch processing</td><td>Best-effort</td></tr>
+                    </table>
+                </div>
+            </div>
+
+            <div class="highlight">
+                <h4>💰 SLO Achievement Strategy:</h4>
+                <ul>
+                    <li><strong>p99 < 5ms Regional Reads:</strong> In-memory Redis with connection pooling and regional proximity</li>
+                    <li><strong>1s Global Write Propagation:</strong> Async fanout architecture with Kafka-based invalidation bus</li>
+                    <li><strong>≥95% Hit Ratio:</strong> ML-powered predictive warming + intelligent eviction policies (LRU + TTL)</li>
+                    <li><strong>99.99% Availability:</strong> Multi-shard resilience + circuit breakers + graceful degradation to DB</li>
+                </ul>
+            </div>
         </div>
     </section>
 
@@ -804,6 +1261,172 @@ Impacted Services: API Frontend (High error rate), Billing Service (High latency
                 <h5>💡 Interviewer Lens:</h5>
                 <p>This is next-level thinking. The candidate is no longer just processing alerts; they are interpreting them. By designing a system that reduces the cognitive load on the on-call engineer, they are demonstrating a deep empathy for operations and a proactive approach to incident management. This is a core trait of SRE leadership at Google.</p>
             </div>
+
+            <h3>Step 6 — Complete Architecture Solution</h3>
+            
+            <div class="step">
+                <h4>🏗️ Production-Grade Global Incident Response System</h4>
+                
+                <div style="background: #f8f9fa; border: 2px solid #e9ecef; border-radius: 12px; padding: 25px; margin: 25px 0; overflow-x: auto;">
+                    <div style="font-family: monospace; font-size: 11px; line-height: 1.3; white-space: pre;">
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                    GLOBAL INCIDENT RESPONSE SYSTEM                                      │
+│              5M Alerts/Day │ p99 < 30s Delivery │ 99.999% Reliability                  │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│ ALERT SOURCES (Monitoring Systems)                                                     │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐      │
+│  │ Prometheus  │ │ Stackdriver │ │  Datadog    │ │  NewRelic   │ │ Custom Apps │      │
+│  │ ┌─────────┐ │ │ ┌─────────┐ │ │ ┌─────────┐ │ │ ┌─────────┐ │ │ ┌─────────┐ │      │
+│  │ │Webhook  │ │ │ │Webhook  │ │ │ │Webhook  │ │ │ │Webhook  │ │ │ │gRPC/API │ │      │
+│  │ │Auth     │ │ │ │Auth     │ │ │ │Auth     │ │ │ │Auth     │ │ │ │TLS Cert │ │      │
+│  │ │Payload  │ │ │ │Payload  │ │ │ │Payload  │ │ │ │Payload  │ │ │ │Schema   │ │      │
+│  │ └─────────┘ │ │ └─────────┘ │ │ └─────────┘ │ │ └─────────┘ │ │ └─────────┘ │      │
+│  └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘      │
+│  Common Alert Schema: service, severity, timestamp, fingerprint, metadata             │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+                                         │ HTTPS Webhooks
+                                         ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│ MULTI-REGION INGESTION TIER                                                             │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐                        │
+│  │   US-WEST-1     │  │   US-EAST-1     │  │    EU-WEST-1    │                        │
+│  │ ┌─────────────┐ │  │ ┌─────────────┐ │  │ ┌─────────────┐ │                        │
+│  │ │Alert Gateway│ │  │ │Alert Gateway│ │  │ │Alert Gateway│ │                        │
+│  │ │• Rate Limit │ │  │ │• Rate Limit │ │  │ │• Rate Limit │ │                        │
+│  │ │• Validation │ │  │ │• Validation │ │  │ │• Validation │ │                        │
+│  │ │• Auth Check │ │  │ │• Auth Check │ │  │ │• Auth Check │ │                        │
+│  │ │• Schema Norm│ │  │ │• Schema Norm│ │  │ │• Schema Norm│ │                        │
+│  │ │• Enrichment │ │  │ │• Enrichment │ │  │ │• Enrichment │ │                        │
+│  │ └─────────────┘ │  │ └─────────────┘ │  │ └─────────────┘ │                        │
+│  │  Load Balancer  │  │  Load Balancer  │  │  Load Balancer  │                        │
+│  │  Health Checks  │  │  Health Checks  │  │  Health Checks  │                        │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘                        │
+│  Active-Active: Regional failover in <10s │ Cross-region alert replication            │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+                                         │
+                                         ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│ DURABLE ALERT QUEUE (Multi-Region Kafka)                                               │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│  ┌────────────────────────────────────────────────────────────────────────────────┐   │
+│  │ Topic: raw-alerts      │ Partitions: 500 │ Retention: 7d │ Replication: 3x    │   │
+│  ├────────────────────────┼──────────────────┼───────────────┼────────────────────┤   │
+│  │ Partition Key: service_name + fingerprint │ Ordering: per alert type           │   │
+│  │ DLQ: malformed-alerts  │ Throughput: 100k alerts/sec sustained                 │   │
+│  └────────────────────────────────────────────────────────────────────────────────┘   │
+│  MirrorMaker 2.0 for cross-region replication │ Backpressure controls              │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+                                         │
+                                         ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│ INTELLIGENT PROCESSING PIPELINE                                                         │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│  ┌──────────────────────────┐ ┌──────────────────────────┐ ┌──────────────────────────┐ │
+│  │   DEDUPLICATION ENGINE   │ │ CORRELATION & GROUPING   │ │  PRIORITY & ROUTING      │ │
+│  │ ┌──────────────────────┐ │ │ ┌──────────────────────┐ │ │ ┌──────────────────────┐ │ │
+│  │ │ Fingerprint Cache    │ │ │ │ Service Dependency   │ │ │ │ Alert Severity Map   │ │ │
+│  │ │ • Rolling window     │ │ │ │ Graph (Real-time)    │ │ │ │ • P0: Page immediat. │ │ │
+│  │ │ • Similar alerts     │ │ │ │ ┌──────────────────┐ │ │ │ │ • P1: Page in 5min   │ │ │
+│  │ │ • Configurable TTL   │ │ │ │ │Service A → DB    │ │ │ │ │ • P2: Ticket only    │ │ │
+│  │ │ Storm prevention     │ │ │ │ │Service B → Cache │ │ │ │ │ • P3: Metrics only   │ │ │
+│  │ │ • Max 10/min/service │ │ │ │ │Service C → Queue │ │ │ │ │ Escalation Policies  │ │ │
+│  │ └──────────────────────┘ │ │ │ └──────────────────┘ │ │ │ └──────────────────────┘ │ │
+│  │ ┌──────────────────────┐ │ │ │ Temporal Correlation │ │ │ ┌──────────────────────┐ │ │
+│  │ │ Semantic Similarity  │ │ │ │ • 60s time window    │ │ │ │ On-Call Scheduler    │ │ │
+│  │ │ • NLP fingerprints   │ │ │ │ • Root cause detect  │ │ │ │ • Teams/Rotations    │ │ │
+│  │ │ • ML-based grouping  │ │ │ │ • Composite alerts   │ │ │ │ • Escalation ladder  │ │ │
+│  │ │ • Alert families     │ │ │ │ • Impact propagation │ │ │ │ • Time zone aware    │ │ │
+│  │ └──────────────────────┘ │ │ └──────────────────────┘ │ │ └──────────────────────┘ │ │
+│  └──────────────────────────┘ └──────────────────────────┘ └──────────────────────────┘ │
+│  Stateless workers │ Auto-scaling │ Circuit breakers │ Checkpoints for recovery         │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+                                         │
+                                         ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│ MULTI-CHANNEL NOTIFICATION SYSTEM                                                       │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────────────┐  ┌─────────────────────────┐  ┌─────────────────────────┐ │
+│  │  PRIMARY CHANNELS       │  │  SECONDARY CHANNELS     │  │   FALLBACK CHANNELS     │ │
+│  │ ┌─────────────────────┐ │  │ ┌─────────────────────┐ │  │ ┌─────────────────────┐ │ │
+│  │ │ PagerDuty API       │ │  │ │ Slack Webhooks      │ │  │ │ SMS Gateway         │ │ │
+│  │ │ • Circuit breaker   │ │  │ │ • Rich formatting   │ │  │ │ • Twilio/AWS SNS    │ │ │
+│  │ │ • Retry w/backoff   │ │  │ │ • Thread management │ │  │ │ • Global coverage   │ │ │
+│  │ │ • Incident tracking │ │  │ │ • Bot interactions  │ │  │ │ • Last resort only  │ │ │
+│  │ └─────────────────────┘ │  │ └─────────────────────┘ │  │ └─────────────────────┘ │ │
+│  │ ┌─────────────────────┐ │  │ ┌─────────────────────┐ │  │ ┌─────────────────────┐ │ │
+│  │ │ Email SMTP          │ │  │ │ Microsoft Teams     │ │  │ │ Push Notifications  │ │ │
+│  │ │ • Multi-provider    │ │  │ │ • Adaptive cards    │ │  │ │ • Mobile apps       │ │ │
+│  │ │ • HTML + plaintext  │ │  │ │ • Action buttons    │ │  │ │ • Wake-up capable   │ │ │
+│  │ │ • Template engine   │ │  │ │ • Deep links        │ │  │ │ • Location aware    │ │ │
+│  │ └─────────────────────┘ │  │ └─────────────────────┘ │  │ └─────────────────────┘ │ │
+│  └─────────────────────────┘  └─────────────────────────┘  └─────────────────────────┘ │
+│  Delivery Strategy: Primary first → Secondary if fail → Fallback if P0/P1              │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+                                         │
+                                         ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│ ACKNOWLEDGMENT & STATE TRACKING                                                         │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────────────┐              ┌─────────────────────────┐                  │
+│  │    STATE DATABASE       │              │   AUDIT & ANALYTICS     │                  │
+│  │ ┌─────────────────────┐ │              │ ┌─────────────────────┐ │                  │
+│  │ │ Multi-Region        │ │              │ │ Alert Lifecycle     │ │                  │
+│  │ │ Spanner/Postgres    │ │              │ │ • Time to ack       │ │                  │
+│  │ │ ┌─────────────────┐ │ │              │ │ • Resolution time   │ │ │                  │
+│  │ │ │Alert States:    │ │ │              │ │ • False pos. rate   │ │ │                  │
+│  │ │ │- FIRING         │ │ │◄────────────►│ │ │ • Channel success   │ │ │                  │
+│  │ │ │- ACKNOWLEDGED   │ │ │              │ │ │ Trend Analysis      │ │ │                  │
+│  │ │ │- RESOLVED       │ │ │              │ │ │ • Service patterns  │ │ │                  │
+│  │ │ │- ESCALATED      │ │ │              │ │ │ • Team performance  │ │ │                  │
+│  │ │ │- SUPPRESSED     │ │ │              │ │ │ • System health     │ │ │                  │
+│  │ │ └─────────────────┘ │ │              │ │ └─────────────────────┘ │ │                  │
+│  │ └─────────────────────┘ │              │ └─────────────────────────┘ │                  │
+│  └─────────────────────────┘              └─────────────────────────────┘                  │
+│  Global consistency │ Conflict resolution │ SLI computation │ Alerting feedback loops      │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+Alert Lifecycle Flow:
+1. INGEST: Multi-source → Gateway → Schema normalization → Queue
+2. PROCESS: Deduplication → Correlation → Priority assignment → Routing rules
+3. NOTIFY: Multi-channel dispatch → Delivery confirmation → Retry logic
+4. TRACK: State updates → Global sync → Audit trail → Analytics pipeline
+5. RESOLVE: Manual/Auto resolution → Notification → Post-incident analysis
+
+Key Reliability Patterns Applied:
+• Multi-region active-active ingestion (no single point of failure)
+• Semantic alert correlation (reduces noise, increases signal)
+• Priority-based delivery (critical alerts bypass throttling)
+• Multi-path notification (redundancy across channels)
+• Global state synchronization (audit and consistency)
+                    </div>
+                </div>
+                
+                <h4>🔧 Technical Implementation Details:</h4>
+                <div class="slo-table">
+                    <table>
+                        <tr><th>Component</th><th>Technology Choice</th><th>Scaling Strategy</th><th>Failure Mitigation</th></tr>
+                        <tr><td><strong>Alert Gateway</strong></td><td>Go/Java microservices</td><td>Autoscaling groups</td><td>Circuit breakers, health checks</td></tr>
+                        <tr><td><strong>Message Queue</strong></td><td>Kafka with Schema Registry</td><td>Dynamic partitioning</td><td>Multi-region replication</td></tr>
+                        <tr><td><strong>Processing Engine</strong></td><td>Apache Flink/Beam</td><td>Stream processing</td><td>Checkpointing, exactly-once</td></tr>
+                        <tr><td><strong>Correlation Service</strong></td><td>Graph DB + ML Pipeline</td><td>Horizontal scaling</td><td>Cached dependency graphs</td></tr>
+                        <tr><td><strong>State Store</strong></td><td>Spanner/CockroachDB</td><td>Global distribution</td><td>Multi-primary consistency</td></tr>
+                    </table>
+                </div>
+            </div>
+
+            <div class="highlight">
+                <h4>💰 SLO Achievement Strategy:</h4>
+                <ul>
+                    <li><strong>p99 < 30s Alert Delivery:</strong> Regional processing + priority queuing + multi-channel redundancy</li>
+                    <li><strong>99.999% Delivery Reliability:</strong> Multi-region active-active + persistent retry queues + fallback channels</li>
+                    <li><strong>≥99.5% Deduplication Accuracy:</strong> ML-powered semantic fingerprinting + configurable time windows</li>
+                    <li><strong>≤10s Global ACK Sync:</strong> Distributed state machine with conflict-free replicated data types (CRDTs)</li>
+                </ul>
+            </div>
         </div>
     </section>
 
@@ -863,6 +1486,161 @@ Impacted Services: API Frontend (High error rate), Billing Service (High latency
                 <p><strong>For the System:</strong> "An SLO system is only useful if its own SLOs are measurable and reliable. Instrument the tracker as ruthlessly as you would a user-facing service."</p>
                 
                 <p><strong>For the Business:</strong> "An SLO system's ultimate purpose is to serve as a data-driven contract between product and reliability. When the error budget is green, product teams have the explicit freedom to launch features and take risks. When the budget turns red, the contract dictates that engineering effort must pivot to reliability work. This tracker isn't just for alerts; it's for automating strategic decision-making."</p>
+            </div>
+
+            <h3>Step 6 — Complete Architecture Solution</h3>
+            
+            <div class="step">
+                <h4>🏗️ Production-Grade SLO Error Budget Tracker</h4>
+                
+                <div style="background: #f8f9fa; border: 2px solid #e9ecef; border-radius: 12px; padding: 25px; margin: 25px 0; overflow-x: auto;">
+                    <div style="font-family: monospace; font-size: 11px; line-height: 1.3; white-space: pre;">
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                        SLO ERROR BUDGET TRACKER SYSTEM                                 │
+│                p95 < 60s Compute │ 99.99% Accuracy │ < 5min Alert Delay              │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│ SLI DATA SOURCES (Raw Telemetry Streams)                                               │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐      │
+│  │Load Balancer│ │API Gateway  │ │ Application │ │ Database    │ │Infrastructure│      │
+│  │ ┌─────────┐ │ │ ┌─────────┐ │ │ ┌─────────┐ │ │ ┌─────────┐ │ │ ┌─────────┐ │      │
+│  │ │Req Count│ │ │ │Success  │ │ │ │Response │ │ │ │Query    │ │ │ │CPU/Mem  │ │      │
+│  │ │2xx/4xx/ │ │ │ │Rate     │ │ │ │Latency  │ │ │ │Latency  │ │ │ │Disk I/O │ │      │
+│  │ │5xx codes│ │ │ │Error %  │ │ │ │P50/P95/ │ │ │ │Timeouts │ │ │ │Network  │ │      │
+│  │ │Latency  │ │ │ │Throughp.│ │ │ │P99 dist │ │ │ │Connect  │ │ │ │Health   │ │      │
+│  │ └─────────┘ │ │ └─────────┘ │ │ └─────────┘ │ │ └─────────┘ │ │ └─────────┘ │      │
+│  └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘      │
+│  Structured metrics │ Prometheus format │ OpenTelemetry │ Custom exporters           │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+                                         │ Pull/Push APIs
+                                         ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│ SLI INGESTION & NORMALIZATION LAYER                                                     │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────────────┐              ┌─────────────────────────┐                  │
+│  │  COLLECTION AGENTS      │              │  NORMALIZATION ENGINE   │                  │
+│  │ ┌─────────────────────┐ │              │ ┌─────────────────────┐ │                  │
+│  │ │ Prometheus Scraper  │ │              │ │ Schema Validator    │ │                  │
+│  │ │ • Service discovery │ │              │ │ • Standard SLI fmt  │ │                  │
+│  │ │ • Auto-scaling      │ │              │ │ • Unit conversion   │ │                  │
+│  │ │ • Failure handling  │ │              │ │ • Timestamp norm.   │ │                  │
+│  │ └─────────────────────┘ │◄────────────►│ │ • Metadata enrich   │ │                  │
+│  │ ┌─────────────────────┐ │              │ └─────────────────────┘ │                  │
+│  │ │ Push Gateway        │ │              │ ┌─────────────────────┐ │                  │
+│  │ │ • Batch processing  │ │              │ │ SLI Type Classifier │ │                  │
+│  │ │ • Rate limiting     │ │              │ │ • Availability      │ │                  │
+│  │ │ • Authentication    │ │              │ │ • Latency (P95/P99) │ │                  │
+│  │ │ • Circuit breakers  │ │              │ │ • Throughput        │ │                  │
+│  │ └─────────────────────┘ │              │ │ • Error rate        │ │                  │
+│  └─────────────────────────┘              │ └─────────────────────┘ │                  │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+                                         │
+                                         ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│ REAL-TIME SLO COMPUTATION ENGINE (Apache Beam/Dataflow)                                │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│  ┌──────────────────────────┐ ┌──────────────────────────┐ ┌──────────────────────────┐ │
+│  │   SLIDING WINDOWS        │ │   SLO RULE ENGINE        │ │   BURN RATE CALCULATOR   │ │
+│  │ ┌──────────────────────┐ │ │ ┌──────────────────────┐ │ │ ┌──────────────────────┐ │ │
+│  │ │ 1-minute windows     │ │ │ │ SLO Configuration    │ │ │ │ Multi-Window Burn    │ │ │
+│  │ │ 5-minute windows     │ │ │ │ ┌──────────────────┐ │ │ │ │ ┌──────────────────┐ │ │ │
+│  │ │ 1-hour windows       │ │ │ │ │Service: auth-svc │ │ │ │ │ │ 1h window: 14.4x │ │ │ │
+│  │ │ 6-hour windows       │ │ │ │ │SLO: 99.9% avail │ │ │ │ │ │ 6h window: 6x    │ │ │ │
+│  │ │ 24-hour windows      │ │ │ │ │Error Budget: 8.7h│ │ │ │ │ │ 24h window: 3x   │ │ │ │
+│  │ │ 30-day windows       │ │ │ │ │Budget Period: 30d│ │ │ │ │ │ 30d window: 1x   │ │ │ │
+│  │ └──────────────────────┘ │ │ │ └──────────────────┘ │ │ │ └──────────────────┘ │ │ │
+│  │ Watermarks & Late Data  │ │ │ SLI → SLO Mapping    │ │ │ Alert Thresholds     │ │ │
+│  │ Exactly-once processing │ │ │ Dynamic config reload │ │ │ Multi-burn detection │ │ │
+│  └──────────────────────────┘ └──────────────────────────┘ └──────────────────────────┘ │
+│  State: Bigtable checkpoints │ Config: Spanner/etcd │ Alerts: Kafka topics            │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+                                         │
+                                         ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│ SLO STATE STORE & ALERT ENGINE                                                          │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────────────┐              ┌─────────────────────────┐                  │
+│  │   TIME-SERIES STORAGE   │              │    ALERT GENERATOR      │                  │
+│  │ ┌─────────────────────┐ │              │ ┌─────────────────────┐ │                  │
+│  │ │ Bigtable/DynamoDB   │ │              │ │ Burn Rate Rules     │ │                  │
+│  │ │ ┌─────────────────┐ │ │              │ │ ┌─────────────────┐ │ │                  │
+│  │ │ │ Row Key:        │ │ │              │ │ │ FAST: >14.4x    │ │ │                  │
+│  │ │ │service#slo#time │ │ │              │ │ │ burn in 1h      │ │ │                  │
+│  │ │ │                 │ │ │              │ │ │ → Page immed.   │ │ │                  │
+│  │ │ │ Columns:        │ │ │◄────────────►│ │ │ SLOW: >3x burn  │ │ │                  │
+│  │ │ │ - good_events   │ │ │              │ │ │ in 24h          │ │ │                  │
+│  │ │ │ - total_events  │ │ │              │ │ │ → Warning alert │ │ │                  │
+│  │ │ │ - slo_target    │ │ │              │ │ └─────────────────┘ │ │                  │
+│  │ │ │ - budget_remain │ │ │              │ │ Budget Exhaustion   │ │ │                  │
+│  │ │ │ - burn_rate     │ │ │              │ │ • 50% budget → warn │ │ │                  │
+│  │ │ └─────────────────┘ │ │              │ │ • 90% budget → crit │ │ │                  │
+│  │ └─────────────────────┘ │              │ └─────────────────────┘ │                  │
+│  └─────────────────────────┘              └─────────────────────────┘                  │
+│  Sharded by service │ Auto-scaling │ Read replicas │ Alert deduplication                │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+                                         │
+                                         ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│ API LAYER & DASHBOARD SERVICES                                                          │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────────────┐  ┌─────────────────────────┐  ┌─────────────────────────┐ │
+│  │    QUERY API            │  │  DASHBOARD SERVICE      │  │   CONFIGURATION API     │ │
+│  │ ┌─────────────────────┐ │  │ ┌─────────────────────┐ │  │ ┌─────────────────────┐ │ │
+│  │ │ GraphQL Endpoint    │ │  │ │ Real-time SLO Views │ │  │ │ SLO CRUD Operations │ │ │
+│  │ │ • Service queries   │ │  │ │ • Error budget viz  │ │  │ │ • Version control   │ │ │
+│  │ │ • Time range filter │ │  │ │ • Burn rate trends  │ │  │ │ • Approval workflow │ │ │
+│  │ │ • Aggregation funcs │ │  │ │ • Alert timeline    │ │  │ │ • Rollback support  │ │ │
+│  │ │ • Caching layer     │ │  │ │ • Multi-service view│ │  │ │ • Schema validation │ │ │
+│  │ └─────────────────────┘ │  │ └─────────────────────┘ │  │ └─────────────────────┘ │ │
+│  │ ┌─────────────────────┐ │  │ ┌─────────────────────┐ │  │ ┌─────────────────────┐ │ │
+│  │ │ REST API Gateway    │ │  │ │ Team Ownership Map  │ │  │ │ Audit & Change Log  │ │ │
+│  │ │ • Rate limiting     │ │  │ │ • On-call rotations │ │  │ │ • Who changed what  │ │ │
+│  │ │ • Authentication    │ │  │ │ • Escalation paths  │ │  │ │ • When and why      │ │ │
+│  │ │ • Request batching  │ │  │ │ • Contact methods   │ │  │ │ • Impact analysis   │ │ │
+│  │ └─────────────────────┘ │  │ └─────────────────────┘ │  │ └─────────────────────┘ │ │
+│  └─────────────────────────┘  └─────────────────────────┘  └─────────────────────────┘ │
+│  Multi-tenant isolation │ Redis caching │ Load balancing │ Circuit breakers           │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+SLO Computation Logic:
+1. INGEST: Raw SLI metrics → Normalization → Structured events
+2. COMPUTE: Sliding window aggregation → SLO compliance % → Error budget calculation  
+3. ALERT: Multi-window burn rate detection → Threshold breach → Alert generation
+4. SERVE: Query API → Cached results → Dashboard visualization → Team notifications
+5. CONFIG: Dynamic SLO management → Version control → Approval workflow → Rollback
+
+Key Reliability Patterns Applied:  
+• Exactly-once stream processing (duplicate SLI handling)
+• Multi-window burn rate alerting (fast + slow burn detection)
+• Immutable SLO configuration (versioned, auditable changes)
+• Circuit breakers on data sources (prevent SLI cascade failures)
+• Global state replication (cross-region SLO consistency)
+                    </div>
+                </div>
+                
+                <h4>🔧 Technical Implementation Details:</h4>
+                <div class="slo-table">
+                    <table>
+                        <tr><th>Component</th><th>Technology Choice</th><th>Scaling Strategy</th><th>Consistency Model</th></tr>
+                        <tr><td><strong>Stream Processing</strong></td><td>Apache Beam/Dataflow</td><td>Auto-scaling workers</td><td>Exactly-once processing</td></tr>
+                        <tr><td><strong>Time-Series Storage</strong></td><td>Bigtable/DynamoDB</td><td>Automatic sharding</td><td>Strong consistency</td></tr>
+                        <tr><td><strong>Configuration Store</strong></td><td>Spanner/etcd</td><td>Global replication</td><td>Strong consistency</td></tr>
+                        <tr><td><strong>API Layer</strong></td><td>GraphQL + REST</td><td>Horizontal scaling</td><td>Read replicas</td></tr>
+                        <tr><td><strong>Dashboard</strong></td><td>React + WebSocket</td><td>CDN distribution</td><td>Eventually consistent</td></tr>
+                    </table>
+                </div>
+            </div>
+
+            <div class="highlight">
+                <h4>💰 SLO Achievement Strategy:</h4>
+                <ul>
+                    <li><strong>p95 < 60s Compute Latency:</strong> Stream processing with micro-batching + pre-computed aggregations</li>
+                    <li><strong>99.99% Data Accuracy:</strong> Exactly-once processing guarantees + data validation checkpoints</li>
+                    <li><strong>< 5min Alert Delay:</strong> Real-time burn rate calculation + prioritized alert queues</li>
+                    <li><strong>99.99% System Availability:</strong> Multi-region deployment + circuit breakers + graceful degradation</li>
+                </ul>
             </div>
         </div>
     </section>
