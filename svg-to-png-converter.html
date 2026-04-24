@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SVG to PNG Converter</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 0;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        #svgContainer {
+            border: 2px solid #ddd;
+            margin: 20px 0;
+            padding: 20px;
+            text-align: center;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Distributed Task Queue SVG to PNG Converter</h1>
+        <button onclick="loadAndConvertSVG()">Load SVG and Convert to PNG</button>
+        
+        <div id="svgContainer">
+            <!-- SVG will be loaded here -->
+        </div>
+        
+        <canvas id="canvas" width="1200" height="800" style="display: none;"></canvas>
+        <br>
+        <button id="downloadBtn" onclick="downloadPNG()" style="display: none;">Download PNG</button>
+    </div>
+
+    <script>
+        async function loadAndConvertSVG() {
+            try {
+                // Load the SVG file
+                const response = await fetch('images/distributed-task-queue-detailed.svg');
+                const svgText = await response.text();
+                
+                // Display the SVG
+                const svgContainer = document.getElementById('svgContainer');
+                svgContainer.innerHTML = svgText;
+                
+                // Get the SVG element
+                const svgElement = svgContainer.querySelector('svg');
+                if (!svgElement) {
+                    throw new Error('No SVG element found');
+                }
+                
+                // Convert to PNG
+                convertSVGToPNG(svgElement);
+                
+            } catch (error) {
+                console.error('Error loading SVG:', error);
+                alert('Error loading SVG: ' + error.message);
+            }
+        }
+        
+        function convertSVGToPNG(svgElement) {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Set high DPI for better quality
+            const scale = 2;
+            canvas.width = 1200 * scale;
+            canvas.height = 800 * scale;
+            canvas.style.width = '1200px';
+            canvas.style.height = '800px';
+            ctx.scale(scale, scale);
+            
+            // Create an image from the SVG
+            const svgData = new XMLSerializer().serializeToString(svgElement);
+            const svgBlob = new Blob([svgData], {type: 'image/svg+xml;charset=utf-8'});
+            const svgUrl = URL.createObjectURL(svgBlob);
+            
+            const img = new Image();
+            img.onload = function() {
+                // Clear canvas and draw the image
+                ctx.fillStyle = 'white';
+                ctx.fillRect(0, 0, 1200, 800);
+                ctx.drawImage(img, 0, 0, 1200, 800);
+                
+                // Show canvas and download button
+                canvas.style.display = 'block';
+                document.getElementById('downloadBtn').style.display = 'inline-block';
+                
+                // Clean up
+                URL.revokeObjectURL(svgUrl);
+            };
+            
+            img.onerror = function() {
+                alert('Error converting SVG to PNG');
+            };
+            
+            img.src = svgUrl;
+        }
+        
+        function downloadPNG() {
+            const canvas = document.getElementById('canvas');
+            
+            // Create download link
+            canvas.toBlob(function(blob) {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'distributed-task-queue-detailed.png';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 'image/png');
+        }
+    </script>
+</body>
+</html>
