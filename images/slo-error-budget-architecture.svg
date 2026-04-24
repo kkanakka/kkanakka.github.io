@@ -1,0 +1,144 @@
+<svg width="1000" height="650" xmlns="http://www.w3.org/2000/svg">
+    <!-- Background -->
+    <rect width="1000" height="650" fill="#ffffff" stroke="#e0e0e0" stroke-width="2" rx="4"/>
+    
+    <!-- Title -->
+    <rect x="20" y="10" width="960" height="40" fill="#7c3aed" rx="4"/>
+    <text x="500" y="35" text-anchor="middle" font-size="16" font-weight="bold" fill="white">
+        SLO Error Budget Tracker (Real-time Burn Rate Calculation)
+    </text>
+    
+    <!-- SLI Collection Layer -->
+    <rect x="30" y="70" width="940" height="100" fill="#fef7ff" stroke="#a855f7" stroke-width="2" rx="6"/>
+    <text x="50" y="95" font-size="14" font-weight="bold" fill="#7e22ce">SLI DATA COLLECTION</text>
+    
+    <!-- SLI sources -->
+    <rect x="70" y="110" width="150" height="50" fill="#e9d5ff" stroke="#8b5cf6" stroke-width="2" rx="4"/>
+    <text x="145" y="128" text-anchor="middle" font-size="11" font-weight="bold" fill="#581c87">Availability</text>
+    <text x="145" y="142" text-anchor="middle" font-size="9" fill="#7c3aed">HTTP 200 responses</text>
+    <text x="145" y="153" text-anchor="middle" font-size="9" fill="#7c3aed">Service uptime</text>
+    
+    <rect x="240" y="110" width="150" height="50" fill="#e9d5ff" stroke="#8b5cf6" stroke-width="2" rx="4"/>
+    <text x="315" y="128" text-anchor="middle" font-size="11" font-weight="bold" fill="#581c87">Latency</text>
+    <text x="315" y="142" text-anchor="middle" font-size="9" fill="#7c3aed">p95 response time</text>
+    <text x="315" y="153" text-anchor="middle" font-size="9" fill="#7c3aed">End-to-end timing</text>
+    
+    <rect x="410" y="110" width="150" height="50" fill="#e9d5ff" stroke="#8b5cf6" stroke-width="2" rx="4"/>
+    <text x="485" y="128" text-anchor="middle" font-size="11" font-weight="bold" fill="#581c87">Quality</text>
+    <text x="485" y="142" text-anchor="middle" font-size="9" fill="#7c3aed">Error rate</text>
+    <text x="485" y="153" text-anchor="middle" font-size="9" fill="#7c3aed">Data correctness</text>
+    
+    <rect x="580" y="110" width="150" height="50" fill="#e9d5ff" stroke="#8b5cf6" stroke-width="2" rx="4"/>
+    <text x="655" y="128" text-anchor="middle" font-size="11" font-weight="bold" fill="#581c87">Coverage</text>
+    <text x="655" y="142" text-anchor="middle" font-size="9" fill="#7c3aed">Feature coverage</text>
+    <text x="655" y="153" text-anchor="middle" font-size="9" fill="#7c3aed">Regional coverage</text>
+    
+    <rect x="750" y="110" width="150" height="50" fill="#f0f4ff" stroke="#6366f1" stroke-width="1" rx="4"/>
+    <text x="825" y="128" text-anchor="middle" font-size="10" font-weight="bold" fill="#4338ca">Custom SLIs</text>
+    <text x="825" y="142" text-anchor="middle" font-size="8" fill="#4338ca">Business metrics</text>
+    <text x="825" y="153" text-anchor="middle" font-size="8" fill="#4338ca">User experience</text>
+    
+    <!-- Arrow markers -->
+    <defs>
+        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto" fill="#374151">
+            <polygon points="0 0, 10 3.5, 0 7"/>
+        </marker>
+    </defs>
+    
+    <!-- Arrow down -->
+    <line x1="500" y1="175" x2="500" y2="200" stroke="#374151" stroke-width="3" marker-end="url(#arrowhead)"/>
+    
+    <!-- Processing Engine -->
+    <rect x="30" y="210" width="940" height="120" fill="#fff7ed" stroke="#ea580c" stroke-width="2" rx="6"/>
+    <text x="50" y="235" font-size="14" font-weight="bold" fill="#c2410c">REAL-TIME PROCESSING ENGINE</text>
+    
+    <!-- Processing components -->
+    <rect x="60" y="250" width="200" height="70" fill="#fed7aa" stroke="#d97706" stroke-width="2" rx="4"/>
+    <text x="160" y="270" text-anchor="middle" font-size="12" font-weight="bold" fill="#92400e">SLO Calculator</text>
+    <text x="160" y="285" text-anchor="middle" font-size="10" fill="#c2410c">Rolling windows</text>
+    <text x="160" y="298" text-anchor="middle" font-size="10" fill="#c2410c">Time-series math</text>
+    <text x="160" y="311" text-anchor="middle" font-size="10" fill="#c2410c">Trend analysis</text>
+    
+    <rect x="280" y="250" width="200" height="70" fill="#fed7aa" stroke="#d97706" stroke-width="2" rx="4"/>
+    <text x="380" y="270" text-anchor="middle" font-size="12" font-weight="bold" fill="#92400e">Error Budget</text>
+    <text x="380" y="285" text-anchor="middle" font-size="10" fill="#c2410c">Burn rate calc</text>
+    <text x="380" y="298" text-anchor="middle" font-size="10" fill="#c2410c">Budget remaining</text>
+    <text x="380" y="311" text-anchor="middle" font-size="10" fill="#c2410c">Depletion forecast</text>
+    
+    <rect x="500" y="250" width="200" height="70" fill="#fed7aa" stroke="#d97706" stroke-width="2" rx="4"/>
+    <text x="600" y="270" text-anchor="middle" font-size="12" font-weight="bold" fill="#92400e">Multi-Window</text>
+    <text x="600" y="285" text-anchor="middle" font-size="10" fill="#c2410c">1h / 6h windows</text>
+    <text x="600" y="298" text-anchor="middle" font-size="10" fill="#c2410c">Fast/slow burn</text>
+    <text x="600" y="311" text-anchor="middle" font-size="10" fill="#c2410c">Alert conditions</text>
+    
+    <rect x="720" y="250" width="200" height="70" fill="#fed7aa" stroke="#d97706" stroke-width="2" rx="4"/>
+    <text x="820" y="270" text-anchor="middle" font-size="12" font-weight="bold" fill="#92400e">ML Predictor</text>
+    <text x="820" y="285" text-anchor="middle" font-size="10" fill="#c2410c">Trend prediction</text>
+    <text x="820" y="298" text-anchor="middle" font-size="10" fill="#c2410c">Anomaly detection</text>
+    <text x="820" y="311" text-anchor="middle" font-size="10" fill="#c2410c">Risk scoring</text>
+    
+    <!-- Arrow down -->
+    <line x1="500" y1="335" x2="500" y2="360" stroke="#374151" stroke-width="3" marker-end="url(#arrowhead)"/>
+    
+    <!-- Alert Manager -->
+    <rect x="30" y="370" width="940" height="120" fill="#fef2f2" stroke="#dc2626" stroke-width="2" rx="6"/>
+    <text x="50" y="395" font-size="14" font-weight="bold" fill="#991b1b">ERROR BUDGET ALERT MANAGER</text>
+    
+    <!-- Alert components -->
+    <rect x="80" y="410" width="160" height="70" fill="#fca5a5" stroke="#b91c1c" stroke-width="2" rx="4"/>
+    <text x="160" y="430" text-anchor="middle" font-size="11" font-weight="bold" fill="#7f1d1d">Fast Burn Alert</text>
+    <text x="160" y="445" text-anchor="middle" font-size="9" fill="#991b1b">14.4x burn rate</text>
+    <text x="160" y="456" text-anchor="middle" font-size="9" fill="#991b1b">1h window</text>
+    <text x="160" y="467" text-anchor="middle" font-size="9" fill="#991b1b">Critical severity</text>
+    
+    <rect x="260" y="410" width="160" height="70" fill="#fca5a5" stroke="#b91c1c" stroke-width="2" rx="4"/>
+    <text x="340" y="430" text-anchor="middle" font-size="11" font-weight="bold" fill="#7f1d1d">Slow Burn Alert</text>
+    <text x="340" y="445" text-anchor="middle" font-size="9" fill="#991b1b">6x burn rate</text>
+    <text x="340" y="456" text-anchor="middle" font-size="9" fill="#991b1b">6h window</text>
+    <text x="340" y="467" text-anchor="middle" font-size="9" fill="#991b1b">Warning severity</text>
+    
+    <rect x="440" y="410" width="160" height="70" fill="#fca5a5" stroke="#b91c1c" stroke-width="2" rx="4"/>
+    <text x="520" y="430" text-anchor="middle" font-size="11" font-weight="bold" fill="#7f1d1d">Budget Exhausted</text>
+    <text x="520" y="445" text-anchor="middle" font-size="9" fill="#991b1b">&lt;2% remaining</text>
+    <text x="520" y="456" text-anchor="middle" font-size="9" fill="#991b1b">Auto-freeze deploys</text>
+    <text x="520" y="467" text-anchor="middle" font-size="9" fill="#991b1b">Executive notify</text>
+    
+    <rect x="620" y="410" width="160" height="70" fill="#fca5a5" stroke="#b91c1c" stroke-width="2" rx="4"/>
+    <text x="700" y="430" text-anchor="middle" font-size="11" font-weight="bold" fill="#7f1d1d">Recovery Alert</text>
+    <text x="700" y="445" text-anchor="middle" font-size="9" fill="#991b1b">SLO restored</text>
+    <text x="700" y="456" text-anchor="middle" font-size="9" fill="#991b1b">Budget recovery</text>
+    <text x="700" y="467" text-anchor="middle" font-size="9" fill="#991b1b">Resume deploys</text>
+    
+    <rect x="800" y="410" width="120" height="70" fill="#f0f4ff" stroke="#6366f1" stroke-width="1" rx="4"/>
+    <text x="860" y="430" text-anchor="middle" font-size="10" font-weight="bold" fill="#4338ca">Policy Engine</text>
+    <text x="860" y="445" text-anchor="middle" font-size="8" fill="#4338ca">Custom rules</text>
+    <text x="860" y="456" text-anchor="middle" font-size="8" fill="#4338ca">Team routing</text>
+    <text x="860" y="467" text-anchor="middle" font-size="8" fill="#4338ca">Escalation</text>
+    
+    <!-- Arrow down -->
+    <line x1="500" y1="495" x2="500" y2="520" stroke="#374151" stroke-width="3" marker-end="url(#arrowhead)"/>
+    
+    <!-- Dashboard & Actions -->
+    <rect x="30" y="530" width="940" height="100" fill="#f0fdf4" stroke="#22c55e" stroke-width="2" rx="6"/>
+    <text x="50" y="555" font-size="14" font-weight="bold" fill="#15803d">VISUALIZATION &amp; AUTOMATED ACTIONS</text>
+    
+    <!-- Dashboard components -->
+    <rect x="80" y="570" width="180" height="50" fill="#bbf7d0" stroke="#16a34a" stroke-width="2" rx="4"/>
+    <text x="170" y="588" text-anchor="middle" font-size="11" fill="#14532d">Real-time Dashboards</text>
+    <text x="170" y="603" text-anchor="middle" font-size="9" fill="#166534">Grafana + Alerts</text>
+    <text x="170" y="614" text-anchor="middle" font-size="9" fill="#166534">Executive summaries</text>
+    
+    <rect x="280" y="570" width="180" height="50" fill="#bbf7d0" stroke="#16a34a" stroke-width="2" rx="4"/>
+    <text x="370" y="588" text-anchor="middle" font-size="11" fill="#14532d">Deployment Gates</text>
+    <text x="370" y="603" text-anchor="middle" font-size="9" fill="#166534">CI/CD integration</text>
+    <text x="370" y="614" text-anchor="middle" font-size="9" fill="#166534">Auto-freeze policies</text>
+    
+    <rect x="480" y="570" width="180" height="50" fill="#bbf7d0" stroke="#16a34a" stroke-width="2" rx="4"/>
+    <text x="570" y="588" text-anchor="middle" font-size="11" fill="#14532d">Capacity Planning</text>
+    <text x="570" y="603" text-anchor="middle" font-size="9" fill="#166534">Resource allocation</text>
+    <text x="570" y="614" text-anchor="middle" font-size="9" fill="#166534">Scaling triggers</text>
+    
+    <rect x="680" y="570" width="240" height="50" fill="#fffbeb" stroke="#f59e0b" stroke-width="2" rx="4"/>
+    <text x="800" y="588" text-anchor="middle" font-size="11" fill="#d97706">Historical Analysis &amp; Reporting</text>
+    <text x="800" y="603" text-anchor="middle" font-size="9" fill="#f59e0b">Quarterly SLO reviews " Trend analysis " Budget optimization</text>
+</svg>

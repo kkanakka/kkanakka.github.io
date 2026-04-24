@@ -1,0 +1,115 @@
+<svg width="1000" height="600" xmlns="http://www.w3.org/2000/svg">
+    <!-- Background -->
+    <rect width="1000" height="600" fill="#ffffff" stroke="#e0e0e0" stroke-width="2" rx="4"/>
+    
+    <!-- Title -->
+    <rect x="20" y="10" width="960" height="40" fill="#16a34a" rx="4"/>
+    <text x="500" y="35" text-anchor="middle" font-size="16" font-weight="bold" fill="white">
+        Global Cache System (10M ops/sec, 99.9% hit ratio)
+    </text>
+    
+    <!-- Client Layer -->
+    <rect x="30" y="70" width="940" height="80" fill="#f0fdf4" stroke="#22c55e" stroke-width="2" rx="6"/>
+    <text x="50" y="95" font-size="14" font-weight="bold" fill="#15803d">APPLICATION CLIENTS</text>
+    
+    <!-- Client boxes -->
+    <rect x="80" y="110" width="140" height="30" fill="#bbf7d0" stroke="#16a34a" stroke-width="2" rx="4"/>
+    <text x="150" y="128" text-anchor="middle" font-size="11" fill="#14532d">Web Services</text>
+    
+    <rect x="240" y="110" width="140" height="30" fill="#bbf7d0" stroke="#16a34a" stroke-width="2" rx="4"/>
+    <text x="310" y="128" text-anchor="middle" font-size="11" fill="#14532d">Mobile APIs</text>
+    
+    <rect x="400" y="110" width="140" height="30" fill="#bbf7d0" stroke="#16a34a" stroke-width="2" rx="4"/>
+    <text x="470" y="128" text-anchor="middle" font-size="11" fill="#14532d">Background Jobs</text>
+    
+    <rect x="560" y="110" width="140" height="30" fill="#bbf7d0" stroke="#16a34a" stroke-width="2" rx="4"/>
+    <text x="630" y="128" text-anchor="middle" font-size="11" fill="#14532d">Analytics Engine</text>
+    
+    <rect x="720" y="110" width="180" height="30" fill="#f0f4ff" stroke="#6366f1" stroke-width="1" rx="4"/>
+    <text x="730" y="128" font-size="10" fill="#4338ca">Client lib: intelligent routing</text>
+    
+    <!-- Arrow markers -->
+    <defs>
+        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto" fill="#374151">
+            <polygon points="0 0, 10 3.5, 0 7"/>
+        </marker>
+    </defs>
+    
+    <!-- Arrow down -->
+    <line x1="500" y1="155" x2="500" y2="180" stroke="#374151" stroke-width="3" marker-end="url(#arrowhead)"/>
+    
+    <!-- Load Balancer Layer -->
+    <rect x="30" y="190" width="940" height="80" fill="#fef2f2" stroke="#dc2626" stroke-width="2" rx="6"/>
+    <text x="50" y="215" font-size="14" font-weight="bold" fill="#991b1b">CONSISTENT HASH ROUTER</text>
+    
+    <!-- Router components -->
+    <rect x="80" y="230" width="200" height="30" fill="#fca5a5" stroke="#b91c1c" stroke-width="2" rx="4"/>
+    <text x="180" y="248" text-anchor="middle" font-size="11" fill="#7f1d1d">Hash Ring (1024 vNodes)</text>
+    
+    <rect x="300" y="230" width="200" height="30" fill="#fca5a5" stroke="#b91c1c" stroke-width="2" rx="4"/>
+    <text x="400" y="248" text-anchor="middle" font-size="11" fill="#7f1d1d">Replica Selection (3x)</text>
+    
+    <rect x="520" y="230" width="200" height="30" fill="#fca5a5" stroke="#b91c1c" stroke-width="2" rx="4"/>
+    <text x="620" y="248" text-anchor="middle" font-size="11" fill="#7f1d1d">Failure Detection</text>
+    
+    <rect x="740" y="230" width="180" height="30" fill="#fef7ff" stroke="#a855f7" stroke-width="1" rx="4"/>
+    <text x="750" y="248" font-size="10" fill="#7e22ce">Gossip protocol health</text>
+    
+    <!-- Arrow down -->
+    <line x1="500" y1="275" x2="500" y2="300" stroke="#374151" stroke-width="3" marker-end="url(#arrowhead)"/>
+    
+    <!-- Cache Tier -->
+    <rect x="30" y="310" width="940" height="120" fill="#fff7ed" stroke="#ea580c" stroke-width="2" rx="6"/>
+    <text x="50" y="335" font-size="14" font-weight="bold" fill="#c2410c">DISTRIBUTED CACHE TIER (Multi-Region)</text>
+    
+    <!-- Regional cache clusters -->
+    <rect x="60" y="350" width="250" height="70" fill="#fed7aa" stroke="#d97706" stroke-width="2" rx="4"/>
+    <text x="185" y="370" text-anchor="middle" font-size="12" font-weight="bold" fill="#92400e">US-WEST CLUSTER</text>
+    <text x="185" y="385" text-anchor="middle" font-size="10" fill="#c2410c">Redis Cluster (50 nodes)</text>
+    <text x="185" y="398" text-anchor="middle" font-size="10" fill="#c2410c">Memory: 2TB total</text>
+    <text x="185" y="411" text-anchor="middle" font-size="10" fill="#c2410c">Cross-replica sync</text>
+    
+    <rect x="330" y="350" width="250" height="70" fill="#fed7aa" stroke="#d97706" stroke-width="2" rx="4"/>
+    <text x="455" y="370" text-anchor="middle" font-size="12" font-weight="bold" fill="#92400e">US-EAST CLUSTER</text>
+    <text x="455" y="385" text-anchor="middle" font-size="10" fill="#c2410c">Redis Cluster (50 nodes)</text>
+    <text x="455" y="398" text-anchor="middle" font-size="10" fill="#c2410c">Memory: 2TB total</text>
+    <text x="455" y="411" text-anchor="middle" font-size="10" fill="#c2410c">Cross-replica sync</text>
+    
+    <rect x="600" y="350" width="250" height="70" fill="#fed7aa" stroke="#d97706" stroke-width="2" rx="4"/>
+    <text x="725" y="370" text-anchor="middle" font-size="12" font-weight="bold" fill="#92400e">EU-WEST CLUSTER</text>
+    <text x="725" y="385" text-anchor="middle" font-size="10" fill="#c2410c">Redis Cluster (50 nodes)</text>
+    <text x="725" y="398" text-anchor="middle" font-size="10" fill="#c2410c">Memory: 2TB total</text>
+    <text x="725" y="411" text-anchor="middle" font-size="10" fill="#c2410c">Cross-replica sync</text>
+    
+    <!-- Arrow down -->
+    <line x1="500" y1="435" x2="500" y2="460" stroke="#374151" stroke-width="3" marker-end="url(#arrowhead)"/>
+    
+    <!-- Backend Layer -->
+    <rect x="30" y="470" width="940" height="120" fill="#f5f3ff" stroke="#7c3aed" stroke-width="2" rx="6"/>
+    <text x="50" y="495" font-size="14" font-weight="bold" fill="#5b21b6">BACKING DATA STORES &amp; WARMING SYSTEM</text>
+    
+    <!-- Backend components -->
+    <rect x="60" y="510" width="200" height="70" fill="#e9d5ff" stroke="#8b5cf6" stroke-width="2" rx="4"/>
+    <text x="160" y="530" text-anchor="middle" font-size="11" font-weight="bold" fill="#581c87">Primary DB</text>
+    <text x="160" y="545" text-anchor="middle" font-size="9" fill="#7c3aed">PostgreSQL</text>
+    <text x="160" y="556" text-anchor="middle" font-size="9" fill="#7c3aed">Read replicas</text>
+    <text x="160" y="567" text-anchor="middle" font-size="9" fill="#7c3aed">Connection pool</text>
+    
+    <rect x="280" y="510" width="200" height="70" fill="#e9d5ff" stroke="#8b5cf6" stroke-width="2" rx="4"/>
+    <text x="380" y="530" text-anchor="middle" font-size="11" font-weight="bold" fill="#581c87">Cache Warmer</text>
+    <text x="380" y="545" text-anchor="middle" font-size="9" fill="#7c3aed">Predictive loading</text>
+    <text x="380" y="556" text-anchor="middle" font-size="9" fill="#7c3aed">ML-based prefetch</text>
+    <text x="380" y="567" text-anchor="middle" font-size="9" fill="#7c3aed">Background jobs</text>
+    
+    <rect x="500" y="510" width="200" height="70" fill="#e9d5ff" stroke="#8b5cf6" stroke-width="2" rx="4"/>
+    <text x="600" y="530" text-anchor="middle" font-size="11" font-weight="bold" fill="#581c87">Invalidation</text>
+    <text x="600" y="545" text-anchor="middle" font-size="9" fill="#7c3aed">Change streams</text>
+    <text x="600" y="556" text-anchor="middle" font-size="9" fill="#7c3aed">Event-driven</text>
+    <text x="600" y="567" text-anchor="middle" font-size="9" fill="#7c3aed">Broadcast</text>
+    
+    <rect x="720" y="510" width="200" height="70" fill="#fffbeb" stroke="#f59e0b" stroke-width="2" rx="4"/>
+    <text x="820" y="530" text-anchor="middle" font-size="11" font-weight="bold" fill="#d97706">Observability</text>
+    <text x="820" y="545" text-anchor="middle" font-size="9" fill="#f59e0b">Hit ratio metrics</text>
+    <text x="820" y="556" text-anchor="middle" font-size="9" fill="#f59e0b">Latency p99/p95</text>
+    <text x="820" y="567" text-anchor="middle" font-size="9" fill="#f59e0b">Error budgets</text>
+</svg>

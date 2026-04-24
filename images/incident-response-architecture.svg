@@ -1,0 +1,155 @@
+<svg width="1000" height="700" xmlns="http://www.w3.org/2000/svg">
+    <!-- Background -->
+    <rect width="1000" height="700" fill="#ffffff" stroke="#e0e0e0" stroke-width="2" rx="4"/>
+    
+    <!-- Title -->
+    <rect x="20" y="10" width="960" height="40" fill="#dc2626" rx="4"/>
+    <text x="500" y="35" text-anchor="middle" font-size="16" font-weight="bold" fill="white">
+        Global Incident Response System (Multi-Channel Alert Correlation)
+    </text>
+    
+    <!-- Detection Layer -->
+    <rect x="30" y="70" width="940" height="100" fill="#fef2f2" stroke="#dc2626" stroke-width="2" rx="6"/>
+    <text x="50" y="95" font-size="14" font-weight="bold" fill="#991b1b">INCIDENT DETECTION SOURCES</text>
+    
+    <!-- Detection sources -->
+    <rect x="60" y="110" width="160" height="50" fill="#fca5a5" stroke="#b91c1c" stroke-width="2" rx="4"/>
+    <text x="140" y="128" text-anchor="middle" font-size="11" font-weight="bold" fill="#7f1d1d">Monitoring</text>
+    <text x="140" y="142" text-anchor="middle" font-size="9" fill="#991b1b">Prometheus/Grafana</text>
+    <text x="140" y="153" text-anchor="middle" font-size="9" fill="#991b1b">SLO breaches</text>
+    
+    <rect x="240" y="110" width="160" height="50" fill="#fca5a5" stroke="#b91c1c" stroke-width="2" rx="4"/>
+    <text x="320" y="128" text-anchor="middle" font-size="11" font-weight="bold" fill="#7f1d1d">Synthetic Tests</text>
+    <text x="320" y="142" text-anchor="middle" font-size="9" fill="#991b1b">End-to-end probes</text>
+    <text x="320" y="153" text-anchor="middle" font-size="9" fill="#991b1b">User journey tests</text>
+    
+    <rect x="420" y="110" width="160" height="50" fill="#fca5a5" stroke="#b91c1c" stroke-width="2" rx="4"/>
+    <text x="500" y="128" text-anchor="middle" font-size="11" font-weight="bold" fill="#7f1d1d">Log Analytics</text>
+    <text x="500" y="142" text-anchor="middle" font-size="9" fill="#991b1b">Error rate spikes</text>
+    <text x="500" y="153" text-anchor="middle" font-size="9" fill="#991b1b">Anomaly detection</text>
+    
+    <rect x="600" y="110" width="160" height="50" fill="#fca5a5" stroke="#b91c1c" stroke-width="2" rx="4"/>
+    <text x="680" y="128" text-anchor="middle" font-size="11" font-weight="bold" fill="#7f1d1d">Customer Reports</text>
+    <text x="680" y="142" text-anchor="middle" font-size="9" fill="#991b1b">Support tickets</text>
+    <text x="680" y="153" text-anchor="middle" font-size="9" fill="#991b1b">Social media</text>
+    
+    <rect x="780" y="110" width="160" height="50" fill="#fef7ff" stroke="#a855f7" stroke-width="1" rx="4"/>
+    <text x="860" y="128" text-anchor="middle" font-size="10" font-weight="bold" fill="#7e22ce">Manual Triggers</text>
+    <text x="860" y="142" text-anchor="middle" font-size="8" fill="#7c3aed">On-call escalation</text>
+    <text x="860" y="153" text-anchor="middle" font-size="8" fill="#7c3aed">Runbook activation</text>
+    
+    <!-- Arrow markers -->
+    <defs>
+        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto" fill="#374151">
+            <polygon points="0 0, 10 3.5, 0 7"/>
+        </marker>
+    </defs>
+    
+    <!-- Arrow down -->
+    <line x1="500" y1="175" x2="500" y2="200" stroke="#374151" stroke-width="3" marker-end="url(#arrowhead)"/>
+    
+    <!-- Correlation Engine -->
+    <rect x="30" y="210" width="940" height="120" fill="#fff7ed" stroke="#ea580c" stroke-width="2" rx="6"/>
+    <text x="50" y="235" font-size="14" font-weight="bold" fill="#c2410c">INTELLIGENT CORRELATION ENGINE</text>
+    
+    <!-- Correlation components -->
+    <rect x="80" y="250" width="200" height="70" fill="#fed7aa" stroke="#d97706" stroke-width="2" rx="4"/>
+    <text x="180" y="270" text-anchor="middle" font-size="12" font-weight="bold" fill="#92400e">Event Processor</text>
+    <text x="180" y="285" text-anchor="middle" font-size="10" fill="#c2410c">Deduplication</text>
+    <text x="180" y="298" text-anchor="middle" font-size="10" fill="#c2410c">Fingerprinting</text>
+    <text x="180" y="311" text-anchor="middle" font-size="10" fill="#c2410c">Noise reduction</text>
+    
+    <rect x="300" y="250" width="200" height="70" fill="#fed7aa" stroke="#d97706" stroke-width="2" rx="4"/>
+    <text x="400" y="270" text-anchor="middle" font-size="12" font-weight="bold" fill="#92400e">ML Classifier</text>
+    <text x="400" y="285" text-anchor="middle" font-size="10" fill="#c2410c">Severity scoring</text>
+    <text x="400" y="298" text-anchor="middle" font-size="10" fill="#c2410c">Impact prediction</text>
+    <text x="400" y="311" text-anchor="middle" font-size="10" fill="#c2410c">Pattern matching</text>
+    
+    <rect x="520" y="250" width="200" height="70" fill="#fed7aa" stroke="#d97706" stroke-width="2" rx="4"/>
+    <text x="620" y="270" text-anchor="middle" font-size="12" font-weight="bold" fill="#92400e">Root Cause</text>
+    <text x="620" y="285" text-anchor="middle" font-size="10" fill="#c2410c">Dependency graph</text>
+    <text x="620" y="298" text-anchor="middle" font-size="10" fill="#c2410c">Timeline analysis</text>
+    <text x="620" y="311" text-anchor="middle" font-size="10" fill="#c2410c">Service mapping</text>
+    
+    <rect x="740" y="250" width="180" height="70" fill="#f0f4ff" stroke="#6366f1" stroke-width="2" rx="4"/>
+    <text x="830" y="270" text-anchor="middle" font-size="11" font-weight="bold" fill="#4338ca">Runbook Matcher</text>
+    <text x="830" y="285" text-anchor="middle" font-size="9" fill="#4338ca">Auto-remediation</text>
+    <text x="830" y="298" text-anchor="middle" font-size="9" fill="#4338ca">Playbook selection</text>
+    <text x="830" y="311" text-anchor="middle" font-size="9" fill="#4338ca">Action suggestions</text>
+    
+    <!-- Arrow down -->
+    <line x1="500" y1="335" x2="500" y2="360" stroke="#374151" stroke-width="3" marker-end="url(#arrowhead)"/>
+    
+    <!-- Incident Management -->
+    <rect x="30" y="370" width="940" height="120" fill="#f0fdf4" stroke="#22c55e" stroke-width="2" rx="6"/>
+    <text x="50" y="395" font-size="14" font-weight="bold" fill="#15803d">INCIDENT MANAGEMENT WORKFLOW</text>
+    
+    <!-- Workflow components -->
+    <rect x="60" y="410" width="180" height="70" fill="#bbf7d0" stroke="#16a34a" stroke-width="2" rx="4"/>
+    <text x="150" y="430" text-anchor="middle" font-size="11" font-weight="bold" fill="#14532d">Triage &amp; Assignment</text>
+    <text x="150" y="445" text-anchor="middle" font-size="9" fill="#166534">On-call rotation</text>
+    <text x="150" y="456" text-anchor="middle" font-size="9" fill="#166534">Expertise routing</text>
+    <text x="150" y="467" text-anchor="middle" font-size="9" fill="#166534">Escalation rules</text>
+    
+    <rect x="260" y="410" width="180" height="70" fill="#bbf7d0" stroke="#16a34a" stroke-width="2" rx="4"/>
+    <text x="350" y="430" text-anchor="middle" font-size="11" font-weight="bold" fill="#14532d">Communication Hub</text>
+    <text x="350" y="445" text-anchor="middle" font-size="9" fill="#166534">Slack war room</text>
+    <text x="350" y="456" text-anchor="middle" font-size="9" fill="#166534">Incident bridge</text>
+    <text x="350" y="467" text-anchor="middle" font-size="9" fill="#166534">Status updates</text>
+    
+    <rect x="460" y="410" width="180" height="70" fill="#bbf7d0" stroke="#16a34a" stroke-width="2" rx="4"/>
+    <text x="550" y="430" text-anchor="middle" font-size="11" font-weight="bold" fill="#14532d">Response Actions</text>
+    <text x="550" y="445" text-anchor="middle" font-size="9" fill="#166534">Automated rollbacks</text>
+    <text x="550" y="456" text-anchor="middle" font-size="9" fill="#166534">Traffic routing</text>
+    <text x="550" y="467" text-anchor="middle" font-size="9" fill="#166534">Resource scaling</text>
+    
+    <rect x="660" y="410" width="180" height="70" fill="#bbf7d0" stroke="#16a34a" stroke-width="2" rx="4"/>
+    <text x="750" y="430" text-anchor="middle" font-size="11" font-weight="bold" fill="#14532d">Timeline &amp; Tracking</text>
+    <text x="750" y="445" text-anchor="middle" font-size="9" fill="#166534">Action log</text>
+    <text x="750" y="456" text-anchor="middle" font-size="9" fill="#166534">Decision history</text>
+    <text x="750" y="467" text-anchor="middle" font-size="9" fill="#166534">MTTR tracking</text>
+    
+    <!-- Arrow down -->
+    <line x1="500" y1="495" x2="500" y2="520" stroke="#374151" stroke-width="3" marker-end="url(#arrowhead)"/>
+    
+    <!-- Notification Layer -->
+    <rect x="30" y="530" width="940" height="120" fill="#fef7ff" stroke="#a855f7" stroke-width="2" rx="6"/>
+    <text x="50" y="555" font-size="14" font-weight="bold" fill="#7e22ce">MULTI-CHANNEL NOTIFICATION SYSTEM</text>
+    
+    <!-- Notification channels -->
+    <rect x="60" y="570" width="150" height="70" fill="#e9d5ff" stroke="#8b5cf6" stroke-width="2" rx="4"/>
+    <text x="135" y="590" text-anchor="middle" font-size="11" font-weight="bold" fill="#581c87">PagerDuty</text>
+    <text x="135" y="605" text-anchor="middle" font-size="9" fill="#7c3aed">SMS/Voice alerts</text>
+    <text x="135" y="616" text-anchor="middle" font-size="9" fill="#7c3aed">Escalation chains</text>
+    <text x="135" y="627" text-anchor="middle" font-size="9" fill="#7c3aed">ACK tracking</text>
+    
+    <rect x="230" y="570" width="150" height="70" fill="#e9d5ff" stroke="#8b5cf6" stroke-width="2" rx="4"/>
+    <text x="305" y="590" text-anchor="middle" font-size="11" font-weight="bold" fill="#581c87">Slack</text>
+    <text x="305" y="605" text-anchor="middle" font-size="9" fill="#7c3aed">Incident channels</text>
+    <text x="305" y="616" text-anchor="middle" font-size="9" fill="#7c3aed">Team notifications</text>
+    <text x="305" y="627" text-anchor="middle" font-size="9" fill="#7c3aed">Bot assistance</text>
+    
+    <rect x="400" y="570" width="150" height="70" fill="#e9d5ff" stroke="#8b5cf6" stroke-width="2" rx="4"/>
+    <text x="475" y="590" text-anchor="middle" font-size="11" font-weight="bold" fill="#581c87">Email</text>
+    <text x="475" y="605" text-anchor="middle" font-size="9" fill="#7c3aed">Executive reports</text>
+    <text x="475" y="616" text-anchor="middle" font-size="9" fill="#7c3aed">Stakeholder updates</text>
+    <text x="475" y="627" text-anchor="middle" font-size="9" fill="#7c3aed">Post-mortem dist.</text>
+    
+    <rect x="570" y="570" width="150" height="70" fill="#e9d5ff" stroke="#8b5cf6" stroke-width="2" rx="4"/>
+    <text x="645" y="590" text-anchor="middle" font-size="11" font-weight="bold" fill="#581c87">Status Page</text>
+    <text x="645" y="605" text-anchor="middle" font-size="9" fill="#7c3aed">Customer comms</text>
+    <text x="645" y="616" text-anchor="middle" font-size="9" fill="#7c3aed">Service health</text>
+    <text x="645" y="627" text-anchor="middle" font-size="9" fill="#7c3aed">SLA reporting</text>
+    
+    <rect x="740" y="570" width="150" height="70" fill="#e9d5ff" stroke="#8b5cf6" stroke-width="2" rx="4"/>
+    <text x="815" y="590" text-anchor="middle" font-size="11" font-weight="bold" fill="#581c87">Webhooks</text>
+    <text x="815" y="605" text-anchor="middle" font-size="9" fill="#7c3aed">External tools</text>
+    <text x="815" y="616" text-anchor="middle" font-size="9" fill="#7c3aed">ITSM integration</text>
+    <text x="815" y="627" text-anchor="middle" font-size="9" fill="#7c3aed">Custom triggers</text>
+    
+    <!-- Bottom metrics -->
+    <rect x="200" y="660" width="600" height="30" fill="#ecfdf5" stroke="#10b981" stroke-width="2" rx="4"/>
+    <text x="500" y="680" text-anchor="middle" font-size="11" font-weight="bold" fill="#047857">
+        SLO: MTTA &lt; 5min, MTTR &lt; 30min, False positive rate &lt; 5%
+    </text>
+</svg>
