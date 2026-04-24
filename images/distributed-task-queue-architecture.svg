@@ -1,0 +1,161 @@
+<svg width="1000" height="700" xmlns="http://www.w3.org/2000/svg">
+    <!-- Background -->
+    <rect width="1000" height="700" fill="#ffffff" stroke="#e0e0e0" stroke-width="2" rx="4"/>
+    
+    <!-- Title -->
+    <rect x="20" y="10" width="960" height="40" fill="#7c2d92" rx="4"/>
+    <text x="500" y="35" text-anchor="middle" font-size="16" font-weight="bold" fill="white">
+        Distributed Task Queue (10M tasks/sec, Multi-tenant Processing)
+    </text>
+    
+    <!-- Task Producers Layer -->
+    <rect x="30" y="70" width="940" height="100" fill="#fdf4ff" stroke="#c084fc" stroke-width="2" rx="6"/>
+    <text x="50" y="95" font-size="14" font-weight="bold" fill="#7e22ce">TASK PRODUCERS (Multi-Tenant Services)</text>
+    
+    <!-- Producer components -->
+    <rect x="70" y="110" width="140" height="50" fill="#e9d5ff" stroke="#8b5cf6" stroke-width="2" rx="4"/>
+    <text x="140" y="128" text-anchor="middle" font-size="11" font-weight="bold" fill="#581c87">Image Service</text>
+    <text x="140" y="142" text-anchor="middle" font-size="9" fill="#7c3aed">Resize/crop jobs</text>
+    <text x="140" y="153" text-anchor="middle" font-size="9" fill="#7c3aed">10K tasks/min</text>
+    
+    <rect x="230" y="110" width="140" height="50" fill="#e9d5ff" stroke="#8b5cf6" stroke-width="2" rx="4"/>
+    <text x="300" y="128" text-anchor="middle" font-size="11" font-weight="bold" fill="#581c87">Email Service</text>
+    <text x="300" y="142" text-anchor="middle" font-size="9" fill="#7c3aed">Bulk notifications</text>
+    <text x="300" y="153" text-anchor="middle" font-size="9" fill="#7c3aed">50K tasks/min</text>
+    
+    <rect x="390" y="110" width="140" height="50" fill="#e9d5ff" stroke="#8b5cf6" stroke-width="2" rx="4"/>
+    <text x="460" y="128" text-anchor="middle" font-size="11" font-weight="bold" fill="#581c87">Analytics</text>
+    <text x="460" y="142" text-anchor="middle" font-size="9" fill="#7c3aed">Data enrichment</text>
+    <text x="460" y="153" text-anchor="middle" font-size="9" fill="#7c3aed">100K tasks/min</text>
+    
+    <rect x="550" y="110" width="140" height="50" fill="#e9d5ff" stroke="#8b5cf6" stroke-width="2" rx="4"/>
+    <text x="620" y="128" text-anchor="middle" font-size="11" font-weight="bold" fill="#581c87">ML Pipeline</text>
+    <text x="620" y="142" text-anchor="middle" font-size="9" fill="#7c3aed">Model training</text>
+    <text x="620" y="153" text-anchor="middle" font-size="9" fill="#7c3aed">5K tasks/min</text>
+    
+    <rect x="710" y="110" width="140" height="50" fill="#e9d5ff" stroke="#8b5cf6" stroke-width="2" rx="4"/>
+    <text x="780" y="128" text-anchor="middle" font-size="11" font-weight="bold" fill="#581c87">Batch Jobs</text>
+    <text x="780" y="142" text-anchor="middle" font-size="9" fill="#7c3aed">Daily reports</text>
+    <text x="780" y="153" text-anchor="middle" font-size="9" fill="#7c3aed">1K tasks/hour</text>
+    
+    <!-- Arrow markers -->
+    <defs>
+        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto" fill="#374151">
+            <polygon points="0 0, 10 3.5, 0 7"/>
+        </marker>
+    </defs>
+    
+    <!-- Arrow down -->
+    <line x1="500" y1="175" x2="500" y2="200" stroke="#374151" stroke-width="3" marker-end="url(#arrowhead)"/>
+    
+    <!-- Queue Management Layer -->
+    <rect x="30" y="210" width="940" height="120" fill="#fff7ed" stroke="#ea580c" stroke-width="2" rx="6"/>
+    <text x="50" y="235" font-size="14" font-weight="bold" fill="#c2410c">QUEUE MANAGEMENT LAYER</text>
+    
+    <!-- Queue components -->
+    <rect x="60" y="250" width="180" height="70" fill="#fed7aa" stroke="#d97706" stroke-width="2" rx="4"/>
+    <text x="150" y="270" text-anchor="middle" font-size="12" font-weight="bold" fill="#92400e">Priority Router</text>
+    <text x="150" y="285" text-anchor="middle" font-size="10" fill="#c2410c">Multi-level priority</text>
+    <text x="150" y="298" text-anchor="middle" font-size="10" fill="#c2410c">SLA-based routing</text>
+    <text x="150" y="311" text-anchor="middle" font-size="10" fill="#c2410c">Dead letter queues</text>
+    
+    <rect x="260" y="250" width="180" height="70" fill="#fed7aa" stroke="#d97706" stroke-width="2" rx="4"/>
+    <text x="350" y="270" text-anchor="middle" font-size="12" font-weight="bold" fill="#92400e">Kafka Clusters</text>
+    <text x="350" y="285" text-anchor="middle" font-size="10" fill="#c2410c">Partitioned topics</text>
+    <text x="350" y="298" text-anchor="middle" font-size="10" fill="#c2410c">Cross-region repl.</text>
+    <text x="350" y="311" text-anchor="middle" font-size="10" fill="#c2410c">Durability: 7 days</text>
+    
+    <rect x="460" y="250" width="180" height="70" fill="#fed7aa" stroke="#d97706" stroke-width="2" rx="4"/>
+    <text x="550" y="270" text-anchor="middle" font-size="12" font-weight="bold" fill="#92400e">Rate Limiting</text>
+    <text x="550" y="285" text-anchor="middle" font-size="10" fill="#c2410c">Per-tenant quotas</text>
+    <text x="550" y="298" text-anchor="middle" font-size="10" fill="#c2410c">Sliding windows</text>
+    <text x="550" y="311" text-anchor="middle" font-size="10" fill="#c2410c">Fair queuing</text>
+    
+    <rect x="660" y="250" width="180" height="70" fill="#fed7aa" stroke="#d97706" stroke-width="2" rx="4"/>
+    <text x="750" y="270" text-anchor="middle" font-size="12" font-weight="bold" fill="#92400e">Scheduler</text>
+    <text x="750" y="285" text-anchor="middle" font-size="10" fill="#c2410c">Delayed execution</text>
+    <text x="750" y="298" text-anchor="middle" font-size="10" fill="#c2410c">Cron-like patterns</text>
+    <text x="750" y="311" text-anchor="middle" font-size="10" fill="#c2410c">Timezone handling</text>
+    
+    <!-- Arrow down -->
+    <line x1="500" y1="335" x2="500" y2="360" stroke="#374151" stroke-width="3" marker-end="url(#arrowhead)"/>
+    
+    <!-- Worker Execution Layer -->
+    <rect x="30" y="370" width="940" height="120" fill="#f0fdf4" stroke="#22c55e" stroke-width="2" rx="6"/>
+    <text x="50" y="395" font-size="14" font-weight="bold" fill="#15803d">WORKER EXECUTION LAYER (Auto-scaling)</text>
+    
+    <!-- Worker pools -->
+    <rect x="70" y="410" width="160" height="70" fill="#bbf7d0" stroke="#16a34a" stroke-width="2" rx="4"/>
+    <text x="150" y="430" text-anchor="middle" font-size="11" font-weight="bold" fill="#14532d">CPU Workers</text>
+    <text x="150" y="445" text-anchor="middle" font-size="9" fill="#166534">Image processing</text>
+    <text x="150" y="456" text-anchor="middle" font-size="9" fill="#166534">Data transforms</text>
+    <text x="150" y="467" text-anchor="middle" font-size="9" fill="#166534">1K-10K instances</text>
+    
+    <rect x="250" y="410" width="160" height="70" fill="#bbf7d0" stroke="#16a34a" stroke-width="2" rx="4"/>
+    <text x="330" y="430" text-anchor="middle" font-size="11" font-weight="bold" fill="#14532d">I/O Workers</text>
+    <text x="330" y="445" text-anchor="middle" font-size="9" fill="#166534">Email sending</text>
+    <text x="330" y="456" text-anchor="middle" font-size="9" fill="#166534">API calls</text>
+    <text x="330" y="467" text-anchor="middle" font-size="9" fill="#166534">5K-20K instances</text>
+    
+    <rect x="430" y="410" width="160" height="70" fill="#bbf7d0" stroke="#16a34a" stroke-width="2" rx="4"/>
+    <text x="510" y="430" text-anchor="middle" font-size="11" font-weight="bold" fill="#14532d">GPU Workers</text>
+    <text x="510" y="445" text-anchor="middle" font-size="9" fill="#166534">ML inference</text>
+    <text x="510" y="456" text-anchor="middle" font-size="9" fill="#166534">Video processing</text>
+    <text x="510" y="467" text-anchor="middle" font-size="9" fill="#166534">100-1K instances</text>
+    
+    <rect x="610" y="410" width="160" height="70" fill="#bbf7d0" stroke="#16a34a" stroke-width="2" rx="4"/>
+    <text x="690" y="430" text-anchor="middle" font-size="11" font-weight="bold" fill="#14532d">Memory Workers</text>
+    <text x="690" y="445" text-anchor="middle" font-size="9" fill="#166534">Large datasets</text>
+    <text x="690" y="456" text-anchor="middle" font-size="9" fill="#166534">In-memory proc.</text>
+    <text x="690" y="467" text-anchor="middle" font-size="9" fill="#166534">100-500 instances</text>
+    
+    <rect x="790" y="410" width="160" height="70" fill="#f0f4ff" stroke="#6366f1" stroke-width="1" rx="4"/>
+    <text x="870" y="430" text-anchor="middle" font-size="10" font-weight="bold" fill="#4338ca">Auto-scaler</text>
+    <text x="870" y="445" text-anchor="middle" font-size="8" fill="#4338ca">Queue depth monitor</text>
+    <text x="870" y="456" text-anchor="middle" font-size="8" fill="#4338ca">Resource utilization</text>
+    <text x="870" y="467" text-anchor="middle" font-size="8" fill="#4338ca">Predictive scaling</text>
+    
+    <!-- Arrow down -->
+    <line x1="500" y1="495" x2="500" y2="520" stroke="#374151" stroke-width="3" marker-end="url(#arrowhead)"/>
+    
+    <!-- Persistence & State Layer -->
+    <rect x="30" y="530" width="940" height="120" fill="#fef2f2" stroke="#dc2626" stroke-width="2" rx="6"/>
+    <text x="50" y="555" font-size="14" font-weight="bold" fill="#991b1b">PERSISTENCE &amp; STATE MANAGEMENT</text>
+    
+    <!-- Persistence components -->
+    <rect x="60" y="570" width="170" height="70" fill="#fca5a5" stroke="#b91c1c" stroke-width="2" rx="4"/>
+    <text x="145" y="590" text-anchor="middle" font-size="11" font-weight="bold" fill="#7f1d1d">Task State DB</text>
+    <text x="145" y="605" text-anchor="middle" font-size="9" fill="#991b1b">PostgreSQL cluster</text>
+    <text x="145" y="616" text-anchor="middle" font-size="9" fill="#991b1b">Status tracking</text>
+    <text x="145" y="627" text-anchor="middle" font-size="9" fill="#991b1b">Retry attempts</text>
+    
+    <rect x="250" y="570" width="170" height="70" fill="#fca5a5" stroke="#b91c1c" stroke-width="2" rx="4"/>
+    <text x="335" y="590" text-anchor="middle" font-size="11" font-weight="bold" fill="#7f1d1d">Result Storage</text>
+    <text x="335" y="605" text-anchor="middle" font-size="9" fill="#991b1b">S3/GCS buckets</text>
+    <text x="335" y="616" text-anchor="middle" font-size="9" fill="#991b1b">Versioned results</text>
+    <text x="335" y="627" text-anchor="middle" font-size="9" fill="#991b1b">TTL policies</text>
+    
+    <rect x="440" y="570" width="170" height="70" fill="#fca5a5" stroke="#b91c1c" stroke-width="2" rx="4"/>
+    <text x="525" y="590" text-anchor="middle" font-size="11" font-weight="bold" fill="#7f1d1d">Failure Tracking</text>
+    <text x="525" y="605" text-anchor="middle" font-size="9" fill="#991b1b">Error categorization</text>
+    <text x="525" y="616" text-anchor="middle" font-size="9" fill="#991b1b">Retry policies</text>
+    <text x="525" y="627" text-anchor="middle" font-size="9" fill="#991b1b">Dead letter queue</text>
+    
+    <rect x="630" y="570" width="170" height="70" fill="#fca5a5" stroke="#b91c1c" stroke-width="2" rx="4"/>
+    <text x="715" y="590" text-anchor="middle" font-size="11" font-weight="bold" fill="#7f1d1d">Metrics Store</text>
+    <text x="715" y="605" text-anchor="middle" font-size="9" fill="#991b1b">InfluxDB/Prometheus</text>
+    <text x="715" y="616" text-anchor="middle" font-size="9" fill="#991b1b">Performance data</text>
+    <text x="715" y="627" text-anchor="middle" font-size="9" fill="#991b1b">SLA compliance</text>
+    
+    <rect x="820" y="570" width="130" height="70" fill="#fffbeb" stroke="#f59e0b" stroke-width="1" rx="4"/>
+    <text x="885" y="590" text-anchor="middle" font-size="10" font-weight="bold" fill="#d97706">Observability</text>
+    <text x="885" y="605" text-anchor="middle" font-size="8" fill="#f59e0b">Real-time dashboards</text>
+    <text x="885" y="616" text-anchor="middle" font-size="8" fill="#f59e0b">Alerting rules</text>
+    <text x="885" y="627" text-anchor="middle" font-size="8" fill="#f59e0b">Capacity planning</text>
+    
+    <!-- Bottom metrics -->
+    <rect x="200" y="660" width="600" height="30" fill="#ecfdf5" stroke="#10b981" stroke-width="2" rx="4"/>
+    <text x="500" y="680" text-anchor="middle" font-size="11" font-weight="bold" fill="#047857">
+        SLO: Processing latency p95 &lt; 30s, Failure rate &lt; 0.1%, Throughput 10M tasks/sec
+    </text>
+</svg>

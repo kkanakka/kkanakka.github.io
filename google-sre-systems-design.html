@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Google SRE Systems Design Interview Guide — 9 Authentic Problems</title>
     <style>
+        /* Clean Document Theme - Word/Google Docs Style */
         * {
             margin: 0;
             padding: 0;
@@ -12,359 +13,234 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
-            line-height: 1.4;
-            color: #2c3e50;
+            font-family: 'Times New Roman', Times, serif;
+            line-height: 1.6;
+            color: #000000;
             background: #ffffff;
-            font-size: 14px;
+            font-size: 16px;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 60px;
         }
 
         .container {
-            max-width: 1000px;
-            margin: 0 auto;
-            padding: 0 16px;
+            width: 100%;
         }
 
         .hero {
-            background: #ffffff;
-            border-bottom: 1px solid #e9ecef;
-            padding: 16px 0;
-            text-align: left;
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #000000;
         }
 
         .hero h1 {
-            font-size: 1.75rem;
-            margin-bottom: 4px;
-            font-weight: 700;
-            color: #1a202c;
+            font-size: 28px;
+            margin-bottom: 12px;
+            font-weight: bold;
+            color: #000000;
         }
 
         .hero p {
-            font-size: 0.95rem;
-            color: #718096;
-            margin-bottom: 8px;
+            font-size: 16px;
+            color: #333333;
+            margin-bottom: 12px;
         }
 
         .hero .quote {
             font-style: italic;
-            font-size: 0.9rem;
-            margin: 8px 0;
-            padding: 8px 12px;
-            background: #f7fafc;
-            border-left: 3px solid #4299e1;
-            border-radius: 3px;
-            color: #4a5568;
+            font-size: 15px;
+            margin: 16px 0;
+            text-align: center;
+            color: #555555;
         }
 
         .nav-tabs {
-            background: white;
-            border-bottom: 1px solid #e2e8f0;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            margin: 24px 0;
+            text-align: center;
         }
 
         .nav-tabs ul {
             list-style: none;
-            display: flex;
-            justify-content: flex-start;
-            flex-wrap: wrap;
-            padding: 0 16px;
+            display: inline-block;
         }
 
         .nav-tabs li {
-            margin: 0;
+            display: inline;
         }
 
         .nav-tabs a {
-            display: block;
-            padding: 8px 12px;
-            text-decoration: none;
-            color: #718096;
-            font-weight: 500;
-            font-size: 0.8rem;
-            border-bottom: 2px solid transparent;
-            transition: all 0.2s ease;
+            color: #0066cc;
+            text-decoration: underline;
+            font-size: 14px;
+            margin: 0 8px;
         }
 
         .nav-tabs a:hover {
-            color: #4299e1;
-            border-bottom-color: #4299e1;
+            color: #004499;
         }
 
         .section {
-            padding: 16px 0;
-            background: white;
+            margin-bottom: 32px;
         }
 
-        .section h2 {
-            font-size: 1.5rem;
-            margin-bottom: 12px;
-            color: #1a202c;
-            font-weight: 700;
+        /* Document-style headings */
+        h1 {
+            font-size: 24px;
+            margin: 24px 0 16px 0;
+            color: #000000;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        h2 {
+            font-size: 20px;
+            margin: 20px 0 12px 0;
+            color: #000000;
+            font-weight: bold;
             text-align: left;
         }
 
-        .section h3 {
-            font-size: 1.25rem;
+        h3 {
+            font-size: 18px;
             margin: 16px 0 8px 0;
-            color: #2d3748;
-            font-weight: 600;
+            color: #000000;
+            font-weight: bold;
         }
 
-        .section h4 {
-            font-size: 1.1rem;
+        h4 {
+            font-size: 16px;
             margin: 12px 0 6px 0;
-            color: #4299e1;
-            font-weight: 600;
+            color: #000000;
+            font-weight: bold;
         }
 
-        .section h5 {
-            font-size: 1rem;
-            margin: 8px 0 4px 0;
-            color: #4a5568;
-            font-weight: 600;
+        h5 {
+            font-size: 14px;
+            margin: 10px 0 4px 0;
+            color: #000000;
+            font-weight: bold;
         }
 
-        .section p {
-            margin-bottom: 8px;
-            line-height: 1.4;
+        p {
+            margin-bottom: 12px;
+            line-height: 1.6;
+            text-align: justify;
         }
 
-        .section ul, .section ol {
-            margin: 8px 0;
-            padding-left: 20px;
-        }
-
-        .section li {
-            margin-bottom: 4px;
-            line-height: 1.3;
-        }
-
-        .methodology {
-            background: #f7fafc;
-            border: 1px solid #cbd5e0;
-            border-left: 3px solid #4299e1;
-            border-radius: 3px;
-            padding: 12px;
+        ul, ol {
             margin: 12px 0;
+            padding-left: 24px;
+        }
+
+        li {
+            margin-bottom: 6px;
+            line-height: 1.6;
+        }
+
+        /* Clean sections without boxes */
+        .methodology {
+            margin: 16px 0;
         }
 
         .step {
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            border-radius: 3px;
-            padding: 12px;
-            margin: 8px 0;
-        }
-
-        .step h4 {
-            color: #4299e1;
-            margin-bottom: 6px;
-            font-size: 1rem;
+            margin: 16px 0;
         }
 
         .problem {
-            background: #fffbf0;
-            border: 1px solid #f6e05e;
-            border-left: 3px solid #ed8936;
-            border-radius: 3px;
-            padding: 12px;
-            margin: 12px 0;
+            margin: 16px 0;
         }
 
-        .problem h3 {
-            color: #c05621;
-            margin-bottom: 6px;
-            font-size: 1.1rem;
+        .pro-tip {
+            margin: 16px 0;
+            font-style: italic;
         }
 
-        .problem h4 {
-            color: #c05621;
-            margin-bottom: 4px;
-            font-size: 1rem;
+        .interviewer-lens {
+            margin: 16px 0;
+            font-style: italic;
         }
 
+        .challenge {
+            margin: 16px 0;
+        }
+
+        .highlight {
+            margin: 16px 0;
+        }
+
+        /* Clean document-style tables */
         .slo-table {
-            border: 1px solid #e2e8f0;
-            border-radius: 3px;
-            overflow: hidden;
-            margin: 12px 0;
+            margin: 16px 0;
         }
 
         .slo-table table {
             width: 100%;
             border-collapse: collapse;
+            border: 1px solid #000000;
         }
 
         .slo-table th {
-            background: #f7fafc;
-            color: #2d3748;
-            padding: 8px;
+            background: #ffffff;
+            color: #000000;
+            padding: 8px 12px;
             text-align: left;
-            font-weight: 600;
-            font-size: 0.8rem;
-            border-bottom: 1px solid #e2e8f0;
+            font-weight: bold;
+            font-size: 14px;
+            border: 1px solid #000000;
         }
 
         .slo-table td {
-            padding: 8px;
-            border-bottom: 1px solid #f1f5f9;
+            padding: 8px 12px;
+            border: 1px solid #000000;
             vertical-align: top;
-            font-size: 0.8rem;
-            line-height: 1.3;
+            font-size: 14px;
+            line-height: 1.6;
         }
 
-        .slo-table tr:last-child td {
-            border-bottom: none;
+        /* Clean document-style images */
+        img {
+            max-width: 100%;
+            height: auto;
+            margin: 16px 0;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
         }
 
-        .highlight {
-            background: #f0fff4;
-            border: 1px solid #9ae6b4;
-            border-left: 3px solid #38a169;
-            padding: 10px;
-            border-radius: 3px;
-            margin: 12px 0;
-        }
-
-        .pro-tip {
-            background: #ebf8ff;
-            border: 1px solid #90cdf4;
-            border-left: 3px solid #4299e1;
-            border-radius: 3px;
-            padding: 10px;
-            margin: 12px 0;
-        }
-
-        .pro-tip h5 {
-            color: #2b6cb0;
-            margin-bottom: 4px;
-            font-size: 0.9rem;
-        }
-
-        .interviewer-lens {
-            background: #faf5ff;
-            border: 1px solid #d6bcfa;
-            border-left: 3px solid #9f7aea;
-            border-radius: 3px;
-            padding: 10px;
-            margin: 12px 0;
-        }
-
-        .interviewer-lens h5 {
-            color: #553c9a;
-            margin-bottom: 4px;
-            font-size: 0.9rem;
-        }
-
-        .challenge {
-            background: #fff5f5;
-            border: 1px solid #feb2b2;
-            border-left: 3px solid #e53e3e;
-            border-radius: 3px;
-            padding: 10px;
-            margin: 8px 0;
-        }
-
-        .challenge h5 {
-            color: #c53030;
-            margin-bottom: 4px;
-            font-size: 0.9rem;
-        }
-
-        .code-block {
-            background: #2d3748;
-            color: #e2e8f0;
-            padding: 8px;
-            border-radius: 3px;
-            margin: 12px 0;
-            overflow-x: auto;
-            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-            font-size: 0.75rem;
-            line-height: 1.3;
-        }
-
-        /* Architecture diagram styling */
-        .step > div[style*="monospace"] {
-            background: #f8fafc !important;
-            border: 1px solid #e2e8f0 !important;
-            border-radius: 3px !important;
-            padding: 8px !important;
-            margin: 8px 0 !important;
-            font-size: 9px !important;
-            line-height: 1.1 !important;
-        }
-
-        .step > div[style*="monospace"] div {
-            color: #2d3748 !important;
-        }
-
-        /* Compact spacing for lists */
-        .step ul {
-            margin: 6px 0;
-        }
-
-        .step li {
-            margin-bottom: 3px;
-        }
-
-        .problem ul {
-            margin: 6px 0;
-        }
-
-        .problem li {
-            margin-bottom: 3px;
-        }
-
-        .methodology ul {
-            margin: 6px 0;
-        }
-
-        .methodology li {
-            margin-bottom: 3px;
-        }
-
-        .highlight ul {
-            margin: 6px 0;
-        }
-
-        .highlight li {
-            margin-bottom: 3px;
-        }
-
-        /* Responsive design */
-        @media (max-width: 768px) {
-            .hero h1 { 
-                font-size: 1.5rem; 
-            }
-            .nav-tabs a { 
-                padding: 6px 8px; 
-                font-size: 0.75rem; 
-            }
-            .container {
-                padding: 0 12px;
-            }
-            .section {
-                padding: 12px 0;
-            }
-        }
-
-        /* Table responsiveness */
-        @media (max-width: 640px) {
-            .slo-table {
-                font-size: 0.75rem;
-            }
-            .slo-table th,
-            .slo-table td {
-                padding: 6px;
-            }
-        }
-
-        /* Improve readability */
+        /* Clean emphasis styles */
         strong {
-            font-weight: 600;
+            font-weight: bold;
+        }
+
+        em, .italic {
+            font-style: italic;
+        }
+
+        /* Code and technical content */
+        code {
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            background: #f5f5f5;
+            padding: 2px 4px;
+        }
+
+        /* Clean responsive design */
+        @media (max-width: 768px) {
+            body {
+                padding: 20px 30px;
+                font-size: 15px;
+            }
+            
+            h1 { font-size: 22px; }
+            h2 { font-size: 19px; }
+            h3 { font-size: 17px; }
+            h4 { font-size: 15px; }
+            
+            .nav-tabs {
+                font-size: 12px;
+            }
+        }
             color: #2d3748;
         }
 
@@ -1799,6 +1675,48 @@ Key Reliability Patterns Applied:
                 <h5>💡 Pro Tip:</h5>
                 <p>"A canary controller is not a deployment tool — it's a risk management system with code as the interface."</p>
             </div>
+
+            <div class="step">
+                <h4>🏗️ Production-Grade Canary Deployment Controller</h4>
+                
+                <div style="text-align: center; margin: 16px 0; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px;">
+                    <img src="images/canary-deployment-architecture.svg" 
+                         alt="Canary Deployment Controller Architecture" 
+                         style="max-width: 100%; height: auto; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                    <div style="margin-top: 12px; font-size: 11px; color: #64748b; text-align: center;">
+                        <strong>Canary Deployment Controller:</strong> Progressive release automation with ML-based decision engine,
+                        error budget awareness, and statistical significance testing for safe deployments.
+                    </div>
+                    <div style="margin-top: 8px; font-size: 10px; color: #64748b;">
+                        <strong>Key Features:</strong> Traffic splitting • Real-time SLI tracking • Automated rollback • Statistical tests • Audit trails
+                    </div>
+                </div>
+
+                <h4>🔧 Technical Implementation Details:</h4>
+                <div class="slo-table">
+                    <table>
+                        <tr><th>Component</th><th>Technology Choice</th><th>Scaling Strategy</th><th>Reliability Pattern</th></tr>
+                        <tr><td><strong>Traffic Splitter</strong></td><td>Istio/Envoy service mesh</td><td>Per-cluster configuration</td><td>Progressive percentage rollout (1% → 5% → 25% → 100%)</td></tr>
+                        <tr><td><strong>Metrics Collection</strong></td><td>Prometheus + Grafana</td><td>Federated monitoring</td><td>Real-time SLI comparison with statistical significance</td></tr>
+                        <tr><td><strong>Decision Engine</strong></td><td>ML model (Random Forest)</td><td>Ensemble voting</td><td>Error budget aware + Mann-Whitney U test</td></tr>
+                        <tr><td><strong>Rollback System</strong></td><td>Kubernetes native APIs</td><td>Instant pod replacement</td><td>Circuit breaker pattern with manual override</td></tr>
+                        <tr><td><strong>Audit Trail</strong></td><td>Event sourcing to Kafka</td><td>Immutable log storage</td><td>Complete deployment decision history</td></tr>
+                    </table>
+                </div>
+                
+                <h4>📊 SLO Achievement Strategy:</h4>
+                <ul>
+                    <li><strong>Detection Latency < 60s:</strong> Real-time streaming metrics with 10s collection intervals and 30s analysis windows</li>
+                    <li><strong>Rollback Success 99.99%:</strong> Pre-validated rollback plans with automated health checks and pod readiness gates</li>
+                    <li><strong>False Positive < 0.1%:</strong> Statistical significance testing (p-value < 0.01) combined with business context validation</li>
+                    <li><strong>Controller Availability 99.99%:</strong> Multi-region controller deployment with leader election and state replication</li>
+                </ul>
+
+                <h4>🎯 Advanced Decision Logic:</h4>
+                <p><strong>Multi-Signal Analysis:</strong> The decision engine doesn't rely on single metrics. It performs correlation analysis across latency (p50, p95, p99), error rates (4xx, 5xx), throughput (QPS), and resource utilization (CPU, memory). The system uses a weighted ensemble approach where each signal contributes to a confidence score.</p>
+                
+                <p><strong>Error Budget Integration:</strong> Before any deployment proceeds beyond 5% traffic, the controller checks the service's current error budget consumption. If the monthly budget is >80% consumed, the controller automatically applies stricter thresholds and shorter observation windows. This prevents deployments from exhausting error budgets during already-stressed periods.</p>
+            </div>
         </div>
     </section>
 
@@ -1848,6 +1766,48 @@ Key Reliability Patterns Applied:
                     </ul>
                 </div>
             </div>
+
+            <div class="step">
+                <h4>🏗️ Production-Grade Distributed Task Queue</h4>
+                
+                <div style="text-align: center; margin: 16px 0; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px;">
+                    <img src="images/distributed-task-queue-architecture.svg" 
+                         alt="Distributed Task Queue Architecture" 
+                         style="max-width: 100%; height: auto; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                    <div style="margin-top: 12px; font-size: 11px; color: #64748b; text-align: center;">
+                        <strong>Distributed Task Queue:</strong> Multi-tenant processing at 10M tasks/sec with auto-scaling worker pools,
+                        priority routing, and comprehensive failure handling across CPU, I/O, GPU, and memory workloads.
+                    </div>
+                    <div style="margin-top: 8px; font-size: 10px; color: #64748b;">
+                        <strong>Key Features:</strong> Priority routing • Auto-scaling workers • Dead letter queues • Multi-tenant isolation • Real-time monitoring
+                    </div>
+                </div>
+
+                <h4>🔧 Technical Implementation Details:</h4>
+                <div class="slo-table">
+                    <table>
+                        <tr><th>Component</th><th>Technology Choice</th><th>Scaling Strategy</th><th>Reliability Pattern</th></tr>
+                        <tr><td><strong>Queue Management</strong></td><td>Apache Kafka (partitioned topics)</td><td>Horizontal partition scaling</td><td>Multi-level priority with SLA-based routing</td></tr>
+                        <tr><td><strong>Worker Pools</strong></td><td>Kubernetes Jobs + HPA</td><td>Auto-scaling (1K-20K instances)</td><td>Specialized pools: CPU/IO/GPU/Memory workers</td></tr>
+                        <tr><td><strong>Task Scheduling</strong></td><td>Custom scheduler + Redis</td><td>Distributed consensus</td><td>Delayed execution with cron-like patterns</td></tr>
+                        <tr><td><strong>State Management</strong></td><td>PostgreSQL + S3/GCS</td><td>Read replicas + sharding</td><td>Task state tracking with retry policies</td></tr>
+                        <tr><td><strong>Rate Limiting</strong></td><td>Token bucket (Redis)</td><td>Per-tenant quotas</td><td>Fair queuing with sliding windows</td></tr>
+                    </table>
+                </div>
+                
+                <h4>📊 SLO Achievement Strategy:</h4>
+                <ul>
+                    <li><strong>Processing Latency p95 < 30s:</strong> Intelligent worker assignment based on task type with resource-optimized pools</li>
+                    <li><strong>Failure Rate < 0.1%:</strong> Comprehensive retry policies with exponential backoff and dead letter queue handling</li>
+                    <li><strong>Throughput 10M tasks/sec:</strong> Kafka partitioning strategy with consistent hashing and auto-scaling worker pools</li>
+                    <li><strong>Multi-tenant Isolation:</strong> Per-tenant resource quotas with fair scheduling and priority-based queue management</li>
+                </ul>
+
+                <h4>🎯 Advanced Queue Features:</h4>
+                <p><strong>Smart Worker Assignment:</strong> The system maintains different worker pools optimized for specific workload types. CPU-intensive tasks (image processing) route to high-compute instances, I/O-bound tasks (email sending) use smaller instances with high network bandwidth, GPU tasks route to specialized GPU-enabled nodes, and memory-intensive tasks use high-memory instances.</p>
+                
+                <p><strong>Predictive Auto-scaling:</strong> The auto-scaler doesn't just react to queue depth. It uses ML models trained on historical patterns to predict task arrival rates, considering factors like time of day, day of week, and business events. This enables proactive scaling that prevents queue buildup during predictable traffic spikes.</p>
+            </div>
         </div>
     </section>
 
@@ -1894,11 +1854,128 @@ Key Reliability Patterns Applied:
                 <h5>💡 Pro Tip:</h5>
                 <p>"In SRE, an ML detector is just another production system. Monitor it, canary it, and page it when it drifts. Its most important SLI is the trust of the on-call engineer."</p>
             </div>
+
+            <div class="step">
+                <h4>🏗️ Production-Grade AI Anomaly Detection Platform</h4>
+                
+                <div style="text-align: center; margin: 16px 0; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px;">
+                    <img src="images/ai-anomaly-detection-architecture.svg" 
+                         alt="AI-Powered Anomaly Detection Architecture" 
+                         style="max-width: 100%; height: auto; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                    <div style="margin-top: 12px; font-size: 11px; color: #64748b; text-align: center;">
+                        <strong>AI Anomaly Detection Platform:</strong> Real-time ML-powered detection across metrics, logs, traces, and events
+                        with ensemble models, automated response, and continuous learning feedback loops.
+                    </div>
+                    <div style="margin-top: 8px; font-size: 10px; color: #64748b;">
+                        <strong>Key Features:</strong> Multi-modal detection • Ensemble models • Feature engineering • Automated remediation • False positive learning
+                    </div>
+                </div>
+
+                <h4>🔧 Technical Implementation Details:</h4>
+                <div class="slo-table">
+                    <table>
+                        <tr><th>Component</th><th>Technology Choice</th><th>Scaling Strategy</th><th>Reliability Pattern</th></tr>
+                        <tr><td><strong>Feature Engineering</strong></td><td>Apache Beam + Feature Store</td><td>Stream processing pipelines</td><td>Time series, statistical, graph, and text features</td></tr>
+                        <tr><td><strong>ML Models</strong></td><td>Ensemble: Isolation Forest, LSTM-AE, VAE, One-Class SVM, Transformer</td><td>Model parallelization</td><td>Consensus voting with confidence scoring</td></tr>
+                        <tr><td><strong>Decision Engine</strong></td><td>Custom inference service</td><td>Auto-scaling containers</td><td>Context-aware alerting with business impact assessment</td></tr>
+                        <tr><td><strong>Response System</strong></td><td>Playbook automation + Human-in-loop</td><td>Graduated automation</td><td>Safe automated actions with manual override capability</td></tr>
+                        <tr><td><strong>Feedback Loop</strong></td><td>Online learning + Model retraining</td><td>Continuous deployment</td><td>False positive learning with human feedback integration</td></tr>
+                    </table>
+                </div>
+                
+                <h4>📊 SLO Achievement Strategy:</h4>
+                <ul>
+                    <li><strong>Detection Latency < 60s:</strong> Real-time feature computation with sub-minute model inference using ensemble parallel processing</li>
+                    <li><strong>False Positive Rate < 2%:</strong> Multi-model consensus voting combined with business context validation and historical pattern analysis</li>
+                    <li><strong>Coverage 99.5%:</strong> Multi-modal data ingestion (metrics, logs, traces, events) with comprehensive feature engineering pipeline</li>
+                    <li><strong>Model Drift Detection:</strong> Continuous model performance monitoring with automated retraining triggers and A/B testing for model updates</li>
+                </ul>
+
+                <h4>🎯 Advanced ML Architecture:</h4>
+                <p><strong>Ensemble Approach:</strong> No single model can detect all anomaly types. The system uses Isolation Forest for high-dimensional outliers, LSTM Autoencoders for temporal sequences, VAEs for generative modeling, One-Class SVMs for boundary learning, and Transformers for multi-modal contexts. Each model votes on anomaly probability with confidence weighting.</p>
+                
+                <p><strong>Continuous Learning:</strong> The system maintains a feedback loop where human operators can mark false positives/negatives. This feedback is used for online learning to adjust model weights and retrain models. A/B testing ensures new model versions improve performance before full deployment, treating the ML system like any other production service.</p>
+            </div>
         </div>
     </section>
 
     <section id="platform" class="section">
         <div class="container">
+            <h2>Design Prompt #9 — Unified Global Monitoring Platform</h2>
+            
+            <div class="problem">
+                <h3>🎯 Planet-Scale Observability Challenge</h3>
+                <p>Design the ultimate unified monitoring platform that Google would use internally — a system that combines metrics, logs, traces, and events from across the entire Google ecosystem into a single pane of glass.</p>
+                
+                <h4>Requirements:</h4>
+                <ul>
+                    <li>Ingest <strong>1 billion events per minute</strong> from 100+ million devices and services globally</li>
+                    <li>Support <strong>multi-modal data</strong>: time-series metrics, structured logs, distributed traces, business events</li>
+                    <li><strong>Real-time query performance</strong>: p95 < 200ms for dashboards, ad-hoc queries within seconds</li>
+                    <li><strong>Planet-scale edge collection</strong>: 150+ global PoPs with intelligent data routing</li>
+                    <li><strong>Cost optimization</strong>: Automated tiering, compression, lifecycle management</li>
+                    <li><strong>Universal query interface</strong>: Single API for all data types with intelligent correlation</li>
+                </ul>
+                
+                <p><strong>Goal:</strong> "Build the monitoring system that monitors all of Google's other monitoring systems."</p>
+            </div>
+
+            <div class="step">
+                <h4>SLO Contract for the Platform:</h4>
+                <div class="slo-table">
+                    <table>
+                        <tr><th>SLI / Metric</th><th>Target</th></tr>
+                        <tr><td><strong>Platform availability</strong></td><td>99.99% (< 4.4 min downtime/month)</td></tr>
+                        <tr><td><strong>Query latency (dashboards)</strong></td><td>p95 < 200ms, p99 < 1s</td></tr>
+                        <tr><td><strong>Data ingestion rate</strong></td><td>1B events/min sustained, 5B burst</td></tr>
+                        <tr><td><strong>Data freshness</strong></td><td>p95 < 30s from edge to queryable</td></tr>
+                        <tr><td><strong>Storage cost efficiency</strong></td><td>80% compression ratio, 95% automated tiering</td></tr>
+                    </table>
+                </div>
+            </div>
+
+            <div class="step">
+                <h4>🏗️ Production-Grade Unified Global Monitoring Platform</h4>
+                
+                <div style="text-align: center; margin: 16px 0; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px;">
+                    <img src="images/global-monitoring-platform-architecture.svg" 
+                         alt="Unified Global Monitoring Platform Architecture" 
+                         style="max-width: 100%; height: auto; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                    <div style="margin-top: 12px; font-size: 11px; color: #64748b; text-align: center;">
+                        <strong>Unified Global Monitoring Platform:</strong> Planet-scale observability with 150+ edge PoPs,
+                        multi-tier storage, intelligent routing, and unified query interface for 1B+ events/minute.
+                    </div>
+                    <div style="margin-top: 8px; font-size: 10px; color: #64748b;">
+                        <strong>Key Features:</strong> Global edge collection • Multi-modal data • Intelligent routing • Cost optimization • Unified query API
+                    </div>
+                </div>
+
+                <h4>🔧 Technical Implementation Details:</h4>
+                <div class="slo-table">
+                    <table>
+                        <tr><th>Component</th><th>Technology Choice</th><th>Scaling Strategy</th><th>Reliability Pattern</th></tr>
+                        <tr><td><strong>Global Edge Network</strong></td><td>Custom edge collectors + Envoy</td><td>150+ PoPs worldwide</td><td>Protocol adaptation with intelligent routing</td></tr>
+                        <tr><td><strong>Unified Ingestion</strong></td><td>Apache Beam + Schema Registry</td><td>Auto-scaling pipelines</td><td>Multi-format support with tenant isolation</td></tr>
+                        <tr><td><strong>Multi-Tier Storage</strong></td><td>Hot(SSD)/Warm(Hybrid)/Cold(Object)</td><td>Automated lifecycle management</td><td>Query performance vs cost optimization</td></tr>
+                        <tr><td><strong>Query Engine</strong></td><td>Custom OLAP + ClickHouse + Elasticsearch</td><td>Federated query routing</td><td>Unified API with intelligent data correlation</td></tr>
+                        <tr><td><strong>Intelligence Layer</strong></td><td>ML anomaly detection + Cost analytics</td><td>Real-time processing</td><td>Automated insights and cost optimization</td></tr>
+                    </table>
+                </div>
+                
+                <h4>📊 SLO Achievement Strategy:</h4>
+                <ul>
+                    <li><strong>Platform Availability 99.99%:</strong> Multi-region deployment with intelligent failover and no single points of failure</li>
+                    <li><strong>Query Latency p95 < 200ms:</strong> Intelligent query routing with hot/warm/cold tier optimization and pre-computed aggregations</li>
+                    <li><strong>Ingestion 1B events/min:</strong> Global edge network with protocol adaptation and auto-scaling stream processing pipelines</li>
+                    <li><strong>Data Freshness p95 < 30s:</strong> Real-time streaming with optimized network paths and edge-to-core routing</li>
+                </ul>
+
+                <h4>🎯 Advanced Platform Features:</h4>
+                <p><strong>Intelligent Data Correlation:</strong> The platform doesn't just store different data types separately. It uses ML models to automatically correlate metrics spikes with log error patterns, trace bottlenecks with resource utilization, and business events with technical incidents. This creates a unified view where engineers can start with any signal and discover related context across all data types.</p>
+                
+                <p><strong>Adaptive Cost Optimization:</strong> The system continuously analyzes query patterns, data access frequencies, and business value to optimize storage tiers and retention policies. High-value, frequently-accessed data stays in hot storage, while automated ML models predict when data can be safely moved to cheaper cold storage without impacting user experience.</p>
+            </div>
+
             <h2>🏆 Master Summary Sheet — All 9 Design Prompts</h2>
             
             <div class="slo-table">
@@ -1962,10 +2039,10 @@ Key Reliability Patterns Applied:
                     </tr>
                     <tr>
                         <td><strong>9</strong></td>
-                        <td>Global Monitoring Platform</td>
-                        <td>Ingest 100M metrics/s, query p99 ≤ 2s</td>
-                        <td>Edge pre-aggregation, multi-tier storage, SLO-driven architecture</td>
-                        <td>"Monitor the monitor" — self-observing, SLO-governed observability</td>
+                        <td>Unified Global Monitoring Platform</td>
+                        <td>1B events/min ingestion, query p95 < 200ms, 99.99% availability</td>
+                        <td>Global edge network, multi-tier storage, unified API, intelligent correlation</td>
+                        <td>"Monitor the monitor" — planet-scale observability with adaptive cost optimization</td>
                     </tr>
                 </table>
             </div>

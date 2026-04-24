@@ -1,0 +1,184 @@
+<svg width="1000" height="700" xmlns="http://www.w3.org/2000/svg">
+    <!-- Background -->
+    <rect width="1000" height="700" fill="#ffffff" stroke="#e0e0e0" stroke-width="2" rx="4"/>
+    
+    <!-- Title -->
+    <rect x="20" y="10" width="960" height="40" fill="#1e40af" rx="4"/>
+    <text x="500" y="35" text-anchor="middle" font-size="16" font-weight="bold" fill="white">
+        Unified Global Monitoring Platform (Planet-scale Observability)
+    </text>
+    
+    <!-- Global Edge Layer -->
+    <rect x="30" y="70" width="940" height="100" fill="#eff6ff" stroke="#3b82f6" stroke-width="2" rx="6"/>
+    <text x="50" y="95" font-size="14" font-weight="bold" fill="#1e40af">GLOBAL EDGE COLLECTION NETWORK</text>
+    
+    <!-- Edge components -->
+    <rect x="70" y="110" width="120" height="50" fill="#dbeafe" stroke="#2563eb" stroke-width="2" rx="4"/>
+    <text x="130" y="128" text-anchor="middle" font-size="10" font-weight="bold" fill="#1e3a8a">Americas Edge</text>
+    <text x="130" y="142" text-anchor="middle" font-size="8" fill="#1d4ed8">50 PoPs</text>
+    <text x="130" y="153" text-anchor="middle" font-size="8" fill="#1d4ed8">10TB/day</text>
+    
+    <rect x="210" y="110" width="120" height="50" fill="#dbeafe" stroke="#2563eb" stroke-width="2" rx="4"/>
+    <text x="270" y="128" text-anchor="middle" font-size="10" font-weight="bold" fill="#1e3a8a">EMEA Edge</text>
+    <text x="270" y="142" text-anchor="middle" font-size="8" fill="#1d4ed8">40 PoPs</text>
+    <text x="270" y="153" text-anchor="middle" font-size="8" fill="#1d4ed8">8TB/day</text>
+    
+    <rect x="350" y="110" width="120" height="50" fill="#dbeafe" stroke="#2563eb" stroke-width="2" rx="4"/>
+    <text x="410" y="128" text-anchor="middle" font-size="10" font-weight="bold" fill="#1e3a8a">APAC Edge</text>
+    <text x="410" y="142" text-anchor="middle" font-size="8" fill="#1d4ed8">35 PoPs</text>
+    <text x="410" y="153" text-anchor="middle" font-size="8" fill="#1d4ed8">7TB/day</text>
+    
+    <rect x="490" y="110" width="120" height="50" fill="#dbeafe" stroke="#2563eb" stroke-width="2" rx="4"/>
+    <text x="550" y="128" text-anchor="middle" font-size="10" font-weight="bold" fill="#1e3a8a">Mobile SDKs</text>
+    <text x="550" y="142" text-anchor="middle" font-size="8" fill="#1d4ed8">100M devices</text>
+    <text x="550" y="153" text-anchor="middle" font-size="8" fill="#1d4ed8">Real-time</text>
+    
+    <rect x="630" y="110" width="120" height="50" fill="#dbeafe" stroke="#2563eb" stroke-width="2" rx="4"/>
+    <text x="690" y="128" text-anchor="middle" font-size="10" font-weight="bold" fill="#1e3a8a">IoT Gateways</text>
+    <text x="690" y="142" text-anchor="middle" font-size="8" fill="#1d4ed8">1B sensors</text>
+    <text x="690" y="153" text-anchor="middle" font-size="8" fill="#1d4ed8">Edge compute</text>
+    
+    <rect x="770" y="110" width="140" height="50" fill="#f0f4ff" stroke="#6366f1" stroke-width="1" rx="4"/>
+    <text x="840" y="128" text-anchor="middle" font-size="9" font-weight="bold" fill="#4338ca">Protocol Adapters</text>
+    <text x="840" y="142" text-anchor="middle" font-size="7" fill="#4338ca">OTLP, Prometheus, StatsD</text>
+    <text x="840" y="153" text-anchor="middle" font-size="7" fill="#4338ca">Custom protocols</text>
+    
+    <!-- Arrow markers -->
+    <defs>
+        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto" fill="#374151">
+            <polygon points="0 0, 10 3.5, 0 7"/>
+        </marker>
+    </defs>
+    
+    <!-- Arrow down -->
+    <line x1="500" y1="175" x2="500" y2="200" stroke="#374151" stroke-width="3" marker-end="url(#arrowhead)"/>
+    
+    <!-- Unified Ingestion Layer -->
+    <rect x="30" y="210" width="940" height="120" fill="#f0fdf4" stroke="#22c55e" stroke-width="2" rx="6"/>
+    <text x="50" y="235" font-size="14" font-weight="bold" fill="#15803d">UNIFIED INGESTION &amp; ROUTING LAYER</text>
+    
+    <!-- Ingestion components -->
+    <rect x="60" y="250" width="160" height="70" fill="#bbf7d0" stroke="#16a34a" stroke-width="2" rx="4"/>
+    <text x="140" y="270" text-anchor="middle" font-size="11" font-weight="bold" fill="#14532d">Protocol Gateway</text>
+    <text x="140" y="285" text-anchor="middle" font-size="9" fill="#166534">OTLP/gRPC/HTTP</text>
+    <text x="140" y="298" text-anchor="middle" font-size="9" fill="#166534">Multi-format</text>
+    <text x="140" y="311" text-anchor="middle" font-size="9" fill="#166534">Auto-discovery</text>
+    
+    <rect x="240" y="250" width="160" height="70" fill="#bbf7d0" stroke="#16a34a" stroke-width="2" rx="4"/>
+    <text x="320" y="270" text-anchor="middle" font-size="11" font-weight="bold" fill="#14532d">Intelligent Router</text>
+    <text x="320" y="285" text-anchor="middle" font-size="9" fill="#166534">Tenant isolation</text>
+    <text x="320" y="298" text-anchor="middle" font-size="9" fill="#166534">Cost optimization</text>
+    <text x="320" y="311" text-anchor="middle" font-size="9" fill="#166534">SLA routing</text>
+    
+    <rect x="420" y="250" width="160" height="70" fill="#bbf7d0" stroke="#16a34a" stroke-width="2" rx="4"/>
+    <text x="500" y="270" text-anchor="middle" font-size="11" font-weight="bold" fill="#14532d">Schema Registry</text>
+    <text x="500" y="285" text-anchor="middle" font-size="9" fill="#166534">Versioned schemas</text>
+    <text x="500" y="298" text-anchor="middle" font-size="9" fill="#166534">Evolution mgmt</text>
+    <text x="500" y="311" text-anchor="middle" font-size="9" fill="#166534">Compatibility</text>
+    
+    <rect x="600" y="250" width="160" height="70" fill="#bbf7d0" stroke="#16a34a" stroke-width="2" rx="4"/>
+    <text x="680" y="270" text-anchor="middle" font-size="11" font-weight="bold" fill="#14532d">Rate Limiting</text>
+    <text x="680" y="285" text-anchor="middle" font-size="9" fill="#166534">Per-tenant quotas</text>
+    <text x="680" y="298" text-anchor="middle" font-size="9" fill="#166534">Burst handling</text>
+    <text x="680" y="311" text-anchor="middle" font-size="9" fill="#166534">Fair queuing</text>
+    
+    <rect x="780" y="250" width="140" height="70" fill="#fef7ff" stroke="#a855f7" stroke-width="1" rx="4"/>
+    <text x="850" y="270" text-anchor="middle" font-size="10" font-weight="bold" fill="#7e22ce">Streaming Pipeline</text>
+    <text x="850" y="285" text-anchor="middle" font-size="8" fill="#7c3aed">Apache Beam</text>
+    <text x="850" y="298" text-anchor="middle" font-size="8" fill="#7c3aed">Real-time proc.</text>
+    <text x="850" y="311" text-anchor="middle" font-size="8" fill="#7c3aed">Windowing</text>
+    
+    <!-- Arrow down -->
+    <line x1="500" y1="335" x2="500" y2="360" stroke="#374151" stroke-width="3" marker-end="url(#arrowhead)"/>
+    
+    <!-- Multi-Tier Storage -->
+    <rect x="30" y="370" width="940" height="120" fill="#fff7ed" stroke="#ea580c" stroke-width="2" rx="6"/>
+    <text x="50" y="395" font-size="14" font-weight="bold" fill="#c2410c">MULTI-TIER STORAGE &amp; INDEXING</text>
+    
+    <!-- Storage tiers -->
+    <rect x="60" y="410" width="140" height="70" fill="#fed7aa" stroke="#d97706" stroke-width="2" rx="4"/>
+    <text x="130" y="430" text-anchor="middle" font-size="11" font-weight="bold" fill="#92400e">Hot Tier</text>
+    <text x="130" y="445" text-anchor="middle" font-size="9" fill="#c2410c">7 days</text>
+    <text x="130" y="456" text-anchor="middle" font-size="9" fill="#c2410c">SSD storage</text>
+    <text x="130" y="467" text-anchor="middle" font-size="9" fill="#c2410c">&lt;100ms query</text>
+    
+    <rect x="220" y="410" width="140" height="70" fill="#fed7aa" stroke="#d97706" stroke-width="2" rx="4"/>
+    <text x="290" y="430" text-anchor="middle" font-size="11" font-weight="bold" fill="#92400e">Warm Tier</text>
+    <text x="290" y="445" text-anchor="middle" font-size="9" fill="#c2410c">30 days</text>
+    <text x="290" y="456" text-anchor="middle" font-size="9" fill="#c2410c">Hybrid storage</text>
+    <text x="290" y="467" text-anchor="middle" font-size="9" fill="#c2410c">&lt;1s query</text>
+    
+    <rect x="380" y="410" width="140" height="70" fill="#fed7aa" stroke="#d97706" stroke-width="2" rx="4"/>
+    <text x="450" y="430" text-anchor="middle" font-size="11" font-weight="bold" fill="#92400e">Cold Tier</text>
+    <text x="450" y="445" text-anchor="middle" font-size="9" fill="#c2410c">2 years</text>
+    <text x="450" y="456" text-anchor="middle" font-size="9" fill="#c2410c">Object storage</text>
+    <text x="450" y="467" text-anchor="middle" font-size="9" fill="#c2410c">&lt;30s query</text>
+    
+    <rect x="540" y="410" width="140" height="70" fill="#fed7aa" stroke="#d97706" stroke-width="2" rx="4"/>
+    <text x="610" y="430" text-anchor="middle" font-size="11" font-weight="bold" fill="#92400e">Search Index</text>
+    <text x="610" y="445" text-anchor="middle" font-size="9" fill="#c2410c">Elasticsearch</text>
+    <text x="610" y="456" text-anchor="middle" font-size="9" fill="#c2410c">Full-text search</text>
+    <text x="610" y="467" text-anchor="middle" font-size="9" fill="#c2410c">Faceted queries</text>
+    
+    <rect x="700" y="410" width="140" height="70" fill="#fed7aa" stroke="#d97706" stroke-width="2" rx="4"/>
+    <text x="770" y="430" text-anchor="middle" font-size="11" font-weight="bold" fill="#92400e">OLAP Engine</text>
+    <text x="770" y="445" text-anchor="middle" font-size="9" fill="#c2410c">ClickHouse</text>
+    <text x="770" y="456" text-anchor="middle" font-size="9" fill="#c2410c">Analytical queries</text>
+    <text x="770" y="467" text-anchor="middle" font-size="9" fill="#c2410c">Aggregations</text>
+    
+    <rect x="860" y="410" width="90" height="70" fill="#f0f4ff" stroke="#6366f1" stroke-width="1" rx="4"/>
+    <text x="905" y="430" text-anchor="middle" font-size="9" font-weight="bold" fill="#4338ca">Lifecycle</text>
+    <text x="905" y="445" text-anchor="middle" font-size="7" fill="#4338ca">Auto-tiering</text>
+    <text x="905" y="456" text-anchor="middle" font-size="7" fill="#4338ca">Compression</text>
+    <text x="905" y="467" text-anchor="middle" font-size="7" fill="#4338ca">Cleanup</text>
+    
+    <!-- Arrow down -->
+    <line x1="500" y1="495" x2="500" y2="520" stroke="#374151" stroke-width="3" marker-end="url(#arrowhead)"/>
+    
+    <!-- Analytics & Intelligence Layer -->
+    <rect x="30" y="530" width="940" height="120" fill="#fef2f2" stroke="#dc2626" stroke-width="2" rx="6"/>
+    <text x="50" y="555" font-size="14" font-weight="bold" fill="#991b1b">ANALYTICS &amp; INTELLIGENCE LAYER</text>
+    
+    <!-- Analytics components -->
+    <rect x="60" y="570" width="130" height="70" fill="#fca5a5" stroke="#b91c1c" stroke-width="2" rx="4"/>
+    <text x="125" y="590" text-anchor="middle" font-size="10" font-weight="bold" fill="#7f1d1d">ML Pipeline</text>
+    <text x="125" y="605" text-anchor="middle" font-size="8" fill="#991b1b">Anomaly detect.</text>
+    <text x="125" y="616" text-anchor="middle" font-size="8" fill="#991b1b">Pattern analysis</text>
+    <text x="125" y="627" text-anchor="middle" font-size="8" fill="#991b1b">Auto-insights</text>
+    
+    <rect x="210" y="570" width="130" height="70" fill="#fca5a5" stroke="#b91c1c" stroke-width="2" rx="4"/>
+    <text x="275" y="590" text-anchor="middle" font-size="10" font-weight="bold" fill="#7f1d1d">Alerting</text>
+    <text x="275" y="605" text-anchor="middle" font-size="8" fill="#991b1b">Smart routing</text>
+    <text x="275" y="616" text-anchor="middle" font-size="8" fill="#991b1b">Deduplication</text>
+    <text x="275" y="627" text-anchor="middle" font-size="8" fill="#991b1b">Escalation</text>
+    
+    <rect x="360" y="570" width="130" height="70" fill="#fca5a5" stroke="#b91c1c" stroke-width="2" rx="4"/>
+    <text x="425" y="590" text-anchor="middle" font-size="10" font-weight="bold" fill="#7f1d1d">Dashboarding</text>
+    <text x="425" y="605" text-anchor="middle" font-size="8" fill="#991b1b">Auto-gen views</text>
+    <text x="425" y="616" text-anchor="middle" font-size="8" fill="#991b1b">Custom widgets</text>
+    <text x="425" y="627" text-anchor="middle" font-size="8" fill="#991b1b">Real-time</text>
+    
+    <rect x="510" y="570" width="130" height="70" fill="#fca5a5" stroke="#b91c1c" stroke-width="2" rx="4"/>
+    <text x="575" y="590" text-anchor="middle" font-size="10" font-weight="bold" fill="#7f1d1d">SLO Engine</text>
+    <text x="575" y="605" text-anchor="middle" font-size="8" fill="#991b1b">Error budgets</text>
+    <text x="575" y="616" text-anchor="middle" font-size="8" fill="#991b1b">Burn rate calc.</text>
+    <text x="575" y="627" text-anchor="middle" font-size="8" fill="#991b1b">Compliance</text>
+    
+    <rect x="660" y="570" width="130" height="70" fill="#fca5a5" stroke="#b91c1c" stroke-width="2" rx="4"/>
+    <text x="725" y="590" text-anchor="middle" font-size="10" font-weight="bold" fill="#7f1d1d">Cost Analytics</text>
+    <text x="725" y="605" text-anchor="middle" font-size="8" fill="#991b1b">Usage tracking</text>
+    <text x="725" y="616" text-anchor="middle" font-size="8" fill="#991b1b">Optimization</text>
+    <text x="725" y="627" text-anchor="middle" font-size="8" fill="#991b1b">Forecasting</text>
+    
+    <rect x="810" y="570" width="130" height="70" fill="#fffbeb" stroke="#f59e0b" stroke-width="2" rx="4"/>
+    <text x="875" y="590" text-anchor="middle" font-size="10" font-weight="bold" fill="#d97706">API Gateway</text>
+    <text x="875" y="605" text-anchor="middle" font-size="8" fill="#f59e0b">GraphQL/REST</text>
+    <text x="875" y="616" text-anchor="middle" font-size="8" fill="#f59e0b">Rate limiting</text>
+    <text x="875" y="627" text-anchor="middle" font-size="8" fill="#f59e0b">Multi-tenant</text>
+    
+    <!-- Bottom SLO -->
+    <rect x="150" y="660" width="700" height="30" fill="#ecfdf5" stroke="#10b981" stroke-width="2" rx="4"/>
+    <text x="500" y="680" text-anchor="middle" font-size="11" font-weight="bold" fill="#047857">
+        Platform SLO: 99.99% availability, Query p95 &lt; 200ms, Ingestion 1B events/min
+    </text>
+</svg>
