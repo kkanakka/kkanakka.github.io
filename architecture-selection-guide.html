@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Architecture Selection Guide — When to Use What System</title>
+    <style>
+        /* Wikipedia-inspired style */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Lato, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: #222;
+            background: #ffffff;
+            font-size: 14px;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 20px 30px;
+        }
+
+        h1 {
+            font-size: 32px;
+            font-weight: normal;
+            margin: 0 0 8px 0;
+            color: #000;
+            border-bottom: 3px solid #a2a9b1;
+            padding-bottom: 8px;
+        }
+
+        h2 {
+            font-size: 24px;
+            font-weight: normal;
+            margin: 32px 0 16px 0;
+            color: #000;
+            border-bottom: 1px solid #a2a9b1;
+            padding-bottom: 4px;
+        }
+
+        h3 {
+            font-size: 20px;
+            font-weight: bold;
+            margin: 24px 0 12px 0;
+            color: #000;
+        }
+
+        h4 {
+            font-size: 16px;
+            font-weight: bold;
+            margin: 20px 0 8px 0;
+            color: #000;
+        }
+
+        p {
+            margin-bottom: 12px;
+            text-align: justify;
+        }
+
+        .infobox {
+            float: right;
+            width: 300px;
+            background: #f8f9fa;
+            border: 1px solid #a2a9b1;
+            padding: 16px;
+            margin: 0 0 16px 16px;
+            font-size: 13px;
+        }
+
+        .infobox h3 {
+            font-size: 16px;
+            margin: 0 0 12px 0;
+            text-align: center;
+            background: #eaecf0;
+            padding: 8px;
+            margin: -16px -16px 12px -16px;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+            font-size: 13px;
+        }
+
+        .comparison-table th {
+            background: #eaecf0;
+            font-weight: bold;
+            padding: 8px;
+            border: 1px solid #a2a9b1;
+            text-align: left;
+        }
+
+        .comparison-table td {
+            padding: 8px;
+            border: 1px solid #a2a9b1;
+            vertical-align: top;
+        }
+
+        .comparison-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        .pros-cons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin: 16px 0;
+        }
+
+        .pros, .cons {
+            background: #f8f9fa;
+            border: 1px solid #a2a9b1;
+            padding: 12px;
+            border-radius: 3px;
+        }
+
+        .pros h4 {
+            color: #00aa00;
+            margin: 0 0 8px 0;
+        }
+
+        .cons h4 {
+            color: #dd3333;
+            margin: 0 0 8px 0;
+        }
+
+        .decision-tree {
+            background: #f0f8ff;
+            border: 2px solid #36c;
+            padding: 16px;
+            margin: 16px 0;
+            border-radius: 4px;
+        }
+
+        .decision-tree h4 {
+            color: #36c;
+            margin: 0 0 12px 0;
+        }
+
+        .use-case {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 12px;
+            margin: 12px 0;
+        }
+
+        .warning {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+            padding: 12px;
+            margin: 12px 0;
+        }
+
+        .linkedin-example {
+            background: #e7f3ff;
+            border-left: 4px solid #0077b5;
+            padding: 12px;
+            margin: 12px 0;
+        }
+
+        .linkedin-example h5 {
+            color: #0077b5;
+            font-weight: bold;
+            margin: 0 0 8px 0;
+        }
+
+        .nav-toc {
+            background: #f8f9fa;
+            border: 1px solid #a2a9b1;
+            padding: 16px;
+            margin: 16px 0;
+            border-radius: 3px;
+        }
+
+        .nav-toc h3 {
+            margin: 0 0 12px 0;
+            font-size: 16px;
+        }
+
+        .nav-toc ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .nav-toc li {
+            margin: 4px 0;
+        }
+
+        .nav-toc a {
+            color: #0645ad;
+            text-decoration: none;
+            font-size: 13px;
+        }
+
+        .nav-toc a:hover {
+            text-decoration: underline;
+        }
+
+        img {
+            max-width: 100%;
+            height: auto;
+            margin: 16px 0;
+            border: 1px solid #a2a9b1;
+        }
+
+        .metrics-table {
+            font-size: 12px;
+        }
+
+        .code {
+            background: #f6f8fa;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-size: 13px;
+        }
+
+        ul, ol {
+            margin: 8px 0 12px 20px;
+        }
+
+        .back-link {
+            text-align: center;
+            margin: 32px 0;
+            padding: 16px;
+            background: #f8f9fa;
+            border: 1px solid #a2a9b1;
+        }
+
+        .back-link a {
+            color: #0645ad;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 15px 20px;
+                font-size: 13px;
+            }
+            .infobox {
+                float: none;
+                width: 100%;
+                margin: 16px 0;
+            }
+            .pros-cons {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Architecture Selection Guide</h1>
+    <p style="font-style: italic; color: #54595d; margin-bottom: 24px;">
+        Comprehensive guide to choosing the right system for your architecture — databases, caching, messaging, storage, and more
+    </p>
+
+    <div class="nav-toc">
+        <h3>Contents</h3>
+        <ul>
+            <li><a href="#databases">1. Database Systems</a>
+                <ul style="margin-left: 16px;">
+                    <li><a href="#btree-vs-lsm">B-Tree vs LSM Tree</a></li>
+                    <li><a href="#relational-vs-nosql">Relational vs NoSQL</a></li>
+                    <li><a href="#linkedin-storage">LinkedIn Storage Stack</a></li>
+                </ul>
+            </li>
+            <li><a href="#consensus">2. Consensus & Coordination</a>
+                <ul style="margin-left: 16px;">
+                    <li><a href="#zookeeper-vs-etcd">ZooKeeper vs etcd vs Consul</a></li>
+                    <li><a href="#raft-implementations">Raft Implementations</a></li>
+                </ul>
+            </li>
+            <li><a href="#messaging">3. Messaging & Pub/Sub</a>
+                <ul style="margin-left: 16px;">
+                    <li><a href="#kafka-vs-others">Kafka vs Pulsar vs RabbitMQ</a></li>
+                    <li><a href="#streaming-engines">Stream Processing Engines</a></li>
+                </ul>
+            </li>
+            <li><a href="#caching">4. Caching Systems</a>
+                <ul style="margin-left: 16px;">
+                    <li><a href="#cache-comparison">Redis vs Memcached vs Others</a></li>
+                    <li><a href="#cache-patterns">Caching Patterns & Trade-offs</a></li>
+                </ul>
+            </li>
+            <li><a href="#storage">5. Storage Systems</a>
+                <ul style="margin-left: 16px;">
+                    <li><a href="#disk-types">NVMe vs SATA SSD vs HDD</a></li>
+                    <li><a href="#object-storage">S3 vs HDFS vs Others</a></li>
+                </ul>
+            </li>
+            <li><a href="#decision-framework">6. Decision Framework</a></li>
+        </ul>
+    </div>
+
+    <div class="infobox">
+        <h3>Quick Reference</h3>
+        <p><strong>LinkedIn Scale:</strong></p>
+        <ul>
+            <li>900M+ members</li>
+            <li>2B+ API calls/day</li>
+            <li>15M+ job searches/day</li>
+            <li>100TB+ data processed/day</li>
+        </ul>
+        <p><strong>Key Principles:</strong></p>
+        <ul>
+            <li>Design for failure</li>
+            <li>Measure everything</li>
+            <li>Automate operations</li>
+            <li>Cost awareness</li>
+        </ul>
+    </div>
+
+    <h2 id="databases">Database Systems</h2>
+
+    <h3 id="btree-vs-lsm">B-Tree vs LSM Tree Storage Engines</h3>
+
+    <img src="images/database-selection-matrix.svg" alt="Database Selection Matrix: Consistency vs Scale" style="width: 100%; max-width: 800px; margin: 16px 0;">
+
+    <table class="comparison-table">
+        <tr>
+            <th>Aspect</th>
+            <th>B-Tree (e.g., PostgreSQL, MySQL InnoDB)</th>
+            <th>LSM Tree (e.g., Cassandra, LevelDB, RocksDB)</th>
+            <th>LinkedIn Espresso</th>
+        </tr>
+        <tr>
+            <td><strong>Write Performance</strong></td>
+            <td>Moderate (requires random I/O for updates)</td>
+            <td>Excellent (sequential writes to WAL + SSTable)</td>
+            <td>High (optimized LSM with compaction tuning)</td>
+        </tr>
+        <tr>
+            <td><strong>Read Performance</strong></td>
+            <td>Excellent (balanced tree, few disk seeks)</td>
+            <td>Good (may require multiple SSTable reads)</td>
+            <td>Very High (multi-level caching + bloom filters)</td>
+        </tr>
+        <tr>
+            <td><strong>Space Amplification</strong></td>
+            <td>Low (1.2-1.5x)</td>
+            <td>Higher (2-4x during compaction)</td>
+            <td>Optimized (1.8-2.2x with smart compaction)</td>
+        </tr>
+        <tr>
+            <td><strong>Write Amplification</strong></td>
+            <td>High (random updates)</td>
+            <td>Lower (sequential writes, compaction cycles)</td>
+            <td>Very Low (optimized compaction strategy)</td>
+        </tr>
+        <tr>
+            <td><strong>Use Cases</strong></td>
+            <td>OLTP, complex queries, transactions</td>
+            <td>Write-heavy workloads, time-series data</td>
+            <td>LinkedIn profiles, social graph, messaging</td>
+        </tr>
+    </table>
+
+    <div class="decision-tree">
+        <h4>🎯 When to Choose Each:</h4>
+        <p><strong>Choose B-Tree when:</strong> Read-heavy workloads (>80% reads), complex queries with joins, ACID transactions, low storage budget, predictable access patterns</p>
+        <p><strong>Choose LSM when:</strong> Write-heavy workloads (>60% writes), time-series data, high throughput requirements, can tolerate eventual consistency</p>
+        <p><strong>Choose Espresso when:</strong> Need both high reads AND writes, multi-datacenter replication, 99.99% availability requirement, willing to pay LinkedIn engineering cost</p>
+    </div>
+
+    <div class="linkedin-example">
+        <h5>LinkedIn Real-World Usage</h5>
+        <p><strong>Espresso:</strong> Stores member profiles (900M records), connection graphs, messaging data. Handles 4.8M reads/sec and 300K writes/sec with <10ms p99 latency across 6 datacenters. Chose over MySQL due to write scaling limits and over Cassandra due to strong consistency needs.</p>
+        <p><strong>Trade-off:</strong> 3x higher operational complexity than managed MySQL, but enables 10x higher write throughput with strong consistency guarantees needed for profile updates.</p>
+    </div>
+
+    <h3 id="relational-vs-nosql">Relational vs NoSQL Database Selection</h3>
+
+    <table class="comparison-table">
+        <tr>
+            <th>Database Type</th>
+            <th>Best Use Cases</th>
+            <th>LinkedIn Usage</th>
+            <th>Latency (p99)</th>
+            <th>Consistency Model</th>
+            <th>Cost ($/GB/month)</th>
+        </tr>
+        <tr>
+            <td><strong>PostgreSQL</strong></td>
+            <td>Complex queries, analytics, reporting</td>
+            <td>Billing, compliance data, analytics</td>
+            <td>50-200ms</td>
+            <td>ACID</td>
+            <td>$2-8</td>
+        </tr>
+        <tr>
+            <td><strong>MySQL</strong></td>
+            <td>Web apps, moderate scale, familiar SQL</td>
+            <td>Legacy systems, configuration management</td>
+            <td>10-50ms</td>
+            <td>ACID</td>
+            <td>$1-4</td>
+        </tr>
+        <tr>
+            <td><strong>Espresso</strong></td>
+            <td>High-scale OLTP, multi-region consistency</td>
+            <td>Member profiles, connections, messaging</td>
+            <td>5-15ms</td>
+            <td>Strong</td>
+            <td>$15-25</td>
+        </tr>
+        <tr>
+            <td><strong>Cassandra</strong></td>
+            <td>Time-series, write-heavy, multi-region</td>
+            <td>Activity streams, event logging, metrics</td>
+            <td>20-100ms</td>
+            <td>Eventual</td>
+            <td>$3-6</td>
+        </tr>
+        <tr>
+            <td><strong>DynamoDB</strong></td>
+            <td>Serverless apps, predictable access patterns</td>
+            <td>Session storage, feature flags</td>
+            <td>5-25ms</td>
+            <td>Eventual</td>
+            <td>$5-12</td>
+        </tr>
+        <tr>
+            <td><strong>Redis</strong></td>
+            <td>Caching, real-time analytics, sessions</td>
+            <td>Feed caching, real-time recommendations</td>
+            <td>1-5ms</td>
+            <td>Eventually</td>
+            <td>$8-20</td>
+        </tr>
+    </table>
+
+    <h2 id="consensus">Consensus & Coordination Systems</h2>
+
+    <h3 id="zookeeper-vs-etcd">ZooKeeper vs etcd vs Consul Comparison</h3>
+
+    <table class="comparison-table">
+        <tr>
+            <th>System</th>
+            <th>Algorithm</th>
+            <th>Best Use Case</th>
+            <th>LinkedIn Usage</th>
+            <th>Performance</th>
+            <th>Operational Complexity</th>
+        </tr>
+        <tr>
+            <td><strong>Apache ZooKeeper</strong></td>
+            <td>ZAB (Zab Atomic Broadcast)</td>
+            <td>Service discovery, configuration, Kafka coordination</td>
+            <td>Kafka clusters, service registry, leader election</td>
+            <td>10K ops/sec</td>
+            <td>High (Java, complex config)</td>
+        </tr>
+        <tr>
+            <td><strong>etcd</strong></td>
+            <td>Raft</td>
+            <td>Kubernetes, container orchestration, microservices</td>
+            <td>Kubernetes clusters, container config management</td>
+            <td>30K ops/sec</td>
+            <td>Medium (Go, simpler operations)</td>
+        </tr>
+        <tr>
+            <td><strong>Consul</strong></td>
+            <td>Raft</td>
+            <td>Service mesh, multi-datacenter service discovery</td>
+            <td>Cross-datacenter service discovery, health checks</td>
+            <td>25K ops/sec</td>
+            <td>Medium (service mesh integration)</td>
+        </tr>
+        <tr>
+            <td><strong>Custom Raft</strong></td>
+            <td>Raft</td>
+            <td>Application-specific consensus needs</td>
+            <td>TiDB coordination, custom distributed services</td>
+            <td>50K+ ops/sec</td>
+            <td>Very High (custom implementation)</td>
+        </tr>
+    </table>
+
+    <div class="decision-tree">
+        <h4>🎯 Consensus System Selection Framework:</h4>
+        <p><strong>Choose ZooKeeper when:</strong> Already using Kafka ecosystem, mature Java environment, need battle-tested reliability, can handle operational complexity</p>
+        <p><strong>Choose etcd when:</strong> Kubernetes environment, need high performance, prefer Go ecosystem, want simpler operations than ZooKeeper</p>
+        <p><strong>Choose Consul when:</strong> Multi-datacenter deployment, service mesh integration, need built-in health checking, HashiCorp ecosystem</p>
+        <p><strong>Build Custom Raft when:</strong> Specific performance requirements, domain-specific needs, have expert distributed systems team</p>
+    </div>
+
+    <div class="linkedin-example">
+        <h5>LinkedIn's Choice: Multi-System Approach</h5>
+        <p><strong>ZooKeeper:</strong> Kafka cluster coordination (500+ brokers), topic management, consumer group coordination. Handles 2M+ operations/day with 99.99% availability.</p>
+        <p><strong>etcd:</strong> Kubernetes orchestration for 10K+ containers, service configuration management, feature flag coordination.</p>
+        <p><strong>Custom Solutions:</strong> Espresso uses custom consensus for multi-master coordination, TiDB uses custom Raft implementation for distributed SQL.</p>
+    </div>
+
+    <h2 id="messaging">Messaging & Pub/Sub Systems</h2>
+
+    <h3 id="kafka-vs-others">Kafka vs Pulsar vs RabbitMQ vs Cloud Pub/Sub</h3>
+
+    <img src="images/messaging-throughput-latency.svg" alt="Messaging Systems: Throughput vs Latency Trade-off" style="width: 100%; max-width: 800px; margin: 16px 0;">
+
+    <table class="comparison-table">
+        <tr>
+            <th>System</th>
+            <th>Throughput</th>
+            <th>Latency (p99)</th>
+            <th>Ordering Guarantees</th>
+            <th>Durability Model</th>
+            <th>LinkedIn Usage</th>
+        </tr>
+        <tr>
+            <td><strong>Apache Kafka</strong></td>
+            <td>1M+ msgs/sec</td>
+            <td>50-200ms</td>
+            <td>Per-partition ordering</td>
+            <td>Configurable replication</td>
+            <td>Activity streams, data pipelines, event sourcing</td>
+        </tr>
+        <tr>
+            <td><strong>Apache Pulsar</strong></td>
+            <td>800K msgs/sec</td>
+            <td>30-100ms</td>
+            <td>Per-key ordering</td>
+            <td>BookKeeper (3+ replicas)</td>
+            <td>Real-time analytics, ML feature pipelines</td>
+        </tr>
+        <tr>
+            <td><strong>RabbitMQ</strong></td>
+            <td>100K msgs/sec</td>
+            <td>10-50ms</td>
+            <td>Queue-based ordering</td>
+            <td>Configurable persistence</td>
+            <td>Job queues, microservice communication</td>
+        </tr>
+        <tr>
+            <td><strong>Google Pub/Sub</strong></td>
+            <td>500K msgs/sec</td>
+            <td>100-500ms</td>
+            <td>No ordering (unless ordered keys)</td>
+            <td>Regional replication</td>
+            <td>Cloud-based event processing</td>
+        </tr>
+        <tr>
+            <td><strong>Amazon SQS</strong></td>
+            <td>300K msgs/sec</td>
+            <td>200-1000ms</td>
+            <td>FIFO queues available</td>
+            <td>Regional replication</td>
+            <td>Serverless job processing</td>
+        </tr>
+    </table>
+
+    <div class="decision-tree">
+        <h4>🎯 Messaging System Selection Framework:</h4>
+        <p><strong>Choose Kafka when:</strong> High-throughput data pipelines, event sourcing, stream processing, need partition-level ordering, long retention periods</p>
+        <p><strong>Choose Pulsar when:</strong> Multi-tenant messaging, geo-replication, storage/compute separation, complex routing needs</p>
+        <p><strong>Choose RabbitMQ when:</strong> Traditional job queues, complex routing, need immediate delivery, moderate scale</p>
+        <p><strong>Choose Cloud Pub/Sub when:</strong> Serverless applications, managed operations, cloud-native, can tolerate higher latency</p>
+    </div>
+
+    <div class="linkedin-example">
+        <h5>LinkedIn's Messaging Infrastructure</h5>
+        <p><strong>Kafka (Primary):</strong> 2000+ brokers processing 7 trillion messages/day. Used for member activity streams, A/B test data, ML feature pipelines. 99.99% availability with cross-datacenter replication.</p>
+        <p><strong>Pulsar (Specialized):</strong> Real-time recommendation model updates, low-latency notification delivery. Chosen for multi-tenant isolation and better geo-replication than Kafka.</p>
+        <p><strong>Cost Comparison:</strong> Kafka: $0.08/GB, Pulsar: $0.12/GB, RabbitMQ: $0.15/GB, Cloud Pub/Sub: $0.40/GB (at LinkedIn scale)</p>
+    </div>
+
+    <h2 id="caching">Caching Systems</h2>
+
+    <h3 id="cache-comparison">Redis vs Memcached vs Hazelcast vs Coherence</h3>
+
+    <table class="comparison-table">
+        <tr>
+            <th>System</th>
+            <th>Data Structures</th>
+            <th>Persistence</th>
+            <th>Clustering</th>
+            <th>Memory Efficiency</th>
+            <th>LinkedIn Use Case</th>
+        </tr>
+        <tr>
+            <td><strong>Redis</strong></td>
+            <td>Rich (lists, sets, hashes, streams)</td>
+            <td>RDB + AOF snapshots</td>
+            <td>Redis Cluster (16K slots)</td>
+            <td>Moderate (metadata overhead)</td>
+            <td>Feed caching, session storage, real-time analytics</td>
+        </tr>
+        <tr>
+            <td><strong>Memcached</strong></td>
+            <td>Key-value only</td>
+            <td>None (memory only)</td>
+            <td>Client-side sharding</td>
+            <td>Excellent (minimal overhead)</td>
+            <td>Profile page caching, API response caching</td>
+        </tr>
+        <tr>
+            <td><strong>Hazelcast</strong></td>
+            <td>Rich (distributed collections)</td>
+            <td>Configurable</td>
+            <td>Built-in clustering</td>
+            <td>Good (JVM-based)</td>
+            <td>Distributed computing, in-memory data grids</td>
+        </tr>
+        <tr>
+            <td><strong>Coherence</strong></td>
+            <td>Rich (Oracle proprietary)</td>
+            <td>Write-through/write-behind</td>
+            <td>Enterprise clustering</td>
+            <td>Good (optimized JVM)</td>
+            <td>Legacy Java applications, Oracle ecosystem</td>
+        </tr>
+    </table>
+
+    <div class="decision-tree">
+        <h4>🎯 Caching System Selection Framework:</h4>
+        <p><strong>Choose Redis when:</strong> Need rich data structures, pub/sub messaging, some persistence, Lua scripting, moderate complexity acceptable</p>
+        <p><strong>Choose Memcached when:</strong> Pure key-value caching, maximum memory efficiency, simple operations, battle-tested reliability</p>
+        <p><strong>Choose Hazelcast when:</strong> Java ecosystem, distributed computing needs, in-memory data grids, complex distributed algorithms</p>
+        <p><strong>Choose Coherence when:</strong> Oracle-heavy environment, enterprise support requirements, complex caching patterns</p>
+    </div>
+
+    <div class="linkedin-example">
+        <h5>LinkedIn's Caching Strategy</h5>
+        <p><strong>Redis (Primary):</strong> 500+ Redis instances handling 4.8M ops/sec for feed caching, real-time recommendation scores, user session management. Average hit ratio: 97.2%</p>
+        <p><strong>Memcached (Specific):</strong> Profile page fragment caching, static content caching. 2000+ instances with 98.5% hit ratio, chosen for memory efficiency</p>
+        <p><strong>Performance Comparison:</strong> Redis: 80K ops/sec/instance, Memcached: 150K ops/sec/instance, but Redis provides richer functionality</p>
+    </div>
+
+    <h2 id="storage">Storage Systems Comparison</h2>
+
+    <h3 id="disk-types">Storage Hardware: NVMe vs SATA SSD vs HDD</h3>
+
+    <img src="images/storage-cost-performance.svg" alt="Storage Systems: Cost vs Performance Trade-off" style="width: 100%; max-width: 800px; margin: 16px 0;">
+
+    <table class="comparison-table">
+        <tr>
+            <th>Storage Type</th>
+            <th>Sequential Read</th>
+            <th>Random IOPS</th>
+            <th>Latency</th>
+            <th>Cost/TB</th>
+            <th>LinkedIn Use Case</th>
+        </tr>
+        <tr>
+            <td><strong>NVMe SSD</strong></td>
+            <td>3.5 GB/s</td>
+            <td>500K+ IOPS</td>
+            <td>0.1ms</td>
+            <td>$400-800</td>
+            <td>Espresso hot data, Redis persistence, Kafka logs</td>
+        </tr>
+        <tr>
+            <td><strong>SATA SSD</strong></td>
+            <td>550 MB/s</td>
+            <td>100K IOPS</td>
+            <td>0.2ms</td>
+            <td>$100-200</td>
+            <td>MySQL data, search indices, warm cache tier</td>
+        </tr>
+        <tr>
+            <td><strong>HDD (7200 RPM)</strong></td>
+            <td>200 MB/s</td>
+            <td>200 IOPS</td>
+            <td>10ms</td>
+            <td>$20-40</td>
+            <td>Log archives, backup storage, cold analytics data</td>
+        </tr>
+        <tr>
+            <td><strong>S3 Standard</strong></td>
+            <td>Variable</td>
+            <td>3500 GET/s</td>
+            <td>50-200ms</td>
+            <td>$23</td>
+            <td>Data lake, backup archives, infrequent access</td>
+        </tr>
+        <tr>
+            <td><strong>HDFS</strong></td>
+            <td>1-10 GB/s</td>
+            <td>N/A (streaming)</td>
+            <td>50-500ms</td>
+            <td>$30-60</td>
+            <td>Data processing, analytics, ML training data</td>
+        </tr>
+    </table>
+
+    <h3 id="streaming-engines">Stream Processing Engine Comparison</h3>
+
+    <table class="comparison-table">
+        <tr>
+            <th>Engine</th>
+            <th>Latency</th>
+            <th>Throughput</th>
+            <th>State Management</th>
+            <th>Fault Tolerance</th>
+            <th>LinkedIn Usage</th>
+        </tr>
+        <tr>
+            <td><strong>Apache Flink</strong></td>
+            <td>10-100ms</td>
+            <td>1M+ events/sec</td>
+            <td>Managed state backends</td>
+            <td>Exactly-once with checkpoints</td>
+            <td>Real-time ML feature generation, fraud detection</td>
+        </tr>
+        <tr>
+            <td><strong>Kafka Streams</strong></td>
+            <td>50-200ms</td>
+            <td>500K events/sec</td>
+            <td>Local state stores</td>
+            <td>At-least-once default</td>
+            <td>Data enrichment, simple transformations</td>
+        </tr>
+        <tr>
+            <td><strong>Apache Storm</strong></td>
+            <td>5-50ms</td>
+            <td>1M+ tuples/sec</td>
+            <td>External state stores</td>
+            <td>At-least-once (complex exactly-once)</td>
+            <td>Legacy real-time analytics (being migrated)</td>
+        </tr>
+        <tr>
+            <td><strong>Apache Samza</strong></td>
+            <td>100-500ms</td>
+            <td>300K msgs/sec</td>
+            <td>Kafka-based state</td>
+            <td>Exactly-once with Kafka</td>
+            <td>Batch processing, data pipeline transformations</td>
+        </tr>
+    </table>
+
+    <div class="decision-tree">
+        <h4>🎯 Stream Processing Selection Framework:</h4>
+        <p><strong>Choose Flink when:</strong> Need lowest latency, complex event processing, stateful computations, exactly-once semantics critical</p>
+        <p><strong>Choose Kafka Streams when:</strong> Already heavy Kafka users, simple stream processing, want to avoid separate cluster management</p>
+        <p><strong>Choose Storm when:</strong> Need ultra-low latency, simple processing logic, can handle at-least-once complexity</p>
+        <p><strong>Choose Samza when:</strong> LinkedIn-style data pipelines, batch-like stream processing, tight Kafka integration</p>
+    </div>
+
+    <h2 id="decision-framework">Comprehensive Decision Framework</h2>
+
+    <h3>Decision Matrix: Workload Characteristics → System Choice</h3>
+
+    <table class="comparison-table">
+        <tr>
+            <th>Workload Pattern</th>
+            <th>Read/Write Ratio</th>
+            <th>Consistency Needs</th>
+            <th>Scale Requirements</th>
+            <th>Recommended System</th>
+            <th>LinkedIn Example</th>
+        </tr>
+        <tr>
+            <td><strong>User Profiles</strong></td>
+            <td>80% read, 20% write</td>
+            <td>Strong consistency</td>
+            <td>900M records, 100K writes/sec</td>
+            <td>Espresso + Redis cache</td>
+            <td>Member profile data with feed caching</td>
+        </tr>
+        <tr>
+            <td><strong>Activity Streams</strong></td>
+            <td>10% read, 90% write</td>
+            <td>Eventual consistency OK</td>
+            <td>Billions of events/day</td>
+            <td>Kafka + Cassandra</td>
+            <td>Member activity feeds, interaction tracking</td>
+        </tr>
+        <tr>
+            <td><strong>Real-time Analytics</strong></td>
+            <td>50% read, 50% write</td>
+            <td>Eventual consistency</td>
+            <td>Millions of metrics/min</td>
+            <td>Flink + Redis + ClickHouse</td>
+            <td>Who viewed your profile, content engagement</td>
+        </tr>
+        <tr>
+            <td><strong>Search Indices</strong></td>
+            <td>95% read, 5% write</td>
+            <td>Eventual consistency</td>
+            <td>Billions of documents</td>
+            <td>Elasticsearch + S3</td>
+            <td>Job search, people search, content search</td>
+        </tr>
+        <tr>
+            <td><strong>Configuration/Metadata</strong></td>
+            <td>70% read, 30% write</td>
+            <td>Strong consistency</td>
+            <td>Small datasets, high availability</td>
+            <td>etcd/ZooKeeper</td>
+            <td>Feature flags, service discovery, A/B test config</td>
+        </tr>
+        <tr>
+            <td><strong>Time-Series Metrics</strong></td>
+            <td>30% read, 70% write</td>
+            <td>Eventual consistency</td>
+            <td>Billions of data points</td>
+            <td>InfluxDB/TimescaleDB</td>
+            <td>Application metrics, performance monitoring</td>
+        </tr>
+    </table>
+
+    <h3>Cost Optimization Decision Tree</h3>
+
+    <div style="background: #f0f8ff; border: 2px solid #36c; padding: 16px; margin: 16px 0; border-radius: 4px;">
+        <h4 style="color: #36c;">💰 LinkedIn's Cost-Driven Architecture Choices</h4>
+        
+        <p><strong>Hot Data Path (High Cost, Low Latency):</strong></p>
+        <ul>
+            <li>NVMe + Redis for sub-10ms queries (Member profiles, feed generation)</li>
+            <li>Cost: $25/TB/month, Justified by: Revenue impact of slow profiles</li>
+        </ul>
+
+        <p><strong>Warm Data Path (Medium Cost, Medium Latency):</strong></p>
+        <ul>
+            <li>SATA SSD + Espresso for 10-50ms queries (Connection graphs, messaging history)</li>
+            <li>Cost: $8/TB/month, Justified by: User engagement metrics</li>
+        </ul>
+
+        <p><strong>Cold Data Path (Low Cost, High Latency):</strong></p>
+        <ul>
+            <li>HDD + S3 for >1s queries (Analytics data, ML training sets, audit logs)</li>
+            <li>Cost: $1/TB/month, Justified by: Regulatory compliance, data science needs</li>
+        </ul>
+    </div>
+
+    <h3>Operational Monitoring & SRE Considerations</h3>
+
+    <div class="use-case">
+        <h4>🔍 What to Monitor for Each System Type</h4>
+        
+        <p><strong>Database Systems:</strong></p>
+        <ul>
+            <li>Query latency percentiles (p50, p95, p99), Connection pool utilization, Lock wait times, Replication lag</li>
+            <li>LinkedIn targets: Espresso p99 < 15ms, MySQL p99 < 100ms, Cassandra p99 < 200ms</li>
+        </ul>
+
+        <p><strong>Messaging Systems:</strong></p>
+        <ul>
+            <li>Producer/consumer lag, Partition skew, Throughput per topic, Replication health</li>
+            <li>LinkedIn targets: Kafka consumer lag < 5min, producer success rate > 99.9%</li>
+        </ul>
+
+        <p><strong>Caching Systems:</strong></p>
+        <ul>
+            <li>Hit ratio, Eviction rate, Memory utilization, Network throughput</li>
+            <li>LinkedIn targets: Redis hit ratio > 95%, Memcached > 98%, Eviction rate < 1%</li>
+        </ul>
+
+        <p><strong>Storage Systems:</strong></p>
+        <ul>
+            <li>Disk utilization, IOPS usage, Queue depth, Error rates</li>
+            <li>LinkedIn targets: NVMe utilization < 80%, IOPS < 70% max, Queue depth < 10</li>
+        </ul>
+    </div>
+
+    <h3>Replication & Recovery Strategies</h3>
+
+    <table class="comparison-table">
+        <tr>
+            <th>System</th>
+            <th>Replication Type</th>
+            <th>Recovery Time (RTO)</th>
+            <th>Data Loss (RPO)</th>
+            <th>LinkedIn Implementation</th>
+        </tr>
+        <tr>
+            <td><strong>Espresso</strong></td>
+            <td>Master-Master + Async slaves</td>
+            <td>< 30 seconds</td>
+            <td>Zero (synchronous)</td>
+            <td>3 masters across datacenters, 6 read replicas</td>
+        </tr>
+        <tr>
+            <td><strong>MySQL</strong></td>
+            <td>Master-Slave async</td>
+            <td>2-5 minutes</td>
+            <td>< 60 seconds</td>
+            <td>Hot standby with semi-sync replication</td>
+        </tr>
+        <tr>
+            <td><strong>Cassandra</strong></td>
+            <td>Multi-master eventually consistent</td>
+            <td>Immediate (no failover)</td>
+            <td>Zero (multi-replica)</td>
+            <td>RF=3 across availability zones</td>
+        </tr>
+        <tr>
+            <td><strong>Kafka</strong></td>
+            <td>Leader-follower per partition</td>
+            <td>< 30 seconds</td>
+            <td>Zero (acks=all)</td>
+            <td>3 replicas, min.insync.replicas=2</td>
+        </tr>
+        <tr>
+            <td><strong>Redis</strong></td>
+            <td>Master-Slave async</td>
+            <td>5-30 seconds</td>
+            <td>< 1 second</td>
+            <td>Redis Sentinel with 3 masters, 6 slaves</td>
+        </tr>
+    </table>
+
+    <div class="warning">
+        <h4>⚠️ Common Anti-Patterns to Avoid</h4>
+        <p><strong>Database Anti-patterns:</strong></p>
+        <ul>
+            <li>Using MySQL for >100TB datasets without sharding strategy</li>
+            <li>Choosing MongoDB for strong consistency requirements</li>
+            <li>Using Redis as primary datastore without proper backup strategy</li>
+        </ul>
+        
+        <p><strong>Messaging Anti-patterns:</strong></p>
+        <ul>
+            <li>Using RabbitMQ for >1M msgs/sec without clustering expertise</li>
+            <li>Choosing Kafka for real-time (<100ms latency) use cases</li>
+            <li>Using pub/sub for request-response patterns</li>
+        </ul>
+    </div>
+
+    <h3>Quick Selection Flowchart</h3>
+
+    <div style="background: #f8f9fa; border: 1px solid #a2a9b1; padding: 20px; margin: 16px 0; font-family: monospace; font-size: 12px; overflow-x: auto;">
+        <pre>
+ARCHITECTURE SELECTION DECISION TREE
+
+Start Here: What's your primary use case?
+    │
+    ├─ TRANSACTIONAL DATA (OLTP) ──┐
+    │  │                           │
+    │  ├─ <100K writes/sec ────────→ PostgreSQL/MySQL + read replicas
+    │  ├─ >100K writes/sec ────────→ Sharded MySQL or Espresso
+    │  └─ >500K writes/sec ────────→ Espresso or Cassandra
+    │
+    ├─ ANALYTICAL DATA (OLAP) ──┐
+    │  │                        │
+    │  ├─ Interactive queries ──→ ClickHouse/BigQuery
+    │  ├─ Batch processing ─────→ Spark + HDFS/S3
+    │  └─ Real-time analytics ──→ Flink + Kafka + ClickHouse
+    │
+    ├─ CACHING ──┐
+    │  │         │
+    │  ├─ Simple key-value ─────→ Memcached
+    │  ├─ Rich data structures ─→ Redis
+    │  └─ Distributed cache ────→ Hazelcast
+    │
+    ├─ MESSAGING ──┐
+    │  │           │
+    │  ├─ High throughput ──────→ Kafka
+    │  ├─ Low latency ──────────→ RabbitMQ/Redis Streams
+    │  └─ Cloud-native ─────────→ Google Pub/Sub/AWS SQS
+    │
+    └─ FILE STORAGE ──┐
+       │              │
+       ├─ Hot data ───→ NVMe SSD
+       ├─ Warm data ──→ SATA SSD  
+       ├─ Cold data ──→ HDD/S3
+       └─ Archive ────→ S3 Glacier/Tape
+        </pre>
+    </div>
+
+    <div class="back-link">
+        <a href="index.html">← Back to Tech Hub</a>
+        <span style="margin: 0 16px;">|</span>
+        <a href="google-sre-systems-design.html">SRE Systems Design Guide →</a>
+    </div>
+</body>
+</html>

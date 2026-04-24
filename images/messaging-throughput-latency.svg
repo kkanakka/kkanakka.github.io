@@ -1,0 +1,164 @@
+<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .title { font: bold 18px Arial; text-anchor: middle; fill: #333; }
+      .axis-label { font: bold 14px Arial; text-anchor: middle; fill: #333; }
+      .system-label { font: 11px Arial; text-anchor: middle; fill: #fff; font-weight: bold; }
+      .grid-line { stroke: #ddd; stroke-width: 1; }
+      .axis-line { stroke: #333; stroke-width: 2; }
+      .use-case-label { font: 12px Arial; font-style: italic; fill: #666; }
+    </style>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="800" height="600" fill="#f9f9f9"/>
+  
+  <!-- Title -->
+  <text x="400" y="30" class="title">Messaging Systems: Throughput vs Latency Trade-off</text>
+  
+  <!-- Grid lines (log scale for both axes) -->
+  <g class="grid">
+    <line x1="80" y1="80" x2="720" y2="80" class="grid-line"/>
+    <line x1="80" y1="150" x2="720" y2="150" class="grid-line"/>
+    <line x1="80" y1="220" x2="720" y2="220" class="grid-line"/>
+    <line x1="80" y1="290" x2="720" y2="290" class="grid-line"/>
+    <line x1="80" y1="360" x2="720" y2="360" class="grid-line"/>
+    <line x1="80" y1="430" x2="720" y2="430" class="grid-line"/>
+    <line x1="80" y1="500" x2="720" y2="500" class="grid-line"/>
+    
+    <line x1="80" y1="80" x2="80" y2="500" class="grid-line"/>
+    <line x1="150" y1="80" x2="150" y2="500" class="grid-line"/>
+    <line x1="220" y1="80" x2="220" y2="500" class="grid-line"/>
+    <line x1="290" y1="80" x2="290" y2="500" class="grid-line"/>
+    <line x1="360" y1="80" x2="360" y2="500" class="grid-line"/>
+    <line x1="430" y1="80" x2="430" y2="500" class="grid-line"/>
+    <line x1="500" y1="80" x2="500" y2="500" class="grid-line"/>
+    <line x1="570" y1="80" x2="570" y2="500" class="grid-line"/>
+    <line x1="640" y1="80" x2="640" y2="500" class="grid-line"/>
+    <line x1="710" y1="80" x2="710" y2="500" class="grid-line"/>
+  </g>
+  
+  <!-- Axes -->
+  <line x1="80" y1="500" x2="720" y2="500" class="axis-line"/>
+  <line x1="80" y1="80" x2="80" y2="500" class="axis-line"/>
+  
+  <!-- Axis labels -->
+  <text x="400" y="530" class="axis-label">Throughput (Messages/Second - Log Scale)</text>
+  <text x="40" y="290" class="axis-label" transform="rotate(-90, 40, 290)">Latency p99 (Log Scale)</text>
+  
+  <!-- Throughput scale (log) -->
+  <text x="120" y="520" style="font: 10px Arial; text-anchor: middle;">1K</text>
+  <text x="190" y="520" style="font: 10px Arial; text-anchor: middle;">10K</text>
+  <text x="260" y="520" style="font: 10px Arial; text-anchor: middle;">100K</text>
+  <text x="330" y="520" style="font: 10px Arial; text-anchor: middle;">1M</text>
+  <text x="400" y="520" style="font: 10px Arial; text-anchor: middle;">10M</text>
+  <text x="470" y="520" style="font: 10px Arial; text-anchor: middle;">100M</text>
+  <text x="540" y="520" style="font: 10px Arial; text-anchor: middle;">1B</text>
+  
+  <!-- Latency labels -->
+  <text x="70" y="485" style="font: 10px Arial; text-anchor: end;">1ms</text>
+  <text x="70" y="430" style="font: 10px Arial; text-anchor: end;">10ms</text>
+  <text x="70" y="375" style="font: 10px Arial; text-anchor: end;">100ms</text>
+  <text x="70" y="320" style="font: 10px Arial; text-anchor: end;">1s</text>
+  <text x="70" y="265" style="font: 10px Arial; text-anchor: end;">10s</text>
+  <text x="70" y="210" style="font: 10px Arial; text-anchor: end;">100s</text>
+  
+  <!-- Messaging systems positioned by throughput and latency -->
+  
+  <!-- Redis Streams - Medium throughput, very low latency -->
+  <circle cx="220" cy="460" r="25" fill="#DC143C" stroke="#B22222" stroke-width="2"/>
+  <text x="220" y="465" class="system-label">Redis</text>
+  <text x="220" y="440" style="font: 9px Arial; text-anchor: middle; fill: #333;">Streams</text>
+  
+  <!-- RabbitMQ - Low-medium throughput, low latency -->
+  <circle cx="190" cy="400" r="30" fill="#FF6600" stroke="#CC5500" stroke-width="2"/>
+  <text x="190" y="405" class="system-label">RabbitMQ</text>
+  <text x="190" y="375" style="font: 9px Arial; text-anchor: middle; fill: #333;">100K/s</text>
+  
+  <!-- Apache Pulsar - High throughput, medium latency -->
+  <circle cx="350" cy="350" r="32" fill="#4A90E2" stroke="#357ABD" stroke-width="2"/>
+  <text x="350" y="355" class="system-label">Pulsar</text>
+  <text x="350" y="325" style="font: 9px Arial; text-anchor: middle; fill: #333;">800K/s</text>
+  
+  <!-- Apache Kafka - Very high throughput, medium-high latency -->
+  <circle cx="380" cy="320" r="40" fill="#2E7D32" stroke="#1B5E20" stroke-width="2"/>
+  <text x="380" y="325" class="system-label">Kafka</text>
+  <text x="380" y="295" style="font: 9px Arial; text-anchor: middle; fill: #333;">1M+/s</text>
+  
+  <!-- Google Pub/Sub - Medium throughput, high latency -->
+  <circle cx="270" cy="280" r="28" fill="#4285F4" stroke="#3367D6" stroke-width="2"/>
+  <text x="270" y="282" class="system-label">Pub/Sub</text>
+  <text x="270" y="292" class="system-label">Cloud</text>
+  <text x="270" y="255" style="font: 9px Arial; text-anchor: middle; fill: #333;">500K/s</text>
+  
+  <!-- Amazon SQS - Medium throughput, high latency -->
+  <circle cx="250" cy="260" r="26" fill="#FF9900" stroke="#E68900" stroke-width="2"/>
+  <text x="250" y="265" class="system-label">SQS</text>
+  <text x="250" y="235" style="font: 9px Arial; text-anchor: middle; fill: #333;">300K/s</text>
+  
+  <!-- Apache Storm - High throughput, very low latency -->
+  <circle cx="340" cy="470" r="28" fill="#800080" stroke="#660066" stroke-width="2"/>
+  <text x="340" y="475" class="system-label">Storm</text>
+  <text x="340" y="445" style="font: 9px Arial; text-anchor: middle; fill: #333;">Ultra-low</text>
+  
+  <!-- Use case regions -->
+  <g fill="#E8F5E8" stroke="#4CAF50" stroke-width="2" stroke-dasharray="5,5" fill-opacity="0.3">
+    <ellipse cx="180" cy="440" rx="60" ry="40"/>
+    <text x="180" y="445" class="use-case-label">Real-time</text>
+    <text x="180" y="460" class="use-case-label">Gaming/Chat</text>
+  </g>
+  
+  <g fill="#E3F2FD" stroke="#2196F3" stroke-width="2" stroke-dasharray="5,5" fill-opacity="0.3">
+    <ellipse cx="350" cy="340" rx="80" ry="50"/>
+    <text x="350" y="340" class="use-case-label">Data Pipelines</text>
+    <text x="350" y="355" class="use-case-label">Stream Processing</text>
+  </g>
+  
+  <g fill="#FFF3E0" stroke="#FF9800" stroke-width="2" stroke-dasharray="5,5" fill-opacity="0.3">
+    <ellipse cx="260" cy="270" rx="70" ry="45"/>
+    <text x="260" y="270" class="use-case-label">Serverless</text>
+    <text x="260" y="285" class="use-case-label">Cloud Apps</text>
+  </g>
+  
+  <!-- LinkedIn annotations -->
+  <g stroke="#0077B5" stroke-width="1" fill="none">
+    <path d="M 380 295 L 420 250" stroke-dasharray="2,2"/>
+    <rect x="420" y="200" width="140" height="50" fill="#E7F3FF" stroke="#0077B5"/>
+    <text x="425" y="215" style="font: 10px Arial; fill: #0077B5; font-weight: bold;">LinkedIn Primary</text>
+    <text x="425" y="225" style="font: 9px Arial; fill: #0077B5;">2000+ brokers</text>
+    <text x="425" y="235" style="font: 9px Arial; fill: #0077B5;">7T messages/day</text>
+    <text x="425" y="245" style="font: 9px Arial; fill: #0077B5;">Activity streams, ML</text>
+  </g>
+  
+  <g stroke="#0077B5" stroke-width="1" fill="none">
+    <path d="M 350 325 L 380 180" stroke-dasharray="2,2"/>
+    <rect x="380" y="130" width="120" height="50" fill="#E7F3FF" stroke="#0077B5"/>
+    <text x="385" y="145" style="font: 10px Arial; fill: #0077B5; font-weight: bold;">LinkedIn Secondary</text>
+    <text x="385" y="155" style="font: 9px Arial; fill: #0077B5;">Real-time ML</text>
+    <text x="385" y="165" style="font: 9px Arial; fill: #0077B5;">Notifications</text>
+    <text x="385" y="175" style="font: 9px Arial; fill: #0077B5;">Multi-tenant</text>
+  </g>
+  
+  <!-- Trade-off arrow -->
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#666"/>
+    </marker>
+  </defs>
+  
+  <line x1="120" y1="120" x2="580" y2="420" stroke="#666" stroke-width="3" marker-end="url(#arrowhead)" stroke-dasharray="10,5"/>
+  <text x="350" y="250" style="font: 14px Arial; font-weight: bold; fill: #666; text-anchor: middle;">Throughput vs Latency Trade-off</text>
+  
+  <!-- Legend -->
+  <rect x="500" y="380" width="200" height="100" fill="#f8f8f8" stroke="#ccc"/>
+  <text x="505" y="395" style="font: 12px Arial; font-weight: bold;">Selection Guidelines</text>
+  
+  <text x="505" y="410" style="font: 10px Arial; fill: #DC143C; font-weight: bold;">Ultra-low latency (<10ms):</text>
+  <text x="505" y="420" style="font: 9px Arial;">Redis Streams, Storm</text>
+  
+  <text x="505" y="435" style="font: 10px Arial; fill: #2E7D32; font-weight: bold;">High throughput (>500K/s):</text>
+  <text x="505" y="445" style="font: 9px Arial;">Kafka, Pulsar</text>
+  
+  <text x="505" y="460" style="font: 10px Arial; fill: #4285F4; font-weight: bold;">Managed/Serverless:</text>
+  <text x="505" y="470" style="font: 9px Arial;">Cloud Pub/Sub, SQS</text>
+</svg>
