@@ -57,7 +57,7 @@
     <text x="70" y="265" font-size="10" fill="#ea580c">2. Open Circuit: Stop all calls to Espresso for 30 seconds</text>
     <text x="70" y="280" font-size="10" fill="#ea580c">3. Fallback: Return cached profile data or default response</text>
     <text x="70" y="295" font-size="10" fill="#ea580c">4. Half-Open: Allow 1 test request after timeout</text>
-    <text x="70" y="310" font-size="10" fill="#ea580c">5. Close/Open: Success ’ Close circuit, Failure ’ Keep open</text>
+    <text x="70" y="310" font-size="10" fill="#ea580c">5. Close/Open: Success ï¿½ Close circuit, Failure ï¿½ Keep open</text>
     
     <!-- Bulkhead Section -->
     <rect x="520" y="70" width="450" height="300" fill="#f0f9ff" stroke="#0ea5e9" stroke-width="2" rx="6"/>

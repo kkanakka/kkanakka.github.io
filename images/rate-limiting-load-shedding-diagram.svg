@@ -84,7 +84,7 @@
     <rect x="730" y="310" width="220" height="50" fill="#fef7ff" stroke="#a855f7" stroke-width="1" rx="4"/>
     <text x="840" y="330" text-anchor="middle" font-size="10" font-weight="bold" fill="#7e22ce">Current System Load</text>
     <text x="840" y="345" text-anchor="middle" font-size="9" fill="#7c3aed">CPU: 85% | Memory: 78%</text>
-    <text x="840" y="360" text-anchor="middle" font-size="9" fill="#7c3aed">  P2 Load Shedding Active</text>
+    <text x="840" y="360" text-anchor="middle" font-size="9" fill="#7c3aed">ï¿½ P2 Load Shedding Active</text>
     
     <!-- Flow Arrows -->
     <defs>
@@ -150,7 +150,7 @@
     <text x="190" y="558" text-anchor="middle" font-size="9" fill="#047857">P0: 100% Available </text>
     
     <rect x="300" y="540" width="180" height="30" fill="#fef3c7" stroke="#f59e0b" stroke-width="1" rx="4"/>
-    <text x="390" y="558" text-anchor="middle" font-size="9" fill="#d97706">P1: 95% Available  </text>
+    <text x="390" y="558" text-anchor="middle" font-size="9" fill="#d97706">P1: 95% Available ï¿½</text>
     
     <rect x="500" y="540" width="180" height="30" fill="#fef2f2" stroke="#dc2626" stroke-width="1" rx="4"/>
     <text x="590" y="558" text-anchor="middle" font-size="9" fill="#991b1b">P2: 60% Available L</text>
@@ -176,5 +176,5 @@
     
     <rect x="740" y="645" width="200" height="35" fill="#e0f2fe" stroke="#0891b2" stroke-width="1" rx="4"/>
     <text x="750" y="660" font-size="10" font-weight="bold" fill="#0e7490">Load Shedding</text>
-    <text x="750" y="675" font-size="9" fill="#0369a1">CPU &gt; 80% ’ Shed P2+</text>
+    <text x="750" y="675" font-size="9" fill="#0369a1">CPU &gt; 80% ï¿½ Shed P2+</text>
 </svg>

@@ -48,7 +48,7 @@
     <text x="300" y="215" font-size="10" fill="#7f1d1d">Producer Rate: 180K msg/min</text>
     <text x="300" y="230" font-size="10" fill="#7f1d1d">Consumer Rate: 120K msg/min</text>
     <text x="300" y="245" font-size="10" fill="#7f1d1d">Queue Depth: 2.5M messages</text>
-    <text x="300" y="260" text-anchor="middle" font-size="10" font-weight="bold" fill="#dc2626">  BACKPRESSURE TRIGGERED</text>
+    <text x="300" y="260" text-anchor="middle" font-size="10" font-weight="bold" fill="#dc2626">ï¿½ BACKPRESSURE TRIGGERED</text>
     
     <!-- Backpressure Control -->
     <rect x="290" y="270" width="220" height="90" fill="#ecfdf5" stroke="#10b981" stroke-width="1" rx="4"/>
