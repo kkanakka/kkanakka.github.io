@@ -1,0 +1,1372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<title>Linux Processes &amp; Programs - Complete Guide</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #f7f6f3;
+    --border: #e3e2de;
+    --text: #37352f;
+    --text-muted: #787774;
+    --accent: #2383e2;
+    --accent2: #0f7b0f;
+    --accent3: #6940a5;
+    --accent4: #d9730d;
+    --red: #e03e3e;
+    --code-bg: #f7f6f3;
+    --card: #ffffff;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    font-size: 15px;
+  }
+  .container { max-width: 900px; margin: 0 auto; padding: 0 24px; }
+
+  /* Hero */
+  .hero {
+    background: linear-gradient(180deg, #fafafa 0%, #ffffff 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 48px 0 36px;
+    text-align: center;
+  }
+  .hero h1 { font-size: 2.2em; font-weight: 700; margin-bottom: 12px; }
+  .hero h1 span { color: var(--accent); }
+  .hero p { font-size: 1.05em; color: var(--text-muted); max-width: 700px; margin: 0 auto 30px; }
+  .hero .badge {
+    display: inline-block; background: var(--surface); border: 1px solid var(--border);
+    padding: 6px 16px; border-radius: 20px; font-size: 0.8em; color: var(--text-muted);
+  }
+
+  /* TOC */
+  .toc {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 32px;
+    margin: 40px auto;
+    max-width: 800px;
+  }
+  .toc h2 { font-size: 1.2em; margin-bottom: 16px; color: var(--accent); }
+  .toc ol { padding-left: 24px; }
+  .toc li { margin: 8px 0; }
+  .toc a {
+    color: var(--text); text-decoration: none; border-bottom: 1px dashed var(--border);
+    transition: color 0.2s;
+  }
+  .toc a:hover { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* Sections */
+  .section {
+    margin: 40px 0; padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+  .section-num {
+    font-size: 0.75em; font-weight: 600; color: var(--accent);
+    text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;
+  }
+  .section h2 {
+    font-size: 1.6em; font-weight: 600; margin-bottom: 20px;
+    color: var(--accent);}
+  .section h3 {
+    font-size: 1.15em; margin: 30px 0 12px; color: var(--accent2);
+    border-left: 3px solid var(--accent2); padding-left: 12px;
+  }
+  .section h4 { font-size: 1.15em; margin: 20px 0 8px; color: var(--accent3); }
+  .section p { margin: 12px 0; color: var(--text); }
+  .section ul, .section ol { margin: 12px 0 12px 24px; }
+  .section li { margin: 6px 0; }
+
+  /* Diagram */
+  .diagram-box {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 24px 0;
+    text-align: center;
+  }
+  .diagram-box img {
+    max-width: 100%;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+  .diagram-box .caption {
+    margin-top: 12px;
+    font-size: 0.9em;
+    color: var(--text-muted);
+    font-style: italic;
+  }
+
+  /* Code */
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    overflow-x: auto;
+    margin: 16px 0;
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace;
+    font-size: 0.9em;
+    line-height: 1.6;
+    position: relative;
+  }
+  pre .lang-label {
+    position: absolute; top: 8px; right: 12px;
+    font-size: 0.75em; color: var(--text-muted);
+    background: var(--surface); padding: 2px 8px; border-radius: 4px;
+  }
+  code {
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace;
+    font-size: 0.9em;
+  }
+  :not(pre) > code {
+    background: var(--surface);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--accent);
+    border: 1px solid var(--border);
+  }
+
+  /* Terminal output */
+  .terminal {
+    background: #000;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 0;
+    margin: 16px 0;
+    overflow: hidden;
+  }
+  .terminal-bar {
+    background: #1a1a2e;
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid #333;
+  }
+  .terminal-dot { width: 12px; height: 12px; border-radius: 50%; }
+  .terminal-dot.red { background: #e03e3e; }
+  .terminal-dot.yellow { background: #d29922; }
+  .terminal-dot.green { background: #0f7b0f; }
+  .terminal-title { color: #787774; font-size: 0.8em; margin-left: 8px; }
+  .terminal pre {
+    margin: 0; border: none; border-radius: 0;
+    padding: 16px 20px;
+    background: #000;
+    color: #37352f;
+  }
+  .terminal .prompt { color: #0f7b0f; }
+  .terminal .output { color: #c9d1d9; }
+  .terminal .comment { color: #6e7681; }
+
+  /* Info boxes */
+  .info-box {
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 16px 0;
+    border-left: 4px solid;
+  }
+  .info-box.note {
+    background: rgba(88, 166, 255, 0.1);
+    border-left-color: var(--accent);
+  }
+  .info-box.warning {
+    background: rgba(240, 136, 62, 0.1);
+    border-left-color: var(--accent4);
+  }
+  .info-box.danger {
+    background: rgba(248, 81, 73, 0.1);
+    border-left-color: var(--red);
+  }
+  .info-box.success {
+    background: rgba(63, 185, 80, 0.1);
+    border-left-color: var(--accent2);
+  }
+  .info-box strong { display: block; margin-bottom: 4px; }
+
+  /* Key-value table */
+  .kv-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 0.95em;
+  }
+  .kv-table th, .kv-table td {
+    border: 1px solid var(--border);
+    padding: 10px 16px;
+    text-align: left;
+  }
+  .kv-table th {
+    background: var(--surface);
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .kv-table td { background: var(--card); }
+  .kv-table tr:hover td { background: var(--surface); }
+
+  /* Comparison grid */
+  .compare-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 20px 0;
+  }
+  .compare-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+  }
+  .compare-card h4 {
+    margin: 0 0 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* Back to top */
+  .back-top {
+    text-align: right; margin: 30px 0 0;
+  }
+  .back-top a {
+    color: var(--text-muted); text-decoration: none; font-size: 0.85em;
+  }
+  .back-top a:hover { color: var(--accent); }
+
+  /* Footer */
+  footer {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 40px 0;
+    margin-top: 80px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.9em;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+  @media (max-width: 768px) {
+    .hero h1 { font-size: 1.6em; }
+    .compare-grid { grid-template-columns: 1fr; }
+    .container { padding: 0 16px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ======================== HERO ======================== -->
+<div class="hero">
+  <div class="container">
+    <h1>Linux <span>Processes</span> &amp; Programs</h1>
+    <p>A complete visual guide to how programs become processes, memory layout, virtual memory, stack frames, command-line arguments, environment variables, and non-local gotos.</p>
+    <div class="badge">Based on The Linux Programming Interface &mdash; Chapter 6</div>
+    <br>
+    <a href="chapter2.html" style="display:inline-block;background:#f7f6f3;border:1px solid #2383e2;padding:8px 20px;border-radius:8px;color:#2383e2;text-decoration:none;margin:8px 4px;font-size:.9em;">Chapter 2: Fundamental Concepts &rarr;</a>
+    <a href="java-memory.html" style="display:inline-block;background:#f7f6f3;border:1px solid #bc8cff;padding:8px 20px;border-radius:8px;color:#bc8cff;text-decoration:none;margin:8px 4px;font-size:.9em;">Java Memory Architecture &rarr;</a>
+    <a href="sd-index.html" style="display:inline-block;background:#f7f6f3;border:1px solid #d9730d;padding:8px 20px;border-radius:8px;color:#d9730d;text-decoration:none;margin:8px 4px;font-size:.9em;font-weight:bold;">System Design Hub (23 Chapters) &rarr;</a>
+    <a href="ddia-ch1.html" style="display:inline-block;background:#f7f6f3;border:1px solid #0d47a1;padding:8px 20px;border-radius:8px;color:#0d47a1;text-decoration:none;margin:8px 4px;font-size:.9em;">Data Intensive Systems &rarr;</a>
+    <a href="networking.html" style="display:inline-block;background:#f7f6f3;border:1px solid #0f7b0f;padding:8px 20px;border-radius:8px;color:#0f7b0f;text-decoration:none;margin:8px 4px;font-size:.9em;font-weight:bold;">Networking 101 (Browser &rarr; LinkedIn) &rarr;</a>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- ======================== TOC ======================== -->
+<div class="toc" id="toc">
+  <h2>Table of Contents</h2>
+  <ol>
+    <li><a href="#sec-1">Processes and Programs</a></li>
+    <li><a href="#sec-2">Process ID and Parent Process ID</a></li>
+    <li><a href="#sec-3">Memory Layout of a Process</a></li>
+    <li><a href="#sec-4">Virtual Memory Management</a></li>
+    <li><a href="#sec-5">The Stack and Stack Frames</a></li>
+    <li><a href="#sec-6">Command-Line Arguments (argc, argv)</a></li>
+    <li><a href="#sec-7">Environment List</a></li>
+    <li><a href="#sec-8">Nonlocal Goto: setjmp() and longjmp()</a></li>
+    <li><a href="#sec-9">Summary</a></li>
+  </ol>
+</div>
+
+<!-- ==================== SECTION 1 ==================== -->
+<div class="section" id="sec-1">
+  <div class="section-num">Section 6.1</div>
+  <h2>Processes and Programs</h2>
+
+  <p>
+    Understanding the distinction between a <strong>program</strong> and a <strong>process</strong> is fundamental to Linux systems programming.
+    A <em>program</em> is a passive file sitting on your disk. A <em>process</em> is that program brought to life &mdash; an active, running instance with its own memory, PID, and state.
+  </p>
+
+  <div class="compare-grid">
+    <div class="compare-card">
+      <h4 style="color: var(--accent);">Program (File on Disk)</h4>
+      <ul>
+        <li><strong>Passive</strong> &mdash; just a file</li>
+        <li>Contains machine code, data, metadata</li>
+        <li>Stored in a specific binary format (ELF)</li>
+        <li>One program can create <em>many</em> processes</li>
+      </ul>
+    </div>
+    <div class="compare-card">
+      <h4 style="color: var(--accent2);">Process (Running Instance)</h4>
+      <ul>
+        <li><strong>Active</strong> &mdash; executing code</li>
+        <li>Has its own memory, PID, state</li>
+        <li>Managed by the kernel</li>
+        <li>Many processes can run the <em>same</em> program</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="diagram-box">
+    <img src="images/01_program_vs_process.png" alt="Program vs Process Diagram">
+    <div class="caption">Figure 1: One program file on disk can be loaded to create many independent processes, each with its own PID and memory space.</div>
+  </div>
+
+  <h3>What's Inside a Program File?</h3>
+  <p>A program file (typically in ELF format on Linux) contains several types of information that the kernel uses to construct a process at run time:</p>
+
+  <table class="kv-table">
+    <tr><th>Component</th><th>Description</th></tr>
+    <tr><td><strong>Binary Format ID</strong></td><td>Metainformation describing the executable format. Linux uses ELF (Executable and Linking Format), replacing older <code>a.out</code> and COFF formats.</td></tr>
+    <tr><td><strong>Machine-Language Instructions</strong></td><td>The compiled algorithm &mdash; the actual CPU instructions that implement the program's logic.</td></tr>
+    <tr><td><strong>Entry-Point Address</strong></td><td>The memory address of the first instruction to execute (where <code>_start</code> or <code>main()</code> begins).</td></tr>
+    <tr><td><strong>Data</strong></td><td>Initial values for variables and literal constants (strings, numbers).</td></tr>
+    <tr><td><strong>Symbol &amp; Relocation Tables</strong></td><td>Names and locations of functions and variables &mdash; used for debugging and dynamic linking.</td></tr>
+    <tr><td><strong>Shared Library Info</strong></td><td>Lists of shared libraries needed at runtime and the path to the dynamic linker (<code>ld-linux.so</code>).</td></tr>
+  </table>
+
+  <h3>Try It: Inspect a Program File</h3>
+
+  <div class="terminal">
+    <div class="terminal-bar">
+      <span class="terminal-dot red"></span>
+      <span class="terminal-dot yellow"></span>
+      <span class="terminal-dot green"></span>
+      <span class="terminal-title">Terminal &mdash; Inspecting ELF format</span>
+    </div>
+    <pre><span class="prompt">$</span> file /usr/bin/ls
+/usr/bin/ls: ELF 64-bit LSB pie executable, x86-64, version 1 (SYSV), dynamically linked
+
+<span class="comment"># On Linux, use readelf to see the ELF header:</span>
+<span class="prompt">$</span> readelf -h /usr/bin/ls | head -10
+ELF Header:
+  Magic:   7f 45 4c 46 02 01 01 00 00 00 00 00 00 00 00 00
+  Class:                             ELF64
+  Data:                              2's complement, little endian
+  Type:                              DYN (Position-Independent Executable file)
+  Entry point address:               0x6ab0
+
+<span class="comment"># See the symbol table (functions & variables):</span>
+<span class="prompt">$</span> nm /usr/bin/ls | head -5
+0000000000012340 T main
+00000000000145a0 t do_stat
+...
+
+<span class="comment"># See shared libraries it depends on:</span>
+<span class="prompt">$</span> ldd /usr/bin/ls
+  linux-vdso.so.1 (0x00007ffd...)
+  libselinux.so.1 => /lib/x86_64-linux-gnu/libselinux.so.1
+  libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6
+  /lib64/ld-linux-x86-64.so.2</pre>
+  </div>
+
+  <h3>Try It: One Program &rarr; Many Processes</h3>
+  <div class="terminal">
+    <div class="terminal-bar">
+      <span class="terminal-dot red"></span>
+      <span class="terminal-dot yellow"></span>
+      <span class="terminal-dot green"></span>
+      <span class="terminal-title">Terminal &mdash; One program, three processes</span>
+    </div>
+    <pre><span class="comment"># Run the same program (sleep) three times in the background</span>
+<span class="prompt">$</span> sleep 100 &amp;
+[1] 46741
+<span class="prompt">$</span> sleep 100 &amp;
+[2] 46742
+<span class="prompt">$</span> sleep 100 &amp;
+[3] 46743
+
+<span class="comment"># All three are separate processes running the SAME program</span>
+<span class="prompt">$</span> ps -p 46741,46742,46743 -o pid,ppid,comm
+  PID  PPID COMM
+46741 46735 sleep
+46742 46735 sleep
+46743 46735 sleep
+
+<span class="comment"># Different PIDs, same program, same parent!</span></pre>
+  </div>
+
+  <div class="info-box note">
+    <strong>Key Insight</strong>
+    A process is an abstract entity defined by the kernel, to which system resources (memory, file descriptors, CPU time) are allocated in order to execute a program. From the kernel's point of view, a process consists of user-space memory containing program code and variables, plus kernel data structures that track the process state.
+  </div>
+
+  <h3>What the Kernel Tracks for Each Process</h3>
+  <ul>
+    <li>Process IDs (PID, PPID, session ID, process group ID)</li>
+    <li>Virtual memory tables (page tables)</li>
+    <li>Table of open file descriptors</li>
+    <li>Signal delivery and handling information</li>
+    <li>Resource usages and limits</li>
+    <li>Current working directory</li>
+    <li>Credentials (user ID, group ID)</li>
+  </ul>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to top</a></div>
+</div>
+
+<!-- ==================== SECTION 2 ==================== -->
+<div class="section" id="sec-2">
+  <div class="section-num">Section 6.2</div>
+  <h2>Process ID and Parent Process ID</h2>
+
+  <p>
+    Every process on a Linux system has a unique <strong>Process ID (PID)</strong> &mdash; a positive integer that identifies it.
+    Every process also has a <strong>Parent Process ID (PPID)</strong> &mdash; the PID of the process that created it.
+    Together, these form a tree structure rooted at <code>init</code> (PID 1).
+  </p>
+
+  <div class="diagram-box">
+    <img src="images/02_pid_ppid_tree.png" alt="PID and PPID Process Tree">
+    <div class="caption">Figure 2: All processes form a tree. PID 1 (init/systemd) is the ancestor of everything. Each child knows its parent via PPID.</div>
+  </div>
+
+  <h3>System Calls</h3>
+  <pre><span class="lang-label">C</span>
+#include &lt;unistd.h&gt;
+
+pid_t getpid(void);   // Returns PID of the calling process
+pid_t getppid(void);  // Returns PID of the parent process</pre>
+
+  <h3>PID Numbering Rules</h3>
+  <table class="kv-table">
+    <tr><th>Rule</th><th>Details</th></tr>
+    <tr><td>Default max PID</td><td><code>32,767</code> (adjustable via <code>/proc/sys/kernel/pid_max</code>)</td></tr>
+    <tr><td>On 64-bit systems</td><td>Can go up to 2<sup>22</sup> &asymp; 4 million</td></tr>
+    <tr><td>Recycling</td><td>After reaching max, counter resets to <strong>300</strong> (not 1), to skip system daemons</td></tr>
+    <tr><td>PID 1</td><td>Always <code>init</code> (or <code>systemd</code>) &mdash; ancestor of all processes</td></tr>
+    <tr><td>Orphan adoption</td><td>If a parent dies, its children are adopted by PID 1</td></tr>
+  </table>
+
+  <h3>Try It: Explore PIDs</h3>
+  <div class="terminal">
+    <div class="terminal-bar">
+      <span class="terminal-dot red"></span>
+      <span class="terminal-dot yellow"></span>
+      <span class="terminal-dot green"></span>
+      <span class="terminal-title">Terminal &mdash; PID exploration</span>
+    </div>
+    <pre><span class="comment"># Current shell's PID and PPID</span>
+<span class="prompt">$</span> echo "My PID: $$"
+My PID: 46877
+<span class="prompt">$</span> echo "My PPID: $PPID"
+My PPID: 45053
+
+<span class="comment"># View the process tree</span>
+<span class="prompt">$</span> pstree -p $$
+bash(46877)───sleep(47001)
+
+<span class="comment"># Walk up the ancestor chain</span>
+<span class="prompt">$</span> ps -p $$ -o pid=,ppid=,comm=
+46877 45053 /bin/zsh
+<span class="prompt">$</span> ps -p 45053 -o pid=,ppid=,comm=
+45053 43370 Cursor Helper
+<span class="prompt">$</span> ps -p 43370 -o pid=,ppid=,comm=
+43370     1 Cursor
+
+<span class="comment"># Process 1 - the root of the tree</span>
+<span class="prompt">$</span> ps -p 1 -o pid,comm
+  PID COMM
+    1 /sbin/launchd        <span class="comment"># (init on Linux, launchd on macOS)</span>
+
+<span class="comment"># Check the PID max (Linux only)</span>
+<span class="prompt">$</span> cat /proc/sys/kernel/pid_max
+32768
+
+<span class="comment"># Read PPID from /proc (Linux only)</span>
+<span class="prompt">$</span> grep Ppid /proc/$$/status
+Ppid:   45053</pre>
+  </div>
+
+  <div class="info-box note">
+    <strong>Orphan Processes</strong>
+    If a child's parent terminates before the child, the child becomes an <em>orphan</em> and is adopted by <code>init</code> (PID 1). After that, <code>getppid()</code> returns 1.
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to top</a></div>
+</div>
+
+<!-- ==================== SECTION 3 ==================== -->
+<div class="section" id="sec-3">
+  <div class="section-num">Section 6.3</div>
+  <h2>Memory Layout of a Process</h2>
+
+  <p>
+    When a program is loaded into memory and becomes a process, its memory is organized into distinct <strong>segments</strong> (also called sections). Understanding this layout is essential for debugging, security, and systems programming.
+  </p>
+
+  <div class="diagram-box">
+    <img src="images/03_memory_layout.png" alt="Process Memory Layout">
+    <div class="caption">Figure 3: The memory layout of a process on Linux/x86. The stack grows downward, the heap grows upward, and they grow toward each other.</div>
+  </div>
+
+  <h3>The Five Memory Segments</h3>
+
+  <table class="kv-table">
+    <tr><th>Segment</th><th>Contains</th><th>Properties</th></tr>
+    <tr>
+      <td style="color: var(--accent);"><strong>Text</strong></td>
+      <td>Machine-language instructions (compiled code)</td>
+      <td><strong>Read-only</strong>, sharable between processes running the same program</td>
+    </tr>
+    <tr>
+      <td style="color: var(--accent2);"><strong>Initialized Data</strong></td>
+      <td>Global and static variables with explicit initial values (e.g., <code>int primes[] = {2,3,5,7}</code>)</td>
+      <td>Read from the executable file when loaded</td>
+    </tr>
+    <tr>
+      <td style="color: var(--accent4);"><strong>BSS (Uninitialized Data)</strong></td>
+      <td>Global and static variables without explicit initialization (e.g., <code>char buf[65536]</code>)</td>
+      <td>Zeroed by the system before program starts. <strong>Not stored on disk</strong> &mdash; only size is recorded!</td>
+    </tr>
+    <tr>
+      <td style="color: var(--red);"><strong>Heap</strong></td>
+      <td>Dynamically allocated memory (<code>malloc()</code>)</td>
+      <td>Grows <strong>upward</strong>. Top end called the "program break"</td>
+    </tr>
+    <tr>
+      <td style="color: var(--accent3);"><strong>Stack</strong></td>
+      <td>Function call frames (local variables, arguments, return addresses)</td>
+      <td>Grows <strong>downward</strong>. Managed automatically via function calls/returns</td>
+    </tr>
+  </table>
+
+  <h3>Where Do C Variables Live?</h3>
+
+  <div class="diagram-box">
+    <img src="images/09_variables_in_segments.png" alt="C Variables in Memory Segments">
+    <div class="caption">Figure 3b: Mapping of C variable declarations to their memory segments. Notice how static variables go to data/BSS regardless of where they are declared in code.</div>
+  </div>
+
+  <h4>Code Example: mem_segments.c</h4>
+  <pre><span class="lang-label">C</span>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+char globBuf[65536];            /* Uninitialized data segment (BSS) */
+int primes[] = { 2, 3, 5, 7 }; /* Initialized data segment */
+
+static int
+square(int x)                   /* Code in text segment */
+{
+    int result;                 /* Allocated in frame for square() (STACK) */
+    result = x * x;
+    return result;              /* Return value passed via register */
+}
+
+static void
+doCalc(int val)                 /* Code in text segment */
+{
+    printf("The square of %d is %d\n", val, square(val));
+    if (val &lt; 1000) {
+        int t;                  /* Allocated in frame for doCalc() (STACK) */
+        t = val * val * val;
+        printf("The cube of %d is %d\n", val, t);
+    }
+}
+
+int
+main(int argc, char *argv[])    /* Code in text segment */
+{
+    static int key = 9973;      /* Initialized data segment */
+    static char mbuf[10240000]; /* Uninitialized data segment (BSS) */
+    char *p;                    /* Allocated in frame for main() (STACK) */
+
+    p = malloc(1024);           /* Points to memory in HEAP segment */
+    doCalc(key);
+    free(p);
+    exit(EXIT_SUCCESS);
+}</pre>
+
+  <h3>Try It: Why Is the File So Small?</h3>
+  <div class="terminal">
+    <div class="terminal-bar">
+      <span class="terminal-dot red"></span>
+      <span class="terminal-dot yellow"></span>
+      <span class="terminal-dot green"></span>
+      <span class="terminal-title">Terminal &mdash; BSS doesn't take disk space</span>
+    </div>
+    <pre><span class="prompt">$</span> gcc -o mem_segments mem_segments.c
+<span class="prompt">$</span> ls -lh mem_segments
+-rwxr-xr-x 1 user user <strong>49K</strong> Apr 5 09:35 mem_segments
+
+<span class="comment"># Despite having a 10MB array (mbuf) + 64KB array (globBuf),
+# the executable is only 49K! BSS variables only record their SIZE
+# on disk. The OS zeroes and allocates the memory at runtime.</span>
+
+<span class="prompt">$</span> size mem_segments
+   text    data     bss     dec     hex filename
+   1234      16  10305536 10306786  9d4f62 mem_segments
+
+<span class="comment"># BSS is ~10MB but takes ZERO bytes on disk!</span>
+
+<span class="comment"># Use nm to see where symbols live:</span>
+<span class="prompt">$</span> nm mem_segments | grep -E "square|main|primes|globBuf"
+0000000100008000 D _primes        <span class="comment"># D = initialized Data</span>
+00000001009d0000 S _globBuf       <span class="comment"># S/B = BSS (uninitialized)</span>
+0000000100000598 T _main          <span class="comment"># T = Text (code)</span>
+000000010000067c t _square        <span class="comment"># t = text (static/local)</span></pre>
+  </div>
+
+  <h3>Boundary Symbols: etext, edata, end</h3>
+  <p>The C runtime provides three global symbols that mark segment boundaries:</p>
+  <pre><span class="lang-label">C</span>
+extern char etext, edata, end;
+
+// &amp;etext  = end of text segment / start of initialized data
+// &amp;edata  = end of initialized data / start of BSS
+// &amp;end    = end of BSS (uninitialized data)</pre>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to top</a></div>
+</div>
+
+<!-- ==================== SECTION 4 ==================== -->
+<div class="section" id="sec-4">
+  <div class="section-num">Section 6.4</div>
+  <h2>Virtual Memory Management</h2>
+
+  <p>
+    Linux (like all modern operating systems) uses <strong>virtual memory</strong>. Each process thinks it has the entire address space to itself, but in reality, the kernel maps virtual addresses to physical RAM on-demand. This is one of the most important concepts in operating systems.
+  </p>
+
+  <div class="diagram-box">
+    <img src="images/04_virtual_memory.png" alt="Virtual Memory Management">
+    <div class="caption">Figure 4: Virtual memory maps process pages to physical RAM frames via a page table. Pages not in RAM reside on swap disk and are loaded on demand (page fault).</div>
+  </div>
+
+  <h3>How Virtual Memory Works</h3>
+  <ol>
+    <li>The process's virtual address space is divided into small, fixed-size <strong>pages</strong> (typically 4096 bytes on x86)</li>
+    <li>Physical RAM is divided into <strong>page frames</strong> of the same size</li>
+    <li>A <strong>page table</strong> (maintained by the kernel for each process) maps virtual pages to physical frames</li>
+    <li>Only some pages need to be in RAM at any time &mdash; this is the <strong>resident set</strong></li>
+    <li>Unused pages live in the <strong>swap area</strong> on disk</li>
+    <li>When a process accesses a page not in RAM, a <strong>page fault</strong> occurs: the kernel loads it from disk</li>
+  </ol>
+
+  <h3>Locality of Reference</h3>
+  <p>Virtual memory works well because programs exhibit two types of locality:</p>
+  <div class="compare-grid">
+    <div class="compare-card">
+      <h4 style="color: var(--accent);">Spatial Locality</h4>
+      <p>Programs tend to access memory addresses <em>near</em> those recently accessed (sequential instruction execution, array traversal).</p>
+    </div>
+    <div class="compare-card">
+      <h4 style="color: var(--accent2);">Temporal Locality</h4>
+      <p>Programs tend to access the <em>same</em> memory addresses again soon (loops, frequently used variables).</p>
+    </div>
+  </div>
+
+  <h3>Benefits of Virtual Memory</h3>
+  <table class="kv-table">
+    <tr><th>Benefit</th><th>How It Works</th></tr>
+    <tr><td><strong>Process Isolation</strong></td><td>Each process has its own page table pointing to different physical pages. One process <em>cannot</em> read or modify another's memory.</td></tr>
+    <tr><td><strong>Memory Sharing</strong></td><td>Multiple processes running the same program share a single read-only copy of the text segment. Page table entries in different processes point to the same physical pages.</td></tr>
+    <tr><td><strong>Memory Protection</strong></td><td>Page table entries can be marked read-only, read-write, or executable. The text segment is read-only to prevent accidental self-modification.</td></tr>
+    <tr><td><strong>Abstraction</strong></td><td>Programmers and compilers don't need to know the physical layout of RAM.</td></tr>
+    <tr><td><strong>Overcommit</strong></td><td>A process's virtual address space can exceed physical RAM. Only needed pages are loaded.</td></tr>
+    <tr><td><strong>More Processes</strong></td><td>Since each process uses less RAM (only resident set), more processes can run simultaneously.</td></tr>
+  </table>
+
+  <h3>When Virtual Address Ranges Change</h3>
+  <ul>
+    <li>Stack grows downward beyond previous limits</li>
+    <li>Heap grows via <code>brk()</code>, <code>sbrk()</code>, or <code>malloc()</code></li>
+    <li>Shared memory attached with <code>shmat()</code> or detached with <code>shmdt()</code></li>
+    <li>Memory mappings created with <code>mmap()</code> or removed with <code>munmap()</code></li>
+  </ul>
+
+  <h3>Try It: Virtual Memory on Your System</h3>
+  <div class="terminal">
+    <div class="terminal-bar">
+      <span class="terminal-dot red"></span>
+      <span class="terminal-dot yellow"></span>
+      <span class="terminal-dot green"></span>
+      <span class="terminal-title">Terminal &mdash; Virtual memory exploration</span>
+    </div>
+    <pre><span class="comment"># Check the page size on your system</span>
+<span class="prompt">$</span> getconf PAGESIZE
+4096                          <span class="comment"># 4096 bytes = 4 KB per page (x86-64 default)</span>
+
+<span class="comment"># View virtual memory statistics (Linux)</span>
+<span class="prompt">$</span> cat /proc/meminfo | head -10
+MemTotal:       16384000 kB
+MemFree:         2048000 kB
+Buffers:          512000 kB
+Cached:          4096000 kB
+SwapTotal:       8192000 kB
+SwapFree:        8000000 kB
+
+<span class="comment"># Compare VSZ (virtual size) vs RSS (resident set size - actually in RAM)</span>
+<span class="prompt">$</span> ps aux --sort=-vsz | head -5
+USER  PID %CPU %MEM    VSZ   RSS COMMAND
+root    1  0.0  0.1  16940  3200 /sbin/init
+user 1234  5.2  2.0 589200 32000 /usr/bin/python3
+
+<span class="comment"># VSZ can be MUCH larger than RSS!
+# VSZ = total virtual address space (includes swap and mapped files)
+# RSS = pages actually in physical RAM right now</span>
+
+<span class="comment"># View a process's memory map (Linux)</span>
+<span class="prompt">$</span> cat /proc/self/maps | head -10
+55a2c8000000-55a2c8001000 r--p  /bin/cat    <span class="comment"># text (read-only)</span>
+55a2c8001000-55a2c8005000 r-xp  /bin/cat    <span class="comment"># text (executable)</span>
+55a2c8005000-55a2c8007000 r--p  /bin/cat    <span class="comment"># read-only data</span>
+55a2c8008000-55a2c8009000 rw-p  /bin/cat    <span class="comment"># read-write data</span>
+55a2c9000000-55a2c9021000 rw-p  [heap]      <span class="comment"># heap</span>
+7ffd40000000-7ffd40021000 rw-p  [stack]     <span class="comment"># stack</span></pre>
+  </div>
+
+  <div class="info-box note">
+    <strong>PMMU Hardware</strong>
+    Virtual memory requires hardware support from the <strong>Paged Memory Management Unit (PMMU)</strong>. It translates virtual addresses to physical addresses and triggers page faults when a page is not in RAM.
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to top</a></div>
+</div>
+
+<!-- ==================== SECTION 5 ==================== -->
+<div class="section" id="sec-5">
+  <div class="section-num">Section 6.5</div>
+  <h2>The Stack and Stack Frames</h2>
+
+  <p>
+    The <strong>stack</strong> is a dynamically growing and shrinking region of memory used for function calls.
+    Each time a function is called, a new <strong>stack frame</strong> is pushed onto the stack. When the function returns, its frame is popped off.
+    On x86 Linux, the stack grows <em>downward</em> from high addresses toward low addresses.
+  </p>
+
+  <div class="diagram-box">
+    <img src="images/05_stack_frames.png" alt="Stack and Stack Frames">
+    <div class="caption">Figure 5: During execution of <code>square()</code>, the stack contains frames for main(), doCalc(), and square(). Each frame holds that function's local variables, arguments, and return address.</div>
+  </div>
+
+  <h3>What's Inside a Stack Frame?</h3>
+  <table class="kv-table">
+    <tr><th>Component</th><th>Purpose</th></tr>
+    <tr><td><strong>Function Arguments</strong></td><td>Values passed to the function (on some ABIs, passed via registers instead)</td></tr>
+    <tr><td><strong>Local Variables</strong></td><td>"Automatic" variables that exist only while the function runs</td></tr>
+    <tr><td><strong>Return Address</strong></td><td>Saved program counter &mdash; where to continue execution after return</td></tr>
+    <tr><td><strong>Saved Registers</strong></td><td>CPU register values that the caller needs restored after the function returns</td></tr>
+  </table>
+
+  <h3>Automatic vs Static Variables</h3>
+  <div class="compare-grid">
+    <div class="compare-card">
+      <h4 style="color: var(--accent);">Automatic (Stack) Variables</h4>
+      <ul>
+        <li>Created when function is called</li>
+        <li>Destroyed when function returns</li>
+        <li>Live on the stack frame</li>
+        <li>E.g., <code>int result;</code> inside a function</li>
+      </ul>
+    </div>
+    <div class="compare-card">
+      <h4 style="color: var(--accent2);">Static / Global Variables</h4>
+      <ul>
+        <li>Exist for the entire program lifetime</li>
+        <li>Independent of function calls</li>
+        <li>Live in data or BSS segment</li>
+        <li>E.g., <code>static int key = 9973;</code></li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>User Stack vs Kernel Stack</h3>
+  <p>
+    Each process has <strong>two stacks</strong>: the user stack (in user memory, what we normally call "the stack") and a kernel stack (in kernel memory, used when the process makes system calls). The kernel stack is small and separate because user memory is untrusted.
+  </p>
+
+  <div class="info-box note">
+    <strong>Recursive Functions</strong>
+    If a function calls itself recursively, each call gets its own stack frame. Too much recursion causes a <em>stack overflow</em> because the stack has a finite size limit (typically 8 MB, adjustable via <code>ulimit -s</code>).
+  </div>
+
+  <h3>Try It: Stack in Action</h3>
+  <div class="terminal">
+    <div class="terminal-bar">
+      <span class="terminal-dot red"></span>
+      <span class="terminal-dot yellow"></span>
+      <span class="terminal-dot green"></span>
+      <span class="terminal-title">Terminal &mdash; Stack exploration</span>
+    </div>
+    <pre><span class="comment"># Check default stack size limit</span>
+<span class="prompt">$</span> ulimit -s
+8192                          <span class="comment"># 8192 KB = 8 MB default stack size</span>
+
+<span class="comment"># Run the mem_segments program and see the stack in action</span>
+<span class="prompt">$</span> ./mem_segments
+The square of 9973 is 99460729
+
+<span class="comment"># During execution, the call chain was:
+#   main() → doCalc(9973) → square(9973)
+# So the stack had 3 frames (plus C runtime startup frames)
+# When square() returned, its frame was popped
+# When doCalc() returned, its frame was popped</span></pre>
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to top</a></div>
+</div>
+
+<!-- ==================== SECTION 6 ==================== -->
+<div class="section" id="sec-6">
+  <div class="section-num">Section 6.6</div>
+  <h2>Command-Line Arguments (argc, argv)</h2>
+
+  <p>
+    When you type a command like <code>./necho hello world</code>, the shell splits it into words and passes them to the program via two arguments to <code>main()</code>:
+    <code>argc</code> (argument count) and <code>argv</code> (argument vector &mdash; an array of strings).
+  </p>
+
+  <div class="diagram-box">
+    <img src="images/06_argc_argv.png" alt="argc and argv Diagram">
+    <div class="caption">Figure 6: For the command <code>./necho hello world</code>, argc is 3 and argv is an array of 4 pointers (3 strings + NULL sentinel).</div>
+  </div>
+
+  <h3>Rules of argc/argv</h3>
+  <ul>
+    <li><code>argv[0]</code> is <strong>always the program name</strong> (or the name used to invoke it)</li>
+    <li><code>argv[argc]</code> is <strong>always NULL</strong> &mdash; a sentinel marking the end of the array</li>
+    <li><code>argc</code> is always at least 1 (the program name itself)</li>
+    <li>The shell does the splitting: quotes preserve spaces (e.g., <code>"hello world"</code> is one argument)</li>
+  </ul>
+
+  <h4>Code Example: necho.c</h4>
+  <pre><span class="lang-label">C</span>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+int main(int argc, char *argv[])
+{
+    int j;
+    for (j = 0; j &lt; argc; j++)
+        printf("argv[%d] = %s\n", j, argv[j]);
+
+    exit(EXIT_SUCCESS);
+}
+
+/* Alternative using pointer walk (argv is NULL-terminated): */
+// char **p;
+// for (p = argv; *p != NULL; p++)
+//     puts(*p);</pre>
+
+  <h3>Try It: Command-Line Arguments in Action</h3>
+  <div class="terminal">
+    <div class="terminal-bar">
+      <span class="terminal-dot red"></span>
+      <span class="terminal-dot yellow"></span>
+      <span class="terminal-dot green"></span>
+      <span class="terminal-title">Terminal &mdash; argc and argv demo</span>
+    </div>
+    <pre><span class="prompt">$</span> gcc -o necho necho.c
+
+<span class="prompt">$</span> ./necho hello world
+argc = 3
+
+argv[0] = "./necho"
+argv[1] = "hello"
+argv[2] = "world"
+
+argv[3] = NULL (sentinel)
+
+<span class="prompt">$</span> ./necho "one argument" two three
+argc = 4
+
+argv[0] = "./necho"
+argv[1] = "one argument"       <span class="comment"># Quotes preserved the space!</span>
+argv[2] = "two"
+argv[3] = "three"
+
+argv[4] = NULL (sentinel)
+
+<span class="comment"># Read command-line of any process (Linux):</span>
+<span class="prompt">$</span> cat /proc/self/cmdline | tr '\0' '\n'
+cat
+/proc/self/cmdline</pre>
+  </div>
+
+  <h3>The argv[0] Trick</h3>
+  <p>
+    Since <code>argv[0]</code> contains the name used to invoke the program, you can create multiple symlinks to the same executable and have it behave differently based on its name. The <code>gzip</code>, <code>gunzip</code>, and <code>zcat</code> commands are all links to the same binary &mdash; it checks <code>argv[0]</code> to decide what to do!
+  </p>
+
+  <div class="terminal">
+    <div class="terminal-bar">
+      <span class="terminal-dot red"></span>
+      <span class="terminal-dot yellow"></span>
+      <span class="terminal-dot green"></span>
+      <span class="terminal-title">Terminal &mdash; argv[0] trick example</span>
+    </div>
+    <pre><span class="comment"># gzip, gunzip, and zcat are often the same binary!</span>
+<span class="prompt">$</span> ls -li /usr/bin/gzip /usr/bin/gunzip /usr/bin/zcat
+131072 -rwxr-xr-x 3 root root 98776 /usr/bin/gzip
+131072 -rwxr-xr-x 3 root root 98776 /usr/bin/gunzip   <span class="comment"># Same inode!</span>
+131072 -rwxr-xr-x 3 root root 98776 /usr/bin/zcat      <span class="comment"># Same inode!</span></pre>
+  </div>
+
+  <h3>ARG_MAX Limit</h3>
+  <p>There's a maximum total size for argv and environ combined. Check it with:</p>
+  <div class="terminal">
+    <div class="terminal-bar">
+      <span class="terminal-dot red"></span>
+      <span class="terminal-dot yellow"></span>
+      <span class="terminal-dot green"></span>
+      <span class="terminal-title">Terminal</span>
+    </div>
+    <pre><span class="prompt">$</span> getconf ARG_MAX
+2097152                        <span class="comment"># ~2 MB on most modern Linux systems</span>
+
+<span class="comment"># This is why "rm *" can fail with "Argument list too long"
+# when there are too many files!</span></pre>
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to top</a></div>
+</div>
+
+<!-- ==================== SECTION 7 ==================== -->
+<div class="section" id="sec-7">
+  <div class="section-num">Section 6.7</div>
+  <h2>Environment List</h2>
+
+  <p>
+    Every process has an <strong>environment list</strong> &mdash; an array of <code>NAME=value</code> strings that provide configuration information. When a new process is created (via <code>fork()</code>), it inherits a <em>copy</em> of its parent's environment. This is a simple form of interprocess communication.
+  </p>
+
+  <div class="diagram-box">
+    <img src="images/07_environment_list.png" alt="Environment List Data Structure">
+    <div class="caption">Figure 7: The <code>environ</code> global variable is an array of pointers to <code>NAME=value</code> strings, terminated by NULL. Child processes get a copy &mdash; changes don't affect each other.</div>
+  </div>
+
+  <h3>Key Points</h3>
+  <ul>
+    <li>Environment is a set of <code>NAME=value</code> pairs</li>
+    <li>Child processes inherit a <strong>copy</strong> of the parent's environment at fork time</li>
+    <li>This is a <strong>one-way, once-only</strong> transfer &mdash; after fork, changes in one don't affect the other</li>
+    <li>The <code>environ</code> global variable (C) points to the array</li>
+    <li>The list is <strong>not sorted</strong> &mdash; order depends on insertion</li>
+  </ul>
+
+  <h3>Environment Functions in C</h3>
+  <table class="kv-table">
+    <tr><th>Function</th><th>Purpose</th><th>Notes</th></tr>
+    <tr><td><code>getenv(name)</code></td><td>Get value of a variable</td><td>Returns pointer to value string, or NULL</td></tr>
+    <tr><td><code>putenv(string)</code></td><td>Add/modify a variable</td><td>Takes <code>"NAME=value"</code>. Does NOT copy &mdash; the string becomes part of the environment!</td></tr>
+    <tr><td><code>setenv(name, value, overwrite)</code></td><td>Add/modify a variable</td><td>Copies name and value. Safer than putenv. If overwrite=0, won't replace existing.</td></tr>
+    <tr><td><code>unsetenv(name)</code></td><td>Remove a variable</td><td>Removes all definitions of the named variable</td></tr>
+    <tr><td><code>clearenv()</code></td><td>Erase entire environment</td><td>Sets <code>environ = NULL</code>. Can cause memory leaks with setenv.</td></tr>
+  </table>
+
+  <h4>Code Example: display_env.c</h4>
+  <pre><span class="lang-label">C</span>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+extern char **environ;
+
+int main(int argc, char *argv[])
+{
+    char **ep;
+    for (ep = environ; *ep != NULL; ep++)
+        puts(*ep);
+    exit(EXIT_SUCCESS);
+}</pre>
+
+  <h4>Code Example: modify_env.c</h4>
+  <pre><span class="lang-label">C</span>
+#define _GNU_SOURCE
+#include &lt;stdlib.h&gt;
+#include &lt;stdio.h&gt;
+
+extern char **environ;
+
+int main(int argc, char *argv[])
+{
+    int j;
+    char **ep;
+
+    clearenv();                              /* Erase entire environment */
+
+    for (j = 1; j &lt; argc; j++)
+        if (putenv(argv[j]) != 0)            /* Add command-line args as env vars */
+            perror("putenv");
+
+    if (setenv("GREET", "Hello world", 0) == -1) /* Add GREET if not set */
+        perror("setenv");
+
+    unsetenv("BYE");                         /* Remove BYE if it exists */
+
+    for (ep = environ; *ep != NULL; ep++)
+        puts(*ep);
+
+    exit(EXIT_SUCCESS);
+}</pre>
+
+  <h3>Try It: Environment Variables</h3>
+  <div class="terminal">
+    <div class="terminal-bar">
+      <span class="terminal-dot red"></span>
+      <span class="terminal-dot yellow"></span>
+      <span class="terminal-dot green"></span>
+      <span class="terminal-title">Terminal &mdash; Environment variable commands</span>
+    </div>
+    <pre><span class="comment"># View current environment</span>
+<span class="prompt">$</span> printenv | head -5
+LOGNAME=mtk
+SHELL=/bin/bash
+HOME=/home/mtk
+PATH=/usr/local/bin:/usr/bin:/bin:.
+TERM=xterm
+
+<span class="comment"># Set and export a variable</span>
+<span class="prompt">$</span> export MY_VAR="Hello Linux"
+<span class="prompt">$</span> echo $MY_VAR
+Hello Linux
+
+<span class="comment"># Child process inherits parent's environment</span>
+<span class="prompt">$</span> bash -c 'echo "Child sees MY_VAR=$MY_VAR"'
+Child sees MY_VAR=Hello Linux
+
+<span class="comment"># Set a variable for just ONE command (doesn't affect parent shell)</span>
+<span class="prompt">$</span> GREETING="Bonjour" bash -c 'echo "GREETING=$GREETING"'
+GREETING=Bonjour
+<span class="prompt">$</span> echo "GREETING=${GREETING:-not set}"
+GREETING=not set                       <span class="comment"># Parent was unaffected!</span>
+
+<span class="comment"># Remove a variable</span>
+<span class="prompt">$</span> unset MY_VAR
+<span class="prompt">$</span> echo "MY_VAR=${MY_VAR:-not set}"
+MY_VAR=not set
+
+<span class="comment"># Read environment of any process (Linux):</span>
+<span class="prompt">$</span> cat /proc/self/environ | tr '\0' '\n' | head -5
+
+<span class="comment"># Using the modify_env program:</span>
+<span class="prompt">$</span> ./modify_env "GREET=Guten Tag" SHELL=/bin/bash BYE=Ciao
+GREET=Guten Tag
+SHELL=/bin/bash
+<span class="comment"># Note: BYE was removed, GREET used the provided value</span>
+
+<span class="prompt">$</span> ./modify_env SHELL=/bin/sh BYE=byebye
+SHELL=/bin/sh
+GREET=Hello world
+<span class="comment"># Note: BYE removed, GREET defaulted to "Hello world"</span></pre>
+  </div>
+
+  <div class="info-box warning">
+    <strong>putenv() vs setenv() - Important Difference!</strong>
+    <code>putenv("NAME=value")</code> does NOT copy the string &mdash; it adds the pointer directly to the environment. If the string is a local variable on the stack, it will become dangling when the function returns! <code>setenv()</code> copies both name and value, making it safer.
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to top</a></div>
+</div>
+
+<!-- ==================== SECTION 8 ==================== -->
+<div class="section" id="sec-8">
+  <div class="section-num">Section 6.8</div>
+  <h2>Nonlocal Goto: setjmp() and longjmp()</h2>
+
+  <p>
+    C's <code>goto</code> only works within a single function. But sometimes you need to jump <em>out</em> of a deeply nested function call back to a higher-level function (e.g., for error handling). <code>setjmp()</code> and <code>longjmp()</code> provide this <strong>nonlocal goto</strong> capability.
+  </p>
+
+  <div class="diagram-box">
+    <img src="images/08_setjmp_longjmp.png" alt="setjmp and longjmp Diagram">
+    <div class="caption">Figure 8: setjmp() saves a checkpoint. longjmp() jumps back to it, unwinding all intermediate stack frames. The second "return" from setjmp() carries a nonzero value to distinguish it from the initial call.</div>
+  </div>
+
+  <h3>How It Works</h3>
+  <ol>
+    <li><code>setjmp(env)</code> saves the current state (program counter, stack pointer, registers) into <code>env</code> buffer and returns <strong>0</strong></li>
+    <li>Later, <code>longjmp(env, val)</code> restores the state from <code>env</code>, making it look like <code>setjmp()</code> returned again &mdash; but this time it returns <code>val</code> (the value you passed to longjmp)</li>
+    <li>All stack frames between the longjmp and the setjmp are <strong>unwound</strong> (removed)</li>
+    <li>If val is 0, longjmp changes it to 1 (to avoid confusion with the initial return)</li>
+  </ol>
+
+  <pre><span class="lang-label">C</span>
+#include &lt;setjmp.h&gt;
+
+int setjmp(jmp_buf env);
+    // Returns 0 on initial call
+    // Returns nonzero on return via longjmp()
+
+void longjmp(jmp_buf env, int val);
+    // Never returns! Jumps back to setjmp() location</pre>
+
+  <h4>Code Example: longjmp.c</h4>
+  <pre><span class="lang-label">C</span>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;setjmp.h&gt;
+
+static jmp_buf env;
+
+static void f2(void) {
+    printf("  In f2() - about to longjmp(env, 2)\n");
+    longjmp(env, 2);
+}
+
+static void f1(int argc) {
+    printf("  In f1() - argc=%d\n", argc);
+    if (argc == 1) {
+        printf("  In f1() - about to longjmp(env, 1)\n");
+        longjmp(env, 1);
+    }
+    f2();
+}
+
+int main(int argc, char *argv[]) {
+    switch (setjmp(env)) {
+    case 0:          /* Initial setjmp() call */
+        printf("Calling f1() after initial setjmp()\n");
+        f1(argc);
+        break;
+    case 1:
+        printf("We jumped back from f1()!\n");
+        break;
+    case 2:
+        printf("We jumped back from f2()!\n");
+        break;
+    }
+    exit(EXIT_SUCCESS);
+}</pre>
+
+  <h3>Try It: setjmp/longjmp in Action</h3>
+  <div class="terminal">
+    <div class="terminal-bar">
+      <span class="terminal-dot red"></span>
+      <span class="terminal-dot yellow"></span>
+      <span class="terminal-dot green"></span>
+      <span class="terminal-title">Terminal &mdash; setjmp/longjmp demo</span>
+    </div>
+    <pre><span class="comment"># Run WITHOUT arguments - jumps from f1()</span>
+<span class="prompt">$</span> ./longjmp_demo
+main() starts
+
+[setjmp returned 0 - initial call]
+Calling f1()...
+  In f1() - argc=1
+  In f1() - about to longjmp(env, 1)
+[setjmp returned 1 - jumped back from f1()!]
+
+main() ends
+
+<span class="comment"># Run WITH an argument - goes through f1() to f2(), jumps from f2()</span>
+<span class="prompt">$</span> ./longjmp_demo x
+main() starts
+
+[setjmp returned 0 - initial call]
+Calling f1()...
+  In f1() - argc=2
+  In f2() - about to longjmp(env, 2)
+[setjmp returned 2 - jumped back from f2()!]
+
+main() ends</pre>
+  </div>
+
+  <h3>The volatile Problem with Optimizing Compilers</h3>
+  <p>
+    When a compiler optimizes code, it may store local variables in CPU registers instead of RAM. When <code>longjmp()</code> restores the registers saved by <code>setjmp()</code>, those optimized variables get <strong>reverted to their values at setjmp() time</strong>. The fix: declare critical variables as <code>volatile</code>.
+  </p>
+
+  <h4>Code Example: setjmp_vars.c</h4>
+  <pre><span class="lang-label">C</span>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;setjmp.h&gt;
+
+static jmp_buf env;
+
+static void doJump(int nvar, int rvar, int vvar) {
+    printf("Inside doJump(): nvar=%d rvar=%d vvar=%d\n", nvar, rvar, vvar);
+    longjmp(env, 1);
+}
+
+int main(int argc, char *argv[]) {
+    int nvar;
+    register int rvar;          /* Hint: put in register if possible */
+    volatile int vvar;          /* NEVER optimize this variable */
+
+    nvar = 111;
+    rvar = 222;
+    vvar = 333;
+
+    if (setjmp(env) == 0) {     /* Checkpoint saved here */
+        nvar = 777;
+        rvar = 888;
+        vvar = 999;
+        doJump(nvar, rvar, vvar);
+    } else {                    /* After longjmp() lands here */
+        printf("After longjmp(): nvar=%d rvar=%d vvar=%d\n",
+               nvar, rvar, vvar);
+    }
+
+    return 0;
+}</pre>
+
+  <h3>Try It: volatile in Action</h3>
+  <div class="terminal">
+    <div class="terminal-bar">
+      <span class="terminal-dot red"></span>
+      <span class="terminal-dot yellow"></span>
+      <span class="terminal-dot green"></span>
+      <span class="terminal-title">Terminal &mdash; Compiler optimization vs volatile</span>
+    </div>
+    <pre><span class="comment"># WITHOUT optimization: all variables keep their updated values</span>
+<span class="prompt">$</span> cc -o setjmp_vars setjmp_vars.c
+<span class="prompt">$</span> ./setjmp_vars
+Inside doJump(): nvar=777 rvar=888 vvar=999
+After longjmp(): nvar=777 rvar=888 vvar=999    <span class="comment"># All 777/888/999 ✓</span>
+
+<span class="comment"># WITH optimization (-O2): non-volatile variables REVERT!</span>
+<span class="prompt">$</span> cc -O2 -o setjmp_vars_opt setjmp_vars.c
+<span class="prompt">$</span> ./setjmp_vars_opt
+Inside doJump(): nvar=777 rvar=888 vvar=999
+After longjmp(): nvar=<strong style="color:#e03e3e">111</strong> rvar=<strong style="color:#e03e3e">222</strong> vvar=<strong style="color:#0f7b0f">999</strong>
+
+<span class="comment">#                  ^^^         ^^^         ^^^
+#                REVERTED!   REVERTED!   SURVIVED!
+#                (int)       (register)  (volatile)
+#
+# nvar and rvar reverted to their values at setjmp() time (111, 222)
+# vvar (declared volatile) correctly retained 999!</span></pre>
+  </div>
+
+  <div class="info-box danger">
+    <strong>DANGER: Never longjmp() to a function that already returned!</strong>
+    If function X calls setjmp(), then X returns, and later you longjmp() back to X &mdash; the stack frame for X no longer exists! The result is undefined behavior: crashes, infinite loops, or corrupted data. The same applies to longjmp() across threads.
+  </div>
+
+  <div class="info-box warning">
+    <strong>Restrictions on setjmp()</strong>
+    setjmp() can only be used in limited contexts:
+    <ul style="margin-top: 8px;">
+      <li>As the entire controlling expression of <code>if</code>, <code>switch</code>, <code>while</code></li>
+      <li>As the operand of a <code>!</code> operator in a controlling expression</li>
+      <li>In a comparison with an integer constant (<code>== 0</code>, <code>!= 0</code>)</li>
+      <li>As a standalone function call</li>
+    </ul>
+    <br>
+    You <strong>cannot</strong> do: <code>s = setjmp(env);</code> &mdash; this is NOT standards-conformant!
+  </div>
+
+  <div class="info-box note">
+    <strong>Best Practice</strong>
+    Avoid setjmp/longjmp when possible &mdash; they make code extremely hard to read and maintain. When you must use them (e.g., in signal handlers), always declare local variables as <code>volatile</code> to prevent compiler optimization issues. Consider using <code>sigsetjmp()</code> and <code>siglongjmp()</code> (Section 21.2.1) in signal handlers.
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to top</a></div>
+</div>
+
+<!-- ==================== SECTION 9 ==================== -->
+<div class="section" id="sec-9">
+  <div class="section-num">Section 6.9</div>
+  <h2>Summary</h2>
+
+  <table class="kv-table">
+    <tr><th>Concept</th><th>Key Takeaway</th></tr>
+    <tr><td><strong>Program vs Process</strong></td><td>A program is a file on disk. A process is a running instance with its own PID, memory, and state. One program can create many processes.</td></tr>
+    <tr><td><strong>PID / PPID</strong></td><td>Every process has a unique PID (1 to 32,767+) and knows its parent's PID. All processes form a tree rooted at init (PID 1). Use <code>getpid()</code> and <code>getppid()</code>.</td></tr>
+    <tr><td><strong>Memory Layout</strong></td><td>Process memory has 5 segments: text (code), initialized data, BSS (zeroed), heap (grows up via malloc), stack (grows down via function calls). BSS saves disk space by not storing zeros.</td></tr>
+    <tr><td><strong>Virtual Memory</strong></td><td>Each process has its own virtual address space mapped to physical RAM via page tables. Only needed pages are in RAM (resident set). Others are on swap. This provides isolation, sharing, and protection.</td></tr>
+    <tr><td><strong>Stack Frames</strong></td><td>Each function call pushes a frame (args, locals, return address). Return pops it. Automatic variables die with their frame; static variables persist. Stack overflow = too many frames.</td></tr>
+    <tr><td><strong>argc / argv</strong></td><td>Command-line arguments arrive as <code>argc</code> (count) and <code>argv</code> (NULL-terminated array of strings). <code>argv[0]</code> is always the program name.</td></tr>
+    <tr><td><strong>Environment</strong></td><td>NAME=value pairs inherited from parent (copy). Access via <code>environ</code>, <code>getenv()</code>, <code>setenv()</code>, <code>putenv()</code>, <code>unsetenv()</code>. Changes don't propagate back to parent.</td></tr>
+    <tr><td><strong>setjmp / longjmp</strong></td><td>Nonlocal goto: setjmp() saves a checkpoint (returns 0), longjmp() jumps back to it (returns nonzero). Unwinds the stack. Use <code>volatile</code> to protect variables from optimization. Avoid when possible.</td></tr>
+  </table>
+
+  <h3>Quick Reference: Essential Commands</h3>
+  <div class="terminal">
+    <div class="terminal-bar">
+      <span class="terminal-dot red"></span>
+      <span class="terminal-dot yellow"></span>
+      <span class="terminal-dot green"></span>
+      <span class="terminal-title">Terminal &mdash; Command Cheat Sheet</span>
+    </div>
+    <pre><span class="comment"># === Process Information ===</span>
+<span class="prompt">$</span> echo $$                    <span class="comment"># Current shell PID</span>
+<span class="prompt">$</span> echo $PPID                 <span class="comment"># Parent PID</span>
+<span class="prompt">$</span> ps aux                     <span class="comment"># All processes</span>
+<span class="prompt">$</span> ps -p 1234 -o pid,ppid,vsz,rss,comm   <span class="comment"># Specific process details</span>
+<span class="prompt">$</span> pstree -p                  <span class="comment"># Process tree with PIDs</span>
+<span class="prompt">$</span> cat /proc/sys/kernel/pid_max <span class="comment"># Max PID value (Linux)</span>
+<span class="prompt">$</span> cat /proc/PID/status       <span class="comment"># Detailed process status (Linux)</span>
+<span class="prompt">$</span> cat /proc/PID/maps         <span class="comment"># Memory map of a process (Linux)</span>
+<span class="prompt">$</span> cat /proc/PID/cmdline      <span class="comment"># Command-line arguments (Linux)</span>
+<span class="prompt">$</span> cat /proc/PID/environ      <span class="comment"># Environment variables (Linux)</span>
+
+<span class="comment"># === Program Inspection ===</span>
+<span class="prompt">$</span> file /usr/bin/ls           <span class="comment"># File type (ELF format info)</span>
+<span class="prompt">$</span> readelf -h program         <span class="comment"># ELF header</span>
+<span class="prompt">$</span> readelf -S program         <span class="comment"># ELF sections</span>
+<span class="prompt">$</span> nm program                 <span class="comment"># Symbol table</span>
+<span class="prompt">$</span> ldd program                <span class="comment"># Shared library dependencies</span>
+<span class="prompt">$</span> size program               <span class="comment"># Segment sizes (text, data, bss)</span>
+<span class="prompt">$</span> objdump -d program         <span class="comment"># Disassemble</span>
+
+<span class="comment"># === Memory & System ===</span>
+<span class="prompt">$</span> getconf PAGESIZE           <span class="comment"># Virtual memory page size</span>
+<span class="prompt">$</span> getconf ARG_MAX            <span class="comment"># Max argv+environ size</span>
+<span class="prompt">$</span> ulimit -s                  <span class="comment"># Stack size limit (KB)</span>
+<span class="prompt">$</span> free -h                    <span class="comment"># RAM and swap usage</span>
+<span class="prompt">$</span> cat /proc/meminfo          <span class="comment"># Detailed memory info (Linux)</span>
+
+<span class="comment"># === Environment ===</span>
+<span class="prompt">$</span> printenv                   <span class="comment"># Show all env vars</span>
+<span class="prompt">$</span> echo $VARIABLE             <span class="comment"># Show one var</span>
+<span class="prompt">$</span> export VAR=value           <span class="comment"># Set and export</span>
+<span class="prompt">$</span> unset VAR                  <span class="comment"># Remove variable</span>
+<span class="prompt">$</span> VAR=val command            <span class="comment"># Temporary env for one command</span>
+<span class="prompt">$</span> env                        <span class="comment"># Show env (or run with modified env)</span></pre>
+  </div>
+
+  <h3>Exercises from the Book</h3>
+  <div class="info-box note">
+    <strong>Exercise 6-1:</strong> Compile <code>mem_segments.c</code> and check its size with <code>ls -l</code>. Although it has a ~10 MB array (<code>mbuf</code>), the executable is tiny. Why? <em>Answer: <code>mbuf</code> is uninitialized (BSS). BSS doesn't store data on disk &mdash; only records the size needed. Memory is allocated and zeroed at runtime.</em>
+  </div>
+  <div class="info-box note">
+    <strong>Exercise 6-2:</strong> Write a program to longjmp() into a function that has already returned. <em>Result: Undefined behavior &mdash; crash, infinite loop, or corruption. The stack frame no longer exists.</em>
+  </div>
+  <div class="info-box note">
+    <strong>Exercise 6-3:</strong> Implement <code>setenv()</code> and <code>unsetenv()</code> using <code>getenv()</code>, <code>putenv()</code>, and direct <code>environ</code> manipulation. Your <code>unsetenv()</code> should remove ALL definitions of a variable (there may be duplicates).
+  </div>
+
+  <div class="back-top"><a href="#toc">&uarr; Back to top</a></div>
+</div>
+
+</div><!-- /container -->
+
+<footer>
+  <div class="container">
+    <p>Linux Processes &amp; Programs &mdash; A Visual Guide | Based on <em>The Linux Programming Interface</em> by Michael Kerrisk, Chapter 6</p>
+    <p style="margin-top: 8px;">Served locally for learning purposes</p>
+  </div>
+</footer>
+
+
+    <div id="comments-section"></div>
+    <script src="comments.js"></script>
+</body>
+</html>

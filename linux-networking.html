@@ -1,0 +1,1133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Networking 101 — Browser → LinkedIn, packet by packet</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+    color: #e2e8f0;
+    padding: 32px 20px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+  .container { max-width: 1100px; margin: 0 auto; }
+
+  .topnav {
+    display: flex;d
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+  }
+  .topnav a {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 8px;
+    padding: 6px 14px;
+    font-size: 13px;
+    color: #cbd5e1;
+    text-decoration: none;
+    transition: .2s;
+  }
+  .topnav a:hover { border-color: #60a5fa; color: #f1f5f9; }
+
+  h1 {
+    font-size: 30px;
+    margin-bottom: 6px;
+    background: linear-gradient(90deg, #60a5fa, #c084fc, #f472b6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .subtitle {
+    color: #94a3b8;
+    margin-bottom: 28px;
+    font-size: 14px;
+  }
+
+  /* TOC */
+  .toc {
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 18px 22px;
+    margin-bottom: 24px;
+  }
+  .toc h3 {
+    font-size: 13px;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 10px;
+    font-weight: 600;
+  }
+  .toc-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 6px 18px;
+  }
+  .toc-grid a {
+    color: #cbd5e1;
+    text-decoration: none;
+    font-size: 13px;
+    padding: 4px 0;
+    border-bottom: 1px dashed rgba(255,255,255,0.08);
+    transition: .15s;
+  }
+  .toc-grid a:hover { color: #60a5fa; border-bottom-color: #60a5fa; }
+  .toc-grid a .tn { color: #fbbf24; font-family: monospace; font-weight: 700; margin-right: 6px; }
+
+  .phase {
+    border-radius: 14px;
+    padding: 22px 26px;
+    margin-bottom: 20px;
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    scroll-margin-top: 16px;
+  }
+  .p-a { background: linear-gradient(135deg, #1e3a5f 0%, #1e293b 100%); border-left: 4px solid #60a5fa; }
+  .p-b { background: linear-gradient(135deg, #164e63 0%, #1e293b 100%); border-left: 4px solid #22d3ee; }
+  .p-c { background: linear-gradient(135deg, #134e4a 0%, #1e293b 100%); border-left: 4px solid #2dd4bf; }
+  .p-d { background: linear-gradient(135deg, #14532d 0%, #1e293b 100%); border-left: 4px solid #4ade80; }
+  .p-e { background: linear-gradient(135deg, #365314 0%, #1e293b 100%); border-left: 4px solid #a3e635; }
+  .p-f { background: linear-gradient(135deg, #713f12 0%, #1e293b 100%); border-left: 4px solid #facc15; }
+  .p-g { background: linear-gradient(135deg, #7c2d12 0%, #1e293b 100%); border-left: 4px solid #fb923c; }
+  .p-h { background: linear-gradient(135deg, #7f1d1d 0%, #1e293b 100%); border-left: 4px solid #f87171; }
+  .p-i { background: linear-gradient(135deg, #86198f 0%, #1e293b 100%); border-left: 4px solid #e879f9; }
+  .p-j { background: linear-gradient(135deg, #581c87 0%, #1e293b 100%); border-left: 4px solid #c084fc; }
+  .p-k { background: linear-gradient(135deg, #4c1d95 0%, #1e293b 100%); border-left: 4px solid #a78bfa; }
+  .p-l { background: linear-gradient(135deg, #831843 0%, #1e293b 100%); border-left: 4px solid #f472b6; }
+
+  /* sub-headers inside a phase deep-dive */
+  .phase h4 {
+    color: #fbbf24;
+    font-size: 14px;
+    margin: 18px 0 8px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 700;
+  }
+  .phase p { color: #cbd5e1; font-size: 14px; margin: 8px 0; }
+  .phase p strong { color: #f1f5f9; }
+  .phase ul { color: #cbd5e1; font-size: 14px; margin: 8px 0 8px 22px; }
+  .phase ul li { margin: 4px 0; }
+
+  .compare-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin: 14px 0;
+  }
+  .compare-2 > div {
+    background: rgba(0,0,0,0.35);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    padding: 14px 16px;
+  }
+  .compare-2 h5 {
+    color: #f472b6;
+    font-size: 13px;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .compare-2 p { font-size: 13px; color: #cbd5e1; }
+  @media (max-width: 700px) { .compare-2 { grid-template-columns: 1fr; } }
+
+  .insight-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    font-size: 13px;
+    background: rgba(0,0,0,0.3);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .insight-table th, .insight-table td {
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .insight-table th {
+    color: #f472b6;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    background: rgba(0,0,0,0.3);
+  }
+  .insight-table td:first-child { color: #fbbf24; font-weight: 600; }
+
+  .phase-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+  .phase-badge {
+    font-family: monospace;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.12);
+    color: #f1f5f9;
+  }
+  .phase-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #f1f5f9;
+  }
+  .phase-icon { font-size: 22px; }
+
+  .ascii {
+    background: rgba(0,0,0,0.4);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    padding: 14px 18px;
+    font-family: 'SF Mono', Menlo, monospace;
+    font-size: 12.5px;
+    color: #cbd5e1;
+    white-space: pre;
+    overflow-x: auto;
+    line-height: 1.55;
+  }
+  .step-num { color: #fbbf24; font-weight: 700; }
+  .ip       { color: #4ade80; }
+  .mac      { color: #f472b6; }
+  .vip      { color: #fde047; font-weight: 700; }
+  .asn      { color: #c084fc; }
+  .comment  { color: #64748b; font-style: italic; }
+  .highlight{ color: #fbbf24; font-weight: 700; }
+
+  .arrow-down {
+    text-align: center;
+    color: #60a5fa;
+    font-size: 28px;
+    margin: -6px 0;
+    text-shadow: 0 0 10px rgba(96, 165, 250, 0.5);
+  }
+
+  .diagram {
+    background: rgba(0,0,0,0.5);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    padding: 20px;
+    margin: 20px 0;
+    font-family: 'SF Mono', Menlo, monospace;
+    font-size: 11px;
+    color: #cbd5e1;
+    white-space: pre;
+    overflow-x: auto;
+    line-height: 1.5;
+  }
+
+  .summary-box {
+    background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+    border: 1px solid #6366f1;
+    border-radius: 12px;
+    padding: 24px 28px;
+    margin-top: 28px;
+  }
+  .summary-box h3 {
+    color: #f1f5f9;
+    font-size: 18px;
+    margin-bottom: 10px;
+  }
+  .summary-box p {
+    color: #cbd5e1;
+    margin-bottom: 10px;
+  }
+  .badge-box {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 10px;
+    margin-top: 14px;
+  }
+  .badge {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+  .badge-title { color: #60a5fa; font-weight: 600; margin-bottom: 4px; }
+  .badge-desc  { color: #94a3b8; }
+
+  .glossary {
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 22px 26px;
+    margin-top: 22px;
+  }
+  .glossary h3 {
+    color: #f1f5f9;
+    font-size: 18px;
+    margin-bottom: 14px;
+  }
+  .glossary table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .glossary th, .glossary td {
+    text-align: left;
+    padding: 8px 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    vertical-align: top;
+  }
+  .glossary th {
+    color: #60a5fa;
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .glossary td:first-child { color: #fbbf24; font-family: monospace; font-weight: 700; white-space: nowrap; }
+
+  .site-footer {
+    text-align: center;
+    color: #64748b;
+    font-size: 12px;
+    padding: 30px 0 6px;
+  }
+  .site-footer a { color: #94a3b8; text-decoration: none; }
+  .site-footer a:hover { color: #60a5fa; }
+
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 6px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.25); }
+
+  @media (max-width: 640px) {
+    h1 { font-size: 22px; }
+    .ascii, .diagram { font-size: 11px; }
+    .phase { padding: 18px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="topnav">
+  <a href="https://kkanakka.github.io/">&larr; Home</a>
+  <a href="index.html">Linux Internals</a>
+  <a href="java-memory.html">Java Memory</a>
+  <a href="sd-index.html">System Design Hub</a>
+</div>
+
+<h1>🌐 Complete Flow: you type <span style="color:#fde047">linkedin.com</span></h1>
+<p class="subtitle">Every step from keystroke to rendered page, with DNS, BGP, ECMP, GLB, IPVS, ATS, and the application tier.</p>
+
+<!-- TOC -->
+<div class="toc">
+  <h3>50 Steps · 11 Phases</h3>
+  <div class="toc-grid">
+    <a href="#phase-a"><span class="tn">A</span>DNS — laptop needs an IP</a>
+    <a href="#phase-b"><span class="tn">B</span>DNS query travels to resolver</a>
+    <a href="#phase-c"><span class="tn">C</span>Resolver walks the hierarchy</a>
+    <a href="#phase-d"><span class="tn">D</span>TCP SYN leaves the laptop</a>
+    <a href="#phase-e"><span class="tn">E</span>BGP routes across ASes</a>
+    <a href="#phase-f"><span class="tn">F</span>Inside the POP: ECMP → IPVS</a>
+    <a href="#phase-g"><span class="tn">G</span>ATS accepts, TLS handshake</a>
+    <a href="#phase-h"><span class="tn">H</span>ATS: cache or origin?</a>
+    <a href="#phase-i"><span class="tn">I</span>L7 LB → app → fanout</a>
+    <a href="#phase-j"><span class="tn">J</span>Response flows back</a>
+    <a href="#phase-k"><span class="tn">K</span>Browser parses & renders</a>
+    <a href="#phase-l"><span class="tn">L</span>Deep dive: where IS the GLB?</a>
+    <a href="#summary"><span class="tn">★</span>Summary &amp; glossary</a>
+  </div>
+</div>
+
+<!-- PRE-FLIGHT DIAGRAM -->
+<div class="diagram" style="border-color: #6366f1;">
+<span style="color:#60a5fa;">╔══════════════════════════════════════════════════════════════════════════════╗</span>
+<span style="color:#60a5fa;">║</span>               <span style="color:#fde047;">THE WHOLE JOURNEY IN ONE PICTURE</span>                             <span style="color:#60a5fa;">║</span>
+<span style="color:#60a5fa;">╚══════════════════════════════════════════════════════════════════════════════╝</span>
+
+  <span style="color:#60a5fa;">[Laptop]</span>
+     │
+     │ <span class="comment">1. DNS lookup</span>
+     ▼
+  <span style="color:#22d3ee;">[Home Router]</span> ──► <span style="color:#22d3ee;">[ISP]</span> ──► <span style="color:#22d3ee;">[ISP Recursive Resolver 75.75.75.75]</span>
+     │                                    │
+     │                                    │ <span class="comment">walks root → .com → Dynect</span>
+     │                                    ▼
+     │                             <span style="color:#2dd4bf;">linkedin.com = 13.107.42.14</span>
+     │                                    │
+     ◄────────────────────────────────────┘
+     │
+     │ <span class="comment">2. TCP SYN to 13.107.42.14</span>
+     ▼
+  <span style="color:#4ade80;">[Home Router]</span> ──► <span style="color:#a3e635;">[Comcast AS7922]</span> ──► <span style="color:#facc15;">[Level3 AS3356]</span> ──► <span style="color:#fb923c;">[LinkedIn AS14413 Edge]</span>
+                                                                              │
+                    <span class="comment">────────── each hop: BGP + ARP + Ethernet rewrite ──────────</span>
+                                                                              ▼
+                                                                 <span style="color:#fb923c;">[POP Edge Router]</span>
+                                                                              │
+                                                                              │ <span class="comment">ECMP hash</span>
+                                            ┌─────────────────────────────────┤
+                                            ▼                                 ▼
+                                      <span style="color:#f87171;">[GLB/IPVS-1]</span>  <span style="color:#f87171;">[GLB/IPVS-2]</span>  <span style="color:#f87171;">[GLB/IPVS-3]</span>  <span style="color:#f87171;">[GLB/IPVS-4]</span>
+                                           (all announce VIP <span class="vip">13.107.42.14</span> via iBGP)
+                                            │
+                                            │ <span class="comment">consistent hash → backend</span>
+                                            ▼
+                                      <span style="color:#e879f9;">[ATS node 7]</span>  ← TLS termination + caching
+                                            │
+                                            │ <span class="comment">cache miss → origin</span>
+                                            ▼
+                                      <span style="color:#c084fc;">[Internal L7 LB]</span>
+                                            │
+                                            ▼
+                                      <span style="color:#a78bfa;">[App Server: feed-service]</span>
+                                            │
+                                      <span class="comment">(fans out to member-graph,</span>
+                                      <span class="comment"> ranking, activity, profile)</span>
+</div>
+
+<!-- PHASE A -->
+<div class="phase p-a" id="phase-a">
+  <div class="phase-header">
+    <span class="phase-icon">🔍</span>
+    <span class="phase-badge">PHASE A</span>
+    <span class="phase-title">DNS — laptop needs an IP for linkedin.com</span>
+  </div>
+  <div class="ascii">
+<span class="step-num">Step 1:</span>  Browser calls getaddrinfo("linkedin.com")
+         → checks browser cache → <span class="highlight">MISS</span>
+         → checks OS cache → <span class="highlight">MISS</span>
+
+<span class="step-num">Step 2:</span>  OS reads /etc/nsswitch.conf → "hosts: files dns"
+         → checks /etc/hosts → not found
+         → falls through to DNS
+
+<span class="step-num">Step 3:</span>  OS reads /etc/resolv.conf → nameserver = <span class="ip">75.75.75.75</span>
+         <span class="comment">(populated by DHCP when laptop joined the Wi-Fi)</span>
+
+<span class="step-num">Step 4:</span>  OS builds DNS query:
+            UDP dst port 53, DNS "linkedin.com A?"
+            IP dst = <span class="ip">75.75.75.75</span>  src = <span class="ip">192.168.1.42</span>
+
+<span class="step-num">Step 5:</span>  Routing table says: <span class="ip">75.75.75.75</span> not local
+         → use default gateway <span class="ip">192.168.1.1</span>
+         → ARP cache for 192.168.1.1 → <span class="highlight">HIT</span> → MAC <span class="mac">aa:bb:cc:11:22:33</span>
+
+<span class="step-num">Step 6:</span>  Build Ethernet frame:
+            Eth dst = <span class="mac">aa:bb:cc:11:22:33</span>  src = <span class="mac">11:22:33:44:55:66</span>
+         → hand to NIC → WiFi transmits
+  </div>
+</div>
+
+<div class="arrow-down">▼</div>
+
+<!-- PHASE B -->
+<div class="phase p-b" id="phase-b">
+  <div class="phase-header">
+    <span class="phase-icon">📡</span>
+    <span class="phase-badge">PHASE B</span>
+    <span class="phase-title">DNS query travels to resolver</span>
+  </div>
+  <div class="ascii">
+<span class="step-num">Step 7:</span>  Home router receives frame
+         → strips Eth header, reads IP dst = <span class="ip">75.75.75.75</span>
+         → performs NAT: src IP <span class="ip">192.168.1.42</span> → <span class="ip">73.15.92.6</span> (public)
+         → ARP for ISP gateway <span class="ip">68.85.4.1</span> → MAC <span class="mac">ff:ee:dd:99:88:77</span>
+         → rewrites Ethernet → forwards out WAN port
+
+<span class="step-num">Step 8:</span>  Comcast ISP gateway (<span class="asn">AS7922</span>) receives
+         → routes internally (OSPF/IS-IS) toward resolver cluster
+         → multiple internal Ethernet rewrites
+
+<span class="step-num">Step 9:</span>  Recursive resolver at <span class="ip">75.75.75.75</span> receives query
+         → cache <span class="highlight">MISS</span> → begins iterative lookup
+  </div>
+</div>
+
+<div class="arrow-down">▼</div>
+
+<!-- PHASE C -->
+<div class="phase p-c" id="phase-c">
+  <div class="phase-header">
+    <span class="phase-icon">🌳</span>
+    <span class="phase-badge">PHASE C</span>
+    <span class="phase-title">Recursive resolver walks the DNS hierarchy</span>
+  </div>
+  <div class="ascii">
+<span class="step-num">Step 10:</span> Resolver → ROOT nameserver (<span class="ip">198.41.0.4</span>, a.root-servers.net)
+          Q: "linkedin.com A?"
+          A: "don't know — for .com, ask gTLD servers at <span class="ip">192.5.6.30</span>..."
+
+<span class="step-num">Step 11:</span> Resolver → .com TLD nameserver (<span class="ip">192.5.6.30</span>, Verisign)
+          Q: "linkedin.com A?"
+          A: "ask ns1.p43.dynect.net at <span class="ip">208.78.70.43</span>..."
+
+<span class="step-num">Step 12:</span> Resolver → LinkedIn authoritative NS (<span class="ip">208.78.70.43</span>, Oracle Dyn)
+          Q: "linkedin.com A?"
+          <span class="comment">GeoDNS logic: resolver IP 75.75.75.75 = US East → Ashburn POP</span>
+          A: "linkedin.com. 300 IN A <span class="vip">13.107.42.14</span>"
+
+<span class="step-num">Step 13:</span> Resolver caches answer (TTL 300s)
+          → DNS reply travels back → home router → laptop
+          → Browser now has: linkedin.com = <span class="vip">13.107.42.14</span>
+  </div>
+</div>
+
+<div class="arrow-down">▼</div>
+
+<!-- PHASE D -->
+<div class="phase p-d" id="phase-d">
+  <div class="phase-header">
+    <span class="phase-icon">🤝</span>
+    <span class="phase-badge">PHASE D</span>
+    <span class="phase-title">TCP SYN leaves the laptop toward LinkedIn</span>
+  </div>
+  <div class="ascii">
+<span class="step-num">Step 14:</span> Laptop builds TCP SYN
+          IP dst = <span class="vip">13.107.42.14</span>  src = <span class="ip">192.168.1.42</span>
+          TCP dst port 443, src port 51234, flags = SYN
+
+<span class="step-num">Step 15:</span> Routing table: dst not local → default gateway <span class="ip">192.168.1.1</span>
+          ARP cache <span class="highlight">HIT</span> → MAC <span class="mac">aa:bb:cc:11:22:33</span>
+          Ethernet frame built → sent over WiFi
+
+<span class="step-num">Step 16:</span> Home router → NAT src to <span class="ip">73.15.92.6</span>
+          → ARP for ISP gateway → Eth rewritten → forwards
+  </div>
+</div>
+
+<div class="arrow-down">▼</div>
+
+<!-- PHASE E -->
+<div class="phase p-e" id="phase-e">
+  <div class="phase-header">
+    <span class="phase-icon">🗺️</span>
+    <span class="phase-badge">PHASE E</span>
+    <span class="phase-title">BGP routes the packet across ASes to LinkedIn's POP</span>
+  </div>
+  <div class="ascii">
+<span class="step-num">Step 17:</span> Comcast ISP gateway (<span class="asn">AS7922</span>)
+          BGP table: <span class="vip">13.107.42.0/24</span> → next-hop <span class="ip">4.69.201.1</span> (Level3)
+          ARP → MAC <span class="mac">00:11:22:aa:bb:cc</span>  → Eth rewritten → forwards
+
+<span class="step-num">Step 18:</span> Level3 edge router (<span class="asn">AS3356</span>)
+          BGP: <span class="vip">13.107.42.0/24</span> → next-hop <span class="ip">129.250.2.1</span> (Level3 core)
+          ARP → MAC <span class="mac">44:55:66:dd:ee:ff</span>  → Eth rewritten → forwards
+
+<span class="step-num">Step 19:</span> Level3 core router
+          BGP: learned <span class="vip">13.107.42.0/24</span> from LinkedIn peering at Equinix
+          next-hop = <span class="ip">52.93.128.1</span> (LinkedIn edge)
+          ARP → MAC <span class="mac">aa:11:bb:22:cc:33</span>  → Eth rewritten → forwards
+
+<span class="step-num">Step 20:</span> Packet arrives at LinkedIn edge router (<span class="asn">AS14413</span>, Ashburn POP)
+  </div>
+</div>
+
+<div class="arrow-down">▼</div>
+
+<!-- PHASE F -->
+<div class="phase p-f" id="phase-f">
+  <div class="phase-header">
+    <span class="phase-icon">⚖️</span>
+    <span class="phase-badge">PHASE F</span>
+    <span class="phase-title">Inside the POP: Edge → ECMP → GLB/IPVS → Backend</span>
+  </div>
+
+  <div class="ascii">
+<span class="comment">══════════════════════════════════════════════════════════════════════════</span>
+<span class="comment">  Key concept: the VIP 13.107.42.14 is announced at THREE nested scopes.</span>
+<span class="comment">══════════════════════════════════════════════════════════════════════════</span>
+
+  <span class="highlight">eBGP</span>  (internet-wide)   → "AS14413 owns <span class="vip">13.107.42.0/24</span>"
+  <span class="highlight">iBGP</span>  (edge → ToR)      → "ToR aggregates /32s from IPVS pool"
+  <span class="highlight">iBGP</span>  (IPVS → ToR)      → "I (each IPVS box) have <span class="vip">13.107.42.14/32</span>"
+
+  Same IP. Different broadcast scope at each layer.
+  </div>
+
+  <div class="diagram">
+<span style="color:#fb923c;">┌────────────────────────────────────────────────────────────────┐</span>
+<span style="color:#fb923c;">│</span>                    <span class="highlight">LINKEDIN POP (Ashburn)</span>                        <span style="color:#fb923c;">│</span>
+<span style="color:#fb923c;">└────────────────────────────────────────────────────────────────┘</span>
+
+                  <span style="color:#fb923c;">[Edge Router AS14413]</span>
+                            │  <span class="vip">dst = 13.107.42.14</span>
+                            ▼
+                   <span style="color:#facc15;">[ToR Router]</span>
+                            │
+                            │  <span class="comment">Routing table entry:</span>
+                            │  <span class="comment">  13.107.42.14/32 → ECMP [</span>
+                            │  <span class="comment">     IPVS-1 (10.10.1.1),</span>
+                            │  <span class="comment">     IPVS-2 (10.10.1.2),</span>
+                            │  <span class="comment">     IPVS-3 (10.10.1.3),</span>
+                            │  <span class="comment">     IPVS-4 (10.10.1.4) ]</span>
+                            │
+                            │  <span class="highlight">ECMP hash(5-tuple) → IPVS-3</span>
+                            │  ARP for <span class="ip">10.10.1.3</span> → MAC <span class="mac">dd:ee:ff:11:22:33</span>
+                            │  Rewrite Eth dst MAC (IP unchanged!)
+                            ▼
+   ┌────────────┬──────────────────┬────────────┬────────────┐
+   │            │                  │            │            │
+<span style="color:#f87171;">[IPVS-1]</span>    <span style="color:#f87171;">[IPVS-2]</span>         <span style="color:#f87171;">[IPVS-3]</span> ◄──     <span style="color:#f87171;">[IPVS-4]</span>
+<span class="ip">10.10.1.1</span>   <span class="ip">10.10.1.2</span>        <span class="ip">10.10.1.3</span>        <span class="ip">10.10.1.4</span>
+lo: <span class="vip">VIP</span>     lo: <span class="vip">VIP</span>          lo: <span class="vip">VIP</span> ✓         lo: <span class="vip">VIP</span>
+  │            │                  │            │
+  └─ BIRD ─────┴─ iBGP session ───┴────────────┘
+             announcing <span class="vip">13.107.42.14/32</span> to ToR
+  </div>
+
+  <div class="ascii">
+<span class="step-num">Step 21:</span> Edge router forwards to ToR
+          (IP header unchanged: dst still = <span class="vip">13.107.42.14</span>)
+
+<span class="step-num">Step 22:</span> ToR looks up <span class="vip">13.107.42.14/32</span> → has 4 ECMP paths
+          hash(<span class="ip">73.15.92.6</span>, 51234, <span class="vip">13.107.42.14</span>, 443, TCP) mod 4 = 2
+          → pick IPVS-3
+
+<span class="step-num">Step 23:</span> ToR ARPs for IPVS-3's real IP <span class="ip">10.10.1.3</span>
+          → gets MAC <span class="mac">dd:ee:ff:11:22:33</span>
+          → rewrites only the <span class="highlight">Ethernet destination MAC</span>
+          → IP header stays as <span class="vip">dst = 13.107.42.14</span>
+          → forwards frame to IPVS-3
+
+<span class="step-num">Step 24:</span> IPVS-3 receives the frame
+          Eth dst = <span class="mac">dd:ee:ff:11:22:33</span> ✓ (that's my MAC, accept)
+          IP dst = <span class="vip">13.107.42.14</span> ✓ (VIP is on my loopback, accept)
+
+          → IPVS connection tracking table lookup:
+              new flow? → run scheduler (<span class="highlight">mh</span> = Maglev consistent hash)
+                           → pick backend from pool
+                           → cache the mapping
+              known flow? → reuse previously chosen backend
+
+          → Scheduler chooses <span class="ip">10.0.0.42</span> (ATS node 7)
+
+<span class="step-num">Step 25:</span> IPVS forwards to backend in <span class="highlight">DR mode (Direct Routing)</span>
+          → ARP for <span class="ip">10.0.0.42</span> → MAC <span class="mac">66:77:88:aa:bb:cc</span>
+          → rewrites <span class="highlight">ONLY Ethernet dst MAC</span> to ATS node 7
+          → IP header COMPLETELY UNCHANGED (<span class="vip">dst = 13.107.42.14</span>)
+          → sends frame over rack network
+
+          <span class="comment">[IPVS real IP 10.10.1.3 never appears in any packet header —</span>
+          <span class="comment"> it exists only so ToR can ARP for it]</span>
+  </div>
+</div>
+
+<div class="arrow-down">▼</div>
+
+<!-- PHASE G -->
+<div class="phase p-g" id="phase-g">
+  <div class="phase-header">
+    <span class="phase-icon">🔐</span>
+    <span class="phase-badge">PHASE G</span>
+    <span class="phase-title">ATS backend accepts, TLS handshake completes</span>
+  </div>
+  <div class="ascii">
+<span class="step-num">Step 26:</span> ATS node 7 (<span class="ip">10.0.0.42</span>) receives frame
+          → Eth dst = my MAC ✓
+          → IP dst = <span class="vip">13.107.42.14</span> ✓ (VIP on loopback, accept as local)
+          → TCP SYN arrives at port 443
+
+<span class="step-num">Step 27:</span> ATS sends SYN-ACK
+          src IP = <span class="vip">13.107.42.14</span>  dst = <span class="ip">73.15.92.6</span>
+          <span class="highlight">Reply bypasses IPVS entirely</span> (DSR = Direct Server Return)
+          → goes ToR → edge → Level3 → Comcast → laptop
+
+<span class="step-num">Step 28:</span> Laptop sends ACK → 3-way handshake complete
+          (L4 LB consistent hash ensures same IPVS → same ATS for this flow)
+
+<span class="step-num">Step 29:</span> TLS 1.3 handshake:
+          → ClientHello (SNI: "linkedin.com", plaintext)
+          → ServerHello + certificate (plaintext)
+          → ECDHE key exchange → shared secret
+          → 🔒 symmetric keys derived, encryption begins 🔒
+
+<span class="step-num">Step 30:</span> Browser sends encrypted HTTP request:
+             GET /feed/ HTTP/2
+             Host: linkedin.com
+             Cookie: li_at=AQEDAT...
+  </div>
+</div>
+
+<div class="arrow-down">▼</div>
+
+<!-- PHASE H -->
+<div class="phase p-h" id="phase-h">
+  <div class="phase-header">
+    <span class="phase-icon">🎯</span>
+    <span class="phase-badge">PHASE H</span>
+    <span class="phase-title">ATS handles request: cache or origin?</span>
+  </div>
+  <div class="ascii">
+<span class="step-num">Step 31:</span> ATS decrypts TLS → plaintext HTTP request visible (inside ATS only)
+          Reads: Host=linkedin.com, path=/feed/, Cookie=user session
+
+<span class="step-num">Step 32:</span> ATS cache lookup for "/feed/":
+          → Cookie present, user-specific → <span class="highlight">NOT cacheable</span>
+          → Forward to origin application tier
+
+<span class="step-num">Step 33:</span> Internal service discovery:
+          feed-service VIP = <span class="ip">10.5.0.1</span>
+          (yet another VIP! announced inside DC by internal LBs via iBGP)
+
+<span class="step-num">Step 34:</span> ATS → internal L7 LB at <span class="ip">10.5.0.1</span>
+          → ToR switch → ARP → Ethernet rewritten → forwarded
+  </div>
+</div>
+
+<div class="arrow-down">▼</div>
+
+<!-- PHASE I -->
+<div class="phase p-i" id="phase-i">
+  <div class="phase-header">
+    <span class="phase-icon">⚙️</span>
+    <span class="phase-badge">PHASE I</span>
+    <span class="phase-title">Internal L7 LB → app server → downstream fanout</span>
+  </div>
+  <div class="ascii">
+<span class="step-num">Step 35:</span> Internal L7 LB (Envoy / Rest.li router)
+          → inspects HTTP path + headers
+          → picks healthy backend: <span class="ip">10.5.2.8</span> (feed-service)
+          → ARP → Eth rewrite → forward
+
+<span class="step-num">Step 36:</span> App server <span class="ip">10.5.2.8</span> (feed-service, Java on JVM)
+          → decodes session cookie → user_id = 12345
+          → begins parallel fanout:
+               • member-graph-service → who you follow
+               • feed-ranking-service → ML scoring
+               • activity-service     → recent posts
+               • profile-service      → avatars, names
+          (each fanout is another internal HTTP call,
+           each traversing internal L7 LB + ToR + ARP)
+
+<span class="step-num">Step 37:</span> Downstream services query storage:
+          Espresso (docs) | Pinot (OLAP) | Venice (KV) | Kafka (streams)
+          → return data
+
+<span class="step-num">Step 38:</span> feed-service aggregates → builds HTML/JSON response
+          HTTP/2 200 OK, Content-Encoding: br, &lt;body&gt;...&lt;/body&gt;
+  </div>
+</div>
+
+<div class="arrow-down">▼</div>
+
+<!-- PHASE J -->
+<div class="phase p-j" id="phase-j">
+  <div class="phase-header">
+    <span class="phase-icon">📤</span>
+    <span class="phase-badge">PHASE J</span>
+    <span class="phase-title">Response flows back to laptop</span>
+  </div>
+  <div class="ascii">
+<span class="step-num">Step 39:</span> Response: app server → internal L7 LB → ATS node 7
+          (Ethernet rewritten at each DC hop)
+
+<span class="step-num">Step 40:</span> ATS node 7
+          → may re-encode (brotli), inject headers (X-Li-Pop)
+          → encrypts with TLS session key
+          → sends back via existing TCP connection
+          → IP src = <span class="vip">13.107.42.14</span>  dst = <span class="ip">73.15.92.6</span>
+          → <span class="highlight">DSR: reply goes directly to client, bypassing IPVS</span>
+
+<span class="step-num">Step 41:</span> ATS → edge router
+          BGP: best path to <span class="ip">73.15.92.0/24</span> → via Level3
+          → Eth rewrite → forward
+
+<span class="step-num">Step 42:</span> Level3 core → Level3 edge → Comcast peering
+          → each hop: BGP lookup + ARP + Eth rewrite
+
+<span class="step-num">Step 43:</span> Comcast backbone → neighborhood head-end → home router's WAN
+
+<span class="step-num">Step 44:</span> Home router
+          → NAT table: <span class="ip">73.15.92.6</span>:51234 ↔ <span class="ip">192.168.1.42</span>:51234
+          → rewrite dst IP back to laptop
+          → ARP → Eth rewrite → WiFi → laptop
+
+<span class="step-num">Step 45:</span> Laptop NIC receives
+          → kernel TCP reassembly
+          → TLS decrypts payload
+          → HTTP/2 layer reconstructs response
+          → hands HTML body to browser
+  </div>
+</div>
+
+<div class="arrow-down">▼</div>
+
+<!-- PHASE K -->
+<div class="phase p-k" id="phase-k">
+  <div class="phase-header">
+    <span class="phase-icon">🎨</span>
+    <span class="phase-badge">PHASE K</span>
+    <span class="phase-title">Browser parses, renders, fetches assets</span>
+  </div>
+  <div class="ascii">
+<span class="step-num">Step 46:</span> Browser parses HTML
+          → encounters &lt;link href&gt;, &lt;script src&gt;, &lt;img src&gt;
+          → for each asset URL, starts a new request:
+              • Same origin → reuses existing TCP+TLS connection
+                (HTTP/2 multiplexes many requests over one connection)
+              • Different origin (static.licdn.com) → restart from PHASE A
+
+<span class="step-num">Step 47:</span> Static assets (CSS, JS, images)
+          → almost all <span class="highlight">cache HIT at ATS edge</span> → returned in &lt;10ms
+          → never reach origin app servers
+
+<span class="step-num">Step 48:</span> Browser executes JS → XHR/fetch calls to /voyager/api/...
+          → each repeats PHASE G-I over the same TCP+TLS connection
+
+<span class="step-num">Step 49:</span> Browser paints pixels on screen
+
+<span class="step-num">Step 50:</span> <span class="highlight">✨ User sees LinkedIn feed ✨</span>
+          Total time: ~200-800ms to first byte, ~1-3s fully interactive
+  </div>
+</div>
+
+<div class="arrow-down">▼</div>
+
+<!-- PHASE L: GLB DEEP DIVE -->
+<div class="phase p-l" id="phase-l">
+  <div class="phase-header">
+    <span class="phase-icon">🌍</span>
+    <span class="phase-badge">PHASE L · DEEP DIVE</span>
+    <span class="phase-title">There IS a GLB &mdash; it's just not a box</span>
+  </div>
+
+  <p>
+    The confusion is thinking of a <strong>GLB (Global Load Balancer)</strong> as a physical device
+    like IPVS. Modern GLB is a <strong>combination</strong> of BGP anycast, geo-aware DNS, and
+    health monitoring &mdash; working together. There is no single server called "the GLB" that
+    all traffic flows through; that would defeat the entire purpose (the point is to <em>avoid</em>
+    global traffic funneling through one place).
+  </p>
+
+  <p>There are two main techniques, and most large companies use a hybrid of both.</p>
+
+  <h4>Technique 1 &mdash; BGP anycast (the VIP lives in many places)</h4>
+
+  <p>
+    Remember <span class="vip" style="font-family:monospace;">13.107.42.14</span>?
+    LinkedIn doesn't announce it from <em>one</em> POP. They announce it from <strong>every</strong>
+    POP in the world, simultaneously, via eBGP to their peers and transit providers.
+  </p>
+
+  <div class="ascii">
+  LinkedIn Ashburn POP       <span class="comment">──&gt;</span> announces <span class="vip">13.107.42.0/24</span> to US East ISPs
+  LinkedIn San Jose POP      <span class="comment">──&gt;</span> announces <span class="vip">13.107.42.0/24</span> to US West ISPs
+  LinkedIn Dublin POP        <span class="comment">──&gt;</span> announces <span class="vip">13.107.42.0/24</span> to European ISPs
+  LinkedIn Singapore POP     <span class="comment">──&gt;</span> announces <span class="vip">13.107.42.0/24</span> to APAC ISPs
+  LinkedIn Mumbai POP        <span class="comment">──&gt;</span> announces <span class="vip">13.107.42.0/24</span> to Indian ISPs
+  ... more POPs ...
+  </div>
+
+  <p>
+    Every POP says <em>"I own this prefix."</em> From the internet's perspective, the VIP is
+    reachable from many directions. <strong>BGP's best-path algorithm does the geographic
+    routing for free.</strong>
+  </p>
+
+  <div class="ascii">
+<span class="comment">When a user in Mumbai sends a packet to 13.107.42.14:</span>
+
+  Their ISP (<span class="asn">Reliance Jio AS55836</span>) looks up <span class="vip">13.107.42.0/24</span> in BGP.
+  Routing table says: shortest AS_PATH is via direct peer at Mumbai IXP
+                       <span class="comment">→</span> LinkedIn Mumbai POP.
+  Packet goes to Mumbai.
+
+<span class="comment">Meanwhile, a user in Texas doing the same query:</span>
+
+  Their ISP (<span class="asn">Comcast AS7922</span>) looks up <span class="vip">13.107.42.0/24</span>.
+  Shortest AS_PATH is via Level3 <span class="comment">→</span> LinkedIn Ashburn POP.
+  Packet goes to Ashburn.
+  </div>
+
+  <p>The same IP, hitting different POPs, purely based on BGP topology. That's anycast.</p>
+
+  <div class="diagram">
+    User in Mumbai <span class="comment">─────►</span> nearest hop <span class="comment">─────►</span> <span style="color:#fb923c;">LinkedIn Mumbai POP</span>
+                                                    │
+                                                    ▼
+                                             <span class="comment">(same VIP locally
+                                              in that POP)</span>
+
+    User in Texas  <span class="comment">─────►</span> nearest hop <span class="comment">─────►</span> <span style="color:#fb923c;">LinkedIn Ashburn POP</span>
+                                                    │
+                                                    ▼
+                                             <span class="comment">(same VIP locally
+                                              in that POP)</span>
+  </div>
+
+  <p>
+    The "GLB" here is <strong>BGP itself</strong>. No centralized dispatcher. The protocol that
+    routes your packet to the nearest advertisement <em>is</em> the global load balancer.
+  </p>
+
+  <h4>Technique 2 &mdash; DNS-based steering (different IPs per region)</h4>
+
+  <p>
+    Not everyone uses pure anycast. The alternative (what Netflix and many CDNs use) is to
+    return <strong>different IPs to different users via GeoDNS</strong>. Each POP gets its own
+    unique unicast VIP.
+  </p>
+
+  <div class="ascii">
+  User in Mumbai asks:   "linkedin.com A?"
+  LinkedIn's DNS sees:    resolver IP from India <span class="comment">→</span> returns <span class="vip">13.107.55.200</span>  <span class="comment">(Mumbai POP VIP)</span>
+
+  User in Texas asks:    "linkedin.com A?"
+  LinkedIn's DNS sees:    resolver IP from US    <span class="comment">→</span> returns <span class="vip">13.107.42.14</span>   <span class="comment">(Ashburn POP VIP)</span>
+  </div>
+
+  <p>
+    Each POP has its own unique VIP. DNS picks which VIP to return based on the resolver's
+    location, then BGP just has to route the packet to that specific VIP (which is only
+    announced from that one POP).
+  </p>
+
+  <p>
+    The "GLB" here is the <strong>authoritative DNS server's geo-logic</strong>. Companies like
+    NS1, AWS Route 53, Dyn, Akamai DNS, and Cloudflare DNS all do this.
+  </p>
+
+  <h4>Technique 3 &mdash; Hybrid (most big companies)</h4>
+
+  <p>Google, AWS, Cloudflare, and Microsoft all use both:</p>
+
+  <ul>
+    <li><strong>Anycast</strong> for DNS and short-lived connections (UDP queries, QUIC handshakes)</li>
+    <li><strong>GeoDNS</strong> for long-lived connections (video streams, large downloads)</li>
+    <li><strong>Inside each POP</strong>, IPVS / Maglev / Katran picks a backend</li>
+  </ul>
+
+  <div class="compare-2">
+    <div>
+      <h5>Cloudflare &mdash; anycast-heavy</h5>
+      <p>Literally every one of their ~300+ POPs announces the same <span class="vip" style="font-family:monospace;">1.1.1.1</span> or the same customer VIPs. Their GLB is pure BGP.</p>
+    </div>
+    <div>
+      <h5>Netflix &mdash; GeoDNS-heavy</h5>
+      <p>Long video streams don't tolerate BGP reconvergence mid-stream well, so they prefer stable unicast IPs per POP, steered by GeoDNS.</p>
+    </div>
+  </div>
+
+  <h4>So how does India hit the Mumbai POP specifically?</h4>
+
+  <p>Two possible mechanisms, depending on the company:</p>
+
+  <p style="color:#fbbf24;font-family:monospace;font-size:13px;margin-top:14px;">▸ If using anycast (Google, Cloudflare):</p>
+
+  <div class="ascii">
+User (Mumbai, ISP = <span class="asn">Jio AS55836</span>)
+  │
+  │ DNS lookup: linkedin.com <span class="comment">→</span> <span class="vip">13.107.42.14</span>
+  │ <span class="comment">(DNS resolver could be anywhere — returns the single anycast IP)</span>
+  │
+  ▼
+User sends packet: dst = <span class="vip">13.107.42.14</span>
+  │
+  ▼
+Jio router's BGP table for <span class="vip">13.107.42.0/24</span>:
+  - Path A: <span class="asn">AS55836</span> <span class="comment">→</span> <span class="asn">AS8075</span> (Microsoft/LinkedIn Mumbai)       AS_PATH = [8075]    <span class="highlight">← shortest!</span>
+  - Path B: <span class="asn">AS55836</span> <span class="comment">→</span> <span class="asn">AS6453</span> (Tata) <span class="comment">→</span> <span class="asn">AS8075</span> (Ashburn POP)     AS_PATH = [6453, 8075]
+  - Path C: <span class="asn">AS55836</span> <span class="comment">→</span> <span class="asn">AS2914</span> (NTT)  <span class="comment">→</span> <span class="asn">AS8075</span> (Singapore POP)   AS_PATH = [2914, 8075]
+
+Jio picks <span class="highlight">Path A</span> (direct peering with LinkedIn Mumbai, shortest AS_PATH)
+  │
+  ▼
+Packet goes to LinkedIn Mumbai POP <span class="comment">— never leaves India</span>
+  </div>
+
+  <p>
+    The shortest AS_PATH to the VIP happens to be the POP in Mumbai because LinkedIn peers with
+    Indian ISPs at Mumbai IXPs. <strong>Geographic proximity emerges from BGP topology naturally.</strong>
+  </p>
+
+  <p style="color:#fbbf24;font-family:monospace;font-size:13px;margin-top:14px;">▸ If using GeoDNS:</p>
+
+  <div class="ascii">
+User (Mumbai)
+  │
+  │ DNS lookup: linkedin.com A?
+  │ <span class="comment">(query goes to Jio's DNS resolver, say 49.45.1.1)</span>
+  │
+  ▼
+Jio resolver <span class="comment">→</span> LinkedIn authoritative DNS (Dynect)
+  │
+  │ Dynect sees: resolver IP = <span class="ip">49.45.1.1</span> (Indian ISP)
+  │ Dynect's geo-database: India <span class="comment">→</span> Mumbai POP
+  │ Returns: linkedin.com = <span class="vip">13.107.55.200</span> (Mumbai VIP, unicast)
+  │
+  ▼
+User sends packet to <span class="vip">13.107.55.200</span>
+  │
+  │ <span class="vip">13.107.55.200/24</span> is announced ONLY from Mumbai POP via BGP
+  │ BGP routes to Mumbai naturally
+  │
+  ▼
+Packet arrives at Mumbai POP
+  </div>
+
+  <p>
+    Both techniques end up with the same result: the packet lands at Mumbai. They just get there
+    by different means.
+  </p>
+
+  <h4>The "GLB is invisible" realization</h4>
+
+  <p>
+    So to answer <em>"why isn't there a GLB anywhere?"</em> &mdash; there is one, but it's woven
+    into the infrastructure rather than being a box:
+  </p>
+
+  <table class="insight-table">
+    <tr><th>What looks like</th><th>What it actually is</th></tr>
+    <tr><td>A "Global Load Balancer"</td><td>BGP anycast + GeoDNS + health monitoring</td></tr>
+    <tr><td>"It decided to send me to Mumbai"</td><td>BGP's shortest-AS-path naturally picked Mumbai</td></tr>
+    <tr><td>"The GLB runs somewhere"</td><td>Distributed across every POP and every DNS server</td></tr>
+  </table>
+
+  <p>
+    There's no single machine deciding "this user goes to Mumbai, that user goes to Dublin." It
+    <strong>emerges</strong> from four cooperating systems:
+  </p>
+  <ul>
+    <li>Every POP <strong>announces the same VIP</strong> (or a region-specific VIP) via BGP.</li>
+    <li>Every BGP router on the internet <strong>independently picks the closest path</strong> based on AS_PATH length and LOCAL_PREF.</li>
+    <li>DNS servers have <strong>geo-aware logic</strong> that steers different users to different VIPs.</li>
+    <li><strong>Health monitoring</strong> at each POP withdraws BGP announcements when the POP is unhealthy &mdash; rerouting users to the next-nearest POP automatically.</li>
+  </ul>
+
+  <h4>What's running at each POP</h4>
+
+  <p>Now you can see the full picture: a thin global "fabric" routes you to a POP, and the heavy LB lifting happens locally inside that POP.</p>
+
+  <div class="diagram">
+<span style="color:#f472b6;">┌───────────────────────────────────────────────────────────────┐</span>
+<span style="color:#f472b6;">│</span>                    <span class="highlight">GLOBAL "GLB"</span>                               <span style="color:#f472b6;">│</span>
+<span style="color:#f472b6;">│</span>       <span class="comment">(BGP anycast + GeoDNS + health monitoring)</span>              <span style="color:#f472b6;">│</span>
+<span style="color:#f472b6;">│</span>                           │                                   <span style="color:#f472b6;">│</span>
+<span style="color:#f472b6;">│</span>                 routes user to nearest POP                    <span style="color:#f472b6;">│</span>
+<span style="color:#f472b6;">│</span>                           │                                   <span style="color:#f472b6;">│</span>
+<span style="color:#f472b6;">└───────────────────────────┼───────────────────────────────────┘</span>
+                            │
+         <span class="comment">┌──────────────────┼──────────────────┐</span>
+         ▼                  ▼                  ▼
+    <span style="color:#fb923c;">┌─────────┐        ┌─────────┐       ┌─────────┐</span>
+    <span style="color:#fb923c;">│</span> Mumbai  <span style="color:#fb923c;">│</span>        <span style="color:#fb923c;">│</span> Ashburn <span style="color:#fb923c;">│</span>       <span style="color:#fb923c;">│</span> Dublin  <span style="color:#fb923c;">│</span>
+    <span style="color:#fb923c;">│</span>  POP    <span style="color:#fb923c;">│</span>        <span style="color:#fb923c;">│</span>  POP    <span style="color:#fb923c;">│</span>       <span style="color:#fb923c;">│</span>  POP    <span style="color:#fb923c;">│</span>
+    <span style="color:#fb923c;">├─────────┤</span>        <span style="color:#fb923c;">├─────────┤</span>       <span style="color:#fb923c;">├─────────┤</span>
+    <span style="color:#fb923c;">│</span> Edge rtr<span style="color:#fb923c;">│</span>        <span style="color:#fb923c;">│</span> Edge rtr<span style="color:#fb923c;">│</span>       <span style="color:#fb923c;">│</span> Edge rtr<span style="color:#fb923c;">│</span>
+    <span style="color:#fb923c;">│</span>    │    <span style="color:#fb923c;">│</span>        <span style="color:#fb923c;">│</span>    │    <span style="color:#fb923c;">│</span>       <span style="color:#fb923c;">│</span>    │    <span style="color:#fb923c;">│</span>
+    <span style="color:#fb923c;">│</span>   ToR   <span style="color:#fb923c;">│</span>        <span style="color:#fb923c;">│</span>   ToR   <span style="color:#fb923c;">│</span>       <span style="color:#fb923c;">│</span>   ToR   <span style="color:#fb923c;">│</span>
+    <span style="color:#fb923c;">│</span>    │    <span style="color:#fb923c;">│</span>        <span style="color:#fb923c;">│</span>    │    <span style="color:#fb923c;">│</span>       <span style="color:#fb923c;">│</span>    │    <span style="color:#fb923c;">│</span>
+    <span style="color:#fb923c;">│</span>  <span style="color:#f87171;">IPVS×N</span> <span style="color:#fb923c;">│</span>        <span style="color:#fb923c;">│</span>  <span style="color:#f87171;">IPVS×N</span> <span style="color:#fb923c;">│</span>       <span style="color:#fb923c;">│</span>  <span style="color:#f87171;">IPVS×N</span> <span style="color:#fb923c;">│</span>    <span class="comment">← local LB</span>
+    <span style="color:#fb923c;">│</span>    │    <span style="color:#fb923c;">│</span>        <span style="color:#fb923c;">│</span>    │    <span style="color:#fb923c;">│</span>       <span style="color:#fb923c;">│</span>    │    <span style="color:#fb923c;">│</span>
+    <span style="color:#fb923c;">│</span>  <span style="color:#e879f9;">ATS×M</span>  <span style="color:#fb923c;">│</span>        <span style="color:#fb923c;">│</span>  <span style="color:#e879f9;">ATS×M</span>  <span style="color:#fb923c;">│</span>       <span style="color:#fb923c;">│</span>  <span style="color:#e879f9;">ATS×M</span>  <span style="color:#fb923c;">│</span>    <span class="comment">← L7 proxy / cache</span>
+    <span style="color:#fb923c;">│</span>    │    <span style="color:#fb923c;">│</span>        <span style="color:#fb923c;">│</span>    │    <span style="color:#fb923c;">│</span>       <span style="color:#fb923c;">│</span>    │    <span style="color:#fb923c;">│</span>
+    <span style="color:#fb923c;">│</span>  <span style="color:#a78bfa;">Apps</span>   <span style="color:#fb923c;">│</span>        <span style="color:#fb923c;">│</span>  <span style="color:#a78bfa;">Apps</span>   <span style="color:#fb923c;">│</span>       <span style="color:#fb923c;">│</span>  <span style="color:#a78bfa;">Apps</span>   <span style="color:#fb923c;">│</span>
+    <span style="color:#fb923c;">└─────────┘        └─────────┘       └─────────┘</span>
+  </div>
+
+  <p>
+    At the <strong>global level</strong>, there's no single LB &mdash; it's BGP + DNS.
+    At the <strong>POP level</strong>, IPVS (or Maglev / Katran / GLB-the-product) handles the work.
+  </p>
+</div>
+
+<!-- SUMMARY -->
+<div class="summary-box" id="summary">
+  <h3>🧠 The five big ideas packed into these 50 steps</h3>
+  <p>
+    <strong>1. Layered addressing.</strong> IP is end-to-end (survives the whole trip).
+    MAC is per-link (rewritten every hop). Port is per-connection.
+    VIP is a logical IP that many physical boxes can "own."
+  </p>
+  <p>
+    <strong>2. BGP is just distributed routing.</strong> Each AS announces what it owns.
+    Each router picks a next hop based on policy (LOCAL_PREF, AS_PATH). There is no central
+    map — routes emerge from each router's independent best-path choice.
+  </p>
+  <p>
+    <strong>3. The same VIP is announced at nested scopes.</strong> eBGP to the internet,
+    iBGP inside the POP, and (in DR mode) ARP-level on the loopback of every IPVS box
+    and every ATS. "Where does it go?" depends on which layer is routing.
+  </p>
+  <p>
+    <strong>4. ECMP + consistent hashing = stateless load balancing.</strong> ToR picks
+    an IPVS box by 5-tuple hash. IPVS picks a backend by 5-tuple hash. Same flow = same
+    IPVS = same backend, without any central coordinator.
+  </p>
+  <p>
+    <strong>5. DSR (Direct Server Return) is why this scales.</strong> The LB sees only
+    inbound packets. The reply bypasses it entirely. Since responses (HTML, video) are
+    10-100× bigger than requests, this multiplies LB capacity by the same factor.
+  </p>
+
+  <div class="badge-box">
+    <div class="badge"><div class="badge-title">DNS</div><div class="badge-desc">Name → IP. 4 round-trips when cold, 0 when cached.</div></div>
+    <div class="badge"><div class="badge-title">ARP</div><div class="badge-desc">Local IP → MAC. Broadcast, per-link only.</div></div>
+    <div class="badge"><div class="badge-title">BGP</div><div class="badge-desc">Policy-based routing between &amp; within ASes.</div></div>
+    <div class="badge"><div class="badge-title">ECMP</div><div class="badge-desc">Spread flows across equal-cost paths by hash.</div></div>
+    <div class="badge"><div class="badge-title">IPVS</div><div class="badge-desc">Kernel L4 forwarder. DR mode = MAC rewrite only.</div></div>
+    <div class="badge"><div class="badge-title">ATS</div><div class="badge-desc">L7 edge proxy: TLS termination + caching.</div></div>
+    <div class="badge"><div class="badge-title">DSR</div><div class="badge-desc">Replies bypass the LB → massive scale.</div></div>
+    <div class="badge"><div class="badge-title">Consistent Hash</div><div class="badge-desc">Same flow → same backend, without central state.</div></div>
+  </div>
+</div>
+
+<!-- GLOSSARY -->
+<div class="glossary">
+  <h3>📖 Glossary — every term, in plain English</h3>
+  <table>
+    <tr><th>Term</th><th>What it means</th></tr>
+    <tr><td>DHCP</td><td>How your laptop learns its IP, gateway, and DNS server when joining a network.</td></tr>
+    <tr><td>/etc/hosts</td><td>Static text file mapping hostnames to IPs. Checked before DNS.</td></tr>
+    <tr><td>/etc/resolv.conf</td><td>Lists DNS servers. Filled in by the DHCP client.</td></tr>
+    <tr><td>nsswitch.conf</td><td>Tells the OS the order to consult name sources (files vs DNS).</td></tr>
+    <tr><td>DNS</td><td>Question: "What's the IP of this hostname?" Answers via UDP/53.</td></tr>
+    <tr><td>Recursive resolver</td><td>DNS server that walks root → TLD → authoritative on your behalf.</td></tr>
+    <tr><td>Authoritative NS</td><td>The DNS server that holds the actual records for a domain.</td></tr>
+    <tr><td>GeoDNS</td><td>Authoritative NS that returns different IPs based on the resolver's location.</td></tr>
+    <tr><td>NAT</td><td>Router rewrites private IP → public IP on the way out, reverses on the way back.</td></tr>
+    <tr><td>RFC 1918</td><td>Defines private ranges 10.x, 172.16–31.x, 192.168.x — reused on every network.</td></tr>
+    <tr><td>ARP</td><td>"What's the MAC of this local IP?" Broadcast, per-link only.</td></tr>
+    <tr><td>MAC address</td><td>48-bit hardware address on your NIC. Used only on the local Ethernet segment.</td></tr>
+    <tr><td>Default gateway</td><td>The router you hand any non-local packet to.</td></tr>
+    <tr><td>Routing table</td><td>OS map of destination → next hop. Always has at least a default route.</td></tr>
+    <tr><td>AS / ASN</td><td>Autonomous System: a network with one administrative owner. Comcast=AS7922.</td></tr>
+    <tr><td>BGP</td><td>How ASes tell each other "I can reach these IP prefixes." The internet's glue.</td></tr>
+    <tr><td>eBGP / iBGP</td><td>BGP between ASes (eBGP) vs inside one AS (iBGP).</td></tr>
+    <tr><td>Anycast</td><td>One IP announced from many locations. Routers pick the closest.</td></tr>
+    <tr><td>POP</td><td>Point of Presence — a physical site where a service has servers.</td></tr>
+    <tr><td>ToR switch</td><td>Top-of-Rack switch — the first L3 hop above servers in a datacenter rack.</td></tr>
+    <tr><td>VIP</td><td>Virtual IP — a logical address many physical boxes can "own" (via iBGP/loopback).</td></tr>
+    <tr><td>5-tuple</td><td>(src_ip, src_port, dst_ip, dst_port, protocol) — the unique fingerprint of a flow.</td></tr>
+    <tr><td>ECMP</td><td>Equal-Cost Multi-Path. Router hashes the 5-tuple to deterministically pick one of N paths.</td></tr>
+    <tr><td>L4 LB</td><td>Operates at TCP/UDP. Doesn't terminate TLS. Forwards by 5-tuple. (Katran, IPVS, Maglev.)</td></tr>
+    <tr><td>L7 LB</td><td>Terminates TLS, parses HTTP, routes by host/path/headers. (Envoy, NGINX, HAProxy.)</td></tr>
+    <tr><td>IPVS</td><td>Linux kernel L4 load balancer. Uses connection tracking + scheduler.</td></tr>
+    <tr><td>DR mode</td><td>Direct Routing — IPVS rewrites only the destination MAC, IP header untouched.</td></tr>
+    <tr><td>DSR</td><td>Direct Server Return — backend replies straight to client, bypassing the LB.</td></tr>
+    <tr><td>Maglev / mh</td><td>Google's consistent-hash scheduler. Same 5-tuple → same backend.</td></tr>
+    <tr><td>Consistent hashing</td><td>Adding/removing a backend re-maps only a small fraction of keys.</td></tr>
+    <tr><td>Connection tracking</td><td>Kernel table that remembers which backend a flow was assigned to.</td></tr>
+    <tr><td>BIRD</td><td>Open-source BGP daemon often used to make a Linux box speak iBGP to a ToR.</td></tr>
+    <tr><td>ATS</td><td>Apache Traffic Server — LinkedIn's edge HTTP proxy and cache.</td></tr>
+    <tr><td>SNI</td><td>Server Name Indication. TLS extension that sends the hostname in plaintext.</td></tr>
+    <tr><td>ALPN</td><td>Application-Layer Protocol Negotiation. TLS picks HTTP/1.1 vs HTTP/2.</td></tr>
+    <tr><td>ECDHE</td><td>Elliptic-Curve Diffie-Hellman Ephemeral. Derives a shared secret without sending it.</td></tr>
+    <tr><td>HTTP/2</td><td>Multiplexes many requests over one TCP+TLS connection.</td></tr>
+    <tr><td>Brotli (br)</td><td>Compression algorithm Google built; used in `Content-Encoding: br`.</td></tr>
+    <tr><td>Espresso</td><td>LinkedIn's primary document store (member data).</td></tr>
+    <tr><td>Pinot</td><td>LinkedIn's OLAP datastore (analytics).</td></tr>
+    <tr><td>Venice</td><td>LinkedIn's KV store (precomputed/derived data).</td></tr>
+    <tr><td>Kafka</td><td>LinkedIn's distributed log / streaming platform.</td></tr>
+  </table>
+</div>
+
+<div class="site-footer">
+  Networking 101 · part of <a href="https://kkanakka.github.io/">Kiran's Tech Hub</a>
+</div>
+
+</div>
+</body>
+</html>
