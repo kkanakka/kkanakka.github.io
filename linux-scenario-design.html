@@ -412,7 +412,418 @@
   <div class="diagram-caption">Figure 1 — End-to-end pipeline. Build once, deploy progressively, validate continuously, roll back instantly.</div>
 </div>
 
-<p><em>[Note: This is a comprehensive 45-minute technical deep dive. The full content includes detailed sections on patch agents, real-time processing, Ceph scaling, Kubernetes resources, eBPF internals, and a complete glossary. Due to length constraints, this represents the opening section of the complete guide.]</em></p>
+<h4>Why each piece exists</h4>
+
+<ul>
+  <li><strong>Sigstore/cosign signing</strong> — kernel packages are high-value attack targets. An unsigned package on the repo could compromise every node. Every agent verifies the signature against a hardware-backed key before <code>rpm</code>/<code>dpkg</code> runs. No signature → install rejected, alert generated.</li>
+  <li><strong>Pre-canary (5 nodes, your team's own)</strong> — this catches the "didn't even boot" class of bugs without affecting any tenants. 4 h is enough to confirm the new kernel loads, drivers initialize, and the agent comes back online.</li>
+  <li><strong>Canary 24 h soak</strong> — captures one full diurnal cycle: peak hours, batch jobs at midnight, backups at 03:00, cron storms on the hour. A 4-hour canary will miss every cron-driven workload pattern.</li>
+  <li><strong>Stage 48 h soak with 1,000 nodes</strong> — large enough sample to surface rare bugs (1-in-200 hardware variants), small enough that a bad patch can be rolled back before user impact.</li>
+  <li><strong>Rack-aware production rolling</strong> — a typical rack has shared power and switches. Patching two nodes in the same rack simultaneously means a coincident failure looks like a patch bug; isolating to one node per rack rules that out.</li>
+  <li><strong>Drain before patch</strong> — the kernel reboot or kexec briefly takes the node offline. Tenant workloads must move first. For databases this means leader-step-down + snapshot before patching.</li>
+</ul>
+
+<h3 id="patch-agent">Per-node agent <a href="#patch-agent" class="anchor">#</a></h3>
+
+<p>The agent on each node is what makes this resilient. It's a state machine that <em>polls</em> the orchestrator for desired state, reconciles locally, and survives orchestrator-unreachable conditions.</p>
+
+<h4>Why each transition exists</h4>
+
+<ul>
+  <li><strong>Pull-based polling, not push.</strong> A push-based system loses commands on partition. Pull-based: the agent retries the orchestrator forever — when the partition heals, it picks up where it left off. No commands are ever "lost in transit."</li>
+  <li><strong>Cached desired state for 24 h.</strong> When the orchestrator is unreachable, the agent doesn't panic — it continues with what it last knew was approved. After 24 h of silence, it pages on-call (the orchestrator might be permanently dead).</li>
+  <li><strong>Idempotent reconcile.</strong> Re-running the patch tool on an already-patched node is a no-op. This means agents can crash and restart without breaking anything; the state machine self-recovers.</li>
+  <li><strong>Verify-signature-first.</strong> Even if a malicious actor compromised the orchestrator and pushed a fake desired-state, agents reject any package without a valid cosign signature.</li>
+  <li><strong>Post-checks before declaring success.</strong> A patch that "applied successfully" might still produce a node that boots but misbehaves (driver bug, slow networking, kernel oops). OBHC (Out-of-Band Health Checks) compare metrics against a control group of unpatched siblings.</li>
+</ul>
+
+<h3 id="patch-rollback">Rollback &amp; partition handling <a href="#patch-rollback" class="anchor">#</a></h3>
+
+<p>Three rollback tiers exist because failures vary in severity:</p>
+
+<table>
+  <thead>
+    <tr><th>Tier</th><th>Mechanism</th><th>Time</th><th>When</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1</td>
+      <td><code>kexec --load /boot/vmlinuz-PREV &amp;&amp; kexec --exec</code></td>
+      <td>~1 s</td>
+      <td>New kernel boots but misbehaves at runtime. Avoids reboot — just loads previous kernel image and jumps to it.</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td><code>grub-set-default 1 &amp;&amp; reboot</code></td>
+      <td>~60 s</td>
+      <td>New kernel panics or hangs. Full reboot through previous grub entry — works because grub keeps the previous entry intact.</td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td>IPMI/iDRAC PXE re-image</td>
+      <td>~10 min</td>
+      <td>Filesystem corruption or bootloader damage. Orchestrator triggers PXE boot, re-provisions from scratch.</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="warning">
+  <p class="callout-title">Quorum-aware sequencing for stateful services</p>
+  <p>Stateless web servers can drain → patch → undrain freely. Stateful services need quorum awareness:</p>
+  <ul>
+    <li><strong>etcd/Consul (3 replicas):</strong> never patch more than 1 at a time.</li>
+    <li><strong>etcd/Consul (5 replicas):</strong> never patch more than 2 at a time.</li>
+    <li><strong>Kafka (RF=3):</strong> never patch more than 1 broker per topic-partition leader at a time.</li>
+    <li><strong>MySQL/Postgres primary-replica:</strong> patch replicas first; failover before patching primary.</li>
+  </ul>
+  <p>Violating quorum during patch = data loss or split brain.</p>
+</div>
+
+<h2 id="realtime">2. Real-time data processing <a href="#realtime" class="anchor">#</a></h2>
+
+<p><strong>Problem statement.</strong> Process streaming data with hard p99 latency requirement under 1 ms. Examples: market data feeds, telemetry ingestion, ML inference for ad bidding. The naïve answer ("optimize the application") fails because the kernel and hardware will introduce latency you can't fix in user code.</p>
+
+<p>The senior answer: real-time isn't a single optimization. It's a <em>stack of mutually-reinforcing tunings</em> from hardware up through application. Skip any layer and the latency tail comes back.</p>
+
+<h3 id="rt-stack">Tuning stack <a href="#rt-stack" class="anchor">#</a></h3>
+
+<h4>Why each layer exists</h4>
+
+<dl class="glossary">
+<dt>Hardware: disable C-states</dt>
+<dd>CPU sleep states (C1, C2, C6) save power by halting cores. Wake-up latency is 30–100+ μs. For a sub-millisecond budget, one wake-up blows the SLO. Pin <code>processor.max_cstate=1</code> in boot params.</dd>
+<dt>Hardware: pin CPU frequency</dt>
+<dd>Frequency scaling adds variable latency as the CPU ramps up. Set governor to <code>performance</code> and disable Intel SpeedStep/AMD Cool'n'Quiet in BIOS.</dd>
+<dt>Hardware: disable hyper-threading on isolated cores</dt>
+<dd>SMT lets two threads share one physical core. Sharing means contention — your latency-critical thread suddenly stalls because a sibling thread on the same core is using the FPU. Disable SMT for predictability.</dd>
+<dt>Kernel: PREEMPT_RT</dt>
+<dd>Lets the kernel preempt itself nearly anywhere. Without it, kernel work (filesystem walks, memory reclaim) can hold the CPU for several ms while your real-time task waits.</dd>
+<dt>Kernel: isolcpus=2-15</dt>
+<dd>Removes cores 2–15 from the scheduler's general pool. The scheduler will not place arbitrary tasks on these cores; only explicit pinning lands jobs there.</dd>
+<dt>Kernel: nohz_full=2-15</dt>
+<dd>Disables the periodic scheduler tick (1000 Hz default) on these cores. Without it, every millisecond a timer interrupt fires and pollutes your cache. With nohz_full, the tick is silent when only one runnable task exists.</dd>
+<dt>Runtime: mlockall</dt>
+<dd>Pins the process's memory in RAM so it can never be paged out or evicted. A single page fault during processing takes hundreds of microseconds — fatal for sub-ms budgets.</dd>
+<dt>Runtime: huge pages</dt>
+<dd>2 MB or 1 GB pages instead of 4 KB. A 1 GB working set fits in 512 TLB entries instead of 262,144 — TLB hit rate stays high, address translation stays fast.</dd>
+</dl>
+
+<h3 id="rt-dpdk-xdp">DPDK vs XDP — when to choose which <a href="#rt-dpdk-xdp" class="anchor">#</a></h3>
+
+<table>
+  <thead>
+    <tr><th>Concern</th><th>DPDK</th><th>XDP</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Latency floor</td><td>~5 μs</td><td>~20 μs</td></tr>
+    <tr><td>CPU cost</td><td>One core 100% busy polling</td><td>Lower — runs on packet arrival</td></tr>
+    <tr><td>NIC sharing</td><td>NIC owned by app exclusively</td><td>NIC shared with kernel stack</td></tr>
+    <tr><td>TCP/UDP stack</td><td>Bring your own (mTCP, F-Stack)</td><td>Kernel stack still works for non-fast-path</td></tr>
+    <tr><td>Programmability</td><td>Plain C in userspace</td><td>eBPF programs (verified, sandboxed)</td></tr>
+    <tr><td>Use cases</td><td>HFT, telco UPF, ultra-low-latency</td><td>DDoS scrubbing, load balancing, observability</td></tr>
+  </tbody>
+</table>
+
+<h3 id="rt-budget">Latency budget breakdown <a href="#rt-budget" class="anchor">#</a></h3>
+
+<pre><code>Component                          Latency        Notes
+─────────────────────────────────────────────────────────────
+NIC DMA → DPDK poll loop           5–10 μs        kernel bypass
+Userspace deserialization          5–20 μs        avoid alloc
+Business logic                    50–500 μs       your code
+Userspace serialization            5–20 μs        pre-allocated buf
+DPDK send → NIC DMA                5–10 μs        TX poll
+─────────────────────────────────────────────────────────────
+Total p99 (typical)              ~70–560 μs       under 1 ms ✓</code></pre>
+
+<p>Verify the floor with <code>cyclictest</code>:</p>
+
+<pre><code>$ cyclictest -p 80 -t 14 -a 2-15 -n -m -D 1h
+T: 0 (   PID) P:80 I:1000 C: 3600000 Min: 2 Avg: 4 Max: 18
+
+<span class="c"># Max: 18 μs is the worst-case wake-up latency over 1 hour.</span>
+<span class="c"># Below 50 μs sustained = real-time territory.</span></code></pre>
+
+<h2 id="ceph">3. Ceph cluster scaling (2× workload) <a href="#ceph" class="anchor">#</a></h2>
+
+<p><strong>Problem statement.</strong> A Ceph cluster handling N IOPS / N MB/s needs to handle 2N. Bottleneck could be in disk I/O, network, CPU, memory, or Ceph internals. The interview tests whether you know how to <em>find</em> which one before tuning anything.</p>
+
+<h3 id="ceph-axes">Optimization axes <a href="#ceph-axes" class="anchor">#</a></h3>
+
+<h4>Why each tuning matters</h4>
+
+<dl class="glossary">
+<dt>scheduler = none for NVMe</dt>
+<dd>NVMe drives have hardware queues that schedule better than the OS can. The kernel I/O scheduler just adds latency for nothing. <code>none</code> = pass-through.</dd>
+<dt>scheduler = mq-deadline for HDD</dt>
+<dd>HDDs have seek latency. <code>mq-deadline</code> reorders requests to minimize seeking and respects deadline-based ordering for fairness.</dd>
+<dt>readahead = 0</dt>
+<dd>OSDs do random I/O. Readahead is wasted work — kernel reads pages you don't need. Disable for OSD volumes; enable for sequential workloads (backup volumes).</dd>
+<dt>WAL/DB on NVMe</dt>
+<dd>BlueStore (Ceph's storage engine) writes a Write-Ahead Log and metadata DB on every operation. Putting these on NVMe while keeping data on HDD gives you NVMe metadata speed with HDD capacity. Single biggest hybrid-cluster optimization.</dd>
+<dt>Separate public + cluster networks</dt>
+<dd>Public network = clients ↔ MON/MGR/primary-OSD. Cluster network = OSD ↔ OSD (replication, recovery). Separating them doubles available bandwidth and prevents recovery storms from impacting client I/O.</dd>
+<dt>Jumbo frames (MTU 9000)</dt>
+<dd>Standard MTU is 1500 bytes. Each Ceph object replication writes at least 4 MB — that's ~3000 packets at MTU 1500 vs 500 packets at MTU 9000. Less per-packet overhead, less CPU per byte.</dd>
+<dt>BBR congestion control</dt>
+<dd>Default <code>cubic</code> is loss-based — it slows down when packets drop, even if there's bandwidth left. BBR is bandwidth-based — measures actual bottleneck capacity. Better for long-haul, high-bandwidth replication.</dd>
+<dt>osd_memory_target = 8 GB</dt>
+<dd>Default 4 GB is too small for serious workloads. BlueStore uses RAM aggressively for caching — onode cache, deferred writes, RocksDB block cache. Doubling memory often doubles throughput.</dd>
+<dt>NUMA-local OSD placement</dt>
+<dd>Pin each OSD to a NUMA node and constrain its memory there. Cross-NUMA memory access is 1.75× slower. With 24+ OSDs per node, this matters.</dd>
+<dt>Disable THP</dt>
+<dd>Transparent Huge Pages compaction stalls processes for milliseconds at random. Ceph's random-access pattern means you never benefit from THP coalescing. <code>transparent_hugepage=never</code> in /sys.</dd>
+<dt>PG count: 100 per OSD</dt>
+<dd>Placement Groups are Ceph's unit of distribution. Too few = uneven load. Too many = metadata overhead. The community-recommended sweet spot is 100 PGs per OSD on average. Use <code>ceph osd pool autoscale-status</code> to verify.</dd>
+<dt>recovery_op_priority &lt; client</dt>
+<dd>When backfilling after adding OSDs, recovery competes with client I/O. Set client priority to 63 (max) and recovery to 1 — clients always win, recovery uses spare capacity only.</dd>
+<dt>CRUSH failure domain = rack</dt>
+<dd>CRUSH map controls replica placement. Setting failure domain to rack ensures the 3 replicas of any object live in 3 different racks — surviving rack-level failures (power, switch, cooling).</dd>
+</dl>
+
+<h3 id="ceph-rebalance">Rebalancing strategy when adding OSDs <a href="#ceph-rebalance" class="anchor">#</a></h3>
+
+<p>Adding capacity to scale 2× triggers backfilling — terabytes of data move across the cluster network for hours or days. This is where production clusters get hurt during scaling.</p>
+
+<pre><code><span class="c"># Throttle aggressively during business hours</span>
+ceph config set osd osd_max_backfills 1
+ceph config set osd osd_recovery_max_active 1
+ceph config set osd osd_recovery_sleep 0.1     <span class="c"># 100ms pause between recovery ops</span>
+
+<span class="c"># Or: pause rebalancing entirely during peak</span>
+ceph osd set norebalance
+ceph osd set nobackfill
+<span class="c"># ... resume off-peak</span>
+ceph osd unset norebalance
+ceph osd unset nobackfill
+
+<span class="c"># Or: spread incrementally with upmap balancer</span>
+ceph balancer mode upmap
+ceph balancer on
+<span class="c"># Moves ~5% of PGs at a time, automatically</span></code></pre>
+
+<h2 id="k8s-resources">4. Dynamic K8s resource allocation <a href="#k8s-resources" class="anchor">#</a></h2>
+
+<p><strong>Problem statement.</strong> Pods need CPU and memory. Static allocation wastes capacity (over-provision for safety). Pure dynamic allocation creates instability (resize storms, eviction flapping). The goal is automatic right-sizing while maintaining stability.</p>
+
+<h3 id="k8s-flow">Spec → cgroup → kernel <a href="#k8s-flow" class="anchor">#</a></h3>
+
+<h4>QoS class behavior at the kernel level</h4>
+
+<table>
+  <thead>
+    <tr><th>Class</th><th>Conditions</th><th>oom_score_adj</th><th>cgroup files set</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Guaranteed</strong></td>
+      <td>requests == limits, both set</td>
+      <td>−997 (last to die)</td>
+      <td>cpu.max + memory.max + (optional) cpuset.cpus</td>
+    </tr>
+    <tr>
+      <td><strong>Burstable</strong></td>
+      <td>requests &lt; limits, or only one set</td>
+      <td>2 to 999 (scaled by request)</td>
+      <td>cpu.weight + cpu.max + memory.max + memory.high</td>
+    </tr>
+    <tr>
+      <td><strong>BestEffort</strong></td>
+      <td>no requests, no limits</td>
+      <td>1000 (first to die)</td>
+      <td>(no limits)</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="k8s-loop">Closed-loop autoscaling <a href="#k8s-loop" class="anchor">#</a></h3>
+
+<p>Three autoscaling mechanisms cooperate:</p>
+
+<dl class="glossary">
+<dt>HPA (Horizontal Pod Autoscaler)</dt>
+<dd>Scales replica count based on average utilization or PSI. Best for stateless workloads. Doesn't change per-pod resources.</dd>
+<dt>VPA (Vertical Pod Autoscaler)</dt>
+<dd>Observes actual usage over time, computes p95 + buffer, updates pod's requests/limits. Until 1.27 required pod restart for cgroup changes.</dd>
+<dt>In-place pod resize (1.27+, beta in 1.32)</dt>
+<dd>Kubelet writes new values directly to existing cgroup files. CPU resizes are always live; memory shrinks still need restart (you can't reclaim memory the process is actively using).</dd>
+</dl>
+
+<div class="tip">
+  <p class="callout-title">Production sweet spot</p>
+  <p>Set requests = p95 of measured usage + 10–15% buffer for CPU; p95 + 25% buffer for memory. Memory pressure is fatal (OOM); CPU pressure is just slow (throttling). Bias buffers accordingly.</p>
+</div>
+
+<h2 id="ebpf">5. eBPF — how it works <a href="#ebpf" class="anchor">#</a></h2>
+
+<p>eBPF (extended Berkeley Packet Filter) is the kernel's <em>safe extensibility mechanism</em>. It lets you load small programs that run inside the kernel — at IRQ context, syscall entry/exit, scheduler events, network receive — without modifying the kernel or loading kernel modules.</p>
+
+<p>It underpins modern Linux observability and networking: Cilium (CNI), Pixie (auto-instrumentation), bcc/bpftrace (debugging), Falco (runtime security), Katran (Facebook's L4 LB), Hubble (network observability). When you hear "we use eBPF for X," the X is almost always one of: tracing, profiling, network filtering, security policy enforcement, or load balancing.</p>
+
+<h3 id="ebpf-anatomy">Program anatomy <a href="#ebpf-anatomy" class="anchor">#</a></h3>
+
+<h3>What can hook into eBPF?</h3>
+
+<table>
+  <thead>
+    <tr><th>Hook type</th><th>Fires when</th><th>Use case</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>kprobe</code></td><td>Any kernel function entry</td><td>Trace function call rates, args</td></tr>
+    <tr><td><code>kretprobe</code></td><td>Any kernel function return</td><td>Measure latency of kernel functions</td></tr>
+    <tr><td><code>uprobe</code> / <code>uretprobe</code></td><td>Userspace function entry/return</td><td>Trace application functions without recompiling</td></tr>
+    <tr><td><code>tracepoint</code></td><td>Predefined kernel event (sched, syscall, etc.)</td><td>Stable interface for monitoring</td></tr>
+    <tr><td><code>XDP</code></td><td>NIC driver receive (before kernel stack)</td><td>DDoS scrubbing, fast load balancing</td></tr>
+    <tr><td><code>TC</code> (traffic control)</td><td>Network egress/ingress queue</td><td>Container networking, bandwidth shaping</td></tr>
+    <tr><td><code>cgroup</code></td><td>Socket operations within cgroup</td><td>Per-container network policy</td></tr>
+    <tr><td><code>LSM</code></td><td>Security hook points</td><td>Runtime security policy (Falco, Tetragon)</td></tr>
+  </tbody>
+</table>
+
+<h3 id="ebpf-verifier">The verifier and JIT — why eBPF is safe <a href="#ebpf-verifier" class="anchor">#</a></h3>
+
+<p>The verifier is the most important kernel component you've never heard of. It's why eBPF is safe to use in production at scale.</p>
+
+<p>Before any eBPF program runs, the verifier does a static analysis:</p>
+
+<ul>
+  <li><strong>Walks all execution paths.</strong> Every branch is explored. The verifier knows the type of every register at every point.</li>
+  <li><strong>Proves termination.</strong> Loops must have a constant upper bound (or use bounded helpers like <code>bpf_loop()</code>). No unbounded recursion.</li>
+  <li><strong>Bounds-checks every memory access.</strong> If your program reads <code>pkt[10]</code>, you must have proven (via earlier checks) that the packet is at least 11 bytes. The verifier propagates this constraint through the type system.</li>
+  <li><strong>Validates helper calls.</strong> eBPF programs can only call kernel-provided helpers — explicit, audited functions like <code>bpf_map_lookup_elem</code>. No arbitrary kernel symbol calls.</li>
+  <li><strong>Stack limit.</strong> eBPF programs use a fixed 8 KB stack. No recursion, no stack overflow.</li>
+  <li><strong>Instruction limit.</strong> ~1 million instructions per program (raised over time). Forces small, focused programs.</li>
+</ul>
+
+<p>If verification fails, the program is rejected and never executes. <strong>This is what makes eBPF different from kernel modules.</strong> A buggy kernel module crashes the kernel. A buggy eBPF program is rejected at load time.</p>
+
+<h3 id="ebpf-uses">Production uses <a href="#ebpf-uses" class="anchor">#</a></h3>
+
+<dl class="glossary">
+<dt>Network observability — Cilium / Hubble</dt>
+<dd>Replaces <code>iptables</code>-based CNI with eBPF programs at TC and socket layers. Sees every connection, applies policy in microseconds, exports flow data without packet capture overhead.</dd>
+<dt>Profiling — Pyroscope, Parca, perf</dt>
+<dd>Continuous CPU/memory profiling using eBPF perf events. Stack traces sampled at hardware rate, no instrumentation needed.</dd>
+<dt>Security — Falco, Tetragon</dt>
+<dd>LSM hooks observe every syscall, process exec, file open, network connect. Detect attacks (privilege escalation, container escape) by behavior signature.</dd>
+<dt>Tracing — bcc, bpftrace</dt>
+<dd>Ad-hoc kernel introspection. <code>bpftrace -e 'kprobe:vfs_read { @ = count(); }'</code> counts every read syscall. No reboot, no kernel module.</dd>
+<dt>Load balancing — Katran, Cilium L7</dt>
+<dd>XDP-based L4 LB at line rate (10s of millions of pps per core). Replaces dedicated LB hardware in some Facebook/Cloudflare deployments.</dd>
+</dl>
+
+<h3>Worked example — counting syscalls</h3>
+
+<p>The "hello world" of eBPF is counting how often a syscall fires. Here's it in <code>bpftrace</code>:</p>
+
+<pre><code><span class="c"># Count every read() syscall, broken down by process</span>
+$ sudo bpftrace -e 'tracepoint:syscalls:sys_enter_read { @[comm] = count(); }'
+^C
+@[bash]: 12
+@[firefox]: 3421
+@[node]: 89234
+
+<span class="c"># Measure read() latency distribution</span>
+$ sudo bpftrace -e '
+  tracepoint:syscalls:sys_enter_read { @start[tid] = nsecs; }
+  tracepoint:syscalls:sys_exit_read /@start[tid]/ {
+    @lat = hist(nsecs - @start[tid]);
+    delete(@start[tid]);
+  }'
+^C
+@lat:
+[1K, 2K)               89 |@                                                   |
+[2K, 4K)             1245 |@@@@@@@@@@@@@@@@@@@@@                                |
+[4K, 8K)             3012 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|
+[8K, 16K)             781 |@@@@@@@@@@@@@                                       |</code></pre>
+
+<p>Behind the scenes: bpftrace generated a tiny eBPF program, the verifier accepted it, the JIT compiled it, and it now runs every time the <code>sys_enter_read</code> tracepoint fires (millions of times per second on a busy system). Removing it is a Ctrl+C — no reboot, no leak.</p>
+
+<h2 id="patterns">6. Common patterns across all scenarios <a href="#patterns" class="anchor">#</a></h2>
+
+<p>Six patterns recur in every scenario. The interviewer is testing whether you recognize them as universal tools, not scenario-specific tricks.</p>
+
+<ol>
+  <li><strong>Layered design.</strong> No single optimization solves a real problem. Real systems are stacks of mutually-reinforcing primitives. Always sketch the full stack before tuning anything.</li>
+  <li><strong>Pull-based, idempotent, stateful agents.</strong> From patch management to cgroup reconciliation, the same pattern: agents that converge to declared state, survive partitions, and can be re-run safely.</li>
+  <li><strong>Blast radius management.</strong> Canary → stage → prod is the same shape as gradual VPA recommendations or staged Ceph rebalancing. Limit how much you can break at once.</li>
+  <li><strong>Trade-off articulation.</strong> Every choice has a cost. The senior signal is naming the cost upfront, not pretending it doesn't exist.</li>
+  <li><strong>Measure first.</strong> "Tune X" is junior. "Identify the bottleneck via Y, then tune the responsible knob" is senior.</li>
+  <li><strong>Failure modes designed-in, not bolted on.</strong> Rollback at every stage. Health checks before, during, after. Quorum awareness for stateful systems.</li>
+</ol>
+
+<h2 id="glossary">7. Glossary <a href="#glossary" class="anchor">#</a></h2>
+
+<dl class="glossary">
+<dt>BBR</dt>
+<dd>Bottleneck Bandwidth and Round-trip — Google's TCP congestion control algorithm. Bandwidth-based instead of loss-based; performs better on high-bandwidth long-haul links.</dd>
+<dt>BlueStore</dt>
+<dd>Ceph's storage backend. Stores objects directly on raw block devices (no filesystem in between), uses RocksDB for metadata, supports separate WAL/DB devices.</dd>
+<dt>BPF / eBPF</dt>
+<dd>Berkeley Packet Filter (extended). Lets you run verified, sandboxed programs inside the kernel at hooks. Used for tracing, networking, security.</dd>
+<dt>cAdvisor</dt>
+<dd>Container Advisor — daemon that exposes per-container resource metrics (CPU, memory, network, I/O). Embedded in kubelet.</dd>
+<dt>CFS</dt>
+<dd>Completely Fair Scheduler — Linux's default process scheduler. Allocates CPU time proportionally based on nice/weight values. Doesn't starve.</dd>
+<dt>cgroup</dt>
+<dd>Control group — kernel feature to limit and account resource usage (CPU, memory, I/O, PIDs) for a group of processes. v1 had separate hierarchies per controller; v2 has unified hierarchy.</dd>
+<dt>cosign / Sigstore</dt>
+<dd>Container/artifact signing tool. Generates cryptographic signatures verifiable without a private CA. Standard for supply-chain security.</dd>
+<dt>CRUSH</dt>
+<dd>Controlled Replication Under Scalable Hashing — Ceph's algorithm for deciding where to place data replicas. Avoids central coordination.</dd>
+<dt>DPDK</dt>
+<dd>Data Plane Development Kit — userspace networking framework that bypasses the kernel. Polls the NIC instead of using interrupts.</dd>
+<dt>HPA</dt>
+<dd>Horizontal Pod Autoscaler — Kubernetes controller that scales replica count based on metrics.</dd>
+<dt>IRQ</dt>
+<dd>Interrupt Request — hardware signal to the CPU that needs immediate attention. Threaded IRQs (PREEMPT_RT) move handling into kernel threads for schedulability.</dd>
+<dt>isolcpus</dt>
+<dd>Boot parameter that excludes specified CPU cores from the scheduler's general pool. Combined with CPU pinning to dedicate cores.</dd>
+<dt>kexec</dt>
+<dd>Linux mechanism to load and run a new kernel from a running kernel without going through bootloader. ~1 second vs ~60 seconds for full reboot.</dd>
+<dt>kprobe / uprobe</dt>
+<dd>Kernel/user probes — eBPF hook types that attach to kernel/userspace functions to fire on entry or return.</dd>
+<dt>mlockall</dt>
+<dd>Syscall to lock all of a process's memory in RAM, preventing swap or paging. Critical for low-latency workloads.</dd>
+<dt>mq-deadline</dt>
+<dd>Multi-queue deadline scheduler — I/O scheduler that prioritizes by deadline. Default for HDDs in modern kernels.</dd>
+<dt>nohz_full</dt>
+<dd>Boot parameter that disables the periodic scheduler tick on specified cores when only one task is runnable. Reduces interrupt overhead on isolated cores.</dd>
+<dt>NUMA</dt>
+<dd>Non-Uniform Memory Access — multi-socket systems where each CPU has local memory and slower remote memory. Cross-NUMA access is ~1.75× slower.</dd>
+<dt>OOM killer</dt>
+<dd>Out-of-Memory killer — kernel mechanism that terminates processes when memory is exhausted. Picks victim by oom_score.</dd>
+<dt>OSD</dt>
+<dd>Object Storage Daemon — Ceph process that manages one storage device. Handles replication, recovery, scrubbing.</dd>
+<dt>OBHC</dt>
+<dd>Out-of-Band Health Check — health validation done by an independent system (not the patch agent itself). Compares against control group of unpatched siblings.</dd>
+<dt>PG (Placement Group)</dt>
+<dd>Ceph's unit of replication and distribution. Each object hashes to a PG; each PG maps to a set of OSDs.</dd>
+<dt>PREEMPT_RT</dt>
+<dd>Linux kernel patch (now mainline since 6.12) that makes nearly all kernel code preemptible. Reduces worst-case latency from ~10 ms to &lt;100 μs.</dd>
+<dt>PSI</dt>
+<dd>Pressure Stall Information — kernel feature exposing how much time tasks spent stalled waiting for CPU/memory/I/O. v2-only.</dd>
+<dt>PXE</dt>
+<dd>Preboot Execution Environment — network boot protocol. Used for bare-metal re-provisioning.</dd>
+<dt>RCU</dt>
+<dd>Read-Copy-Update — kernel synchronization primitive. Allows lockless reads with deferred reclamation. <code>rcu_nocbs</code> offloads callbacks off isolated cores.</dd>
+<dt>SR-IOV</dt>
+<dd>Single Root I/O Virtualization — splits a physical NIC into virtual functions, each assignable to a VM/container with near-native performance.</dd>
+<dt>TC (traffic control)</dt>
+<dd>Linux network QoS subsystem. eBPF programs can attach as TC classifiers or actions for fast packet processing.</dd>
+<dt>THP</dt>
+<dd>Transparent Huge Pages — kernel feature that automatically promotes 4 KB pages to 2 MB pages. Compaction stalls cause latency spikes; disable for low-latency or random-I/O workloads.</dd>
+<dt>TLB</dt>
+<dd>Translation Lookaside Buffer — CPU cache for virtual-to-physical address translations. Cold TLB after migration causes 80× latency penalty per memory access.</dd>
+<dt>upmap</dt>
+<dd>Ceph balancer mode that incrementally moves PGs to even out OSD utilization without full rebalancing.</dd>
+<dt>VPA</dt>
+<dd>Vertical Pod Autoscaler — Kubernetes controller that recommends or applies resource changes based on observed usage.</dd>
+<dt>WAL</dt>
+<dd>Write-Ahead Log — durability mechanism. Writes go to WAL first, applied to main data later. BlueStore puts WAL on NVMe for hybrid HDD setups.</dd>
+<dt>XDP</dt>
+<dd>eXpress Data Path — eBPF programs running at the NIC driver layer, before the kernel network stack. Used for DDoS mitigation, fast load balancing.</dd>
+</dl>
 
 <hr>
 
