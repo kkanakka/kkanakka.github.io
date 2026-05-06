@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>System Design Basics — Networking, visual cheatsheet</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:linear-gradient(135deg,#0f172a 0%,#1e1b4b 100%);color:#e2e8f0;padding:32px 20px;line-height:1.5;min-height:100vh}
+.container{max-width:1100px;margin:0 auto}
+.topnav{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+.topnav a{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:6px 14px;font-size:13px;color:#cbd5e1;text-decoration:none;transition:.2s}
+.topnav a:hover{border-color:#60a5fa;color:#f1f5f9}
+h1{font-size:30px;margin-bottom:6px;background:linear-gradient(90deg,#60a5fa,#c084fc,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.subtitle{color:#94a3b8;margin-bottom:24px;font-size:14px}
+.toc{background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:18px 22px;margin-bottom:22px}
+.toc h3{font-size:12px;color:#94a3b8;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;font-weight:600}
+.toc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:4px 16px}
+.toc-grid a{color:#cbd5e1;text-decoration:none;font-size:13px;padding:3px 0;border-bottom:1px dashed rgba(255,255,255,0.08);transition:.15s}
+.toc-grid a:hover{color:#60a5fa;border-bottom-color:#60a5fa}
+.toc-grid .tn{color:#fbbf24;font-family:monospace;font-weight:700;margin-right:6px}
+.card{border-radius:14px;padding:22px 26px;margin-bottom:18px;border:1px solid rgba(255,255,255,0.08);box-shadow:0 4px 20px rgba(0,0,0,0.3);scroll-margin-top:16px}
+.c-blue{background:linear-gradient(135deg,#1e3a5f 0%,#1e293b 100%);border-left:4px solid #60a5fa}
+.c-cyan{background:linear-gradient(135deg,#164e63 0%,#1e293b 100%);border-left:4px solid #22d3ee}
+.c-teal{background:linear-gradient(135deg,#134e4a 0%,#1e293b 100%);border-left:4px solid #2dd4bf}
+.c-green{background:linear-gradient(135deg,#14532d 0%,#1e293b 100%);border-left:4px solid #4ade80}
+.c-lime{background:linear-gradient(135deg,#365314 0%,#1e293b 100%);border-left:4px solid #a3e635}
+.c-yellow{background:linear-gradient(135deg,#713f12 0%,#1e293b 100%);border-left:4px solid #facc15}
+.c-orange{background:linear-gradient(135deg,#7c2d12 0%,#1e293b 100%);border-left:4px solid #fb923c}
+.c-red{background:linear-gradient(135deg,#7f1d1d 0%,#1e293b 100%);border-left:4px solid #f87171}
+.c-pink{background:linear-gradient(135deg,#831843 0%,#1e293b 100%);border-left:4px solid #f472b6}
+.c-fuch{background:linear-gradient(135deg,#86198f 0%,#1e293b 100%);border-left:4px solid #e879f9}
+.c-purple{background:linear-gradient(135deg,#581c87 0%,#1e293b 100%);border-left:4px solid #c084fc}
+.c-violet{background:linear-gradient(135deg,#4c1d95 0%,#1e293b 100%);border-left:4px solid #a78bfa}
+.card-header{display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+.badge-num{font-family:monospace;font-size:12px;font-weight:700;padding:4px 10px;border-radius:6px;background:rgba(255,255,255,0.12);color:#f1f5f9}
+.card-title{font-size:18px;font-weight:600;color:#f1f5f9}
+.icon{font-size:22px}
+.lead{font-size:13px;color:#cbd5e1;margin:6px 0 12px}
+.ascii{background:rgba(0,0,0,0.45);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:14px 18px;font-family:'SF Mono',Menlo,monospace;font-size:12px;color:#cbd5e1;white-space:pre;overflow-x:auto;line-height:1.55;margin:8px 0 12px}
+.ip{color:#4ade80}.mac{color:#f472b6}.vip{color:#fde047;font-weight:700}.asn{color:#c084fc}
+.cmt{color:#64748b;font-style:italic}.hl{color:#fbbf24;font-weight:700}
+.svg-wrap{background:rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:14px;margin:8px 0 12px;overflow-x:auto}
+.svg-wrap svg{display:block;max-width:100%;height:auto}
+.where{background:rgba(34,197,94,0.08);border:1px solid rgba(74,222,128,0.3);border-left:3px solid #4ade80;border-radius:8px;padding:11px 16px;margin-top:10px}
+.where h4{color:#4ade80;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px}
+.where ul{font-size:13px;color:#cbd5e1;margin-left:18px}
+.where li{margin:3px 0}.where strong{color:#f1f5f9}
+.twoup{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:8px 0 12px}
+.twoup>div{background:rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:14px 16px}
+.twoup h5{font-size:12px;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.twoup p,.twoup ul{font-size:13px;color:#cbd5e1}
+.twoup ul{margin-left:18px}
+.threeup{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:8px 0 12px}
+.threeup>div{background:rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:12px 14px}
+.threeup h5{font-size:12px;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.threeup p{font-size:12px;color:#cbd5e1}
+@media(max-width:720px){.twoup,.threeup{grid-template-columns:1fr}}
+table.cmp{width:100%;border-collapse:collapse;margin:8px 0 12px;font-size:13px;background:rgba(0,0,0,0.3);border-radius:8px;overflow:hidden}
+table.cmp th,table.cmp td{padding:8px 12px;text-align:left;border-bottom:1px solid rgba(255,255,255,0.08)}
+table.cmp th{color:#f472b6;font-size:11px;text-transform:uppercase;letter-spacing:1px;background:rgba(0,0,0,0.3)}
+table.cmp td:first-child{color:#fbbf24;font-weight:600}
+.footer-note{text-align:center;color:#64748b;font-size:12px;padding:28px 0 6px}
+.footer-note a{color:#94a3b8;text-decoration:none}.footer-note a:hover{color:#60a5fa}
+::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-track{background:rgba(0,0,0,0.2)}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.15);border-radius:6px}
+@media(max-width:640px){h1{font-size:22px}.ascii{font-size:11px}}
+</style></head><body>
+<div class="container">
+<div class="topnav">
+<a href="/">&larr; Home</a>
+<a href="/linux-systems-guide/networking.html">Networking 101 (deep dive)</a>
+<a href="/linux-systems-guide/sd-index.html">System Design Hub</a>
+</div>
+<h1>🧰 System Design Basics — Networking</h1>
+<p class="subtitle">Visual cheatsheet for interviews. Diagrams first, prose second. Each block ends with a "where to use" callout.</p>
+<div class="toc"><h3>12 Topics · diagrams + use-cases</h3>
+<div class="toc-grid">
+<a href="#layers"><span class="tn">01</span>Three layers we care about</a>
+<a href="#req-life"><span class="tn">02</span>HTTP request lifecycle</a>
+<a href="#l4"><span class="tn">03</span>TCP vs UDP vs QUIC</a>
+<a href="#http"><span class="tn">04</span>HTTP / HTTPS anatomy</a>
+<a href="#rest"><span class="tn">05</span>REST APIs</a>
+<a href="#graphql"><span class="tn">06</span>GraphQL</a>
+<a href="#grpc"><span class="tn">07</span>gRPC</a>
+<a href="#sse"><span class="tn">08</span>Server-Sent Events (SSE)</a>
+<a href="#ws"><span class="tn">09</span>WebSockets</a>
+<a href="#webrtc"><span class="tn">10</span>WebRTC</a>
+<a href="#lb"><span class="tn">11</span>Load balancing landscape</a>
+<a href="#reliab"><span class="tn">12</span>Retries, idempotency, breakers</a>
+</div></div>
+<!-- 01 -->
+<div class="card c-blue" id="layers">
+<div class="card-header"><span class="icon">🥞</span><span class="badge-num">01</span><span class="card-title">The three layers we care about</span></div>
+<p class="lead">OSI has 7 layers. For interviews, the three that matter are L3 (IP), L4 (TCP/UDP/QUIC), and L7 (HTTP, gRPC, WS).</p>
+<div class="svg-wrap"><svg viewBox="0 0 760 270" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<linearGradient id="g7" x1="0" x2="1"><stop offset="0" stop-color="#a78bfa"/><stop offset="1" stop-color="#c084fc"/></linearGradient>
+<linearGradient id="g4" x1="0" x2="1"><stop offset="0" stop-color="#4ade80"/><stop offset="1" stop-color="#a3e635"/></linearGradient>
+<linearGradient id="g3" x1="0" x2="1"><stop offset="0" stop-color="#60a5fa"/><stop offset="1" stop-color="#22d3ee"/></linearGradient>
+</defs>
+<rect x="20" y="20" width="720" height="50" rx="8" fill="url(#g7)" opacity=".95"/>
+<text x="40" y="42" font-family="monospace" font-size="13" font-weight="700" fill="#1e1b4b">L7  Application</text>
+<text x="40" y="60" font-family="monospace" font-size="11" fill="#1e1b4b">DNS · HTTP/HTTPS · gRPC · WebSocket · WebRTC · SSE</text>
+<rect x="20" y="80" width="720" height="50" rx="8" fill="url(#g4)" opacity=".95"/>
+<text x="40" y="102" font-family="monospace" font-size="13" font-weight="700" fill="#0f172a">L4  Transport</text>
+<text x="40" y="120" font-family="monospace" font-size="11" fill="#0f172a">TCP (reliable, ordered) · UDP (fire &amp; forget) · QUIC (UDP + reliability + 0-RTT)</text>
+<rect x="20" y="140" width="720" height="50" rx="8" fill="url(#g3)" opacity=".95"/>
+<text x="40" y="162" font-family="monospace" font-size="13" font-weight="700" fill="#0f172a">L3  Network</text>
+<text x="40" y="180" font-family="monospace" font-size="11" fill="#0f172a">IP — addressing &amp; best-effort packet routing across networks</text>
+<rect x="20" y="200" width="720" height="40" rx="8" fill="#334155" opacity=".7"/>
+<text x="40" y="225" font-family="monospace" font-size="12" fill="#cbd5e1">L1/L2  Link &amp; Physical (Ethernet, MAC, WiFi, fiber) — usually outside interview scope</text>
+<text x="380" y="262" text-anchor="middle" font-family="Inter" font-size="11" fill="#94a3b8" font-style="italic">Each layer hides the messy details of the layer below.</text>
+</svg></div>
+<div class="where"><h4>Where to use this</h4><ul>
+<li><strong>Identify the layer</strong> when proposing a protocol ("WebSocket — L7 over a long-lived TCP connection at L4").</li>
+<li><strong>L4 vs L7 LB</strong> is the most common networking question — covered in topic 11.</li>
+</ul></div>
+</div>
+<!-- 02 -->
+<div class="card c-cyan" id="req-life">
+<div class="card-header"><span class="icon">📨</span><span class="badge-num">02</span><span class="card-title">HTTP request lifecycle (DNS → TCP → request → teardown)</span></div>
+<p class="lead">The classic "what happens when you type a URL" sequence diagram.</p>
+<div class="svg-wrap"><svg viewBox="0 0 800 460" xmlns="http://www.w3.org/2000/svg">
+<defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#22d3ee"/></marker></defs>
+<text x="120" y="22" text-anchor="middle" font-family="Inter" font-size="13" font-weight="700" fill="#22d3ee">CLIENT</text>
+<text x="420" y="22" text-anchor="middle" font-family="Inter" font-size="13" font-weight="700" fill="#a78bfa">DNS</text>
+<text x="700" y="22" text-anchor="middle" font-family="Inter" font-size="13" font-weight="700" fill="#f472b6">SERVER</text>
+<line x1="120" y1="35" x2="120" y2="440" stroke="#22d3ee" stroke-width="2" stroke-dasharray="3,4"/>
+<line x1="420" y1="35" x2="420" y2="100" stroke="#a78bfa" stroke-width="2" stroke-dasharray="3,4"/>
+<line x1="700" y1="35" x2="700" y2="440" stroke="#f472b6" stroke-width="2" stroke-dasharray="3,4"/>
+<line x1="120" y1="60" x2="420" y2="60" stroke="#22d3ee" stroke-width="2" marker-end="url(#ar)"/>
+<text x="270" y="55" text-anchor="middle" font-family="monospace" font-size="11" fill="#cbd5e1">resolve "hellointerview.com"</text>
+<line x1="420" y1="85" x2="120" y2="85" stroke="#22d3ee" stroke-width="2" marker-end="url(#ar)"/>
+<text x="270" y="80" text-anchor="middle" font-family="monospace" font-size="11" fill="#4ade80">→ 32.42.52.62</text>
+<line x1="120" y1="125" x2="700" y2="125" stroke="#22d3ee" stroke-width="2" marker-end="url(#ar)"/>
+<text x="410" y="120" text-anchor="middle" font-family="monospace" font-size="11" fill="#cbd5e1">SYN</text>
+<line x1="700" y1="150" x2="120" y2="150" stroke="#22d3ee" stroke-width="2" marker-end="url(#ar)"/>
+<text x="410" y="145" text-anchor="middle" font-family="monospace" font-size="11" fill="#cbd5e1">SYN-ACK</text>
+<line x1="120" y1="175" x2="700" y2="175" stroke="#22d3ee" stroke-width="2" marker-end="url(#ar)"/>
+<text x="410" y="170" text-anchor="middle" font-family="monospace" font-size="11" fill="#cbd5e1">ACK <tspan fill="#fbbf24">(connection established)</tspan></text>
+<line x1="120" y1="215" x2="700" y2="215" stroke="#4ade80" stroke-width="2" marker-end="url(#ar)"/>
+<text x="410" y="210" text-anchor="middle" font-family="monospace" font-size="11" fill="#4ade80">HTTP GET /feed</text>
+<rect x="660" y="225" width="80" height="34" rx="4" fill="#86198f" opacity=".5"/>
+<text x="700" y="245" text-anchor="middle" font-family="monospace" font-size="10" fill="#fde047">processing</text>
+<line x1="700" y1="280" x2="120" y2="280" stroke="#4ade80" stroke-width="2" marker-end="url(#ar)"/>
+<text x="410" y="275" text-anchor="middle" font-family="monospace" font-size="11" fill="#4ade80">HTTP 200 OK + body</text>
+<line x1="120" y1="320" x2="700" y2="320" stroke="#f472b6" stroke-width="2" marker-end="url(#ar)"/>
+<text x="410" y="315" text-anchor="middle" font-family="monospace" font-size="11" fill="#cbd5e1">FIN</text>
+<line x1="700" y1="345" x2="120" y2="345" stroke="#f472b6" stroke-width="2" marker-end="url(#ar)"/>
+<text x="410" y="340" text-anchor="middle" font-family="monospace" font-size="11" fill="#cbd5e1">ACK</text>
+<line x1="700" y1="370" x2="120" y2="370" stroke="#f472b6" stroke-width="2" marker-end="url(#ar)"/>
+<text x="410" y="365" text-anchor="middle" font-family="monospace" font-size="11" fill="#cbd5e1">FIN</text>
+<line x1="120" y1="395" x2="700" y2="395" stroke="#f472b6" stroke-width="2" marker-end="url(#ar)"/>
+<text x="410" y="390" text-anchor="middle" font-family="monospace" font-size="11" fill="#cbd5e1">ACK <tspan fill="#fbbf24">(connection closed)</tspan></text>
+<text x="40" y="125" font-family="monospace" font-size="10" fill="#94a3b8">3-way</text>
+<text x="40" y="138" font-family="monospace" font-size="10" fill="#94a3b8">handshake</text>
+<text x="40" y="245" font-family="monospace" font-size="10" fill="#94a3b8">request</text>
+<text x="40" y="345" font-family="monospace" font-size="10" fill="#94a3b8">4-way</text>
+<text x="40" y="358" font-family="monospace" font-size="10" fill="#94a3b8">teardown</text>
+<text x="400" y="440" text-anchor="middle" font-family="Inter" font-size="11" fill="#94a3b8" font-style="italic">With keep-alive / HTTP/2 multiplexing the teardown is skipped — the same TCP connection serves many requests.</text>
+</svg></div>
+<div class="where"><h4>What to remember</h4><ul>
+<li><strong>Connection setup is expensive</strong> (≥ 1 RTT for TCP, +1–2 for TLS). HTTP/2 keep-alive amortizes it across many requests.</li>
+<li><strong>State on both ends.</strong> Each open TCP connection costs memory on client + server — relevant once you scale to millions of connections (chat, push, gaming).</li>
+</ul></div>
+</div>
+<!-- 03 -->
+<div class="card c-green" id="l4">
+<div class="card-header"><span class="icon">🚦</span><span class="badge-num">03</span><span class="card-title">TCP vs UDP vs QUIC</span></div>
+<div class="threeup">
+<div style="border-left:3px solid #4ade80"><h5 style="color:#4ade80">TCP — workhorse</h5>
+<p>Reliable, ordered, error-checked. 3-way handshake. Flow + congestion control. Default for "everything else."</p></div>
+<div style="border-left:3px solid #f472b6"><h5 style="color:#f472b6">UDP — fire &amp; forget</h5>
+<p>Connectionless. No delivery / order / dedup guarantees. Just src/dst IP+port + payload. Lower latency, less overhead.</p></div>
+<div style="border-left:3px solid #c084fc"><h5 style="color:#c084fc">QUIC — modern TCP</h5>
+<p>Runs over UDP. Built-in TLS 1.3, 0-RTT resumption, no head-of-line blocking. Powers HTTP/3.</p></div>
+</div>
+<table class="cmp"><tr><th>Feature</th><th>UDP</th><th>TCP</th><th>QUIC</th></tr>
+<tr><td>Connection</td><td>Connectionless</td><td>Connection-oriented</td><td>Connection-oriented (over UDP)</td></tr>
+<tr><td>Reliability</td><td>Best effort</td><td>Guaranteed</td><td>Guaranteed</td></tr>
+<tr><td>Ordering</td><td>None</td><td>Yes (per stream)</td><td>Yes (per-stream, no HoL block)</td></tr>
+<tr><td>Flow / congestion</td><td>None</td><td>Yes</td><td>Yes</td></tr>
+<tr><td>Encryption</td><td>App-defined (DTLS opt.)</td><td>+TLS layer</td><td>Built in (TLS 1.3)</td></tr>
+<tr><td>Header size</td><td>8 B</td><td>20–60 B</td><td>~26 B</td></tr>
+<tr><td>Speed</td><td>Fastest</td><td>Slowest of the three</td><td>Fast (0/1-RTT setup)</td></tr>
+<tr><td>Browser support</td><td>WebRTC only</td><td>Universal</td><td>HTTP/3 (growing)</td></tr>
+</table>
+<div class="where"><h4>How to choose</h4><ul>
+<li><strong>Default → TCP.</strong> Interviewers assume it. You don't need to mention it explicitly.</li>
+<li><strong>Reach for UDP</strong> when low latency &gt; reliability: live video, VoIP, gaming, DNS, telemetry where loss is OK.</li>
+<li><strong>Mention QUIC / HTTP/3</strong> for performance-focused interviews, but don't optimize on it before fixing real bottlenecks.</li>
+<li><strong>Hybrid is common</strong> — e.g. video conferencing: TCP/HTTP for signaling, UDP/WebRTC for media.</li>
+</ul></div>
+</div>
+<!-- 04 -->
+<div class="card c-lime" id="http">
+<div class="card-header"><span class="icon">📦</span><span class="badge-num">04</span><span class="card-title">HTTP / HTTPS anatomy</span></div>
+<p class="lead">Stateless request/response. Method + path + headers + (optional) body. Standardized status codes.</p>
+<div class="ascii">
+<span class="hl">REQUEST</span>                                       <span class="hl">RESPONSE</span>
+<span class="cmt">────────────────────────────────────</span>      <span class="cmt">────────────────────────────────────</span>
+GET /users/42 HTTP/2                       HTTP/2 200 OK
+Host: api.example.com                      Content-Type: application/json
+Authorization: Bearer eyJ…                 Content-Encoding: br
+Accept: application/json                   Cache-Control: no-store
+Accept-Encoding: gzip, br                  ETag: "v17-9f3a"
+                                           
+<span class="cmt">(no body for GET)</span>                          {"id":42,"name":"Ada Lovelace"}
+</div>
+<div class="threeup">
+<div><h5 style="color:#4ade80">2xx Success</h5><p><b>200</b> OK · <b>201</b> Created · <b>204</b> No Content</p></div>
+<div><h5 style="color:#22d3ee">3xx Redirect</h5><p><b>301</b> Moved (perm) · <b>302</b> Found · <b>304</b> Not Modified</p></div>
+<div><h5 style="color:#facc15">4xx Client</h5><p><b>400</b> Bad · <b>401</b> Auth · <b>403</b> Forbidden · <b>404</b> Not Found · <b>409</b> Conflict · <b>429</b> Rate-limit</p></div>
+</div>
+<div class="threeup">
+<div><h5 style="color:#f87171">5xx Server</h5><p><b>500</b> Error · <b>502</b> Bad Gateway · <b>503</b> Unavailable · <b>504</b> Timeout</p></div>
+<div><h5 style="color:#c084fc">Methods</h5><p><b>GET</b> read · <b>POST</b> create · <b>PUT</b> replace · <b>PATCH</b> partial update · <b>DELETE</b></p></div>
+<div><h5 style="color:#a78bfa">HTTPS = HTTP + TLS</h5><p>Encrypts payload &amp; integrity-checks. <b>Doesn't</b> validate the request body — always validate user IDs server-side.</p></div>
+</div>
+<div class="where"><h4>Where to use this</h4><ul>
+<li><strong>Default for client ↔ server</strong> traffic. Stateless, cacheable, well-understood.</li>
+<li><strong>Status codes matter</strong> for retry logic: <code>5xx</code> + <code>408</code>/<code>429</code> are retryable, <code>4xx</code> generally not.</li>
+<li><strong>Headers are flexible.</strong> Use them for content negotiation (<code>Accept-Encoding</code>), tracing (<code>X-Request-Id</code>), and idempotency keys.</li>
+</ul></div>
+</div>
+<!-- 05 -->
+<div class="card c-yellow" id="rest">
+<div class="card-header"><span class="icon">🔁</span><span class="badge-num">05</span><span class="card-title">REST — resource-oriented APIs</span></div>
+<p class="lead">Model your domain as <em>resources</em> (nouns), not operations (verbs). HTTP method + path expresses intent.</p>
+<div class="ascii">
+<span class="hl">RESOURCE</span>          <span class="hl">VERB</span>     <span class="hl">PATH</span>                  <span class="hl">RESULT</span>
+<span class="cmt">─────────────────────────────────────────────────────────────────</span>
+User              GET      /users                <span class="cmt">→ list users</span>
+User              GET      /users/{id}           <span class="cmt">→ one user</span>
+User              POST     /users                <span class="cmt">→ create (server assigns id)</span>
+User              PUT      /users/{id}           <span class="cmt">→ replace</span>
+User              PATCH    /users/{id}           <span class="cmt">→ partial update</span>
+User              DELETE   /users/{id}           <span class="cmt">→ remove</span>
+
+Posts of a user   GET      /users/{id}/posts     <span class="cmt">→ nested resource</span>
+</div>
+<div class="twoup">
+<div><h5 style="color:#fbbf24">❌ Operation-shaped (anti-pattern)</h5>
+<p><code>POST /updateUser</code><br><code>POST /startGame</code></p></div>
+<div><h5 style="color:#4ade80">✅ Resource-shaped</h5>
+<p><code>PUT /users/{id}</code><br><code>PATCH /games/{id}  { "status": "started" }</code></p></div>
+</div>
+<div class="where"><h4>Where to use this</h4><ul>
+<li><strong>Default API style</strong> for public + most internal HTTP services. Easy to cache, easy to teach, easy to reason about.</li>
+<li><strong>Reach for something else</strong> only if you have specific needs: real-time push (SSE/WS), high throughput internal RPC (gRPC), flexible client queries (GraphQL).</li>
+</ul></div>
+</div>
+<!-- 06 -->
+<div class="card c-orange" id="graphql">
+<div class="card-header"><span class="icon">🎯</span><span class="badge-num">06</span><span class="card-title">GraphQL — client picks the shape</span></div>
+<p class="lead">Solves over-fetching (REST returns too much) and under-fetching (REST needs N round-trips for one screen).</p>
+<div class="svg-wrap"><svg viewBox="0 0 800 280" xmlns="http://www.w3.org/2000/svg">
+<defs><marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#fb923c"/></marker></defs>
+<rect x="20" y="30" width="220" height="220" rx="10" fill="#7c2d12" opacity=".5" stroke="#fb923c"/>
+<text x="130" y="55" text-anchor="middle" font-family="Inter" font-size="13" font-weight="700" fill="#fde047">CLIENT QUERY</text>
+<text x="40" y="80" font-family="monospace" font-size="11" fill="#cbd5e1">query {</text>
+<text x="40" y="98" font-family="monospace" font-size="11" fill="#cbd5e1">  user(id: 42) {</text>
+<text x="40" y="116" font-family="monospace" font-size="11" fill="#4ade80">    name</text>
+<text x="40" y="134" font-family="monospace" font-size="11" fill="#4ade80">    avatar</text>
+<text x="40" y="152" font-family="monospace" font-size="11" fill="#cbd5e1">    posts(limit:5) {</text>
+<text x="40" y="170" font-family="monospace" font-size="11" fill="#4ade80">      title</text>
+<text x="40" y="188" font-family="monospace" font-size="11" fill="#4ade80">      likes</text>
+<text x="40" y="206" font-family="monospace" font-size="11" fill="#cbd5e1">    }</text>
+<text x="40" y="224" font-family="monospace" font-size="11" fill="#cbd5e1">  }</text>
+<text x="40" y="242" font-family="monospace" font-size="11" fill="#cbd5e1">}</text>
+<line x1="240" y1="140" x2="320" y2="140" stroke="#fb923c" stroke-width="2" marker-end="url(#ag)"/>
+<text x="280" y="130" text-anchor="middle" font-family="Inter" font-size="10" fill="#94a3b8">single</text>
+<text x="280" y="158" text-anchor="middle" font-family="Inter" font-size="10" fill="#94a3b8">request</text>
+<rect x="320" y="30" width="220" height="220" rx="10" fill="#581c87" opacity=".5" stroke="#c084fc"/>
+<text x="430" y="55" text-anchor="middle" font-family="Inter" font-size="13" font-weight="700" fill="#fde047">GRAPHQL SERVER</text>
+<text x="430" y="100" text-anchor="middle" font-family="monospace" font-size="11" fill="#cbd5e1">resolve user → DB</text>
+<text x="430" y="125" text-anchor="middle" font-family="monospace" font-size="11" fill="#cbd5e1">resolve posts → DB</text>
+<text x="430" y="160" text-anchor="middle" font-family="monospace" font-size="11" fill="#cbd5e1">project requested fields only</text>
+<text x="430" y="185" text-anchor="middle" font-family="monospace" font-size="11" fill="#cbd5e1">return shape that matches query</text>
+<line x1="540" y1="140" x2="620" y2="140" stroke="#fb923c" stroke-width="2" marker-end="url(#ag)"/>
+<rect x="620" y="30" width="160" height="220" rx="10" fill="#14532d" opacity=".5" stroke="#4ade80"/>
+<text x="700" y="55" text-anchor="middle" font-family="Inter" font-size="13" font-weight="700" fill="#fde047">RESPONSE</text>
+<text x="640" y="85" font-family="monospace" font-size="10" fill="#4ade80">{</text>
+<text x="640" y="100" font-family="monospace" font-size="10" fill="#4ade80">  user: {</text>
+<text x="640" y="115" font-family="monospace" font-size="10" fill="#4ade80">    name: "Ada"</text>
+<text x="640" y="130" font-family="monospace" font-size="10" fill="#4ade80">    avatar: "..."</text>
+<text x="640" y="145" font-family="monospace" font-size="10" fill="#4ade80">    posts: [</text>
+<text x="640" y="160" font-family="monospace" font-size="10" fill="#4ade80">      {title, likes}</text>
+<text x="640" y="175" font-family="monospace" font-size="10" fill="#4ade80">      {title, likes}</text>
+<text x="640" y="190" font-family="monospace" font-size="10" fill="#4ade80">      ...</text>
+<text x="640" y="205" font-family="monospace" font-size="10" fill="#4ade80">    ]</text>
+<text x="640" y="220" font-family="monospace" font-size="10" fill="#4ade80">  }</text>
+<text x="640" y="235" font-family="monospace" font-size="10" fill="#4ade80">}</text>
+</svg></div>
+<div class="where"><h4>Where to use this</h4><ul>
+<li><strong>Mobile + web frontends</strong> with rapidly changing screens — clients pick fields without backend redeploys.</li>
+<li><strong>Multiple teams</strong> querying overlapping data on a shared graph (Facebook-scale problem).</li>
+<li><strong>Skip in interviews</strong> with fixed requirements; mention only if interviewer signals "rapid iteration / unknown future queries."</li>
+<li><strong>Watch out:</strong> resolver fan-out can N+1 your DB. Need DataLoader / batching.</li>
+</ul></div>
+</div>
+<!-- 07 -->
+<div class="card c-red" id="grpc">
+<div class="card-header"><span class="icon">⚡</span><span class="badge-num">07</span><span class="card-title">gRPC — binary RPC over HTTP/2</span></div>
+<p class="lead">Schema-first (Protocol Buffers) → smaller, faster, type-safe. Built for service-to-service.</p>
+<div class="twoup">
+<div><h5 style="color:#facc15">JSON over HTTP/1.1 — 40 bytes</h5>
+<div class="ascii" style="margin:6px 0 0">{<span class="cmt"> </span>
+  "id": "123",<span class="cmt"> </span>
+  "name": "John Doe"<span class="cmt"> </span>
+}</div></div>
+<div><h5 style="color:#4ade80">Protobuf over HTTP/2 — 15 bytes</h5>
+<div class="ascii" style="margin:6px 0 0">0A 03 31 32 33 12 08 6A 6F
+68 6E 20 64 6F 65   <span class="cmt">←  &lt;3x</span>
+                    <span class="cmt">     smaller</span></div></div>
+</div>
+<div class="ascii">
+<span class="hl">.proto schema (single source of truth)</span>
+message User { string id = 1; string name = 2; }
+message GetUserRequest  { string id = 1; }
+message GetUserResponse { User user = 1; }
+
+service UserService {
+  rpc GetUser (GetUserRequest) returns (GetUserResponse);
+  rpc StreamPosts (StreamReq) returns (stream Post);   <span class="cmt">// server streaming</span>
+}
+<span class="cmt">────────────────────────────────</span>
+<span class="hl">protoc</span> generates client + server stubs in Go, Java, Python, Rust, ...
+</div>
+<div class="where"><h4>Where to use this</h4><ul>
+<li><strong>Internal service-to-service</strong> in microservices. Strong typing catches errors at compile time.</li>
+<li><strong>Performance-critical paths</strong> — some benchmarks show 10× throughput vs JSON/HTTP.</li>
+<li><strong>Avoid for public APIs / browsers.</strong> Tooling is heavier, no native browser support.</li>
+<li><strong>Common pattern:</strong> gRPC inside the DC, REST at the edge.</li>
+</ul></div>
+</div>
+<!-- 08 -->
+<div class="card c-pink" id="sse">
+<div class="card-header"><span class="icon">📺</span><span class="badge-num">08</span><span class="card-title">Server-Sent Events (SSE) — server pushes, one direction</span></div>
+<p class="lead">A "long" HTTP response that the server keeps writing chunks into. Browser-native via <code>EventSource</code>, auto-reconnect with last-id replay.</p>
+<div class="svg-wrap"><svg viewBox="0 0 800 220" xmlns="http://www.w3.org/2000/svg">
+<defs><marker id="as" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#f472b6"/></marker></defs>
+<text x="100" y="30" text-anchor="middle" font-family="Inter" font-size="12" font-weight="700" fill="#22d3ee">CLIENT</text>
+<text x="700" y="30" text-anchor="middle" font-family="Inter" font-size="12" font-weight="700" fill="#f472b6">SERVER</text>
+<line x1="100" y1="40" x2="100" y2="200" stroke="#22d3ee" stroke-width="2" stroke-dasharray="3,4"/>
+<line x1="700" y1="40" x2="700" y2="200" stroke="#f472b6" stroke-width="2" stroke-dasharray="3,4"/>
+<line x1="100" y1="60" x2="700" y2="60" stroke="#22d3ee" stroke-width="2" marker-end="url(#as)"/>
+<text x="400" y="55" text-anchor="middle" font-family="monospace" font-size="11" fill="#cbd5e1">GET /events  Accept: text/event-stream</text>
+<line x1="700" y1="85" x2="100" y2="85" stroke="#fde047" stroke-width="2" marker-end="url(#as)"/>
+<text x="400" y="80" text-anchor="middle" font-family="monospace" font-size="11" fill="#fde047">200 OK · Content-Type: text/event-stream</text>
+<line x1="700" y1="115" x2="100" y2="115" stroke="#f472b6" stroke-width="1.5" marker-end="url(#as)"/>
+<text x="400" y="110" text-anchor="middle" font-family="monospace" font-size="11" fill="#f472b6">data: {"price":102.4}</text>
+<line x1="700" y1="140" x2="100" y2="140" stroke="#f472b6" stroke-width="1.5" marker-end="url(#as)"/>
+<text x="400" y="135" text-anchor="middle" font-family="monospace" font-size="11" fill="#f472b6">data: {"price":102.7}</text>
+<line x1="700" y1="165" x2="100" y2="165" stroke="#f472b6" stroke-width="1.5" marker-end="url(#as)"/>
+<text x="400" y="160" text-anchor="middle" font-family="monospace" font-size="11" fill="#f472b6">data: {"price":103.1}</text>
+<text x="400" y="195" text-anchor="middle" font-family="Inter" font-size="11" fill="#94a3b8" font-style="italic">One TCP+HTTP response. Many "data:" chunks pushed over time. Client processes each as it arrives.</text>
+</svg></div>
+<div class="where"><h4>Where to use this</h4><ul>
+<li><strong>Server-to-client only</strong> push: live prices, auction bids, deployment logs, AI token streaming.</li>
+<li><strong>Pros:</strong> trivial setup, runs over plain HTTP, browser-native, plays nice with proxies and load balancers.</li>
+<li><strong>Watch out:</strong> some middleboxes buffer the response (defeating the streaming). Connections eventually drop — design for reconnect with <code>Last-Event-Id</code> replay.</li>
+</ul></div>
+</div>
+<!-- 09 -->
+<div class="card c-fuch" id="ws">
+<div class="card-header"><span class="icon">🔄</span><span class="badge-num">09</span><span class="card-title">WebSockets — bidirectional, persistent</span></div>
+<p class="lead">HTTP "Upgrade" handshake → the same TCP connection becomes a full-duplex binary channel. Both sides can push at any time.</p>
+<div class="svg-wrap"><svg viewBox="0 0 800 240" xmlns="http://www.w3.org/2000/svg">
+<defs><marker id="aw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#e879f9"/></marker></defs>
+<text x="100" y="30" text-anchor="middle" font-family="Inter" font-size="12" font-weight="700" fill="#22d3ee">CLIENT</text>
+<text x="700" y="30" text-anchor="middle" font-family="Inter" font-size="12" font-weight="700" fill="#e879f9">SERVER</text>
+<line x1="100" y1="40" x2="100" y2="220" stroke="#22d3ee" stroke-width="2" stroke-dasharray="3,4"/>
+<line x1="700" y1="40" x2="700" y2="220" stroke="#e879f9" stroke-width="2" stroke-dasharray="3,4"/>
+<line x1="100" y1="60" x2="700" y2="60" stroke="#22d3ee" stroke-width="2" marker-end="url(#aw)"/>
+<text x="400" y="55" text-anchor="middle" font-family="monospace" font-size="11" fill="#cbd5e1">GET /ws  Upgrade: websocket</text>
+<line x1="700" y1="85" x2="100" y2="85" stroke="#fde047" stroke-width="2" marker-end="url(#aw)"/>
+<text x="400" y="80" text-anchor="middle" font-family="monospace" font-size="11" fill="#fde047">101 Switching Protocols</text>
+<rect x="180" y="100" width="440" height="2" fill="#fbbf24"/>
+<text x="400" y="118" text-anchor="middle" font-family="Inter" font-size="11" fill="#fbbf24" font-weight="700">→ TCP connection now owned by WebSocket protocol ←</text>
+<line x1="100" y1="140" x2="700" y2="140" stroke="#e879f9" stroke-width="1.5" marker-end="url(#aw)"/>
+<text x="400" y="135" text-anchor="middle" font-family="monospace" font-size="11" fill="#e879f9">{"type":"chat","msg":"hi"}</text>
+<line x1="700" y1="160" x2="100" y2="160" stroke="#e879f9" stroke-width="1.5" marker-end="url(#aw)"/>
+<text x="400" y="155" text-anchor="middle" font-family="monospace" font-size="11" fill="#e879f9">{"type":"presence","user":"42","online":true}</text>
+<line x1="100" y1="180" x2="700" y2="180" stroke="#e879f9" stroke-width="1.5" marker-end="url(#aw)"/>
+<text x="400" y="175" text-anchor="middle" font-family="monospace" font-size="11" fill="#e879f9">{"type":"chat","msg":"hey!"}</text>
+<text x="400" y="215" text-anchor="middle" font-family="Inter" font-size="11" fill="#94a3b8" font-style="italic">Both sides send whenever. Connection stays open until either explicitly closes.</text>
+</svg></div>
+<div class="where"><h4>Where to use this</h4><ul>
+<li><strong>True bidirectional realtime:</strong> chat, multiplayer games, collaborative cursors, trading desks.</li>
+<li><strong>Use an L4 load balancer</strong> in front (or an L7 LB that explicitly understands WS upgrade). The flow stays pinned to one server.</li>
+<li><strong>Stateful = expensive.</strong> Plan for connection storms, sticky routing, and per-server connection limits.</li>
+<li><strong>Don't WS by default.</strong> If client only needs server pushes, prefer SSE. If only request/response, prefer HTTP.</li>
+</ul></div>
+</div>
+<!-- 10 -->
+<div class="card c-purple" id="webrtc">
+<div class="card-header"><span class="icon">🔗</span><span class="badge-num">10</span><span class="card-title">WebRTC — peer-to-peer with NAT traversal</span></div>
+<p class="lead">The only browser-accessible UDP. Peers connect <em>directly</em> after a brief signaling dance, with STUN/TURN to punch through NATs.</p>
+<div class="svg-wrap"><svg viewBox="0 0 800 320" xmlns="http://www.w3.org/2000/svg">
+<defs><marker id="aw2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#c084fc"/></marker></defs>
+<rect x="40" y="40" width="160" height="80" rx="10" fill="#14532d" opacity=".6" stroke="#4ade80"/>
+<text x="120" y="65" text-anchor="middle" font-family="Inter" font-size="13" font-weight="700" fill="#4ade80">Peer A</text>
+<text x="120" y="85" text-anchor="middle" font-family="monospace" font-size="11" fill="#cbd5e1">behind NAT</text>
+<text x="120" y="103" text-anchor="middle" font-family="monospace" font-size="11" fill="#cbd5e1">192.168.1.42</text>
+<rect x="600" y="40" width="160" height="80" rx="10" fill="#7c2d12" opacity=".6" stroke="#fb923c"/>
+<text x="680" y="65" text-anchor="middle" font-family="Inter" font-size="13" font-weight="700" fill="#fb923c">Peer B</text>
+<text x="680" y="85" text-anchor="middle" font-family="monospace" font-size="11" fill="#cbd5e1">behind NAT</text>
+<text x="680" y="103" text-anchor="middle" font-family="monospace" font-size="11" fill="#cbd5e1">10.0.0.7</text>
+<rect x="320" y="20" width="160" height="60" rx="8" fill="#1e3a5f" opacity=".7" stroke="#60a5fa"/>
+<text x="400" y="42" text-anchor="middle" font-family="Inter" font-size="12" font-weight="700" fill="#60a5fa">Signaling server</text>
+<text x="400" y="62" text-anchor="middle" font-family="monospace" font-size="10" fill="#cbd5e1">SDP &amp; ICE candidates</text>
+<rect x="320" y="100" width="160" height="60" rx="8" fill="#365314" opacity=".7" stroke="#a3e635"/>
+<text x="400" y="122" text-anchor="middle" font-family="Inter" font-size="12" font-weight="700" fill="#a3e635">STUN server</text>
+<text x="400" y="142" text-anchor="middle" font-family="monospace" font-size="10" fill="#cbd5e1">"what's my public IP?"</text>
+<rect x="320" y="180" width="160" height="60" rx="8" fill="#831843" opacity=".7" stroke="#f472b6"/>
+<text x="400" y="202" text-anchor="middle" font-family="Inter" font-size="12" font-weight="700" fill="#f472b6">TURN relay</text>
+<text x="400" y="222" text-anchor="middle" font-family="monospace" font-size="10" fill="#cbd5e1">fallback: bounce traffic</text>
+<line x1="200" y1="60" x2="320" y2="50" stroke="#60a5fa" stroke-width="2" marker-end="url(#aw2)"/>
+<line x1="600" y1="60" x2="480" y2="50" stroke="#60a5fa" stroke-width="2" marker-end="url(#aw2)"/>
+<line x1="200" y1="90" x2="320" y2="125" stroke="#a3e635" stroke-width="2" marker-end="url(#aw2)"/>
+<line x1="600" y1="90" x2="480" y2="125" stroke="#a3e635" stroke-width="2" marker-end="url(#aw2)"/>
+<line x1="200" y1="100" x2="600" y2="100" stroke="#fde047" stroke-width="3" stroke-dasharray="6,4" marker-end="url(#aw2)"/>
+<text x="400" y="280" text-anchor="middle" font-family="Inter" font-size="13" font-weight="700" fill="#fde047">DIRECT PEER-TO-PEER (UDP) — once ICE finishes</text>
+<text x="400" y="300" text-anchor="middle" font-family="Inter" font-size="11" fill="#94a3b8" font-style="italic">If hole-punching fails, traffic falls back through TURN.</text>
+</svg></div>
+<div class="where"><h4>Where to use this</h4><ul>
+<li><strong>Audio/video calling &amp; conferencing</strong> — the canonical use case. Browser-native.</li>
+<li><strong>Niche P2P data</strong> (CRDT-based collab, file transfer between users). Works, but rarely worth the operational complexity.</li>
+<li><strong>Don't reach for it</strong> just because "peer-to-peer sounds cool." Most "real-time" problems are better served by SSE or WebSockets.</li>
+</ul></div>
+</div>
+<!-- 11 -->
+<div class="card c-violet" id="lb">
+<div class="card-header"><span class="icon">⚖️</span><span class="badge-num">11</span><span class="card-title">Load balancing landscape</span></div>
+<p class="lead">Two axes to choose on: <strong>where</strong> the LB lives (client vs dedicated) and <strong>which layer</strong> it inspects (L4 vs L7).</p>
+
+<h4 style="color:#fbbf24;font-size:13px;margin:14px 0 6px;text-transform:uppercase;letter-spacing:1px">A. Vertical vs horizontal scaling</h4>
+<div class="svg-wrap"><svg viewBox="0 0 800 200" xmlns="http://www.w3.org/2000/svg">
+<rect x="80" y="40" width="120" height="120" rx="10" fill="#581c87" opacity=".7" stroke="#c084fc"/>
+<text x="140" y="100" text-anchor="middle" font-family="Inter" font-size="14" font-weight="700" fill="#fde047">1 BIG box</text>
+<text x="140" y="125" text-anchor="middle" font-family="monospace" font-size="11" fill="#cbd5e1">128 cores</text>
+<text x="140" y="180" text-anchor="middle" font-family="Inter" font-size="11" fill="#94a3b8">Vertical</text>
+<text x="300" y="105" text-anchor="middle" font-family="Inter" font-size="20" fill="#94a3b8">vs</text>
+<g>
+<rect x="420" y="40" width="55" height="55" rx="6" fill="#14532d" opacity=".7" stroke="#4ade80"/>
+<rect x="490" y="40" width="55" height="55" rx="6" fill="#14532d" opacity=".7" stroke="#4ade80"/>
+<rect x="560" y="40" width="55" height="55" rx="6" fill="#14532d" opacity=".7" stroke="#4ade80"/>
+<rect x="630" y="40" width="55" height="55" rx="6" fill="#14532d" opacity=".7" stroke="#4ade80"/>
+<rect x="700" y="40" width="55" height="55" rx="6" fill="#14532d" opacity=".7" stroke="#4ade80"/>
+<rect x="420" y="105" width="55" height="55" rx="6" fill="#14532d" opacity=".7" stroke="#4ade80"/>
+<rect x="490" y="105" width="55" height="55" rx="6" fill="#14532d" opacity=".7" stroke="#4ade80"/>
+<rect x="560" y="105" width="55" height="55" rx="6" fill="#14532d" opacity=".7" stroke="#4ade80"/>
+<rect x="630" y="105" width="55" height="55" rx="6" fill="#14532d" opacity=".7" stroke="#4ade80"/>
+<rect x="700" y="105" width="55" height="55" rx="6" fill="#14532d" opacity=".7" stroke="#4ade80"/>
+</g>
+<text x="585" y="180" text-anchor="middle" font-family="Inter" font-size="11" fill="#94a3b8">Horizontal — 10 small boxes (and you need a load balancer)</text>
+</svg></div>
+
+<h4 style="color:#fbbf24;font-size:13px;margin:14px 0 6px;text-transform:uppercase;letter-spacing:1px">B. Client-side vs dedicated</h4>
+<div class="twoup">
+<div><h5 style="color:#22d3ee">Client-side LB</h5>
+<p>Client knows the server list (registry, gossip, DNS) and picks one itself. <strong>Zero extra hops.</strong></p>
+<p style="margin-top:6px"><b>Examples:</b> gRPC client-side LB, Redis Cluster, DNS round-robin.</p>
+<p style="margin-top:6px"><b>Use when:</b> few controlled clients, OR many clients but slow updates are OK (DNS).</p></div>
+<div><h5 style="color:#fb923c">Dedicated LB</h5>
+<p>A box (HAProxy, NGINX, Envoy, AWS ALB/NLB, F5) sits between client and servers. Adds one hop, but instant updates.</p>
+<p style="margin-top:6px"><b>Use when:</b> public clients you don't control, or you want fine-grained routing.</p></div>
+</div>
+
+<h4 style="color:#fbbf24;font-size:13px;margin:14px 0 6px;text-transform:uppercase;letter-spacing:1px">C. L4 vs L7</h4>
+<div class="svg-wrap"><svg viewBox="0 0 800 240" xmlns="http://www.w3.org/2000/svg">
+<defs><marker id="al" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#a78bfa"/></marker></defs>
+<rect x="20" y="40" width="380" height="180" rx="10" fill="#14532d" opacity=".4" stroke="#4ade80"/>
+<text x="210" y="65" text-anchor="middle" font-family="Inter" font-size="14" font-weight="700" fill="#4ade80">L4 Load Balancer</text>
+<text x="210" y="85" text-anchor="middle" font-family="monospace" font-size="11" fill="#cbd5e1">routes by (src/dst IP, port)</text>
+<rect x="50" y="105" width="80" height="40" rx="6" fill="#22d3ee" opacity=".4"/>
+<text x="90" y="128" text-anchor="middle" font-family="Inter" font-size="11" fill="#f1f5f9">client</text>
+<rect x="180" y="105" width="80" height="40" rx="6" fill="#a78bfa" opacity=".5"/>
+<text x="220" y="128" text-anchor="middle" font-family="Inter" font-size="11" fill="#f1f5f9">L4 LB</text>
+<rect x="310" y="105" width="80" height="40" rx="6" fill="#fb923c" opacity=".5"/>
+<text x="350" y="128" text-anchor="middle" font-family="Inter" font-size="11" fill="#f1f5f9">server</text>
+<line x1="130" y1="125" x2="180" y2="125" stroke="#a78bfa" stroke-width="2" marker-end="url(#al)"/>
+<line x1="260" y1="125" x2="310" y2="125" stroke="#a78bfa" stroke-width="2" marker-end="url(#al)"/>
+<text x="210" y="180" text-anchor="middle" font-family="monospace" font-size="11" fill="#fde047">TCP connection persists end-to-end</text>
+<text x="210" y="200" text-anchor="middle" font-family="Inter" font-size="11" fill="#94a3b8">→ great for WebSockets, raw perf</text>
+<rect x="420" y="40" width="360" height="180" rx="10" fill="#7c2d12" opacity=".4" stroke="#fb923c"/>
+<text x="600" y="65" text-anchor="middle" font-family="Inter" font-size="14" font-weight="700" fill="#fb923c">L7 Load Balancer</text>
+<text x="600" y="85" text-anchor="middle" font-family="monospace" font-size="11" fill="#cbd5e1">routes by URL, header, cookie</text>
+<rect x="440" y="105" width="80" height="40" rx="6" fill="#22d3ee" opacity=".4"/>
+<text x="480" y="128" text-anchor="middle" font-family="Inter" font-size="11" fill="#f1f5f9">client</text>
+<rect x="560" y="105" width="80" height="40" rx="6" fill="#a78bfa" opacity=".5"/>
+<text x="600" y="128" text-anchor="middle" font-family="Inter" font-size="11" fill="#f1f5f9">L7 LB</text>
+<rect x="680" y="105" width="80" height="40" rx="6" fill="#fb923c" opacity=".5"/>
+<text x="720" y="128" text-anchor="middle" font-family="Inter" font-size="11" fill="#f1f5f9">server</text>
+<line x1="520" y1="125" x2="560" y2="125" stroke="#a78bfa" stroke-width="2" marker-end="url(#al)"/>
+<text x="540" y="118" text-anchor="middle" font-family="monospace" font-size="9" fill="#cbd5e1">TCP A</text>
+<line x1="640" y1="125" x2="680" y2="125" stroke="#a78bfa" stroke-width="2" marker-end="url(#al)"/>
+<text x="660" y="118" text-anchor="middle" font-family="monospace" font-size="9" fill="#cbd5e1">TCP B</text>
+<text x="600" y="180" text-anchor="middle" font-family="monospace" font-size="11" fill="#fde047">terminates client TCP, opens new TCP to server</text>
+<text x="600" y="200" text-anchor="middle" font-family="Inter" font-size="11" fill="#94a3b8">→ great for HTTP routing, A/B, canary</text>
+</svg></div>
+
+<h4 style="color:#fbbf24;font-size:13px;margin:14px 0 6px;text-transform:uppercase;letter-spacing:1px">D. Algorithms &amp; health checks</h4>
+<table class="cmp"><tr><th>Algorithm</th><th>How it picks</th><th>Use when</th></tr>
+<tr><td>Round-robin</td><td>Sequentially across servers</td><td>Stateless, equal-cost servers — default</td></tr>
+<tr><td>Random</td><td>Uniform random</td><td>Simple, similar to round-robin at scale</td></tr>
+<tr><td>Least connections</td><td>Server with fewest active conns</td><td>Long-lived connections (WS, SSE)</td></tr>
+<tr><td>Least response time</td><td>Server with lowest p50 latency</td><td>Heterogeneous backends</td></tr>
+<tr><td>IP hash / consistent hash</td><td>hash(client IP) → server</td><td>Session stickiness, sharded caches</td></tr>
+</table>
+<p class="lead" style="margin-top:6px"><strong>Health checks:</strong> LB pings each backend on an interval (TCP open, or L7 GET /health expecting 200). Unhealthy backends are removed from the pool until they recover. This is what makes LBs the cornerstone of high availability.</p>
+
+<div class="where"><h4>Quick decision tree for interviews</h4><ul>
+<li><strong>WebSocket / streaming?</strong> &rarr; L4 LB + Least Connections.</li>
+<li><strong>HTTP REST/GraphQL?</strong> &rarr; L7 LB + round-robin.</li>
+<li><strong>Internal microservices?</strong> &rarr; Client-side LB (gRPC has it built in).</li>
+<li><strong>Avoid single point of failure?</strong> &rarr; Two LBs in different AZs, DNS rotates between them.</li>
+</ul></div>
+</div>
+<!-- 12 -->
+<div class="card c-orange" id="reliab">
+<div class="card-header"><span class="icon">🛡️</span><span class="badge-num">12</span><span class="card-title">Retries with backoff · Idempotency · Circuit breakers</span></div>
+<p class="lead">"The network is reliable" is a lie. Build for failures.</p>
+
+<h4 style="color:#fbbf24;font-size:13px;margin:14px 0 6px;text-transform:uppercase;letter-spacing:1px">A. Exponential backoff with jitter</h4>
+<div class="svg-wrap"><svg viewBox="0 0 800 220" xmlns="http://www.w3.org/2000/svg">
+<line x1="60" y1="180" x2="760" y2="180" stroke="#94a3b8" stroke-width="1"/>
+<text x="60" y="205" font-family="monospace" font-size="11" fill="#94a3b8">t=0</text>
+<text x="400" y="205" text-anchor="middle" font-family="monospace" font-size="11" fill="#94a3b8">time →</text>
+<line x1="80" y1="180" x2="80" y2="40" stroke="#f87171" stroke-width="3"/><text x="80" y="34" text-anchor="middle" font-family="monospace" font-size="10" fill="#f87171">FAIL</text>
+<line x1="120" y1="180" x2="120" y2="60" stroke="#fbbf24" stroke-width="3"/><text x="120" y="54" text-anchor="middle" font-family="monospace" font-size="10" fill="#fbbf24">retry 1</text>
+<line x1="200" y1="180" x2="200" y2="60" stroke="#fbbf24" stroke-width="3"/><text x="200" y="54" text-anchor="middle" font-family="monospace" font-size="10" fill="#fbbf24">retry 2</text>
+<line x1="360" y1="180" x2="360" y2="60" stroke="#fbbf24" stroke-width="3"/><text x="360" y="54" text-anchor="middle" font-family="monospace" font-size="10" fill="#fbbf24">retry 3</text>
+<line x1="630" y1="180" x2="630" y2="60" stroke="#4ade80" stroke-width="3"/><text x="630" y="54" text-anchor="middle" font-family="monospace" font-size="10" fill="#4ade80">retry 4 ✓</text>
+<text x="100" y="155" font-family="monospace" font-size="10" fill="#94a3b8">100ms</text>
+<text x="160" y="155" font-family="monospace" font-size="10" fill="#94a3b8">200ms</text>
+<text x="280" y="155" font-family="monospace" font-size="10" fill="#94a3b8">400ms</text>
+<text x="490" y="155" font-family="monospace" font-size="10" fill="#94a3b8">800ms (+ random jitter)</text>
+<text x="400" y="100" text-anchor="middle" font-family="Inter" font-size="13" fill="#fde047">delay = base · 2ⁿ + random(0, base)</text>
+<text x="400" y="120" text-anchor="middle" font-family="Inter" font-size="11" fill="#94a3b8" font-style="italic">jitter prevents thundering herd — clients don't sync up retries</text>
+</svg></div>
+
+<h4 style="color:#fbbf24;font-size:13px;margin:14px 0 6px;text-transform:uppercase;letter-spacing:1px">B. Idempotency keys (so retries are safe)</h4>
+<div class="ascii">
+<span class="cmt">Without idempotency:</span>
+  Client &rarr; POST /charge   {amount: 10}    <span class="hl">FAIL (timeout)</span>   <span class="cmt">… but server processed it!</span>
+  Client &rarr; POST /charge   {amount: 10}    <span class="hl">retry</span>           <span class="cmt">user charged twice 💥</span>
+
+<span class="cmt">With idempotency:</span>
+  Client &rarr; POST /charge   <span class="hl">Idempotency-Key: 7f3a-...</span>   {amount: 10}
+  <span class="cmt">Server stores key + result. Same key → same response, executed once.</span>
+</div>
+
+<h4 style="color:#fbbf24;font-size:13px;margin:14px 0 6px;text-transform:uppercase;letter-spacing:1px">C. Circuit breaker state machine</h4>
+<div class="svg-wrap"><svg viewBox="0 0 800 240" xmlns="http://www.w3.org/2000/svg">
+<defs><marker id="acb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#fb923c"/></marker></defs>
+<circle cx="150" cy="120" r="60" fill="#14532d" opacity=".7" stroke="#4ade80" stroke-width="2"/>
+<text x="150" y="115" text-anchor="middle" font-family="Inter" font-size="14" font-weight="700" fill="#4ade80">CLOSED</text>
+<text x="150" y="135" text-anchor="middle" font-family="monospace" font-size="11" fill="#cbd5e1">requests pass</text>
+<circle cx="650" cy="120" r="60" fill="#7f1d1d" opacity=".7" stroke="#f87171" stroke-width="2"/>
+<text x="650" y="115" text-anchor="middle" font-family="Inter" font-size="14" font-weight="700" fill="#f87171">OPEN</text>
+<text x="650" y="135" text-anchor="middle" font-family="monospace" font-size="11" fill="#cbd5e1">fail fast</text>
+<circle cx="400" cy="120" r="60" fill="#713f12" opacity=".7" stroke="#facc15" stroke-width="2"/>
+<text x="400" y="115" text-anchor="middle" font-family="Inter" font-size="14" font-weight="700" fill="#facc15">HALF-OPEN</text>
+<text x="400" y="135" text-anchor="middle" font-family="monospace" font-size="10" fill="#cbd5e1">probe request</text>
+<path d="M210 100 Q300 50 590 100" fill="none" stroke="#fb923c" stroke-width="2" marker-end="url(#acb)"/>
+<text x="400" y="65" text-anchor="middle" font-family="monospace" font-size="11" fill="#fb923c">N consecutive failures</text>
+<path d="M590 145 Q500 200 460 155" fill="none" stroke="#fb923c" stroke-width="2" marker-end="url(#acb)"/>
+<text x="540" y="200" text-anchor="middle" font-family="monospace" font-size="11" fill="#fb923c">timeout elapses</text>
+<path d="M340 130 Q230 200 210 145" fill="none" stroke="#4ade80" stroke-width="2" marker-end="url(#acb)"/>
+<text x="240" y="210" text-anchor="middle" font-family="monospace" font-size="11" fill="#4ade80">probe succeeds</text>
+<path d="M460 90 Q540 60 590 90" fill="none" stroke="#f87171" stroke-width="2" marker-end="url(#acb)"/>
+<text x="525" y="50" text-anchor="middle" font-family="monospace" font-size="11" fill="#f87171">probe fails</text>
+</svg></div>
+
+<div class="where"><h4>Where to apply each pattern</h4><ul>
+<li><strong>Retry with exponential backoff + jitter</strong> on every external call. The exact phrase interviewers want to hear.</li>
+<li><strong>Idempotency keys</strong> on any non-GET that mutates state — payments, orders, user creation.</li>
+<li><strong>Circuit breakers</strong> around any dependency that could cascade-fail: third-party APIs, DB pools, downstream services. Keeps the herd from trampling a recovering service.</li>
+<li><strong>Bonus phrase:</strong> "thundering herd" — what jitter and circuit breakers prevent.</li>
+</ul></div>
+</div>
+<div class="footer-note">System Design Basics — Networking · part of <a href="/">Kiran's Tech Hub</a></div>
+</div></body></html>
