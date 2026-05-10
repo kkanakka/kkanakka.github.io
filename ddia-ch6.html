@@ -548,20 +548,104 @@ LINKEDIN ESPRESSO CACHE INVALIDATION:
   <div class="section-num">Section 8</div>
   <h2>When to Use What &mdash; Decision Guide</h2>
 
+  <h3>The Four Ways to Write to Cache</h3>
+  <img src="images/cache-write-patterns.png" alt="Cache-Aside, Read-Through, Write-Through, Write-Behind patterns" style="max-width:100%;border:1px solid #ddd;border-radius:8px;margin:1rem 0;">
+
+  <h3>Real-World Feature &rarr; Cache Pattern Quick Reference</h3>
+  <p>When designing a feature, pick the caching pattern based on <strong>read/write ratio</strong>, <strong>consistency needs</strong>, and <strong>latency budget</strong>:</p>
+
   <table>
-    <tr><th>Scenario</th><th>Best Cache</th><th>Why</th></tr>
-    <tr><td>Simple key-value caching, disposable</td><td><strong>Memcached</strong></td><td>Multi-threaded, no overhead of persistence. Pure speed.</td></tr>
-    <tr><td>Leaderboards, ranked feeds</td><td><strong>Redis</strong> (Sorted Sets)</td><td><code>ZADD</code> + <code>ZRANGE</code> gives O(log N) ranked operations natively.</td></tr>
-    <tr><td>Rate limiting</td><td><strong>Redis</strong></td><td><code>INCR</code> + <code>EXPIRE</code> = atomic counter with TTL. Lua for sliding window.</td></tr>
-    <tr><td>Session storage</td><td><strong>Redis</strong> (with AOF)</td><td>Persistence survives restart. Hash type for session fields.</td></tr>
-    <tr><td>Message queues (lightweight)</td><td><strong>Redis</strong> (Streams/Lists)</td><td><code>XADD</code>/<code>XREAD</code> for pub/sub with persistence. Not for Kafka-scale.</td></tr>
-    <tr><td>Geospatial queries (nearby drivers)</td><td><strong>Redis</strong> (Geo)</td><td><code>GEOADD</code> + <code>GEORADIUS</code> for proximity search. Uber uses this.</td></tr>
-    <tr><td>Document cache for Espresso</td><td><strong>Couchbase</strong></td><td>Shared L2 cache, survives restart, sub-doc updates, XDCR.</td></tr>
-    <tr><td>Huge cache pool (100GB+ shared)</td><td><strong>Couchbase</strong></td><td>Memory + disk tiering. LRU ejects from RAM, reloads on access.</td></tr>
-    <tr><td>Facebook-scale object cache</td><td><strong>Memcached</strong> (+ mcrouter)</td><td>Simplest, multi-threaded, battle-tested at billions of req/s.</td></tr>
-    <tr><td>Netflix personalization</td><td><strong>EVCache</strong> (Memcached fork)</td><td>AWS-optimized, zone-aware replication, tuned for Netflix scale.</td></tr>
-    <tr><td>CDN / edge caching</td><td><strong>Varnish / Nginx</strong></td><td>HTTP cache at edge. Not a database cache — caches entire responses.</td></tr>
-    <tr><td>Per-process local cache</td><td><strong>OHC / Caffeine / Guava</strong></td><td>In-process, nanosecond access, no network. LinkedIn L1 uses OHC.</td></tr>
+    <tr><th>Feature</th><th>Pattern</th><th>Cache</th><th>How It Works</th></tr>
+    <tr>
+      <td><strong>User profile views</strong></td>
+      <td>Cache-Aside</td>
+      <td>Memcached / OHC + Couchbase</td>
+      <td>Read-heavy (1000:1 read/write). App checks cache on profile view → miss = query Espresso → populate cache with TTL. Write to DB on profile edit → DELETE from cache. LinkedIn: L1 OHC (nanosec) → L2 Couchbase (microsec) → L3 Espresso.</td>
+    </tr>
+    <tr>
+      <td><strong>Like / reaction counts</strong></td>
+      <td>Write-Behind</td>
+      <td>Redis</td>
+      <td>High-frequency writes (thousands of likes/sec on viral posts). <code>INCR post:123:likes</code> in Redis immediately → async batch flush to DB every N seconds. User sees instant count. Slight inconsistency OK. If Redis crashes, recount from DB.</td>
+    </tr>
+    <tr>
+      <td><strong>News feed / timeline</strong></td>
+      <td>Write-Through (fan-out on write)</td>
+      <td>Redis Sorted Sets</td>
+      <td>When user posts → <code>ZADD timeline:{followerId} timestamp postId</code> for each follower. Read = <code>ZREVRANGE</code> top 50. Cache always pre-built. Twitter: fan-out on write for users with &lt;10K followers. Celebrity timelines: fan-out on read (cache-aside).</td>
+    </tr>
+    <tr>
+      <td><strong>Session management</strong></td>
+      <td>Write-Through + TTL</td>
+      <td>Redis (Hash + AOF)</td>
+      <td>Every login/action → <code>HSET session:abc user_id 123 role admin</code> + <code>EXPIRE session:abc 1800</code>. Redis is source of truth for active sessions. AOF <code>everysec</code> for crash recovery. No DB in the hot path. Session timeout = Redis TTL.</td>
+    </tr>
+    <tr>
+      <td><strong>Rate limiting / API throttle</strong></td>
+      <td>Write-Through (cache-only)</td>
+      <td>Redis</td>
+      <td>Redis IS the system, not a cache. Sliding window: Lua script atomically checks + increments counter. <code>INCR api:user:123:min</code> + <code>EXPIRE 60</code>. No DB needed. If Redis dies: fail-open (allow all) or fail-closed (block all) per policy.</td>
+    </tr>
+    <tr>
+      <td><strong>Product catalog / search results</strong></td>
+      <td>Read-Through</td>
+      <td>Couchbase / CDN</td>
+      <td>Cache automatically fetches from DB on miss — app only talks to cache. Catalog rarely changes (write-light). Couchbase sub-doc ops update individual fields. CDN caches rendered pages at edge. TTL = 5-15 min for freshness. Invalidate on product update via CDC.</td>
+    </tr>
+    <tr>
+      <td><strong>Leaderboard / top-K ranking</strong></td>
+      <td>Write-Through</td>
+      <td>Redis Sorted Sets</td>
+      <td>Every score change → <code>ZADD leaderboard score userId</code> (writes to Redis AND DB). <code>ZREVRANGE leaderboard 0 9</code> = top 10. O(log N) insert + O(K) read. Always consistent. Gaming, LinkedIn skill endorsements, Stack Overflow reputation.</td>
+    </tr>
+    <tr>
+      <td><strong>Nearby drivers / stores (geospatial)</strong></td>
+      <td>Write-Through</td>
+      <td>Redis Geo</td>
+      <td>GPS ping every 3-5s → <code>GEOADD drivers:sf lon lat driver42</code>. Rider request → <code>GEORADIUS drivers:sf lon lat 5 km COUNT 10</code>. Positions overwritten in-place. No DB in hot path for location queries. Historical data → DB async.</td>
+    </tr>
+    <tr>
+      <td><strong>Shopping cart</strong></td>
+      <td>Write-Through + persistence</td>
+      <td>Redis Hash + AOF</td>
+      <td><code>HSET cart:user123 item456 qty:2</code>. Every add/remove writes to Redis + async to DB. Redis AOF ensures durability. <code>HGETALL cart:user123</code> for checkout. TTL = 7 days for abandoned carts. Merge on login (anonymous → authenticated).</td>
+    </tr>
+    <tr>
+      <td><strong>DNS / config lookups</strong></td>
+      <td>Cache-Aside + short TTL</td>
+      <td>In-process (Caffeine) + Memcached</td>
+      <td>DNS/config changes infrequently but must propagate. Local cache with 30-60s TTL. Miss → query config service → cache. Short TTL ensures eventual consistency. No write-through needed — config service is the single source of truth.</td>
+    </tr>
+    <tr>
+      <td><strong>ML recommendations / personalization</strong></td>
+      <td>Cache-Aside (pre-computed)</td>
+      <td>EVCache / Redis</td>
+      <td>ML pipeline pre-computes recommendations offline → bulk-loads into cache. App reads from cache directly. TTL = hours (refresh when pipeline re-runs). Netflix: EVCache with zone-aware replication. No DB in the read path.</td>
+    </tr>
+    <tr>
+      <td><strong>Notifications / activity feed</strong></td>
+      <td>Write-Behind</td>
+      <td>Redis Lists/Streams</td>
+      <td>Event occurs → <code>LPUSH notif:user123 payload</code> immediately → async consumer writes to DB for persistence. User polls with <code>LRANGE notif:user123 0 19</code> = latest 20. Fast writes, eventual DB consistency. <code>LTRIM</code> keeps list bounded.</td>
+    </tr>
+  </table>
+
+  <h3>Complete Decision Guide</h3>
+
+  <table>
+    <tr><th>Scenario</th><th>Best Cache</th><th>Caching Pattern</th><th>Why</th></tr>
+    <tr><td>Simple key-value caching, disposable</td><td><strong>Memcached</strong></td><td><strong>Cache-Aside</strong> (Lazy Loading)<br><em>App checks cache → miss → query DB → populate cache.</em> No persistence needed. TTL-based expiration. Facebook uses leases to prevent thundering herd.</td><td>Multi-threaded, no overhead of persistence. Pure speed.</td></tr>
+    <tr><td>Leaderboards, ranked feeds</td><td><strong>Redis</strong> (Sorted Sets)</td><td><strong>Write-Through</strong><br><em>Every score update writes to Redis AND DB synchronously.</em> Sorted Set always current. Reads never miss for active leaderboards. <code>ZADD</code> on every write keeps rankings real-time.</td><td><code>ZADD</code> + <code>ZRANGE</code> gives O(log N) ranked operations natively.</td></tr>
+    <tr><td>Rate limiting</td><td><strong>Redis</strong></td><td><strong>Write-Through</strong> (cache-only for counters)<br><em><code>INCR</code> + <code>EXPIRE</code> directly on Redis.</em> No DB in the hot path. Redis IS the source of truth for rate counters. Lua scripts for atomic sliding window. If Redis dies, fail-open or fail-closed per policy.</td><td><code>INCR</code> + <code>EXPIRE</code> = atomic counter with TTL. Lua for sliding window.</td></tr>
+    <tr><td>Session storage</td><td><strong>Redis</strong> (with AOF)</td><td><strong>Write-Through</strong> + AOF persistence<br><em>App writes session to Redis on every update. AOF ensures durability.</em> Redis Hash per session (<code>HSET session:abc field val</code>). <code>EXPIRE</code> for session timeout. AOF <code>everysec</code> fsync = max 1s data loss on crash.</td><td>Persistence survives restart. Hash type for session fields.</td></tr>
+    <tr><td>Message queues (lightweight)</td><td><strong>Redis</strong> (Streams/Lists)</td><td><strong>Write-Behind</strong> (async consumption)<br><em>Producers <code>XADD</code> to stream. Consumers <code>XREADGROUP</code> asynchronously.</em> Consumer groups track offsets. Acknowledged messages trimmed. Not a replacement for Kafka at scale, but ideal for lightweight pub/sub.</td><td><code>XADD</code>/<code>XREAD</code> for pub/sub with persistence. Not for Kafka-scale.</td></tr>
+    <tr><td>Geospatial queries (nearby drivers)</td><td><strong>Redis</strong> (Geo)</td><td><strong>Write-Through</strong> (real-time location updates)<br><em>Driver location → <code>GEOADD</code> to Redis on every GPS ping.</em> Reads via <code>GEORADIUS</code> always get latest positions. High-frequency writes (every 3-5s per driver). Old positions overwritten in-place.</td><td><code>GEOADD</code> + <code>GEORADIUS</code> for proximity search. Uber uses this.</td></tr>
+    <tr><td>Document cache for Espresso</td><td><strong>Couchbase</strong></td><td><strong>Write-Around + Invalidate</strong><br><em>Write goes to Espresso (MySQL) → invalidate L1 OHC → invalidate L2 Couchbase → next read repopulates cache.</em> Schema version in cache key auto-invalidates on schema change. CDC via binlog → Kafka for async invalidation.</td><td>Shared L2 cache, survives restart, sub-doc updates, XDCR.</td></tr>
+    <tr><td>Huge cache pool (100GB+ shared)</td><td><strong>Couchbase</strong></td><td><strong>Read-Through</strong> + LRU eviction<br><em>Cache manages DB fetches on miss. LRU ejects cold items from RAM, but data stays on disk.</em> Re-access warm items loaded from disk (not DB). Memory quota per bucket. Disk-backed = survives restarts without cold-start penalty.</td><td>Memory + disk tiering. LRU ejects from RAM, reloads on access.</td></tr>
+    <tr><td>Facebook-scale object cache</td><td><strong>Memcached</strong> (+ mcrouter)</td><td><strong>Cache-Aside</strong> + Lease tokens<br><em>App checks cache → miss → lease token prevents thundering herd → one DB query → populate cache.</em> Regional pools via mcrouter. <code>DELETE</code> on write (write-around). Stale flag allows serving stale while refresh in progress.</td><td>Simplest, multi-threaded, battle-tested at billions of req/s.</td></tr>
+    <tr><td>Netflix personalization</td><td><strong>EVCache</strong> (Memcached fork)</td><td><strong>Cache-Aside</strong> + zone-aware replication<br><em>App populates cache from ML pipeline. Reads from nearest AZ replica.</em> Write to primary EVCache → async replicate to other AZs. Warm-up on deploy via bulk preload. TTL-based expiration for recommendation freshness.</td><td>AWS-optimized, zone-aware replication, tuned for Netflix scale.</td></tr>
+    <tr><td>CDN / edge caching</td><td><strong>Varnish / Nginx</strong></td><td><strong>Read-Through</strong> (reverse proxy)<br><em>CDN intercepts request → cache hit = serve from edge → miss = fetch from origin, cache, serve.</em> HTTP <code>Cache-Control</code> headers drive TTL. Purge API for invalidation. Typically cache full HTTP responses (HTML, JS, images).</td><td>HTTP cache at edge. Not a database cache — caches entire responses.</td></tr>
+    <tr><td>Per-process local cache</td><td><strong>OHC / Caffeine / Guava</strong></td><td><strong>Cache-Aside</strong> (in-process, no network)<br><em>Thread checks local cache → miss → fetch from L2/DB → populate local cache.</em> Caffeine: <code>LoadingCache</code> with <code>refreshAfterWrite</code>. OHC: off-heap = no GC pressure. Size-bounded + time-bounded eviction. No serialization cost.</td><td>In-process, nanosecond access, no network. LinkedIn L1 uses OHC.</td></tr>
   </table>
 
   <div class="card interview">
