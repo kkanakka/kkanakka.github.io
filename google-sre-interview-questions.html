@@ -1,0 +1,2827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Google SRE Interview Questions — Linux, Networking, Processes, Filesystems</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #f7f6f3;
+    --border: #e3e2de;
+    --text: #37352f;
+    --text-muted: #787774;
+    --accent: #ea4335;
+    --accent2: #4285f4;
+    --accent3: #34a853;
+    --accent4: #fbbc04;
+    --code-bg: #f4f4f4;
+    --warn-bg: #fff3cd;
+    --warn-border: #ffc107;
+    --info-bg: #e3f2fd;
+    --info-border: #2196f3;
+    --tip-bg: #e8f5e9;
+    --tip-border: #4caf50;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    font-size: 15px;
+  }
+  .container { max-width: 920px; margin: 0 auto; padding: 0 24px; }
+
+  .hero {
+    background: linear-gradient(135deg, #fff8f7 0%, #fff 50%, #f0f7ff 100%);
+    border-bottom: 3px solid var(--accent);
+    padding: 48px 0 36px;
+    text-align: center;
+  }
+  .hero h1 { font-size: 2.2em; font-weight: 700; margin-bottom: 12px; }
+  .hero h1 span { color: var(--accent); }
+  .hero p { font-size: 1.05em; color: var(--text-muted); max-width: 700px; margin: 0 auto 16px; }
+  .breadcrumb { font-size: 0.88em; color: var(--text-muted); }
+  .breadcrumb a { color: var(--accent2); text-decoration: none; }
+  .breadcrumb a:hover { text-decoration: underline; }
+
+  .toc {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px 32px;
+    margin: 32px 0;
+  }
+  .toc h2 { font-size: 1.1em; font-weight: 700; margin-bottom: 14px; color: var(--accent); }
+  .toc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 8px 24px; }
+  .toc a { color: var(--text); text-decoration: none; font-size: 0.9em; padding: 4px 0; display: block; }
+  .toc a:hover { color: var(--accent); }
+  .toc .section-head { font-weight: 700; font-size: 0.82em; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); margin-top: 10px; margin-bottom: 4px; }
+
+  .topic-section { margin: 48px 0 0; padding-top: 32px; border-top: 2px solid var(--border); }
+  .topic-section:first-of-type { border-top: none; }
+
+  h2.section-title {
+    font-size: 1.6em; font-weight: 700; margin-bottom: 8px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  h2.section-title .badge {
+    background: var(--accent);
+    color: #fff;
+    font-size: 0.45em;
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .question-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin: 24px 0;
+    overflow: hidden;
+  }
+  .question-card .q-header {
+    background: linear-gradient(90deg, #fafafa, #fff);
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .question-card .q-header:hover { background: #f5f5f5; }
+  .question-card .q-header h3 { font-size: 1.1em; font-weight: 700; flex: 1; }
+  .question-card .q-header .level {
+    font-size: 0.72em; font-weight: 600; padding: 3px 10px;
+    border-radius: 4px; text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .level-l3 { background: #e8f5e9; color: #2e7d32; }
+  .level-l4 { background: #fff3e0; color: #e65100; }
+  .level-l5 { background: #fce4ec; color: #c62828; }
+  .level-l6 { background: #f3e5f5; color: #6a1b9a; }
+  .level-l7 { background: #e8eaf6; color: #283593; }
+
+  .q-body { padding: 24px; }
+  .q-body h4 { font-size: 1em; font-weight: 700; margin: 20px 0 10px; color: var(--accent); }
+  .q-body h4:first-child { margin-top: 0; }
+  .q-body p { margin: 0 0 12px; }
+  .q-body ul, .q-body ol { margin: 0 0 14px; padding-left: 24px; }
+  .q-body li { margin-bottom: 6px; }
+
+  pre {
+    background: #1e1e1e;
+    color: #d4d4d4;
+    border-radius: 8px;
+    padding: 16px 20px;
+    overflow-x: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    margin: 12px 0 16px;
+  }
+  pre .comment { color: #6a9955; }
+  pre .keyword { color: #569cd6; }
+  pre .string { color: #ce9178; }
+  pre .number { color: #b5cea8; }
+  pre .func { color: #dcdcaa; }
+  pre .type { color: #4ec9b0; }
+
+  code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.88em;
+    background: var(--code-bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+  pre code { background: none; padding: 0; font-size: 1em; }
+
+  .callout {
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin: 14px 0;
+    font-size: 0.92em;
+  }
+  .callout-warn { background: var(--warn-bg); border-left: 4px solid var(--warn-border); }
+  .callout-info { background: var(--info-bg); border-left: 4px solid var(--info-border); }
+  .callout-tip { background: var(--tip-bg); border-left: 4px solid var(--tip-border); }
+
+  .diagram {
+    background: #fafafa;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    margin: 16px 0;
+    overflow-x: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    line-height: 1.4;
+    white-space: pre;
+  }
+
+  .followup {
+    background: #f9f9f9;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 16px 0;
+  }
+  .followup h5 { font-size: 0.9em; font-weight: 700; margin-bottom: 8px; color: var(--accent2); }
+  .followup ul { padding-left: 20px; margin: 0; }
+  .followup li { font-size: 0.9em; margin-bottom: 4px; }
+
+  .eval-guidance {
+    background: #fff8e1;
+    border: 1px solid #ffcc02;
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 16px 0;
+  }
+  .eval-guidance h5 { font-size: 0.9em; font-weight: 700; margin-bottom: 8px; color: #f57f17; }
+  .eval-guidance ul { padding-left: 20px; margin: 0; }
+  .eval-guidance li { font-size: 0.88em; margin-bottom: 4px; }
+
+  table.data {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0 16px;
+    font-size: 0.9em;
+  }
+  table.data th {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 8px 12px;
+    font-weight: 600;
+    text-align: left;
+    font-size: 0.85em;
+  }
+  table.data td {
+    border: 1px solid var(--border);
+    padding: 8px 12px;
+    vertical-align: top;
+  }
+
+  .footer {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 32px 0;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.88em;
+    margin-top: 64px;
+  }
+  .footer a { color: var(--accent); text-decoration: none; }
+
+  @media (max-width: 640px) {
+    .hero { padding: 32px 0 24px; }
+    .hero h1 { font-size: 1.6em; }
+    .toc-grid { grid-template-columns: 1fr; }
+    pre { font-size: 11.5px; padding: 12px 14px; }
+  }
+</style>
+</head>
+<body>
+
+<section class="hero">
+  <div class="container">
+    <h1>Google <span>SRE Interview</span> Questions</h1>
+    <p>Comprehensive deep-dives into Linux internals, networking, processes, filesystems, containers, and sysadmin — with kernel diagrams, commands, and follow-up chains.</p>
+    <div class="breadcrumb">
+      <a href="/">Kiran's Tech Hub</a> &rarr; <a href="linux-systems-guide.html">Linux Systems Guide</a> &rarr; Google SRE Interview
+    </div>
+  </div>
+</section>
+
+<div class="container">
+
+<!-- TABLE OF CONTENTS -->
+<div class="toc">
+  <h2>Table of Contents</h2>
+  <div class="toc-grid">
+    <div>
+      <div class="section-head">Networking</div>
+      <a href="#net-how-it-works">How does networking work?</a>
+      <a href="#net-attacks">Network Attacks</a>
+      <a href="#net-routing-tables">Routing Tables</a>
+      <a href="#net-telnet-curl">Telnet or Curl Mechanics</a>
+      <a href="#net-foo-com">What happens when you telnet www.foo.com?</a>
+    </div>
+    <div>
+      <div class="section-head">Processes</div>
+      <a href="#proc-signals">Signals and Trapping</a>
+      <a href="#proc-fork">Fork — Parent/Child Relationships</a>
+      <a href="#proc-orphaned">Orphaned Processes</a>
+      <a href="#proc-fork-system">Fork: What happens on the system?</a>
+      <a href="#proc-kill">What does kill do?</a>
+      <a href="#proc-exec">Describe exec</a>
+      <a href="#proc-exec-args">What does exec do? Calling exec()</a>
+      <a href="#proc-vm">Virtual Memory</a>
+    </div>
+    <div>
+      <div class="section-head">Filesystems</div>
+      <a href="#fs-inodes">Inode Contents</a>
+      <a href="#fs-unix-types">Unix-type Filesystems Organization</a>
+      <a href="#fs-symlinks-hardlinks">Symlinks vs Hardlinks</a>
+      <a href="#fs-permissions">UNIX Permissions</a>
+      <a href="#fs-pwd">Implement pwd</a>
+      <a href="#fs-lsof">Implement the "lsof" command</a>
+    </div>
+    <div>
+      <div class="section-head">Containers &amp; VMs</div>
+      <a href="#cont-vs-vm">Container vs VM</a>
+      <a href="#cont-isolation">Container Isolation &amp; Namespaces</a>
+    </div>
+    <div>
+      <div class="section-head">SysAdmin</div>
+      <a href="#sys-copy-verify">Copy Disk, Verify</a>
+      <a href="#sys-diskless-boot">Diskless Booting</a>
+      <a href="#sys-pid-init">Init Process &amp; PID 1</a>
+      <a href="#sys-load-average">Load Average &amp; Uptime</a>
+      <a href="#sys-remove-f">Remove a file named -f</a>
+      <a href="#sys-apache-advisory">Apache Security Advisory Scenario</a>
+      <a href="#sys-passwordless-ssh">Passwordless SSH</a>
+      <a href="#sys-timestamps">UNIX Timestamps</a>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!--                       NETWORKING                              -->
+<!-- ============================================================ -->
+
+<div class="topic-section" id="networking">
+  <h2 class="section-title">Networking <span class="badge">5 Questions</span></h2>
+
+  <!-- Q: How does networking work? -->
+  <div class="question-card" id="net-how-it-works">
+    <div class="q-header">
+      <h3>[network] How does network/data(base) boot work? (tcp, ftp, bootp)</h3>
+      <span class="level level-l4">L3–L5</span>
+    </div>
+    <div class="q-body">
+      <h4>Question</h4>
+      <p>How does network/database boot work? Explain protocols like TCP, FTP, BOOTP.</p>
+
+      <h4>Answer</h4>
+      <p>Network booting involves a client machine with no local OS obtaining its network configuration and boot image entirely over the network. The process relies on a layered set of protocols:</p>
+
+      <div class="diagram">
+┌──────────────┐                              ┌──────────────┐
+│   PXE Client │                              │  DHCP/TFTP   │
+│ (no local OS)│                              │    Server     │
+└──────┬───────┘                              └──────┬───────┘
+       │  1. DHCPDISCOVER (broadcast)                │
+       │ ──────────────────────────────────────────> │
+       │                                             │
+       │  2. DHCPOFFER (IP + next-server + filename) │
+       │ <────────────────────────────────────────── │
+       │                                             │
+       │  3. DHCPREQUEST                             │
+       │ ──────────────────────────────────────────> │
+       │                                             │
+       │  4. DHCPACK                                 │
+       │ <────────────────────────────────────────── │
+       │                                             │
+       │  5. TFTP Read Request (pxelinux.0)          │
+       │ ──────────────────────────────────────────> │
+       │                                             │
+       │  6. TFTP Data (boot loader binary)          │
+       │ <────────────────────────────────────────── │
+       │                                             │
+       │  7. Boot loader fetches kernel + initrd     │
+       │ ──────────────────────────────────────────> │
+       │                                             │
+       │  8. Kernel boots, NFS/HTTP root mount        │
+       │ ──────────────────────────────────────────> │
+       ▼                                             ▼
+</div>
+
+      <h4>Protocol Stack</h4>
+      <table class="data">
+        <tr><th>Protocol</th><th>Purpose</th><th>Layer</th><th>Port</th></tr>
+        <tr><td><code>BOOTP/DHCP</code></td><td>Obtain IP address, next-server, boot filename</td><td>Application (L7)</td><td>67/68 UDP</td></tr>
+        <tr><td><code>TFTP</code></td><td>Transfer boot loader binary (small, no auth)</td><td>Application (L7)</td><td>69 UDP</td></tr>
+        <tr><td><code>PXE</code></td><td>Pre-boot Execution Environment (firmware-level)</td><td>Firmware</td><td>—</td></tr>
+        <tr><td><code>NFS/HTTP</code></td><td>Mount root filesystem after kernel boot</td><td>Application (L7)</td><td>2049/80</td></tr>
+      </table>
+
+      <h4>TCP/IP Fundamentals</h4>
+      <div class="diagram">
+Application Layer    │ HTTP, FTP, DNS, SSH, SMTP
+─────────────────────┼──────────────────────────
+Transport Layer      │ TCP (reliable, ordered, connection-oriented)
+                     │ UDP (unreliable, unordered, connectionless)
+─────────────────────┼──────────────────────────
+Network Layer        │ IP (addressing, routing), ICMP, ARP
+─────────────────────┼──────────────────────────
+Data Link Layer      │ Ethernet frames, MAC addresses, switches
+─────────────────────┼──────────────────────────
+Physical Layer       │ Cables, radio waves, electrical signals
+</div>
+
+      <h4>TCP Three-Way Handshake (Kernel Level)</h4>
+<pre><code><span class="comment">/* Kernel: net/ipv4/tcp_input.c — simplified handshake state machine */</span>
+
+Client                          Server
+  │                               │
+  │── SYN (seq=x) ──────────────>│  <span class="comment">// tcp_v4_connect() → tcp_connect()</span>
+  │                               │  <span class="comment">// Server: SYN_RECV, create request_sock</span>
+  │<── SYN-ACK (seq=y, ack=x+1) ─│  <span class="comment">// tcp_v4_send_synack()</span>
+  │                               │
+  │── ACK (ack=y+1) ────────────>│  <span class="comment">// tcp_rcv_state_process() → ESTABLISHED</span>
+  │                               │
+  │       <span class="keyword">ESTABLISHED</span>              │
+
+<span class="comment">/* SYN queue (half-open) → Accept queue (fully established) */</span>
+<span class="comment">/* Tuning: net.ipv4.tcp_max_syn_backlog, net.core.somaxconn */</span></code></pre>
+
+      <h4>Key Commands</h4>
+<pre><code><span class="comment"># Show TCP connection states</span>
+ss -tan state established | head -20
+ss -s   <span class="comment"># Summary statistics</span>
+
+<span class="comment"># Trace packet path</span>
+traceroute -T -p 443 google.com
+
+<span class="comment"># Watch real-time TCP handshakes with tcpdump</span>
+sudo tcpdump -i eth0 'tcp[tcpflags] &amp; (tcp-syn|tcp-ack) != 0' -nn
+
+<span class="comment"># Kernel TCP parameters</span>
+sysctl net.ipv4.tcp_max_syn_backlog
+sysctl net.core.somaxconn
+sysctl net.ipv4.tcp_syncookies</code></pre>
+
+      <div class="followup">
+        <h5>Follow-up Questions</h5>
+        <ul>
+          <li>What is the difference between BOOTP and DHCP?</li>
+          <li>Why does TFTP use UDP instead of TCP?</li>
+          <li>What happens if the TFTP server is unreachable during PXE boot?</li>
+          <li>How does iPXE extend the original PXE standard?</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Q: Network Attacks -->
+  <div class="question-card" id="net-attacks">
+    <div class="q-header">
+      <h3>[attack] Name a few typical network attacks. Detect &amp; defend?</h3>
+      <span class="level level-l4">L3–L5</span>
+    </div>
+    <div class="q-body">
+      <h4>Question</h4>
+      <p>Name a few typical network attacks. How would you detect and defend against them?</p>
+
+      <h4>Answer</h4>
+      <p>This is a discussion question. Assuming the person can name and describe some of the network attacks — ask them to detect and defend.</p>
+
+      <h4>Common Network Attacks</h4>
+      <table class="data">
+        <tr><th>Attack</th><th>Mechanism</th><th>Detection</th><th>Defense</th></tr>
+        <tr>
+          <td><strong>SYN Flood</strong></td>
+          <td>Send many SYN packets, never complete handshake. Fills SYN queue.</td>
+          <td><code>netstat -s | grep "SYNs to LISTEN"</code><br>Watch half-open connections</td>
+          <td>SYN cookies: <code>sysctl net.ipv4.tcp_syncookies=1</code><br>Rate limiting with iptables</td>
+        </tr>
+        <tr>
+          <td><strong>ARP Spoofing</strong></td>
+          <td>Send fake ARP replies to associate attacker's MAC with target IP</td>
+          <td><code>arpwatch</code>, duplicate IP detection, ARP table monitoring</td>
+          <td>Static ARP entries, 802.1X, Dynamic ARP Inspection (DAI)</td>
+        </tr>
+        <tr>
+          <td><strong>DNS Spoofing</strong></td>
+          <td>Forge DNS responses to redirect traffic to malicious server</td>
+          <td>DNSSEC validation failures, unexpected DNS response IPs</td>
+          <td>DNSSEC, DNS over HTTPS/TLS, randomized source ports</td>
+        </tr>
+        <tr>
+          <td><strong>DDoS</strong></td>
+          <td>Volumetric: overwhelm bandwidth. Protocol: exploit L3/L4. App: exhaust L7 resources</td>
+          <td>Traffic anomaly detection, baseline deviation, flow analysis</td>
+          <td>CDN/scrubbing centers, rate limiting, anycast, BCP38</td>
+        </tr>
+        <tr>
+          <td><strong>MITM</strong></td>
+          <td>Position between two parties, intercept/modify traffic</td>
+          <td>Certificate pinning failures, unexpected cert changes</td>
+          <td>TLS everywhere, HSTS, certificate transparency logs</td>
+        </tr>
+      </table>
+
+      <h4>Kernel-Level Network Defense</h4>
+<pre><code><span class="comment"># Enable SYN cookies (kernel responds to SYN floods without state)</span>
+echo 1 > /proc/sys/net/ipv4/tcp_syncookies
+
+<span class="comment"># Reduce SYN-ACK retries (default 5 = ~3 min timeout)</span>
+echo 2 > /proc/sys/net/ipv4/tcp_synack_retries
+
+<span class="comment"># Enable reverse path filtering (drops spoofed source IPs)</span>
+echo 1 > /proc/sys/net/ipv4/conf/all/rp_filter
+
+<span class="comment"># Rate limit ICMP (prevent ping floods)</span>
+iptables -A INPUT -p icmp --icmp-type echo-request \
+  -m limit --limit 1/s --limit-burst 4 -j ACCEPT
+iptables -A INPUT -p icmp --icmp-type echo-request -j DROP
+
+<span class="comment"># Detect ARP spoofing</span>
+arpwatch -i eth0 -f /var/lib/arpwatch/eth0.dat
+
+<span class="comment"># Connection tracking table (conntrack)</span>
+conntrack -L | wc -l
+sysctl net.netfilter.nf_conntrack_max</code></pre>
+
+      <div class="diagram">
+SYN Flood Attack & SYN Cookie Defense
+══════════════════════════════════════
+
+Normal:                         SYN Flood:
+Client → SYN → Server           Attacker → 1000s SYN → Server
+       ← SYN-ACK ←                       ← SYN-ACK (fills queue)
+       → ACK →                            (never ACKs → half-open)
+       ESTABLISHED                        SYN queue exhausted!
+
+SYN Cookie Defense (kernel):
+┌─────────────────────────────────────────────────┐
+│ Server does NOT allocate state on SYN            │
+│ Instead, encodes: MSS + timestamp + hash         │
+│ into the sequence number of SYN-ACK              │
+│                                                   │
+│ On ACK:                                           │
+│   1. Extract cookie from ack_seq - 1              │
+│   2. Validate HMAC(src_ip, dst_ip, ports, secret) │
+│   3. If valid → create connection (no queue used) │
+└─────────────────────────────────────────────────┘
+</div>
+
+      <div class="followup">
+        <h5>Follow-up Questions</h5>
+        <ul>
+          <li>How do SYN cookies work without allocating state? What information is encoded in the sequence number?</li>
+          <li>What is the difference between a DDoS attack called "amplification" vs a "reflection" attack?</li>
+          <li>Can you use <code>eBPF</code> for DDoS mitigation? How does XDP help?</li>
+          <li>What is BCP38 and how does it prevent IP spoofing at the network level?</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Q: Routing Tables -->
+  <div class="question-card" id="net-routing-tables">
+    <div class="q-header">
+      <h3>[rtable] How do you determine the current routing table?</h3>
+      <span class="level level-l3">L3–L5</span>
+    </div>
+    <div class="q-body">
+      <h4>Question</h4>
+      <p>Talk about the routing table. How do you view it? What are the key concepts?</p>
+
+      <h4>Answer</h4>
+      <p>This is a very open-ended question. Any candidate with any practical experience is expected to know at least basic knowledge of routing. This isn't about being a network engineer — more about showing you understand how packets find their destination.</p>
+
+      <h4>Basic Concepts</h4>
+      <ul>
+        <li>A <strong>routing table</strong> tells the OS/router where to forward a packet based on its destination IP</li>
+        <li>A route is an <code>(destination, gateway, interface, metric)</code> tuple</li>
+        <li>The most specific match wins (longest prefix match)</li>
+        <li>Default route (<code>0.0.0.0/0</code>) is used when no specific route matches</li>
+      </ul>
+
+      <h4>Commands to Check Routing Table</h4>
+<pre><code><span class="comment"># Modern Linux (iproute2)</span>
+ip route show
+ip -6 route show    <span class="comment"># IPv6 routes</span>
+
+<span class="comment"># Legacy</span>
+route -n            <span class="comment"># Numeric output, skip DNS</span>
+netstat -rn
+
+<span class="comment"># Specific route lookup</span>
+ip route get 8.8.8.8
+ip route get 2001:4860:4860::8888   <span class="comment"># IPv6</span>
+
+<span class="comment"># Show routing table for specific table</span>
+ip route show table main
+ip route show table local
+ip route show table all
+
+<span class="comment"># Kernel routing cache (older kernels)</span>
+ip route show cache</code></pre>
+
+      <h4>Routing Table Anatomy</h4>
+      <div class="diagram">
+$ ip route show
+default via 10.0.0.1 dev eth0 proto dhcp metric 100
+10.0.0.0/24 dev eth0 proto kernel scope link src 10.0.0.50 metric 100
+172.17.0.0/16 dev docker0 proto kernel scope link src 172.17.0.1
+192.168.1.0/24 via 10.0.0.254 dev eth0 metric 200
+
+Field Breakdown:
+──────────────────────────────────────────────────────
+default         → destination 0.0.0.0/0 (catch-all)
+via 10.0.0.1    → next-hop gateway
+dev eth0        → outgoing interface
+proto dhcp      → route was learned via DHCP
+proto kernel    → route auto-created by kernel for directly connected networks
+scope link      → destination is on-link (same L2 segment)
+src 10.0.0.50   → preferred source address when using this route
+metric 100      → preference (lower = preferred)
+</div>
+
+      <h4>Advanced Concepts</h4>
+      <ul>
+        <li><strong>Policy Routing</strong>: Multiple routing tables, selected by rules (<code>ip rule list</code>)</li>
+        <li><strong>MPLS</strong>: Multiprotocol Label Switching — label-based forwarding instead of IP lookup</li>
+        <li><strong>BGP</strong>: Border Gateway Protocol — how the internet's routing tables are built</li>
+        <li><strong>ECMP</strong>: Equal-Cost Multi-Path — load balance across multiple next hops</li>
+        <li><strong>Blackholing</strong>: <code>ip route add blackhole 192.168.1.0/24</code> — silently drop traffic</li>
+      </ul>
+
+<pre><code><span class="comment"># Policy routing example</span>
+ip rule list
+ip rule add from 10.0.1.0/24 table 100
+ip route add default via 10.0.0.2 table 100
+
+<span class="comment"># Add a route</span>
+ip route add 192.168.2.0/24 via 10.0.0.254 dev eth0
+
+<span class="comment"># Add blackhole (drop)</span>
+ip route add blackhole 198.51.100.0/24
+
+<span class="comment"># ECMP routing</span>
+ip route add default \
+  nexthop via 10.0.0.1 weight 1 \
+  nexthop via 10.0.0.2 weight 1
+
+<span class="comment"># Programmatic access to routing table</span>
+<span class="comment"># Linux: AF_NETLINK socket with protocol NETLINK_ROUTE</span>
+<span class="comment"># Or /proc/net/route, /proc/net/ipv6_route</span></code></pre>
+
+      <div class="diagram">
+Longest Prefix Match — How the Kernel Picks a Route
+════════════════════════════════════════════════════
+
+Destination: 10.0.1.50
+
+Route Table:
+  10.0.0.0/16   → via gateway A   (matches /16 = 16 bits)
+  10.0.1.0/24   → via gateway B   (matches /24 = 24 bits)  ← WINNER
+  10.0.1.48/28  → via gateway C   (matches /28 = 28 bits)  ← ACTUALLY WINS
+  0.0.0.0/0     → via gateway D   (matches /0 = 0 bits)
+
+The kernel uses a <strong>trie</strong> (LC-trie in Linux) for O(log n) lookup.
+Source: net/ipv4/fib_trie.c
+</div>
+
+      <div class="eval-guidance">
+        <h5>Evaluation Guidance</h5>
+        <ul>
+          <li><strong>L3</strong>: Any answer that is able to provide the current routing table and discuss its contents is sufficient</li>
+          <li><strong>L4</strong>: Should include ability to discuss routing concepts, diagnose routing problems, modify routing tables, and familiarity with IPv4 and IPv6 differences</li>
+          <li><strong>L5+</strong>: Familiarity with netlink kernel interface, policy routing, MPLS, IPMP/ECMP, blackholing, discovery protocols, and routing protocols</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Q: Telnet or Curl Mechanics -->
+  <div class="question-card" id="net-telnet-curl">
+    <div class="q-header">
+      <h3>[tcurl] What happens when you run curl / telnet? Describe the network flow.</h3>
+      <span class="level level-l4">L3–L5</span>
+    </div>
+    <div class="q-body">
+      <h4>Question</h4>
+      <p>What happens when you run <code>curl http://example.com</code> or <code>telnet example.com 80</code>? Walk through the network mechanics step by step.</p>
+
+      <h4>Answer</h4>
+      <p>This is a discussion question. Depending on the candidate's level of experience, you can go from a straightforward simple answer to a deep drill.</p>
+
+      <h4>Complete Network Flow</h4>
+      <div class="diagram">
+$ curl http://www.example.com/page
+
+Step 1: DNS Resolution
+   curl → getaddrinfo("www.example.com")
+     → /etc/nsswitch.conf → "hosts: files dns"
+     → /etc/hosts (miss)
+     → /etc/resolv.conf → nameserver 10.0.0.1
+     → UDP:53 query A www.example.com
+     ← 93.184.216.34
+
+Step 2: Socket Creation
+   socket(AF_INET, SOCK_STREAM, 0) → fd=3
+   ↓ kernel: allocate struct socket, struct sock
+
+Step 3: TCP Connect (3-way handshake)
+   connect(fd, {93.184.216.34:80})
+   → [SYN seq=x]              → kernel: tcp_v4_connect()
+   ← [SYN-ACK seq=y ack=x+1]  ← kernel: tcp_v4_do_rcv()
+   → [ACK ack=y+1]             → ESTABLISHED
+
+Step 4: HTTP Request
+   send(fd, "GET /page HTTP/1.1\r\n"
+            "Host: www.example.com\r\n"
+            "\r\n")
+   → kernel: tcp_sendmsg() → sk_buff → ip_queue_xmit()
+   → IP: src=10.0.0.50 dst=93.184.216.34 proto=TCP
+   → Ethernet: src_mac → dst_mac(gateway) → wire
+
+Step 5: HTTP Response
+   recv(fd, buffer, 8192)
+   ← "HTTP/1.1 200 OK\r\n..."
+   ← kernel: tcp_rcv_established() → sk_buff → socket buffer
+
+Step 6: Connection Close
+   close(fd)
+   → [FIN] → [ACK] → [FIN] → [ACK]  (4-way teardown)
+   → kernel: tcp_close() → TIME_WAIT (2*MSL = 60s default)
+</div>
+
+      <h4>Kernel Path of a Packet</h4>
+      <div class="diagram">
+Outgoing Packet (curl sends data):
+═══════════════════════════════════
+
+  Application: write(fd, data)
+       │
+       ▼
+  Socket Layer: sock_sendmsg()
+       │
+       ▼
+  TCP: tcp_sendmsg() → segment, set seq/ack, checksum
+       │
+       ▼
+  IP: ip_queue_xmit() → route lookup (fib_lookup)
+       │                → set src/dst IP, TTL, checksum
+       ▼
+  Netfilter: NF_INET_LOCAL_OUT → iptables OUTPUT chain
+       │
+       ▼
+  Neighbor/ARP: neigh_resolve_output() → ARP cache or ARP request
+       │
+       ▼
+  Device: dev_queue_xmit() → Ethernet frame → qdisc
+       │
+       ▼
+  NIC Driver: e1000_xmit_frame() → DMA ring buffer → wire
+</div>
+
+<pre><code><span class="comment"># Trace the full network path of a curl request</span>
+strace -e trace=network curl -s http://example.com >/dev/null
+
+<span class="comment"># Watch DNS resolution</span>
+strace -e trace=network curl -s http://example.com 2>&amp;1 | grep -E 'connect|sendto|recvfrom'
+
+<span class="comment"># Use telnet to manually send HTTP</span>
+telnet www.example.com 80
+GET / HTTP/1.1
+Host: www.example.com
+
+<span class="comment"># tcpdump to see the packets</span>
+sudo tcpdump -i eth0 host 93.184.216.34 -nn -v</code></pre>
+
+      <div class="followup">
+        <h5>Follow-up Questions</h5>
+        <ul>
+          <li>If you used <code>curl -I</code> before and <code>-I</code> and the basic <code>GET</code>, what things should you look at when writing something that handles coded responses for HTTP</li>
+          <li>How is <code>TIME_WAIT</code> state handled? Why does it last 2*MSL? What are the consequences?</li>
+          <li>What is the difference between <code>curl</code> and <code>telnet</code> for connection testing?</li>
+        </ul>
+      </div>
+
+      <div class="eval-guidance">
+        <h5>Evaluation Guidance</h5>
+        <ul>
+          <li><strong>L3</strong>: Can describe DNS lookup, TCP connection, HTTP request cycle</li>
+          <li><strong>L4</strong>: Understands kernel path, can trace with strace/tcpdump, knows about TIME_WAIT</li>
+          <li><strong>L5</strong>: Can describe full kernel packet path, netfilter hooks, qdisc, DMA ring buffers</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Q: What happens when you telnet www.foo.com? -->
+  <div class="question-card" id="net-foo-com">
+    <div class="q-header">
+      <h3>[telnet] What happens when you telnet www.foo.com?</h3>
+      <span class="level level-l3">L3–L5</span>
+    </div>
+    <div class="q-body">
+      <h4>Question</h4>
+      <p>What happens when you type <code>telnet www.foo.com</code>?</p>
+
+      <h4>Answer</h4>
+      <p>This is essentially a simplified version of the curl question but specifically tests understanding of the client-side connection lifecycle:</p>
+
+      <ol>
+        <li><strong>Shell parses command</strong> → <code>fork()</code> + <code>exec("telnet", ["telnet", "www.foo.com"])</code></li>
+        <li><strong>DNS Resolution</strong> → <code>getaddrinfo("www.foo.com")</code> → checks <code>/etc/nsswitch.conf</code>, <code>/etc/hosts</code>, then DNS resolver at <code>/etc/resolv.conf</code></li>
+        <li><strong>Socket creation</strong> → <code>socket(AF_INET, SOCK_STREAM, 0)</code></li>
+        <li><strong>TCP handshake</strong> → <code>connect()</code> to port 23 (default telnet port) → SYN → SYN-ACK → ACK</li>
+        <li><strong>Telnet negotiation</strong> → IAC (Interpret As Command) option negotiation (WILL/WONT/DO/DONT)</li>
+        <li><strong>Interactive session</strong> → bidirectional byte stream, terminal I/O via <code>read()/write()</code></li>
+        <li><strong>Disconnect</strong> → TCP FIN → four-way teardown → TIME_WAIT</li>
+      </ol>
+
+      <div class="callout callout-info">
+        <strong>Key insight:</strong> Telnet defaults to port 23 (plaintext!). If you <code>telnet host 80</code>, you're just making a raw TCP connection — useful for testing HTTP manually but insecure. Modern equivalent: <code>nc</code> (netcat) or <code>openssl s_client</code> for TLS.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!--                       PROCESSES                               -->
+<!-- ============================================================ -->
+
+<div class="topic-section" id="processes">
+  <h2 class="section-title">Processes <span class="badge">8 Questions</span></h2>
+
+  <!-- Q: Signals and Trapping -->
+  <div class="question-card" id="proc-signals">
+    <div class="q-header">
+      <h3>[tis-a-trap] What signals can't be trapped?</h3>
+      <span class="level level-l4">L3–L5</span>
+    </div>
+    <div class="q-body">
+      <h4>Question</h4>
+      <p>Write a program to work out which signals can't be trapped.</p>
+
+      <h4>Answer</h4>
+      <p><code>SIGKILL</code> (9) and <code>SIGSTOP</code> (19) cannot be caught, blocked, or ignored. They are handled directly by the kernel to ensure the system can always stop a process.</p>
+
+      <h4>Why Can't They Be Trapped?</h4>
+      <div class="diagram">
+Signal Delivery Path in the Kernel
+═══════════════════════════════════
+
+  Signal sent (kill(), kernel event)
+       │
+       ▼
+  kernel/signal.c: send_signal()
+       │
+       ├── SIGKILL or SIGSTOP?
+       │     YES → force_sig_info()
+       │           → Cannot be blocked (sigdelsetmask)
+       │           → Cannot have handler (SIG_DFL forced)
+       │           → Kernel handles directly
+       │
+       └── Other signal?
+             → Add to task's pending signal set
+             → When returning to userspace:
+               do_signal() → handle_signal()
+               → Call registered handler (if any)
+               → Or default action (SIG_DFL)
+</div>
+
+      <h4>Program to Find Untrappable Signals</h4>
+<pre><code><span class="keyword">#include</span> &lt;signal.h&gt;
+<span class="keyword">#include</span> &lt;stdio.h&gt;
+<span class="keyword">#include</span> &lt;string.h&gt;
+<span class="keyword">#include</span> &lt;errno.h&gt;
+
+<span class="type">void</span> <span class="func">handler</span>(<span class="type">int</span> sig) { }
+
+<span class="type">int</span> <span class="func">main</span>(<span class="type">int</span> argc, <span class="type">char</span> *argv[]) {
+    <span class="type">struct</span> sigaction sa;
+    memset(&amp;sa, <span class="number">0</span>, <span class="keyword">sizeof</span>(sa));
+    sa.sa_handler = handler;
+
+    <span class="keyword">for</span> (<span class="type">int</span> sig = <span class="number">1</span>; sig &lt; NSIG; sig++) {
+        <span class="keyword">if</span> (sigaction(sig, &amp;sa, NULL) == -<span class="number">1</span>) {
+            printf(<span class="string">"Signal %2d (%s): CANNOT be trapped — %s\n"</span>,
+                   sig, strsignal(sig), strerror(errno));
+        }
+    }
+    <span class="keyword">return</span> <span class="number">0</span>;
+}</code></pre>
+
+<pre><code><span class="comment"># Output:</span>
+Signal  9 (Killed): CANNOT be trapped — Invalid argument
+Signal 19 (Stopped): CANNOT be trapped — Invalid argument
+<span class="comment"># (Signal 32 and 33 are also untrappable — used internally by NPTL threading)</span></code></pre>
+
+      <h4>Common Signals Reference</h4>
+      <table class="data">
+        <tr><th>Signal</th><th>#</th><th>Default Action</th><th>Trappable</th><th>Use Case</th></tr>
+        <tr><td><code>SIGHUP</code></td><td>1</td><td>Terminate</td><td>Yes</td><td>Daemon reload config</td></tr>
+        <tr><td><code>SIGINT</code></td><td>2</td><td>Terminate</td><td>Yes</td><td>Ctrl+C</td></tr>
+        <tr><td><code>SIGQUIT</code></td><td>3</td><td>Core dump</td><td>Yes</td><td>Ctrl+\</td></tr>
+        <tr><td><code>SIGKILL</code></td><td>9</td><td>Terminate</td><td><strong>NO</strong></td><td>Force kill (last resort)</td></tr>
+        <tr><td><code>SIGSEGV</code></td><td>11</td><td>Core dump</td><td>Yes</td><td>Segmentation fault</td></tr>
+        <tr><td><code>SIGTERM</code></td><td>15</td><td>Terminate</td><td>Yes</td><td>Graceful shutdown</td></tr>
+        <tr><td><code>SIGSTOP</code></td><td>19</td><td>Stop</td><td><strong>NO</strong></td><td>Freeze process</td></tr>
+        <tr><td><code>SIGTSTP</code></td><td>20</td><td>Stop</td><td>Yes</td><td>Ctrl+Z</td></tr>
+        <tr><td><code>SIGCHLD</code></td><td>17</td><td>Ignore</td><td>Yes</td><td>Child exited</td></tr>
+        <tr><td><code>SIGUSR1</code></td><td>10</td><td>Terminate</td><td>Yes</td><td>User-defined</td></tr>
+      </table>
+
+      <div class="followup">
+        <h5>Follow-up Questions</h5>
+        <ul>
+          <li>Write a program (a shell wrapper) that sets up signal handlers for all trappable signals</li>
+          <li>What is the difference between <code>signal()</code> and <code>sigaction()</code>? Why prefer <code>sigaction()</code>?</li>
+          <li>What happens when a signal is delivered to a multi-threaded process? Which thread gets it?</li>
+          <li>What is a signal mask? How does <code>sigprocmask()</code> work?</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Q: Fork — Parent/Child Relationships -->
+  <div class="question-card" id="proc-fork">
+    <div class="q-header">
+      <h3>[fork] Discuss the parent/child relationship of UNIX processes</h3>
+      <span class="level level-l4">L3–L5</span>
+    </div>
+    <div class="q-body">
+      <h4>Question</h4>
+      <p>Discuss various aspects of the parent/child relationship for UNIX processes. For instance: read the relationship, how many children, what data about children, and vice versa.</p>
+
+      <h4>Answer</h4>
+      <p>The relationship is read by <code>fork(1)</code> or <code>clone(1)</code> and preserved across <code>exec(1)</code>. The parent PID is only changed when a parent exits. Then all its children are re-parented to the init process. The child process gets a copy of the parent process using <code>fork()</code>, but with different PID.</p>
+
+      <h4>Process Tree in the Kernel</h4>
+      <div class="diagram">
+Kernel Data Structures (include/linux/sched.h)
+═══════════════════════════════════════════════
+
+struct task_struct {
+    pid_t pid;                    // Process ID
+    pid_t tgid;                   // Thread Group ID (= pid for main thread)
+
+    struct task_struct *parent;   // Pointer to parent
+    struct list_head children;    // List of children
+    struct list_head sibling;     // Linkage in parent's children list
+
+    struct task_struct *real_parent;  // Actual parent (before ptrace)
+    struct task_struct *group_leader; // Thread group leader
+
+    int exit_code;               // Exit status for parent to read
+    int exit_signal;             // Signal to send to parent on exit
+    ...
+};
+
+Process Tree:
+─────────────
+     init (PID 1)
+     ├── sshd (PID 100)
+     │   └── bash (PID 200)
+     │       ├── vim (PID 300)
+     │       └── grep (PID 301)
+     ├── cron (PID 101)
+     └── nginx (PID 102)
+         ├── worker (PID 400)
+         └── worker (PID 401)
+</div>
+
+      <h4>fork() Deep Dive</h4>
+<pre><code><span class="keyword">#include</span> &lt;unistd.h&gt;
+<span class="keyword">#include</span> &lt;stdio.h&gt;
+<span class="keyword">#include</span> &lt;sys/wait.h&gt;
+
+<span class="type">int</span> <span class="func">main</span>() {
+    pid_t pid = fork();
+
+    <span class="keyword">if</span> (pid == -<span class="number">1</span>) {
+        perror(<span class="string">"fork failed"</span>);
+        <span class="keyword">return</span> <span class="number">1</span>;
+    }
+
+    <span class="keyword">if</span> (pid == <span class="number">0</span>) {
+        <span class="comment">// CHILD: fork() returned 0</span>
+        printf(<span class="string">"Child: PID=%d, PPID=%d\n"</span>, getpid(), getppid());
+        sleep(<span class="number">2</span>);
+        _exit(<span class="number">42</span>);  <span class="comment">// Exit with status 42</span>
+    } <span class="keyword">else</span> {
+        <span class="comment">// PARENT: fork() returned child's PID</span>
+        printf(<span class="string">"Parent: PID=%d, child=%d\n"</span>, getpid(), pid);
+
+        <span class="type">int</span> status;
+        waitpid(pid, &amp;status, <span class="number">0</span>);  <span class="comment">// Reap child</span>
+
+        <span class="keyword">if</span> (WIFEXITED(status))
+            printf(<span class="string">"Child exited with %d\n"</span>, WEXITSTATUS(status));
+    }
+    <span class="keyword">return</span> <span class="number">0</span>;
+}</code></pre>
+
+      <h4>What Happens in the Kernel During fork()</h4>
+      <div class="diagram">
+fork() → sys_fork() → kernel_clone() → copy_process()
+═══════════════════════════════════════════════════════
+
+1. copy_process():
+   ├── dup_task_struct()     → Allocate new task_struct + kernel stack
+   ├── copy_creds()          → Copy credentials (uid, gid, capabilities)
+   ├── copy_mm()             → Clone memory map (COW page tables)
+   │   └── dup_mmap()        → Duplicate VMAs, mark pages read-only
+   │       └── All pages are shared with COW (Copy-on-Write)
+   │           → Parent writes? Page fault → copy_one_pte() → new page
+   ├── copy_fs()             → Copy filesystem context (cwd, root)
+   ├── copy_files()          → Duplicate file descriptor table
+   │   └── Each fd shares same struct file (refcount++)
+   ├── copy_sighand()        → Copy signal handlers
+   ├── copy_signal()         → Copy signal delivery state
+   ├── copy_io()             → Copy I/O context
+   └── copy_thread()         → Set up new kernel stack, return point
+
+2. Assign new PID (alloc_pid)
+3. Add to parent's children list
+4. Wake up new process (wake_up_new_task)
+</div>
+
+      <h4>Key Observations</h4>
+      <ul>
+        <li>The child process can find the parent's PID using <code>getppid()</code> call</li>
+        <li>The parent process gets the child's PID from the return value of <code>fork()</code></li>
+        <li>If parent exits first: children are re-parented to PID 1 (init/systemd) or the nearest subreaper</li>
+        <li>If child exits first: becomes a <strong>zombie</strong> until parent calls <code>wait()</code>/<code>waitpid()</code></li>
+        <li>The child inherits open file descriptors, signal handlers, environment, and cwd</li>
+        <li>The child does NOT inherit: PID, parent PID, pending signals, file locks, timers</li>
+      </ul>
+
+<pre><code><span class="comment"># View process tree</span>
+pstree -p $$
+ps -ef --forest
+ps auxf
+
+<span class="comment"># Parent/child relationship</span>
+ls -la /proc/$$/status | grep -E 'PPid|Pid|Threads'
+cat /proc/$$/status | grep -E '^(Name|Pid|PPid|Threads)'
+
+<span class="comment"># Children of a process</span>
+cat /proc/$$/task/$$/children</code></pre>
+
+      <div class="followup">
+        <h5>Follow-up Questions</h5>
+        <ul>
+          <li>How does the kernel keep track of which of its children have exited?</li>
+          <li>What happens when a child exits but the parent is ignoring SIGCHLD?</li>
+          <li>Explain Copy-on-Write. What happens when a child writes to a page shared with the parent?</li>
+          <li>What is a <strong>subreaper</strong>? How does <code>prctl(PR_SET_CHILD_SUBREAPER)</code> work?</li>
+          <li>When a process calls fork, what happens on the system? How many returns from fork are there? If more than 1, how does the system tell them apart?</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Q: Orphaned Processes -->
+  <div class="question-card" id="proc-orphaned">
+    <div class="q-header">
+      <h3>[orphans] What happens if a parent exits before its child does?</h3>
+      <span class="level level-l3">L3–L5</span>
+    </div>
+    <div class="q-body">
+      <h4>Question</h4>
+      <p>What happens if a parent process exits before its child dies?</p>
+
+      <h4>Answer</h4>
+      <p>The orphaned process is re-parented. In the old days, orphaned processes were always adopted by <code>init</code> (PID 1). Modern Linux has the concept of <strong>subreapers</strong>.</p>
+
+      <div class="diagram">
+Re-parenting Flow
+═════════════════
+
+Parent (PID 100) exits while Child (PID 200) still running:
+
+BEFORE:                           AFTER:
+  init (1)                         init (1)
+  └── Parent (100)                 └── Child (200)  ← re-parented!
+      └── Child (200)
+
+With subreaper (e.g., systemd, Docker):
+  init (1)
+  └── container-shim (50) [SUBREAPER]
+      └── Parent (100)
+          └── Child (200)
+
+Parent exits → Child re-parented to subreaper (50), NOT init (1)
+</div>
+
+      <h4>Kernel Code Path</h4>
+<pre><code><span class="comment">/* kernel/exit.c — forget_original_parent() */</span>
+<span class="comment">/* Called when a process exits — re-parents its children */</span>
+
+<span class="keyword">static void</span> <span class="func">forget_original_parent</span>(<span class="type">struct task_struct</span> *father) {
+    <span class="type">struct task_struct</span> *reaper;
+
+    <span class="comment">/* Find the new parent:
+     * 1. Walk up the tree looking for a subreaper
+     * 2. If none found, use init_task (PID 1)
+     */</span>
+    reaper = find_child_reaper(father);
+
+    <span class="comment">/* Re-parent all children to the reaper */</span>
+    list_for_each_entry(child, &amp;father->children, sibling) {
+        child->real_parent = reaper;
+        <span class="keyword">if</span> (child->exit_state)
+            <span class="comment">/* Zombie child — send SIGCHLD to new parent */</span>
+            do_notify_parent(child, child->exit_signal);
+    }
+}</code></pre>
+
+      <h4>Zombie vs Orphan</h4>
+      <table class="data">
+        <tr><th></th><th>Zombie</th><th>Orphan</th></tr>
+        <tr>
+          <td><strong>Definition</strong></td>
+          <td>Child exited but parent hasn't called <code>wait()</code></td>
+          <td>Parent exited while child still running</td>
+        </tr>
+        <tr>
+          <td><strong>State</strong></td>
+          <td><code>Z</code> (zombie) in <code>ps</code></td>
+          <td>Normal running state, just different PPID</td>
+        </tr>
+        <tr>
+          <td><strong>Resources</strong></td>
+          <td>Only entry in process table (task_struct)</td>
+          <td>Full process with all resources</td>
+        </tr>
+        <tr>
+          <td><strong>Resolution</strong></td>
+          <td>Parent must call <code>wait()</code>, or parent exits (then init reaps)</td>
+          <td>Automatically re-parented to init/subreaper</td>
+        </tr>
+      </table>
+
+<pre><code><span class="comment"># Find zombie processes</span>
+ps aux | grep 'Z'
+ps -eo pid,ppid,stat,comm | grep -E '^|Z'
+
+<span class="comment"># Find orphaned processes (PPID = 1)</span>
+ps -eo pid,ppid,comm | awk '$2 == 1'
+
+<span class="comment"># Set subreaper flag</span>
+prctl(PR_SET_CHILD_SUBREAPER, 1, 0, 0, 0);</code></pre>
+
+      <div class="followup">
+        <h5>Follow-up Questions</h5>
+        <ul>
+          <li>If they seem tired, you may want to listen to the direction of init</li>
+          <li>Is there also a "reaper" mechanism? How does it work?</li>
+          <li>How do you decide if you need to use the direction of init?</li>
+        </ul>
+      </div>
+
+      <div class="eval-guidance">
+        <h5>Leveling Guidance</h5>
+        <ul>
+          <li><strong>L3</strong>: Knows orphans are re-parented to init</li>
+          <li><strong>L4</strong>: Can explain zombie vs orphan distinction, knows about SIGCHLD and wait()</li>
+          <li><strong>L5</strong>: Understands subreapers, can trace kernel code path, knows about process groups and sessions</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Q: Fork — What happens on the system -->
+  <div class="question-card" id="proc-fork-system">
+    <div class="q-header">
+      <h3>[fork] When a process calls fork, what happens on the system?</h3>
+      <span class="level level-l4">L4–L5</span>
+    </div>
+    <div class="q-body">
+      <h4>Question</h4>
+      <p>When a process calls fork, what happens on the system? How many returns from fork are there? If more than 1, how does the system tell them apart?</p>
+
+      <h4>Answer</h4>
+      <p>The <code>fork()</code> system call creates a (nearly) complete copy of a process, which has the original process as its parent. The new process has its own PID, its own copy of all open file descriptors (including exec-on-close), memory regions, signal handlers.</p>
+
+      <p><code>fork()</code> returns <strong>twice</strong>: once in the parent (returning child's PID) and once in the child (returning 0). The kernel distinguishes them by setting different return values in each process's register context.</p>
+
+      <div class="diagram">
+How fork() Returns Twice
+════════════════════════
+
+kernel_clone() → copy_process()
+  │
+  ├── Create child task_struct (copy of parent)
+  │   └── copy_thread() sets child's pt_regs:
+  │       child_regs->ax = 0    ← child will "return" 0
+  │
+  └── Return child's PID to parent
+      parent_regs->ax = child_pid  ← parent gets child's PID
+
+Both processes resume from the SAME instruction
+(the return from the fork() syscall), but with
+different values in RAX register:
+
+Parent thread:                     Child thread:
+  RAX = child_pid (> 0)             RAX = 0
+  → fork() "returns" child_pid      → fork() "returns" 0
+</div>
+
+      <h4>Copy-on-Write (COW) Memory</h4>
+      <div class="diagram">
+Before fork():
+┌─────────────────────────┐
+│ Parent Process (PID 100) │
+│                          │
+│ Virtual Page → Physical  │
+│ 0x1000 → Frame A (RW)   │
+│ 0x2000 → Frame B (RW)   │
+│ 0x3000 → Frame C (RW)   │
+└─────────────────────────┘
+
+After fork() (both point to SAME physical pages, marked READ-ONLY):
+┌─────────────────────┐     ┌─────────────────────┐
+│ Parent (PID 100)     │     │ Child (PID 200)      │
+│ 0x1000 → Frame A (R) │     │ 0x1000 → Frame A (R) │
+│ 0x2000 → Frame B (R) │     │ 0x2000 → Frame B (R) │
+│ 0x3000 → Frame C (R) │     │ 0x3000 → Frame C (R) │
+└─────────────────────┘     └─────────────────────┘
+
+Child writes to 0x2000:
+  1. Page fault (write to read-only page)
+  2. Kernel: do_wp_page() → wp_page_copy()
+  3. Allocate new Frame D, copy Frame B → Frame D
+  4. Update child's page table: 0x2000 → Frame D (RW)
+  5. If parent is only remaining reference: mark Frame B as RW
+
+┌─────────────────────┐     ┌─────────────────────┐
+│ Parent (PID 100)     │     │ Child (PID 200)      │
+│ 0x1000 → Frame A (R) │     │ 0x1000 → Frame A (R) │
+│ 0x2000 → Frame B (RW)│     │ 0x2000 → Frame D (RW)│ ← NEW COPY
+│ 0x3000 → Frame C (R) │     │ 0x3000 → Frame C (R) │
+└─────────────────────┘     └─────────────────────┘
+</div>
+    </div>
+  </div>
+
+  <!-- Q: What does kill do? -->
+  <div class="question-card" id="proc-kill">
+    <div class="q-header">
+      <h3>[kill] What does kill do?</h3>
+      <span class="level level-l3">L3–L5</span>
+    </div>
+    <div class="q-body">
+      <h4>Question</h4>
+      <p>What does <code>kill(1)</code> do? This question tests TC's understanding of UNIX signals and inter-process communication.</p>
+
+      <h4>Answer</h4>
+      <p>The <code>kill(1)</code> command (and the <code>kill(2)</code> system call) sends a signal to the specified process. The default signal is <code>SIGTERM</code> (15). Despite the name, <code>kill</code> doesn't always kill — it's really "send signal."</p>
+
+<pre><code><span class="comment"># Send SIGTERM (default — graceful shutdown request)</span>
+kill 1234
+
+<span class="comment"># Send SIGKILL (force kill — cannot be caught)</span>
+kill -9 1234
+kill -SIGKILL 1234
+
+<span class="comment"># Send signal to process group</span>
+kill -TERM -1234    <span class="comment"># Negative PID = entire process group</span>
+
+<span class="comment"># Send signal to all processes of a user</span>
+kill -TERM -1       <span class="comment"># All processes you own (except PID 1)</span>
+
+<span class="comment"># List available signals</span>
+kill -l</code></pre>
+
+      <h4>Kernel Path: kill() System Call</h4>
+      <div class="diagram">
+kill(pid, sig) → sys_kill() → kill_something_info()
+════════════════════════════════════════════════════
+
+pid > 0:  kill_proc_info(sig, pid)
+          → Send signal to specific process
+
+pid == 0: kill_pgrp_info(sig, current->pgrp)
+          → Send signal to entire process group
+
+pid == -1: for_each_process(p)
+           → Send signal to all processes you can signal
+
+pid < -1: kill_pgrp_info(sig, -pid)
+          → Send signal to process group |pid|
+
+Actual delivery:
+  → group_send_sig_info()
+    → __send_signal()
+      → Allocate sigqueue
+      → Add to task->pending.signal or task->signal->shared_pending
+      → set_tsk_thread_flag(TIF_SIGPENDING)
+      → wake_up_state(task, TASK_INTERRUPTIBLE)
+</div>
+
+      <div class="followup">
+        <h5>Follow-up Questions</h5>
+        <ul>
+          <li>What is the difference between <code>kill</code>, <code>pkill</code>, and <code>killall</code>?</li>
+          <li>Why would an application trap SIGTERM? Give an example.</li>
+          <li>What happens when a signal is pending for a process that is in <code>TASK_UNINTERRUPTIBLE</code> (D state)?</li>
+          <li>What happens in the case of multi-threaded process — which thread gets the signal?</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Q: Describe exec -->
+  <div class="question-card" id="proc-exec">
+    <div class="q-header">
+      <h3>[exec] What does exec do? Describe the exec() system call.</h3>
+      <span class="level level-l4">L3–L5</span>
+    </div>
+    <div class="q-body">
+      <h4>Question</h4>
+      <p>What does the <code>exec(1)</code> system call do?</p>
+
+      <h4>Answer</h4>
+      <p>It replaces the current process image with a new image. The PID stays the same. All of the memory is replaced. Open file descriptors are preserved (unless <code>FD_CLOEXEC</code> / <code>O_CLOEXEC</code> is set).</p>
+
+      <h4>The exec() Family</h4>
+      <table class="data">
+        <tr><th>Function</th><th>Path lookup</th><th>Args format</th><th>Environment</th></tr>
+        <tr><td><code>execl()</code></td><td>Full path</td><td>Variadic list</td><td>Inherited</td></tr>
+        <tr><td><code>execlp()</code></td><td>PATH search</td><td>Variadic list</td><td>Inherited</td></tr>
+        <tr><td><code>execle()</code></td><td>Full path</td><td>Variadic list</td><td>Explicit</td></tr>
+        <tr><td><code>execv()</code></td><td>Full path</td><td>Array</td><td>Inherited</td></tr>
+        <tr><td><code>execvp()</code></td><td>PATH search</td><td>Array</td><td>Inherited</td></tr>
+        <tr><td><code>execvpe()</code></td><td>PATH search</td><td>Array</td><td>Explicit</td></tr>
+        <tr><td><code>execve()</code></td><td>Full path</td><td>Array</td><td>Explicit (this is the actual syscall)</td></tr>
+      </table>
+
+      <h4>What exec() Does in the Kernel</h4>
+      <div class="diagram">
+execve("/bin/ls", ["ls", "-la"], envp)
+→ sys_execve() → do_execveat_common()
+════════════════════════════════════════
+
+1. open_exec(filename)
+   → Open the binary, check permissions (+x)
+   → Read first 128 bytes to detect format
+
+2. Detect binary format:
+   → ELF: "\x7fELF" → load_elf_binary()
+   → Script: "#!" → load_script() → re-exec interpreter
+   → a.out (legacy)
+
+3. flush_old_exec()
+   → Release old memory mappings (mm_struct)
+   → Clear signal handlers (reset to SIG_DFL)
+   → Close FD_CLOEXEC file descriptors
+
+4. setup_new_exec()
+   → Set process name (comm field)
+   → Set new credentials if setuid/setgid
+
+5. Load new image:
+   ├── Map .text section (executable code) → read-only, executable
+   ├── Map .data section (initialized data) → read-write
+   ├── Map .bss section (zeroed data) → read-write
+   ├── Set up stack (argv, envp, auxv)
+   ├── Map dynamic linker (ld-linux.so) if dynamically linked
+   └── Set instruction pointer to entry point (e_entry or ld.so)
+
+6. start_thread(regs, elf_entry, sp)
+   → Set registers: RIP=entry_point, RSP=new_stack
+   → Return to userspace → new program begins
+</div>
+
+      <h4>Key: exec() Never Returns (on success)</h4>
+<pre><code><span class="comment">/* Classic fork+exec pattern */</span>
+pid_t pid = fork();
+<span class="keyword">if</span> (pid == <span class="number">0</span>) {
+    <span class="comment">/* Child: replace ourselves with /bin/ls */</span>
+    <span class="type">char</span> *args[] = {<span class="string">"ls"</span>, <span class="string">"-la"</span>, NULL};
+    execvp(<span class="string">"ls"</span>, args);
+
+    <span class="comment">/* If we get here, exec FAILED */</span>
+    perror(<span class="string">"execvp failed"</span>);
+    _exit(<span class="number">127</span>);
+}
+<span class="comment">/* Parent continues here */</span>
+waitpid(pid, &amp;status, <span class="number">0</span>);</code></pre>
+
+      <div class="callout callout-warn">
+        <strong>Important:</strong> There are only 6 (or 7) variants of exec, all of which in Linux are frontends for the <code>execve(2)</code> system call. In all cases the exec() doesn't return unless there was an error, and <code>errno</code> is set.
+      </div>
+
+      <div class="followup">
+        <h5>Follow-up Questions</h5>
+        <ul>
+          <li>If you used fork() and the exec fails, what things should you look at when writing some handling code?</li>
+          <li>What is <code>FD_CLOEXEC</code> and why is it important for security?</li>
+          <li>How does the kernel handle the <code>#!</code> (shebang) line in scripts?</li>
+          <li>What happens to memory-mapped files across exec?</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Q: What does exec do with args -->
+  <div class="question-card" id="proc-exec-args">
+    <div class="q-header">
+      <h3>[exec2] What types of arguments are passed to exec()?</h3>
+      <span class="level level-l3">L3–L4</span>
+    </div>
+    <div class="q-body">
+      <h4>Question</h4>
+      <p>What does exec do? What happens to the process calling exec? What types of arguments are passed to exec (i.e. exec, file, arguments, env vars)? What attributes of a process survive an exec?</p>
+
+      <h4>What Survives exec()</h4>
+      <table class="data">
+        <tr><th>Survives</th><th>Replaced / Reset</th></tr>
+        <tr>
+          <td>
+            PID, PPID, PGID, SID<br>
+            Real UID/GID<br>
+            Open FDs (without CLOEXEC)<br>
+            Current working directory<br>
+            Root directory<br>
+            umask<br>
+            Resource limits<br>
+            Controlling terminal<br>
+            Process group membership
+          </td>
+          <td>
+            Memory image (text, data, heap, stack)<br>
+            Signal handlers (reset to SIG_DFL)<br>
+            Memory mappings<br>
+            Pending signals (cleared)<br>
+            FDs with CLOEXEC flag<br>
+            Effective UID/GID (may change for setuid)<br>
+            Core dump settings
+          </td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- Q: Virtual Memory -->
+  <div class="question-card" id="proc-vm">
+    <div class="q-header">
+      <h3>[vm] What is virtual memory?</h3>
+      <span class="level level-l4">L3–L6</span>
+    </div>
+    <div class="q-body">
+      <h4>Question</h4>
+      <p>What is virtual memory? How does it work? This is a deep and complex topic that tests the candidate's ability to explain complex things simply.</p>
+
+      <h4>Answer</h4>
+      <p>Virtual memory is an abstraction where each process sees its own private, contiguous address space. The OS + hardware (MMU) transparently maps virtual addresses to physical RAM pages. This provides isolation, allows overcommit, and enables features like demand paging and memory-mapped files.</p>
+
+      <div class="diagram">
+Process Virtual Address Space (x86_64)
+══════════════════════════════════════
+
+ 0xFFFFFFFFFFFFFFFF ┌─────────────────┐
+                    │  Kernel Space     │ (upper half, per-architecture)
+ 0xFFFF800000000000 ├─────────────────┤
+                    │  (hole/unused)    │
+ 0x00007FFFFFFFFFFF ├─────────────────┤
+                    │  Stack ↓          │ grows downward
+                    │  ...              │
+                    │  Memory-mapped    │ shared libs, mmap regions
+                    │  ...              │
+                    │  Heap ↑           │ grows upward (brk/sbrk/mmap)
+                    ├─────────────────┤
+                    │  BSS (.bss)       │ uninitialized globals (zeroed)
+                    │  Data (.data)     │ initialized globals
+                    │  Text (.text)     │ executable code (read-only)
+ 0x0000000000400000 ├─────────────────┤
+                    │  (reserved/null)  │ NULL pointer dereference → SIGSEGV
+ 0x0000000000000000 └─────────────────┘
+</div>
+
+      <h4>Page Table Walk (4-Level on x86_64)</h4>
+      <div class="diagram">
+Virtual Address: 48 bits used (of 64)
+┌──────┬──────┬──────┬──────┬──────┐
+│ PML4 │ PDPT │  PD  │  PT  │Offset│
+│9 bits│9 bits│9 bits│9 bits│12 bit│
+└──┬───┴──┬───┴──┬───┴──┬───┴──┬───┘
+   │      │      │      │      │
+   ▼      ▼      ▼      ▼      ▼
+┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐ ┌────────────┐
+│PML4E│→│PDPTE│→│ PDE │→│ PTE │→│Physical Addr│
+│Table│ │Table│ │Table│ │Table│ │ (+ offset)  │
+└─────┘ └─────┘ └─────┘ └─────┘ └────────────┘
+  ↑
+  CR3 register (per-process, stored in task_struct->mm->pgd)
+
+TLB (Translation Lookaside Buffer):
+  Cache of recent virtual→physical translations
+  TLB miss → full page table walk (expensive!)
+  Context switch → TLB flush (unless PCID used)
+</div>
+
+      <h4>Page Fault Types</h4>
+      <table class="data">
+        <tr><th>Type</th><th>Cause</th><th>Kernel Action</th></tr>
+        <tr>
+          <td><strong>Minor</strong></td>
+          <td>Page in memory but PTE not set (e.g., demand paging, COW)</td>
+          <td>Map the page, no I/O needed. <code>do_anonymous_page()</code></td>
+        </tr>
+        <tr>
+          <td><strong>Major</strong></td>
+          <td>Page not in memory, must read from disk (swap, file-backed)</td>
+          <td>Read from disk, block process. <code>do_swap_page()</code></td>
+        </tr>
+        <tr>
+          <td><strong>Invalid</strong></td>
+          <td>Access to unmapped address or permission violation</td>
+          <td><code>SIGSEGV</code> or <code>SIGBUS</code></td>
+        </tr>
+      </table>
+
+<pre><code><span class="comment"># View process memory map</span>
+cat /proc/$$/maps
+pmap -x $$
+
+<span class="comment"># Page fault statistics</span>
+ps -o pid,min_flt,maj_flt,cmd -p $$
+
+<span class="comment"># System-wide memory</span>
+cat /proc/meminfo
+free -h
+vmstat 1   <span class="comment"># si/so = swap in/out, bi/bo = block in/out</span>
+
+<span class="comment"># Look at process memory usage</span>
+cat /proc/$$/status | grep -E 'VmSize|VmRSS|VmSwap'
+<span class="comment"># VmSize = Virtual (total address space)</span>
+<span class="comment"># VmRSS  = Resident (actually in physical RAM)</span>
+<span class="comment"># VmSwap = Swapped to disk</span></code></pre>
+
+      <div class="followup">
+        <h5>Follow-up Questions</h5>
+        <ul>
+          <li>I'm writing a program that uses memory. Can I tell if it is in RAM? (<code>mincore()</code>, <code>/proc/self/smaps</code>)</li>
+          <li>What happens when you run <code>p = malloc(1GB)</code>? (Virtual size grows, RSS doesn't until you touch pages)</li>
+          <li>What is the impact of disabling swap?</li>
+          <li>How do you see the rate of swapping? (<code>vmstat</code>, <code>sar</code>)</li>
+        </ul>
+      </div>
+
+      <div class="eval-guidance">
+        <h5>Evaluation Guidance</h5>
+        <ul>
+          <li><strong>L3</strong>: Can describe basics of virtual memory, page faults, swapping</li>
+          <li><strong>L4</strong>: Can discuss page tables, TLB, COW, demand paging in detail</li>
+          <li><strong>L5</strong>: Can describe architecture of virtual memory on one or more existing system, including trade-offs</li>
+          <li><strong>L6/7</strong>: Demonstrated precise understanding of implementation details and challenges on multiple existing systems</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!--                      FILESYSTEMS                              -->
+<!-- ============================================================ -->
+
+<div class="topic-section" id="filesystems">
+  <h2 class="section-title">Filesystems <span class="badge">6 Questions</span></h2>
+
+  <!-- Q: Inode Contents -->
+  <div class="question-card" id="fs-inodes">
+    <div class="q-header">
+      <h3>[inodes] What information is stored in an inode?</h3>
+      <span class="level level-l4">L3–L5</span>
+    </div>
+    <div class="q-body">
+      <h4>Question</h4>
+      <p>What information is stored in an inode? How is this information used? How are file system inodes connected to in-memory inodes?</p>
+
+      <div class="callout callout-warn">
+        <strong>Caveat:</strong> This question also appears in the pre-screen questions. Do not repeat. If the candidate doesn't know what an inode is, consider guiding them. Focus on the follow-up questions.
+      </div>
+
+      <h4>Answer</h4>
+      <p>An inode is the on-disk (and in-memory) representation of a file in the file system. It stores all metadata about a file EXCEPT the filename.</p>
+
+      <h4>Inode Contents</h4>
+      <div class="diagram">
+struct inode (on-disk, ext4 as example):
+════════════════════════════════════════
+
+Field                  Description
+──────────────────── ─ ─────────────────────────────────
+i_mode               File type + permissions (rwxrwxrwx)
+i_uid                Owner user ID
+i_gid                Owner group ID
+i_size               File size in bytes
+i_atime              Last access time
+i_mtime              Last modification time
+i_ctime              Last inode change time (NOT creation)
+i_links_count        Number of hard links to this inode
+i_blocks             Number of 512-byte blocks allocated
+i_block[15]          Pointers to data blocks:
+                       [0-11]  → 12 direct block pointers
+                       [12]    → indirect (points to block of pointers)
+                       [13]    → double indirect
+                       [14]    → triple indirect
+i_flags              Immutable, append-only, etc.
+
+In ext4, also: extents (instead of block pointers for large files)
+</div>
+
+      <div class="diagram">
+Block Pointers (Traditional Unix FS):
+═════════════════════════════════════
+
+inode
+┌──────────┐
+│ direct 0  │ → [data block]
+│ direct 1  │ → [data block]
+│ ...        │
+│ direct 11 │ → [data block]         ← 12 × 4KB = 48KB directly
+│            │
+│ indirect   │ → [ptr block] → [data blocks]        ← ~4MB
+│ dbl indir  │ → [ptr] → [ptr block] → [data]       ← ~4GB
+│ tpl indir  │ → [ptr] → [ptr] → [ptr] → [data]     ← ~4TB
+└──────────┘
+
+ext4 uses EXTENTS instead (more efficient for large files):
+  (start_block, length) tuples stored in inode or extent tree
+</div>
+
+      <h4>Commands</h4>
+<pre><code><span class="comment"># View inode information</span>
+stat /etc/passwd
+ls -li /etc/passwd   <span class="comment"># -i shows inode number</span>
+
+<span class="comment"># Inode usage on filesystem</span>
+df -i
+
+<span class="comment"># Find file by inode number</span>
+find / -inum 12345
+
+<span class="comment"># Detailed inode info (ext4)</span>
+debugfs -R 'stat &lt;12345&gt;' /dev/sda1
+
+<span class="comment"># In-memory inode cache</span>
+cat /proc/sys/fs/inode-nr   <span class="comment"># allocated vs free inodes in slab cache</span>
+slabtop | grep inode</code></pre>
+
+      <h4>What is NOT in an Inode</h4>
+      <ul>
+        <li><strong>Filename</strong> — stored in directory entries, not the inode itself</li>
+        <li><strong>File content</strong> — stored in data blocks pointed to by the inode</li>
+        <li>This separation is why hard links work: multiple directory entries point to the same inode</li>
+      </ul>
+
+      <div class="followup">
+        <h5>Follow-up Questions</h5>
+        <ul>
+          <li>How do I see the inode information for a file? (<code>stat</code>, <code>ls -i</code>)</li>
+          <li>What information is stored in an inode? vs what is stored in a directory?</li>
+          <li>What happens when a hard link is deleted? When does the content of the file get deleted?</li>
+          <li>What is the difference between <code>ctime</code> and <code>mtime</code>?</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Q: Unix-type Filesystems Organization -->
+  <div class="question-card" id="fs-unix-types">
+    <div class="q-header">
+      <h3>[inodes] In-depth discussion of how Unix-type filesystems are organized</h3>
+      <span class="level level-l4">L4–L5</span>
+    </div>
+    <div class="q-body">
+      <h4>Question</h4>
+      <p>Describe in-depth how Unix-type filesystems are organized.</p>
+
+      <h4>Filesystem Layout (ext4)</h4>
+      <div class="diagram">
+Disk Layout:
+═══════════
+
+┌──────────┬──────────────────────────────────────────────────┐
+│Boot Block│              Block Group 0                        │
+│(1024 B)  │                                                   │
+├──────────┼─────────┬──────┬──────┬─────────┬────────────────┤
+│          │Super    │Group │Block │ Inode   │ Data Blocks     │
+│          │Block    │Desc  │Bitmap│ Bitmap  │                 │
+│          │         │Table │      │         │ Inode Table     │
+├──────────┼─────────┼──────┼──────┼─────────┼────────────────┤
+│          │              Block Group 1                        │
+│          ├─────────┬──────┬──────┬─────────┬────────────────┤
+│          │Super    │Group │Block │ Inode   │ Data Blocks     │
+│          │(backup) │Desc  │Bitmap│ Bitmap  │                 │
+│          │         │(bkup)│      │         │ Inode Table     │
+└──────────┴─────────┴──────┴──────┴─────────┴────────────────┘
+
+Key Components:
+  Superblock:    Filesystem metadata (block size, inode count, free blocks)
+  Group Desc:    Per-group metadata (bitmap locations, free counts)
+  Block Bitmap:  1 bit per block (0=free, 1=used)
+  Inode Bitmap:  1 bit per inode (0=free, 1=used)
+  Inode Table:   Array of inode structures
+  Data Blocks:   Actual file content + directory entries
+</div>
+
+      <h4>Directory Structure</h4>
+      <div class="diagram">
+A directory is just a file whose data blocks contain directory entries:
+
+Directory "/home/user":
+┌────────────┬──────────┬────────────┬───────────┐
+│ inode: 100 │ rec_len  │ name_len:1 │ name: "." │  ← current dir
+├────────────┼──────────┼────────────┼───────────┤
+│ inode: 50  │ rec_len  │ name_len:2 │ name: ".."│  ← parent dir
+├────────────┼──────────┼────────────┼───────────┤
+│ inode: 201 │ rec_len  │ name_len:8 │ name:"doc"│  ← regular file
+├────────────┼──────────┼────────────┼───────────┤
+│ inode: 202 │ rec_len  │ name_len:5 │ name:"pics"│ ← subdirectory
+└────────────┴──────────┴────────────┴───────────┘
+
+Looking up "/home/user/docs/file.txt":
+  1. Start at root inode (inode 2)
+  2. Read root directory data → find "home" → inode 50
+  3. Read inode 50 data → find "user" → inode 100
+  4. Read inode 100 data → find "docs" → inode 201
+  5. Read inode 201 data → find "file.txt" → inode 305
+  6. Read inode 305 → get file metadata + block pointers
+</div>
+
+      <h4>Virtual Filesystem (VFS) Layer</h4>
+      <div class="diagram">
+Linux VFS — Uniform Interface to All Filesystem Types
+═════════════════════════════════════════════════════
+
+  User Space:  open() / read() / write() / stat()
+       │
+       ▼
+  VFS Layer:   struct file_operations {
+                 .read = generic_file_read_iter,
+                 .write = generic_file_write_iter,
+                 .open = ext4_file_open,
+                 ...
+               }
+       │
+       ├── ext4       → ext4_readdir(), ext4_lookup()
+       ├── xfs        → xfs_file_read_iter()
+       ├── btrfs      → btrfs_readdir()
+       ├── tmpfs      → shmem_readdir()
+       ├── procfs     → proc_readdir()
+       ├── sysfs      → sysfs_readdir()
+       └── NFS        → nfs_readdir()
+
+Key VFS objects:
+  struct super_block   → Represents a mounted filesystem
+  struct inode         → In-memory inode (cached from disk)
+  struct dentry        → Directory entry cache (name → inode mapping)
+  struct file          → Open file instance (position, flags)
+</div>
+    </div>
+  </div>
+
+  <!-- Q: Symlinks vs Hardlinks -->
+  <div class="question-card" id="fs-symlinks-hardlinks">
+    <div class="q-header">
+      <h3>[links] Symlinks v. Hardlinks. Discuss.</h3>
+      <span class="level level-l3">L3–L5</span>
+    </div>
+    <div class="q-body">
+      <h4>Question</h4>
+      <p>Symlinks v. Hardlinks. Discuss.</p>
+
+      <h4>Answer</h4>
+      <table class="data">
+        <tr><th></th><th>Hard Link</th><th>Symbolic (Soft) Link</th></tr>
+        <tr>
+          <td><strong>What it is</strong></td>
+          <td>Additional directory entry pointing to same inode</td>
+          <td>A special file or another file, containing a path to the target</td>
+        </tr>
+        <tr>
+          <td><strong>Inode</strong></td>
+          <td>Same inode number as original</td>
+          <td>Different inode (its own inode, content = path string)</td>
+        </tr>
+        <tr>
+          <td><strong>Cross filesystem</strong></td>
+          <td>No — must be on same filesystem</td>
+          <td>Yes — can point anywhere</td>
+        </tr>
+        <tr>
+          <td><strong>Directories</strong></td>
+          <td>Cannot hard link directories (to prevent cycles)</td>
+          <td>Can symlink to directories</td>
+        </tr>
+        <tr>
+          <td><strong>Target deleted</strong></td>
+          <td>File still accessible (link count decremented)</td>
+          <td>Dangling symlink (broken)</td>
+        </tr>
+        <tr>
+          <td><strong>Performance</strong></td>
+          <td>Direct inode lookup (fast)</td>
+          <td>Extra dereference (read symlink → then resolve path)</td>
+        </tr>
+        <tr>
+          <td><strong><code>ls -l</code></strong></td>
+          <td>Looks like regular file, link count > 1</td>
+          <td>Shows <code>l</code> type, displays <code>→ target</code></td>
+        </tr>
+      </table>
+
+      <div class="diagram">
+Hard Link:
+──────────
+  Directory A:              Directory B:
+  "file.txt" → inode 42    "backup.txt" → inode 42
+                     ↓
+              ┌────────────┐
+              │ Inode 42    │  i_links_count = 2
+              │ size, perms │  Same content, same metadata
+              │ block ptrs  │
+              └────────────┘
+  Delete "file.txt" → i_links_count = 1, data NOT freed
+  Delete "backup.txt" → i_links_count = 0, data freed
+
+
+Symbolic Link:
+──────────────
+  "shortcut" → inode 99 (type: symlink)
+                 ↓
+  Content of inode 99's data: "/path/to/original"
+                                ↓
+  Kernel: resolve "/path/to/original" → inode 42 → actual data
+
+  Delete original → "shortcut" still exists but points to nothing (ENOENT)
+</div>
+
+<pre><code><span class="comment"># Create hard link</span>
+ln original.txt hardlink.txt
+ls -li original.txt hardlink.txt  <span class="comment"># Same inode number!</span>
+
+<span class="comment"># Create symbolic link</span>
+ln -s original.txt symlink.txt
+ls -li symlink.txt  <span class="comment"># Different inode, shows →</span>
+
+<span class="comment"># Find all hard links to a file</span>
+find / -samefile original.txt
+find / -inum $(stat -c '%i' original.txt)
+
+<span class="comment"># Read where a symlink points</span>
+readlink symlink.txt
+readlink -f symlink.txt  <span class="comment"># Fully resolve (follow chain)</span>
+
+<span class="comment"># Check link count</span>
+stat -c '%h' original.txt</code></pre>
+
+      <div class="followup">
+        <h5>Follow-up Questions</h5>
+        <ul>
+          <li>What information is stored in an inode?</li>
+          <li>What happens when a hard link is deleted? When does the content of the file get deleted?</li>
+          <li>How does the <code>lstat()</code> system call differ from <code>stat()</code>?</li>
+          <li>Why can't you hard link directories? (Prevents cycles in the directory graph)</li>
+        </ul>
+      </div>
+
+      <div class="eval-guidance">
+        <h5>Leveling Guidance</h5>
+        <ul>
+          <li><strong>L3</strong>: Knows the basics of symlinks and hardlinks</li>
+          <li><strong>L4</strong>: Can explain the difference in terms of inodes and directory entries, understands cross-filesystem limitation</li>
+          <li><strong>L5</strong>: Understands kernel implementation, knows about <code>AT_EMPTY_PATH</code>, <code>O_NOFOLLOW</code>, can explain symlink resolution in the VFS</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Q: UNIX Permissions -->
+  <div class="question-card" id="fs-permissions">
+    <div class="q-header">
+      <h3>[perms] On native UNIX filesystems, talk about the 12-bit permissions block</h3>
+      <span class="level level-l4">L3–L5</span>
+    </div>
+    <div class="q-body">
+      <h4>Question</h4>
+      <p>On native UNIX filesystems, talk about the 12-bit permissions block. Sticky bits, setuid/setgid bits: how do they work differently on directories? If a file is not owned by you, but you are in the same group as the file, and the file has permission 0707, can you read the file? Why/why not?</p>
+
+      <h4>Answer</h4>
+      <div class="diagram">
+The 12-bit Permission Field:
+════════════════════════════
+
+  Bit layout (octal representation):
+  ┌───┬───┬───┬───┐
+  │ S │ U │ G │ O │
+  │sst│rwx│rwx│rwx│
+  └───┴───┴───┴───┘
+
+  Special bits (S):
+    4 = setuid (s in user execute)
+    2 = setgid (s in group execute)
+    1 = sticky (t in other execute)
+
+  Example: 4755 = -rwsr-xr-x (setuid + rwx for owner, rx for group/other)
+
+Permission Check Order (FIRST match wins):
+  1. Are you the owner? → Use owner bits (U)
+  2. Are you in the group? → Use group bits (G)  ← STOPS HERE
+  3. Otherwise → Use other bits (O)
+</div>
+
+      <h4>The 0707 Trick Question</h4>
+      <div class="callout callout-warn">
+        <strong>0707 = ---rwx---rwx</strong><br>
+        If you are in the file's group, the GROUP bits apply: <code>---</code> (no permissions!). You CANNOT read the file, even though "other" has rwx. The kernel stops at the first matching category.
+      </div>
+
+      <h4>Special Permissions Deep Dive</h4>
+      <table class="data">
+        <tr><th>Bit</th><th>On Files</th><th>On Directories</th></tr>
+        <tr>
+          <td><strong>setuid</strong> (4)</td>
+          <td>Execute as file owner's UID (e.g., <code>/usr/bin/passwd</code>)</td>
+          <td>No standard effect on Linux</td>
+        </tr>
+        <tr>
+          <td><strong>setgid</strong> (2)</td>
+          <td>Execute as file group's GID</td>
+          <td>New files inherit directory's group (not creator's group)</td>
+        </tr>
+        <tr>
+          <td><strong>sticky</strong> (1)</td>
+          <td>Historically: keep in swap. Modern: ignored for files</td>
+          <td>Only file owner/dir owner/root can delete files (<code>/tmp</code> uses this)</td>
+        </tr>
+      </table>
+
+<pre><code><span class="comment"># View permissions including special bits</span>
+stat -c '%a %A %n' /usr/bin/passwd
+<span class="comment"># Output: 4755 -rwsr-xr-x /usr/bin/passwd</span>
+
+<span class="comment"># /tmp with sticky bit</span>
+ls -ld /tmp
+<span class="comment"># drwxrwxrwt — the 't' means sticky bit set</span>
+
+<span class="comment"># Set setuid</span>
+chmod u+s program     <span class="comment"># or chmod 4755 program</span>
+
+<span class="comment"># Set setgid on directory (new files inherit group)</span>
+chmod g+s /shared/    <span class="comment"># or chmod 2775 /shared/</span>
+
+<span class="comment"># Set sticky bit on directory</span>
+chmod +t /shared/     <span class="comment"># or chmod 1777 /shared/</span>
+
+<span class="comment"># Find all setuid binaries (security audit)</span>
+find / -perm -4000 -type f -ls 2>/dev/null
+
+<span class="comment"># Find all setgid binaries</span>
+find / -perm -2000 -type f -ls 2>/dev/null</code></pre>
+
+      <div class="followup">
+        <h5>Follow-up Questions</h5>
+        <ul>
+          <li>How does UNIX know that an executable file is executable? (Check +x permission, read magic bytes for format)</li>
+          <li>How do setuid/setgid programs deal with shared libraries?</li>
+          <li>What are the limitations of this model and how can they be addressed? (ACLs, SELinux, capabilities)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Q: Implement pwd -->
+  <div class="question-card" id="fs-pwd">
+    <div class="q-header">
+      <h3>[pwd] Implement the "pwd" command.</h3>
+      <span class="level level-l5">L4–L5</span>
+    </div>
+    <div class="q-body">
+      <h4>Question</h4>
+      <p>How would you implement the <code>pwd</code> command? How do you figure out the absolute path of the current directory?</p>
+
+      <h4>Answer</h4>
+      <p>The general approach is to recurse up the directory tree from the current directory to the root by repeatedly looking at <code>..</code> entries.</p>
+
+      <h4>Algorithm</h4>
+      <ol>
+        <li><code>stat(".")</code> to get the inode of the current directory</li>
+        <li><code>stat("/")</code> to get the root inode — this is our stopping condition</li>
+        <li>While current inode != root inode:
+          <ul>
+            <li>Open <code>..</code> (parent directory)</li>
+            <li>Read directory entries to find which entry has our inode number</li>
+            <li>Push that name onto a stack</li>
+            <li><code>chdir("..")</code> and repeat</li>
+          </ul>
+        </li>
+        <li>Print the names from root to current</li>
+      </ol>
+
+      <h4>Implementation</h4>
+<pre><code><span class="keyword">#include</span> &lt;stdio.h&gt;
+<span class="keyword">#include</span> &lt;dirent.h&gt;
+<span class="keyword">#include</span> &lt;sys/stat.h&gt;
+<span class="keyword">#include</span> &lt;unistd.h&gt;
+<span class="keyword">#include</span> &lt;string.h&gt;
+
+<span class="keyword">#define</span> MAX_PATH <span class="number">4096</span>
+
+<span class="type">ino_t</span> <span class="func">get_inode</span>(<span class="type">const char</span> *path) {
+    <span class="type">struct stat</span> sb;
+    stat(path, &amp;sb);
+    <span class="keyword">return</span> sb.st_ino;
+}
+
+<span class="type">dev_t</span> <span class="func">get_dev</span>(<span class="type">const char</span> *path) {
+    <span class="type">struct stat</span> sb;
+    stat(path, &amp;sb);
+    <span class="keyword">return</span> sb.st_dev;
+}
+
+<span class="type">int</span> <span class="func">main</span>() {
+    <span class="type">char</span> path[MAX_PATH] = <span class="string">""</span>;
+    <span class="type">char</span> components[<span class="number">256</span>][<span class="number">256</span>];
+    <span class="type">int</span> depth = <span class="number">0</span>;
+
+    <span class="type">ino_t</span> root_inode = get_inode(<span class="string">"/"</span>);
+    <span class="type">ino_t</span> cur_inode = get_inode(<span class="string">"."</span>);
+
+    <span class="keyword">while</span> (cur_inode != root_inode) {
+        <span class="type">ino_t</span> target = cur_inode;
+        chdir(<span class="string">".."</span>);
+        cur_inode = get_inode(<span class="string">"."</span>);
+
+        <span class="comment">/* Read parent directory to find our name */</span>
+        DIR *dp = opendir(<span class="string">"."</span>);
+        <span class="type">struct dirent</span> *entry;
+        <span class="keyword">while</span> ((entry = readdir(dp)) != NULL) {
+            <span class="keyword">if</span> (entry->d_ino == target) {
+                strcpy(components[depth++], entry->d_name);
+                <span class="keyword">break</span>;
+            }
+        }
+        closedir(dp);
+    }
+
+    <span class="comment">/* Print path from root to current */</span>
+    <span class="keyword">if</span> (depth == <span class="number">0</span>) {
+        printf(<span class="string">"/"</span>);
+    } <span class="keyword">else</span> {
+        <span class="keyword">for</span> (<span class="type">int</span> i = depth - <span class="number">1</span>; i >= <span class="number">0</span>; i--)
+            printf(<span class="string">"/%s"</span>, components[i]);
+    }
+    printf(<span class="string">"\n"</span>);
+    <span class="keyword">return</span> <span class="number">0</span>;
+}</code></pre>
+
+      <div class="callout callout-info">
+        <strong>Edge cases to consider:</strong>
+        <ul>
+          <li>Crossing filesystem boundaries (check <code>st_dev</code> too, not just <code>st_ino</code>)</li>
+          <li>Bind mounts may cause <code>st_dev</code> differences</li>
+          <li>The real <code>getcwd()</code> syscall uses <code>d_path()</code> in the kernel which walks the dentry cache — much faster</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Q: Implement lsof -->
+  <div class="question-card" id="fs-lsof">
+    <div class="q-header">
+      <h3>[lsof] Implement the "lsof" command.</h3>
+      <span class="level level-l5">L4–L5</span>
+    </div>
+    <div class="q-body">
+      <h4>Question</h4>
+      <p>How would you implement the <code>lsof</code> command?</p>
+
+      <h4>Answer</h4>
+      <p><code>lsof</code> lists open files for processes. On Linux, everything is exposed via <code>/proc</code>:</p>
+
+<pre><code><span class="comment"># For each process, /proc/PID/fd/ contains symlinks to open files</span>
+ls -la /proc/$$/fd/
+<span class="comment"># 0 → /dev/pts/0 (stdin)</span>
+<span class="comment"># 1 → /dev/pts/0 (stdout)</span>
+<span class="comment"># 2 → /dev/pts/0 (stderr)</span>
+<span class="comment"># 3 → /home/user/file.txt (open file)</span>
+
+<span class="comment"># /proc/PID/fdinfo/N has offset, flags, mnt_id</span>
+cat /proc/$$/fdinfo/0</code></pre>
+
+      <h4>Simplified lsof Implementation</h4>
+<pre><code><span class="comment">#!/bin/bash</span>
+<span class="comment"># Simplified lsof using /proc</span>
+
+printf <span class="string">"%-8s %-6s %-4s %s\n"</span> <span class="string">"COMMAND"</span> <span class="string">"PID"</span> <span class="string">"FD"</span> <span class="string">"NAME"</span>
+
+<span class="keyword">for</span> pid_dir <span class="keyword">in</span> /proc/[0-9]*; <span class="keyword">do</span>
+    pid=$(basename <span class="string">"$pid_dir"</span>)
+    comm=$(cat <span class="string">"$pid_dir/comm"</span> 2>/dev/null) || <span class="keyword">continue</span>
+
+    <span class="keyword">for</span> fd <span class="keyword">in</span> <span class="string">"$pid_dir"</span>/fd/*; <span class="keyword">do</span>
+        fd_num=$(basename <span class="string">"$fd"</span>)
+        target=$(readlink <span class="string">"$fd"</span> 2>/dev/null) || <span class="keyword">continue</span>
+        printf <span class="string">"%-8s %-6s %-4s %s\n"</span> <span class="string">"$comm"</span> <span class="string">"$pid"</span> <span class="string">"$fd_num"</span> <span class="string">"$target"</span>
+    <span class="keyword">done</span>
+<span class="keyword">done</span></code></pre>
+
+      <h4>Kernel Perspective</h4>
+      <div class="diagram">
+Process File Descriptor Table (kernel)
+═══════════════════════════════════════
+
+task_struct
+  └── files (struct files_struct)
+        └── fdt (struct fdtable)
+              └── fd[] (array of struct file *)
+                    [0] → struct file { f_path, f_pos, f_op, f_mode }
+                    [1] → struct file { ... }
+                    [2] → struct file { ... }
+                    [3] → struct file { f_path → /home/user/data.txt }
+
+struct file:
+  f_path    → (vfsmount, dentry) → full path
+  f_pos     → current read/write offset
+  f_op      → file_operations (read, write, mmap, ...)
+  f_mode    → FMODE_READ | FMODE_WRITE
+  f_flags   → O_RDONLY, O_NONBLOCK, etc.
+  f_count   → reference count (fork shares, close decrements)
+</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!--                   CONTAINERS & VMS                            -->
+<!-- ============================================================ -->
+
+<div class="topic-section" id="containers">
+  <h2 class="section-title">Containers &amp; VMs <span class="badge">2 Questions</span></h2>
+
+  <!-- Q: Container vs VM -->
+  <div class="question-card" id="cont-vs-vm">
+    <div class="q-header">
+      <h3>[containers-vs-vm] What is a container and how is it different to a Virtual Machine?</h3>
+      <span class="level level-l4">L3–L5</span>
+    </div>
+    <div class="q-body">
+      <h4>Question</h4>
+      <p>Can we talk about containers? What is a container and how is it different from a VM? Think about what specific technologies like Docker, LXC, Zones, VMs use. Discuss three filtering mechanisms: the host level, the container level, and the VM level.</p>
+
+      <h4>Answer</h4>
+      <table class="data">
+        <tr><th></th><th>Container</th><th>Virtual Machine</th></tr>
+        <tr>
+          <td><strong>Isolation</strong></td>
+          <td>OS-level (namespaces + cgroups), shares host kernel</td>
+          <td>Hardware-level (hypervisor), own kernel</td>
+        </tr>
+        <tr>
+          <td><strong>Startup</strong></td>
+          <td>Milliseconds (no kernel boot)</td>
+          <td>Seconds to minutes (full OS boot)</td>
+        </tr>
+        <tr>
+          <td><strong>Overhead</strong></td>
+          <td>Minimal (process-level)</td>
+          <td>Significant (full OS + virtual hardware)</td>
+        </tr>
+        <tr>
+          <td><strong>Density</strong></td>
+          <td>100s–1000s per host</td>
+          <td>10s per host</td>
+        </tr>
+        <tr>
+          <td><strong>Security</strong></td>
+          <td>Shared kernel = larger attack surface</td>
+          <td>Strong isolation (separate kernels)</td>
+        </tr>
+        <tr>
+          <td><strong>Use case</strong></td>
+          <td>Microservices, CI/CD, dev environments</td>
+          <td>Multi-tenant, different OS, strong isolation</td>
+        </tr>
+      </table>
+
+      <div class="diagram">
+Virtual Machine Architecture:
+═════════════════════════════
+
+┌──────────┐ ┌──────────┐ ┌──────────┐
+│   App A   │ │   App B   │ │   App C   │
+├──────────┤ ├──────────┤ ├──────────┤
+│ Bins/Libs │ │ Bins/Libs │ │ Bins/Libs │
+├──────────┤ ├──────────┤ ├──────────┤
+│ Guest OS  │ │ Guest OS  │ │ Guest OS  │  ← Full kernel each!
+└────┬─────┘ └────┬─────┘ └────┬─────┘
+     └────────────┼────────────┘
+          ┌───────┴───────┐
+          │  Hypervisor    │  (KVM, Xen, VMware)
+          ├───────────────┤
+          │   Host OS      │
+          ├───────────────┤
+          │   Hardware     │
+          └───────────────┘
+
+
+Container Architecture:
+═══════════════════════
+
+┌──────────┐ ┌──────────┐ ┌──────────┐
+│   App A   │ │   App B   │ │   App C   │
+├──────────┤ ├──────────┤ ├──────────┤
+│ Bins/Libs │ │ Bins/Libs │ │ Bins/Libs │
+└────┬─────┘ └────┬─────┘ └────┬─────┘
+     │ namespaces  │  cgroups   │
+     └────────────┼────────────┘
+          ┌───────┴───────┐
+          │ Container      │  (Docker, containerd, CRI-O)
+          │ Runtime        │
+          ├───────────────┤
+          │ Shared Kernel  │  ← ONE kernel for all!
+          ├───────────────┤
+          │   Hardware     │
+          └───────────────┘
+</div>
+
+      <h4>Common Container Implementations</h4>
+      <ul>
+        <li><strong>Docker</strong> / <strong>containerd</strong> — most popular, uses Linux namespaces + cgroups</li>
+        <li><strong>LXC</strong> / <strong>LXD</strong> — system containers (more like lightweight VMs)</li>
+        <li><strong>Solaris Zones</strong> / FreeBSD Jails — older OS-level virtualization</li>
+        <li><strong>gVisor</strong> — user-space kernel for stronger isolation</li>
+        <li><strong>Kata Containers</strong> — lightweight VMs that look like containers</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Q: Container Isolation & Namespaces -->
+  <div class="question-card" id="cont-isolation">
+    <div class="q-header">
+      <h3>[namespaces] How are containers isolated from themselves and the host?</h3>
+      <span class="level level-l4">L4–L5</span>
+    </div>
+    <div class="q-body">
+      <h4>Question</h4>
+      <p>By what mechanisms are containers separated from each other and from the host OS?</p>
+
+      <h4>Answer</h4>
+      <p>Containers use two primary kernel features: <strong>namespaces</strong> (isolation) and <strong>cgroups</strong> (resource limits). Plus additional mechanisms like seccomp, capabilities, and AppArmor/SELinux.</p>
+
+      <h4>Linux Namespaces (8 types)</h4>
+      <table class="data">
+        <tr><th>Namespace</th><th>Isolates</th><th>Flag</th><th>Example</th></tr>
+        <tr><td><code>mnt</code></td><td>Mount points</td><td><code>CLONE_NEWNS</code></td><td>Container sees its own <code>/</code></td></tr>
+        <tr><td><code>pid</code></td><td>Process IDs</td><td><code>CLONE_NEWPID</code></td><td>Container PID 1 ≠ host PID 1</td></tr>
+        <tr><td><code>net</code></td><td>Network stack</td><td><code>CLONE_NEWNET</code></td><td>Own interfaces, IPs, routes, iptables</td></tr>
+        <tr><td><code>uts</code></td><td>Hostname</td><td><code>CLONE_NEWUTS</code></td><td>Container has own hostname</td></tr>
+        <tr><td><code>ipc</code></td><td>IPC resources</td><td><code>CLONE_NEWIPC</code></td><td>Separate SysV IPC, message queues</td></tr>
+        <tr><td><code>user</code></td><td>User/group IDs</td><td><code>CLONE_NEWUSER</code></td><td>Root in container ≠ root on host</td></tr>
+        <tr><td><code>cgroup</code></td><td>Cgroup root</td><td><code>CLONE_NEWCGROUP</code></td><td>Container sees its own cgroup tree</td></tr>
+        <tr><td><code>time</code></td><td>Clock</td><td><code>CLONE_NEWTIME</code></td><td>Introduced in 5.6 (boot/monotonic)</td></tr>
+      </table>
+
+      <div class="diagram">
+How Docker Creates a Container (simplified):
+═════════════════════════════════════════════
+
+  dockerd receives "docker run alpine /bin/sh"
+       │
+       ▼
+  containerd → runc (OCI runtime)
+       │
+       ▼
+  runc calls clone() with namespace flags:
+    clone(CLONE_NEWNS | CLONE_NEWPID | CLONE_NEWNET |
+          CLONE_NEWUTS | CLONE_NEWIPC | CLONE_NEWUSER)
+       │
+       ├── New PID namespace → process is PID 1 inside
+       ├── New mount namespace → pivot_root to container rootfs
+       ├── New network namespace → veth pair (container ↔ bridge)
+       ├── New UTS namespace → set hostname
+       └── New user namespace → map UID 0 → host UID 100000
+       │
+       ▼
+  Set up cgroups:
+    /sys/fs/cgroup/cpu/docker/&lt;container-id&gt;/cpu.max
+    /sys/fs/cgroup/memory/docker/&lt;container-id&gt;/memory.max
+    /sys/fs/cgroup/pids/docker/&lt;container-id&gt;/pids.max
+       │
+       ▼
+  Apply security:
+    seccomp filter (block dangerous syscalls)
+    Drop capabilities (CAP_SYS_ADMIN, etc.)
+    AppArmor/SELinux profile
+       │
+       ▼
+  exec("/bin/sh") inside the container
+</div>
+
+      <h4>Cgroups v2 Resource Control</h4>
+<pre><code><span class="comment"># View container's cgroup limits</span>
+cat /sys/fs/cgroup/system.slice/docker-&lt;id&gt;.scope/cpu.max
+cat /sys/fs/cgroup/system.slice/docker-&lt;id&gt;.scope/memory.max
+cat /sys/fs/cgroup/system.slice/docker-&lt;id&gt;.scope/pids.max
+
+<span class="comment"># Set CPU limit (100ms per 200ms period = 50% CPU)</span>
+echo "100000 200000" > cpu.max
+
+<span class="comment"># Set memory limit (512MB)</span>
+echo 536870912 > memory.max
+
+<span class="comment"># View current usage</span>
+cat memory.current
+cat cpu.stat
+
+<span class="comment"># View namespaces of a process</span>
+ls -la /proc/$$/ns/
+<span class="comment"># ipc -> ipc:[4026531839]</span>
+<span class="comment"># mnt -> mnt:[4026531840]</span>
+<span class="comment"># net -> net:[4026531992]</span>
+<span class="comment"># pid -> pid:[4026531836]</span>
+
+<span class="comment"># Enter a container's namespace</span>
+nsenter --target &lt;PID&gt; --mount --uts --ipc --net --pid</code></pre>
+
+      <div class="diagram">
+Container Network Namespace (veth pair):
+════════════════════════════════════════
+
+Host Network Namespace          Container Network Namespace
+┌───────────────────────┐      ┌──────────────────────────┐
+│                       │      │                          │
+│  eth0 (10.0.0.50)     │      │  eth0 (172.17.0.2)       │
+│  docker0 (172.17.0.1) │      │    ↑                     │
+│    │                   │      │    │                     │
+│    ├── veth123abc ─────┼──────┼── veth (renamed eth0)    │
+│    ├── veth456def ─────┼──┐   │                          │
+│    └── ...             │  │   └──────────────────────────┘
+│                       │  │
+│  iptables NAT:        │  │   Container 2 Network Namespace
+│  172.17.0.0/16 →      │  │   ┌──────────────────────────┐
+│    MASQUERADE          │  └───┼── veth (renamed eth0)    │
+│                       │      │  eth0 (172.17.0.3)       │
+└───────────────────────┘      └──────────────────────────┘
+</div>
+
+      <div class="callout callout-warn">
+        <strong>WARNING:</strong> This isn't school; don't expect candidates to reel off all eight namespaces perfectly. A good candidate might only get three or four, but if they can't get at least mount and networking, they aren't showing a good understanding of containers.
+      </div>
+
+      <div class="eval-guidance">
+        <h5>Leveling Guidance</h5>
+        <ul>
+          <li><strong>L3</strong>: Can name at least 2 different namespaces</li>
+          <li><strong>L4</strong>: Can explain 3-4 namespaces plus cgroups, understands the kernel mechanisms</li>
+          <li><strong>L5</strong>: Deep understanding of all namespace types, can explain seccomp, capabilities, rootless containers, and edge cases</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!--                       SYSADMIN                                -->
+<!-- ============================================================ -->
+
+<div class="topic-section" id="sysadmin">
+  <h2 class="section-title">SysAdmin <span class="badge">8 Questions</span></h2>
+
+  <!-- Q: Copy Disk, Verify -->
+  <div class="question-card" id="sys-copy-verify">
+    <div class="q-header">
+      <h3>[copy-verify] Copy host A's disk to host B's disk and verify.</h3>
+      <span class="level level-l3">L3–L4</span>
+    </div>
+    <div class="q-body">
+      <h4>Question</h4>
+      <p>Copy host A's disk to host B's disk and verify. You are at host A.</p>
+
+      <h4>Answer</h4>
+<pre><code><span class="comment"># Method 1: dd over SSH (block-level copy)</span>
+dd if=/dev/sda bs=64K | ssh hostB "dd of=/dev/sda bs=64K"
+
+<span class="comment"># Verify with checksums</span>
+ssh hostA "md5sum /dev/sda" &amp;
+ssh hostB "md5sum /dev/sda" &amp;
+wait  <span class="comment"># Compare the two checksums</span>
+
+<span class="comment"># Method 2: dd + netcat (faster, no encryption overhead)</span>
+<span class="comment"># On host B (receiver):</span>
+nc -l -p 9000 | dd of=/dev/sda bs=64K
+
+<span class="comment"># On host A (sender):</span>
+dd if=/dev/sda bs=64K | nc hostB 9000
+
+<span class="comment"># Method 3: rsync for filesystem-level copy</span>
+rsync -avz --progress / hostB:/ --exclude /proc --exclude /sys
+
+<span class="comment"># Verify: compare checksums</span>
+<span class="comment"># On host A:</span>
+sha256sum /dev/sda | ssh hostB "sha256sum -c -"</code></pre>
+
+      <div class="callout callout-info">
+        <strong>Key points for interviewer:</strong>
+        <ul>
+          <li>Does candidate know if the tar completed successfully in their solution? (<code>$?</code> check, <code>set -o pipefail</code>)</li>
+          <li>Do they validate the copy? (hash verification is critical)</li>
+          <li>Do they consider that the filesystem should ideally be unmounted/read-only during copy?</li>
+          <li>The candidate doesn't need to know syntax perfectly — understanding the concepts matters more</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Q: Diskless Booting -->
+  <div class="question-card" id="sys-diskless-boot">
+    <div class="q-header">
+      <h3>[diskless] How does network/diskless boot work? (tcp, ftp, bootp)</h3>
+      <span class="level level-l4">L3–L5</span>
+    </div>
+    <div class="q-body">
+      <h4>Question</h4>
+      <p>How does a network/diskless boot work?</p>
+
+      <h4>Answer</h4>
+      <p>A diskless boot has no permanent storage, so there are generally two stages: getting an IP address and getting the boot image.</p>
+      <ol>
+        <li><strong>PXE firmware</strong> sends DHCPDISCOVER broadcast</li>
+        <li><strong>DHCP server</strong> responds with IP + next-server (TFTP) + boot filename</li>
+        <li><strong>TFTP transfer</strong> — download boot loader (pxelinux.0 or iPXE)</li>
+        <li><strong>Boot loader</strong> downloads kernel + initrd via TFTP/HTTP</li>
+        <li><strong>Kernel boots</strong>, mounts root filesystem via NFS or iSCSI</li>
+      </ol>
+
+      <div class="callout callout-info">
+        <strong>Modern approaches:</strong> iPXE extends PXE with HTTP/HTTPS support, UEFI HTTP boot can skip TFTP entirely. Cloud providers use similar techniques with cloud-init for instance metadata.
+      </div>
+    </div>
+  </div>
+
+  <!-- Q: Init Process & PID 1 -->
+  <div class="question-card" id="sys-pid-init">
+    <div class="q-header">
+      <h3>[init] What process is PID=1? What does it do? How does it know?</h3>
+      <span class="level level-l4">L3–L5</span>
+    </div>
+    <div class="q-body">
+      <h4>Question</h4>
+      <p>What process is PID 1? What does it do? How does it know what to start?</p>
+
+      <h4>Answer</h4>
+      <p>PID 1 is the <code>init</code> process — the first (and possibly only) user process brought up by the kernel. It is responsible for configuring the system and starting daemons. It is the ultimate progenitor to (nearly) all user processes and becomes the parent for any orphaned processes.</p>
+
+      <div class="diagram">
+Kernel Boot → PID 1
+═══════════════════
+
+Bootloader (GRUB) → loads vmlinuz + initrd
+  → Kernel: start_kernel()
+    → ... hardware init, scheduler init, memory init ...
+    → kernel_init()
+      → Try to exec, in order:
+        1. /sbin/init
+        2. /etc/init
+        3. /bin/init
+        4. /bin/sh (last resort)
+      → This becomes PID 1
+
+init Systems Evolution:
+  SysV init  →  Upstart  →  systemd (most Linux distros today)
+  (sequential)  (event)     (parallel, dependency graph, socket activation)
+</div>
+
+      <h4>PID 1 Special Properties</h4>
+      <ul>
+        <li><strong>Cannot be killed</strong> — kernel ignores SIGKILL/SIGSTOP for PID 1</li>
+        <li><strong>Reaps orphans</strong> — becomes parent of any process whose parent exits</li>
+        <li><strong>If PID 1 exits, kernel panics</strong> — the system cannot function without init</li>
+        <li><strong>Signal handling</strong> — PID 1 only receives signals it has registered handlers for (unlike other processes)</li>
+      </ul>
+
+<pre><code><span class="comment"># What is PID 1?</span>
+ps -p 1 -o pid,comm,args
+<span class="comment"># PID COMMAND     COMMAND</span>
+<span class="comment">#   1 systemd     /sbin/init</span>
+
+<span class="comment"># systemd: view service dependencies</span>
+systemctl list-dependencies
+systemctl list-units --type=service --state=running
+
+<span class="comment"># Boot process timeline</span>
+systemd-analyze
+systemd-analyze blame    <span class="comment"># Slowest services</span>
+systemd-analyze critical-chain
+
+<span class="comment"># In containers: PID 1 matters too!</span>
+<span class="comment"># Docker: CMD/ENTRYPOINT becomes PID 1</span>
+<span class="comment"># Must handle SIGTERM! Or use tini/dumb-init</span></code></pre>
+
+      <div class="followup">
+        <h5>Follow-up Questions</h5>
+        <ul>
+          <li>What happens if init process dies? (Kernel panic)</li>
+          <li>How does systemd know what services to start and in what order?</li>
+          <li>Why is PID 1 special for signal handling in containers?</li>
+          <li>What is <code>tini</code> / <code>dumb-init</code> and why do containers need it?</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Q: Load Average & Uptime -->
+  <div class="question-card" id="sys-load-average">
+    <div class="q-header">
+      <h3>[loading] What is loading? What do the three #s in uptime represent?</h3>
+      <span class="level level-l3">L3–L5</span>
+    </div>
+    <div class="q-body">
+      <h4>Question</h4>
+      <p>What is load average? What do the three numbers in <code>uptime</code> represent?</p>
+
+      <h4>Answer</h4>
+      <p>Load average is the average number of processes in the run queue or a given period. The three numbers in uptime represent the 1-minute, 5-minute, and 15-minute exponentially-weighted moving averages.</p>
+
+<pre><code>$ uptime
+ 14:32:01 up 45 days, 3:21, 2 users, load average: 2.15, 1.89, 1.45
+                                                     ^^^   ^^^   ^^^
+                                                     1min  5min  15min</code></pre>
+
+      <h4>What Counts as "Load"</h4>
+      <ul>
+        <li><strong>Running processes</strong> (R state) — on CPU or waiting for CPU</li>
+        <li><strong>Uninterruptible sleep</strong> (D state) — typically waiting for disk I/O</li>
+        <li>Unlike other Unixes, Linux includes D-state processes (I/O wait) in load average</li>
+      </ul>
+
+      <div class="callout callout-info">
+        <strong>Interpreting load average:</strong>
+        <ul>
+          <li>On a single-CPU system: load 1.0 = fully utilized</li>
+          <li>On a 4-core system: load 4.0 = fully utilized, load 8.0 = double overloaded</li>
+          <li>A rising number (1min > 5min > 15min) indicates increasing load</li>
+          <li>High load + low CPU usage often indicates I/O bottleneck (many D-state processes)</li>
+        </ul>
+      </div>
+
+<pre><code><span class="comment"># Check load average</span>
+uptime
+cat /proc/loadavg
+<span class="comment"># 2.15 1.89 1.45 3/245 12345</span>
+<span class="comment">#                 ^^^^^</span>
+<span class="comment">#                 running_threads/total_threads  last_pid</span>
+
+<span class="comment"># Check number of CPUs (to interpret load)</span>
+nproc
+grep -c processor /proc/cpuinfo
+
+<span class="comment"># Find D-state (uninterruptible) processes contributing to load</span>
+ps aux | awk '$8 ~ /D/'
+
+<span class="comment"># More detailed: top, htop, or vmstat</span>
+vmstat 1    <span class="comment"># r = run queue, b = blocked (D state)</span></code></pre>
+    </div>
+  </div>
+
+  <!-- Q: Remove a file named -f -->
+  <div class="question-card" id="sys-remove-f">
+    <div class="q-header">
+      <h3>[remove-f] How might you remove a file named -f?</h3>
+      <span class="level level-l3">L3–L5</span>
+    </div>
+    <div class="q-body">
+      <h4>Question</h4>
+      <p>How might you remove a file named <code>-f</code>?</p>
+
+      <div class="callout callout-info">
+        <strong>NOTE:</strong> This question is not about understanding the <code>rm -f</code> (force) option. It is about understanding how shell argument processing (POSIX argument handling) and the <code>--</code> end-of-options marker work.
+      </div>
+
+      <h4>Answer</h4>
+<pre><code><span class="comment"># Method 1: Use -- to mark end of options (POSIX standard)</span>
+rm -- -f
+
+<span class="comment"># Method 2: Use ./ prefix to avoid leading dash</span>
+rm ./-f
+
+<span class="comment"># Method 3: Use full path</span>
+rm /path/to/-f
+
+<span class="comment"># Method 4: Use find</span>
+find . -name '-f' -delete
+
+<span class="comment"># Method 5: Using inode number</span>
+ls -i     <span class="comment"># find the inode of -f</span>
+find . -inum 12345 -delete</code></pre>
+
+      <h4>Why <code>--</code> Works</h4>
+      <p>The POSIX/GNU convention is that <code>--</code> signals the end of options. Everything after <code>--</code> is treated as a positional argument, not a flag. This works for virtually any POSIX-compliant CLI tool.</p>
+
+<pre><code><span class="comment"># This also works for other "problem" filenames</span>
+touch -- --help         <span class="comment"># Create a file named --help</span>
+cat -- --help           <span class="comment"># Read the file (not display help)</span>
+ls -- -la               <span class="comment"># List a file named -la</span>
+
+<span class="comment"># GNU getopt processing: flags → "--" → positional args</span>
+<span class="comment"># e.g.: rm -v -- -f   means: verbose mode, delete file named "-f"</span></code></pre>
+
+      <div class="followup">
+        <h5>Follow-up Questions</h5>
+        <ul>
+          <li>How would you create a file named <code>-f</code> in the first place? (<code>touch -- -f</code>)</li>
+          <li>What about files with spaces, newlines, or unicode in their names?</li>
+          <li>How does the shell/kernel/libc handle the <code>--</code> convention? Where is it implemented?</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Q: Apache Security Advisory -->
+  <div class="question-card" id="sys-apache-advisory">
+    <div class="q-header">
+      <h3>[advisory] It's 4pm on Friday. A security advisory for Apache pops into your inbox.</h3>
+      <span class="level level-l5">L4–L7</span>
+    </div>
+    <div class="q-body">
+      <h4>Question</h4>
+      <p>It's 4pm on a Friday and you get a mail that says "last batch alert: apache recently was found to contain a previously unknown attack." What do you do?</p>
+
+      <h4>Answer — Structured Incident Response</h4>
+
+      <h4>Good things to hear</h4>
+      <ul>
+        <li>Not panicking. Acknowledge that changing things on Friday at 4pm is risky.</li>
+        <li>Don't be affected by "Friday 4pm" pressure — assess first</li>
+        <li>By not doing nothing: the security risk is real and needs assessment</li>
+        <li>Acknowledging that balancing the risk of leaving the system unpatched with the risk of a botched deployment: rushed fixes can make things worse</li>
+      </ul>
+
+      <h4>Bad things to hear</h4>
+      <ul>
+        <li>"I would just patch right away"</li>
+        <li>"I would tell the patch in the lab and then roll it out everywhere"</li>
+      </ul>
+
+      <h4>Impact Assessment</h4>
+      <ul>
+        <li>Is the vulnerability <strong>actively exploited</strong> in the wild?</li>
+        <li>Is our service externally facing / internet-reachable?</li>
+        <li>Which version(s) are affected? Are we running an affected version?</li>
+        <li>What's the CVSS score / severity?</li>
+        <li>Do we have WAF/reverse proxy that could provide interim mitigation?</li>
+        <li>Can we use the feature flag system to reduce exposure?</li>
+      </ul>
+
+      <h4>Communication</h4>
+      <ul>
+        <li>How do we authenticate the warning? Is the URL in the "advisory" pointing to a known legitimate source?</li>
+        <li>Who do we tell? How do people get status updates? Who do the pointy-hairs get called? How do we prevent that impeding actual progress?</li>
+        <li>Longer term: did we lose data? Did data get corrupted? How do we tell? Who do we inform?</li>
+      </ul>
+
+      <h4>Workarounds</h4>
+      <ul>
+        <li>Reverse proxy to block the attack pattern</li>
+        <li>If they already have a reverse proxy set up, this makes sense. Configurating that is safer than patching Apache</li>
+        <li>Rate limiting, IP blocking, WAF rules</li>
+        <li>Disable specific Apache modules if the vulnerability is module-specific</li>
+      </ul>
+
+      <h4>Rollout (if patching)</h4>
+      <ul>
+        <li><strong>Good:</strong> Test it in the lab first on one machine. Do a controlled upgrade over the course of N hours. Bonus points if you tell the proxy to mark your origin server as unhealthy during the upgrade</li>
+        <li><strong>Bad:</strong> Just install it on every machine</li>
+      </ul>
+
+      <div class="eval-guidance">
+        <h5>Evaluation Guidance</h5>
+        <ul>
+          <li><strong>L4</strong>: Shows structured thinking, assesses risk before acting</li>
+          <li><strong>L5</strong>: Considers impact scope, communication plan, interim mitigations, staged rollout</li>
+          <li><strong>L6/7</strong>: Discusses organizational response, fleet-wide audit, post-incident learning, automation of future responses</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Q: Passwordless SSH -->
+  <div class="question-card" id="sys-passwordless-ssh">
+    <div class="q-header">
+      <h3>[ssh-agent] How do you set up passwordless SSH? What if I set up ssh-agent?</h3>
+      <span class="level level-l4">L3–L5</span>
+    </div>
+    <div class="q-body">
+      <h4>Question</h4>
+      <p>How do I set up passwordless SSH? What if I sell/exit my private key protected with a passphrase? ssh-agent?</p>
+
+      <h4>Answer — Things to Cover</h4>
+      <ol>
+        <li>Set up a key pair (<code>ssh-keygen</code>)</li>
+        <li>Put the private key somewhere safe (<code>-i</code> argument to ssh, or <code>~/.ssh/id_rsa</code>)</li>
+        <li>Put the public key in <code>~/.ssh/authorized_keys</code> on the remote machine</li>
+        <li>If passphrase was set, ask about protecting the key from physical compromise</li>
+        <li>If no mention of <code>ssh-agent</code>, ask about avoiding entering passphrase every time</li>
+        <li>Modern security: hardware keys (YubiKey), key rotation, certificate-based SSH</li>
+      </ol>
+
+<pre><code><span class="comment"># Generate key pair</span>
+ssh-keygen -t ed25519 -C "user@host"
+<span class="comment"># Creates: ~/.ssh/id_ed25519 (private) and ~/.ssh/id_ed25519.pub (public)</span>
+
+<span class="comment"># Copy public key to remote host</span>
+ssh-copy-id user@remote-host
+<span class="comment"># OR manually:</span>
+cat ~/.ssh/id_ed25519.pub | ssh user@remote "mkdir -p ~/.ssh &amp;&amp; cat >> ~/.ssh/authorized_keys"
+
+<span class="comment"># ssh-agent: cache decrypted key in memory</span>
+eval $(ssh-agent)        <span class="comment"># Start agent</span>
+ssh-add ~/.ssh/id_ed25519 <span class="comment"># Add key (enter passphrase once)</span>
+ssh-add -l               <span class="comment"># List cached keys</span>
+
+<span class="comment"># Now SSH without passphrase prompt:</span>
+ssh user@remote-host     <span class="comment"># Agent provides the key</span></code></pre>
+
+      <h4>How ssh-agent Works</h4>
+      <div class="diagram">
+ssh-agent Architecture:
+═══════════════════════
+
+  ssh-agent (daemon process)
+  ├── Listens on Unix domain socket: $SSH_AUTH_SOCK
+  ├── Holds decrypted private keys in memory
+  └── Accepts signing requests from ssh clients
+
+  Flow:
+  1. ssh connects to remote server
+  2. Remote server sends challenge
+  3. ssh asks ssh-agent (via socket) to sign the challenge
+  4. ssh-agent signs with the private key IN MEMORY
+  5. ssh sends signed response to server
+  → Private key NEVER leaves the agent's memory
+  → Private key NEVER sent over the network
+
+  Agent Forwarding (ssh -A):
+  ┌─────────┐    ┌─────────┐    ┌─────────┐
+  │ Laptop   │───→│ Jump Box │───→│ Target   │
+  │ (agent)  │    │ (forward)│    │ (auth)   │
+  └─────────┘    └─────────┘    └─────────┘
+  Agent socket forwarded: target asks jumpbox,
+  jumpbox asks your laptop's agent to sign
+</div>
+
+      <div class="followup">
+        <h5>Follow-up Questions</h5>
+        <ul>
+          <li>If I have ssh-agent running on my computer at work and I'm SSHed in from home, can I piggyback on the ssh-agent I have running?</li>
+          <li>What if the server gets broken into and /root/.ssh/authorized_keys is stolen. Do you have to re-generate your key?</li>
+          <li>What mitigations can be put in place to prevent the private key and passphrase being stolen? (Manage keys centrally, certificate-based, hardware tokens)</li>
+        </ul>
+      </div>
+
+      <div class="eval-guidance">
+        <h5>Evaluation Guidance</h5>
+        <ul>
+          <li><strong>L3</strong>: Familiar with basic security properties of public key cryptography</li>
+          <li><strong>L5</strong>: Can reason about threat models and manageability at scale, may need some prompting</li>
+          <li><strong>L7</strong>: Can design a solid solution over the available mechanisms and their properties without prompting</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Q: UNIX Timestamps -->
+  <div class="question-card" id="sys-timestamps">
+    <div class="q-header">
+      <h3>[timestamps] On native UNIX filesystems, files have three different times. Describe.</h3>
+      <span class="level level-l3">L3–L5</span>
+    </div>
+    <div class="q-body">
+      <h4>Question</h4>
+      <p>On native UNIX filesystems, files have three different times associated with them. Describe them. What can you use atime for? How could you get the benefits of atime without the costs?</p>
+
+      <h4>Answer</h4>
+      <table class="data">
+        <tr><th>Timestamp</th><th>Name</th><th>Updated When</th><th>Example</th></tr>
+        <tr>
+          <td><code>atime</code></td>
+          <td>Access time</td>
+          <td>File content is read</td>
+          <td><code>cat file</code>, <code>less file</code></td>
+        </tr>
+        <tr>
+          <td><code>mtime</code></td>
+          <td>Modification time</td>
+          <td>File content is modified</td>
+          <td><code>echo "x" >> file</code>, <code>vim</code> save</td>
+        </tr>
+        <tr>
+          <td><code>ctime</code></td>
+          <td>Change time (inode change)</td>
+          <td>Inode metadata changes</td>
+          <td><code>chmod</code>, <code>chown</code>, <code>mv</code>, <code>ln</code></td>
+        </tr>
+      </table>
+
+      <div class="callout callout-warn">
+        <strong>Common misconception:</strong> <code>ctime</code> is NOT creation time. Unix traditionally has no creation time. ext4 has <code>crtime</code> (birth time) but it's not exposed through standard POSIX APIs. Use <code>stat</code> or <code>debugfs</code> to see it.
+      </div>
+
+<pre><code><span class="comment"># View all timestamps</span>
+stat filename
+<span class="comment">#   Access: 2026-05-10 14:30:00.000000000 -0700</span>
+<span class="comment">#   Modify: 2026-05-09 10:15:00.000000000 -0700</span>
+<span class="comment">#   Change: 2026-05-09 10:15:00.000000000 -0700</span>
+<span class="comment">#    Birth: 2026-05-01 09:00:00.000000000 -0700  (ext4 only)</span>
+
+<span class="comment"># ls shows different timestamps</span>
+ls -l file     <span class="comment"># mtime (default)</span>
+ls -lu file    <span class="comment"># atime</span>
+ls -lc file    <span class="comment"># ctime</span>
+
+<span class="comment"># Find files accessed in last 7 days</span>
+find /tmp -atime -7
+
+<span class="comment"># Find files modified in last 24 hours</span>
+find /var/log -mtime -1</code></pre>
+
+      <h4>Disable atime</h4>
+      <p>Many systems mount filesystems with atime disabled (<code>noatime</code> mount option). Reading a file triggers an inode update (write!) for every read — this is expensive on rotating disks and reduces SSD lifespan.</p>
+
+<pre><code><span class="comment"># Mount with noatime</span>
+mount -o noatime /dev/sda1 /mnt
+
+<span class="comment"># Or use relatime (default on modern Linux)</span>
+<span class="comment"># Only updates atime if: atime < mtime, or atime older than 24h</span>
+mount -o relatime /dev/sda1 /mnt
+
+<span class="comment"># In /etc/fstab:</span>
+/dev/sda1  /  ext4  defaults,noatime  0 1</code></pre>
+
+      <h4>Use Case for atime</h4>
+      <ul>
+        <li><code>tmpwatch</code> / <code>tmpreaper</code> — remove files from <code>/tmp</code> that haven't been accessed in N days</li>
+        <li>Incremental backups — only back up files accessed since last backup</li>
+        <li>Old-school "you have new mail" indicator (check mbox <code>atime</code> vs <code>mtime</code>)</li>
+      </ul>
+
+      <div class="followup">
+        <h5>Follow-up Questions</h5>
+        <ul>
+          <li>How could you get the benefits of atime without the costs? (<code>relatime</code> mount option)</li>
+          <li>What information is stored in an inode? (Links to inode question)</li>
+          <li>On a conventional disk, what is the extra write overhead for atime updates? (Read-modify-write of inode block)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /container -->
+
+<footer class="footer">
+  <div class="container">
+    <p>Part of <a href="/">Kiran's Tech Hub</a> &rarr; <a href="linux-systems-guide.html">Linux Systems Guide</a></p>
+    <p style="margin-top:8px;">Based on the Google SRE Interview Question Bank — Comprehensive coverage of Linux internals, networking, and systems administration.</p>
+  </div>
+</footer>
+
+</body>
+</html>
