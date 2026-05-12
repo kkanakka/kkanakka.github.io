@@ -1,0 +1,1099 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GPUs in Kubernetes · a field guide</title>
+<style>
+  :root{
+    --fg:        #1f2328;
+    --fg-muted:  #59636e;
+    --fg-subtle: #6e7781;
+    --bg:        #ffffff;
+    --bg-subtle: #f6f8fa;
+    --bg-muted:  #eaeef2;
+    --border:    #d1d9e0;
+    --border-muted: #d8dee4;
+    --accent:    #0969da;
+    --accent-bg: #ddf4ff;
+    --success:   #1a7f37;
+    --success-bg:#dafbe1;
+    --attention: #9a6700;
+    --attention-bg:#fff8c5;
+    --danger:    #d1242f;
+    --danger-bg: #ffebe9;
+    --done:      #8250df;
+    --mono:      ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    --sans:      -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .topbar{
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+    position: sticky; top:0; z-index:50;
+    height: 44px;
+    display:flex;align-items:center;
+  }
+  .topbar .inner{
+    max-width: 1280px; margin: 0 auto; padding: 0 24px;
+    width: 100%;
+    display:flex;align-items:center;justify-content:space-between;
+    font-size: 13px;
+  }
+  .topbar .crumbs{color:var(--fg-muted);display:flex;align-items:center;gap:8px}
+  .topbar .crumbs strong{color:var(--fg);font-weight:600}
+  .topbar .crumbs .sep{color:var(--border)}
+  .topbar .actions{display:flex;gap:14px;color:var(--fg-muted);font-size:12px}
+
+  .layout{
+    max-width: 1280px; margin: 0 auto; padding: 0 24px;
+    display: grid; grid-template-columns: 220px minmax(0, 1fr) 200px;
+    gap: 40px;
+  }
+  @media(max-width:1024px){
+    .layout{grid-template-columns: 220px minmax(0, 1fr); gap:32px}
+    aside.toc-right{display:none}
+  }
+  @media(max-width:760px){
+    .layout{grid-template-columns: 1fr; gap:0; padding:0 16px}
+    aside.toc-left{display:none}
+  }
+
+  aside.toc-left{
+    border-right: 1px solid var(--border);
+    padding: 24px 16px 24px 0;
+    font-size: 13px;
+    position: sticky;
+    top: 44px;
+    max-height: calc(100vh - 44px);
+    overflow-y: auto;
+  }
+  aside.toc-left .group{margin-bottom: 18px}
+  aside.toc-left .group-title{
+    font-weight: 600; color: var(--fg); padding: 4px 0 6px;
+    font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  aside.toc-left a{
+    display:block; padding: 4px 10px; color: var(--fg-muted);
+    text-decoration: none; border-radius: 6px; line-height: 1.4;
+    border-left: 2px solid transparent; margin-left: -2px;
+  }
+  aside.toc-left a:hover{background: var(--bg-subtle); color: var(--fg)}
+  aside.toc-left a.active{
+    color: var(--accent); background: var(--accent-bg);
+    border-left-color: var(--accent); font-weight: 500;
+  }
+
+  main{padding: 24px 0 80px; min-width: 0}
+
+  h1{
+    font-size: 32px; font-weight: 600; line-height: 1.25;
+    padding-bottom: 12px; margin-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+    letter-spacing: -0.01em;
+  }
+  .subtitle{color: var(--fg-muted); font-size: 16px; margin-bottom: 28px; max-width: 720px}
+
+  h2{
+    font-size: 22px; font-weight: 600; line-height: 1.3;
+    margin-top: 32px; margin-bottom: 12px;
+    padding-bottom: 6px; border-bottom: 1px solid var(--border-muted);
+    scroll-margin-top: 60px;
+  }
+  h3{
+    font-size: 17px; font-weight: 600; line-height: 1.35;
+    margin-top: 22px; margin-bottom: 8px;
+    scroll-margin-top: 60px;
+  }
+  h4{
+    font-size: 14px; font-weight: 600; line-height: 1.35;
+    margin-top: 18px; margin-bottom: 6px;
+    color: var(--fg);
+  }
+
+  p{margin-bottom: 12px; max-width: 760px}
+  a{color: var(--accent); text-decoration: none}
+  a:hover{text-decoration: underline}
+
+  p code, li code, td code, h2 code, h3 code, h4 code{
+    font-family: var(--mono);
+    background: var(--bg-subtle);
+    padding: 0.15em 0.4em;
+    border-radius: 6px;
+    font-size: 0.88em;
+    color: var(--fg);
+    border: 1px solid var(--border-muted);
+  }
+
+  strong{font-weight: 600; color: var(--fg)}
+  em{font-style: italic}
+
+  ul, ol{margin: 8px 0 14px; padding-left: 24px; max-width: 760px}
+  li{margin-bottom: 4px; line-height: 1.55}
+
+  pre{
+    background: var(--bg-subtle);
+    border: 1px solid var(--border-muted);
+    padding: 12px 14px;
+    border-radius: 6px;
+    overflow-x: auto;
+    margin: 8px 0 16px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.55;
+    max-width: 880px;
+  }
+  pre .kw{color:#cf222e}
+  pre .fn{color:#8250df}
+  pre .str{color:#0a3069}
+  pre .com{color:#6e7781;font-style:italic}
+  pre .ty{color:#953800}
+  pre .num{color:#0550ae}
+
+  .alert{
+    margin: 12px 0 16px;
+    padding: 8px 16px;
+    border-left: 4px solid;
+    border-radius: 6px;
+    background: var(--bg-subtle);
+    max-width: 860px;
+    font-size: 13.5px;
+  }
+  .alert .alert-title{
+    font-weight: 600; font-size: 13px; margin-bottom: 4px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .alert.note     {border-color: var(--accent);    background: #f0f7ff}
+  .alert.note .alert-title    {color: var(--accent)}
+  .alert.warning  {border-color: var(--attention); background: #fff8e6}
+  .alert.warning .alert-title {color: var(--attention)}
+  .alert.danger   {border-color: var(--danger);    background: #fff5f5}
+  .alert.danger .alert-title  {color: var(--danger)}
+  .alert.tip      {border-color: var(--success);   background: #f0fdf4}
+  .alert.tip .alert-title     {color: var(--success)}
+  .alert p{margin-bottom: 4px}
+  .alert p:last-child{margin-bottom: 0}
+
+  .diagram{
+    margin: 14px 0 18px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    border-radius: 6px;
+    overflow: hidden;
+    max-width: 980px;
+  }
+  .diagram-head{
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 6px 12px;
+    background: var(--bg-subtle);
+    border-bottom: 1px solid var(--border-muted);
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--fg-muted);
+  }
+  .diagram-head .id{color: var(--accent); font-weight: 500}
+  .diagram-body{padding: 18px 14px; overflow-x: auto; background: var(--bg)}
+  .diagram-body svg{display:block; margin: 0 auto; max-width: 100%; height: auto}
+  .diagram-cap{
+    padding: 8px 12px;
+    background: var(--bg-subtle);
+    border-top: 1px solid var(--border-muted);
+    font-size: 12.5px;
+    color: var(--fg-muted);
+  }
+
+  table{
+    width: 100%; max-width: 880px; margin: 8px 0 16px;
+    border-collapse: collapse;
+    font-size: 13px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  th{
+    text-align: left; padding: 8px 12px;
+    background: var(--bg-subtle);
+    color: var(--fg); font-weight: 600;
+    border-bottom: 1px solid var(--border);
+    font-size: 12.5px;
+  }
+  td{
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--border-muted);
+    vertical-align: top;
+  }
+  tr:last-child td{border-bottom: none}
+  tr:nth-child(even) td{background: var(--bg-subtle)}
+
+  aside.toc-right{
+    padding: 24px 0;
+    font-size: 12px;
+    position: sticky;
+    top: 44px;
+    max-height: calc(100vh - 44px);
+    overflow-y: auto;
+  }
+  aside.toc-right .label{
+    text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--fg-muted); font-weight: 600; font-size: 11px;
+    margin-bottom: 8px;
+  }
+  aside.toc-right ul{list-style:none; padding: 0; margin: 0}
+  aside.toc-right li{margin-bottom: 4px}
+  aside.toc-right a{
+    color: var(--fg-muted); text-decoration: none;
+    display: block; padding: 2px 0; line-height: 1.4;
+    border-left: 2px solid transparent; padding-left: 8px;
+    margin-left: -10px;
+  }
+  aside.toc-right a:hover{color: var(--fg)}
+  aside.toc-right li.h3{padding-left: 12px}
+  aside.toc-right a.active{color: var(--accent); border-left-color: var(--accent); font-weight: 500}
+
+  .badges{
+    display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px;
+  }
+  .badge{
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 2px 8px; border-radius: 12px;
+    background: var(--bg-subtle);
+    border: 1px solid var(--border-muted);
+    font-size: 12px; color: var(--fg-muted);
+    font-family: var(--mono);
+  }
+  .badge .dot{width:6px;height:6px;border-radius:50%;background:var(--success)}
+
+  .stats{
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    margin: 14px 0 18px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    max-width: 880px;
+  }
+  .stat{
+    padding: 16px 14px;
+    background: var(--bg);
+  }
+  .stat-num{
+    font-size: 28px;
+    font-weight: 600;
+    color: var(--accent);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .stat-label{
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--fg-muted);
+  }
+
+  .compare{
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 12px 0 18px;
+    max-width: 880px;
+  }
+  .compare-card{
+    padding: 14px 16px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg-subtle);
+  }
+  .compare-card h5{
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+  .compare-card.bad h5{color: var(--attention)}
+  .compare-card ul{margin: 0; padding-left: 18px}
+  .compare-card li{font-size: 13px}
+
+  .defn{
+    margin: 14px 0 18px;
+    padding: 14px 18px;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 6px;
+    background: var(--accent-bg);
+    max-width: 860px;
+  }
+  .defn-term{
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+  .defn p:last-child{margin-bottom: 0}
+
+  svg text{font-family: var(--mono); fill: var(--fg)}
+  ::selection{background:var(--accent-bg);color:var(--fg)}
+
+  .d-box { fill: var(--bg-subtle); stroke: var(--border); stroke-width: 1; }
+  .d-box-accent { fill: #ddf4ff; stroke: var(--accent); stroke-width: 1; }
+  .d-box-cool { fill: #f0f7ff; stroke: #0969da; stroke-width: 1; }
+  .d-box-warn { fill: #fff8e6; stroke: var(--attention); stroke-width: 1; }
+  .d-box-success { fill: #dafbe1; stroke: var(--success); stroke-width: 1; }
+  .d-text { font-family: var(--sans); font-size: 13px; font-weight: 600; fill: var(--fg); }
+  .d-text-sm { font-family: var(--sans); font-size: 11px; fill: var(--fg-muted); }
+  .d-text-accent { font-family: var(--mono); font-size: 11px; fill: var(--accent); letter-spacing: 0.06em; font-weight: 600; }
+  .d-arrow { stroke: var(--fg-muted); stroke-width: 1.2; fill: none; }
+  .d-arrow-accent { stroke: var(--accent); stroke-width: 1.2; fill: none; }
+  .d-divider { stroke: var(--border); stroke-width: 0.5; stroke-dasharray: 3 4; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="inner">
+    <div class="crumbs">
+      <span>docs</span><span class="sep">/</span>
+      <span>kubernetes</span><span class="sep">/</span>
+      <strong>GPUs in Kubernetes</strong>
+    </div>
+    <div class="actions">
+      <span>v1</span>
+      <span>&middot;</span>
+      <span>Updated 2026-05</span>
+    </div>
+  </div>
+</div>
+
+<div class="layout">
+
+<!-- LEFT TOC -->
+<aside class="toc-left">
+  <div class="group">
+    <div class="group-title">Part I &mdash; Allocation</div>
+    <a href="#kubelet">Kubelet&rsquo;s role</a>
+    <a href="#cgroups">cgroups &amp; isolation</a>
+    <a href="#namespaces">No GPU namespace</a>
+    <a href="#slicing">Slicing models</a>
+    <a href="#mig">MIG explained</a>
+    <a href="#mps">MPS explained</a>
+    <a href="#timeslicing">Time-slicing</a>
+    <a href="#dra">DRA &mdash; the future</a>
+  </div>
+  <div class="group">
+    <div class="group-title">Part II &mdash; Networking</div>
+    <a href="#rdma">What is RDMA?</a>
+    <a href="#roce">RoCE vs InfiniBand</a>
+    <a href="#gpudirect">GPUDirect</a>
+    <a href="#cni">CNI &amp; Multus</a>
+    <a href="#sriov">SR-IOV</a>
+    <a href="#nccl">NCCL</a>
+  </div>
+  <div class="group">
+    <div class="group-title">Part III &mdash; Workloads</div>
+    <a href="#why-gpu">Why GPUs for ML</a>
+    <a href="#inference-tricks">Inference optimizations</a>
+    <a href="#kv-cache">KV cache</a>
+    <a href="#parallelism">Parallelism strategies</a>
+  </div>
+  <div class="group">
+    <div class="group-title">Part IV &mdash; Operations</div>
+    <a href="#operator">GPU Operator</a>
+    <a href="#scheduling">Scheduling concerns</a>
+    <a href="#topology">Topology awareness</a>
+    <a href="#monitoring">Monitoring</a>
+    <a href="#gotchas">Common gotchas</a>
+  </div>
+</aside>
+
+<!-- MAIN CONTENT -->
+<main>
+
+<h1>GPUs in Kubernetes &mdash; a field guide</h1>
+<p class="subtitle">From kubelet&rsquo;s bouncer-not-surgeon view of the device, through the kernel&rsquo;s surprising lack of a GPU namespace, into RDMA fabrics where one GPU reads another&rsquo;s memory across the network &mdash; and finally to the workloads that justify the whole stack.</p>
+
+<div class="badges">
+  <span class="badge"><span class="dot"></span>Infrastructure</span>
+  <span class="badge">Practitioner depth</span>
+  <span class="badge">Reference</span>
+</div>
+
+<!-- ============================================ -->
+<!-- PART I — ALLOCATION -->
+<!-- ============================================ -->
+
+<h2 id="part-1">Part I &mdash; Allocation</h2>
+<p>The first thing to understand about GPUs in Kubernetes is that Kubernetes itself doesn&rsquo;t understand GPUs. It allocates them, gates access to them, and lets vendor software do the real work. Everything starts there.</p>
+
+<h2 id="kubelet">&sect; 01.01 &mdash; Kubelet&rsquo;s role: the coordinator</h2>
+
+<p>Kubelet is the node-level agent that turns scheduled pods into running containers. With GPUs, its job is narrower than people assume: it doesn&rsquo;t understand streaming multiprocessors, HBM, CUDA contexts, or MIG slices. It only knows that <em>something</em> on the node has advertised a resource called <code>nvidia.com/gpu</code>, and that a pod has requested one.</p>
+
+<p>The actual flow:</p>
+
+<pre><span class="com"># 1. Pod requests GPU</span>
+resources:
+  limits:
+    <span class="num">nvidia.com/gpu</span>: 1
+
+<span class="com"># 2. Scheduler picks a node that advertises the resource</span>
+<span class="com"># 3. Kubelet calls the NVIDIA device plugin's Allocate() RPC</span>
+<span class="com"># 4. Plugin returns: device IDs, env vars, mounts, /dev nodes</span>
+<span class="com"># 5. Kubelet passes this to containerd / CRI-O</span>
+<span class="com"># 6. Runtime starts the container with GPU access</span></pre>
+
+<p>The crucial line: <strong>kubelet asks the plugin and obeys</strong>. It doesn&rsquo;t inspect the GPU, doesn&rsquo;t decide which physical GPU to use, and doesn&rsquo;t enforce memory or compute limits. The plugin tells kubelet what to inject; kubelet injects it.</p>
+
+<div class="diagram">
+  <div class="diagram-head"><span class="id">Fig 1.1</span> Kubelet GPU allocation hierarchy</div>
+  <div class="diagram-body">
+    <svg viewBox="0 0 800 480" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arr1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M2 1L9 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </marker>
+      </defs>
+      <rect x="280" y="20" width="240" height="50" rx="6" class="d-box"/>
+      <text class="d-text" x="400" y="42" text-anchor="middle">Pod spec</text>
+      <text class="d-text-sm" x="400" y="60" text-anchor="middle">limits: nvidia.com/gpu: 1</text>
+      <line x1="400" y1="70" x2="400" y2="98" class="d-arrow" marker-end="url(#arr1)"/>
+      <rect x="140" y="100" width="520" height="74" rx="8" class="d-box-accent"/>
+      <text class="d-text-accent" x="400" y="122" text-anchor="middle">KUBELET — THE COORDINATOR</text>
+      <text class="d-text-sm" x="400" y="145" text-anchor="middle">Allocates advertised resources. Injects env, mounts, devices.</text>
+      <text class="d-text-sm" x="400" y="161" text-anchor="middle">Does not understand SMs, HBM, CUDA contexts, or MIG slices.</text>
+      <line x1="240" y1="174" x2="160" y2="218" class="d-arrow" marker-end="url(#arr1)"/>
+      <line x1="400" y1="174" x2="400" y2="218" class="d-arrow" marker-end="url(#arr1)"/>
+      <line x1="560" y1="174" x2="640" y2="218" class="d-arrow" marker-end="url(#arr1)"/>
+      <rect x="40" y="220" width="240" height="64" rx="6" class="d-box-cool"/>
+      <text class="d-text" x="160" y="242" text-anchor="middle">Device plugin / DRA</text>
+      <text class="d-text-sm" x="160" y="260" text-anchor="middle">Advertises resources</text>
+      <text class="d-text-sm" x="160" y="274" text-anchor="middle">Returns IDs, env, mounts</text>
+      <rect x="300" y="220" width="200" height="64" rx="6" class="d-box-cool"/>
+      <text class="d-text" x="400" y="242" text-anchor="middle">Container runtime</text>
+      <text class="d-text-sm" x="400" y="260" text-anchor="middle">containerd / CRI-O</text>
+      <text class="d-text-sm" x="400" y="274" text-anchor="middle">Starts the container</text>
+      <rect x="520" y="220" width="240" height="64" rx="6" class="d-box-cool"/>
+      <text class="d-text" x="640" y="242" text-anchor="middle">cgroups devices</text>
+      <text class="d-text-sm" x="640" y="260" text-anchor="middle">Gates /dev/nvidia*</text>
+      <text class="d-text-sm" x="640" y="274" text-anchor="middle">No memory / SM limits</text>
+      <line x1="160" y1="284" x2="280" y2="328" class="d-arrow" marker-end="url(#arr1)"/>
+      <line x1="400" y1="284" x2="400" y2="328" class="d-arrow" marker-end="url(#arr1)"/>
+      <line x1="640" y1="284" x2="520" y2="328" class="d-arrow" marker-end="url(#arr1)"/>
+      <rect x="80" y="330" width="640" height="100" rx="8" class="d-box-warn"/>
+      <text class="d-text-accent" x="400" y="352" text-anchor="middle" style="fill: var(--attention);">VENDOR STACK — WHERE SLICING ACTUALLY HAPPENS</text>
+      <text class="d-text-sm" x="400" y="372" text-anchor="middle">NVIDIA driver · Container Toolkit · CUDA runtime · MIG · MPS · time-slicing</text>
+      <line x1="180" y1="395" x2="620" y2="395" class="d-divider"/>
+      <text class="d-text-sm" x="400" y="414" text-anchor="middle">This layer decides how the GPU is actually carved up or shared.</text>
+      <line x1="400" y1="430" x2="400" y2="450" class="d-arrow" marker-end="url(#arr1)"/>
+      <text class="d-text" x="400" y="472" text-anchor="middle" style="fill: var(--accent);">Physical GPU</text>
+    </svg>
+  </div>
+  <div class="diagram-cap">The allocation hierarchy. Kubelet sits between the pod&rsquo;s declarative request and the vendor stack that actually slices silicon.</div>
+</div>
+
+<h2 id="cgroups">&sect; 01.02 &mdash; cgroups: what they do and don&rsquo;t do</h2>
+
+<p>Linux cgroups (control groups) are the kernel&rsquo;s mechanism for limiting resource use. For CPU, cgroups enforce hard quotas via <code>cpu.max</code>. For memory, <code>memory.max</code> sets a ceiling. For GPUs, the story is far thinner.</p>
+
+<p>The <strong>devices cgroup controller</strong> can allow or deny access to character device files. For an NVIDIA GPU, the relevant files are:</p>
+
+<pre>/dev/nvidia0          <span class="com"># the GPU itself</span>
+/dev/nvidiactl        <span class="com"># control interface</span>
+/dev/nvidia-uvm       <span class="com"># unified memory driver</span>
+/dev/nvidia-uvm-tools <span class="com"># UVM tooling</span>
+/dev/nvidia-caps/*    <span class="com"># capability files (for MIG)</span></pre>
+
+<p>The container runtime places the container in a cgroup that allows access to a specific subset of these files. That is <em>the entire kernel-level isolation story</em> for GPUs.</p>
+
+<h4>What cgroups can do</h4>
+<ul>
+  <li>Allow this container to open <code>/dev/nvidia0</code> but not <code>/dev/nvidia1</code></li>
+  <li>Deny GPU access entirely to a container that didn&rsquo;t request one</li>
+</ul>
+
+<h4>What cgroups cannot do</h4>
+<ul>
+  <li>Limit how much GPU memory the container allocates</li>
+  <li>Limit how many SMs the container&rsquo;s kernels run on</li>
+  <li>Set a fair-share scheduler weight for CUDA kernels</li>
+  <li>Prevent one container&rsquo;s bug from crashing the whole GPU context</li>
+  <li>Account for or rate-limit memory bandwidth</li>
+</ul>
+
+<div class="alert warning">
+  <div class="alert-title">The asymmetry that catches people</div>
+  <p>You can run two containers on the same node, both with <code>nvidia.com/gpu: 1</code>, and they&rsquo;ll get different GPUs. But if you configure time-slicing and put them on the <em>same</em> GPU, one container allocating 39 GB of memory on a 40 GB card will OOM the other. cgroups won&rsquo;t save you. The driver will.</p>
+</div>
+
+<h2 id="namespaces">&sect; 01.03 &mdash; There is no GPU namespace</h2>
+
+<p>Linux namespaces virtualize kernel resources so containers see their own view of the world. The full set:</p>
+
+<table>
+  <thead><tr><th>Namespace</th><th>What it isolates</th></tr></thead>
+  <tbody>
+    <tr><td><code>pid</code></td><td>Process IDs &mdash; each container sees its own PID 1</td></tr>
+    <tr><td><code>net</code></td><td>Network interfaces, routing tables, iptables rules</td></tr>
+    <tr><td><code>mnt</code></td><td>Filesystem mount points</td></tr>
+    <tr><td><code>user</code></td><td>UID/GID mappings</td></tr>
+    <tr><td><code>ipc</code></td><td>SysV IPC, POSIX message queues</td></tr>
+    <tr><td><code>uts</code></td><td>Hostname, domain name</td></tr>
+    <tr><td><code>cgroup</code></td><td>The container&rsquo;s view of cgroup hierarchy</td></tr>
+    <tr><td><code>time</code></td><td>System clock offsets</td></tr>
+  </tbody>
+</table>
+
+<p>Notably absent: <strong>a GPU namespace</strong>. There is no kernel primitive that says &ldquo;this container sees only its own slice of GPU memory&rdquo; or &ldquo;this container&rsquo;s view of GPU device IDs is virtualized.&rdquo; When a container opens <code>/dev/nvidia0</code>, it talks to the real driver, which talks to the real GPU.</p>
+
+<p>This is why GPU isolation is structurally weaker than CPU or memory isolation:</p>
+
+<div class="compare">
+  <div class="compare-card">
+    <h5>CPU isolation</h5>
+    <ul>
+      <li>cgroups <code>cpu.max</code> = hard quota</li>
+      <li>PID namespace virtualizes processes</li>
+      <li>Kernel scheduler enforces fairness</li>
+      <li>Strong, well-tested, decades old</li>
+    </ul>
+  </div>
+  <div class="compare-card bad">
+    <h5>GPU isolation</h5>
+    <ul>
+      <li>Devices cgroup = binary access only</li>
+      <li>No namespace virtualization</li>
+      <li>Driver decides scheduling internally</li>
+      <li>Real isolation needs vendor hardware (MIG)</li>
+    </ul>
+  </div>
+</div>
+
+<h2 id="slicing">&sect; 01.04 &mdash; Slicing models: how one GPU becomes many</h2>
+
+<p>Because the kernel can&rsquo;t isolate GPUs, NVIDIA provides three mechanisms above the kernel. They differ wildly in isolation strength, performance overhead, and hardware requirements.</p>
+
+<table>
+  <thead>
+    <tr><th>Model</th><th>Mechanism</th><th>Memory isolation</th><th>Fault isolation</th><th>Best for</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>Exclusive</strong></td><td>1 pod = 1 GPU</td><td>Total</td><td>Total</td><td>Training, large inference</td></tr>
+    <tr><td><strong>MIG</strong></td><td>Hardware partition</td><td>Strong</td><td>Strong</td><td>Multi-tenant prod</td></tr>
+    <tr><td><strong>MPS</strong></td><td>Process multiplexing</td><td>Soft limits</td><td>Weak</td><td>Trusted CUDA workloads</td></tr>
+    <tr><td><strong>Time-sliced</strong></td><td>Round-robin scheduling</td><td>None</td><td>None</td><td>Dev, notebooks, low-util</td></tr>
+  </tbody>
+</table>
+
+<h3 id="mig">&sect; MIG &mdash; Multi-Instance GPU</h3>
+
+<p>MIG is the only model that does <em>real</em> hardware partitioning. On supported GPUs (A100, H100, H200, B200), the silicon itself can be carved into up to 7 independent <strong>GPU instances</strong>, each with its own slice of SMs, its own slice of HBM, its own L2 cache region, and its own memory controllers. They share no fault domains. One instance crashing does not affect the others.</p>
+
+<p>MIG profiles are named by their SM and memory slice counts. On an A100 80GB:</p>
+
+<pre>1g.10gb   <span class="com"># 1 compute slice, 10 GB</span>
+2g.20gb   <span class="com"># 2 compute slices, 20 GB</span>
+3g.40gb   <span class="com"># 3 compute slices, 40 GB</span>
+4g.40gb   <span class="com"># 4 compute slices, 40 GB</span>
+7g.80gb   <span class="com"># the whole GPU as one MIG instance</span></pre>
+
+<p>The device plugin advertises each MIG geometry as its own Kubernetes resource:</p>
+
+<pre>resources:
+  limits:
+    <span class="num">nvidia.com/mig-1g.10gb</span>: 1</pre>
+
+<div class="alert note">
+  <div class="alert-title">Two MIG strategies</div>
+  <p>The NVIDIA GPU Operator supports two strategies for surfacing MIG to Kubernetes: <code>single</code> (the node exposes one uniform MIG profile, e.g. all 1g.10gb slices) and <code>mixed</code> (the node exposes multiple profiles simultaneously). Mixed is more flexible but the scheduler has to be smarter about fitting pods.</p>
+</div>
+
+<h3 id="mps">&sect; MPS &mdash; Multi-Process Service</h3>
+
+<p>MPS is a userspace daemon that multiplexes CUDA contexts from multiple processes onto a single GPU. Without MPS, the GPU time-slices between contexts; with MPS, contexts run <em>concurrently</em> via a shared scheduler. The daemon can be configured to enforce per-client memory limits and compute percentages.</p>
+
+<p>MPS is stronger than naive time-slicing but weaker than MIG. Its limitations:</p>
+
+<ul>
+  <li><strong>No fault isolation.</strong> A fatal CUDA error in one client can take down all clients sharing the MPS daemon.</li>
+  <li><strong>Limited tenant count.</strong> Default is 48 clients per GPU; Volta+ supports more.</li>
+  <li><strong>Memory limits are advisory.</strong> The driver enforces them but a misbehaving process can still cause issues.</li>
+</ul>
+
+<p>MPS shines for trusted workloads &mdash; multiple inference replicas of the same model owned by the same team, where you want to pack a GPU more densely than exclusive allocation allows but you don&rsquo;t need cross-tenant security.</p>
+
+<h3 id="timeslicing">&sect; Time-slicing</h3>
+
+<p>The simplest and weakest sharing model. The device plugin is configured to advertise <em>N</em> &ldquo;replicas&rdquo; of each physical GPU. Multiple pods can be scheduled to the same underlying GPU, and the GPU&rsquo;s command scheduler interleaves their work.</p>
+
+<pre>version: v1
+sharing:
+  timeSlicing:
+    resources:
+      - name: <span class="num">nvidia.com/gpu</span>
+        replicas: 4   <span class="com"># oversubscribe each GPU 4x</span></pre>
+
+<p>This is oversubscription, not isolation. From a pod&rsquo;s perspective, it has a whole GPU; in reality, it shares one with three others. There is no memory limit, no compute guarantee, and no fault containment. A pod that allocates all available HBM will starve everyone else. A CUDA crash will affect every pod on that GPU.</p>
+
+<div class="alert warning">
+  <div class="alert-title">When time-slicing is appropriate</div>
+  <p>Jupyter notebooks for ML researchers. Dev environments where developers occasionally run small models. Inference for tiny models where you genuinely don&rsquo;t care about jitter. Anywhere the workload is bursty, the tenants trust each other, and the failure mode is acceptable.</p>
+</div>
+
+<h3 id="dra">&sect; DRA &mdash; Dynamic Resource Allocation</h3>
+
+<p>The device plugin API was designed for fungible resources: every <code>nvidia.com/gpu</code> looks identical to the scheduler. That assumption broke down years ago. A modern GPU node might have GPUs with different memory sizes, different MIG configurations, different NVLink topologies, and different sharing modes.</p>
+
+<p><strong>Dynamic Resource Allocation</strong> (DRA), generally available in Kubernetes 1.32, replaces the flat resource counter with a richer model. Workloads describe what they need via a <code>ResourceClaim</code>; a DRA driver (NVIDIA ships one) decides how to satisfy it. The pod can specify:</p>
+
+<ul>
+  <li>A specific MIG profile</li>
+  <li>Minimum GPU memory</li>
+  <li>A sharing mode (exclusive, MPS, time-slice)</li>
+  <li>Topology constraints (must be NVLink-connected to another claim)</li>
+  <li>Driver-specific tunables (compute mode, persistence mode)</li>
+</ul>
+
+<pre><span class="kw">apiVersion</span>: resource.k8s.io/v1
+<span class="kw">kind</span>: ResourceClaim
+<span class="kw">metadata</span>:
+  <span class="kw">name</span>: training-gpu
+<span class="kw">spec</span>:
+  <span class="kw">devices</span>:
+    <span class="kw">requests</span>:
+    - <span class="kw">name</span>: gpu
+      <span class="kw">deviceClassName</span>: gpu.nvidia.com
+      <span class="kw">selectors</span>:
+      - <span class="kw">cel</span>:
+          <span class="kw">expression</span>: <span class="str">"device.attributes['gpu.nvidia.com'].productName == 'NVIDIA H100'"</span></pre>
+
+<p>DRA is where Kubernetes GPU support is heading. The old <code>nvidia.com/gpu: 1</code> still works and will for years, but DRA is what makes things like topology-aware NVLink scheduling and dynamic MIG reconfiguration tractable.</p>
+
+<!-- ============================================ -->
+<!-- PART II — NETWORKING -->
+<!-- ============================================ -->
+
+<h2 id="part-2">Part II &mdash; Networking</h2>
+<p>Once you have multiple GPUs across multiple nodes, the question isn&rsquo;t how to allocate them but how to make them <em>talk</em>. A 405 billion-parameter model doesn&rsquo;t fit on one GPU. Distributed inference doesn&rsquo;t work if every all-reduce round-trips through the kernel.</p>
+
+<h2 id="rdma">&sect; 02.01 &mdash; RDMA: Remote Direct Memory Access</h2>
+
+<div class="defn">
+  <div class="defn-term">RDMA</div>
+  <p>A network protocol that lets one machine read from or write to another machine&rsquo;s memory <em>without involving the CPU or operating system on either side</em>. The application registers a memory region with the NIC; the remote side, knowing the address and a key, transfers data directly. Latency drops from milliseconds to single-digit microseconds. CPU usage during transfer is essentially zero.</p>
+</div>
+
+<p>To understand why RDMA matters, contrast it with a normal TCP send. When a program calls <code>send()</code>:</p>
+
+<ol>
+  <li>Data is copied from userspace into a kernel socket buffer.</li>
+  <li>The TCP/IP stack adds headers, computes checksums, manages retransmission state.</li>
+  <li>The NIC driver DMA-copies the buffer to the NIC.</li>
+  <li>The NIC puts it on the wire.</li>
+  <li>On the receiving side: the inverse, plus an interrupt that wakes the receiving process.</li>
+</ol>
+
+<p>Every step costs CPU cycles and memory bandwidth. For a 10 KB message, the overhead is acceptable. For an 80 GB tensor moved every layer of every step of a training run, it&rsquo;s catastrophic. The CPU becomes the bottleneck of a workload that should be limited by the GPU.</p>
+
+<p>RDMA collapses this. The application&rsquo;s buffer <em>is</em> the network buffer. The NIC reads it directly. The kernel is bypassed entirely after setup. The remote NIC writes directly into the destination buffer. The receiving CPU is never interrupted unless the application asks to be notified.</p>
+
+<h4>What RDMA requires</h4>
+<ul>
+  <li><strong>RDMA-capable NICs</strong> on both ends &mdash; NVIDIA ConnectX series, Broadcom Thor, AWS EFA.</li>
+  <li><strong>A lossless or near-lossless fabric.</strong> RDMA is designed assuming the network doesn&rsquo;t drop packets &mdash; there&rsquo;s no fast retransmit. On Ethernet this means PFC (Priority Flow Control) and ECN (Explicit Congestion Notification).</li>
+  <li><strong>Memory registration.</strong> The application pins memory pages and registers them with the NIC, getting a key (<code>rkey</code>) that the remote side uses to address them.</li>
+  <li><strong>Queue pairs.</strong> Each connection is a pair of work queues (send + receive) into which the application posts work requests.</li>
+</ul>
+
+<h3 id="roce">&sect; RoCE vs InfiniBand</h3>
+
+<p>RDMA was originally an InfiniBand thing. InfiniBand is a separate physical network &mdash; different cables, different switches, different addressing. It&rsquo;s expensive, fast, and used in HPC and the largest AI training clusters.</p>
+
+<p><strong>RoCE</strong> (RDMA over Converged Ethernet, pronounced &ldquo;rocky&rdquo;) brings RDMA semantics to Ethernet. RoCEv2, the version in production today, encapsulates RDMA packets in UDP/IP, so they route across any IP network. You get most of RDMA&rsquo;s performance benefit on standard Ethernet hardware.</p>
+
+<table>
+  <thead><tr><th></th><th>InfiniBand</th><th>RoCEv2</th></tr></thead>
+  <tbody>
+    <tr><td>Physical layer</td><td>Dedicated IB fabric</td><td>Standard Ethernet (100/200/400/800 GbE)</td></tr>
+    <tr><td>Latency floor</td><td>~600 ns</td><td>~1&ndash;2 &mu;s</td></tr>
+    <tr><td>Routing</td><td>InfiniBand subnet</td><td>Standard IP routing</td></tr>
+    <tr><td>Lossless via</td><td>Built-in credit-based flow control</td><td>PFC + ECN (DCQCN)</td></tr>
+    <tr><td>Typical use</td><td>Top-tier HPC, largest AI training</td><td>Most AI clusters, cloud GPU instances</td></tr>
+  </tbody>
+</table>
+
+<h3 id="gpudirect">&sect; GPUDirect RDMA</h3>
+
+<p>RDMA bypasses the kernel. <strong>GPUDirect RDMA</strong> goes further: it bypasses host memory entirely. The NIC reads directly from GPU memory across PCIe and sends it on the wire; the receiving NIC writes directly into the destination GPU&rsquo;s memory.</p>
+
+<p>Without GPUDirect, a GPU-to-GPU transfer across nodes looks like:</p>
+
+<pre>GPU A memory &rarr; host A memory &rarr; NIC A &rarr; wire &rarr; NIC B &rarr; host B memory &rarr; GPU B memory
+              &uarr; copy             &uarr; DMA             &uarr; DMA           &uarr; copy</pre>
+
+<p>With GPUDirect RDMA:</p>
+
+<pre>GPU A memory &rarr; NIC A &rarr; wire &rarr; NIC B &rarr; GPU B memory
+              &uarr; DMA           &uarr; DMA</pre>
+
+<p>Two memory copies eliminated. Host memory bandwidth freed for other work. End-to-end latency cut by 40&ndash;60% for typical message sizes.</p>
+
+<div class="alert note">
+  <div class="alert-title">PCIe topology matters</div>
+  <p>GPUDirect RDMA works best when the GPU and NIC share a PCIe root complex, ideally under the same PCIe switch. If the path has to traverse the CPU&rsquo;s PCIe controller, performance degrades &mdash; sometimes dramatically. This is why AI server designs pair GPUs with NICs in fixed ratios and document the topology (e.g., NVIDIA&rsquo;s HGX reference design pairs each GPU with a dedicated 400G ConnectX-7).</p>
+</div>
+
+<h2 id="cni">&sect; 02.02 &mdash; CNI and Multus: getting RDMA into a pod</h2>
+
+<p>Standard Kubernetes networking goes through a CNI (Container Network Interface) plugin. Calico, Cilium, Flannel, AWS VPC CNI &mdash; they all install a single network interface in the pod, typically <code>eth0</code>, on a virtual overlay or routed network. This works beautifully for HTTP services and falls over for GPU workloads, because the standard CNI path is the standard kernel path: every packet traverses iptables, conntrack, the TCP/IP stack, and incurs copies.</p>
+
+<p>The solution is <strong>Multus</strong> &mdash; a &ldquo;meta-CNI&rdquo; that lets a pod have multiple network interfaces. <code>eth0</code> stays on the default CNI for control-plane traffic (service discovery, kubectl logs, Prometheus scraping). A second interface, often called <code>net1</code>, is attached by a high-performance CNI bound to an RDMA-capable device.</p>
+
+<pre><span class="kw">apiVersion</span>: v1
+<span class="kw">kind</span>: Pod
+<span class="kw">metadata</span>:
+  <span class="kw">name</span>: training-worker
+  <span class="kw">annotations</span>:
+    <span class="str">k8s.v1.cni.cncf.io/networks</span>: rdma-net
+<span class="kw">spec</span>:
+  <span class="kw">containers</span>:
+  - <span class="kw">name</span>: worker
+    <span class="kw">resources</span>:
+      <span class="kw">limits</span>:
+        <span class="num">nvidia.com/gpu</span>: 1
+        <span class="num">rdma/hca_shared_devices_a</span>: 1</pre>
+
+<div class="diagram">
+  <div class="diagram-head"><span class="id">Fig 2.1</span> Standard CNI vs GPU-aware CNI networking</div>
+  <div class="diagram-body">
+    <svg viewBox="0 0 800 540" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M2 1L9 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </marker>
+      </defs>
+      <text class="d-text-accent" x="200" y="25" text-anchor="middle">STANDARD CNI</text>
+      <text class="d-text-accent" x="600" y="25" text-anchor="middle" style="fill: var(--success);">GPU-AWARE CNI</text>
+      <rect x="60" y="50" width="280" height="50" rx="6" class="d-box"/>
+      <text class="d-text" x="200" y="72" text-anchor="middle">Pod — eth0 only</text>
+      <text class="d-text-sm" x="200" y="90" text-anchor="middle">Default CNI (Calico/Cilium/Flannel)</text>
+      <line x1="200" y1="100" x2="200" y2="128" class="d-arrow" marker-end="url(#arr2)"/>
+      <rect x="60" y="130" width="280" height="50" rx="6" class="d-box-warn"/>
+      <text class="d-text" x="200" y="152" text-anchor="middle">Kernel TCP/IP stack</text>
+      <text class="d-text-sm" x="200" y="170" text-anchor="middle">iptables · conntrack · sockets</text>
+      <line x1="200" y1="180" x2="200" y2="208" class="d-arrow" marker-end="url(#arr2)"/>
+      <rect x="60" y="210" width="280" height="50" rx="6" class="d-box-warn"/>
+      <text class="d-text" x="200" y="232" text-anchor="middle">Host memory copy</text>
+      <text class="d-text-sm" x="200" y="250" text-anchor="middle">GPU mem → RAM → NIC</text>
+      <line x1="200" y1="260" x2="200" y2="288" class="d-arrow" marker-end="url(#arr2)"/>
+      <rect x="60" y="290" width="280" height="50" rx="6" class="d-box"/>
+      <text class="d-text" x="200" y="312" text-anchor="middle">NIC — standard Ethernet</text>
+      <text class="d-text-sm" x="200" y="330" text-anchor="middle">Sockets API · per-packet copies</text>
+      <rect x="60" y="370" width="280" height="70" rx="6" class="d-box-warn"/>
+      <text class="d-text-accent" x="200" y="392" text-anchor="middle" style="fill: var(--attention);">COST</text>
+      <text class="d-text-sm" x="200" y="410" text-anchor="middle">Multiple memory copies</text>
+      <text class="d-text-sm" x="200" y="426" text-anchor="middle">Millisecond latency · CPU bound</text>
+      <rect x="460" y="50" width="280" height="50" rx="6" class="d-box"/>
+      <text class="d-text" x="600" y="72" text-anchor="middle">Pod — eth0 + net1</text>
+      <text class="d-text-sm" x="600" y="90" text-anchor="middle">Multus attaches secondary iface</text>
+      <line x1="600" y1="100" x2="600" y2="128" class="d-arrow-accent" marker-end="url(#arr2)"/>
+      <rect x="460" y="130" width="280" height="50" rx="6" class="d-box-success"/>
+      <text class="d-text" x="600" y="152" text-anchor="middle">SR-IOV / RDMA CNI</text>
+      <text class="d-text-sm" x="600" y="170" text-anchor="middle">VF attached directly to pod</text>
+      <line x1="600" y1="180" x2="600" y2="208" class="d-arrow-accent" marker-end="url(#arr2)"/>
+      <rect x="460" y="210" width="280" height="50" rx="6" class="d-box-success"/>
+      <text class="d-text" x="600" y="232" text-anchor="middle">GPUDirect RDMA</text>
+      <text class="d-text-sm" x="600" y="250" text-anchor="middle">GPU mem → NIC, no host copy</text>
+      <line x1="600" y1="260" x2="600" y2="288" class="d-arrow-accent" marker-end="url(#arr2)"/>
+      <rect x="460" y="290" width="280" height="50" rx="6" class="d-box"/>
+      <text class="d-text" x="600" y="312" text-anchor="middle">RoCE NIC — ConnectX</text>
+      <text class="d-text-sm" x="600" y="330" text-anchor="middle">Verbs API · kernel bypass</text>
+      <rect x="460" y="370" width="280" height="70" rx="6" class="d-box-success"/>
+      <text class="d-text-accent" x="600" y="392" text-anchor="middle" style="fill: var(--success);">PAYOFF</text>
+      <text class="d-text-sm" x="600" y="410" text-anchor="middle">Zero-copy GPU-to-GPU</text>
+      <text class="d-text-sm" x="600" y="426" text-anchor="middle">Microsecond latency · CPU free</text>
+      <rect x="60" y="465" width="680" height="60" rx="6" class="d-box-accent"/>
+      <text class="d-text-accent" x="400" y="488" text-anchor="middle">PHYSICAL FABRIC — RoCE or InfiniBand</text>
+      <text class="d-text-sm" x="400" y="510" text-anchor="middle">Node-to-node GPU-to-GPU at line rate · NCCL all-reduce sits here</text>
+    </svg>
+  </div>
+  <div class="diagram-cap">The two networking paths a GPU pod can take. The fast path requires Multus, SR-IOV or RDMA CNI, and matching hardware.</div>
+</div>
+
+<h3 id="sriov">&sect; SR-IOV &mdash; slicing the NIC</h3>
+
+<p>You can&rsquo;t run an RDMA workload through a virtual ethernet pair. The pod needs direct access to a real hardware queue on the NIC. <strong>SR-IOV</strong> (Single-Root I/O Virtualization) is the PCIe feature that makes this possible: a single physical NIC presents itself as one <em>physical function</em> (PF) and many <em>virtual functions</em> (VFs). Each VF is a real PCIe device with its own queues, MAC address, and DMA paths.</p>
+
+<p>The <strong>SR-IOV network device plugin</strong> enumerates VFs on each node and advertises them to Kubernetes as a custom resource. A pod requesting <code>rdma/hca_shared_devices_a: 1</code> gets a VF attached directly. The pod sees a real NIC; the host sees one of dozens of VFs carved from the same physical card.</p>
+
+<p>This is the GPU device plugin pattern applied to networking. Same idea &mdash; advertise hardware as a Kubernetes resource, let the scheduler match supply with demand, let the kubelet inject the device into the container.</p>
+
+<h2 id="nccl">&sect; 02.03 &mdash; NCCL: what actually uses the fabric</h2>
+
+<p>Once you have GPUDirect RDMA over RoCE on SR-IOV VFs attached by Multus, what software actually <em>uses</em> all that machinery? For NVIDIA GPUs, the answer is <strong>NCCL</strong> (NVIDIA Collective Communications Library, pronounced &ldquo;nickel&rdquo;).</p>
+
+<p>NCCL implements the collective operations that distributed deep learning needs:</p>
+
+<table>
+  <thead><tr><th>Operation</th><th>What it does</th><th>Where it&rsquo;s used</th></tr></thead>
+  <tbody>
+    <tr><td><code>AllReduce</code></td><td>Sum tensors across all GPUs, every GPU gets the result</td><td>Gradient sync in data-parallel training</td></tr>
+    <tr><td><code>AllGather</code></td><td>Concatenate per-GPU tensors, every GPU gets the full concat</td><td>Tensor parallel forward pass</td></tr>
+    <tr><td><code>ReduceScatter</code></td><td>Sum then split &mdash; each GPU gets one shard of the sum</td><td>Tensor parallel backward pass</td></tr>
+    <tr><td><code>Broadcast</code></td><td>One GPU&rsquo;s tensor copied to all others</td><td>Parameter initialization</td></tr>
+    <tr><td><code>Send/Recv</code></td><td>Point-to-point GPU-to-GPU</td><td>Pipeline parallelism between stages</td></tr>
+  </tbody>
+</table>
+
+<p>NCCL picks transports automatically. Within a node, it uses NVLink between GPUs that have it, or PCIe peer-to-peer otherwise. Between nodes, it uses InfiniBand verbs if available, RoCE if the NICs support it, or falls back to TCP sockets (which is what you want to <em>avoid</em>). The right setup means NCCL transparently uses the fast path; the wrong setup means it silently falls back to TCP and your training run is 10&times; slower than it should be.</p>
+
+<div class="alert tip">
+  <div class="alert-title">How to confirm NCCL is using RDMA</div>
+  <p>Set <code>NCCL_DEBUG=INFO</code> and look at the startup log. You want to see lines like <code>NCCL INFO NET/IB : Using [0]mlx5_0:1/RoCE</code>. If you see <code>NET/Socket</code>, NCCL is falling back to TCP and you&rsquo;ve misconfigured something &mdash; usually a missing device plugin allocation, wrong <code>NCCL_IB_HCA</code>, or a Multus annotation that didn&rsquo;t take.</p>
+</div>
+
+<!-- ============================================ -->
+<!-- PART III — WORKLOADS -->
+<!-- ============================================ -->
+
+<h2 id="part-3">Part III &mdash; Workloads</h2>
+<p>All this infrastructure exists for one reason &mdash; the workloads that run on top need it. Understanding why ML inference is so well-matched to GPUs explains why the rest of the stack is shaped the way it is.</p>
+
+<h2 id="why-gpu">&sect; 03.01 &mdash; Why GPUs for ML inference</h2>
+
+<p>A modern CPU has dozens of cores. Each is fast, branch-predicting, out-of-order, with megabytes of cache. It&rsquo;s optimized to make a single sequential thread run as fast as possible. A GPU has thousands of cores. Each is slow, in-order, with kilobytes of cache. It&rsquo;s optimized to do the <em>same operation</em> on enormous amounts of data simultaneously.</p>
+
+<p>Neural network inference is mostly one operation: matrix multiplication. A transformer layer&rsquo;s forward pass is, almost entirely, a sequence of giant matmuls &mdash; multiplying activations by weight matrices, multiplying queries by keys, multiplying attention outputs by value matrices. Each element of the output is independent of every other element. This is the literal definition of <em>embarrassingly parallel</em>.</p>
+
+<div class="stats">
+  <div class="stat">
+    <div class="stat-num">~64</div>
+    <div class="stat-label">CPU cores &mdash; typical server</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num">16K+</div>
+    <div class="stat-label">CUDA cores &mdash; H100</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num">3.35TB/s</div>
+    <div class="stat-label">HBM bandwidth &mdash; H100 SXM</div>
+  </div>
+</div>
+
+<p>The bandwidth number matters as much as the core count. Inference for a large language model is often <em>memory-bound</em>: the bottleneck isn&rsquo;t doing the math, it&rsquo;s getting the weights from HBM into the compute units. CPUs sit at ~100 GB/s of memory bandwidth. An H100 sits at 3.35 TB/s &mdash; over 30&times; more. For models where weights are large and reused only briefly, this gap dominates everything.</p>
+
+<p>GPUs also have <strong>tensor cores</strong>, dedicated units that execute matmul-and-accumulate operations at lower precision (FP16, BF16, FP8, INT8) at multiples of the throughput of regular floating-point. For inference, where lower precision is usually fine, tensor cores deliver another 2&ndash;4&times; speedup over what raw FLOPS numbers would suggest.</p>
+
+<h2 id="inference-tricks">&sect; 03.02 &mdash; What inference servers do on top of GPUs</h2>
+
+<p>Raw GPU compute isn&rsquo;t enough. Production inference servers &mdash; vLLM, TensorRT-LLM, Triton, Text Generation Inference (TGI) &mdash; layer several optimizations on top.</p>
+
+<h3>Continuous batching</h3>
+
+<p>Na&iuml;ve inference processes one request at a time. The GPU then spends most of its time loading weights for a single tiny computation. <strong>Static batching</strong> waits until <em>N</em> requests arrive, then processes them together, sharing the weight-loading cost. But static batching adds latency (requests wait in queue) and stalls if any one request finishes early (the whole batch is held until the slowest).</p>
+
+<p><strong>Continuous batching</strong> (sometimes called <em>iteration-level scheduling</em>) merges requests at each decode step, not at the request level. When request A finishes early, request F joins the batch immediately. The batch is fluid. GPU utilization stays high and per-request latency stays low.</p>
+
+<h3 id="kv-cache">&sect; KV cache</h3>
+
+<p>An autoregressive language model generates one token at a time. To generate token <em>n</em>, it needs the attention representation for tokens 1 through <em>n&minus;1</em>. Na&iuml;vely, that means recomputing every previous token&rsquo;s attention every step. That would be quadratic in sequence length and make long contexts impossibly slow.</p>
+
+<p>The <strong>KV cache</strong> stores the Key and Value tensors from each attention layer for every token already generated. Generating token <em>n</em> only requires computing K and V for token <em>n</em> itself, then attending over the cached K/V for tokens 1 through <em>n</em>. The compute per step is now O(<em>n</em>) instead of O(<em>n</em>&sup2;), and dominated by memory reads rather than matmul throughput.</p>
+
+<p>This is why decode is <em>memory-bound</em>: the per-step work is small but the cache reads are huge. It&rsquo;s also why KV cache management is the central problem of LLM serving &mdash; vLLM&rsquo;s PagedAttention manages the KV cache like an OS manages virtual memory, breaking it into fixed-size pages, sharing pages across requests with common prefixes, and evicting cold pages when memory pressure rises.</p>
+
+<h3>Speculative decoding</h3>
+
+<p>A small &ldquo;draft&rdquo; model generates several tokens cheaply. The large &ldquo;target&rdquo; model verifies them in parallel &mdash; one forward pass on the whole speculated sequence. Tokens that match what the target would have generated are accepted. Tokens that don&rsquo;t are rejected and the target&rsquo;s choice is used.</p>
+
+<p>When the draft model agrees with the target most of the time (common for easy continuations), you get multiple tokens per forward pass at the cost of one. Throughput per GPU goes up substantially.</p>
+
+<h3>Quantization</h3>
+
+<p>Weights stored at lower precision take less memory and load faster. FP16 is the default; INT8 and FP8 are common; INT4 is aggressive but usable for many models. A 70B-parameter model at FP16 needs 140 GB of HBM; at INT4 it fits in 35 GB. That&rsquo;s the difference between needing 4 H100s and needing 1.</p>
+
+<h2 id="parallelism">&sect; 03.03 &mdash; Parallelism strategies</h2>
+
+<p>When a model is too big for one GPU, you split it. There are three main strategies, often combined.</p>
+
+<table>
+  <thead><tr><th>Strategy</th><th>What&rsquo;s split</th><th>Comm pattern</th><th>Network demand</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Data parallel</strong></td><td>The batch is split; every GPU has the full model</td><td>AllReduce of gradients per step (training only)</td><td>Moderate &mdash; once per step</td></tr>
+    <tr><td><strong>Tensor parallel</strong></td><td>Each matmul is split across GPUs</td><td>AllReduce / AllGather every layer</td><td>Heavy &mdash; once per layer</td></tr>
+    <tr><td><strong>Pipeline parallel</strong></td><td>Different layers on different GPUs</td><td>Send/Recv between stages</td><td>Light &mdash; once per stage boundary</td></tr>
+    <tr><td><strong>Expert parallel</strong></td><td>MoE experts on different GPUs</td><td>AllToAll for token routing</td><td>Heavy &mdash; once per MoE layer</td></tr>
+  </tbody>
+</table>
+
+<p>Tensor parallelism is the demanding one. Splitting a matmul across 8 GPUs means an AllReduce on every layer &mdash; for a 80-layer model, that&rsquo;s 80 AllReduces per forward pass. If each AllReduce takes 100 &mu;s over RoCE, that&rsquo;s 8 ms of pure communication. Over TCP, it might be 100 ms &mdash; and your &ldquo;fast&rdquo; inference is now anything but.</p>
+
+<p>This is the connection that makes the whole stack make sense. <strong>Tensor parallelism is why you need RDMA. RDMA is why you need Multus and SR-IOV. Multus and SR-IOV are why the device plugin pattern extends beyond GPUs.</strong> The model architecture creates a communication pattern that creates a hardware requirement that creates a Kubernetes configuration. Each layer is downstream of the one below.</p>
+
+<!-- ============================================ -->
+<!-- PART IV — OPERATIONS -->
+<!-- ============================================ -->
+
+<h2 id="part-4">Part IV &mdash; Operations</h2>
+<p>Knowing how it works is half the job. Running it in production &mdash; installing drivers, monitoring health, handling failures, paying for it &mdash; is the other half.</p>
+
+<h2 id="operator">&sect; 04.01 &mdash; The NVIDIA GPU Operator</h2>
+
+<p>A GPU node needs a lot of software stacked correctly: the NVIDIA kernel driver, the container toolkit, the device plugin, optionally MIG configuration, optionally DCGM-Exporter for metrics, optionally the Node Feature Discovery agent, optionally the network operator if you&rsquo;re doing RDMA. Installing this by hand is tedious; getting versions to match across a fleet is painful.</p>
+
+<p>The <strong>NVIDIA GPU Operator</strong> packages all of it as a single Helm-installable operator that runs as a DaemonSet across GPU nodes. It handles driver installation (via a privileged container, or it uses pre-installed host drivers), deploys the container toolkit, runs the device plugin, configures MIG if requested, sets up DCGM-Exporter, and keeps everything version-aligned.</p>
+
+<pre>helm install gpu-operator nvidia/gpu-operator \
+  --namespace gpu-operator \
+  --create-namespace \
+  --set <span class="str">driver.enabled=true</span> \
+  --set <span class="str">mig.strategy=mixed</span> \
+  --set <span class="str">toolkit.enabled=true</span></pre>
+
+<p>The Operator&rsquo;s MIG manager can switch MIG configurations on the fly without rebooting nodes (though running pods on a GPU need to drain first). This makes MIG actually operable at scale; doing it by hand with <code>nvidia-smi</code> across a fleet is unworkable.</p>
+
+<p>There&rsquo;s a parallel <strong>Network Operator</strong> for the RDMA side &mdash; it deploys the Mellanox OFED driver, the SR-IOV device plugin, the RDMA shared device plugin, Multus, and the Whereabouts IPAM plugin. Combined, the GPU Operator and Network Operator give you a working RDMA-enabled GPU cluster from a clean Kubernetes install.</p>
+
+<h2 id="scheduling">&sect; 04.02 &mdash; Scheduling: what the default scheduler doesn&rsquo;t do</h2>
+
+<p>The default Kubernetes scheduler treats <code>nvidia.com/gpu</code> as an opaque counter. It will pack pods onto nodes that have spare GPUs without knowing anything about which GPU on the node, whether GPUs are NVLink-connected, or whether the chosen GPU is on the same PCIe root complex as the SR-IOV NIC the pod also requested.</p>
+
+<p>For a 2-GPU tensor-parallel pod, this matters a lot. Two GPUs on the same node connected by NVLink communicate at 900 GB/s. Two GPUs on the same node not connected by NVLink communicate at 64 GB/s over PCIe. Two GPUs on different nodes over 400 GbE RoCE communicate at 50 GB/s. The scheduler doesn&rsquo;t know.</p>
+
+<h4>Tools that help</h4>
+<ul>
+  <li><strong>Topology Manager</strong> &mdash; a kubelet feature that aligns CPU, memory, and device allocations on the same NUMA node. Doesn&rsquo;t understand NVLink but does avoid cross-socket disasters.</li>
+  <li><strong>Volcano</strong> &mdash; a batch scheduler with gang scheduling (all-or-nothing pod groups) for training jobs that need <em>N</em> pods to start simultaneously or not at all.</li>
+  <li><strong>Kueue</strong> &mdash; Kubernetes-native job queueing with quotas, fair sharing, and preemption.</li>
+  <li><strong>NVIDIA DRA driver</strong> &mdash; exposes NVLink topology as a constraint expressible in ResourceClaims.</li>
+  <li><strong>scheduler plugins</strong> (kube-scheduler-plugins repo) &mdash; out-of-tree plugins for topology-aware scheduling, network-aware scheduling, etc.</li>
+</ul>
+
+<h2 id="topology">&sect; 04.03 &mdash; Topology awareness</h2>
+
+<p>A modern 8-GPU node is not a flat resource. It has internal structure:</p>
+
+<ul>
+  <li><strong>NVLink islands.</strong> H100 nodes use NVSwitch to connect all 8 GPUs in a full mesh at 900 GB/s. Older A100 nodes connect GPUs in pairs at 600 GB/s, with non-paired GPUs falling back to PCIe.</li>
+  <li><strong>PCIe topology.</strong> GPUs are typically grouped under PCIe switches, with each group sharing a NIC. Pairing the right GPU with the right NIC is essential for GPUDirect performance.</li>
+  <li><strong>NUMA.</strong> The host has multiple CPU sockets, each with its own memory. A GPU is physically connected to one socket; pinning the pod&rsquo;s CPU work to that socket avoids cross-socket memory traffic.</li>
+</ul>
+
+<p>Topology awareness becomes critical when you scale past a single node. The intra-node communication pattern (NVLink) is very different from inter-node (RoCE), and the right placement strategy (all 8 GPUs of a job on one node vs 1 GPU each on 8 nodes) depends on what the job is doing. A tensor-parallel job wants tight intra-node placement. A data-parallel job is more flexible.</p>
+
+<h2 id="monitoring">&sect; 04.04 &mdash; Monitoring</h2>
+
+<p>The standard tool is <strong>DCGM-Exporter</strong> (Data Center GPU Manager), which exposes GPU metrics in Prometheus format. The metrics that matter:</p>
+
+<table>
+  <thead><tr><th>Metric</th><th>What it tells you</th></tr></thead>
+  <tbody>
+    <tr><td><code>DCGM_FI_DEV_GPU_UTIL</code></td><td>% of time the GPU was doing <em>anything</em>. Misleading &mdash; a GPU at 100% might be doing a small kernel inefficiently.</td></tr>
+    <tr><td><code>DCGM_FI_PROF_SM_ACTIVE</code></td><td>% of SMs that had at least one active warp. Better signal than GPU_UTIL.</td></tr>
+    <tr><td><code>DCGM_FI_PROF_SM_OCCUPANCY</code></td><td>Average warps per SM as a fraction of max. The &ldquo;are we actually saturating compute?&rdquo; metric.</td></tr>
+    <tr><td><code>DCGM_FI_PROF_DRAM_ACTIVE</code></td><td>% of cycles the memory subsystem was busy. High during memory-bound work (LLM decode).</td></tr>
+    <tr><td><code>DCGM_FI_PROF_PIPE_TENSOR_ACTIVE</code></td><td>% of cycles tensor cores were busy. The number you actually want high for ML.</td></tr>
+    <tr><td><code>DCGM_FI_DEV_FB_USED</code></td><td>HBM in use. Watch for OOMs.</td></tr>
+    <tr><td><code>DCGM_FI_DEV_GPU_TEMP</code></td><td>Temperature. Thermal throttling starts around 84&deg;C on H100.</td></tr>
+    <tr><td><code>DCGM_FI_DEV_POWER_USAGE</code></td><td>Power draw. H100 SXM caps at 700W; sustained near the cap means you&rsquo;re getting your money&rsquo;s worth.</td></tr>
+  </tbody>
+</table>
+
+<p>For RDMA, separate tooling: <code>ibstat</code>, <code>perfquery</code>, the Mellanox <code>mlnx_perf</code> tool. The metrics you want are link utilization, packet loss (should be zero on a properly-tuned RoCE fabric), and PFC pause frames (should be infrequent &mdash; frequent pauses mean the network is congested).</p>
+
+<h2 id="gotchas">&sect; 04.05 &mdash; Common gotchas</h2>
+
+<h4>Driver version mismatches</h4>
+<p>The NVIDIA kernel driver, the userspace libraries inside the container, and the CUDA version compiled into the application all have to be compatible. The container&rsquo;s CUDA version must be &le; the host driver&rsquo;s supported CUDA version. The GPU Operator handles this automatically; manual installs frequently get it wrong.</p>
+
+<h4>cgroup v2 incompatibility</h4>
+<p>Older NVIDIA container toolkit versions didn&rsquo;t support cgroup v2, which is the default on modern distros. If you see &ldquo;Failed to initialize NVML&rdquo; errors, check whether cgroup v2 is in play and whether your toolkit version is recent enough.</p>
+
+<h4>MIG mode enabled but no instances created</h4>
+<p>Enabling MIG mode on a GPU is one operation; creating MIG instances is another. A GPU with MIG mode on but no instances configured will report zero allocatable resources to Kubernetes. The Operator&rsquo;s MIG manager handles this if configured; manual <code>nvidia-smi mig</code> commands are easy to forget.</p>
+
+<h4>Multus annotation silently ignored</h4>
+<p>If the <code>k8s.v1.cni.cncf.io/networks</code> annotation references a NetworkAttachmentDefinition that doesn&rsquo;t exist in the pod&rsquo;s namespace, Multus will log a warning but the pod will start anyway &mdash; with only <code>eth0</code>. The application sees no error. NCCL falls back to TCP. Performance collapses. Always verify the secondary interface is actually present inside the pod (<code>ip link</code>).</p>
+
+<h4>GPUDirect not actually active</h4>
+<p>GPUDirect RDMA requires the <code>nvidia_peermem</code> kernel module to be loaded. If it isn&rsquo;t, transfers fall back to bouncing through host memory &mdash; silently, with no error. Check with <code>lsmod | grep nvidia_peermem</code> on the host.</p>
+
+<h4>NUMA imbalance</h4>
+<p>If your inference workers run on the &ldquo;wrong&rdquo; NUMA node relative to the GPU, you can lose 10&ndash;20% throughput to cross-socket memory traffic. Use the Topology Manager with policy <code>single-numa-node</code> for latency-sensitive workloads.</p>
+
+<h4>Cost of mistakes</h4>
+<p>An H100 costs ~$30k to buy and ~$2&ndash;4/hour to rent on major clouds. A misconfigured cluster running at 30% of theoretical performance is burning real money. The configuration work is worth doing carefully.</p>
+
+</main>
+
+<!-- RIGHT TOC -->
+<aside class="toc-right">
+  <div class="label">On this page</div>
+  <ul>
+    <li><a href="#part-1">Part I &mdash; Allocation</a></li>
+    <li class="h3"><a href="#kubelet">Kubelet&rsquo;s role</a></li>
+    <li class="h3"><a href="#cgroups">cgroups &amp; isolation</a></li>
+    <li class="h3"><a href="#namespaces">No GPU namespace</a></li>
+    <li class="h3"><a href="#slicing">Slicing models</a></li>
+    <li class="h3"><a href="#mig">MIG</a></li>
+    <li class="h3"><a href="#mps">MPS</a></li>
+    <li class="h3"><a href="#timeslicing">Time-slicing</a></li>
+    <li class="h3"><a href="#dra">DRA</a></li>
+    <li><a href="#part-2">Part II &mdash; Networking</a></li>
+    <li class="h3"><a href="#rdma">RDMA</a></li>
+    <li class="h3"><a href="#roce">RoCE vs IB</a></li>
+    <li class="h3"><a href="#gpudirect">GPUDirect</a></li>
+    <li class="h3"><a href="#cni">CNI &amp; Multus</a></li>
+    <li class="h3"><a href="#sriov">SR-IOV</a></li>
+    <li class="h3"><a href="#nccl">NCCL</a></li>
+    <li><a href="#part-3">Part III &mdash; Workloads</a></li>
+    <li class="h3"><a href="#why-gpu">Why GPUs</a></li>
+    <li class="h3"><a href="#inference-tricks">Inference optimizations</a></li>
+    <li class="h3"><a href="#kv-cache">KV cache</a></li>
+    <li class="h3"><a href="#parallelism">Parallelism</a></li>
+    <li><a href="#part-4">Part IV &mdash; Operations</a></li>
+    <li class="h3"><a href="#operator">GPU Operator</a></li>
+    <li class="h3"><a href="#scheduling">Scheduling</a></li>
+    <li class="h3"><a href="#topology">Topology</a></li>
+    <li class="h3"><a href="#monitoring">Monitoring</a></li>
+    <li class="h3"><a href="#gotchas">Gotchas</a></li>
+  </ul>
+</aside>
+
+</div>
+
+<script>
+(function(){
+  const tocLinks = document.querySelectorAll('aside.toc-left a, aside.toc-right a');
+  const sections = [];
+  tocLinks.forEach(a => {
+    const id = a.getAttribute('href');
+    if(id && id.startsWith('#')){
+      const el = document.getElementById(id.slice(1));
+      if(el) sections.push({el, links: document.querySelectorAll('a[href="'+id+'"]')});
+    }
+  });
+  function onScroll(){
+    let current = sections[0];
+    for(const s of sections){
+      if(s.el.getBoundingClientRect().top <= 80) current = s;
+    }
+    tocLinks.forEach(a => a.classList.remove('active'));
+    if(current) current.links.forEach(a => a.classList.add('active'));
+  }
+  window.addEventListener('scroll', onScroll, {passive:true});
+  onScroll();
+})();
+</script>
+
+</body>
+</html>
