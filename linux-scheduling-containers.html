@@ -3,1483 +3,1377 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Linux scheduling, cgroups &amp; containers</title>
+<title>Kernel internals · preemption, cgroups, namespaces</title>
 <style>
-  :root {
-    --fg: #1f2328;
-    --fg-muted: #59636e;
-    --fg-subtle: #818b98;
-    --bg: #ffffff;
+  :root{
+    --fg:        #1f2328;
+    --fg-muted:  #59636e;
+    --fg-subtle: #6e7781;
+    --bg:        #ffffff;
     --bg-subtle: #f6f8fa;
-    --bg-emphasis: #eaeef2;
-    --border: #d1d9e0;
-    --border-muted: #d1d9e0b3;
-    --accent: #0969da;
+    --bg-muted:  #eaeef2;
+    --border:    #d1d9e0;
+    --border-muted: #d8dee4;
+    --accent:    #0969da;
+    --accent-bg: #ddf4ff;
+    --success:   #1a7f37;
+    --success-bg:#dafbe1;
+    --attention: #9a6700;
+    --attention-bg:#fff8c5;
+    --danger:    #d1242f;
+    --danger-bg: #ffebe9;
+    --done:      #8250df;
+    --mono:      ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    --sans:      -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
   }
 
-  * { box-sizing: border-box; }
-  html { scroll-behavior: smooth; }
-
-  body {
-    margin: 0;
-    color: var(--fg);
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
     background: var(--bg);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
-    font-size: 16px;
+    color: var(--fg);
+    font-family: var(--sans);
+    font-size: 14px;
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
   }
 
-  .layout {
-    display: grid;
-    grid-template-columns: 280px minmax(0, 1fr);
-    max-width: 1280px;
-    margin: 0 auto;
-    min-height: 100vh;
+  .topbar{
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+    position: sticky; top:0; z-index:50;
+    height: 44px;
+    display:flex;align-items:center;
+  }
+  .topbar .inner{
+    max-width: 1280px; margin: 0 auto; padding: 0 24px;
+    width: 100%;
+    display:flex;align-items:center;justify-content:space-between;
+    font-size: 13px;
+  }
+  .topbar .crumbs{color:var(--fg-muted);display:flex;align-items:center;gap:8px}
+  .topbar .crumbs strong{color:var(--fg);font-weight:600}
+  .topbar .crumbs .sep{color:var(--border)}
+  .topbar .actions{display:flex;gap:14px;color:var(--fg-muted);font-size:12px}
+
+  .layout{
+    max-width: 1280px; margin: 0 auto; padding: 0 24px;
+    display: grid; grid-template-columns: 220px minmax(0, 1fr) 200px;
+    gap: 40px;
+  }
+  @media(max-width:1024px){
+    .layout{grid-template-columns: 220px minmax(0, 1fr); gap:32px}
+    aside.toc-right{display:none}
+  }
+  @media(max-width:760px){
+    .layout{grid-template-columns: 1fr; gap:0; padding:0 16px}
+    aside.toc-left{display:none}
   }
 
-  aside {
+  aside.toc-left{
     border-right: 1px solid var(--border);
-    padding: 32px 24px;
+    padding: 24px 16px 24px 0;
+    font-size: 13px;
     position: sticky;
-    top: 0;
-    height: 100vh;
+    top: 44px;
+    max-height: calc(100vh - 44px);
     overflow-y: auto;
-    background: var(--bg);
+  }
+  aside.toc-left .group{margin-bottom: 18px}
+  aside.toc-left .group-title{
+    font-weight: 600; color: var(--fg); padding: 4px 0 6px;
+    font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  aside.toc-left a{
+    display:block; padding: 4px 10px; color: var(--fg-muted);
+    text-decoration: none; border-radius: 6px; line-height: 1.4;
+    border-left: 2px solid transparent; margin-left: -2px;
+  }
+  aside.toc-left a:hover{background: var(--bg-subtle); color: var(--fg)}
+  aside.toc-left a.active{
+    color: var(--accent); background: var(--accent-bg);
+    border-left-color: var(--accent); font-weight: 500;
   }
 
-  .sidebar-title {
-    font-size: 12px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: var(--fg-muted);
-    margin-bottom: 12px;
-    padding-bottom: 8px;
+  main{padding: 24px 0 80px; min-width: 0}
+
+  h1{
+    font-size: 32px; font-weight: 600; line-height: 1.25;
+    padding-bottom: 12px; margin-bottom: 16px;
     border-bottom: 1px solid var(--border);
-  }
-
-  .sidebar-nav { list-style: none; margin: 0 0 24px; padding: 0; }
-  .sidebar-nav li { margin: 0; }
-  .sidebar-nav a {
-    display: block;
-    padding: 6px 8px;
-    color: var(--fg);
-    text-decoration: none;
-    font-size: 14px;
-    border-radius: 6px;
-    line-height: 1.4;
-  }
-  .sidebar-nav a:hover { background: var(--bg-subtle); }
-  .sidebar-nav .num {
-    color: var(--fg-subtle);
-    font-variant-numeric: tabular-nums;
-    margin-right: 8px;
-    font-size: 12px;
-  }
-
-  main {
-    padding: 48px 56px 96px;
-    max-width: 920px;
-    width: 100%;
-  }
-
-  .doc-header {
-    border-bottom: 1px solid var(--border);
-    padding-bottom: 16px;
-    margin-bottom: 32px;
-  }
-
-  .breadcrumb { font-size: 13px; color: var(--fg-muted); margin-bottom: 8px; }
-  .breadcrumb a { color: var(--fg-muted); text-decoration: none; }
-  .breadcrumb a:hover { text-decoration: underline; }
-
-  h1 {
-    font-size: 32px;
-    font-weight: 600;
-    line-height: 1.25;
     letter-spacing: -0.01em;
-    margin: 0 0 8px;
+  }
+  .subtitle{color: var(--fg-muted); font-size: 16px; margin-bottom: 28px; max-width: 720px}
+
+  h2{
+    font-size: 22px; font-weight: 600; line-height: 1.3;
+    margin-top: 32px; margin-bottom: 12px;
+    padding-bottom: 6px; border-bottom: 1px solid var(--border-muted);
+    scroll-margin-top: 60px;
+  }
+  h3{
+    font-size: 17px; font-weight: 600; line-height: 1.35;
+    margin-top: 22px; margin-bottom: 8px;
+    scroll-margin-top: 60px;
+  }
+  h4{
+    font-size: 14px; font-weight: 600; line-height: 1.35;
+    margin-top: 18px; margin-bottom: 6px;
+    color: var(--fg);
   }
 
-  .tagline { font-size: 16px; color: var(--fg-muted); margin: 0; }
+  p{margin-bottom: 12px; max-width: 760px}
+  a{color: var(--accent); text-decoration: none}
+  a:hover{text-decoration: underline}
 
-  h2 {
-    font-size: 24px;
-    font-weight: 600;
-    line-height: 1.25;
-    margin: 48px 0 16px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid var(--border-muted);
-    scroll-margin-top: 24px;
-  }
-
-  h3 {
-    font-size: 20px;
-    font-weight: 600;
-    line-height: 1.25;
-    margin: 32px 0 12px;
-    scroll-margin-top: 24px;
-  }
-
-  h4 { font-size: 16px; font-weight: 600; line-height: 1.25; margin: 24px 0 8px; }
-
-  p { margin: 0 0 16px; }
-  a { color: var(--accent); text-decoration: none; }
-  a:hover { text-decoration: underline; }
-  strong { font-weight: 600; }
-  em { font-style: italic; }
-
-  code {
-    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
-    font-size: 85%;
-    background: var(--bg-emphasis);
-    padding: 2px 6px;
-    border-radius: 6px;
-    white-space: nowrap;
-  }
-
-  pre {
+  p code, li code, td code, h2 code, h3 code, h4 code{
+    font-family: var(--mono);
     background: var(--bg-subtle);
-    border: 1px solid var(--border);
+    padding: 0.15em 0.4em;
     border-radius: 6px;
-    padding: 16px;
+    font-size: 0.88em;
+    color: var(--fg);
+    border: 1px solid var(--border-muted);
+  }
+
+  strong{font-weight: 600; color: var(--fg)}
+  em{font-style: italic}
+
+  ul, ol{margin: 8px 0 14px; padding-left: 24px; max-width: 760px}
+  li{margin-bottom: 4px; line-height: 1.55}
+
+  pre{
+    background: var(--bg-subtle);
+    border: 1px solid var(--border-muted);
+    padding: 12px 14px;
+    border-radius: 6px;
     overflow-x: auto;
-    margin: 16px 0;
-    font-size: 14px;
-    line-height: 1.45;
+    margin: 8px 0 16px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.55;
+    max-width: 880px;
   }
+  pre .kw{color:#cf222e}
+  pre .fn{color:#8250df}
+  pre .str{color:#0a3069}
+  pre .com{color:#6e7781;font-style:italic}
+  pre .ty{color:#953800}
+  pre .num{color:#0550ae}
 
-  pre code {
-    background: transparent;
-    padding: 0;
-    border-radius: 0;
-    font-size: 100%;
-    white-space: pre;
+  .alert{
+    margin: 12px 0 16px;
+    padding: 8px 16px;
+    border-left: 4px solid;
+    border-radius: 6px;
+    background: var(--bg-subtle);
+    max-width: 860px;
+    font-size: 13.5px;
   }
+  .alert .alert-title{
+    font-weight: 600; font-size: 13px; margin-bottom: 4px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .alert.note     {border-color: var(--accent);    background: #f0f7ff}
+  .alert.note .alert-title    {color: var(--accent)}
+  .alert.warning  {border-color: var(--attention); background: #fff8e6}
+  .alert.warning .alert-title {color: var(--attention)}
+  .alert.danger   {border-color: var(--danger);    background: #fff5f5}
+  .alert.danger .alert-title  {color: var(--danger)}
+  .alert.tip      {border-color: var(--success);   background: #f0fdf4}
+  .alert.tip .alert-title     {color: var(--success)}
+  .alert p{margin-bottom: 4px}
+  .alert p:last-child{margin-bottom: 0}
 
-  .c { color: var(--fg-muted); font-style: italic; }
-
-  ul, ol { margin: 0 0 16px; padding-left: 28px; }
-  li { margin-bottom: 4px; }
-  li > p { margin-bottom: 8px; }
-
-  blockquote {
-    margin: 16px 0;
-    padding: 0 16px;
-    border-left: 4px solid var(--border);
+  .diagram{
+    margin: 14px 0 18px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    border-radius: 6px;
+    overflow: hidden;
+    max-width: 980px;
+  }
+  .diagram-head{
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 6px 12px;
+    background: var(--bg-subtle);
+    border-bottom: 1px solid var(--border-muted);
+    font-family: var(--mono);
+    font-size: 11px;
     color: var(--fg-muted);
   }
-  blockquote p:last-child { margin-bottom: 0; }
-
-  table {
-    border-collapse: collapse;
-    margin: 16px 0;
-    width: 100%;
-    font-size: 14px;
-    display: block;
-    overflow-x: auto;
-  }
-
-  table thead { background: var(--bg-subtle); }
-  th, td {
-    border: 1px solid var(--border);
-    padding: 6px 13px;
-    text-align: left;
-    vertical-align: top;
-  }
-  th { font-weight: 600; }
-  tbody tr:nth-child(2n) { background: var(--bg-subtle); }
-
-  .note, .warning, .tip {
-    border-left: 4px solid;
-    padding: 8px 16px;
-    margin: 16px 0;
-    border-radius: 6px;
+  .diagram-head .id{color: var(--accent); font-weight: 500}
+  .diagram-body{padding: 18px 14px; overflow-x: auto; background: var(--bg)}
+  .diagram-body svg{display:block; margin: 0 auto; max-width: 100%; height: auto}
+  .diagram-cap{
+    padding: 8px 12px;
     background: var(--bg-subtle);
+    border-top: 1px solid var(--border-muted);
+    font-size: 12.5px;
+    color: var(--fg-muted);
   }
-  .note { border-left-color: var(--accent); }
-  .warning { border-left-color: #bf3989; }
-  .tip { border-left-color: #1a7f37; }
 
-  .callout-title { font-size: 14px; font-weight: 600; margin: 0 0 4px; }
-  .note .callout-title { color: var(--accent); }
-  .warning .callout-title { color: #bf3989; }
-  .tip .callout-title { color: #1a7f37; }
-  .note p:last-child, .warning p:last-child, .tip p:last-child { margin-bottom: 0; }
-
-  .diagram {
-    margin: 24px 0;
+  table{
+    width: 100%; max-width: 880px; margin: 8px 0 16px;
+    border-collapse: collapse;
+    font-size: 13px;
     border: 1px solid var(--border);
     border-radius: 6px;
-    background: var(--bg);
     overflow: hidden;
   }
-
-  .diagram-header {
+  th{
+    text-align: left; padding: 8px 12px;
     background: var(--bg-subtle);
+    color: var(--fg); font-weight: 600;
     border-bottom: 1px solid var(--border);
-    padding: 8px 16px;
+    font-size: 12.5px;
+  }
+  td{
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--border-muted);
+    vertical-align: top;
+  }
+  tr:last-child td{border-bottom: none}
+  tr:nth-child(even) td{background: var(--bg-subtle)}
+  td:first-child{font-family: var(--mono); font-size: 12.5px}
+
+  aside.toc-right{
+    padding: 24px 0;
     font-size: 12px;
-    color: var(--fg-muted);
-    font-family: ui-monospace, SFMono-Regular, monospace;
-    display: flex;
-    justify-content: space-between;
+    position: sticky;
+    top: 44px;
+    max-height: calc(100vh - 44px);
+    overflow-y: auto;
   }
-
-  .diagram-body { padding: 24px 16px; text-align: center; }
-  .diagram svg { max-width: 100%; height: auto; display: block; margin: 0 auto; }
-
-  .diagram-caption {
-    border-top: 1px solid var(--border-muted);
-    padding: 8px 16px;
-    font-size: 13px;
-    color: var(--fg-muted);
-    background: var(--bg);
+  aside.toc-right .label{
+    text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--fg-muted); font-weight: 600; font-size: 11px;
+    margin-bottom: 8px;
   }
-
-  h2 a.anchor, h3 a.anchor {
-    visibility: hidden;
-    color: var(--fg-muted);
-    text-decoration: none;
-    margin-left: 8px;
+  aside.toc-right ul{list-style:none; padding: 0; margin: 0}
+  aside.toc-right li{margin-bottom: 4px}
+  aside.toc-right a{
+    color: var(--fg-muted); text-decoration: none;
+    display: block; padding: 2px 0; line-height: 1.4;
+    border-left: 2px solid transparent; padding-left: 8px;
+    margin-left: -10px;
   }
-  h2:hover a.anchor, h3:hover a.anchor { visibility: visible; }
+  aside.toc-right a:hover{color: var(--fg)}
+  aside.toc-right li.h3{padding-left: 12px}
+  aside.toc-right a.active{color: var(--accent); border-left-color: var(--accent); font-weight: 500}
 
-  .meta {
-    display: flex;
-    gap: 16px;
-    flex-wrap: wrap;
-    font-size: 13px;
-    color: var(--fg-muted);
-    margin-top: 12px;
+  .badges{
+    display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px;
   }
-
-  @media (max-width: 900px) {
-    .layout { grid-template-columns: 1fr; }
-    aside {
-      position: static;
-      height: auto;
-      border-right: 0;
-      border-bottom: 1px solid var(--border);
-      padding: 16px;
-    }
-    main { padding: 24px 16px 64px; }
+  .badge{
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 2px 8px; border-radius: 12px;
+    background: var(--bg-subtle);
+    border: 1px solid var(--border-muted);
+    font-size: 12px; color: var(--fg-muted);
+    font-family: var(--mono);
   }
+  .badge .dot{width:6px;height:6px;border-radius:50%;background:var(--success)}
 
-  hr { border: 0; border-top: 1px solid var(--border); margin: 32px 0; }
+  svg text{font-family: var(--mono); fill: var(--fg)}
+  ::selection{background:var(--accent-bg);color:var(--fg)}
 </style>
 </head>
 <body>
+
+<div class="topbar">
+  <div class="inner">
+    <div class="crumbs">
+      <span>docs</span><span class="sep">/</span>
+      <span>kernel</span><span class="sep">/</span>
+      <strong>internals</strong>
+    </div>
+    <div class="actions">
+      <span>v6.x</span>
+      <span>·</span>
+      <span>Updated 2026-05</span>
+    </div>
+  </div>
+</div>
+
 <div class="layout">
 
-<aside>
-  <div class="sidebar-title">On this page</div>
-  <ul class="sidebar-nav">
-    <li><a href="#overview"><span class="num">1.</span>Overview</a></li>
-    <li><a href="#layer-1"><span class="num">2.</span>Layer 1 — PREEMPT model</a></li>
-    <li><a href="#layer-2"><span class="num">3.</span>Layer 2 — Scheduling class</a></li>
-    <li><a href="#layer-3"><span class="num">4.</span>Layer 3 — Priority &amp; nice</a></li>
-    <li><a href="#how-they-work-together"><span class="num">5.</span>How they work together</a></li>
-    <li><a href="#commands"><span class="num">6.</span>Commands</a></li>
-    <li><a href="#scenarios"><span class="num">7.</span>Common scenarios</a></li>
-    <li><a href="#cgroups-v1-vs-v2"><span class="num">8.</span>Cgroups v1 vs v2</a></li>
-    <li><a href="#process-tree"><span class="num">9.</span>Container process tree</a></li>
-    <li><a href="#kernel-enforcement"><span class="num">10.</span>How limits are enforced</a></li>
-    <li><a href="#namespace-internals"><span class="num">11.</span>Namespace internals</a></li>
-    <li><a href="#cpu-static-numa"><span class="num">12.</span>CPU pinning &amp; NUMA</a></li>
-    <li><a href="#tlb-cache"><span class="num">13.</span>TLB &amp; cache effects</a></li>
-    <li><a href="#takeaways"><span class="num">14.</span>Key takeaways</a></li>
-    <li><a href="#deep-preemption"><span class="num">15.</span>Deep dive: Preemption</a></li>
-    <li><a href="#deep-namespaces"><span class="num">16.</span>Deep dive: Namespaces</a></li>
-    <li><a href="#deep-cgroups"><span class="num">17.</span>Deep dive: cgroups v2</a></li>
-    <li><a href="#deep-containers"><span class="num">18.</span>Container anatomy</a></li>
-    <li><a href="#deep-networking"><span class="num">19.</span>Networking &amp; TCP</a></li>
-    <li><a href="#deep-memory"><span class="num">20.</span>Memory: NUMA &amp; Huge Pages</a></li>
-    <li><a href="#deep-storage"><span class="num">21.</span>Storage &amp; I/O schedulers</a></li>
-    <li><a href="#deep-troubleshooting"><span class="num">22.</span>Troubleshooting playbooks</a></li>
-    <li><a href="#deep-design"><span class="num">23.</span>Design scenarios</a></li>
-  </ul>
-
-  <div class="sidebar-title">Related</div>
-  <ul class="sidebar-nav">
-    <li><a href="linux-systems-guide.html"><span class="num">←</span>Back to Linux Guide</a></li>
-    <li><a href="#"><span class="num">→</span>Processes & Memory</a></li>
-    <li><a href="#"><span class="num">→</span>Networking Guide</a></li>
-  </ul>
-</aside>
-
-<main>
-
-<header class="doc-header">
-  <div class="breadcrumb">
-    <a href="linux-systems-guide.html">Linux Systems Guide</a> / <a href="#">Scheduling & Containers</a>
-  </div>
-  <h1>Linux scheduling, cgroups &amp; container isolation</h1>
-  <p class="tagline">A working reference for understanding how preemption, scheduling classes, priority, cgroups, namespaces, CPU pinning and NUMA cooperate to run containers on Kubernetes.</p>
-  <div class="meta">
-    <span>Updated May 2026</span>
-    <span>Reading time ~30 min</span>
-    <span>Audience: backend engineers, SREs</span>
-  </div>
-</header>
-
-<h2 id="overview">Overview <a href="#overview" class="anchor">#</a></h2>
-
-<p>When a process becomes runnable, three independent layers cooperate to decide if and when it gets the CPU. Each layer answers a different question. Most explanations of Linux scheduling collapse into a single confused blob because these three orthogonal mechanisms get conflated.</p>
-
-<ul>
-  <li><strong>Layer 1 — PREEMPT model.</strong> Set once when the kernel is built. Controls how fast the kernel can be interrupted while running its own code.</li>
-  <li><strong>Layer 2 — Scheduling class.</strong> Set per process. Picks the algorithm that runs the task (real-time vs normal).</li>
-  <li><strong>Layer 3 — Priority / nice.</strong> Set per process. Ranks peers within the same class.</li>
-</ul>
-
-<div class="diagram">
-  <div class="diagram-header">
-    <span>Figure 1</span>
-    <span>three-layer-overview.svg</span>
-  </div>
-  <div class="diagram-body">
-    <svg viewBox="0 0 760 460" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-          <path d="M2 1L8 5L2 9" fill="none" stroke="#1f2328" stroke-width="1.5" stroke-linecap="round"/>
-        </marker>
-      </defs>
-
-      <rect x="20" y="20" width="720" height="120" fill="#ffffff" stroke="#1f2328" stroke-width="1.5"/>
-      <text x="40" y="46" font-family="ui-monospace, monospace" font-size="11" font-weight="700" fill="#1f2328">LAYER 1 — KERNEL BUILD CONFIG (compile time, system-wide)</text>
-      <line x1="40" y1="56" x2="720" y2="56" stroke="#d1d9e0"/>
-      <text x="40" y="84" font-family="-apple-system, sans-serif" font-size="20" font-weight="600" fill="#1f2328">PREEMPT_NONE   ·   PREEMPT_VOLUNTARY   ·   PREEMPT_RT</text>
-      <text x="40" y="108" font-family="-apple-system, sans-serif" font-size="14" fill="#59636e">Q: How fast can the kernel be interrupted while running its own code?</text>
-      <text x="40" y="128" font-family="ui-monospace, monospace" font-size="11" fill="#818b98">changed by installing a different kernel package or via preempt= boot param</text>
-
-      <line x1="380" y1="145" x2="380" y2="170" stroke="#1f2328" stroke-width="1.5" marker-end="url(#arr)"/>
-
-      <rect x="20" y="175" width="720" height="120" fill="#ffffff" stroke="#1f2328" stroke-width="1.5"/>
-      <text x="40" y="201" font-family="ui-monospace, monospace" font-size="11" font-weight="700" fill="#1f2328">LAYER 2 — SCHEDULING CLASS (runtime, per process)</text>
-      <line x1="40" y1="211" x2="720" y2="211" stroke="#d1d9e0"/>
-      <text x="40" y="239" font-family="-apple-system, sans-serif" font-size="18" font-weight="600" fill="#1f2328">SCHED_DEADLINE · SCHED_FIFO · SCHED_RR · SCHED_OTHER · BATCH · IDLE</text>
-      <text x="40" y="263" font-family="-apple-system, sans-serif" font-size="14" fill="#59636e">Q: Which scheduling algorithm should run me?</text>
-      <text x="40" y="283" font-family="ui-monospace, monospace" font-size="11" fill="#818b98">set with chrt(1) or sched_setscheduler(2)</text>
-
-      <line x1="380" y1="300" x2="380" y2="325" stroke="#1f2328" stroke-width="1.5" marker-end="url(#arr)"/>
-
-      <rect x="20" y="330" width="720" height="120" fill="#ffffff" stroke="#1f2328" stroke-width="1.5"/>
-      <text x="40" y="356" font-family="ui-monospace, monospace" font-size="11" font-weight="700" fill="#1f2328">LAYER 3 — PRIORITY / NICE (runtime, per process)</text>
-      <line x1="40" y1="366" x2="720" y2="366" stroke="#d1d9e0"/>
-      <text x="40" y="394" font-family="-apple-system, sans-serif" font-size="18" font-weight="600" fill="#1f2328">RT priority 1–99   ·   Nice value −20 to +19</text>
-      <text x="40" y="418" font-family="-apple-system, sans-serif" font-size="14" fill="#59636e">Q: Where do I rank among others using the same algorithm?</text>
-      <text x="40" y="438" font-family="ui-monospace, monospace" font-size="11" fill="#818b98">set with chrt (RT) or nice/renice (CFS)</text>
-    </svg>
-  </div>
-  <div class="diagram-caption">Three independent layers, evaluated together every time the scheduler picks a task.</div>
-</div>
-
-<blockquote>
-  <p>PREEMPT model is the kernel's rulebook. Scheduling class is the league you play in. Priority is your rank inside that league.</p>
-</blockquote>
-
-<h2 id="layer-1">Layer 1 — PREEMPT model <a href="#layer-1" class="anchor">#</a></h2>
-
-<p>Set once when the kernel is compiled. Controls how quickly the kernel can be interrupted while running its own code on behalf of a syscall. When your application calls <code>read()</code> or <code>write()</code>, control jumps into the kernel — the preemption model decides whether that kernel code can be paused mid-flight if a higher-priority task suddenly needs the CPU.</p>
-
-<table>
-  <thead>
-    <tr><th>Model</th><th>Worst-case latency</th><th>Trade-off</th><th>Typical user</th></tr>
-  </thead>
-  <tbody>
-    <tr><td><code>PREEMPT_NONE</code></td><td>~10 ms</td><td>Best throughput, worst latency</td><td>Batch / HPC servers</td></tr>
-    <tr><td><code>PREEMPT_VOLUNTARY</code></td><td>~1–5 ms</td><td>Balanced</td><td>Most production servers, K8s</td></tr>
-    <tr><td><code>PREEMPT</code> (full)</td><td>&lt; 1 ms</td><td>Lower latency, modest throughput cost</td><td>Low-latency desktop</td></tr>
-    <tr><td><code>PREEMPT_RT</code></td><td>&lt; 100 μs</td><td>Strong guarantees, ~5–15% throughput cost</td><td>Audio, trading, industrial control</td></tr>
-  </tbody>
-</table>
-
-<div class="note">
-  <p class="callout-title">Note</p>
-  <p>Linux 5.12+ ships with <code>PREEMPT_DYNAMIC</code>, which lets you switch models at boot via <code>preempt=none|voluntary|full</code> on the kernel command line — no recompile needed. <code>PREEMPT_RT</code> was merged into mainline in Linux 6.12.</p>
-</div>
-
-<h2 id="layer-2">Layer 2 — Scheduling class <a href="#layer-2" class="anchor">#</a></h2>
-
-<p>Each process belongs to exactly one scheduling class. The class determines the algorithm. Classes are organized into two strictly-ordered realms.</p>
-
-<h3>What each class is for</h3>
-
-<table>
-  <thead>
-    <tr><th>Class</th><th>Behavior</th><th>Used for</th></tr>
-  </thead>
-  <tbody>
-    <tr><td><code>SCHED_DEADLINE</code></td><td>Explicit timing budget (runtime within period). Admission-controlled.</td><td>Industrial control, robotics</td></tr>
-    <tr><td><code>SCHED_FIFO</code></td><td>Runs until it voluntarily blocks or yields. No timeslice.</td><td>Audio engines, IRQ threads</td></tr>
-    <tr><td><code>SCHED_RR</code></td><td>Like FIFO but with timeslice (default 100 ms).</td><td>Several RT tasks needing fair sharing</td></tr>
-    <tr><td><code>SCHED_OTHER</code></td><td>Default. Handled by CFS. Nice value is the knob.</td><td>Everything you've ever launched</td></tr>
-    <tr><td><code>SCHED_BATCH</code></td><td>Like OTHER but treated as CPU-bound — no wake-up boost.</td><td>Long compute jobs</td></tr>
-    <tr><td><code>SCHED_IDLE</code></td><td>Only runs when system has nothing else to do.</td><td>Lowest-priority background work</td></tr>
-  </tbody>
-</table>
-
-<div class="warning">
-  <p class="callout-title">Warning</p>
-  <p>A buggy <code>SCHED_FIFO</code> task in an infinite loop can pin a CPU core and make the system effectively unresponsive. The kernel reserves about 5% of CPU per period (<code>/proc/sys/kernel/sched_rt_runtime_us</code>) as a safety net, but treat <code>chrt -f</code> as a loaded weapon.</p>
-</div>
-
-<h2 id="layer-3">Layer 3 — Priority &amp; nice <a href="#layer-3" class="anchor">#</a></h2>
-
-<p>Once a class is picked, the priority number ranks the task among other members of that same class. The two realms use different scales — <strong>and they go in opposite directions</strong>.</p>
-
-<table>
-  <thead>
-    <tr><th>Scale</th><th>Range</th><th>Direction</th><th>Mnemonic</th></tr>
-  </thead>
-  <tbody>
-    <tr><td>RT priority — <code>chrt</code></td><td>1 to 99</td><td>Higher = more urgent</td><td>Military rank — bigger number, bigger boss</td></tr>
-    <tr><td>Nice — <code>nice</code> / <code>renice</code></td><td>−20 to +19</td><td>Lower = more urgent</td><td>"Less nice = more selfish"</td></tr>
-  </tbody>
-</table>
-
-<h3>Nice is not a quieter version of RT</h3>
-<p>A common misconception: assuming <code>nice -20</code> makes other processes wait. <strong>It doesn't.</strong> CFS guarantees fairness — every runnable task gets time, just weighted by nice. A <code>nice -20</code> task gets ~88% of the CPU when competing against <code>nice 0</code>; the <code>nice 0</code> task still gets the remaining 12%. Nobody starves.</p>
-
-<p><code>SCHED_FIFO</code> by contrast can take 100% and starve everything else. That's the actual difference, and the actual reason RT exists.</p>
-
-<h2 id="commands">Commands <a href="#commands" class="anchor">#</a></h2>
-
-<h3>Layer 1 — preemption model</h3>
-<pre><code><span class="c"># What model is the kernel built with?</span>
-uname -v
-grep PREEMPT /boot/config-$(uname -r)
-
-<span class="c"># Modern kernels: switch model at boot via GRUB</span>
-<span class="c"># add to GRUB_CMDLINE_LINUX in /etc/default/grub:</span>
-preempt=none|voluntary|full</code></pre>
-
-<h3>Layer 2 — scheduling class</h3>
-<pre><code><span class="c"># Inspect class &amp; priority of PID 1234</span>
-chrt -p 1234
-
-<span class="c"># Set a real-time class</span>
-sudo chrt -f 50 ./app           <span class="c"># SCHED_FIFO,  priority 50</span>
-sudo chrt -r 50 ./app           <span class="c"># SCHED_RR,    priority 50</span>
-
-<span class="c"># Back to normal</span>
-sudo chrt -o -p 0 1234          <span class="c"># SCHED_OTHER</span></code></pre>
-
-<h3>Layer 3 — nice (CFS only)</h3>
-<pre><code><span class="c"># Launch with a nice value</span>
-nice -n -10 ./game              <span class="c"># needs sudo for negatives</span>
-nice -n  19 ./backup
-
-<span class="c"># Change a running process</span>
-renice -n  10 -p 1234
-sudo renice -n -5  -p 1234</code></pre>
-
-<h2 id="how-they-work-together">How they work together <a href="#how-they-work-together" class="anchor">#</a></h2>
-
-<p>The scheduler evaluates them in order:</p>
-
-<ol>
-  <li><strong>Class first.</strong> Real-time classes always win over normal classes.</li>
-  <li><strong>Priority within class.</strong> Among peers in the same class, priority/nice is the tiebreaker.</li>
-  <li><strong>Preemption model limits how fast this happens.</strong> Even if a high-priority task becomes runnable, it might have to wait for the current kernel operation to reach a preemption point.</li>
-</ol>
-
-<div class="diagram">
-  <div class="diagram-header">
-    <span>Figure 2</span>
-    <span>scheduler-runqueues.svg</span>
-  </div>
-  <div class="diagram-body">
-    <svg viewBox="0 0 800 380" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <marker id="arr2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-          <path d="M2 1L8 5L2 9" fill="none" stroke="#1f2328" stroke-width="1.5" stroke-linecap="round"/>
-        </marker>
-      </defs>
-
-      <rect x="100" y="40" width="600" height="160" fill="#f6f8fa" stroke="#1f2328" stroke-width="1.5"/>
-      <text x="120" y="66" font-family="ui-monospace, monospace" font-size="14" font-weight="700" fill="#1f2328">CPU SCHEDULER — RUNQUEUE PER CORE</text>
-
-      <rect x="120" y="80" width="140" height="50" fill="#ffffff" stroke="#1f2328" rx="4"/>
-      <text x="140" y="100" font-family="-apple-system, sans-serif" font-size="12" font-weight="600" fill="#1f2328">DEADLINE</text>
-      <text x="140" y="116" font-family="ui-monospace, monospace" font-size="10" fill="#59636e">RT realtime (highest)</text>
-
-      <rect x="120" y="140" width="140" height="50" fill="#ffffff" stroke="#1f2328" rx="4"/>
-      <text x="140" y="160" font-family="-apple-system, sans-serif" font-size="12" font-weight="600" fill="#1f2328">FIFO / RR</text>
-      <text x="140" y="176" font-family="ui-monospace, monospace" font-size="10" fill="#59636e">RT priorities 1-99</text>
-
-      <rect x="320" y="80" width="180" height="110" fill="#ffffff" stroke="#1f2328" rx="4"/>
-      <text x="340" y="100" font-family="-apple-system, sans-serif" font-size="12" font-weight="600" fill="#1f2328">CFS - SCHED_OTHER</text>
-      <text x="340" y="116" font-family="ui-monospace, monospace" font-size="10" fill="#59636e">nice -20 (highest priority)</text>
-      <text x="340" y="130" font-family="ui-monospace, monospace" font-size="10" fill="#59636e">nice 0 (default)</text>
-      <text x="340" y="144" font-family="ui-monospace, monospace" font-size="10" fill="#59636e">nice +19 (lowest priority)</text>
-      <text x="340" y="162" font-family="-apple-system, sans-serif" font-size="12" font-weight="600" fill="#1f2328">BATCH</text>
-      <text x="340" y="176" font-family="ui-monospace, monospace" font-size="10" fill="#59636e">cpu-intensive tasks</text>
-
-      <rect x="520" y="80" width="140" height="50" fill="#ffffff" stroke="#1f2328" rx="4"/>
-      <text x="540" y="100" font-family="-apple-system, sans-serif" font-size="12" font-weight="600" fill="#1f2328">IDLE</text>
-      <text x="540" y="116" font-family="ui-monospace, monospace" font-size="10" fill="#59636e">only when nothing else</text>
-
-      <line x1="190" y1="240" x2="410" y2="240" stroke="#1f2328" stroke-width="1.5" marker-end="url(#arr2)"/>
-      <text x="220" y="258" font-family="-apple-system, sans-serif" font-size="13" fill="#59636e">Scheduler picks next task from highest-priority non-empty queue</text>
-
-      <rect x="100" y="300" width="600" height="60" fill="#eaeef2" stroke="#1f2328" stroke-width="1.5"/>
-      <text x="120" y="326" font-family="ui-monospace, monospace" font-size="14" font-weight="700" fill="#1f2328">PREEMPTION CHECK</text>
-      <text x="120" y="346" font-family="-apple-system, sans-serif" font-size="12" fill="#59636e">Can current task be interrupted? Depends on PREEMPT_* model and current kernel state.</text>
-    </svg>
-  </div>
-  <div class="diagram-caption">Each CPU has runqueues for each scheduling class. RT beats CFS. Within each queue, priority rules.</div>
-</div>
-
-<h2 id="scenarios">Common scenarios <a href="#scenarios" class="anchor">#</a></h2>
-
-<h3>1. Audio dropouts on a music workstation</h3>
-<p><strong>Problem:</strong> Your audio recording software is getting hiccups and dropouts.</p>
-<p><strong>Solution:</strong> Run the audio engine with real-time priority:</p>
-<pre><code>sudo chrt -f 80 /usr/bin/jackd -R -dalsa</code></pre>
-<p>This puts the audio daemon in <code>SCHED_FIFO</code> with RT priority 80, so it can preempt almost anything to meet deadlines.</p>
-
-<h3>2. Batch job hogging the desktop</h3>
-<p><strong>Problem:</strong> A data processing script is making your desktop sluggish.</p>
-<p><strong>Solution:</strong> Run it with <code>SCHED_BATCH</code> and a high nice value:</p>
-<pre><code>chrt -b 0 nice -n 15 ./data_processor.py</code></pre>
-<p>The batch class prevents it from getting wakeup boosts, and <code>nice 15</code> lowers its priority among normal tasks.</p>
-
-<h3>3. Kubernetes node running general workloads</h3>
-<p><strong>Problem:</strong> You want predictable performance without risking system lockups.</p>
-<p><strong>Solution:</strong> Most distributions use <code>PREEMPT_VOLUNTARY</code> by default — this gives ~1–5ms latency with good throughput. Pods run as <code>SCHED_OTHER</code> unless they request specific priority classes.</p>
-
-<p>Kubernetes <code>PriorityClass</code> maps to Linux nice values via the kubelet's <code>--system-reserved-cgroup</code>.</p>
-
-<h3>4. Container escape attempt detection</h3>
-<p><strong>Problem:</strong> A container is trying to monopolize CPU and starve the system.</p>
-<p><strong>Solution:</strong> The kernel's RT throttling mechanism (<code>/proc/sys/kernel/sched_rt_runtime_us</code>) reserves CPU for non-RT tasks. Even a malicious <code>SCHED_FIFO</code> process can't completely starve the system — but it can still cause severe disruption. Use cgroups for robust limits.</p>
-
-<h2 id="cgroups-v1-vs-v2">Cgroups v1 vs v2 <a href="#cgroups-v1-vs-v2" class="anchor">#</a></h2>
-
-<p>Control groups (cgroups) provide resource limiting and accounting. Two versions exist with different philosophies:</p>
-
-<table>
-  <thead>
-    <tr><th>Aspect</th><th>Cgroups v1</th><th>Cgroups v2</th></tr>
-  </thead>
-  <tbody>
-    <tr><td><strong>Hierarchy</strong></td><td>Multiple hierarchies, one per controller</td><td>Single unified hierarchy</td></tr>
-    <tr><td><strong>Process placement</strong></td><td>Process can be in different cgroups for different controllers</td><td>Process belongs to exactly one cgroup</td></tr>
-    <tr><td><strong>Controller organization</strong></td><td>Independent: <code>/sys/fs/cgroup/memory</code>, <code>/sys/fs/cgroup/cpu</code></td><td>Unified: <code>/sys/fs/cgroup</code></td></tr>
-    <tr><td><strong>Memory+CPU accounting</strong></td><td>Separate, can be inconsistent</td><td>Coordinated, consistent view</td></tr>
-    <tr><td><strong>Thread vs process</strong></td><td>Individual threads can be in different cgroups</td><td>All threads of a process must be in same cgroup</td></tr>
-    <tr><td><strong>Complex configurations</strong></td><td>Flexible but can create conflicts</td><td>Simpler, more predictable</td></tr>
-    <tr><td><strong>Current status</strong></td><td>Legacy but widely used</td><td>Preferred for new deployments</td></tr>
-  </tbody>
-</table>
-
-<div class="tip">
-  <p class="callout-title">Tip</p>
-  <p>You can check which version is active: <code>mount | grep cgroup</code>. If you see multiple mounts like <code>cgroup on /sys/fs/cgroup/memory</code>, it's v1. If you see <code>cgroup2 on /sys/fs/cgroup</code>, it's v2.</p>
-</div>
-
-<h3>Key controllers and their purpose</h3>
-
-<table>
-  <thead>
-    <tr><th>Controller</th><th>Controls</th><th>Key files</th></tr>
-  </thead>
-  <tbody>
-    <tr><td><code>memory</code></td><td>RAM usage, OOM behavior</td><td><code>memory.limit_in_bytes</code>, <code>memory.usage_in_bytes</code></td></tr>
-    <tr><td><code>cpu</code></td><td>CPU time shares, throttling</td><td><code>cpu.shares</code>, <code>cpu.cfs_period_us</code>, <code>cpu.cfs_quota_us</code></td></tr>
-    <tr><td><code>cpuset</code></td><td>CPU and memory node placement</td><td><code>cpuset.cpus</code>, <code>cpuset.mems</code></td></tr>
-    <tr><td><code>blkio</code></td><td>Block I/O bandwidth</td><td><code>blkio.throttle.read_bps_device</code></td></tr>
-    <tr><td><code>pids</code></td><td>Number of processes/threads</td><td><code>pids.max</code>, <code>pids.current</code></td></tr>
-    <tr><td><code>devices</code></td><td>Device access permissions</td><td><code>devices.allow</code>, <code>devices.deny</code></td></tr>
-  </tbody>
-</table>
-
-<h2 id="process-tree">Container process tree <a href="#process-tree" class="anchor">#</a></h2>
-
-<p>When you run <code>docker run ubuntu bash</code>, several layers of process isolation are involved. Here's what the process tree looks like:</p>
-
-<div class="diagram">
-  <div class="diagram-header">
-    <span>Figure 3</span>
-    <span>container-process-tree.svg</span>
-  </div>
-  <div class="diagram-body">
-    <svg viewBox="0 0 800 480" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <marker id="arr3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-          <path d="M2 1L8 5L2 9" fill="none" stroke="#1f2328" stroke-width="1.5" stroke-linecap="round"/>
-        </marker>
-      </defs>
-
-      <rect x="50" y="40" width="700" height="420" fill="#f6f8fa" stroke="#1f2328" stroke-width="1.5"/>
-      <text x="70" y="66" font-family="ui-monospace, monospace" font-size="14" font-weight="700" fill="#1f2328">PROCESS TREE AND NAMESPACE VIEW</text>
-
-      <rect x="80" y="90" width="300" height="140" fill="#ffffff" stroke="#1f2328" stroke-width="1.5"/>
-      <text x="100" y="116" font-family="ui-monospace, monospace" font-size="12" font-weight="700" fill="#1f2328">HOST PID NAMESPACE (what ps sees)</text>
-      
-      <text x="110" y="140" font-family="ui-monospace, monospace" font-size="11" fill="#1f2328">PID 1: /sbin/init</text>
-      <text x="110" y="156" font-family="ui-monospace, monospace" font-size="11" fill="#59636e">├─ PID 1234: dockerd</text>
-      <text x="110" y="172" font-family="ui-monospace, monospace" font-size="11" fill="#59636e">├─ PID 5678: containerd-shim</text>
-      <text x="110" y="188" font-family="ui-monospace, monospace" font-size="11" fill="#0969da">├─ PID 9999: bash (container)</text>
-      <text x="110" y="204" font-family="ui-monospace, monospace" font-size="11" fill="#0969da">└─ PID 10001: curl (inside container)</text>
-
-      <rect x="420" y="90" width="280" height="140" fill="#eaeef2" stroke="#1f2328" stroke-width="1.5"/>
-      <text x="440" y="116" font-family="ui-monospace, monospace" font-size="12" font-weight="700" fill="#1f2328">CONTAINER PID NAMESPACE</text>
-      <text x="450" y="140" font-family="ui-monospace, monospace" font-size="11" fill="#0969da">PID 1: bash (appears as init)</text>
-      <text x="450" y="156" font-family="ui-monospace, monospace" font-size="11" fill="#0969da">└─ PID 2: curl</text>
-      <text x="450" y="180" font-family="-apple-system, sans-serif" font-size="10" fill="#59636e">Same processes, different</text>
-      <text x="450" y="194" font-family="-apple-system, sans-serif" font-size="10" fill="#59636e">PID numbering!</text>
-
-      <line x1="380" y1="160" x2="420" y2="160" stroke="#1f2328" stroke-width="1.5" marker-end="url(#arr3)"/>
-
-      <rect x="80" y="260" width="620" height="180" fill="#ffffff" stroke="#1f2328" stroke-width="1.5"/>
-      <text x="100" y="286" font-family="ui-monospace, monospace" font-size="12" font-weight="700" fill="#1f2328">CGROUP HIERARCHY (resource limits)</text>
-      
-      <text x="110" y="310" font-family="ui-monospace, monospace" font-size="11" fill="#1f2328">/sys/fs/cgroup/</text>
-      <text x="130" y="326" font-family="ui-monospace, monospace" font-size="11" fill="#59636e">├─ systemd/</text>
-      <text x="150" y="342" font-family="ui-monospace, monospace" font-size="11" fill="#59636e">│  └─ system.slice/ (system services)</text>
-      <text x="130" y="358" font-family="ui-monospace, monospace" font-size="11" fill="#59636e">└─ docker/</text>
-      <text x="150" y="374" font-family="ui-monospace, monospace" font-size="11" fill="#0969da">   └─ 9abc123def456.../  (container ID)</text>
-      <text x="170" y="390" font-family="ui-monospace, monospace" font-size="10" fill="#0969da">├─ memory.limit_in_bytes: 1073741824  (1GB)</text>
-      <text x="170" y="404" font-family="ui-monospace, monospace" font-size="10" fill="#0969da">├─ cpu.shares: 1024</text>
-      <text x="170" y="418" font-family="ui-monospace, monospace" font-size="10" fill="#0969da">└─ cgroup.procs: 9999, 10001</text>
-
-      <line x1="530" y1="360" x2="430" y2="188" stroke="#0969da" stroke-width="1.5" stroke-dasharray="4,4"/>
-      <text x="470" y="280" font-family="-apple-system, sans-serif" font-size="10" fill="#0969da">Processes 9999,10001</text>
-      <text x="470" y="294" font-family="-apple-system, sans-serif" font-size="10" fill="#0969da">limited by this cgroup</text>
-    </svg>
-  </div>
-  <div class="diagram-caption">The same processes appear with different PIDs in different namespaces. Cgroups provide the resource limits regardless of namespace view.</div>
-</div>
-
-<h2 id="kernel-enforcement">How limits are enforced <a href="#kernel-enforcement" class="anchor">#</a></h2>
-
-<h3>CPU limits — Throttling</h3>
-<p>The CFS (Completely Fair Scheduler) implements CPU limits via time-based throttling:</p>
-
-<ul>
-  <li><code>cpu.cfs_period_us</code> — Time period (default: 100,000μs = 100ms)</li>
-  <li><code>cpu.cfs_quota_us</code> — CPU time allowed in each period</li>
-</ul>
-
-<p>If a cgroup is configured with <code>period=100ms</code> and <code>quota=50ms</code>, it gets 50% CPU. Once it uses its 50ms in any 100ms window, all processes in that cgroup get throttled until the next period begins.</p>
-
-<pre><code><span class="c"># See throttling stats</span>
-cat /sys/fs/cgroup/cpu/docker/&lt;container-id&gt;/cpu.stat
-
-nr_periods 12345
-nr_throttled 678
-throttled_time 98765432100  <span class="c"># nanoseconds spent throttled</span></code></pre>
-
-<h3>Memory limits — OOM killing</h3>
-<p>When a cgroup hits its memory limit:</p>
-
-<ol>
-  <li><strong>Reclaim:</strong> Try to free up memory (flush page cache, swap out pages)</li>
-  <li><strong>OOM kill:</strong> If reclaim fails, pick a process in the cgroup to kill</li>
-  <li><strong>OOM score:</strong> Process with highest <code>oom_score</code> gets killed first</li>
-</ol>
-
-<p>The OOM killer picks victims using several factors:</p>
-<ul>
-  <li>Memory usage (higher = more likely to be killed)</li>
-  <li><code>oom_score_adj</code> value (you can set this per-process)</li>
-  <li>Runtime (longer-running processes are slightly protected)</li>
-</ul>
-
-<pre><code><span class="c"># Check a process's OOM score</span>
-cat /proc/1234/oom_score
-cat /proc/1234/oom_score_adj
-
-<span class="c"># Make a process less likely to be OOM killed</span>
-echo -500 > /proc/1234/oom_score_adj
-
-<span class="c"># See cgroup memory usage</span>
-cat /sys/fs/cgroup/memory/docker/&lt;container-id&gt;/memory.usage_in_bytes
-cat /sys/fs/cgroup/memory/docker/&lt;container-id&gt;/memory.limit_in_bytes</code></pre>
-
-<div class="warning">
-  <p class="callout-title">Warning</p>
-  <p>Setting <code>oom_score_adj</code> to -1000 makes a process "OOM-immune" — it will never be killed even if the system runs out of memory. Only use this for critical system processes like init or kernel threads.</p>
-</div>
-
-<h2 id="namespace-internals">Namespace internals <a href="#namespace-internals" class="anchor">#</a></h2>
-
-<p>Namespaces provide isolation by giving processes different views of global resources:</p>
-
-<table>
-  <thead>
-    <tr><th>Namespace</th><th>Isolates</th><th>Example</th></tr>
-  </thead>
-  <tbody>
-    <tr><td><code>PID</code></td><td>Process IDs</td><td>Container sees its own PID 1</td></tr>
-    <tr><td><code>NET</code></td><td>Network stack</td><td>Container has its own interfaces, routing table</td></tr>
-    <tr><td><code>MNT</code></td><td>Filesystem mounts</td><td>Container sees different root filesystem</td></tr>
-    <tr><td><code>UTS</code></td><td>Hostname and domain</td><td>Container can have different hostname</td></tr>
-    <tr><td><code>IPC</code></td><td>Inter-process communication</td><td>Separate shared memory, semaphores, message queues</td></tr>
-    <tr><td><code>USER</code></td><td>User and group IDs</td><td>Root inside container ≠ root on host</td></tr>
-    <tr><td><code>CGROUP</code></td><td>Cgroup filesystem view</td><td>Container sees different cgroup hierarchy</td></tr>
-  </tbody>
-</table>
-
-<h3>PID namespace deeper dive</h3>
-<p>PID namespaces are hierarchical. A process can see PIDs in its own namespace and all descendant namespaces, but not parent or sibling namespaces.</p>
-
-<div class="diagram">
-  <div class="diagram-header">
-    <span>Figure 4</span>
-    <span>pid-namespace-hierarchy.svg</span>
-  </div>
-  <div class="diagram-body">
-    <svg viewBox="0 0 800 320" xmlns="http://www.w3.org/2000/svg">
-      <rect x="100" y="40" width="600" height="60" fill="#f6f8fa" stroke="#1f2328" stroke-width="1.5"/>
-      <text x="120" y="66" font-family="ui-monospace, monospace" font-size="12" font-weight="700" fill="#1f2328">HOST NAMESPACE (init_pid_ns)</text>
-      <text x="120" y="86" font-family="ui-monospace, monospace" font-size="11" fill="#59636e">PID 1: init, PID 1234: dockerd, PID 5678: container-bash, PID 5679: container-curl</text>
-
-      <rect x="150" y="140" width="200" height="60" fill="#ffffff" stroke="#1f2328" stroke-width="1.5"/>
-      <text x="170" y="166" font-family="ui-monospace, monospace" font-size="12" font-weight="700" fill="#0969da">CONTAINER A NAMESPACE</text>
-      <text x="170" y="186" font-family="ui-monospace, monospace" font-size="11" fill="#0969da">PID 1: bash (actually 5678)</text>
-
-      <rect x="400" y="140" width="200" height="60" fill="#ffffff" stroke="#1f2328" stroke-width="1.5"/>
-      <text x="420" y="166" font-family="ui-monospace, monospace" font-size="12" font-weight="700" fill="#bf3989">CONTAINER B NAMESPACE</text>
-      <text x="420" y="186" font-family="ui-monospace, monospace" font-size="11" fill="#bf3989">PID 1: nginx (different host PID)</text>
-
-      <rect x="200" y="240" width="150" height="60" fill="#eaeef2" stroke="#1f2328" stroke-width="1.5"/>
-      <text x="220" y="266" font-family="ui-monospace, monospace" font-size="12" font-weight="700" fill="#0969da">NESTED NAMESPACE</text>
-      <text x="220" y="286" font-family="ui-monospace, monospace" font-size="11" fill="#0969da">PID 1: sub-process</text>
-
-      <line x1="250" y1="100" x2="250" y2="140" stroke="#1f2328" stroke-width="1.5"/>
-      <line x1="500" y1="100" x2="500" y2="140" stroke="#1f2328" stroke-width="1.5"/>
-      <line x1="275" y1="200" x2="275" y2="240" stroke="#1f2328" stroke-width="1.5"/>
-
-      <text x="120" y="330" font-family="-apple-system, sans-serif" font-size="12" fill="#59636e">Host can see all PIDs. Containers can only see their own tree. Nested containers inherit visibility.</text>
-    </svg>
-  </div>
-  <div class="diagram-caption">PID namespace hierarchy. Processes can see their own namespace and all child namespaces, but not siblings.</div>
-</div>
-
-<h2 id="cpu-static-numa">CPU pinning &amp; NUMA <a href="#cpu-static-numa" class="anchor">#</a></h2>
-
-<p>On NUMA (Non-Uniform Memory Access) systems, CPU cores are grouped into nodes. Memory access is fastest to "local" memory on the same node, slower to remote nodes.</p>
-
-<div class="diagram">
-  <div class="diagram-header">
-    <span>Figure 5</span>
-    <span>numa-topology.svg</span>
-  </div>
-  <div class="diagram-body">
-    <svg viewBox="0 0 800 360" xmlns="http://www.w3.org/2000/svg">
-      <rect x="80" y="60" width="280" height="120" fill="#f6f8fa" stroke="#1f2328" stroke-width="1.5"/>
-      <text x="100" y="86" font-family="ui-monospace, monospace" font-size="12" font-weight="700" fill="#1f2328">NUMA NODE 0</text>
-      <rect x="120" y="100" width="40" height="30" fill="#ffffff" stroke="#0969da"/>
-      <text x="130" y="120" font-family="ui-monospace, monospace" font-size="9">CPU 0</text>
-      <rect x="170" y="100" width="40" height="30" fill="#ffffff" stroke="#0969da"/>
-      <text x="180" y="120" font-family="ui-monospace, monospace" font-size="9">CPU 1</text>
-      <rect x="220" y="100" width="40" height="30" fill="#ffffff" stroke="#0969da"/>
-      <text x="230" y="120" font-family="ui-monospace, monospace" font-size="9">CPU 2</text>
-      <rect x="270" y="100" width="40" height="30" fill="#ffffff" stroke="#0969da"/>
-      <text x="280" y="120" font-family="ui-monospace, monospace" font-size="9">CPU 3</text>
-      <rect x="120" y="140" width="160" height="30" fill="#eaeef2" stroke="#1f2328"/>
-      <text x="130" y="160" font-family="ui-monospace, monospace" font-size="10">LOCAL MEMORY 16GB</text>
-
-      <rect x="440" y="60" width="280" height="120" fill="#f6f8fa" stroke="#1f2328" stroke-width="1.5"/>
-      <text x="460" y="86" font-family="ui-monospace, monospace" font-size="12" font-weight="700" fill="#1f2328">NUMA NODE 1</text>
-      <rect x="480" y="100" width="40" height="30" fill="#ffffff" stroke="#bf3989"/>
-      <text x="490" y="120" font-family="ui-monospace, monospace" font-size="9">CPU 4</text>
-      <rect x="530" y="100" width="40" height="30" fill="#ffffff" stroke="#bf3989"/>
-      <text x="540" y="120" font-family="ui-monospace, monospace" font-size="9">CPU 5</text>
-      <rect x="580" y="100" width="40" height="30" fill="#ffffff" stroke="#bf3989"/>
-      <text x="590" y="120" font-family="ui-monospace, monospace" font-size="9">CPU 6</text>
-      <rect x="630" y="100" width="40" height="30" fill="#ffffff" stroke="#bf3989"/>
-      <text x="640" y="120" font-family="ui-monospace, monospace" font-size="9">CPU 7</text>
-      <rect x="480" y="140" width="160" height="30" fill="#eaeef2" stroke="#1f2328"/>
-      <text x="490" y="160" font-family="ui-monospace, monospace" font-size="10">LOCAL MEMORY 16GB</text>
-
-      <path d="M360 120 Q400 120 440 120" fill="none" stroke="#1f2328" stroke-width="2" stroke-dasharray="4,4"/>
-      <text x="365" y="110" font-family="-apple-system, sans-serif" font-size="10" fill="#59636e">Interconnect</text>
-      <text x="365" y="140" font-family="-apple-system, sans-serif" font-size="10" fill="#59636e">(slower)</text>
-
-      <rect x="200" y="220" width="400" height="100" fill="#ffffff" stroke="#1f2328" stroke-width="1.5"/>
-      <text x="220" y="246" font-family="ui-monospace, monospace" font-size="12" font-weight="700" fill="#1f2328">MEMORY ACCESS LATENCY</text>
-      <text x="220" y="270" font-family="-apple-system, sans-serif" font-size="12" fill="#0969da">Node 0 CPU → Node 0 Memory: ~100ns</text>
-      <text x="220" y="290" font-family="-apple-system, sans-serif" font-size="12" fill="#bf3989">Node 0 CPU → Node 1 Memory: ~150ns (1.5x slower)</text>
-      <text x="220" y="310" font-family="-apple-system, sans-serif" font-size="12" fill="#59636e">Performance penalty for cross-node memory access</text>
-    </svg>
-  </div>
-  <div class="diagram-caption">NUMA topology with two nodes. Memory access is faster within the same node than across the interconnect.</div>
-</div>
-
-<h3>CPU affinity and isolation</h3>
-
-<p>You can control which CPUs a process is allowed to run on:</p>
-
-<pre><code><span class="c"># Check current CPU affinity of PID 1234</span>
-taskset -p 1234
-taskset -cp 1234                <span class="c"># CPU list format</span>
-
-<span class="c"># Set affinity to CPUs 0-3 (NUMA node 0)</span>
-taskset -cp 0-3 1234
-
-<span class="c"># Launch a process pinned to specific CPUs</span>
-taskset -c 2,3 ./compute_intensive_app
-
-<span class="c"># Using cgroups cpuset controller</span>
-echo "0-3" > /sys/fs/cgroup/cpuset/my_group/cpuset.cpus
-echo "0"   > /sys/fs/cgroup/cpuset/my_group/cpuset.mems  <span class="c"># NUMA node 0 memory</span>
-echo 1234  > /sys/fs/cgroup/cpuset/my_group/cgroup.procs</code></pre>
-
-<h3>CPU isolation techniques</h3>
-
-<table>
-  <thead>
-    <tr><th>Method</th><th>Purpose</th><th>Implementation</th></tr>
-  </thead>
-  <tbody>
-    <tr><td><code>isolcpus</code></td><td>Remove CPUs from general scheduling</td><td>Kernel boot param: <code>isolcpus=2-7</code></td></tr>
-    <tr><td><code>nohz_full</code></td><td>Disable timer interrupts on dedicated CPUs</td><td>Boot param: <code>nohz_full=2-7</code></td></tr>
-    <tr><td><code>rcu_nocbs</code></td><td>Move RCU callbacks off isolated CPUs</td><td>Boot param: <code>rcu_nocbs=2-7</code></td></tr>
-    <tr><td><code>cpuset</code></td><td>Runtime CPU assignment via cgroups</td><td>Echo CPU list to cpuset.cpus</td></tr>
-  </tbody>
-</table>
-
-<div class="note">
-  <p class="callout-title">Note</p>
-  <p>For true CPU isolation (e.g., for low-latency trading or real-time control), you typically need all three boot parameters together plus careful application design to avoid syscalls and page faults.</p>
-</div>
-
-<h2 id="tlb-cache">TLB &amp; cache effects <a href="#tlb-cache" class="anchor">#</a></h2>
-
-<p>When a process migrates between CPU cores, it loses several important caches:</p>
-
-<div class="diagram">
-  <div class="diagram-header">
-    <span>Figure 6</span>
-    <span>cpu-cache-hierarchy.svg</span>
-  </div>
-  <div class="diagram-body">
-    <svg viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg">
-      <rect x="100" y="40" width="200" height="320" fill="#f6f8fa" stroke="#1f2328" stroke-width="1.5"/>
-      <text x="120" y="66" font-family="ui-monospace, monospace" font-size="12" font-weight="700" fill="#1f2328">CPU CORE 0</text>
-
-      <rect x="120" y="80" width="160" height="40" fill="#ffffff" stroke="#0969da"/>
-      <text x="130" y="96" font-family="ui-monospace, monospace" font-size="10" font-weight="600">L1 I-CACHE</text>
-      <text x="130" y="110" font-family="ui-monospace, monospace" font-size="9">32KB, 1 cycle</text>
-
-      <rect x="120" y="130" width="160" height="40" fill="#ffffff" stroke="#0969da"/>
-      <text x="130" y="146" font-family="ui-monospace, monospace" font-size="10" font-weight="600">L1 D-CACHE</text>
-      <text x="130" y="160" font-family="ui-monospace, monospace" font-size="9">32KB, 1 cycle</text>
-
-      <rect x="120" y="180" width="160" height="40" fill="#eaeef2" stroke="#1f2328"/>
-      <text x="130" y="196" font-family="ui-monospace, monospace" font-size="10" font-weight="600">TLB</text>
-      <text x="130" y="210" font-family="ui-monospace, monospace" font-size="9">1536 entries</text>
-
-      <rect x="120" y="230" width="160" height="40" fill="#eaeef2" stroke="#1f2328"/>
-      <text x="130" y="246" font-family="ui-monospace, monospace" font-size="10" font-weight="600">L2 CACHE</text>
-      <text x="130" y="260" font-family="ui-monospace, monospace" font-size="9">256KB, 3 cycles</text>
-
-      <rect x="120" y="280" width="160" height="40" fill="#eaeef2" stroke="#1f2328"/>
-      <text x="130" y="296" font-family="ui-monospace, monospace" font-size="10" font-weight="600">L3 CACHE</text>
-      <text x="130" y="310" font-family="ui-monospace, monospace" font-size="9">8MB, 12 cycles</text>
-
-      <rect x="500" y="40" width="200" height="320" fill="#f6f8fa" stroke="#1f2328" stroke-width="1.5"/>
-      <text x="520" y="66" font-family="ui-monospace, monospace" font-size="12" font-weight="700" fill="#1f2328">CPU CORE 1</text>
-
-      <rect x="520" y="80" width="160" height="40" fill="#f6f8fa" stroke="#d1d9e0"/>
-      <text x="530" y="96" font-family="ui-monospace, monospace" font-size="10" font-weight="600" fill="#818b98">L1 I-CACHE</text>
-      <text x="530" y="110" font-family="ui-monospace, monospace" font-size="9" fill="#818b98">COLD / EMPTY</text>
-
-      <rect x="520" y="130" width="160" height="40" fill="#f6f8fa" stroke="#d1d9e0"/>
-      <text x="530" y="146" font-family="ui-monospace, monospace" font-size="10" font-weight="600" fill="#818b98">L1 D-CACHE</text>
-      <text x="530" y="160" font-family="ui-monospace, monospace" font-size="9" fill="#818b98">COLD / EMPTY</text>
-
-      <rect x="520" y="180" width="160" height="40" fill="#f6f8fa" stroke="#d1d9e0"/>
-      <text x="530" y="196" font-family="ui-monospace, monospace" font-size="10" font-weight="600" fill="#818b98">TLB</text>
-      <text x="530" y="210" font-family="ui-monospace, monospace" font-size="9" fill="#818b98">COLD / EMPTY</text>
-
-      <rect x="520" y="230" width="160" height="40" fill="#eaeef2" stroke="#1f2328"/>
-      <text x="530" y="246" font-family="ui-monospace, monospace" font-size="10" font-weight="600">L2 CACHE</text>
-      <text x="530" y="260" font-family="ui-monospace, monospace" font-size="9">Different data</text>
-
-      <rect x="320" y="280" width="160" height="40" fill="#eaeef2" stroke="#1f2328"/>
-      <text x="360" y="296" font-family="ui-monospace, monospace" font-size="10" font-weight="600">L3 CACHE</text>
-      <text x="345" y="310" font-family="ui-monospace, monospace" font-size="9">SHARED (good!)</text>
-
-      <path d="M300 300 L320 300" fill="none" stroke="#1f2328" stroke-width="1.5"/>
-      <path d="M480 300 L500 300" fill="none" stroke="#1f2328" stroke-width="1.5"/>
-
-      <path d="M350 240 Q400 160 550 240" fill="none" stroke="#bf3989" stroke-width="2" marker-end="url(#arr3)"/>
-      <text x="420" y="140" font-family="-apple-system, sans-serif" font-size="11" font-weight="600" fill="#bf3989">Process migration</text>
-      <text x="420" y="156" font-family="-apple-system, sans-serif" font-size="11" fill="#bf3989">Cache misses!</text>
-    </svg>
-  </div>
-  <div class="diagram-caption">When a process migrates to a different CPU core, L1/L2 caches and TLB are cold. Only L3 cache (if shared) has warm data.</div>
-</div>
-
-<h3>What gets lost during migration</h3>
-
-<table>
-  <thead>
-    <tr><th>Cache/Buffer</th><th>Size</th><th>Miss penalty</th><th>Impact</th></tr>
-  </thead>
-  <tbody>
-    <tr><td>L1 instruction cache</td><td>32KB</td><td>~3-12 cycles</td><td>Code execution slowdown</td></tr>
-    <tr><td>L1 data cache</td><td>32KB</td><td>~3-12 cycles</td><td>Data access slowdown</td></tr>
-    <tr><td>L2 cache</td><td>256KB-1MB</td><td>~12-35 cycles</td><td>Moderate performance hit</td></tr>
-    <tr><td>TLB</td><td>1500+ entries</td><td>~100-300 cycles</td><td>Virtual memory translation slowdown</td></tr>
-    <tr><td>Branch predictor</td><td>~64KB</td><td>~10-20 cycles</td><td>Control flow misprediction</td></tr>
-  </tbody>
-</table>
-
-<h3>TLB (Translation Lookaside Buffer)</h3>
-<p>The TLB caches virtual-to-physical address translations. When a process moves to a new core, the TLB is cold and every memory access initially requires a expensive page table walk.</p>
-
-<pre><code><span class="c"># Check TLB miss rate</span>
-perf stat -e dTLB-misses,iTLB-misses,page-faults ./your_app
-
-<span class="c"># Monitor process migrations</span>
-perf stat -e migrations,cs ./your_app
-
-<span class="c"># See huge page usage (reduces TLB pressure)</span>
-cat /proc/meminfo | grep -i huge
-grep -E "AnonHugePages|HugePages" /proc/*/smaps</code></pre>
-
-<div class="tip">
-  <p class="callout-title">Tip</p>
-  <p>Huge pages (2MB or 1GB instead of 4KB) dramatically reduce TLB pressure. A 2MB huge page covers 512× more address space than a regular page, meaning far fewer TLB entries needed for large memory applications.</p>
-</div>
-
-<h2 id="takeaways">Key takeaways <a href="#takeaways" class="anchor">#</a></h2>
-
-<h3>For application developers</h3>
-<ul>
-  <li><strong>Don't set real-time priorities unless you understand the risks.</strong> <code>SCHED_FIFO</code> can hang your system.</li>
-  <li><strong>Use nice values judiciously.</strong> Nice only affects <code>SCHED_OTHER</code> tasks competing against each other.</li>
-  <li><strong>Memory limits trigger OOM kills, CPU limits trigger throttling.</strong> Design your applications to handle both gracefully.</li>
-  <li><strong>CPU pinning helps latency-sensitive workloads</strong> but reduces overall system flexibility.</li>
-</ul>
-
-<h3>For SREs and platform teams</h3>
-<ul>
-  <li><strong>Monitor throttling and OOM events.</strong> They're often early signals of resource contention.</li>
-  <li><strong>Understand your PREEMPT model.</strong> <code>PREEMPT_VOLUNTARY</code> is the sweet spot for most server workloads.</li>
-  <li><strong>Use cgroups v2 for new deployments.</strong> The unified hierarchy is simpler and more predictable.</li>
-  <li><strong>NUMA awareness matters for large applications.</strong> Memory locality can impact performance significantly.</li>
-  <li><strong>Container limits don't replace proper application design.</strong> They're a safety net, not a performance optimization.</li>
-</ul>
-
-<h3>For Kubernetes users</h3>
-<ul>
-  <li><strong>Resource requests and limits map to cgroups.</strong> Requests affect scheduling, limits trigger enforcement.</li>
-  <li><strong>QoS classes control OOM kill order.</strong> Guaranteed pods are protected from BestEffort pod OOM kills.</li>
-  <li><strong>Node pressure eviction is separate from cgroup limits.</strong> Both can trigger pod restarts.</li>
-  <li><strong>CPU pinning requires static CPU manager policy</strong> and integer CPU requests.</li>
-</ul>
-
-
-<!-- ============================================ -->
-<!-- DEEP DIVE SECTIONS                            -->
-<!-- ============================================ -->
-
-<h2 id="deep-preemption">Deep dive: Kernel preemption <a href="#deep-preemption" class="anchor">#</a></h2>
-
-<p>Every task carries a per-CPU <code>preempt_count</code> bitfield tracking reasons preemption is disabled:</p>
-
-<pre>
-<span class="comment">// include/linux/preempt.h — conceptual layout</span>
-<span class="comment">//   bits  0..7   PREEMPT_MASK  — explicit preempt_disable() nesting</span>
-<span class="comment">//   bits  8..15  SOFTIRQ_MASK  — inside a softirq</span>
-<span class="comment">//   bits 16..19  HARDIRQ_MASK  — inside a hardirq</span>
-<span class="comment">//   bit  20      NMI_MASK      — inside an NMI</span>
-<span class="comment">//   bit  31      PREEMPT_NEED_RESCHED  (inverted flag)</span>
-
-static inline bool preemptible(void) {
-    return preempt_count() == 0 &amp;&amp; !irqs_disabled();
-}
-</pre>
-
-<p>The scheduler sets <code>TIF_NEED_RESCHED</code> when a higher-priority task wakes up. The interaction:</p>
-<ul>
-<li><strong>Returning to user mode:</strong> always checks the flag and calls <code>schedule()</code> if set.</li>
-<li><strong>Returning to kernel mode:</strong> only checks if <code>preempt_count == 0</code> AND the build allows kernel preemption.</li>
-<li><strong>Voluntary points:</strong> <code>cond_resched()</code> calls in long kernel loops yield if the flag is set.</li>
-</ul>
-
-<h3>Scheduling classes — the priority ladder</h3>
-<p>Every task belongs to exactly one class, and class order is absolute: a single task in a higher class always beats any number of tasks in a lower one.</p>
-
-<div class="callout note">
-<div class="callout-title">Note · privilege</div>
-<p>Moving <em>up</em> into a real-time class (DEADLINE, FIFO, RR) requires <code>CAP_SYS_NICE</code>. Moving <em>down</em> — to <code>SCHED_IDLE</code>, or to a higher nice value — is always allowed.</p>
-</div>
-
-<pre>
-<span class="comment"># Inspect a process's class &amp; priority</span>
-chrt -p $(pidof pipewire)
-
-<span class="comment"># Launch a job in a class</span>
-chrt -f 50 ./audio_server      <span class="comment"># SCHED_FIFO prio 50</span>
-chrt -i 0  ./nightly_backup     <span class="comment"># SCHED_IDLE</span>
-nice -n 10 ./big_compile        <span class="comment"># SCHED_NORMAL with nice=10</span>
-
-<span class="comment"># Change from C</span>
-struct sched_param p = { .sched_priority = 80 };
-sched_setscheduler(0, SCHED_FIFO, &amp;p);
-</pre>
-
-<h3>PREEMPT_RT — what actually changes</h3>
-<p>PREEMPT_RT restructures long-standing mechanisms so almost any kernel code path can be preempted:</p>
-<ul>
-<li><strong>Spinlocks become sleeping mutexes.</strong> Most <code>spin_lock()</code>s are converted to <code>rt_mutex</code> with priority inheritance.</li>
-<li><strong>Interrupts run in threads.</strong> Each IRQ line gets a kthread. A high-priority RT task can preempt an interrupt handler.</li>
-<li><strong>Softirqs are per-task.</strong> No longer at random points in unrelated contexts.</li>
-<li><strong>Priority inheritance everywhere.</strong> When a low-priority task holds a lock a high-priority task needs, the holder is temporarily boosted.</li>
-</ul>
-
-<h3>Real-time workloads in practice</h3>
-<p>Real-time means <strong>predictable</strong>, not fast. A workload that must respond within 100 μs every time needs:</p>
-<ul>
-<li>The PREEMPT_RT kernel</li>
-<li>An RT scheduling class — <code>SCHED_FIFO</code> or <code>SCHED_DEADLINE</code></li>
-<li>Memory pre-faulted with <code>mlockall(MCL_CURRENT | MCL_FUTURE)</code></li>
-<li>CPU pinning via <code>sched_setaffinity()</code> onto an <code>isolcpus=</code>/<code>nohz_full=</code> isolated core</li>
-</ul>
-
-<pre>
-<span class="comment">// minimal SCHED_DEADLINE task</span>
-struct sched_attr attr = {
-    .size           = sizeof(attr),
+  <aside class="toc-left">
+    <div class="group">
+      <div class="group-title">Kernel Internals</div>
+      <a href="#preemption" class="active">Preemption</a>
+      <a href="#namespaces">Namespaces</a>
+      <a href="#cgroups">Control groups</a>
+      <a href="#containers">Containers</a>
+      <a href="#networking">Networking</a>
+      <a href="#memory">Memory</a>
+      <a href="#storage">Storage</a>
+      <a href="#systemd-cookbook">Service tuning</a>
+      <a href="#troubleshooting">Troubleshooting</a>
+      <a href="#design">Design scenarios</a>
+    </div>
+    <div class="group">
+      <div class="group-title">Related</div>
+      <a href="#">Scheduler classes</a>
+      <a href="#">RCU</a>
+      <a href="#">Memory management</a>
+      <a href="#">Block I/O</a>
+      <a href="#">Tracing &amp; eBPF</a>
+    </div>
+    <div class="group">
+      <div class="group-title">Reference</div>
+      <a href="#">syscalls(2)</a>
+      <a href="#">cgroups(7)</a>
+      <a href="#">namespaces(7)</a>
+      <a href="#">sched(7)</a>
+    </div>
+  </aside>
+
+  <main>
+    <h1>Kernel preemption, cgroups &amp; namespaces</h1>
+    <p class="subtitle">
+      A deep tour through three mechanisms in the Linux kernel: the preemption model that bounds your latency,
+      and the namespaces and cgroups that compose every container.
+    </p>
+
+    <div class="badges">
+      <span class="badge"><span class="dot"></span>Stable</span>
+      <span class="badge">Kernel 6.x</span>
+      <span class="badge">~15 min read</span>
+      <span class="badge">Depth 9/10</span>
+    </div>
+
+    <h2 id="preemption">Kernel preemption</h2>
+
+    <p>
+      Every CPU runs exactly one thing at a time. The scheduler decides which thing.
+      <strong>Preemption</strong> is the act of forcibly taking the CPU away from a running task —
+      because something higher-priority woke up, or because the running task burned its time slice.
+    </p>
+
+    <p>
+      Preempting userspace has always been free in Linux. The interesting question — the one that defines
+      real-time latency — is whether code running <em>in kernel mode</em> can be preempted. The answer ranges
+      from "almost never" to "almost always," and you choose at build time.
+    </p>
+
+    <h3 id="mechanism">The mechanism</h3>
+
+    <p>
+      Every task carries a per-CPU <code>preempt_count</code>. It's a bitfield, not a counter — different
+      sub-ranges track different reasons preemption is currently disabled:
+    </p>
+
+<pre><span class="com">// include/linux/preempt.h — conceptual layout</span>
+<span class="com">//   bits  0..7   PREEMPT_MASK  — explicit preempt_disable() nesting</span>
+<span class="com">//   bits  8..15  SOFTIRQ_MASK  — inside a softirq</span>
+<span class="com">//   bits 16..19  HARDIRQ_MASK  — inside a hardirq</span>
+<span class="com">//   bit  20      NMI_MASK      — inside an NMI</span>
+<span class="com">//   bit  31      PREEMPT_NEED_RESCHED  (inverted flag)</span>
+
+<span class="kw">static inline bool</span> <span class="fn">preemptible</span>(<span class="kw">void</span>) {
+    <span class="kw">return</span> preempt_count() == <span class="num">0</span> && !irqs_disabled();
+}</pre>
+
+    <p>
+      Separately, the scheduler sets <code>TIF_NEED_RESCHED</code> on a task when it decides that task should yield —
+      e.g. when <code>try_to_wake_up()</code> just queued a higher-priority task. The interaction:
+    </p>
+
+    <ul>
+      <li><strong>Returning to user mode:</strong> always checks the flag and calls <code>schedule()</code> if set. Has worked this way since forever.</li>
+      <li><strong>Returning to kernel mode:</strong> only checks if <code>preempt_count == 0</code> AND the build allows kernel preemption. This is where the models differ.</li>
+      <li><strong>Voluntary points:</strong> <code>cond_resched()</code> calls in long kernel loops yield if the flag is set.</li>
+    </ul>
+
+    <div class="diagram">
+      <div class="diagram-head">
+        <span><span class="id">Figure 1</span> · preemption decision flow on IRQ exit</span>
+        <span>SVG</span>
+      </div>
+      <div class="diagram-body">
+<svg viewBox="0 0 900 360" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arr1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1f2328"/>
+    </marker>
+    <marker id="arr_red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#d1242f"/>
+    </marker>
+    <marker id="arr_green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1a7f37"/>
+    </marker>
+  </defs>
+  <line x1="40" y1="55" x2="860" y2="55" stroke="#d1d9e0" stroke-dasharray="2,4"/>
+  <text x="40" y="42" fill="#0969da" font-size="11">time →</text>
+  <rect x="40" y="70" width="180" height="32" fill="#dafbe1" stroke="#1a7f37"/>
+  <text x="130" y="91" text-anchor="middle" font-size="12">task A · user mode</text>
+  <rect x="220" y="70" width="280" height="32" fill="#fff8c5" stroke="#9a6700"/>
+  <text x="360" y="91" text-anchor="middle" font-size="12">task A · kernel (syscall)</text>
+  <line x1="340" y1="50" x2="340" y2="70" stroke="#d1242f" stroke-width="2" marker-end="url(#arr_red)"/>
+  <text x="344" y="46" fill="#d1242f" font-size="10" font-weight="600">⚡ IRQ</text>
+  <rect x="340" y="110" width="78" height="20" fill="#ffebe9" stroke="#d1242f"/>
+  <text x="379" y="124" text-anchor="middle" fill="#d1242f" font-size="10">hardirq</text>
+  <text x="379" y="146" text-anchor="middle" font-size="10" fill="#59636e">wake_up(B)</text>
+  <text x="379" y="158" text-anchor="middle" font-size="10" fill="#1a7f37">set TIF_NEED_RESCHED</text>
+  <line x1="418" y1="70" x2="418" y2="200" stroke="#0969da" stroke-dasharray="3,3"/>
+  <text x="422" y="200" fill="#0969da" font-size="10">irq_exit()</text>
+  <rect x="460" y="180" width="170" height="46" fill="#ddf4ff" stroke="#0969da" rx="4"/>
+  <text x="545" y="200" text-anchor="middle" font-size="11" font-weight="600">preempt_count == 0?</text>
+  <text x="545" y="216" text-anchor="middle" font-size="10" fill="#59636e">(depends on model)</text>
+  <line x1="460" y1="210" x2="300" y2="260" stroke="#d1242f" stroke-width="1.5" marker-end="url(#arr_red)"/>
+  <text x="370" y="252" fill="#d1242f" font-size="10">no → finish syscall first</text>
+  <line x1="630" y1="210" x2="770" y2="260" stroke="#1a7f37" stroke-width="1.5" marker-end="url(#arr_green)"/>
+  <text x="760" y="252" fill="#1a7f37" text-anchor="end" font-size="10">yes → schedule()</text>
+  <rect x="220" y="275" width="190" height="32" fill="#fff8c5" stroke="#9a6700" stroke-dasharray="3,3"/>
+  <text x="315" y="296" text-anchor="middle" font-size="11">A finishes syscall</text>
+  <rect x="410" y="275" width="110" height="32" fill="#ddf4ff" stroke="#0969da" stroke-dasharray="3,3"/>
+  <text x="465" y="296" text-anchor="middle" font-size="11" fill="#0969da">B runs (later)</text>
+  <rect x="680" y="275" width="180" height="32" fill="#ddf4ff" stroke="#0969da"/>
+  <text x="770" y="296" text-anchor="middle" font-size="12" font-weight="600" fill="#0969da">B preempts A — now</text>
+  <g transform="translate(40, 330)" font-size="11" fill="#59636e">
+    <rect width="12" height="12" fill="#dafbe1" stroke="#1a7f37"/><text x="18" y="10">user</text>
+    <rect x="70" width="12" height="12" fill="#fff8c5" stroke="#9a6700"/><text x="88" y="10">kernel</text>
+    <rect x="150" width="12" height="12" fill="#ffebe9" stroke="#d1242f"/><text x="168" y="10">IRQ</text>
+    <rect x="210" width="12" height="12" fill="#ddf4ff" stroke="#0969da"/><text x="228" y="10">other task</text>
+  </g>
+</svg>
+      </div>
+      <div class="diagram-cap">The lower branch is <code>PREEMPT_NONE</code>: task B waits until A's syscall returns. The upper branch is <code>PREEMPT</code>/<code>PREEMPT_RT</code>: B takes the CPU immediately, even though A is mid-syscall.</div>
+    </div>
+
+    <h3 id="sched-classes">Scheduling classes — who actually wins</h3>
+
+    <p>
+      Preemption only fires when something <em>higher priority</em> needs to run. So the prior
+      question is: what makes something higher? Linux answers with <strong>scheduling classes</strong> —
+      a strict ladder of policies. Every task belongs to exactly one class, and class order is
+      absolute: a single task in a higher class always beats any number of tasks in a lower one.
+    </p>
+
+    <table>
+      <thead><tr><th>Class</th><th>Algorithm</th><th>Used for</th></tr></thead>
+      <tbody>
+        <tr><td>SCHED_DEADLINE</td><td>Earliest-Deadline-First, admission-controlled</td><td>Industrial control, robotics</td></tr>
+        <tr><td>SCHED_FIFO</td><td>Runs until it blocks or yields — no timeslice</td><td>Audio engines, IRQ threads</td></tr>
+        <tr><td>SCHED_RR</td><td>Like FIFO but with a ~100 ms timeslice at equal prio</td><td>Several RT tasks sharing one priority</td></tr>
+        <tr><td>SCHED_NORMAL</td><td>Default — CFS/EEVDF, fairness by <code>nice</code> weight</td><td>Everything you've ever launched</td></tr>
+        <tr><td>SCHED_BATCH</td><td>Like NORMAL but no wake-up boost — treated as CPU-bound</td><td>Long compute jobs</td></tr>
+        <tr><td>SCHED_IDLE</td><td>Runs only when nothing else wants the CPU</td><td>Lowest-priority background work</td></tr>
+      </tbody>
+    </table>
+
+    <h4>Who picks the class?</h4>
+
+    <p>
+      Almost certainly not the program. The default is <strong>inherited</strong>: <code>fork()</code>
+      and <code>execve()</code> hand the new task its parent's class and parameters. Your shell runs as
+      <code>SCHED_NORMAL</code> with <code>nice=0</code>, so every command you launch does too.
+    </p>
+
+    <p>Four ways the class actually changes:</p>
+
+    <ul>
+      <li><strong>The program asks.</strong> <code>sched_setscheduler(2)</code> / <code>sched_setattr(2)</code> from libc.</li>
+      <li><strong>An external tool.</strong> <code>chrt -f 50 ./myprogram</code> launches in <code>SCHED_FIFO</code> at priority 50.</li>
+      <li><strong>systemd.</strong> Unit directives <code>CPUSchedulingPolicy=fifo</code>, <code>CPUSchedulingPriority=50</code>.</li>
+      <li><strong>The kernel itself.</strong> For its own threads via <code>sched_setscheduler_nocheck()</code>.</li>
+    </ul>
+
+    <div class="alert note">
+      <div class="alert-title">Note · privilege</div>
+      <p>
+        Moving <em>up</em> into a real-time class (DEADLINE, FIFO, RR) requires <code>CAP_SYS_NICE</code>.
+        Moving <em>down</em> — to <code>SCHED_IDLE</code>, or to a higher nice value — is always allowed.
+      </p>
+    </div>
+
+    <div class="diagram">
+      <div class="diagram-head">
+        <span><span class="id">Figure 2</span> · priority ranking · class ladder + nice zoom into SCHED_NORMAL</span>
+        <span>SVG</span>
+      </div>
+      <div class="diagram-body">
+<svg viewBox="0 0 900 380" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arrz" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0969da"/>
+    </marker>
+  </defs>
+  <text x="20" y="22" font-size="12" font-weight="600">Class is the lane · nice positions a task within SCHED_NORMAL only</text>
+  <text x="40" y="50" font-size="11" font-weight="500" fill="#59636e">CLASS LADDER · top wins absolutely</text>
+  <rect x="40" y="60" width="340" height="56" fill="#ffebe9" stroke="#d1242f"/>
+  <text x="56" y="84" font-size="12" font-weight="600" fill="#d1242f">SCHED_DEADLINE</text>
+  <text x="364" y="84" text-anchor="end" font-size="11" fill="#59636e">runtime / deadline / period</text>
+  <text x="56" y="103" font-size="10" fill="#59636e">"finish by this deadline" · admission-controlled</text>
+  <rect x="40" y="120" width="340" height="56" fill="#fff8c5" stroke="#9a6700"/>
+  <text x="56" y="144" font-size="12" font-weight="600" fill="#9a6700">SCHED_FIFO · SCHED_RR</text>
+  <text x="364" y="144" text-anchor="end" font-size="11" fill="#59636e">rt_priority 1–99</text>
+  <text x="56" y="163" font-size="10" fill="#59636e">audio engines · IRQ threads · higher prio always wins</text>
+  <rect x="40" y="180" width="340" height="56" fill="#ddf4ff" stroke="#0969da" stroke-width="2"/>
+  <text x="56" y="204" font-size="12" font-weight="600" fill="#0969da">SCHED_NORMAL · SCHED_BATCH</text>
+  <text x="364" y="204" text-anchor="end" font-size="11" fill="#0969da">nice −20 … +19</text>
+  <text x="56" y="223" font-size="10" fill="#59636e">CFS / EEVDF · everything you've ever launched</text>
+  <rect x="40" y="240" width="340" height="56" fill="#eaeef2" stroke="#6e7781"/>
+  <text x="56" y="264" font-size="12" font-weight="600" fill="#6e7781">SCHED_IDLE</text>
+  <text x="364" y="264" text-anchor="end" font-size="11" fill="#59636e">leftover CPU only</text>
+  <text x="56" y="283" font-size="10" fill="#59636e">runs only when nothing else wants the CPU</text>
+  <path d="M 380 208 L 460 208" stroke="#0969da" stroke-width="2" fill="none" marker-end="url(#arrz)"/>
+  <text x="420" y="200" text-anchor="middle" font-size="10" fill="#0969da">zoom</text>
+  <text x="490" y="50" font-size="11" font-weight="500" fill="#0969da">SCHED_NORMAL · nice → CFS weight</text>
+  <line x1="490" y1="296" x2="880" y2="296" stroke="#0969da" stroke-width="1"/>
+  <rect x="500" y="82" width="60" height="214" fill="#0969da"/>
+  <text x="530" y="312" text-anchor="middle" font-size="11" fill="#1f2328" font-weight="500">−20</text>
+  <text x="530" y="76" text-anchor="middle" font-size="9" fill="#59636e">88761</text>
+  <rect x="575" y="172" width="60" height="124" fill="#0969da" fill-opacity="0.7"/>
+  <text x="605" y="312" text-anchor="middle" font-size="11" fill="#1f2328" font-weight="500">−10</text>
+  <text x="605" y="166" text-anchor="middle" font-size="9" fill="#59636e">9548</text>
+  <rect x="650" y="225" width="60" height="71" fill="#0969da" fill-opacity="0.55"/>
+  <text x="680" y="312" text-anchor="middle" font-size="11" fill="#1f2328" font-weight="600">0</text>
+  <text x="680" y="219" text-anchor="middle" font-size="9" fill="#59636e">1024</text>
+  <text x="680" y="328" text-anchor="middle" font-size="9" fill="#0969da">default</text>
+  <rect x="725" y="266" width="60" height="30" fill="#0969da" fill-opacity="0.4"/>
+  <text x="755" y="312" text-anchor="middle" font-size="11" fill="#1f2328" font-weight="500">+10</text>
+  <text x="755" y="260" text-anchor="middle" font-size="9" fill="#59636e">110</text>
+  <rect x="800" y="288" width="60" height="8" fill="#0969da" fill-opacity="0.3"/>
+  <text x="830" y="312" text-anchor="middle" font-size="11" fill="#1f2328" font-weight="500">+19</text>
+  <text x="830" y="282" text-anchor="middle" font-size="9" fill="#59636e">15</text>
+  <text x="685" y="352" text-anchor="middle" font-size="10" fill="#59636e">more weight ← CFS share → less weight</text>
+  <text x="685" y="367" text-anchor="middle" font-size="10" fill="#59636e">nice differs by 1 → ≈ 10% CPU difference at contention</text>
+</svg>
+      </div>
+      <div class="diagram-cap">Class is the lane; <code>nice</code> positions a task within SCHED_NORMAL only. CFS/EEVDF balances vruntime by these weights.</div>
+    </div>
+
+<pre><span class="com"># Inspect a process's class &amp; priority</span>
+<span class="kw">chrt</span> -p $(<span class="fn">pidof</span> pipewire)
+
+<span class="com"># Launch a job in a class</span>
+<span class="kw">chrt</span> -f <span class="num">50</span> ./audio_server      <span class="com"># SCHED_FIFO prio 50</span>
+<span class="kw">chrt</span> -i <span class="num">0</span>  ./nightly_backup     <span class="com"># SCHED_IDLE</span>
+<span class="kw">nice</span> -n <span class="num">10</span> ./big_compile        <span class="com"># SCHED_NORMAL with nice=10</span>
+
+<span class="com"># Change from C</span>
+<span class="ty">struct</span> sched_param p = { .sched_priority = <span class="num">80</span> };
+<span class="fn">sched_setscheduler</span>(<span class="num">0</span>, SCHED_FIFO, &amp;p);</pre>
+
+    <h3 id="preemption-gate">The preemption gate — same wakeup, two outcomes</h3>
+
+    <p>
+      Priority decides <em>who should be running</em>. A separate question: <em>when can the switch
+      actually happen?</em> Under <code>PREEMPT_NONE</code>, the answer depends on what mode A
+      was in when B woke up.
+    </p>
+
+    <div class="diagram">
+      <div class="diagram-head">
+        <span><span class="id">Figure 3</span> · the preemption gate · user mode (open) vs kernel mode (closed)</span>
+        <span>SVG</span>
+      </div>
+      <div class="diagram-body">
+<svg viewBox="0 0 900 340" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arrok" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1a7f37"/>
+    </marker>
+  </defs>
+  <text x="20" y="22" font-size="12" font-weight="600">B wakes up · higher priority · same kernel · outcome depends on where A is</text>
+  <rect x="20" y="50" width="420" height="270" fill="#f6fdf9" stroke="#1a7f37" stroke-width="1.5" rx="4"/>
+  <text x="34" y="74" font-size="13" font-weight="600" fill="#1a7f37">A in user mode · gate OPEN</text>
+  <rect x="50" y="100" width="160" height="80" fill="#dafbe1" stroke="#1a7f37"/>
+  <text x="130" y="130" text-anchor="middle" font-size="12" font-weight="600">Task A</text>
+  <text x="130" y="150" text-anchor="middle" font-size="10" fill="#59636e">running user code</text>
+  <text x="130" y="167" text-anchor="middle" font-size="10" fill="#1a7f37">on CPU</text>
+  <rect x="260" y="100" width="160" height="80" fill="#fff" stroke="#1a7f37" stroke-dasharray="3,3"/>
+  <text x="340" y="130" text-anchor="middle" font-size="12" font-weight="600">Task B</text>
+  <text x="340" y="150" text-anchor="middle" font-size="10" fill="#59636e">wakes, higher prio</text>
+  <text x="340" y="167" text-anchor="middle" font-size="10" fill="#59636e">runnable</text>
+  <path d="M 340 180 Q 340 230 130 230 Q 130 200 130 185" stroke="#1a7f37" stroke-width="2" fill="none" marker-end="url(#arrok)"/>
+  <text x="230" y="265" text-anchor="middle" font-size="11" fill="#1a7f37" font-weight="500">B takes the CPU at the next tick / IRQ exit</text>
+  <text x="230" y="283" text-anchor="middle" font-size="10" fill="#59636e">latency: microseconds</text>
+  <rect x="460" y="50" width="420" height="270" fill="#fff5f5" stroke="#d1242f" stroke-width="1.5" rx="4"/>
+  <text x="474" y="74" font-size="13" font-weight="600" fill="#d1242f">A in kernel mode · PREEMPT_NONE · gate CLOSED</text>
+  <rect x="490" y="100" width="160" height="80" fill="#ffebe9" stroke="#d1242f"/>
+  <text x="570" y="130" text-anchor="middle" font-size="12" font-weight="600">Task A</text>
+  <text x="570" y="150" text-anchor="middle" font-size="10" fill="#59636e">inside a syscall</text>
+  <text x="570" y="167" text-anchor="middle" font-size="10" fill="#d1242f">on CPU · in kernel</text>
+  <rect x="700" y="100" width="160" height="80" fill="#fff" stroke="#d1242f" stroke-dasharray="3,3"/>
+  <text x="780" y="130" text-anchor="middle" font-size="12" font-weight="600">Task B</text>
+  <text x="780" y="150" text-anchor="middle" font-size="10" fill="#59636e">wakes, FIFO prio 99</text>
+  <text x="780" y="167" text-anchor="middle" font-size="10" fill="#d1242f">WAITS</text>
+  <line x1="673" y1="195" x2="673" y2="240" stroke="#d1242f" stroke-width="4"/>
+  <text x="685" y="222" font-size="10" fill="#d1242f" font-weight="600">GATE</text>
+  <path d="M 780 180 Q 780 220 695 220" stroke="#d1242f" stroke-width="2" stroke-dasharray="5,3" fill="none"/>
+  <circle cx="695" cy="220" r="3" fill="#d1242f"/>
+  <text x="670" y="265" text-anchor="middle" font-size="11" fill="#d1242f" font-weight="500">A finishes the syscall first · B cannot break in</text>
+  <text x="670" y="283" text-anchor="middle" font-size="10" fill="#59636e">latency: whole syscall — could be many ms</text>
+</svg>
+      </div>
+      <div class="diagram-cap">Same priority math, same wake-up event. The only difference is where A happened to be executing.</div>
+    </div>
+
+    <h4>Scenarios under PREEMPT_NONE</h4>
+
+    <table>
+      <thead>
+        <tr><th>#</th><th>A (running)</th><th>B (wakes up)</th><th>Result under PREEMPT_NONE</th><th>Lesson</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1</td><td>nice=0, user</td><td>nice=0</td><td>A finishes timeslice; scheduler picks at tick</td><td>Equal weight → fair share</td></tr>
+        <tr><td>2</td><td>nice=0, user</td><td>nice=−20</td><td>B preempts A at next tick</td><td>Userspace is always preemptible</td></tr>
+        <tr><td>3</td><td>nice=−20, user</td><td>nice=0</td><td>A keeps running</td><td>Lower-weight challenger loses</td></tr>
+        <tr><td>4</td><td>nice=19, user</td><td>nice=−20</td><td>B preempts A almost immediately</td><td>Big weight gap, user path</td></tr>
+        <tr><td>5</td><td>nice=0, in syscall</td><td>nice=−20</td><td>B waits until syscall returns</td><td><strong>Core PREEMPT_NONE rule</strong></td></tr>
+        <tr><td>6</td><td>nice=−20, in syscall</td><td>nice=−20</td><td>B waits for syscall to finish</td><td>Same-prio kernel work still blocks</td></tr>
+        <tr><td>7</td><td>nice=19, in long syscall</td><td>nice=−20</td><td>B blocked for whole syscall</td><td>Low-prio task can delay high-prio via kernel mode</td></tr>
+        <tr><td>8</td><td>in syscall, hits <code>cond_resched()</code></td><td>nice=−20 waiting</td><td>B runs at that point</td><td>Voluntary preemption point</td></tr>
+        <tr><td>9</td><td>SCHED_FIFO prio=50, user</td><td>SCHED_FIFO prio=80</td><td>B preempts A immediately</td><td>RT preemption works in userspace</td></tr>
+        <tr><td>10</td><td>SCHED_NORMAL nice=−20</td><td>SCHED_FIFO prio=1</td><td>B preempts A</td><td>Any RT beats any SCHED_NORMAL</td></tr>
+        <tr><td>11</td><td>SCHED_FIFO prio=99</td><td>SCHED_FIFO prio=1</td><td>A keeps running</td><td>Higher RT wins; lower can starve forever</td></tr>
+        <tr><td>12</td><td>SCHED_DEADLINE task</td><td>SCHED_FIFO prio=99</td><td>A keeps running</td><td>Class order: deadline &gt; RT</td></tr>
+        <tr><td>13</td><td>SCHED_NORMAL, in syscall</td><td>SCHED_FIFO prio=99</td><td>B waits until syscall returns</td><td><strong>The PREEMPT_NONE latency problem</strong></td></tr>
+        <tr><td>14</td><td>SCHED_FIFO prio=50, in syscall</td><td>SCHED_FIFO prio=99</td><td>B waits for kernel code to finish</td><td>Even RT can't preempt kernel mode here</td></tr>
+        <tr><td>15</td><td>nice=0 inside long mm/IO path</td><td>SCHED_FIFO prio=99</td><td>B's latency = duration of that path</td><td>Why audio/realtime avoid PREEMPT_NONE</td></tr>
+        <tr><td>16</td><td>nice=0, user</td><td>Hardware IRQ fires</td><td>IRQ handler runs, then A resumes</td><td>Interrupts ≠ preemption; always serviced</td></tr>
+        <tr><td>17</td><td>SCHED_IDLE task</td><td>nice=19 (NORMAL)</td><td>B preempts A</td><td>SCHED_IDLE sits below SCHED_NORMAL</td></tr>
+        <tr><td>18</td><td>SCHED_RR prio=50</td><td>SCHED_RR prio=50</td><td>Round-robin timeslicing between them</td><td>RR shares at equal prio</td></tr>
+        <tr><td>19</td><td>nice=0 in cgroup cpu.weight=10</td><td>nice=0 in cgroup cpu.weight=1000</td><td>B's group gets ~100× the share</td><td>Cgroup weight applies before per-task fairness</td></tr>
+        <tr><td>20</td><td>nice=0, in syscall holding mutex</td><td>SCHED_FIFO prio=99 needs mutex</td><td>B blocks; A can't be paused</td><td>Priority inversion, worsened by non-preemptible kernel</td></tr>
+      </tbody>
+    </table>
+
+    <div class="alert tip">
+      <div class="alert-title">Tip · the through-line</div>
+      <p>
+        Rows 5, 13, 14, 15 are the same problem repeated: when A holds the CPU in kernel mode, no
+        priority can dislodge it. <code>PREEMPT</code> dissolves rows 5 and 13. <code>PREEMPT_RT</code>
+        dissolves 14 too. Nothing dissolves row 20 — priority inversion needs priority inheritance.
+      </p>
+    </div>
+
+    <h3 id="models">The four preemption models</h3>
+
+    <table>
+      <thead>
+        <tr><th>Model</th><th>Kernel preemptible?</th><th>Worst-case latency</th><th>Use case</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>PREEMPT_NONE</td><td>Only at explicit schedule points</td><td>tens of ms</td><td>Throughput servers, HPC</td></tr>
+        <tr><td>PREEMPT_VOLUNTARY</td><td>At <code>cond_resched()</code> calls</td><td>~few ms</td><td>General-purpose distros</td></tr>
+        <tr><td>PREEMPT</td><td>Anywhere except spinlocks / IRQ-off</td><td>sub-ms (typical)</td><td>Low-latency desktop, audio</td></tr>
+        <tr><td>PREEMPT_RT</td><td>Almost everywhere, including spinlocks</td><td>μs-scale (bounded)</td><td>Industrial control, robotics, telecom</td></tr>
+      </tbody>
+    </table>
+
+    <div class="diagram">
+      <div class="diagram-head">
+        <span><span class="id">Figure 4</span> · worst-case latency by preemption model (log scale)</span>
+        <span>SVG</span>
+      </div>
+      <div class="diagram-body">
+<svg viewBox="0 0 900 300" xmlns="http://www.w3.org/2000/svg">
+  <text x="20" y="22" font-size="12" font-weight="600">cyclictest worst-case latency · stressed system</text>
+  <line x1="200" y1="240" x2="860" y2="240" stroke="#d1d9e0"/>
+  <g fill="#59636e" font-size="10">
+    <text x="200" y="258" text-anchor="middle">1 μs</text>
+    <text x="332" y="258" text-anchor="middle">10 μs</text>
+    <text x="464" y="258" text-anchor="middle">100 μs</text>
+    <text x="596" y="258" text-anchor="middle">1 ms</text>
+    <text x="728" y="258" text-anchor="middle">10 ms</text>
+    <text x="860" y="258" text-anchor="middle">100 ms</text>
+  </g>
+  <text x="190" y="68" text-anchor="end" font-size="12" font-weight="500">PREEMPT_NONE</text>
+  <rect x="200" y="55" width="610" height="18" fill="#ffebe9" stroke="#d1242f"/>
+  <text x="818" y="68" font-size="10" fill="#d1242f">~50 ms</text>
+  <text x="190" y="103" text-anchor="end" font-size="12" font-weight="500">PREEMPT_VOLUNTARY</text>
+  <rect x="200" y="90" width="465" height="18" fill="#fff8c5" stroke="#9a6700"/>
+  <text x="672" y="103" font-size="10" fill="#9a6700">~3 ms</text>
+  <text x="190" y="138" text-anchor="end" font-size="12" font-weight="500">PREEMPT (full)</text>
+  <rect x="200" y="125" width="350" height="18" fill="#ddf4ff" stroke="#0969da"/>
+  <text x="557" y="138" font-size="10" fill="#0969da">~500 μs</text>
+  <text x="190" y="173" text-anchor="end" font-size="12" font-weight="500">PREEMPT_RT</text>
+  <rect x="200" y="160" width="180" height="18" fill="#dafbe1" stroke="#1a7f37"/>
+  <text x="387" y="173" font-size="10" fill="#1a7f37">~30 μs (bounded)</text>
+  <line x1="380" y1="178" x2="380" y2="208" stroke="#1a7f37" stroke-dasharray="2,3"/>
+  <text x="380" y="220" text-anchor="middle" font-size="10" fill="#1a7f37">deterministic ceiling</text>
+</svg>
+      </div>
+      <div class="diagram-cap">Numbers are representative. The point is the order-of-magnitude difference, and that only RT gives a bounded ceiling.</div>
+    </div>
+
+    <h3 id="preempt-rt">PREEMPT_RT — what actually changes</h3>
+
+    <p>
+      PREEMPT_RT restructures several long-standing mechanisms so that almost any kernel code path can be preempted:
+    </p>
+
+    <ul>
+      <li><strong>Spinlocks become sleeping mutexes.</strong> Most <code>spin_lock()</code>s are converted to <code>rt_mutex</code> with priority inheritance. The few that must remain non-sleeping are renamed <code>raw_spinlock_t</code>.</li>
+      <li><strong>Interrupts run in threads.</strong> Each IRQ line gets a kthread. A high-priority RT task can preempt an interrupt handler.</li>
+      <li><strong>Softirqs are per-task.</strong> No longer at random points in unrelated contexts.</li>
+      <li><strong>Priority inheritance everywhere.</strong> When a low-priority task holds a lock a high-priority task needs, the holder is temporarily boosted.</li>
+    </ul>
+
+    <div class="alert note">
+      <div class="alert-title">Note · the real latency culprit</div>
+      <p>
+        On RT, missed deadlines are usually not "the kernel was busy." They are typically
+        <strong>SMIs from firmware</strong>, CPU frequency transitions, or a stray <code>raw_spinlock_t</code> held too long.
+      </p>
+    </div>
+
+    <h3 id="rt-workload">Real-time workloads in practice</h3>
+
+    <p>Real-time means <strong>predictable</strong>, not fast. A workload that must respond within 100 μs every time needs:</p>
+
+    <ul>
+      <li>The PREEMPT_RT kernel.</li>
+      <li>An RT scheduling class — <code>SCHED_FIFO</code> or <code>SCHED_DEADLINE</code>.</li>
+      <li>Memory pre-faulted with <code>mlockall(MCL_CURRENT | MCL_FUTURE)</code>.</li>
+      <li>CPU pinning via <code>sched_setaffinity()</code> onto an <code>isolcpus=</code>/<code>nohz_full=</code> isolated core.</li>
+    </ul>
+
+<pre><span class="com">// minimal SCHED_DEADLINE task</span>
+<span class="ty">struct</span> sched_attr attr = {
+    .size           = <span class="kw">sizeof</span>(attr),
     .sched_policy   = SCHED_DEADLINE,
-    .sched_runtime  = 100000,   <span class="comment">// 100 μs budget</span>
-    .sched_deadline = 1000000,  <span class="comment">// must finish within 1 ms</span>
-    .sched_period   = 1000000,  <span class="comment">// every 1 ms</span>
+    .sched_runtime  = <span class="num">100000</span>,   <span class="com">// 100 μs budget</span>
+    .sched_deadline = <span class="num">1000000</span>,  <span class="com">// must finish within 1 ms</span>
+    .sched_period   = <span class="num">1000000</span>,  <span class="com">// every 1 ms</span>
 };
-sched_setattr(0, &amp;attr, 0);
-mlockall(MCL_CURRENT | MCL_FUTURE);
+<span class="fn">sched_setattr</span>(<span class="num">0</span>, &amp;attr, <span class="num">0</span>);
+<span class="fn">mlockall</span>(MCL_CURRENT | MCL_FUTURE);
 
-while (running) {
-    do_critical_work();
-    sched_yield();
-}
-</pre>
+<span class="kw">while</span> (running) {
+    <span class="fn">do_critical_work</span>();
+    <span class="fn">sched_yield</span>();
+}</pre>
 
-<h2 id="deep-namespaces">Deep dive: Namespaces <a href="#deep-namespaces" class="anchor">#</a></h2>
+    <h2 id="namespaces">Namespaces</h2>
 
-<p>A <strong>namespace</strong> partitions a kernel resource so processes inside see one view and processes outside see another. Every task has a <code>struct nsproxy</code>. Two tasks share a namespace by sharing a pointer; <code>setns(2)</code> is cheap because it is just a pointer swap.</p>
+    <p>
+      A <strong>namespace</strong> partitions a kernel resource so that processes inside see one view and
+      processes outside see another. Every task has a <code>struct nsproxy</code>. Two tasks share a namespace by sharing a pointer; <code>setns(2)</code> is cheap because it's just a pointer swap.
+    </p>
 
-<pre>
-<span class="comment">// include/linux/nsproxy.h — abridged</span>
-struct nsproxy {
+<pre><span class="com">// include/linux/nsproxy.h — abridged</span>
+<span class="ty">struct</span> nsproxy {
     refcount_t           count;
-    struct uts_namespace    *uts_ns;
-    struct ipc_namespace    *ipc_ns;
-    struct mnt_namespace    *mnt_ns;
-    struct pid_namespace    *pid_ns_for_children;
-    struct net              *net_ns;
-    struct time_namespace   *time_ns;
-    struct cgroup_namespace *cgroup_ns;
-};
-</pre>
+    <span class="ty">struct</span> uts_namespace    *uts_ns;
+    <span class="ty">struct</span> ipc_namespace    *ipc_ns;
+    <span class="ty">struct</span> mnt_namespace    *mnt_ns;
+    <span class="ty">struct</span> pid_namespace    *pid_ns_for_children;
+    <span class="ty">struct</span> net              *net_ns;
+    <span class="ty">struct</span> time_namespace   *time_ns;
+    <span class="ty">struct</span> cgroup_namespace *cgroup_ns;
+};</pre>
 
-<h3>The eight namespace types</h3>
-<table>
-<thead><tr><th>Namespace</th><th>Isolates</th><th>Added</th></tr></thead>
-<tbody>
-<tr><td>MNT</td><td>Mount table — own filesystem tree</td><td>2.4.19 (2002)</td></tr>
-<tr><td>UTS</td><td>Hostname, domainname</td><td>2.6.19 (2006)</td></tr>
-<tr><td>IPC</td><td>SysV IPC, POSIX message queues</td><td>2.6.19</td></tr>
-<tr><td>PID</td><td>Process IDs — PID 1 inside ≠ PID 1 outside</td><td>2.6.24 (2008)</td></tr>
-<tr><td>NET</td><td>Interfaces, routes, sockets, firewall</td><td>2.6.29 (2009)</td></tr>
-<tr><td>USER</td><td>UID/GID mappings — root in ≠ root out</td><td>3.8 (2013)</td></tr>
-<tr><td>CGROUP</td><td>cgroup root — hides host hierarchy</td><td>4.6 (2016)</td></tr>
-<tr><td>TIME</td><td>CLOCK_MONOTONIC / CLOCK_BOOTTIME offsets</td><td>5.6 (2020)</td></tr>
-</tbody>
-</table>
+    <h3 id="ns-types">The eight namespace types</h3>
 
-<h3>The three syscalls</h3>
-<ul>
-<li><code>clone(CLONE_NEW*)</code> — create a child in fresh namespaces. This is how containers are born.</li>
-<li><code>unshare(2)</code> — same flags, operates on the calling process.</li>
-<li><code>setns(2)</code> — given an fd to <code>/proc/&lt;pid&gt;/ns/&lt;type&gt;</code>, join that namespace. How <code>nsenter</code> and <code>docker exec</code> work.</li>
-</ul>
+    <table>
+      <thead><tr><th>Namespace</th><th>Isolates</th><th>Added</th></tr></thead>
+      <tbody>
+        <tr><td>MNT</td><td>Mount table — own filesystem tree</td><td>2.4.19 (2002)</td></tr>
+        <tr><td>UTS</td><td>Hostname, domainname</td><td>2.6.19 (2006)</td></tr>
+        <tr><td>IPC</td><td>SysV IPC, POSIX message queues</td><td>2.6.19</td></tr>
+        <tr><td>PID</td><td>Process IDs — PID 1 inside ≠ PID 1 outside</td><td>2.6.24 (2008)</td></tr>
+        <tr><td>NET</td><td>Interfaces, routes, sockets, firewall</td><td>2.6.29 (2009)</td></tr>
+        <tr><td>USER</td><td>UID/GID mappings — root in ≠ root out</td><td>3.8 (2013)</td></tr>
+        <tr><td>CGROUP</td><td>cgroup root — hides host hierarchy</td><td>4.6 (2016)</td></tr>
+        <tr><td>TIME</td><td>CLOCK_MONOTONIC / CLOCK_BOOTTIME offsets</td><td>5.6 (2020)</td></tr>
+      </tbody>
+    </table>
 
-<h3>PID namespaces nest</h3>
-<p>PID namespaces <strong>nest</strong>. The first process inside becomes <code>PID 1</code> while keeping its larger PID in the parent. PID 1 has init semantics — it reaps orphans, and if it dies the kernel kills every process in the namespace.</p>
+    <h3 id="ns-syscalls">The three syscalls</h3>
 
-<div class="callout warning">
-<div class="callout-title">Warning · isolation ≠ security</div>
-<p>A container talks to the <em>same kernel</em> the host runs. A kernel CVE is just as exploitable from inside a container. This is why seccomp, capability dropping, and user namespaces matter at least as much as namespaces themselves.</p>
-</div>
+    <ul>
+      <li><code>clone(CLONE_NEW*)</code> — create a child in fresh namespaces. This is how containers are born.</li>
+      <li><code>unshare(2)</code> — same flags, operates on the calling process.</li>
+      <li><code>setns(2)</code> — given an fd to <code>/proc/&lt;pid&gt;/ns/&lt;type&gt;</code>, join that namespace. How <code>nsenter</code> and <code>docker exec</code> work.</li>
+    </ul>
 
-<h2 id="deep-cgroups">Deep dive: cgroups v2 <a href="#deep-cgroups" class="anchor">#</a></h2>
+    <h3 id="pid-ns">PID namespaces nest</h3>
 
-<p>Where namespaces answer "what can this process <em>see</em>?", cgroups answer "what can it <em>consume</em>?". The interface is a virtual filesystem at <code>/sys/fs/cgroup</code>. You create a cgroup by <code>mkdir</code>, add a process by writing its PID to <code>cgroup.procs</code>, set limits by writing to files like <code>memory.max</code>.</p>
+    <p>
+      PID namespaces <strong>nest</strong>. The first process inside becomes <code>PID 1</code> while keeping its larger PID in the parent. PID 1 has init semantics — it reaps orphans, and if it dies the kernel kills every process in the namespace.
+    </p>
 
-<h3>Worked example · create a cgroup by hand</h3>
-<pre>
-<span class="comment"># 1. create a new cgroup</span>
-mkdir /sys/fs/cgroup/my_workload
+    <div class="alert warning">
+      <div class="alert-title">Warning · isolation ≠ security</div>
+      <p>
+        A container talks to the <em>same kernel</em> the host runs. A kernel CVE is just as exploitable from inside a container. This is why seccomp, capability dropping, and user namespaces matter.
+      </p>
+    </div>
 
-<span class="comment"># 2. enable controllers</span>
-echo "+memory +cpu +io" &gt; /sys/fs/cgroup/cgroup.subtree_control
+    <h2 id="cgroups">Control groups</h2>
 
-<span class="comment"># 3. set limits — 1 GiB memory, ~2 CPUs</span>
-echo 1073741824     &gt; /sys/fs/cgroup/my_workload/memory.max
-echo "200000 100000" &gt; /sys/fs/cgroup/my_workload/cpu.max
+    <p>
+      Where namespaces answer "what can this process <em>see</em>?", cgroups answer "what can it
+      <em>consume</em>?". The interface is a virtual filesystem at <code>/sys/fs/cgroup</code>. You create a cgroup by <code>mkdir</code>, add a process by writing its PID to <code>cgroup.procs</code>, set limits by writing to files like <code>memory.max</code>.
+    </p>
 
-<span class="comment"># 4. move a process in</span>
-echo $$ &gt; /sys/fs/cgroup/my_workload/cgroup.procs
+    <h3 id="v1-v2">v1 vs v2</h3>
 
-<span class="comment"># 5. observe</span>
-cat /sys/fs/cgroup/my_workload/memory.current
-cat /sys/fs/cgroup/my_workload/cpu.stat
-cat /sys/fs/cgroup/my_workload/memory.pressure
-</pre>
+    <p>
+      cgroup v1 attached each controller to its own hierarchy. cgroup v2 made one call: <strong>unified hierarchy</strong>. All controllers hang off the same tree; a process is in exactly one cgroup. PSI, unified memory+io accounting, and proper writeback attribution all became possible.
+    </p>
 
-<h3>Controllers (v2)</h3>
-<table>
-<thead><tr><th>Controller</th><th>Key files</th><th>Enforces</th></tr></thead>
-<tbody>
-<tr><td>cpu</td><td>cpu.max · cpu.weight · cpu.stat</td><td>CFS bandwidth quota or weight-based share</td></tr>
-<tr><td>memory</td><td>memory.max · memory.high · memory.low · memory.swap.max</td><td>Hard cap + soft throttling + protection</td></tr>
-<tr><td>io</td><td>io.max · io.weight · io.stat</td><td>Per-device bandwidth + IOPS</td></tr>
-<tr><td>pids</td><td>pids.max · pids.current</td><td>Max number of tasks — defeats fork bombs</td></tr>
-<tr><td>cpuset</td><td>cpuset.cpus · cpuset.mems</td><td>Restrict to specific CPUs / NUMA nodes</td></tr>
-<tr><td>hugetlb</td><td>hugetlb.&lt;size&gt;.max</td><td>Cap on huge page consumption</td></tr>
-</tbody>
-</table>
+    <h3 id="worked-example">Worked example · create a cgroup by hand</h3>
 
-<h2 id="deep-containers">Container anatomy <a href="#deep-containers" class="anchor">#</a></h2>
+<pre><span class="com"># 1. create a new cgroup</span>
+<span class="kw">mkdir</span> /sys/fs/cgroup/my_workload
 
-<p>The kernel has no <code>struct container</code>. A container is a process tree with <strong>(a)</strong> its own namespaces, <strong>(b)</strong> a cgroup with limits, <strong>(c)</strong> a pivot_root, <strong>(d)</strong> a seccomp filter, <strong>(e)</strong> a reduced capability set.</p>
+<span class="com"># 2. enable controllers</span>
+<span class="kw">echo</span> <span class="str">"+memory +cpu +io"</span> &gt; /sys/fs/cgroup/cgroup.subtree_control
 
-<h3>Container birth sequence</h3>
-<pre>
-<span class="comment">// 1. runtime forks with namespace flags</span>
-pid_t child = clone(child_fn, stack_top,
+<span class="com"># 3. set limits — 1 GiB memory, ~2 CPUs</span>
+<span class="kw">echo</span> <span class="num">1073741824</span>     &gt; /sys/fs/cgroup/my_workload/memory.max
+<span class="kw">echo</span> <span class="str">"200000 100000"</span> &gt; /sys/fs/cgroup/my_workload/cpu.max
+
+<span class="com"># 4. move a process in</span>
+<span class="kw">echo</span> $$ &gt; /sys/fs/cgroup/my_workload/cgroup.procs
+
+<span class="com"># 5. observe</span>
+<span class="kw">cat</span> /sys/fs/cgroup/my_workload/memory.current
+<span class="kw">cat</span> /sys/fs/cgroup/my_workload/cpu.stat
+<span class="kw">cat</span> /sys/fs/cgroup/my_workload/memory.pressure</pre>
+
+    <h4>Controllers, briefly</h4>
+
+    <table>
+      <thead><tr><th>Controller</th><th>Key files</th><th>Enforces</th></tr></thead>
+      <tbody>
+        <tr><td>cpu</td><td>cpu.max · cpu.weight · cpu.stat</td><td>CFS bandwidth quota or weight-based share</td></tr>
+        <tr><td>memory</td><td>memory.max · memory.high · memory.low · memory.swap.max</td><td>Hard cap + soft throttling + protection</td></tr>
+        <tr><td>io</td><td>io.max · io.weight · io.stat</td><td>Per-device bandwidth + IOPS</td></tr>
+        <tr><td>pids</td><td>pids.max · pids.current</td><td>Max number of tasks — defeats fork bombs</td></tr>
+        <tr><td>cpuset</td><td>cpuset.cpus · cpuset.mems</td><td>Restrict to specific CPUs / NUMA nodes</td></tr>
+        <tr><td>hugetlb</td><td>hugetlb.&lt;size&gt;.max</td><td>Cap on huge page consumption</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="containers">Putting it together · containers</h2>
+
+    <p>
+      The kernel has no <code>struct container</code>. A container is a process tree with
+      <strong>(a)</strong> its own namespaces, <strong>(b)</strong> a cgroup with limits,
+      <strong>(c)</strong> a pivot_root, <strong>(d)</strong> a seccomp filter,
+      <strong>(e)</strong> a reduced capability set.
+    </p>
+
+    <h3 id="birth">Container birth sequence</h3>
+
+<pre><span class="com">// 1. runtime forks with namespace flags</span>
+<span class="ty">pid_t</span> child = <span class="fn">clone</span>(child_fn, stack_top,
     CLONE_NEWPID | CLONE_NEWNS  | CLONE_NEWNET |
     CLONE_NEWUTS | CLONE_NEWIPC | CLONE_NEWUSER |
     CLONE_NEWCGROUP | SIGCHLD, args);
 
-<span class="comment">// 2. parent writes mappings + cgroup membership</span>
-write_file("/proc/{child}/uid_map", "0 100000 65536");
-write_file("/sys/fs/cgroup/machine.slice/docker-abc.scope/cgroup.procs", child);
+<span class="com">// 2. parent writes mappings + cgroup membership</span>
+<span class="fn">write_file</span>(<span class="str">"/proc/{child}/uid_map"</span>, <span class="str">"0 100000 65536"</span>);
+<span class="fn">write_file</span>(<span class="str">"/sys/fs/cgroup/machine.slice/docker-abc.scope/cgroup.procs"</span>, child);
 
-<span class="comment">// 3. inside the child</span>
-sethostname("abc123", 6);
-pivot_root("/newroot", "/newroot/.old");
-mount("proc", "/proc", "proc", 0, 0);
-prctl(PR_SET_NO_NEW_PRIVS, 1);
-seccomp(SECCOMP_SET_MODE_FILTER, 0, &amp;filter);
-execve("/bin/sh", argv, envp);
-</pre>
+<span class="com">// 3. inside the child</span>
+<span class="fn">sethostname</span>(<span class="str">"abc123"</span>, <span class="num">6</span>);
+<span class="fn">pivot_root</span>(<span class="str">"/newroot"</span>, <span class="str">"/newroot/.old"</span>);
+<span class="fn">mount</span>(<span class="str">"proc"</span>, <span class="str">"/proc"</span>, <span class="str">"proc"</span>, <span class="num">0</span>, <span class="num">0</span>);
+<span class="fn">prctl</span>(PR_SET_NO_NEW_PRIVS, <span class="num">1</span>);
+<span class="fn">seccomp</span>(SECCOMP_SET_MODE_FILTER, <span class="num">0</span>, &amp;filter);
+<span class="fn">execve</span>(<span class="str">"/bin/sh"</span>, argv, envp);</pre>
 
-<h3>Closing the loop with preemption</h3>
-<ul>
-<li>If a container is under <code>cpu.max</code> throttling, even <code>SCHED_FIFO</code> can be denied the CPU when the quota is exhausted.</li>
-<li>PSI files (<code>cpu.pressure</code>, <code>memory.pressure</code>, <code>io.pressure</code>) report stalled-time percentages per cgroup.</li>
-<li>Preemption decides <strong>when</strong> a task runs. Cgroups decide <strong>how much</strong>. Namespaces decide <strong>what world it runs in</strong>.</li>
-</ul>
+    <h3 id="closing-loop">Closing the loop with preemption</h3>
 
-<h2 id="deep-networking">Networking &amp; TCP <a href="#deep-networking" class="anchor">#</a></h2>
+    <ul>
+      <li>If a container is under <code>cpu.max</code> throttling, even <code>SCHED_FIFO</code> can be denied the CPU when the quota is exhausted.</li>
+      <li>PSI files (<code>cpu.pressure</code>, <code>memory.pressure</code>, <code>io.pressure</code>) report stalled-time percentages per cgroup.</li>
+      <li>Preemption decides <strong>when</strong> a task runs. Cgroups decide <strong>how much</strong>. Namespaces decide <strong>what world it runs in</strong>.</li>
+    </ul>
 
-<h3>TCP congestion control</h3>
-<p>TCP sends as much as <code>min(cwnd, rwnd) / RTT</code>. Classic <strong>Reno</strong> treats packet loss as the only signal. <strong>CUBIC</strong> (Linux default since 2.6.19) uses a cubic function. <strong>BBR</strong> (Google, 2016) models bottleneck bandwidth and minimum RTT directly.</p>
+    <div class="alert tip">
+      <div class="alert-title">Tip · the through-line</div>
+      <p>
+        Preemption decides <strong>when</strong> a task runs. Cgroups decide <strong>how much</strong>.
+        Namespaces decide <strong>what world it runs in</strong>. The kernel composes them orthogonally.
+      </p>
+    </div>
 
-<table>
-<thead><tr><th>Algorithm</th><th>Signal</th><th>Best for</th><th>Failure mode</th></tr></thead>
-<tbody>
-<tr><td>Reno / NewReno</td><td>Loss</td><td>Reference; short fat pipes</td><td>Slow recovery on high BDP</td></tr>
-<tr><td>CUBIC (default)</td><td>Loss</td><td>WAN, datacentre, default</td><td>Buffer-bloats with shallow queues</td></tr>
-<tr><td>BBR / BBRv2</td><td>BW × RTT model</td><td>Lossy paths, long RTT, video</td><td>Can starve CUBIC at shared bottleneck</td></tr>
-<tr><td>DCTCP</td><td>ECN marks</td><td>Datacentre fabrics</td><td>Needs ECN end-to-end</td></tr>
-</tbody>
-</table>
+    <h2 id="networking">Advanced networking</h2>
 
-<pre>
-<span class="comment"># Show available algorithms</span>
-sysctl net.ipv4.tcp_available_congestion_control
+    <h3 id="cc">TCP congestion control</h3>
 
-<span class="comment"># Switch system-wide</span>
-sysctl -w net.ipv4.tcp_congestion_control=bbr
+    <p>
+      TCP sends as much as <code>min(cwnd, rwnd) / RTT</code>. Classic <strong>Reno</strong> treats packet loss as the only signal. <strong>CUBIC</strong> (Linux default since 2.6.19) uses a cubic function. <strong>BBR</strong> (Google, 2016) models bottleneck bandwidth and minimum RTT directly.
+    </p>
 
-<span class="comment"># Per-socket from C</span>
-const char *cc = "bbr";
-setsockopt(fd, IPPROTO_TCP, TCP_CONGESTION, cc, strlen(cc));
+    <table>
+      <thead><tr><th>Algorithm</th><th>Signal</th><th>Best for</th><th>Failure mode</th></tr></thead>
+      <tbody>
+        <tr><td>Reno / NewReno</td><td>Loss</td><td>Reference; short fat pipes</td><td>Slow recovery on high BDP</td></tr>
+        <tr><td>CUBIC (default)</td><td>Loss</td><td>WAN, datacentre, default</td><td>Buffer-bloats with shallow queues</td></tr>
+        <tr><td>BBR / BBRv2</td><td>BW × RTT model</td><td>Lossy paths, long RTT, video</td><td>Can starve CUBIC at shared bottleneck</td></tr>
+        <tr><td>DCTCP</td><td>ECN marks</td><td>Datacentre fabrics</td><td>Needs ECN end-to-end</td></tr>
+        <tr><td>Vegas</td><td>RTT increase</td><td>Research</td><td>Loses to loss-based peers</td></tr>
+      </tbody>
+    </table>
 
-<span class="comment"># Live inspection</span>
-ss -tin 'sport = :443'
-</pre>
+<pre><span class="com"># Show available algorithms</span>
+<span class="kw">sysctl</span> net.ipv4.tcp_available_congestion_control
 
-<h3>Low-latency network optimizations</h3>
-<table>
-<thead><tr><th>Layer</th><th>Knob</th><th>Effect</th></tr></thead>
-<tbody>
-<tr><td>NIC</td><td><code>ethtool -C eth0 rx-usecs 0</code></td><td>Disable interrupt coalescing — IRQ per packet</td></tr>
-<tr><td>NIC</td><td><code>ethtool -K eth0 gro off lro off</code></td><td>Stop merging segments</td></tr>
-<tr><td>IRQ</td><td><code>/proc/irq/N/smp_affinity</code></td><td>Pin NIC IRQs to specific cores</td></tr>
-<tr><td>Socket</td><td><code>SO_BUSY_POLL</code></td><td>Spin in kernel polling the NIC instead of sleeping</td></tr>
-<tr><td>Socket</td><td><code>TCP_NODELAY</code></td><td>Disable Nagle — send every write immediately</td></tr>
-<tr><td>Socket</td><td><code>TCP_QUICKACK</code></td><td>Disable delayed ACK</td></tr>
-<tr><td>App</td><td>AF_XDP, DPDK, io_uring</td><td>Kernel bypass — userspace handles the NIC</td></tr>
-</tbody>
-</table>
+<span class="com"># Switch system-wide</span>
+<span class="kw">sysctl</span> -w net.ipv4.tcp_congestion_control=bbr
 
-<pre>
-<span class="comment"># A minimal low-latency profile</span>
-ethtool -C eth0 adaptive-rx off adaptive-tx off rx-usecs 0 tx-usecs 0
-ethtool -K eth0 gro off lro off gso off tso off
+<span class="com"># Per-socket from C</span>
+<span class="kw">const char</span> *cc = <span class="str">"bbr"</span>;
+<span class="fn">setsockopt</span>(fd, IPPROTO_TCP, TCP_CONGESTION, cc, <span class="fn">strlen</span>(cc));
 
-<span class="comment"># Pin NIC IRQs to cores 2-3</span>
-for irq in $(grep eth0 /proc/interrupts | awk -F: '{print $1}'); do
-    echo c &gt; /proc/irq/$irq/smp_affinity
-done
+<span class="com"># Live inspection</span>
+<span class="kw">ss</span> -tin <span class="str">'sport = :443'</span></pre>
 
-<span class="comment"># Enable busy-poll</span>
-sysctl -w net.core.busy_poll=50
+    <h3 id="low-latency-net">Low-latency network optimizations</h3>
 
-<span class="comment"># App-side</span>
-int on = 1, us = 50;
-setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &amp;on, sizeof(on));
-setsockopt(fd, SOL_SOCKET, SO_BUSY_POLL, &amp;us, sizeof(us));
+    <table>
+      <thead><tr><th>Layer</th><th>Knob</th><th>Effect</th></tr></thead>
+      <tbody>
+        <tr><td>NIC</td><td><code>ethtool -C eth0 rx-usecs 0</code></td><td>Disable interrupt coalescing — IRQ per packet</td></tr>
+        <tr><td>NIC</td><td><code>ethtool -K eth0 gro off lro off</code></td><td>Stop merging segments</td></tr>
+        <tr><td>IRQ</td><td><code>/proc/irq/N/smp_affinity</code></td><td>Pin NIC IRQs to specific cores</td></tr>
+        <tr><td>Socket</td><td><code>SO_BUSY_POLL</code></td><td>Spin in kernel polling the NIC instead of sleeping</td></tr>
+        <tr><td>Socket</td><td><code>TCP_NODELAY</code></td><td>Disable Nagle — send every write immediately</td></tr>
+        <tr><td>Socket</td><td><code>TCP_QUICKACK</code></td><td>Disable delayed ACK</td></tr>
+        <tr><td>App</td><td>AF_XDP, DPDK, io_uring</td><td>Kernel bypass — userspace handles the NIC</td></tr>
+      </tbody>
+    </table>
 
-<span class="comment"># Pin the app</span>
-taskset -c 4 ./trading_app
-</pre>
+<pre><span class="com"># A minimal low-latency profile</span>
+<span class="kw">ethtool</span> -C eth0 adaptive-rx off adaptive-tx off rx-usecs 0 tx-usecs 0
+<span class="kw">ethtool</span> -K eth0 gro off lro off gso off tso off
 
-<h2 id="deep-memory">Memory: NUMA &amp; Huge Pages <a href="#deep-memory" class="anchor">#</a></h2>
+<span class="com"># Pin NIC IRQs to cores 2-3</span>
+<span class="kw">for</span> irq in $(<span class="fn">grep</span> eth0 /proc/interrupts | <span class="fn">awk</span> -F: <span class="str">'{print $1}'</span>); do
+    <span class="kw">echo</span> c &gt; /proc/irq/$irq/smp_affinity
+<span class="kw">done</span>
 
-<h3>NUMA · non-uniform memory access</h3>
-<p>Each CPU socket has its own memory controller — a <strong>NUMA node</strong>. Crossing an inter-socket interconnect costs latency (~50 ns extra) and bandwidth (~0.5×). Linux uses <strong>first-touch</strong> placement by default.</p>
+<span class="com"># Enable busy-poll</span>
+<span class="kw">sysctl</span> -w net.core.busy_poll=50
 
-<table>
-<thead><tr><th>Policy</th><th>Behaviour</th></tr></thead>
-<tbody>
-<tr><td>MPOL_DEFAULT</td><td>First-touch (the default)</td></tr>
-<tr><td>MPOL_BIND</td><td>Allocate only on listed nodes — OOM if those fill</td></tr>
-<tr><td>MPOL_PREFERRED</td><td>Try a node, fall back to anywhere</td></tr>
-<tr><td>MPOL_INTERLEAVE</td><td>Round-robin pages across nodes — good for streaming</td></tr>
-</tbody>
-</table>
+<span class="com"># App-side</span>
+<span class="kw">int</span> on = <span class="num">1</span>, us = <span class="num">50</span>;
+<span class="fn">setsockopt</span>(fd, IPPROTO_TCP, TCP_NODELAY, &amp;on, <span class="kw">sizeof</span>(on));
+<span class="fn">setsockopt</span>(fd, SOL_SOCKET, SO_BUSY_POLL, &amp;us, <span class="kw">sizeof</span>(us));
+<span class="kw">taskset</span> -c 4 ./trading_app</pre>
 
-<pre>
-<span class="comment"># Pin process + memory to node 0</span>
-numactl --cpunodebind=0 --membind=0 ./db
+    <h2 id="memory">Memory management</h2>
 
-<span class="comment"># Interleave across nodes</span>
-numactl --interleave=all ./spark-worker
+    <h3 id="numa">NUMA · non-uniform memory access</h3>
 
-<span class="comment"># Per-process stats</span>
-numastat -p $(pidof postgres)
-</pre>
+    <p>
+      Each CPU socket has its own memory controller — a <strong>NUMA node</strong>. Crossing an inter-socket interconnect costs latency (~50 ns extra) and bandwidth (~0.5×). Linux uses <strong>first-touch</strong> placement by default.
+    </p>
 
-<h3>Transparent Huge Pages</h3>
-<p>A <strong>huge page</strong> is one TLB entry covering 2 MiB. Same translation cost, 512× more memory covered. On big-heap workloads this alone can be a 5-30% throughput win.</p>
+    <table>
+      <thead><tr><th>Policy</th><th>Behaviour</th></tr></thead>
+      <tbody>
+        <tr><td>MPOL_DEFAULT</td><td>First-touch (the default)</td></tr>
+        <tr><td>MPOL_BIND</td><td>Allocate only on listed nodes — OOM if those fill</td></tr>
+        <tr><td>MPOL_PREFERRED</td><td>Try a node, fall back to anywhere</td></tr>
+        <tr><td>MPOL_INTERLEAVE</td><td>Round-robin pages across nodes — good for streaming</td></tr>
+      </tbody>
+    </table>
 
-<table>
-<thead><tr><th>Mode</th><th>Behaviour</th><th>Good for</th><th>Bad for</th></tr></thead>
-<tbody>
-<tr><td>always</td><td>Every anonymous mapping aspires to be huge</td><td>JVM, Redis, analytics</td><td>Random small allocations</td></tr>
-<tr><td>madvise</td><td>Only mappings marked <code>MADV_HUGEPAGE</code></td><td>Default for many distros</td><td>—</td></tr>
-<tr><td>never</td><td>Use 4 KiB everywhere</td><td>Latency-critical, KVM hosts</td><td>Big-heap throughput apps</td></tr>
-</tbody>
-</table>
+<pre><span class="com"># Pin process + memory to node 0</span>
+<span class="kw">numactl</span> --cpunodebind=<span class="num">0</span> --membind=<span class="num">0</span> ./db
 
-<div class="callout warning">
-<div class="callout-title">Danger · why databases often disable THP</div>
-<p>Allocating a 2 MiB page requires 512 contiguous 4 KiB frames. Under fragmentation, the kernel does <strong>compaction</strong> and the faulting thread waits — pauses can be tens of ms. MongoDB, Redis, PostgreSQL all recommend <code>never</code> or <code>madvise</code>.</p>
+<span class="com"># Interleave across nodes</span>
+<span class="kw">numactl</span> --interleave=all ./spark-worker
+
+<span class="com"># Per-process stats</span>
+<span class="kw">numastat</span> -p $(<span class="fn">pidof</span> postgres)</pre>
+
+    <h3 id="thp">Transparent Huge Pages</h3>
+
+    <p>A <strong>huge page</strong> is one TLB entry covering 2 MiB. Same translation cost, 512× more memory covered. On big-heap workloads this alone can be a 5-30% throughput win.</p>
+
+    <table>
+      <thead><tr><th>Mode</th><th>Behaviour</th><th>Good for</th><th>Bad for</th></tr></thead>
+      <tbody>
+        <tr><td>always</td><td>Every anonymous mapping aspires to be huge</td><td>JVM, Redis, analytics</td><td>Random small allocations</td></tr>
+        <tr><td>madvise</td><td>Only mappings marked <code>MADV_HUGEPAGE</code></td><td>Default for many distros</td><td>—</td></tr>
+        <tr><td>never</td><td>Use 4 KiB everywhere</td><td>Latency-critical, KVM hosts</td><td>Big-heap throughput apps</td></tr>
+      </tbody>
+    </table>
+
+    <div class="alert danger">
+      <div class="alert-title">Danger · why databases often disable THP</div>
+      <p>
+        Allocating a 2 MiB page requires 512 contiguous 4 KiB frames. Under fragmentation, the kernel
+        does <strong>compaction</strong> and the faulting thread waits — pauses can be tens of ms.
+        MongoDB, Redis, PostgreSQL all recommend <code>never</code> or <code>madvise</code>.
+      </p>
+    </div>
+
+<pre><span class="com"># Inspect current setting</span>
+<span class="kw">cat</span> /sys/kernel/mm/transparent_hugepage/enabled
+
+<span class="com"># Disable entirely</span>
+<span class="kw">echo</span> never &gt; /sys/kernel/mm/transparent_hugepage/enabled
+<span class="kw">echo</span> never &gt; /sys/kernel/mm/transparent_hugepage/defrag</pre>
+
+    <h2 id="storage">Storage systems</h2>
+
+    <h3 id="fs">XFS vs ext4</h3>
+
+    <p>
+      <strong>XFS</strong> partitions the filesystem into independent <strong>allocation groups</strong> — writes to different AGs proceed in parallel. <strong>ext4</strong> is excellent for small-file, single-stream workloads.
+    </p>
+
+    <table>
+      <thead><tr><th>Concern</th><th>XFS</th><th>ext4</th></tr></thead>
+      <tbody>
+        <tr><td>Many parallel writers</td><td>Excellent — independent AGs</td><td>Good single-stream, plateaus</td></tr>
+        <tr><td>Single-thread fsync</td><td>OK</td><td>Slightly lower latency</td></tr>
+        <tr><td>Huge files (TB-scale)</td><td>Designed for it (SGI heritage)</td><td>Capable, less battle-tested at PB</td></tr>
+        <tr><td>Lots of small files</td><td>Slightly slower inode allocator</td><td>Faster, traditional strength</td></tr>
+        <tr><td>Shrink filesystem</td><td>Not supported</td><td>Supported (offline)</td></tr>
+        <tr><td>Default in</td><td>RHEL/Rocky 7+, SUSE</td><td>Debian, Ubuntu (server)</td></tr>
+      </tbody>
+    </table>
+
+    <h3 id="io-sched">I/O schedulers — blk-mq era</h3>
+
+    <p>NVMe SSDs support <strong>64 K hardware queues</strong>. Current schedulers sit on the <strong>multi-queue (blk-mq)</strong> framework:</p>
+
+    <table>
+      <thead><tr><th>Scheduler</th><th>Strategy</th><th>Best for</th></tr></thead>
+      <tbody>
+        <tr><td>none</td><td>No reordering — submit FIFO</td><td>NVMe, fast SSDs</td></tr>
+        <tr><td>mq-deadline</td><td>Per-request expiry; reads prioritised</td><td>SATA SSD, HDD</td></tr>
+        <tr><td>bfq</td><td>Budget-fair queueing, per-process</td><td>Interactive desktop, mixed HDD</td></tr>
+        <tr><td>kyber</td><td>Latency-target based</td><td>NVMe with mixed read/write</td></tr>
+      </tbody>
+    </table>
+
+<pre><span class="com"># Check current scheduler</span>
+<span class="kw">cat</span> /sys/block/nvme0n1/queue/scheduler
+
+<span class="com"># Switch at runtime</span>
+<span class="kw">echo</span> mq-deadline &gt; /sys/block/sda/queue/scheduler</pre>
+
+    <h2 id="systemd-cookbook">Service tuning · the systemd cookbook</h2>
+
+    <h3 id="systemd-knobs">The directives</h3>
+
+    <table>
+      <thead><tr><th>Directive</th><th>Sets</th><th>Kernel syscall</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>Nice=</td><td>nice value −20…+19</td><td><code>setpriority()</code></td><td>SCHED_NORMAL/BATCH only</td></tr>
+        <tr><td>CPUSchedulingPolicy=</td><td>scheduling class</td><td><code>sched_setscheduler()</code></td><td>other · batch · idle · fifo · rr · deadline</td></tr>
+        <tr><td>CPUSchedulingPriority=</td><td>rt_priority 1–99</td><td><code>sched_setscheduler()</code></td><td>Only fifo/rr/deadline</td></tr>
+        <tr><td>CPUAffinity=</td><td>CPU mask</td><td><code>sched_setaffinity()</code></td><td>Pair with <code>isolcpus=</code></td></tr>
+        <tr><td>IOSchedulingClass=</td><td>I/O class</td><td><code>ioprio_set()</code></td><td>realtime · best-effort · idle</td></tr>
+        <tr><td>LimitMEMLOCK=</td><td>RLIMIT_MEMLOCK</td><td><code>setrlimit()</code></td><td>Required for <code>mlockall()</code></td></tr>
+        <tr><td>OOMScoreAdjust=</td><td>OOM kill priority</td><td>write <code>oom_score_adj</code></td><td>Lower = killed later</td></tr>
+        <tr><td>CPUWeight= · CPUQuota=</td><td>cgroup v2 CPU controls</td><td>write cgroup files</td><td>Weight = soft share · Quota = hard ceiling</td></tr>
+        <tr><td>MemoryHigh= · MemoryMax=</td><td>cgroup v2 memory controls</td><td>write cgroup files</td><td>High = throttle · Max = cgroup-OOM</td></tr>
+      </tbody>
+    </table>
+
+    <h3 id="systemd-profiles">Five production profiles</h3>
+
+    <h4>1 · Background batch</h4>
+
+<pre>[Service]
+ExecStart=/opt/etl/nightly_aggregator.py
+CPUSchedulingPolicy=idle
+IOSchedulingClass=idle
+Nice=19</pre>
+
+    <h4>2 · General service</h4>
+
+<pre>[Service]
+ExecStart=/usr/bin/myapp --port=8080
+Nice=-5
+IOSchedulingClass=best-effort
+IOSchedulingPriority=2
+Restart=on-failure</pre>
+
+    <h4>3 · Latency-sensitive</h4>
+
+<pre>[Service]
+ExecStart=/opt/db/server
+Nice=-10
+CPUAffinity=4-15
+IOSchedulingClass=realtime
+IOSchedulingPriority=0
+LimitMEMLOCK=infinity
+OOMScoreAdjust=-500
+Restart=on-failure</pre>
+
+    <h4>4 · Hard real-time</h4>
+
+<pre>[Service]
+ExecStart=/opt/hft/engine
+CPUSchedulingPolicy=fifo
+CPUSchedulingPriority=50
+CPUAffinity=4-7
+LimitMEMLOCK=infinity
+LimitRTPRIO=99
+LimitRTTIME=infinity
+IOSchedulingClass=realtime
+IOSchedulingPriority=0
+OOMScoreAdjust=-1000
+Restart=no</pre>
+
+    <h4>5 · Resource-isolated</h4>
+
+<pre>[Service]
+ExecStart=/usr/bin/microservice
+Slice=workload-tenant-a.slice
+CPUWeight=200
+CPUQuota=200%
+MemoryHigh=3G
+MemoryMax=4G
+MemorySwapMax=0
+IOWeight=200
+TasksMax=512</pre>
+
+    <h3 id="systemd-verify">Verifying what's actually applied</h3>
+
+<pre><span class="com"># All effective settings</span>
+<span class="kw">systemctl</span> show myapp.service | <span class="fn">grep</span> -E <span class="str">'Nice|CPU|IO|Limit|Memory'</span>
+
+<span class="com"># Running-process snapshot</span>
+<span class="kw">ps</span> -o pid,comm,policy,rtprio,nice,psr -p $(<span class="fn">pidof</span> myapp)
+<span class="kw">chrt</span> -p $(<span class="fn">pidof</span> myapp)
+<span class="kw">taskset</span> -p $(<span class="fn">pidof</span> myapp)
+<span class="kw">ionice</span> -p $(<span class="fn">pidof</span> myapp)
+
+<span class="com"># cgroup-side enforcement values</span>
+<span class="kw">cat</span> /sys/fs/cgroup/system.slice/myapp.service/cpu.max
+<span class="kw">cat</span> /sys/fs/cgroup/system.slice/myapp.service/memory.max
+<span class="kw">cat</span> /sys/fs/cgroup/system.slice/myapp.service/cpu.pressure</pre>
+
+    <div class="alert tip">
+      <div class="alert-title">Tip · the right pattern for "make this service important"</div>
+      <p>
+        99% of services that "need to be important" do not need real-time scheduling. They need
+        three lines: <strong><code>Nice=-10</code></strong>, <strong><code>LimitMEMLOCK=infinity</code></strong>,
+        <strong><code>OOMScoreAdjust=-500</code></strong>.
+      </p>
+    </div>
+
+    <h2 id="troubleshooting">Troubleshooting playbooks</h2>
+
+    <h3 id="freeze">System freeze · zero logs</h3>
+
+    <p>Six things look like a freeze: kernel panic, hard lockup, soft lockup, hung task, userspace deadlock, resource exhaustion. Diagnostic capability falls as the system gets more dead:</p>
+
+    <table>
+      <thead><tr><th>Level</th><th>Condition</th><th>Tools available</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>SSH responds</td><td><code>perf top</code>, <code>bpftrace</code>, <code>/proc/PID/stack</code>, <code>offcputime</code></td></tr>
+        <tr><td>2</td><td>Only console/BMC</td><td>Magic SysRq: <code>echo t/w/l/m/p &gt; /proc/sysrq-trigger</code></td></tr>
+        <tr><td>3</td><td>Hard lockup</td><td>NMI watchdog auto-prints stacks after <code>watchdog_thresh</code></td></tr>
+        <tr><td>4</td><td>Totally unresponsive, kdump armed</td><td><code>echo c &gt; sysrq-trigger</code> → vmcore → <code>crash(8)</code></td></tr>
+        <tr><td>5</td><td>No kdump</td><td>Hardware reset, firmware logs only</td></tr>
+      </tbody>
+    </table>
+
+<pre><span class="com"># Magic SysRq essentials</span>
+<span class="kw">echo</span> t &gt; /proc/sysrq-trigger    <span class="com"># dump every task's stack</span>
+<span class="kw">echo</span> w &gt; /proc/sysrq-trigger    <span class="com"># only D-state tasks</span>
+<span class="kw">echo</span> l &gt; /proc/sysrq-trigger    <span class="com"># NMI backtrace on every CPU</span>
+<span class="kw">echo</span> c &gt; /proc/sysrq-trigger    <span class="com"># intentional panic → triggers kdump</span>
+
+<span class="com"># kdump analysis</span>
+<span class="kw">crash</span> /usr/lib/debug/boot/vmlinux-$(uname -r) /var/crash/.../vmcore
+<span class="kw">crash&gt;</span> bt -a                <span class="com"># backtrace every CPU</span>
+<span class="kw">crash&gt;</span> foreach UN bt       <span class="com"># every D-state task</span>
+<span class="kw">crash&gt;</span> log                 <span class="com"># kmsg ring buffer</span></pre>
+
+    <h3 id="disk-latency">High disk latency</h3>
+
+<pre><span class="com"># Snapshot</span>
+<span class="kw">iostat</span> -xz <span class="num">1</span>
+
+<span class="com"># Block-layer latency histogram</span>
+<span class="kw">biolatency-bpfcc</span> -D <span class="num">10</span>
+
+<span class="com"># Per-request trace</span>
+<span class="kw">biosnoop-bpfcc</span>
+
+<span class="com"># Raw block events</span>
+<span class="kw">blktrace</span> -d /dev/nvme0n1 -o trace -w <span class="num">30</span>
+<span class="kw">btt</span> -i trace.blktrace</pre>
+
+    <h3 id="mem-frag">Memory fragmentation</h3>
+
+<pre><span class="com"># Inspect buddy allocator</span>
+<span class="kw">cat</span> /proc/buddyinfo
+<span class="kw">cat</span> /proc/pagetypeinfo
+
+<span class="com"># Force compaction</span>
+<span class="kw">echo</span> <span class="num">1</span> &gt; /proc/sys/vm/compact_memory
+
+<span class="com"># More aggressive background compaction</span>
+<span class="kw">sysctl</span> -w vm.compaction_proactiveness=<span class="num">60</span>
+
+<span class="com"># Reserve hugepages at boot</span>
+<span class="kw">echo</span> <span class="num">4096</span> &gt; /proc/sys/vm/nr_hugepages</pre>
+
+    <h3 id="pkt-drops">Packet drops at high throughput</h3>
+
+    <table>
+      <thead><tr><th>Layer</th><th>Symptom</th><th>Fix</th></tr></thead>
+      <tbody>
+        <tr><td>NIC ring</td><td><code>rx_dropped</code> climbing</td><td><code>ethtool -G eth0 rx 4096</code></td></tr>
+        <tr><td>SoftIRQ</td><td>col 2 in softnet_stat</td><td>Raise <code>netdev_budget</code></td></tr>
+        <tr><td>Conntrack</td><td>"table full" in dmesg</td><td>Raise <code>nf_conntrack_max</code></td></tr>
+        <tr><td>TCP recv</td><td><code>TcpExtPruneCalled</code></td><td>Increase <code>rmem_max</code></td></tr>
+        <tr><td>App</td><td>Recv-Q large in <code>ss</code></td><td>Speed up consumer</td></tr>
+        <tr><td>All</td><td>Drops won't budge</td><td>Move to AF_XDP / DPDK</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="design">Design scenarios</h2>
+
+    <h3 id="patch-rollout">Distributed kernel patches across 10,000 nodes</h3>
+
+    <p>Exponential waves with health gates: <strong>10 → 100 → 1000 → 5000 → 10000</strong>.</p>
+
+    <table>
+      <thead><tr><th>Choice</th><th>Options</th><th>Trade-off</th></tr></thead>
+      <tbody>
+        <tr><td>Update mechanism</td><td>Package manager · A/B partitions · livepatch</td><td>A/B = atomic rollback; livepatch = no reboot for 80% of CVEs</td></tr>
+        <tr><td>Coordination</td><td>Central scheduler · pull-based</td><td>Central = simple but SPOF; pull = partition-tolerant</td></tr>
+        <tr><td>Health signal</td><td>Heartbeat · workload SLO</td><td>SLO catches real regressions; heartbeat only worst failures</td></tr>
+        <tr><td>Rollback</td><td>Boot previous slot · downgrade</td><td>Boot previous is one reboot</td></tr>
+      </tbody>
+    </table>
+
+    <h3 id="rt-pipeline">Real-time streaming data processing</h3>
+
+    <p>Hot path: NIC → userspace → NIC. No syscalls, no kernel scheduler, no GC.</p>
+
+    <table>
+      <thead><tr><th>Layer</th><th>Choice</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td>Kernel</td><td>PREEMPT_RT</td><td>Sub-ms bounded latency</td></tr>
+        <tr><td>Scheduler</td><td>SCHED_FIFO or DEADLINE</td><td>Bypass CFS</td></tr>
+        <tr><td>CPU</td><td><code>isolcpus nohz_full rcu_nocbs</code></td><td>No tick, no RCU, no migration</td></tr>
+        <tr><td>Network</td><td>DPDK / AF_XDP</td><td>Bypass kernel stack</td></tr>
+        <tr><td>Memory</td><td>Hugepages, NUMA-local, mlocked</td><td>No page faults, no TLB misses</td></tr>
+        <tr><td>Language</td><td>C++, Rust, JVM+ZGC</td><td>No unpredictable GC pauses</td></tr>
+      </tbody>
+    </table>
+
+    <h3 id="ceph-scale">Scaling distributed storage · 2× workload</h3>
+
+    <table>
+      <thead><tr><th>Area</th><th>Lever</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td>I/O scheduler</td><td><code>none</code> on NVMe</td><td>BlueStore manages its own queue</td></tr>
+        <tr><td>WAL/DB</td><td>On NVMe, separate from data</td><td>Isolate synchronous write path</td></tr>
+        <tr><td>Network</td><td>MTU 9000 · BBR</td><td>Replication moves bulk data</td></tr>
+        <tr><td>NUMA</td><td>Pin OSD daemons to local node</td><td>UPI round-trips destroy latency</td></tr>
+        <tr><td>cgroup</td><td>OSDs in own slice with <code>io.weight</code></td><td>Recovery must not starve client I/O</td></tr>
+      </tbody>
+    </table>
+
+    <h3 id="k8s-alloc">K8s dynamic resource allocation</h3>
+
+    <table>
+      <thead><tr><th>K8s feature</th><th>Linux primitive</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>CPU limits</td><td>CFS bandwidth (<code>cpu.max</code>)</td><td>Throttles per 100 ms period — silent latency killer</td></tr>
+        <tr><td>CPU requests</td><td>CFS weight (<code>cpu.weight</code>)</td><td>Soft floor under contention</td></tr>
+        <tr><td>Memory limit</td><td><code>memory.max</code></td><td>OOM-kill in that cgroup</td></tr>
+        <tr><td>Memory request</td><td><code>memory.low</code> / <code>memory.min</code></td><td>Reclaim protection</td></tr>
+        <tr><td>CPU pinning</td><td>cpuset · static CPU manager</td><td>Guaranteed pods get exclusive cores</td></tr>
+        <tr><td>NUMA</td><td>cpuset + memory binding</td><td>Topology Manager</td></tr>
+        <tr><td>I/O isolation</td><td><code>io.weight</code> / <code>io.max</code></td><td>Prevents one pod from drowning disk</td></tr>
+      </tbody>
+    </table>
+
+<pre><span class="com"># Read PSI for a pod's cgroup</span>
+<span class="kw">cat</span> /sys/fs/cgroup/kubepods.slice/.../cpu.pressure
+<span class="com"># some avg10=12.34 avg60=8.10 avg300=5.20 total=...</span></pre>
+
+    <div class="alert tip">
+      <div class="alert-title">Tip · CFS throttling is the silent latency killer</div>
+      <p>
+        A pod with <code>cpu.max = 200000 100000</code> (2 cores) that briefly spikes to 4 cores gets
+        <em>throttled</em> for the rest of the 100 ms period. Remove CPU limits and rely on weight-based
+        fairness for latency-sensitive workloads.
+      </p>
+    </div>
+
+  </main>
+
+  <aside class="toc-right">
+    <div class="label">On this page</div>
+    <ul>
+      <li><a href="#preemption">Kernel preemption</a></li>
+      <li class="h3"><a href="#mechanism">The mechanism</a></li>
+      <li class="h3"><a href="#sched-classes">Scheduling classes</a></li>
+      <li class="h3"><a href="#preemption-gate">The preemption gate</a></li>
+      <li class="h3"><a href="#models">The four models</a></li>
+      <li class="h3"><a href="#preempt-rt">PREEMPT_RT</a></li>
+      <li class="h3"><a href="#rt-workload">RT workloads</a></li>
+      <li><a href="#namespaces">Namespaces</a></li>
+      <li class="h3"><a href="#ns-types">Eight types</a></li>
+      <li class="h3"><a href="#ns-syscalls">Syscalls</a></li>
+      <li class="h3"><a href="#pid-ns">PID nesting</a></li>
+      <li><a href="#cgroups">Control groups</a></li>
+      <li class="h3"><a href="#v1-v2">v1 vs v2</a></li>
+      <li class="h3"><a href="#worked-example">Worked example</a></li>
+      <li><a href="#containers">Containers</a></li>
+      <li class="h3"><a href="#birth">Birth sequence</a></li>
+      <li class="h3"><a href="#closing-loop">Preemption loop</a></li>
+      <li><a href="#networking">Networking</a></li>
+      <li class="h3"><a href="#cc">TCP congestion control</a></li>
+      <li class="h3"><a href="#low-latency-net">Low-latency tuning</a></li>
+      <li><a href="#memory">Memory management</a></li>
+      <li class="h3"><a href="#numa">NUMA</a></li>
+      <li class="h3"><a href="#thp">Huge pages</a></li>
+      <li><a href="#storage">Storage</a></li>
+      <li class="h3"><a href="#fs">XFS vs ext4</a></li>
+      <li class="h3"><a href="#io-sched">I/O schedulers</a></li>
+      <li><a href="#systemd-cookbook">Service tuning</a></li>
+      <li class="h3"><a href="#systemd-knobs">The directives</a></li>
+      <li class="h3"><a href="#systemd-profiles">Production profiles</a></li>
+      <li class="h3"><a href="#systemd-verify">Verification</a></li>
+      <li><a href="#troubleshooting">Troubleshooting</a></li>
+      <li class="h3"><a href="#freeze">System freeze</a></li>
+      <li class="h3"><a href="#disk-latency">Disk latency</a></li>
+      <li class="h3"><a href="#mem-frag">Memory fragmentation</a></li>
+      <li class="h3"><a href="#pkt-drops">Packet drops</a></li>
+      <li><a href="#design">Design scenarios</a></li>
+      <li class="h3"><a href="#patch-rollout">Patch rollout · 10k nodes</a></li>
+      <li class="h3"><a href="#rt-pipeline">Real-time pipeline</a></li>
+      <li class="h3"><a href="#ceph-scale">Scaling storage</a></li>
+      <li class="h3"><a href="#k8s-alloc">K8s resource allocation</a></li>
+    </ul>
+  </aside>
+
 </div>
 
-<pre>
-<span class="comment"># Inspect current setting</span>
-cat /sys/kernel/mm/transparent_hugepage/enabled
+<script>
+  const links = document.querySelectorAll('aside.toc-left a, aside.toc-right a');
+  const sections = [...document.querySelectorAll('h2[id], h3[id]')];
+  function onScroll(){
+    let current = sections[0]?.id;
+    for(const s of sections){
+      if(s.getBoundingClientRect().top < 100) current = s.id;
+    }
+    links.forEach(a => {
+      const href = a.getAttribute('href');
+      if(href === '#' + current) a.classList.add('active');
+      else a.classList.remove('active');
+    });
+  }
+  window.addEventListener('scroll', onScroll, {passive:true});
+  onScroll();
+</script>
 
-<span class="comment"># Disable entirely</span>
-echo never &gt; /sys/kernel/mm/transparent_hugepage/enabled
-echo never &gt; /sys/kernel/mm/transparent_hugepage/defrag
-</pre>
-
-<h2 id="deep-storage">Storage &amp; I/O schedulers <a href="#deep-storage" class="anchor">#</a></h2>
-
-<h3>XFS vs ext4</h3>
-<p><strong>XFS</strong> partitions the filesystem into independent <strong>allocation groups</strong> — writes to different AGs proceed in parallel. <strong>ext4</strong> is excellent for small-file, single-stream workloads.</p>
-
-<table>
-<thead><tr><th>Concern</th><th>XFS</th><th>ext4</th></tr></thead>
-<tbody>
-<tr><td>Many parallel writers</td><td>Excellent — independent AGs</td><td>Good single-stream, plateaus</td></tr>
-<tr><td>Single-thread fsync</td><td>OK</td><td>Slightly lower latency</td></tr>
-<tr><td>Huge files (TB-scale)</td><td>Designed for it (SGI heritage)</td><td>Capable, less battle-tested at PB</td></tr>
-<tr><td>Lots of small files</td><td>Slightly slower inode allocator</td><td>Faster, traditional strength</td></tr>
-<tr><td>Shrink filesystem</td><td>Not supported</td><td>Supported (offline)</td></tr>
-<tr><td>Default in</td><td>RHEL/Rocky 7+, SUSE</td><td>Debian, Ubuntu (server)</td></tr>
-</tbody>
-</table>
-
-<h3>I/O schedulers — blk-mq era</h3>
-<p>NVMe SSDs support <strong>64 K hardware queues</strong>. Current schedulers sit on the <strong>multi-queue (blk-mq)</strong> framework:</p>
-
-<table>
-<thead><tr><th>Scheduler</th><th>Strategy</th><th>Best for</th></tr></thead>
-<tbody>
-<tr><td>none</td><td>No reordering — submit FIFO</td><td>NVMe, fast SSDs</td></tr>
-<tr><td>mq-deadline</td><td>Per-request expiry; reads prioritised</td><td>SATA SSD, HDD</td></tr>
-<tr><td>bfq</td><td>Budget-fair queueing, per-process</td><td>Interactive desktop, mixed HDD</td></tr>
-<tr><td>kyber</td><td>Latency-target based</td><td>NVMe with mixed read/write</td></tr>
-</tbody>
-</table>
-
-<pre>
-<span class="comment"># Check current scheduler</span>
-cat /sys/block/nvme0n1/queue/scheduler
-
-<span class="comment"># Switch at runtime</span>
-echo mq-deadline &gt; /sys/block/sda/queue/scheduler
-</pre>
-
-<h2 id="deep-troubleshooting">Troubleshooting playbooks <a href="#deep-troubleshooting" class="anchor">#</a></h2>
-
-<h3>System freeze · zero logs</h3>
-<p>Six things look like a freeze: kernel panic, hard lockup, soft lockup, hung task, userspace deadlock, resource exhaustion. Diagnostic capability falls as the system gets more dead:</p>
-
-<table>
-<thead><tr><th>Level</th><th>Condition</th><th>Tools available</th></tr></thead>
-<tbody>
-<tr><td>1</td><td>SSH responds</td><td><code>perf top</code>, <code>bpftrace</code>, <code>/proc/PID/stack</code>, <code>offcputime</code></td></tr>
-<tr><td>2</td><td>Only console/BMC</td><td>Magic SysRq: <code>echo t/w/l/m/p &gt; /proc/sysrq-trigger</code></td></tr>
-<tr><td>3</td><td>Hard lockup</td><td>NMI watchdog auto-prints stacks after <code>watchdog_thresh</code></td></tr>
-<tr><td>4</td><td>Totally unresponsive, kdump armed</td><td><code>echo c &gt; sysrq-trigger</code> → vmcore → <code>crash(8)</code></td></tr>
-<tr><td>5</td><td>No kdump</td><td>Hardware reset, firmware logs only</td></tr>
-</tbody>
-</table>
-
-<pre>
-<span class="comment"># Magic SysRq essentials</span>
-echo t &gt; /proc/sysrq-trigger    <span class="comment"># dump every task's stack</span>
-echo w &gt; /proc/sysrq-trigger    <span class="comment"># only D-state tasks</span>
-echo l &gt; /proc/sysrq-trigger    <span class="comment"># NMI backtrace on every CPU</span>
-echo c &gt; /proc/sysrq-trigger    <span class="comment"># intentional panic → triggers kdump</span>
-
-<span class="comment"># kdump analysis</span>
-crash /usr/lib/debug/boot/vmlinux-$(uname -r) /var/crash/.../vmcore
-crash&gt; bt -a                <span class="comment"># backtrace every CPU</span>
-crash&gt; foreach UN bt       <span class="comment"># every D-state task</span>
-crash&gt; log                 <span class="comment"># kmsg ring buffer</span>
-</pre>
-
-<h3>High disk latency</h3>
-<pre>
-<span class="comment"># Snapshot</span>
-iostat -xz 1
-
-<span class="comment"># Block-layer latency histogram</span>
-biolatency-bpfcc -D 10
-
-<span class="comment"># Per-request trace</span>
-biosnoop-bpfcc
-
-<span class="comment"># Raw block events</span>
-blktrace -d /dev/nvme0n1 -o trace -w 30
-btt -i trace.blktrace
-</pre>
-
-<h3>Memory fragmentation</h3>
-<pre>
-<span class="comment"># Inspect buddy allocator</span>
-cat /proc/buddyinfo
-cat /proc/pagetypeinfo
-
-<span class="comment"># Force compaction</span>
-echo 1 &gt; /proc/sys/vm/compact_memory
-
-<span class="comment"># More aggressive background compaction</span>
-sysctl -w vm.compaction_proactiveness=60
-
-<span class="comment"># Reserve hugepages at boot</span>
-echo 4096 &gt; /proc/sys/vm/nr_hugepages
-</pre>
-
-<h3>Packet drops at high throughput</h3>
-<table>
-<thead><tr><th>Layer</th><th>Symptom</th><th>Fix</th></tr></thead>
-<tbody>
-<tr><td>NIC ring</td><td><code>rx_dropped</code> climbing</td><td><code>ethtool -G eth0 rx 4096</code></td></tr>
-<tr><td>SoftIRQ</td><td>col 2 in softnet_stat</td><td>Raise <code>netdev_budget</code></td></tr>
-<tr><td>Conntrack</td><td>"table full" in dmesg</td><td>Raise <code>nf_conntrack_max</code></td></tr>
-<tr><td>TCP recv</td><td><code>TcpExtPruneCalled</code></td><td>Increase <code>rmem_max</code></td></tr>
-<tr><td>App</td><td>Recv-Q large in <code>ss</code></td><td>Speed up consumer</td></tr>
-<tr><td>All</td><td>Drops won't budge</td><td>Move to AF_XDP / DPDK</td></tr>
-</tbody>
-</table>
-
-<h2 id="deep-design">Design scenarios <a href="#deep-design" class="anchor">#</a></h2>
-
-<h3>Distributed kernel patches across 10,000 nodes</h3>
-<p>Exponential waves with health gates: <strong>10 → 100 → 1000 → 5000 → 10000</strong>. Each wave soaks and checks workload SLOs. Key choices:</p>
-<table>
-<thead><tr><th>Choice</th><th>Options</th><th>Trade-off</th></tr></thead>
-<tbody>
-<tr><td>Update mechanism</td><td>Package manager · A/B partitions · livepatch</td><td>A/B = atomic rollback; livepatch = no reboot for 80% of CVEs</td></tr>
-<tr><td>Coordination</td><td>Central scheduler · pull-based</td><td>Central = simple but SPOF; pull = partition-tolerant</td></tr>
-<tr><td>Health signal</td><td>Heartbeat · workload SLO</td><td>SLO catches real regressions; heartbeat only worst failures</td></tr>
-<tr><td>Rollback</td><td>Boot previous slot · downgrade</td><td>Boot previous is one reboot</td></tr>
-</tbody>
-</table>
-
-<h3>Real-time streaming data processing</h3>
-<p>Hot path: NIC → userspace → NIC. No syscalls, no kernel scheduler, no GC.</p>
-<table>
-<thead><tr><th>Layer</th><th>Choice</th><th>Why</th></tr></thead>
-<tbody>
-<tr><td>Kernel</td><td>PREEMPT_RT</td><td>Sub-ms bounded latency</td></tr>
-<tr><td>Scheduler</td><td>SCHED_FIFO or DEADLINE</td><td>Bypass CFS</td></tr>
-<tr><td>CPU</td><td><code>isolcpus nohz_full rcu_nocbs</code></td><td>No tick, no RCU, no migration</td></tr>
-<tr><td>Network</td><td>DPDK / AF_XDP</td><td>Bypass kernel stack</td></tr>
-<tr><td>Memory</td><td>Hugepages, NUMA-local, mlocked</td><td>No page faults, no TLB misses</td></tr>
-<tr><td>Language</td><td>C++, Rust, JVM+ZGC</td><td>No unpredictable GC pauses</td></tr>
-</tbody>
-</table>
-
-<h3>Scaling distributed storage · 2× workload</h3>
-<table>
-<thead><tr><th>Area</th><th>Lever</th><th>Why</th></tr></thead>
-<tbody>
-<tr><td>I/O scheduler</td><td><code>none</code> on NVMe</td><td>BlueStore manages its own queue</td></tr>
-<tr><td>WAL/DB</td><td>On NVMe, separate from data</td><td>Isolate synchronous write path</td></tr>
-<tr><td>Network</td><td>MTU 9000 · BBR</td><td>Replication moves bulk data</td></tr>
-<tr><td>NUMA</td><td>Pin OSD daemons to local node</td><td>UPI round-trips destroy latency</td></tr>
-<tr><td>cgroup</td><td>OSDs in own slice with <code>io.weight</code></td><td>Recovery must not starve client I/O</td></tr>
-</tbody>
-</table>
-
-<h3>K8s dynamic resource allocation</h3>
-<table>
-<thead><tr><th>K8s feature</th><th>Linux primitive</th><th>Notes</th></tr></thead>
-<tbody>
-<tr><td>CPU limits</td><td>CFS bandwidth (<code>cpu.max</code>)</td><td>Throttles per 100 ms period — silent latency killer</td></tr>
-<tr><td>CPU requests</td><td>CFS weight (<code>cpu.weight</code>)</td><td>Soft floor under contention</td></tr>
-<tr><td>Memory limit</td><td><code>memory.max</code></td><td>OOM-kill in that cgroup</td></tr>
-<tr><td>Memory request</td><td><code>memory.low</code> / <code>memory.min</code></td><td>Reclaim protection</td></tr>
-<tr><td>CPU pinning</td><td>cpuset · static CPU manager</td><td>Guaranteed pods get exclusive cores</td></tr>
-<tr><td>NUMA</td><td>cpuset + memory binding</td><td>Topology Manager</td></tr>
-<tr><td>I/O isolation</td><td><code>io.weight</code> / <code>io.max</code></td><td>Prevents one pod from drowning disk</td></tr>
-</tbody>
-</table>
-
-<pre>
-<span class="comment"># Read PSI for a pod's cgroup</span>
-cat /sys/fs/cgroup/kubepods.slice/.../cpu.pressure
-<span class="comment"># some avg10=12.34 avg60=8.10 avg300=5.20 total=...</span>
-</pre>
-
-<div class="callout note">
-<div class="callout-title">Tip · CFS throttling is the silent latency killer</div>
-<p>A pod with <code>cpu.max = 200000 100000</code> (2 cores) that briefly spikes to 4 cores gets <em>throttled</em> for the rest of the 100 ms period. Remove CPU limits and rely on weight-based fairness for latency-sensitive workloads.</p>
-</div>
-
-</main>
-</div>
 </body>
 </html>
