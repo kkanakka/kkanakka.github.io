@@ -290,6 +290,15 @@
     <li><a href="#cpu-static-numa"><span class="num">12.</span>CPU pinning &amp; NUMA</a></li>
     <li><a href="#tlb-cache"><span class="num">13.</span>TLB &amp; cache effects</a></li>
     <li><a href="#takeaways"><span class="num">14.</span>Key takeaways</a></li>
+    <li><a href="#deep-preemption"><span class="num">15.</span>Deep dive: Preemption</a></li>
+    <li><a href="#deep-namespaces"><span class="num">16.</span>Deep dive: Namespaces</a></li>
+    <li><a href="#deep-cgroups"><span class="num">17.</span>Deep dive: cgroups v2</a></li>
+    <li><a href="#deep-containers"><span class="num">18.</span>Container anatomy</a></li>
+    <li><a href="#deep-networking"><span class="num">19.</span>Networking &amp; TCP</a></li>
+    <li><a href="#deep-memory"><span class="num">20.</span>Memory: NUMA &amp; Huge Pages</a></li>
+    <li><a href="#deep-storage"><span class="num">21.</span>Storage &amp; I/O schedulers</a></li>
+    <li><a href="#deep-troubleshooting"><span class="num">22.</span>Troubleshooting playbooks</a></li>
+    <li><a href="#deep-design"><span class="num">23.</span>Design scenarios</a></li>
   </ul>
 
   <div class="sidebar-title">Related</div>
@@ -968,6 +977,507 @@ grep -E "AnonHugePages|HugePages" /proc/*/smaps</code></pre>
   <li><strong>Node pressure eviction is separate from cgroup limits.</strong> Both can trigger pod restarts.</li>
   <li><strong>CPU pinning requires static CPU manager policy</strong> and integer CPU requests.</li>
 </ul>
+
+
+<!-- ============================================ -->
+<!-- DEEP DIVE SECTIONS                            -->
+<!-- ============================================ -->
+
+<h2 id="deep-preemption">Deep dive: Kernel preemption <a href="#deep-preemption" class="anchor">#</a></h2>
+
+<p>Every task carries a per-CPU <code>preempt_count</code> bitfield tracking reasons preemption is disabled:</p>
+
+<pre>
+<span class="comment">// include/linux/preempt.h — conceptual layout</span>
+<span class="comment">//   bits  0..7   PREEMPT_MASK  — explicit preempt_disable() nesting</span>
+<span class="comment">//   bits  8..15  SOFTIRQ_MASK  — inside a softirq</span>
+<span class="comment">//   bits 16..19  HARDIRQ_MASK  — inside a hardirq</span>
+<span class="comment">//   bit  20      NMI_MASK      — inside an NMI</span>
+<span class="comment">//   bit  31      PREEMPT_NEED_RESCHED  (inverted flag)</span>
+
+static inline bool preemptible(void) {
+    return preempt_count() == 0 &amp;&amp; !irqs_disabled();
+}
+</pre>
+
+<p>The scheduler sets <code>TIF_NEED_RESCHED</code> when a higher-priority task wakes up. The interaction:</p>
+<ul>
+<li><strong>Returning to user mode:</strong> always checks the flag and calls <code>schedule()</code> if set.</li>
+<li><strong>Returning to kernel mode:</strong> only checks if <code>preempt_count == 0</code> AND the build allows kernel preemption.</li>
+<li><strong>Voluntary points:</strong> <code>cond_resched()</code> calls in long kernel loops yield if the flag is set.</li>
+</ul>
+
+<h3>Scheduling classes — the priority ladder</h3>
+<p>Every task belongs to exactly one class, and class order is absolute: a single task in a higher class always beats any number of tasks in a lower one.</p>
+
+<div class="callout note">
+<div class="callout-title">Note · privilege</div>
+<p>Moving <em>up</em> into a real-time class (DEADLINE, FIFO, RR) requires <code>CAP_SYS_NICE</code>. Moving <em>down</em> — to <code>SCHED_IDLE</code>, or to a higher nice value — is always allowed.</p>
+</div>
+
+<pre>
+<span class="comment"># Inspect a process's class &amp; priority</span>
+chrt -p $(pidof pipewire)
+
+<span class="comment"># Launch a job in a class</span>
+chrt -f 50 ./audio_server      <span class="comment"># SCHED_FIFO prio 50</span>
+chrt -i 0  ./nightly_backup     <span class="comment"># SCHED_IDLE</span>
+nice -n 10 ./big_compile        <span class="comment"># SCHED_NORMAL with nice=10</span>
+
+<span class="comment"># Change from C</span>
+struct sched_param p = { .sched_priority = 80 };
+sched_setscheduler(0, SCHED_FIFO, &amp;p);
+</pre>
+
+<h3>PREEMPT_RT — what actually changes</h3>
+<p>PREEMPT_RT restructures long-standing mechanisms so almost any kernel code path can be preempted:</p>
+<ul>
+<li><strong>Spinlocks become sleeping mutexes.</strong> Most <code>spin_lock()</code>s are converted to <code>rt_mutex</code> with priority inheritance.</li>
+<li><strong>Interrupts run in threads.</strong> Each IRQ line gets a kthread. A high-priority RT task can preempt an interrupt handler.</li>
+<li><strong>Softirqs are per-task.</strong> No longer at random points in unrelated contexts.</li>
+<li><strong>Priority inheritance everywhere.</strong> When a low-priority task holds a lock a high-priority task needs, the holder is temporarily boosted.</li>
+</ul>
+
+<h3>Real-time workloads in practice</h3>
+<p>Real-time means <strong>predictable</strong>, not fast. A workload that must respond within 100 μs every time needs:</p>
+<ul>
+<li>The PREEMPT_RT kernel</li>
+<li>An RT scheduling class — <code>SCHED_FIFO</code> or <code>SCHED_DEADLINE</code></li>
+<li>Memory pre-faulted with <code>mlockall(MCL_CURRENT | MCL_FUTURE)</code></li>
+<li>CPU pinning via <code>sched_setaffinity()</code> onto an <code>isolcpus=</code>/<code>nohz_full=</code> isolated core</li>
+</ul>
+
+<pre>
+<span class="comment">// minimal SCHED_DEADLINE task</span>
+struct sched_attr attr = {
+    .size           = sizeof(attr),
+    .sched_policy   = SCHED_DEADLINE,
+    .sched_runtime  = 100000,   <span class="comment">// 100 μs budget</span>
+    .sched_deadline = 1000000,  <span class="comment">// must finish within 1 ms</span>
+    .sched_period   = 1000000,  <span class="comment">// every 1 ms</span>
+};
+sched_setattr(0, &amp;attr, 0);
+mlockall(MCL_CURRENT | MCL_FUTURE);
+
+while (running) {
+    do_critical_work();
+    sched_yield();
+}
+</pre>
+
+<h2 id="deep-namespaces">Deep dive: Namespaces <a href="#deep-namespaces" class="anchor">#</a></h2>
+
+<p>A <strong>namespace</strong> partitions a kernel resource so processes inside see one view and processes outside see another. Every task has a <code>struct nsproxy</code>. Two tasks share a namespace by sharing a pointer; <code>setns(2)</code> is cheap because it is just a pointer swap.</p>
+
+<pre>
+<span class="comment">// include/linux/nsproxy.h — abridged</span>
+struct nsproxy {
+    refcount_t           count;
+    struct uts_namespace    *uts_ns;
+    struct ipc_namespace    *ipc_ns;
+    struct mnt_namespace    *mnt_ns;
+    struct pid_namespace    *pid_ns_for_children;
+    struct net              *net_ns;
+    struct time_namespace   *time_ns;
+    struct cgroup_namespace *cgroup_ns;
+};
+</pre>
+
+<h3>The eight namespace types</h3>
+<table>
+<thead><tr><th>Namespace</th><th>Isolates</th><th>Added</th></tr></thead>
+<tbody>
+<tr><td>MNT</td><td>Mount table — own filesystem tree</td><td>2.4.19 (2002)</td></tr>
+<tr><td>UTS</td><td>Hostname, domainname</td><td>2.6.19 (2006)</td></tr>
+<tr><td>IPC</td><td>SysV IPC, POSIX message queues</td><td>2.6.19</td></tr>
+<tr><td>PID</td><td>Process IDs — PID 1 inside ≠ PID 1 outside</td><td>2.6.24 (2008)</td></tr>
+<tr><td>NET</td><td>Interfaces, routes, sockets, firewall</td><td>2.6.29 (2009)</td></tr>
+<tr><td>USER</td><td>UID/GID mappings — root in ≠ root out</td><td>3.8 (2013)</td></tr>
+<tr><td>CGROUP</td><td>cgroup root — hides host hierarchy</td><td>4.6 (2016)</td></tr>
+<tr><td>TIME</td><td>CLOCK_MONOTONIC / CLOCK_BOOTTIME offsets</td><td>5.6 (2020)</td></tr>
+</tbody>
+</table>
+
+<h3>The three syscalls</h3>
+<ul>
+<li><code>clone(CLONE_NEW*)</code> — create a child in fresh namespaces. This is how containers are born.</li>
+<li><code>unshare(2)</code> — same flags, operates on the calling process.</li>
+<li><code>setns(2)</code> — given an fd to <code>/proc/&lt;pid&gt;/ns/&lt;type&gt;</code>, join that namespace. How <code>nsenter</code> and <code>docker exec</code> work.</li>
+</ul>
+
+<h3>PID namespaces nest</h3>
+<p>PID namespaces <strong>nest</strong>. The first process inside becomes <code>PID 1</code> while keeping its larger PID in the parent. PID 1 has init semantics — it reaps orphans, and if it dies the kernel kills every process in the namespace.</p>
+
+<div class="callout warning">
+<div class="callout-title">Warning · isolation ≠ security</div>
+<p>A container talks to the <em>same kernel</em> the host runs. A kernel CVE is just as exploitable from inside a container. This is why seccomp, capability dropping, and user namespaces matter at least as much as namespaces themselves.</p>
+</div>
+
+<h2 id="deep-cgroups">Deep dive: cgroups v2 <a href="#deep-cgroups" class="anchor">#</a></h2>
+
+<p>Where namespaces answer "what can this process <em>see</em>?", cgroups answer "what can it <em>consume</em>?". The interface is a virtual filesystem at <code>/sys/fs/cgroup</code>. You create a cgroup by <code>mkdir</code>, add a process by writing its PID to <code>cgroup.procs</code>, set limits by writing to files like <code>memory.max</code>.</p>
+
+<h3>Worked example · create a cgroup by hand</h3>
+<pre>
+<span class="comment"># 1. create a new cgroup</span>
+mkdir /sys/fs/cgroup/my_workload
+
+<span class="comment"># 2. enable controllers</span>
+echo "+memory +cpu +io" &gt; /sys/fs/cgroup/cgroup.subtree_control
+
+<span class="comment"># 3. set limits — 1 GiB memory, ~2 CPUs</span>
+echo 1073741824     &gt; /sys/fs/cgroup/my_workload/memory.max
+echo "200000 100000" &gt; /sys/fs/cgroup/my_workload/cpu.max
+
+<span class="comment"># 4. move a process in</span>
+echo $$ &gt; /sys/fs/cgroup/my_workload/cgroup.procs
+
+<span class="comment"># 5. observe</span>
+cat /sys/fs/cgroup/my_workload/memory.current
+cat /sys/fs/cgroup/my_workload/cpu.stat
+cat /sys/fs/cgroup/my_workload/memory.pressure
+</pre>
+
+<h3>Controllers (v2)</h3>
+<table>
+<thead><tr><th>Controller</th><th>Key files</th><th>Enforces</th></tr></thead>
+<tbody>
+<tr><td>cpu</td><td>cpu.max · cpu.weight · cpu.stat</td><td>CFS bandwidth quota or weight-based share</td></tr>
+<tr><td>memory</td><td>memory.max · memory.high · memory.low · memory.swap.max</td><td>Hard cap + soft throttling + protection</td></tr>
+<tr><td>io</td><td>io.max · io.weight · io.stat</td><td>Per-device bandwidth + IOPS</td></tr>
+<tr><td>pids</td><td>pids.max · pids.current</td><td>Max number of tasks — defeats fork bombs</td></tr>
+<tr><td>cpuset</td><td>cpuset.cpus · cpuset.mems</td><td>Restrict to specific CPUs / NUMA nodes</td></tr>
+<tr><td>hugetlb</td><td>hugetlb.&lt;size&gt;.max</td><td>Cap on huge page consumption</td></tr>
+</tbody>
+</table>
+
+<h2 id="deep-containers">Container anatomy <a href="#deep-containers" class="anchor">#</a></h2>
+
+<p>The kernel has no <code>struct container</code>. A container is a process tree with <strong>(a)</strong> its own namespaces, <strong>(b)</strong> a cgroup with limits, <strong>(c)</strong> a pivot_root, <strong>(d)</strong> a seccomp filter, <strong>(e)</strong> a reduced capability set.</p>
+
+<h3>Container birth sequence</h3>
+<pre>
+<span class="comment">// 1. runtime forks with namespace flags</span>
+pid_t child = clone(child_fn, stack_top,
+    CLONE_NEWPID | CLONE_NEWNS  | CLONE_NEWNET |
+    CLONE_NEWUTS | CLONE_NEWIPC | CLONE_NEWUSER |
+    CLONE_NEWCGROUP | SIGCHLD, args);
+
+<span class="comment">// 2. parent writes mappings + cgroup membership</span>
+write_file("/proc/{child}/uid_map", "0 100000 65536");
+write_file("/sys/fs/cgroup/machine.slice/docker-abc.scope/cgroup.procs", child);
+
+<span class="comment">// 3. inside the child</span>
+sethostname("abc123", 6);
+pivot_root("/newroot", "/newroot/.old");
+mount("proc", "/proc", "proc", 0, 0);
+prctl(PR_SET_NO_NEW_PRIVS, 1);
+seccomp(SECCOMP_SET_MODE_FILTER, 0, &amp;filter);
+execve("/bin/sh", argv, envp);
+</pre>
+
+<h3>Closing the loop with preemption</h3>
+<ul>
+<li>If a container is under <code>cpu.max</code> throttling, even <code>SCHED_FIFO</code> can be denied the CPU when the quota is exhausted.</li>
+<li>PSI files (<code>cpu.pressure</code>, <code>memory.pressure</code>, <code>io.pressure</code>) report stalled-time percentages per cgroup.</li>
+<li>Preemption decides <strong>when</strong> a task runs. Cgroups decide <strong>how much</strong>. Namespaces decide <strong>what world it runs in</strong>.</li>
+</ul>
+
+<h2 id="deep-networking">Networking &amp; TCP <a href="#deep-networking" class="anchor">#</a></h2>
+
+<h3>TCP congestion control</h3>
+<p>TCP sends as much as <code>min(cwnd, rwnd) / RTT</code>. Classic <strong>Reno</strong> treats packet loss as the only signal. <strong>CUBIC</strong> (Linux default since 2.6.19) uses a cubic function. <strong>BBR</strong> (Google, 2016) models bottleneck bandwidth and minimum RTT directly.</p>
+
+<table>
+<thead><tr><th>Algorithm</th><th>Signal</th><th>Best for</th><th>Failure mode</th></tr></thead>
+<tbody>
+<tr><td>Reno / NewReno</td><td>Loss</td><td>Reference; short fat pipes</td><td>Slow recovery on high BDP</td></tr>
+<tr><td>CUBIC (default)</td><td>Loss</td><td>WAN, datacentre, default</td><td>Buffer-bloats with shallow queues</td></tr>
+<tr><td>BBR / BBRv2</td><td>BW × RTT model</td><td>Lossy paths, long RTT, video</td><td>Can starve CUBIC at shared bottleneck</td></tr>
+<tr><td>DCTCP</td><td>ECN marks</td><td>Datacentre fabrics</td><td>Needs ECN end-to-end</td></tr>
+</tbody>
+</table>
+
+<pre>
+<span class="comment"># Show available algorithms</span>
+sysctl net.ipv4.tcp_available_congestion_control
+
+<span class="comment"># Switch system-wide</span>
+sysctl -w net.ipv4.tcp_congestion_control=bbr
+
+<span class="comment"># Per-socket from C</span>
+const char *cc = "bbr";
+setsockopt(fd, IPPROTO_TCP, TCP_CONGESTION, cc, strlen(cc));
+
+<span class="comment"># Live inspection</span>
+ss -tin 'sport = :443'
+</pre>
+
+<h3>Low-latency network optimizations</h3>
+<table>
+<thead><tr><th>Layer</th><th>Knob</th><th>Effect</th></tr></thead>
+<tbody>
+<tr><td>NIC</td><td><code>ethtool -C eth0 rx-usecs 0</code></td><td>Disable interrupt coalescing — IRQ per packet</td></tr>
+<tr><td>NIC</td><td><code>ethtool -K eth0 gro off lro off</code></td><td>Stop merging segments</td></tr>
+<tr><td>IRQ</td><td><code>/proc/irq/N/smp_affinity</code></td><td>Pin NIC IRQs to specific cores</td></tr>
+<tr><td>Socket</td><td><code>SO_BUSY_POLL</code></td><td>Spin in kernel polling the NIC instead of sleeping</td></tr>
+<tr><td>Socket</td><td><code>TCP_NODELAY</code></td><td>Disable Nagle — send every write immediately</td></tr>
+<tr><td>Socket</td><td><code>TCP_QUICKACK</code></td><td>Disable delayed ACK</td></tr>
+<tr><td>App</td><td>AF_XDP, DPDK, io_uring</td><td>Kernel bypass — userspace handles the NIC</td></tr>
+</tbody>
+</table>
+
+<pre>
+<span class="comment"># A minimal low-latency profile</span>
+ethtool -C eth0 adaptive-rx off adaptive-tx off rx-usecs 0 tx-usecs 0
+ethtool -K eth0 gro off lro off gso off tso off
+
+<span class="comment"># Pin NIC IRQs to cores 2-3</span>
+for irq in $(grep eth0 /proc/interrupts | awk -F: '{print $1}'); do
+    echo c &gt; /proc/irq/$irq/smp_affinity
+done
+
+<span class="comment"># Enable busy-poll</span>
+sysctl -w net.core.busy_poll=50
+
+<span class="comment"># App-side</span>
+int on = 1, us = 50;
+setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &amp;on, sizeof(on));
+setsockopt(fd, SOL_SOCKET, SO_BUSY_POLL, &amp;us, sizeof(us));
+
+<span class="comment"># Pin the app</span>
+taskset -c 4 ./trading_app
+</pre>
+
+<h2 id="deep-memory">Memory: NUMA &amp; Huge Pages <a href="#deep-memory" class="anchor">#</a></h2>
+
+<h3>NUMA · non-uniform memory access</h3>
+<p>Each CPU socket has its own memory controller — a <strong>NUMA node</strong>. Crossing an inter-socket interconnect costs latency (~50 ns extra) and bandwidth (~0.5×). Linux uses <strong>first-touch</strong> placement by default.</p>
+
+<table>
+<thead><tr><th>Policy</th><th>Behaviour</th></tr></thead>
+<tbody>
+<tr><td>MPOL_DEFAULT</td><td>First-touch (the default)</td></tr>
+<tr><td>MPOL_BIND</td><td>Allocate only on listed nodes — OOM if those fill</td></tr>
+<tr><td>MPOL_PREFERRED</td><td>Try a node, fall back to anywhere</td></tr>
+<tr><td>MPOL_INTERLEAVE</td><td>Round-robin pages across nodes — good for streaming</td></tr>
+</tbody>
+</table>
+
+<pre>
+<span class="comment"># Pin process + memory to node 0</span>
+numactl --cpunodebind=0 --membind=0 ./db
+
+<span class="comment"># Interleave across nodes</span>
+numactl --interleave=all ./spark-worker
+
+<span class="comment"># Per-process stats</span>
+numastat -p $(pidof postgres)
+</pre>
+
+<h3>Transparent Huge Pages</h3>
+<p>A <strong>huge page</strong> is one TLB entry covering 2 MiB. Same translation cost, 512× more memory covered. On big-heap workloads this alone can be a 5-30% throughput win.</p>
+
+<table>
+<thead><tr><th>Mode</th><th>Behaviour</th><th>Good for</th><th>Bad for</th></tr></thead>
+<tbody>
+<tr><td>always</td><td>Every anonymous mapping aspires to be huge</td><td>JVM, Redis, analytics</td><td>Random small allocations</td></tr>
+<tr><td>madvise</td><td>Only mappings marked <code>MADV_HUGEPAGE</code></td><td>Default for many distros</td><td>—</td></tr>
+<tr><td>never</td><td>Use 4 KiB everywhere</td><td>Latency-critical, KVM hosts</td><td>Big-heap throughput apps</td></tr>
+</tbody>
+</table>
+
+<div class="callout warning">
+<div class="callout-title">Danger · why databases often disable THP</div>
+<p>Allocating a 2 MiB page requires 512 contiguous 4 KiB frames. Under fragmentation, the kernel does <strong>compaction</strong> and the faulting thread waits — pauses can be tens of ms. MongoDB, Redis, PostgreSQL all recommend <code>never</code> or <code>madvise</code>.</p>
+</div>
+
+<pre>
+<span class="comment"># Inspect current setting</span>
+cat /sys/kernel/mm/transparent_hugepage/enabled
+
+<span class="comment"># Disable entirely</span>
+echo never &gt; /sys/kernel/mm/transparent_hugepage/enabled
+echo never &gt; /sys/kernel/mm/transparent_hugepage/defrag
+</pre>
+
+<h2 id="deep-storage">Storage &amp; I/O schedulers <a href="#deep-storage" class="anchor">#</a></h2>
+
+<h3>XFS vs ext4</h3>
+<p><strong>XFS</strong> partitions the filesystem into independent <strong>allocation groups</strong> — writes to different AGs proceed in parallel. <strong>ext4</strong> is excellent for small-file, single-stream workloads.</p>
+
+<table>
+<thead><tr><th>Concern</th><th>XFS</th><th>ext4</th></tr></thead>
+<tbody>
+<tr><td>Many parallel writers</td><td>Excellent — independent AGs</td><td>Good single-stream, plateaus</td></tr>
+<tr><td>Single-thread fsync</td><td>OK</td><td>Slightly lower latency</td></tr>
+<tr><td>Huge files (TB-scale)</td><td>Designed for it (SGI heritage)</td><td>Capable, less battle-tested at PB</td></tr>
+<tr><td>Lots of small files</td><td>Slightly slower inode allocator</td><td>Faster, traditional strength</td></tr>
+<tr><td>Shrink filesystem</td><td>Not supported</td><td>Supported (offline)</td></tr>
+<tr><td>Default in</td><td>RHEL/Rocky 7+, SUSE</td><td>Debian, Ubuntu (server)</td></tr>
+</tbody>
+</table>
+
+<h3>I/O schedulers — blk-mq era</h3>
+<p>NVMe SSDs support <strong>64 K hardware queues</strong>. Current schedulers sit on the <strong>multi-queue (blk-mq)</strong> framework:</p>
+
+<table>
+<thead><tr><th>Scheduler</th><th>Strategy</th><th>Best for</th></tr></thead>
+<tbody>
+<tr><td>none</td><td>No reordering — submit FIFO</td><td>NVMe, fast SSDs</td></tr>
+<tr><td>mq-deadline</td><td>Per-request expiry; reads prioritised</td><td>SATA SSD, HDD</td></tr>
+<tr><td>bfq</td><td>Budget-fair queueing, per-process</td><td>Interactive desktop, mixed HDD</td></tr>
+<tr><td>kyber</td><td>Latency-target based</td><td>NVMe with mixed read/write</td></tr>
+</tbody>
+</table>
+
+<pre>
+<span class="comment"># Check current scheduler</span>
+cat /sys/block/nvme0n1/queue/scheduler
+
+<span class="comment"># Switch at runtime</span>
+echo mq-deadline &gt; /sys/block/sda/queue/scheduler
+</pre>
+
+<h2 id="deep-troubleshooting">Troubleshooting playbooks <a href="#deep-troubleshooting" class="anchor">#</a></h2>
+
+<h3>System freeze · zero logs</h3>
+<p>Six things look like a freeze: kernel panic, hard lockup, soft lockup, hung task, userspace deadlock, resource exhaustion. Diagnostic capability falls as the system gets more dead:</p>
+
+<table>
+<thead><tr><th>Level</th><th>Condition</th><th>Tools available</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>SSH responds</td><td><code>perf top</code>, <code>bpftrace</code>, <code>/proc/PID/stack</code>, <code>offcputime</code></td></tr>
+<tr><td>2</td><td>Only console/BMC</td><td>Magic SysRq: <code>echo t/w/l/m/p &gt; /proc/sysrq-trigger</code></td></tr>
+<tr><td>3</td><td>Hard lockup</td><td>NMI watchdog auto-prints stacks after <code>watchdog_thresh</code></td></tr>
+<tr><td>4</td><td>Totally unresponsive, kdump armed</td><td><code>echo c &gt; sysrq-trigger</code> → vmcore → <code>crash(8)</code></td></tr>
+<tr><td>5</td><td>No kdump</td><td>Hardware reset, firmware logs only</td></tr>
+</tbody>
+</table>
+
+<pre>
+<span class="comment"># Magic SysRq essentials</span>
+echo t &gt; /proc/sysrq-trigger    <span class="comment"># dump every task's stack</span>
+echo w &gt; /proc/sysrq-trigger    <span class="comment"># only D-state tasks</span>
+echo l &gt; /proc/sysrq-trigger    <span class="comment"># NMI backtrace on every CPU</span>
+echo c &gt; /proc/sysrq-trigger    <span class="comment"># intentional panic → triggers kdump</span>
+
+<span class="comment"># kdump analysis</span>
+crash /usr/lib/debug/boot/vmlinux-$(uname -r) /var/crash/.../vmcore
+crash&gt; bt -a                <span class="comment"># backtrace every CPU</span>
+crash&gt; foreach UN bt       <span class="comment"># every D-state task</span>
+crash&gt; log                 <span class="comment"># kmsg ring buffer</span>
+</pre>
+
+<h3>High disk latency</h3>
+<pre>
+<span class="comment"># Snapshot</span>
+iostat -xz 1
+
+<span class="comment"># Block-layer latency histogram</span>
+biolatency-bpfcc -D 10
+
+<span class="comment"># Per-request trace</span>
+biosnoop-bpfcc
+
+<span class="comment"># Raw block events</span>
+blktrace -d /dev/nvme0n1 -o trace -w 30
+btt -i trace.blktrace
+</pre>
+
+<h3>Memory fragmentation</h3>
+<pre>
+<span class="comment"># Inspect buddy allocator</span>
+cat /proc/buddyinfo
+cat /proc/pagetypeinfo
+
+<span class="comment"># Force compaction</span>
+echo 1 &gt; /proc/sys/vm/compact_memory
+
+<span class="comment"># More aggressive background compaction</span>
+sysctl -w vm.compaction_proactiveness=60
+
+<span class="comment"># Reserve hugepages at boot</span>
+echo 4096 &gt; /proc/sys/vm/nr_hugepages
+</pre>
+
+<h3>Packet drops at high throughput</h3>
+<table>
+<thead><tr><th>Layer</th><th>Symptom</th><th>Fix</th></tr></thead>
+<tbody>
+<tr><td>NIC ring</td><td><code>rx_dropped</code> climbing</td><td><code>ethtool -G eth0 rx 4096</code></td></tr>
+<tr><td>SoftIRQ</td><td>col 2 in softnet_stat</td><td>Raise <code>netdev_budget</code></td></tr>
+<tr><td>Conntrack</td><td>"table full" in dmesg</td><td>Raise <code>nf_conntrack_max</code></td></tr>
+<tr><td>TCP recv</td><td><code>TcpExtPruneCalled</code></td><td>Increase <code>rmem_max</code></td></tr>
+<tr><td>App</td><td>Recv-Q large in <code>ss</code></td><td>Speed up consumer</td></tr>
+<tr><td>All</td><td>Drops won't budge</td><td>Move to AF_XDP / DPDK</td></tr>
+</tbody>
+</table>
+
+<h2 id="deep-design">Design scenarios <a href="#deep-design" class="anchor">#</a></h2>
+
+<h3>Distributed kernel patches across 10,000 nodes</h3>
+<p>Exponential waves with health gates: <strong>10 → 100 → 1000 → 5000 → 10000</strong>. Each wave soaks and checks workload SLOs. Key choices:</p>
+<table>
+<thead><tr><th>Choice</th><th>Options</th><th>Trade-off</th></tr></thead>
+<tbody>
+<tr><td>Update mechanism</td><td>Package manager · A/B partitions · livepatch</td><td>A/B = atomic rollback; livepatch = no reboot for 80% of CVEs</td></tr>
+<tr><td>Coordination</td><td>Central scheduler · pull-based</td><td>Central = simple but SPOF; pull = partition-tolerant</td></tr>
+<tr><td>Health signal</td><td>Heartbeat · workload SLO</td><td>SLO catches real regressions; heartbeat only worst failures</td></tr>
+<tr><td>Rollback</td><td>Boot previous slot · downgrade</td><td>Boot previous is one reboot</td></tr>
+</tbody>
+</table>
+
+<h3>Real-time streaming data processing</h3>
+<p>Hot path: NIC → userspace → NIC. No syscalls, no kernel scheduler, no GC.</p>
+<table>
+<thead><tr><th>Layer</th><th>Choice</th><th>Why</th></tr></thead>
+<tbody>
+<tr><td>Kernel</td><td>PREEMPT_RT</td><td>Sub-ms bounded latency</td></tr>
+<tr><td>Scheduler</td><td>SCHED_FIFO or DEADLINE</td><td>Bypass CFS</td></tr>
+<tr><td>CPU</td><td><code>isolcpus nohz_full rcu_nocbs</code></td><td>No tick, no RCU, no migration</td></tr>
+<tr><td>Network</td><td>DPDK / AF_XDP</td><td>Bypass kernel stack</td></tr>
+<tr><td>Memory</td><td>Hugepages, NUMA-local, mlocked</td><td>No page faults, no TLB misses</td></tr>
+<tr><td>Language</td><td>C++, Rust, JVM+ZGC</td><td>No unpredictable GC pauses</td></tr>
+</tbody>
+</table>
+
+<h3>Scaling distributed storage · 2× workload</h3>
+<table>
+<thead><tr><th>Area</th><th>Lever</th><th>Why</th></tr></thead>
+<tbody>
+<tr><td>I/O scheduler</td><td><code>none</code> on NVMe</td><td>BlueStore manages its own queue</td></tr>
+<tr><td>WAL/DB</td><td>On NVMe, separate from data</td><td>Isolate synchronous write path</td></tr>
+<tr><td>Network</td><td>MTU 9000 · BBR</td><td>Replication moves bulk data</td></tr>
+<tr><td>NUMA</td><td>Pin OSD daemons to local node</td><td>UPI round-trips destroy latency</td></tr>
+<tr><td>cgroup</td><td>OSDs in own slice with <code>io.weight</code></td><td>Recovery must not starve client I/O</td></tr>
+</tbody>
+</table>
+
+<h3>K8s dynamic resource allocation</h3>
+<table>
+<thead><tr><th>K8s feature</th><th>Linux primitive</th><th>Notes</th></tr></thead>
+<tbody>
+<tr><td>CPU limits</td><td>CFS bandwidth (<code>cpu.max</code>)</td><td>Throttles per 100 ms period — silent latency killer</td></tr>
+<tr><td>CPU requests</td><td>CFS weight (<code>cpu.weight</code>)</td><td>Soft floor under contention</td></tr>
+<tr><td>Memory limit</td><td><code>memory.max</code></td><td>OOM-kill in that cgroup</td></tr>
+<tr><td>Memory request</td><td><code>memory.low</code> / <code>memory.min</code></td><td>Reclaim protection</td></tr>
+<tr><td>CPU pinning</td><td>cpuset · static CPU manager</td><td>Guaranteed pods get exclusive cores</td></tr>
+<tr><td>NUMA</td><td>cpuset + memory binding</td><td>Topology Manager</td></tr>
+<tr><td>I/O isolation</td><td><code>io.weight</code> / <code>io.max</code></td><td>Prevents one pod from drowning disk</td></tr>
+</tbody>
+</table>
+
+<pre>
+<span class="comment"># Read PSI for a pod's cgroup</span>
+cat /sys/fs/cgroup/kubepods.slice/.../cpu.pressure
+<span class="comment"># some avg10=12.34 avg60=8.10 avg300=5.20 total=...</span>
+</pre>
+
+<div class="callout note">
+<div class="callout-title">Tip · CFS throttling is the silent latency killer</div>
+<p>A pod with <code>cpu.max = 200000 100000</code> (2 cores) that briefly spikes to 4 cores gets <em>throttled</em> for the rest of the 100 ms period. Remove CPU limits and rely on weight-based fairness for latency-sensitive workloads.</p>
+</div>
 
 </main>
 </div>
