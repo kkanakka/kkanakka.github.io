@@ -359,6 +359,104 @@
       from "almost never" to "almost always," and you choose at build time.
     </p>
 
+
+    <h3 id="four-models-tldr">The four models at a glance</h3>
+
+    <p>
+      Linux offers four preemption models, chosen at kernel build time (or at boot with
+      <code>PREEMPT_DYNAMIC</code> since v6.1). Each trades throughput for latency:
+    </p>
+
+    <div class="diagram">
+      <div class="diagram-head">
+        <span><span class="id">Figure 0</span> · four preemption models · what can interrupt kernel code</span>
+        <span>SVG</span>
+      </div>
+      <div class="diagram-body">
+<svg viewBox="0 0 900 340" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arr_f0" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0969da"/>
+    </marker>
+  </defs>
+
+  <text x="20" y="22" font-size="12" font-weight="600">More preemptible → lower latency · less preemptible → higher throughput</text>
+
+  <!-- Gradient arrow -->
+  <line x1="40" y1="310" x2="860" y2="310" stroke="#0969da" stroke-width="2" marker-end="url(#arr_f0)"/>
+  <text x="40" y="335" font-size="10" fill="#d1242f">best throughput</text>
+  <text x="790" y="335" font-size="10" fill="#1a7f37">best latency</text>
+
+  <!-- PREEMPT_NONE -->
+  <rect x="40" y="50" width="190" height="240" fill="#ffebe9" stroke="#d1242f" rx="4"/>
+  <text x="135" y="72" text-anchor="middle" font-size="12" font-weight="600" fill="#d1242f">PREEMPT_NONE</text>
+  <line x1="40" y1="80" x2="230" y2="80" stroke="#d1242f" stroke-width="0.5"/>
+  <text x="55" y="100" font-size="10" fill="#59636e">Kernel code runs until it</text>
+  <text x="55" y="115" font-size="10" fill="#59636e">either finishes its work,</text>
+  <text x="55" y="130" font-size="10" fill="#59636e">returns to userspace, or</text>
+  <text x="55" y="145" font-size="10" fill="#59636e">explicitly blocks (waits</text>
+  <text x="55" y="160" font-size="10" fill="#59636e">for I/O, sleeps on a lock).</text>
+  <text x="55" y="185" font-size="10" fill="#1f2328" font-weight="500">A long syscall doing CPU</text>
+  <text x="55" y="200" font-size="10" fill="#1f2328" font-weight="500">work just runs to completion.</text>
+  <line x1="55" y1="215" x2="215" y2="215" stroke="#d1242f" stroke-width="0.3"/>
+  <text x="55" y="235" font-size="10" fill="#d1242f" font-weight="500">Worst latency (tens of ms)</text>
+  <text x="55" y="250" font-size="10" fill="#1a7f37" font-weight="500">Best throughput</text>
+  <text x="55" y="272" font-size="9" fill="#59636e">Use: HPC, throughput servers</text>
+
+  <!-- PREEMPT_VOLUNTARY -->
+  <rect x="250" y="50" width="190" height="240" fill="#fff8c5" stroke="#9a6700" rx="4"/>
+  <text x="345" y="72" text-anchor="middle" font-size="11" font-weight="600" fill="#9a6700">PREEMPT_VOLUNTARY</text>
+  <line x1="250" y1="80" x2="440" y2="80" stroke="#9a6700" stroke-width="0.5"/>
+  <text x="265" y="100" font-size="10" fill="#59636e">Same as NONE, except the</text>
+  <text x="265" y="115" font-size="10" fill="#59636e">kernel is sprinkled with</text>
+  <text x="265" y="130" font-size="10" fill="#1f2328" font-weight="500">explicit checkpoints:</text>
+  <text x="265" y="145" font-size="10" fill="#8250df">might_sleep()</text>
+  <text x="265" y="160" font-size="10" fill="#8250df">cond_resched()</text>
+  <text x="265" y="180" font-size="10" fill="#59636e">At each checkpoint: "is</text>
+  <text x="265" y="195" font-size="10" fill="#59636e">something higher-prio</text>
+  <text x="265" y="210" font-size="10" fill="#59636e">waiting? If so, yield."</text>
+  <line x1="265" y1="220" x2="425" y2="220" stroke="#9a6700" stroke-width="0.3"/>
+  <text x="265" y="238" font-size="10" fill="#9a6700" font-weight="500">Latency ~few ms</text>
+  <text x="265" y="255" font-size="9" fill="#59636e">Use: general-purpose distros</text>
+  <text x="265" y="272" font-size="9" fill="#59636e">(Ubuntu, Fedora default)</text>
+
+  <!-- PREEMPT (full) -->
+  <rect x="460" y="50" width="190" height="240" fill="#ddf4ff" stroke="#0969da" rx="4"/>
+  <text x="555" y="72" text-anchor="middle" font-size="12" font-weight="600" fill="#0969da">PREEMPT (full)</text>
+  <line x1="460" y1="80" x2="650" y2="80" stroke="#0969da" stroke-width="0.5"/>
+  <text x="475" y="100" font-size="10" fill="#59636e">Kernel can be preempted</text>
+  <text x="475" y="115" font-size="10" fill="#1f2328" font-weight="500">almost anywhere, except</text>
+  <text x="475" y="130" font-size="10" fill="#59636e">inside critical sections</text>
+  <text x="475" y="145" font-size="10" fill="#59636e">that explicitly disable</text>
+  <text x="475" y="160" font-size="10" fill="#59636e">preemption:</text>
+  <text x="475" y="180" font-size="10" fill="#8250df">• spinlocks</text>
+  <text x="475" y="195" font-size="10" fill="#8250df">• RCU read sides</text>
+  <text x="475" y="210" font-size="10" fill="#8250df">• IRQ-off regions</text>
+  <line x1="475" y1="220" x2="635" y2="220" stroke="#0969da" stroke-width="0.3"/>
+  <text x="475" y="238" font-size="10" fill="#0969da" font-weight="500">Latency sub-ms (typical)</text>
+  <text x="475" y="255" font-size="9" fill="#59636e">Use: low-latency desktop,</text>
+  <text x="475" y="272" font-size="9" fill="#59636e">audio, interactive</text>
+
+  <!-- PREEMPT_RT -->
+  <rect x="670" y="50" width="190" height="240" fill="#dafbe1" stroke="#1a7f37" rx="4"/>
+  <text x="765" y="72" text-anchor="middle" font-size="12" font-weight="600" fill="#1a7f37">PREEMPT_RT</text>
+  <line x1="670" y1="80" x2="860" y2="80" stroke="#1a7f37" stroke-width="0.5"/>
+  <text x="685" y="100" font-size="10" fill="#59636e">Even most of those</text>
+  <text x="685" y="115" font-size="10" fill="#59636e">"almost anywhere"</text>
+  <text x="685" y="130" font-size="10" fill="#1f2328" font-weight="500">exceptions are removed:</text>
+  <text x="685" y="155" font-size="10" fill="#8250df">• spinlocks → sleeping locks</text>
+  <text x="685" y="170" font-size="10" fill="#8250df">• IRQ handlers → threads</text>
+  <text x="685" y="185" font-size="10" fill="#8250df">• priority inheritance</text>
+  <text x="685" y="200" font-size="10" fill="#8250df">  everywhere</text>
+  <line x1="685" y1="220" x2="845" y2="220" stroke="#1a7f37" stroke-width="0.3"/>
+  <text x="685" y="238" font-size="10" fill="#1a7f37" font-weight="500">Latency ~30 μs (bounded)</text>
+  <text x="685" y="255" font-size="9" fill="#59636e">Use: industrial control,</text>
+  <text x="685" y="272" font-size="9" fill="#59636e">robotics, telecom, trading</text>
+</svg>
+      </div>
+      <div class="diagram-cap">Each model is a different answer to "when can the scheduler take the CPU from kernel code?" — from "basically never" (NONE) to "basically always" (RT). Userspace is always preemptible regardless of model.</div>
+    </div>
+
     <h3 id="mechanism">The mechanism</h3>
 
     <p>
@@ -2317,6 +2415,7 @@ kubectl describe node &lt;node&gt; | sed -n '/Allocatable/,/System/p'</code></pr
 <aside class="toc-right" id="toc-right" aria-label="On this page">
   <div class="toc-section"><a href="#preemption">Kernel preemption</a></div>
   <ul>
+    <li><a href="#four-models-tldr">four models at a glance</a></li>
     <li><a href="#mechanism">mechanism</a></li>
     <li><a href="#sched-classes">sched-classes</a></li>
     <li><a href="#preemption-gate">preemption-gate</a></li>
