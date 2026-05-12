@@ -125,6 +125,16 @@
   .card-ggl:hover { border-color: #ea4335; }
   .card-ggl .cta { color: #ea4335; }
 
+  .card-kernel .icon { background: rgba(9,105,218,0.1); color: #0969da; }
+  .card-kernel h2 { color: #0969da; }
+  .card-kernel:hover { border-color: #0969da; }
+  .card-kernel .cta { color: #0969da; }
+
+  .card-gpu .icon { background: rgba(130,80,223,0.1); color: #8250df; }
+  .card-gpu h2 { color: #8250df; }
+  .card-gpu:hover { border-color: #8250df; }
+  .card-gpu .cta { color: #8250df; }
+
   .footer {
     background: var(--surface);
     border-top: 1px solid var(--border);
@@ -254,6 +264,44 @@
         <span class="tag">SSH</span>
       </div>
       <div class="cta">Study all questions →</div>
+    </a>
+
+    <!-- Kernel Internals & Kubelet -->
+    <a href="kernel-internals-kubelet.html" class="card card-kernel">
+      <div class="icon">🔧</div>
+      <h2>Kernel Internals &amp; Kubelet</h2>
+      <div class="subtitle">Preemption, cgroups, namespaces, Kubernetes deep-dive</div>
+      <p>Linux kernel preemption models, scheduling classes, cgroups v2, namespaces, advanced networking, memory management, storage I/O, systemd tuning, troubleshooting, and Kubernetes resource allocation with kubelet internals.</p>
+      <div class="tag-row">
+        <span class="tag">Preemption</span>
+        <span class="tag">cgroups v2</span>
+        <span class="tag">Namespaces</span>
+        <span class="tag">BBR</span>
+        <span class="tag">XDP</span>
+        <span class="tag">io_uring</span>
+        <span class="tag">Kubelet</span>
+        <span class="tag">QoS Classes</span>
+      </div>
+      <div class="cta">Explore kernel internals →</div>
+    </a>
+
+    <!-- GPUs in Kubernetes -->
+    <a href="gpus-in-kubernetes.html" class="card card-gpu">
+      <div class="icon">🎮</div>
+      <h2>GPUs in Kubernetes</h2>
+      <div class="subtitle">Allocation, RDMA networking, inference, operations</div>
+      <p>How kubelet allocates GPUs, cgroup limitations, MIG/MPS/time-slicing, DRA, RDMA &amp; GPUDirect networking, SR-IOV, NCCL, inference optimizations (KV cache, speculative decoding), and GPU Operator operations.</p>
+      <div class="tag-row">
+        <span class="tag">MIG</span>
+        <span class="tag">MPS</span>
+        <span class="tag">DRA</span>
+        <span class="tag">RDMA</span>
+        <span class="tag">GPUDirect</span>
+        <span class="tag">SR-IOV</span>
+        <span class="tag">NCCL</span>
+        <span class="tag">KV Cache</span>
+      </div>
+      <div class="cta">Read the GPU field guide →</div>
     </a>
 
   </div>
