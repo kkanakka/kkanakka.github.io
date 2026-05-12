@@ -6,781 +6,1418 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <title>Java Memory Architecture — Deep Dive</title>
 <style>
-  :root { --bg: #ffffff; --card: #f7f6f3; --border: #e3e2de; --text: #c9d1d9; --heading: #f0f6fc; --accent: #2383e2; --green: #0f7b0f; --red: #e03e3e; --orange: #d29922; --purple: #bc8cff; }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
-  .container { max-width: 960px; margin: 0 auto; padding: 20px; }
-  h1 { color: var(--heading); font-size: 2.2em; margin: 30px 0 10px; border-bottom: 1px solid var(--border); padding-bottom: 12px; }
-  h2 { color: var(--accent); font-size: 1.6em; margin: 40px 0 14px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
-  h3 { color: var(--green); font-size: 1.25em; margin: 25px 0 10px; }
-  h4 { color: var(--orange); font-size: 1.1em; margin: 18px 0 8px; }
-  p, li { font-size: 1em; margin-bottom: 10px; }
-  ul, ol { padding-left: 24px; margin-bottom: 16px; }
-  img { max-width: 100%; border-radius: 10px; border: 1px solid var(--border); margin: 16px 0; }
-  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin: 18px 0; }
-  .warn { border-left: 4px solid var(--red); padding-left: 14px; margin: 14px 0; }
-  .info { border-left: 4px solid var(--accent); padding-left: 14px; margin: 14px 0; }
-  .tip { border-left: 4px solid var(--green); padding-left: 14px; margin: 14px 0; }
-  code { background: #ffffff; padding: 2px 6px; border-radius: 4px; font-family: 'SFMono-Regular', Consolas, monospace; font-size: 0.92em; color: var(--orange); }
-  pre { background: #ffffff; border: 1px solid var(--border); border-radius: 8px; padding: 16px; overflow-x: auto; margin: 14px 0; font-size: 0.9em; line-height: 1.5; }
-  pre code { background: none; padding: 0; color: var(--text); }
-  table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 0.95em; }
-  th { background: #ffffff; color: var(--accent); padding: 10px; text-align: left; border: 1px solid var(--border); }
-  td { padding: 10px; border: 1px solid var(--border); }
-  tr:nth-child(even) { background: #f7f6f3; }
-  .badge { display: inline-block; background: var(--accent); color: #ffffff; padding: 4px 14px; border-radius: 20px; font-size: 0.85em; font-weight: 600; }
-  a { color: var(--accent); text-decoration: none; }
-  a:hover { text-decoration: underline; }
-  .nav-links { margin: 14px 0; }
-  .nav-links a { display: inline-block; background: var(--card); border: 1px solid var(--accent); padding: 8px 20px; border-radius: 8px; margin: 8px 4px; font-size: 0.9em; }
-  .formula { background: #1a1f2b; border: 2px solid var(--purple); border-radius: 8px; padding: 14px; margin: 14px 0; font-family: monospace; font-size: 0.95em; color: var(--purple); }
-  .segment-label { display: inline-block; padding: 2px 10px; border-radius: 4px; font-weight: 600; font-size: 0.85em; margin-right: 6px; }
-  .seg-text { background: #1f3a5f; color: #79b8ff; }
-  .seg-data { background: #1a3a1a; color: #56d364; }
-  .seg-heap { background: #3b1f5e; color: #6940a5; }
-  .seg-stack { background: #1a3a3a; color: #56d3a8; }
-  .seg-native { background: #3a2a0f; color: #e3b341; }
-  .seg-kernel { background: #2a2a2a; color: #999; }
+:root {
+  --bg: #ffffff;
+  --fg: #1f2328;
+  --muted: #59636e;
+  --border: #d1d9e0;
+  --card: #f6f8fa;
+  --blue: #0969da;
+  --blue-bg: #ddf4ff;
+  --green: #1a7f37;
+  --green-bg: #dafbe1;
+  --amber: #9a6700;
+  --yellow-bg: #fff8c5;
+  --red: #d1242f;
+  --red-bg: #ffebe9;
+  --purple: #8250df;
+  --purple-bg: #f5f0ff;
+  --kernel-bg: #f6f8fa;
+  --kernel-fg: #59636e;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  color: #1f2328;
+  background: #ffffff;
+  font-family: Inter, sans-serif;
+  line-height: 1.7;
+  margin: 0;
+}
+
+.container {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.nav-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.nav-links a {
+  background: #f6f8fa;
+  border: 1px solid #0969da;
+  color: #0969da;
+  padding: 8px 20px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.nav-links a:hover {
+  background: #ddf4ff;
+}
+
+h1 {
+  color: #1f2328;
+  font-size: 2rem;
+  font-weight: 700;
+  padding-bottom: 12px;
+  margin: 0 0 14px;
+  border-bottom: 3px solid #0969da;
+}
+
+h2 {
+  color: #0969da;
+  font-size: 1.45rem;
+  font-weight: 600;
+  margin-top: 2.2rem;
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #d1d9e0;
+}
+
+h3 {
+  color: #1a7f37;
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin-top: 1.4rem;
+  margin-bottom: 10px;
+}
+
+h4 {
+  color: #9a6700;
+  font-size: 1rem;
+  font-weight: 600;
+  margin-top: 1.1rem;
+  margin-bottom: 8px;
+}
+
+p,
+li {
+  color: #1f2328;
+}
+
+ul,
+ol {
+  padding-left: 1.4rem;
+}
+
+strong {
+  color: #1f2328;
+}
+
+a {
+  color: #0969da;
+}
+
+.card {
+  background: #f6f8fa;
+  border: 1px solid #d1d9e0;
+  border-radius: 8px;
+  padding: 20px;
+  margin: 18px 0;
+}
+
+.warn {
+  border-left: 4px solid #d1242f;
+  background: #ffebe9;
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin: 14px 0;
+}
+
+.warn p {
+  color: #1f2328;
+  margin: 0;
+}
+
+.info {
+  border-left: 4px solid #0969da;
+  background: #ddf4ff;
+  padding: 12px 16px;
+  border-radius: 6px;
+}
+
+.info p {
+  color: #1f2328;
+  margin: 0;
+}
+
+.tip {
+  border-left: 4px solid #1a7f37;
+  background: #dafbe1;
+  padding: 12px 16px;
+  border-radius: 6px;
+}
+
+.tip p {
+  color: #1f2328;
+  margin: 0;
+}
+
+code {
+  background: #fff8c5;
+  color: #9a6700;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.9em;
+}
+
+pre {
+  background: #f6f8fa;
+  border: 1px solid #d1d9e0;
+  border-radius: 8px;
+  padding: 16px;
+  overflow-x: auto;
+  color: #1f2328;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.88em;
+  line-height: 1.5;
+}
+
+pre code {
+  background: none;
+  color: #1f2328;
+  padding: 0;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+  font-size: 0.95em;
+  border: 1px solid #d1d9e0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+th,
+td {
+  border: 1px solid #d1d9e0;
+  padding: 12px 14px;
+  text-align: left;
+}
+
+th {
+  background: #f6f8fa;
+  color: #1f2328;
+  font-weight: 600;
+}
+
+td {
+  color: #1f2328;
+}
+
+.formula {
+  background: #f5f0ff;
+  border: 2px solid #8250df;
+  border-radius: 8px;
+  padding: 14px;
+  color: #1f2328;
+  font-family: "JetBrains Mono", monospace;
+  font-weight: 500;
+  margin: 18px 0;
+}
+
+.badge {
+  display: inline-block;
+  background: #0969da;
+  color: #fff;
+  padding: 4px 14px;
+  border-radius: 20px;
+  font-size: 0.85em;
+  font-weight: 600;
+}
+
+.seg-text {
+  background: #ddf4ff;
+  color: #0969da;
+}
+
+.seg-data {
+  background: #dafbe1;
+  color: #1a7f37;
+}
+
+.seg-heap {
+  background: #f5f0ff;
+  color: #8250df;
+}
+
+.seg-stack {
+  background: #fff8c5;
+  color: #9a6700;
+}
+
+.seg-native {
+  background: #ffebe9;
+  color: #d1242f;
+}
+
+.seg-kernel {
+  background: #f6f8fa;
+  color: #59636e;
+}
+
+.diagram {
+  border: 1px solid #d1d9e0;
+  border-radius: 8px;
+  margin: 20px 0;
+  overflow: hidden;
+}
+
+.diagram-head {
+  background: #f6f8fa;
+  padding: 8px 16px;
+  border-bottom: 1px solid #d1d9e0;
+  font-size: 0.85em;
+  color: #59636e;
+  font-weight: 600;
+}
+
+.diagram-body {
+  padding: 16px;
+  background: #ffffff;
+}
+
+.diagram-cap {
+  padding: 8px 16px;
+  background: #f6f8fa;
+  border-top: 1px solid #d1d9e0;
+  font-size: 0.85em;
+  color: #59636e;
+  font-style: italic;
+}
+
+.svg-label {
+  font-family: Inter, sans-serif;
+  font-size: 11px;
+  fill: #1f2328;
+}
+
+.svg-muted {
+  fill: #59636e;
+  font-size: 10px;
+  font-family: Inter, sans-serif;
+}
+
+.svg-mono {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px;
+  fill: #1f2328;
+}
 </style>
 </head>
 <body>
 <div class="container">
-
 <div class="nav-links">
-  <a href="index.html">&larr; Chapter 6: Processes</a>
+  <a href="index.html">← Chapter 6: Processes</a>
   <a href="chapter2.html">Chapter 2: Fundamentals</a>
 </div>
-
-<h1>Java Memory Architecture &mdash; Deep Dive</h1>
+<h1>Java Memory Architecture — Deep Dive</h1>
 <div class="badge">Mapping JVM Internals to Linux Process Memory</div>
-<p style="margin-top:14px;">This guide maps <strong>every Java component</strong> to its exact location in the Linux process memory layout. We trace how ZooKeeper and Espresso (LinkedIn's NoSQL store) use Text, Data, BSS, Heap, Stack, and Kernel memory &mdash; with diagrams for every scenario.</p>
+<p style="margin-top:14px;">This guide maps <strong>every Java component</strong> to its exact location in the Linux process memory layout: the <span class="seg-text">TEXT</span> segment where <code>libjvm.so</code> and JIT-compiled code live, the <span class="seg-data">DATA</span> and <span class="seg-data">BSS</span> regions for class-level state, the <span class="seg-heap">HEAP</span> split between the managed Java heap and native arenas (Metaspace, direct buffers, CodeCache), per-thread <span class="seg-stack">STACK</span> frames for method execution, and how the <span class="seg-kernel">kernel</span> accounts for sockets, page cache, and scheduling around your process.</p>
 
-<!-- ===== SECTION 1: JVM PROCESS MEMORY LAYOUT ===== -->
-<h2 id="sec-1">1. Java Process Memory Layout &mdash; Where Everything Lives</h2>
+<h2 id="sec-1">1. Java Process Memory Layout</h2>
+<p>Every Java application is a normal Linux process. The virtual address space still follows the classic ELF layout: executable and shared-library <strong>TEXT</strong> (read-only code), <strong>DATA</strong> (initialized static storage), <strong>BSS</strong> (zeroed uninitialized statics), a <strong>heap</strong> that grows toward higher addresses, memory-mapped files and anonymous mappings, and a <strong>stack</strong> anchored near the top of user space that grows down. The JVM layers <code>libjvm.so</code>, interpreters, JIT output, class metadata, and GC-managed object storage onto these primitives.</p>
 
-<p>A running Java program is a regular Linux process. Its virtual address space has the same segments as any C program (text, data, BSS, heap, stack) &mdash; but the JVM <strong>carves up the heap</strong> into specialized sub-regions and adds large off-heap native allocations.</p>
+<h3>The TEXT Segment</h3>
+<p>The TEXT segment holds machine instructions: the JVM executable, <code>libjvm.so</code>, other JNI libraries, and the <strong>JIT CodeCache</strong> where hotspots are emitted as native code. The interpreter dispatch loop and stubs also reside here. This region is typically mapped read-execute (<code>r-x</code>); writable JIT buffers are separate anonymous mappings coordinated by the runtime.</p>
 
-<img src="images/jvm_01_memory_layout.png" alt="Java Process Memory Layout Inside Linux">
+<h3>The DATA and BSS Segments</h3>
+<p><strong>DATA</strong> contains initialized globals from the JVM and native libraries: static finals backed by loads from the constant pool (often pointing into Metaspace), internal tables, JNI handles, and static C/C++ symbols linked into the JVM. <strong>BSS</strong> holds uninitialized static variables—zeroed by the loader—including null reference fields fixed up before bytecode runs. Understanding DATA/BSS separates “process-wide native statics” from per-instance heap objects.</p>
 
-<div class="card">
-<h3>Segment-by-Segment Breakdown</h3>
+<h3>The Heap (Managed + Native)</h3>
+<p>The <strong>Java heap</strong> is where object instances (<code>new</code>) and arrays live across <strong>Eden</strong>, <strong>Survivor</strong> spaces (often S0/S1), and the <strong>Old</strong> (tenured) generation. A concurrent collector may add regions or humongous-object areas, but the generational mental model stays the same. Alongside—still “heap” colloquially in process terms—sit <strong>Metaspace</strong> for class metadata, <strong>direct <code>ByteBuffer</code></strong> and <code>mmap</code> arenas, malloc zones for JNI/native code, and the CodeCache for JIT output. Monitoring must separate RSS attributed to GC heap versus native arenas.</p>
 
-<h4><span class="segment-label seg-text">TEXT</span> Machine Code &mdash; Read-Only, Shared</h4>
-<ul>
-  <li><strong>JVM binary code</strong>: <code>libjvm.so</code>, the core JVM runtime (interpreter loop, GC algorithms, class loader)</li>
-  <li><strong>JIT-compiled methods</strong>: After the JVM detects a &ldquo;hot&rdquo; method (called thousands of times), the C1 (client) or C2 (server) compiler compiles it from bytecode to native machine instructions. These go into the <strong>CodeCache</strong> (technically in native memory, but conceptually &ldquo;text&rdquo;)</li>
-  <li><strong>Interpreter dispatch loop</strong>: The bytecode interpreter itself is compiled C++ code in the text segment</li>
-  <li>This region is <strong>read-only</strong> and can be <strong>shared</strong> between processes running the same JVM binary</li>
-</ul>
+<h3>The Stack</h3>
+<p>Each OS thread mapped by the JVM consumes a contiguous stack chunk sized by <code>-Xss</code> (commonly on the order of 1 MiB). Frames store primitives, operands, partial evaluation state, and <strong>references</strong> to heap objects—not the objects themselves (except inlined scalarization optimizations). Thousands of threads linearly multiply reserved virtual stack space; always correlate thread count with <code>ulimit</code>, container memory limits, and NMT reports.</p>
 
-<h4><span class="segment-label seg-data">DATA</span> Initialized Global/Static Variables</h4>
-<ul>
-  <li>JVM version strings, default configuration constants</li>
-  <li>Signal handler function pointers</li>
-  <li>Static final fields from loaded Java classes (after class loading, the JVM places resolved constant pool entries here)</li>
-  <li>Values are read from the executable file when the JVM binary is loaded</li>
-</ul>
+<h3>Memory-Mapped Regions</h3>
+<p>JAR/class data (often mapped read-only), <code>mmap</code>’d files, CDS archives, compressed class space, anonymous huge pages, and <code>/dev/zero</code>-backed regions appear between classical heap bookkeeping and stacks. GC may use <code>mmap</code> for heap reservation even before pages are touched.</p>
 
-<h4><span class="segment-label seg-data">BSS</span> Uninitialized Global/Static Variables</h4>
-<ul>
-  <li>Large static arrays before initialization</li>
-  <li>JVM internal counters that start at zero</li>
-  <li>Key advantage: the binary doesn&rsquo;t need to store these bytes &mdash; the kernel just records the size needed and fills with zeros at startup</li>
-</ul>
+<h3>The Kernel’s View</h3>
+<p>Although not part of user virtual memory the same way, kernel structures back your process: page tables, file descriptor tables, epoll interest lists, socket send/receive buffers, and page cache pages tied to your I/O. Syscalls move data between user buffers (heap or direct) and these kernel-side resources—important when diagnosing “memory” that is not in the Java heap but still charged to the host.</p>
 
-<h4><span class="segment-label seg-heap">HEAP</span> Dynamic Memory &mdash; The Largest Region</h4>
-<p>In a Java process, &ldquo;heap&rdquo; has <strong>two meanings</strong>:</p>
+<div class="diagram">
+  <div class="diagram-head">Figure 1 — Java process memory layout inside Linux (virtual addresses increase upward)</div>
+  <div class="diagram-body">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 520" width="100%" height="auto" role="img" aria-label="Java process memory layout from low to high address">
+      <defs>
+        <marker id="arr-up" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+          <polygon points="0,0 8,4 0,8" fill="#0969da"/>
+        </marker>
+        <marker id="arr-g" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+          <polygon points="0,0 8,4 0,8" fill="#1a7f37"/>
+        </marker>
+      </defs>
+      <!-- Address axis labels -->
+      <text x="18" y="38" class="svg-muted">0xFFFF_FFFF_FFFF_FFFF</text>
+      <text x="18" y="488" class="svg-muted">0x0000_0000_0040_0000</text>
+      <text x="120" y="265" class="svg-muted" transform="rotate(-90 120 265)">Virtual address →</text>
 
-<table>
-<tr><th>Java Heap (<code>-Xmx</code>)</th><th>Native Heap (<code>malloc</code>)</th></tr>
-<tr>
-  <td>
-    <strong>Eden</strong>: Where <code>new</code> objects are born. <code>new Request()</code>, <code>new byte[1024]</code> &mdash; short-lived<br>
-    <strong>Survivor S0/S1</strong>: Objects that survived at least 1 minor GC cycle<br>
-    <strong>Old Gen (Tenured)</strong>: Long-lived objects promoted after surviving many GC cycles. DataNode tree, HashMap, SessionTracker
-  </td>
-  <td>
-    <strong>Metaspace</strong>: Class metadata, method vtables (<code>-XX:MaxMetaspaceSize</code>)<br>
-    <strong>DirectByteBuffer</strong>: Netty I/O buffers, allocated via <code>sun.misc.Unsafe</code><br>
-    <strong>JIT CodeCache</strong>: Compiled native methods (<code>-XX:ReservedCodeCacheSize</code>)<br>
-    <strong>Thread-local storage</strong> for native (C/C++) code
-  </td>
-</tr>
-<tr>
-  <td>Managed by GC (G1, ZGC, etc.)</td>
-  <td>Outside GC control. Managed by <code>malloc</code>/<code>free</code> or Netty reference counting</td>
-</tr>
-</table>
+      <!-- KERNEL SPACE -->
+      <rect x="160" y="28" width="680" height="52" fill="#f6f8fa" stroke="#d1d9e0" stroke-width="2"/>
+      <text x="500" y="52" text-anchor="middle" class="svg-label" font-weight="700" fill="#59636e">KERNEL SPACE</text>
+      <text x="500" y="68" text-anchor="middle" class="svg-muted" font-size="10px">socket buffers · page cache · fd table · epoll</text>
 
-<h4><span class="segment-label seg-stack">STACK</span> Per-Thread, Auto-Managed</h4>
-<ul>
-  <li>Each Java thread gets its own stack, typically 512KB&ndash;1MB (<code>-Xss</code>)</li>
-  <li>Contains <strong>method call frames</strong> with local variables, return addresses, operand values</li>
-  <li><strong>Primitives</strong> (<code>int</code>, <code>long</code>, <code>boolean</code>) are stored directly on the stack</li>
-  <li><strong>Object references</strong> are on the stack, but the actual objects are on the heap</li>
-  <li>200 threads &times; 1MB = 200MB of stack memory!</li>
-  <li>If recursion goes too deep: <code>StackOverflowError</code></li>
-</ul>
+      <!-- STACK -->
+      <rect x="160" y="88" width="680" height="95" fill="#fff8c5" stroke="#9a6700" stroke-width="2"/>
+      <text x="500" y="108" text-anchor="middle" class="svg-label" font-weight="700" fill="#9a6700">STACK (per-thread, grows ↓)</text>
+      <text x="500" y="124" text-anchor="middle" class="svg-label" font-size="11px">200 threads × 1 MiB ≈ 200 MiB reserved (typical sizing)</text>
+      <rect x="180" y="132" width="56" height="40" fill="#ffffff" stroke="#d1d9e0"/>
+      <rect x="242" y="132" width="56" height="40" fill="#ffffff" stroke="#d1d9e0"/>
+      <rect x="304" y="132" width="56" height="40" fill="#ffffff" stroke="#d1d9e0"/>
+      <text x="218" y="156" text-anchor="middle" class="svg-mono" font-size="9px">T1</text>
+      <text x="270" y="156" text-anchor="middle" class="svg-mono" font-size="9px">T2</text>
+      <text x="332" y="156" text-anchor="middle" class="svg-mono" font-size="9px">T3</text>
+      <text x="420" y="156" class="svg-muted" font-size="10px">…</text>
+      <rect x="730" y="132" width="90" height="40" fill="#ffffff" stroke="#d1d9e0"/>
+      <text x="775" y="156" text-anchor="middle" class="svg-mono" font-size="9px">T200</text>
+      <text x="500" y="178" text-anchor="middle" class="svg-muted" font-size="10px">Each box: -Xss frames, local vars, reference slots (oop maps)</text>
 
-<h4><span class="segment-label seg-kernel">KERNEL SPACE</span> Not Accessible to JVM</h4>
-<ul>
-  <li>Socket buffers (<code>sk_buff</code>) for TCP connections</li>
-  <li>Page cache (cached disk I/O)</li>
-  <li>File descriptor table</li>
-  <li>epoll interest lists</li>
-  <li>The JVM interacts with kernel space only through <strong>system calls</strong></li>
-</ul>
+      <!-- mmap region -->
+      <rect x="160" y="191" width="680" height="42" fill="#f6f8fa" stroke="#59636e" stroke-width="1" stroke-dasharray="4 3"/>
+      <text x="500" y="210" text-anchor="middle" class="svg-label" font-weight="600" fill="#59636e">Memory-mapped files &amp; anonymous mappings</text>
+      <text x="500" y="226" text-anchor="middle" class="svg-muted" font-size="10px">JAR/class data · CDS · huge pages · other mmap</text>
+
+      <!-- HEAP outer -->
+      <rect x="160" y="241" width="680" height="168" fill="#f5f0ff" stroke="#8250df" stroke-width="2"/>
+      <text x="500" y="260" text-anchor="middle" class="svg-label" font-weight="700" fill="#8250df">HEAP — Java managed + native arenas</text>
+
+      <!-- Java heap left -->
+      <rect x="175" y="270" width="320" height="125" fill="#ffffff" stroke="#8250df" stroke-width="1"/>
+      <text x="335" y="288" text-anchor="middle" class="svg-label" font-weight="600" fill="#8250df">Java Heap (GC-managed)</text>
+      <rect x="188" y="298" width="70" height="36" fill="#dafbe1" stroke="#1a7f37"/>
+      <text x="223" y="320" text-anchor="middle" class="svg-mono" font-size="10px">Eden</text>
+      <polygon points="260,306 274,306 274,298 286,316 274,334 274,326 260,326" fill="#0969da"/>
+      <rect x="292" y="298" width="44" height="36" fill="#ddf4ff" stroke="#0969da"/>
+      <text x="314" y="320" text-anchor="middle" class="svg-mono" font-size="9px">S0</text>
+      <polygon points="338,306 352,306 352,298 364,316 352,334 352,326 338,326" fill="#0969da"/>
+      <rect x="370" y="298" width="44" height="36" fill="#ddf4ff" stroke="#0969da"/>
+      <text x="392" y="320" text-anchor="middle" class="svg-mono" font-size="9px">S1</text>
+      <polygon points="418,306 432,306 432,298 444,316 432,334 432,326 418,326" fill="#0969da"/>
+      <rect x="452" y="298" width="130" height="85" fill="#f5f0ff" stroke="#8250df"/>
+      <text x="517" y="322" text-anchor="middle" class="svg-mono" font-size="11px">Old Gen</text>
+      <text x="517" y="340" text-anchor="middle" class="svg-muted" font-size="9px">long-lived objects</text>
+      <path d="M223 296 L314 294" stroke="#1a7f37" stroke-width="1.2" marker-end="url(#arr-g)"/>
+
+      <!-- Native heap right -->
+      <rect x="510" y="270" width="315" height="125" fill="#ffffff" stroke="#8250df" stroke-width="1"/>
+      <text x="667" y="288" text-anchor="middle" class="svg-label" font-weight="600" fill="#8250df">Native Heap / JVM arenas</text>
+      <rect x="525" y="298" width="92" height="38" fill="#ffebe9" stroke="#d1242f"/>
+      <text x="571" y="321" text-anchor="middle" class="svg-mono" font-size="10px">Metaspace</text>
+      <rect x="627" y="298" width="92" height="38" fill="#ffebe9" stroke="#d1242f"/>
+      <text x="673" y="321" text-anchor="middle" class="svg-mono" font-size="9px">DirectByteBuf</text>
+      <rect x="729" y="298" width="82" height="38" fill="#ffebe9" stroke="#d1242f"/>
+      <text x="770" y="321" text-anchor="middle" class="svg-mono" font-size="9px">CodeCache</text>
+      <text x="667" y="370" text-anchor="middle" class="svg-muted" font-size="10px">malloc zones · arena allocators · thread-local buffers</text>
+
+      <!-- BSS -->
+      <rect x="160" y="415" width="680" height="28" fill="#ffffff" stroke="#1a7f37" stroke-width="1" stroke-dasharray="4 3"/>
+      <text x="500" y="434" text-anchor="middle" class="svg-label" font-weight="600" fill="#1a7f37">BSS — uninitialized statics · zero-filled at startup</text>
+
+      <!-- DATA -->
+      <rect x="160" y="447" width="680" height="28" fill="#dafbe1" stroke="#1a7f37" stroke-width="2"/>
+      <text x="500" y="466" text-anchor="middle" class="svg-label" font-weight="600" fill="#1a7f37">DATA — static finals · version strings · signal handlers</text>
+
+      <!-- TEXT -->
+      <rect x="160" y="479" width="680" height="32" fill="#ddf4ff" stroke="#0969da" stroke-width="2"/>
+      <text x="500" y="500" text-anchor="middle" class="svg-label" font-weight="700" fill="#0969da">TEXT — libjvm.so · JIT CodeCache · interpreter</text>
+
+      <!-- Side address callouts -->
+      <text x="18" y="58" class="svg-mono" font-size="9px" fill="#59636e">0xFFFF…</text>
+      <text x="18" y="135" class="svg-mono" font-size="9px" fill="#59636e">0x7FFF…</text>
+      <text x="18" y="220" class="svg-mono" font-size="9px" fill="#59636e">brk/mmap band</text>
+      <text x="18" y="330" class="svg-mono" font-size="9px" fill="#59636e">growing ↑</text>
+      <text x="18" y="492" class="svg-mono" font-size="9px" fill="#59636e">0x0040…</text>
+      <line x1="848" y1="44" x2="870" y2="44" stroke="#0969da" stroke-width="1.5" marker-end="url(#arr-up)"/>
+      <text x="855" y="38" class="svg-muted" font-size="9px" text-anchor="end">high</text>
+      <text x="855" y="505" class="svg-muted" font-size="9px" text-anchor="end">low</text>
+    </svg>
+  </div>
+  <div class="diagram-cap">Classic segments still apply; the JVM allocates many subregions inside heap and mmap space. Actual maps are visible in /proc/[pid]/maps.</div>
 </div>
 
-<div class="formula">
-<strong>Total Process Memory</strong> = Heap (-Xmx) + Metaspace + Direct Buffers + Code Cache + Thread Stacks &times; N + Native libs + Kernel overhead<br>
-<strong>Example:</strong> 4G + 256M + 512M + 240M + 200&times;1M + 100M &asymp; <strong>5.3GB</strong>
-</div>
+<div class="formula">RSS ≈ Σ(touched Java heap regions) + Metaspace + CodeCache + thread stacks (committed) + direct/native buffers + glibc arenas + page cache pinning effects</div>
 
 <div class="tip">
-<strong>Linux commands to inspect:</strong>
-<pre><code># Total process memory (RSS = physical, VSZ = virtual)
-ps -p $(pgrep -f ZooKeeper) -o pid,rss,vsz,comm
-
-# Detailed memory map
-cat /proc/$(pgrep -f ZooKeeper)/maps | head -40
-
-# Java-specific: heap + non-heap
-jcmd $(pgrep -f ZooKeeper) VM.native_memory summary
-
-# JVM flags in effect
-jcmd $(pgrep -f ZooKeeper) VM.flags</code></pre>
+  <p><strong>Tip:</strong> correlate <code>jcmd &lt;pid&gt; VM.native_memory summary</code> with <code>pmap -x</code> or container cgroup <code>memory.stat</code> to see heap vs native vs stack. Eden promotions and direct buffer spikes show up as different ledger lines—not a single “heap used” slider.</p>
 </div>
 
-<!-- ===== SECTION 2: STACK vs HEAP ===== -->
-<h2 id="sec-2">2. Stack vs Heap &mdash; What Goes Where in Java</h2>
+<h2 id="sec-2">2. Stack vs Heap</h2>
+<p>The <strong>Java stack</strong> is an array of <em>activation records</em>: each method call pushes a frame with local variable slots (including parameter slots), operand stack depth accounted for by the verifier, and a reference to runtime metadata for exception tables. Frames are ephemeral—when <code>serialize()</code> returns, its frame is popped and its primitive slots cease to exist. The <strong>heap</strong> holds object graphs that outlive any single invocation unless they become unreachable and are reclaimed.</p>
 
-<img src="images/jvm_06_stack_vs_heap.png" alt="Stack vs Heap: What Goes Where in Java">
+<h4>Stack frames hold references, not instances</h4>
+<p>For <code>Object o = new Thing()</code>, the instance lives in the heap; <code>o</code> is a compressed or raw reference slot on the operand stack/locals. Bytecode uses <code>aload</code>/<code>astore</code>; the interpreter or JIT lays out spills and registers obeying <code>-Xss</code>. Deep recursion blows stack depth regardless of heap size.</p>
 
-<div class="card">
-<h3>Stack: Per-Thread, Automatic</h3>
-<p>When ZooKeeper&rsquo;s <code>RequestProcessor</code> chain calls <code>PrepRequestProcessor.processRequest()</code> &rarr; <code>SyncRequestProcessor.processRequest()</code> &rarr; <code>FinalRequestProcessor.processRequest()</code>, each call pushes a <strong>frame</strong> onto that thread&rsquo;s stack:</p>
+<h4>Primitives vs references on stack</h4>
+<p>Primitives (<code>int</code>, <code>boolean</code>, <code>long</code>) sit directly in frame slots sized by JVM rules (e.g., <code>long</code> occupies two operand stack entries). Only references point outward; <code>struct</code>-like bundling is done with objects on the heap (value types in newer JVMs change some cases but preserve the rule: identity vs inline layout is explicit).</p>
 
-<pre><code>┌─────────────────────────────────────┐  ← Stack Pointer (top)
-│ serialize() frame                   │
-│   int offset = 0    (primitive)     │
-│   ByteBuffer buf    (ref → off-heap)│
-│   return address                    │
-├─────────────────────────────────────┤
-│ processRequest() frame              │
-│   Request req       (ref → heap)    │
-│   int txnType = 1   (primitive)     │
-│   byte[] data       (ref → heap)    │
-│   return address                    │
-├─────────────────────────────────────┤
-│ main() frame                        │
-│   String[] args     (ref → heap)    │
-│   int port = 2181   (primitive)     │
-│   return address                    │
-└─────────────────────────────────────┘  ← Stack Bottom</code></pre>
-
-<p>When <code>serialize()</code> returns, its frame is <strong>popped</strong> &mdash; all its locals vanish instantly. No GC needed.</p>
-
-<h3>Heap: Shared, GC-Managed</h3>
-<p>Objects created with <code>new</code> live on the heap. References to them are stored on the stack (or in other heap objects):</p>
+<h4>Heap generations and lifetimes</h4>
+<p>Short-lived allocations fill Eden and copy survivors; long-lived trees, caches, and session objects climb to Old. When diagnosing retention, look for dominator paths from GC roots (static fields, JNI globals, thread stacks, monitors) into the old gen—not just “big old gen,” but <em>who holds the edges</em>.</p>
 
 <table>
-<tr><th>What</th><th>Where on Heap</th><th>Lifetime</th></tr>
-<tr><td><code>new Request()</code></td><td>Young Gen (Eden)</td><td>Short &mdash; GC&rsquo;d after processing</td></tr>
-<tr><td><code>new byte[1024]</code></td><td>Young Gen (Eden)</td><td>Short &mdash; temporary buffer</td></tr>
-<tr><td><code>DataNode(&quot;/app/config&quot;)</code></td><td>Old Gen (Tenured)</td><td>Long &mdash; lives for process lifetime</td></tr>
-<tr><td><code>HashMap&lt;String,DataNode&gt;</code></td><td>Old Gen (Tenured)</td><td>Long &mdash; the ZK data tree</td></tr>
-<tr><td><code>SessionTracker</code></td><td>Old Gen (Tenured)</td><td>Long &mdash; tracks all client sessions</td></tr>
+  <thead>
+    <tr>
+      <th>Aspect</th>
+      <th>Stack</th>
+      <th>Heap</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Scope</td>
+      <td>Per-thread, per-method activation</td>
+      <td>Process-wide object graph</td>
+    </tr>
+    <tr>
+      <td>Lifetime</td>
+      <td>Ends when the method returns (frame popped)</td>
+      <td>Ends when unreachable (GC, no ordering guarantee)</td>
+    </tr>
+    <tr>
+      <td>Contents</td>
+      <td>Primitives, return addresses, reference slots, operand stack cells</td>
+      <td>Objects, arrays, headers, alignment padding</td>
+    </tr>
+    <tr>
+      <td>Sizing</td>
+      <td><code>-Xss</code> per thread; linear in thread count</td>
+      <td><code>-Xmx</code>, region sizing, Metaspace caps</td>
+    </tr>
+    <tr>
+      <td>Failure mode</td>
+      <td><code>StackOverflowError</code></td>
+      <td><code>OutOfMemoryError: Java heap space</code> / GC thrash</td>
+    </tr>
+  </tbody>
 </table>
 
-<h3>Key Differences</h3>
-<table>
-<tr><th>Property</th><th>Stack</th><th>Heap</th><th>Off-Heap</th></tr>
-<tr><td>Scope</td><td>Per-thread</td><td>Shared by all threads</td><td>Shared (manual)</td></tr>
-<tr><td>Size</td><td>Fixed (<code>-Xss</code>), default 1MB</td><td>Dynamic (<code>-Xms</code> to <code>-Xmx</code>)</td><td>Varies</td></tr>
-<tr><td>Management</td><td>Auto (LIFO push/pop)</td><td>GC (G1, ZGC, etc.)</td><td><code>malloc/free</code>, ref-counting</td></tr>
-<tr><td>Stores</td><td>Primitives + references</td><td>Actual objects</td><td>Direct buffers, class metadata</td></tr>
-<tr><td>Speed</td><td>Very fast (pointer move)</td><td>Slower (allocation + GC)</td><td>Fast (no GC pause)</td></tr>
-<tr><td>Overflow</td><td><code>StackOverflowError</code></td><td><code>OutOfMemoryError</code></td><td><code>OutOfMemoryError: Direct buffer</code></td></tr>
-</table>
+<div class="diagram">
+  <div class="diagram-head">Figure 2 — Stack vs heap: what goes where</div>
+  <div class="diagram-body">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 400" width="100%" height="auto" role="img" aria-label="Stack frames and heap objects with references">
+      <defs>
+        <marker id="ar" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+          <polygon points="0 0, 7 3.5, 0 7" fill="#0969da"/>
+        </marker>
+      </defs>
+      <text x="220" y="28" text-anchor="middle" class="svg-label" font-weight="700" fill="#9a6700">Stack (yellow region / -Xss)</text>
+      <text x="680" y="28" text-anchor="middle" class="svg-label" font-weight="700" fill="#8250df">Heap (purple / GC-managed)</text>
+
+      <!-- Stack column -->
+      <rect x="40" y="40" width="360" height="320" fill="#fff8c5" stroke="#9a6700" stroke-width="2"/>
+      <text x="70" y="62" class="svg-muted" font-size="10px">← Stack Pointer (grows downward)</text>
+      <line x1="360" y1="52" x2="400" y2="52" stroke="#0969da" marker-end="url(#ar)"/>
+
+      <rect x="60" y="75" width="320" height="72" fill="#ffffff" stroke="#d1d9e0"/>
+      <text x="70" y="92" class="svg-label" font-weight="600" fill="#1f2328">serialize()</text>
+      <text x="70" y="110" class="svg-mono" font-size="10px">int offset = 0</text>
+      <text x="70" y="126" class="svg-mono" font-size="10px">ByteBuffer buf (ref → off-heap / direct)</text>
+
+      <rect x="60" y="155" width="320" height="78" fill="#ffffff" stroke="#d1d9e0"/>
+      <text x="70" y="172" class="svg-label" font-weight="600" fill="#1f2328">processRequest()</text>
+      <text x="70" y="190" class="svg-mono" font-size="10px">Request req (ref → heap)</text>
+      <text x="70" y="206" class="svg-mono" font-size="10px">int txnType = 1</text>
+
+      <rect x="60" y="241" width="320" height="78" fill="#ffffff" stroke="#d1d9e0"/>
+      <text x="70" y="258" class="svg-label" font-weight="600" fill="#1f2328">main()</text>
+      <text x="70" y="276" class="svg-mono" font-size="10px">String[] args (ref → heap)</text>
+      <text x="70" y="292" class="svg-mono" font-size="10px">int port = 2181</text>
+
+      <text x="220" y="355" text-anchor="middle" class="svg-muted" font-size="10px">Stack Bottom → higher addresses / caller chain</text>
+
+      <!-- Heap column -->
+      <rect x="430" y="40" width="430" height="320" fill="#f5f0ff" stroke="#8250df" stroke-width="2"/>
+      <rect x="450" y="58" width="185" height="130" fill="#ffffff" stroke="#8250df"/>
+      <text x="542" y="78" text-anchor="middle" class="svg-label" font-weight="600" fill="#8250df">Young Gen</text>
+      <rect x="465" y="88" width="55" height="36" fill="#dafbe1" stroke="#1a7f37"/>
+      <text x="492" y="110" text-anchor="middle" class="svg-mono" font-size="10px">Eden</text>
+      <rect x="528" y="88" width="48" height="36" fill="#ddf4ff" stroke="#0969da"/>
+      <text x="552" y="110" text-anchor="middle" class="svg-mono" font-size="9px">S0</text>
+      <rect x="584" y="88" width="48" height="36" fill="#ddf4ff" stroke="#0969da"/>
+      <text x="608" y="110" text-anchor="middle" class="svg-mono" font-size="9px">S1</text>
+      <text x="542" y="150" text-anchor="middle" class="svg-muted" font-size="9px">short-lived request DTOs</text>
+
+      <rect x="655" y="58" width="185" height="130" fill="#ffffff" stroke="#8250df"/>
+      <text x="747" y="78" text-anchor="middle" class="svg-label" font-weight="600" fill="#8250df">Old Gen</text>
+      <text x="660" y="100" class="svg-mono" font-size="9px">DataNode tree · ZK ensemble state</text>
+      <text x="660" y="118" class="svg-mono" font-size="9px">HashMap&lt;Long, Ledger&gt; cache</text>
+      <text x="660" y="136" class="svg-mono" font-size="9px">SessionTracker listeners</text>
+
+      <!-- Arrows from stack refs to heap -->
+      <path d="M380 118 C 410 118, 410 105, 440 105" fill="none" stroke="#0969da" stroke-width="1.5" marker-end="url(#ar)"/>
+      <path d="M380 190 C 410 190, 410 115, 440 115" fill="none" stroke="#0969da" stroke-width="1.5" marker-end="url(#ar)"/>
+      <path d="M380 276 C 400 276, 400 95, 440 95" fill="none" stroke="#0969da" stroke-width="1.5" marker-end="url(#ar)"/>
+      <path d="M380 276 C 400 276, 420 115, 440 125" fill="none" stroke="#0969da" stroke-width="1.5" marker-end="url(#ar)"/>
+
+      <text x="645" y="210" text-anchor="middle" class="svg-label" font-weight="600" fill="#1f2328">Objects live here, references live on stack</text>
+      <rect x="450" y="225" width="390" height="115" fill="#ffffff" stroke="#d1d9e0"/>
+      <text x="645" y="248" text-anchor="middle" class="svg-muted" font-size="10px">Off-heap buffers (direct) still have a small Java object on-heap pointing at native memory</text>
+      <text x="465" y="275" class="svg-mono" font-size="10px">GC roots include thread stacks + JNI + statics</text>
+      <text x="465" y="295" class="svg-mono" font-size="10px">Walking references finds path: stack slot → heap object → fields → …</text>
+    </svg>
+  </div>
+  <div class="diagram-cap">The operand stack and locals are machine-like; the object graph is managed and may move (compacting GC) while references are updated.</div>
 </div>
 
-<!-- ===== SECTION 3: SEGMENTS DETAILED ===== -->
-<h2 id="sec-3">3. Text, Data, BSS, Heap, Stack &mdash; Java Edition</h2>
-
-<img src="images/jvm_09_segments_detailed.png" alt="What Lives in Text, Data, BSS, Heap, and Stack — Java Edition">
-
-<div class="card">
-<h3>Mapping C Concepts to Java</h3>
-<p>In Chapter 6, we saw how a C program&rsquo;s variables map to memory segments. Here&rsquo;s the Java equivalent:</p>
-
-<table>
-<tr><th>C Concept</th><th>Java Equivalent</th><th>Memory Location</th></tr>
-<tr><td>Global initialized variable (<code>int primes[] = {2,3,5,7}</code>)</td><td><code>static final int[] PRIMES = {2,3,5,7}</code></td><td>Data segment (constant pool → heap after class load)</td></tr>
-<tr><td>Global uninitialized (<code>char globBuf[65536]</code>)</td><td><code>static byte[] buffer</code> (null until assigned)</td><td>BSS (reference is null/zero)</td></tr>
-<tr><td>Local variable (<code>int result</code>)</td><td><code>int result = x * x</code></td><td>Stack (primitive directly)</td></tr>
-<tr><td>Heap allocation (<code>malloc(1024)</code>)</td><td><code>new byte[1024]</code></td><td>Java Heap (Eden → Survivor → Old Gen)</td></tr>
-<tr><td>Function pointer</td><td>Method reference / vtable</td><td>Metaspace (off-heap)</td></tr>
-<tr><td>Text / code</td><td>JIT-compiled bytecode</td><td>CodeCache (off-heap, executable)</td></tr>
-</table>
-
-<p>The JVM adds a layer of indirection. In C, you manage all memory directly. In Java:</p>
-<ul>
-  <li><strong>javac</strong> compiles <code>.java</code> → <code>.class</code> (bytecode, not native machine code)</li>
-  <li>The JVM <strong>interpreter</strong> executes bytecodes one by one (this interpreter lives in the text segment as compiled C++)</li>
-  <li>The <strong>JIT compiler</strong> (C1/C2) detects hot methods and compiles them to native x86/ARM code, storing the result in the <strong>CodeCache</strong></li>
-  <li>The <strong>GC</strong> manages the Java heap, moving objects between young and old gen</li>
-</ul>
-
-<pre><code># See what the JIT compiled
-jcmd &lt;pid&gt; Compiler.codecache
-
-# See compiled methods
-jcmd &lt;pid&gt; Compiler.queue
-
-# Example output:
-# CodeCache: size=245760Kb used=12345Kb max_used=23456Kb free=233415Kb
-#  bounds [0x00007f1234560000, 0x00007f1234d60000, 0x00007f1249560000]
-#  total_blobs=4567 nmethods=3456 adapters=789
-#  compilation: enabled</code></pre>
+<div class="info">
+  <p><strong>Remember:</strong> storing large arrays or collections in local variables still keeps the <em>reference</em> on the stack—the bulk storage is always in the heap (unless explicitly off-heap or inlined by escape analysis).</p>
 </div>
 
-<!-- ===== SECTION 4: FORK IN JAVA ===== -->
-<h2 id="sec-4">4. fork() in Java &mdash; The Dangerous Copy</h2>
+<h2 id="sec-3">3. Text, Data, BSS, Heap, Stack — Java Edition</h2>
+<p>The C mental model maps cleanly once you know what the JVM substitutes: <code>malloc</code>/<code>free</code> becomes allocation + GC (for Java objects) or native allocators (for Metaspace growth, direct memory, JNI). Global state splits between true native statics (DATA/BSS in <code>libjvm.so</code>) and Java <code>static</code> fields whose object payloads live in the heap while their reference cells are described by class metadata.</p>
 
-<img src="images/jvm_02_fork_danger.png" alt="fork() in Java: The Dangerous Copy">
+<h3>C → Java mapping</h3>
+<table>
+  <thead>
+    <tr>
+      <th>C / Linux segment</th>
+      <th>Typical C content</th>
+      <th>Java / JVM counterpart</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>TEXT</td>
+      <td>Your program’s <code>main</code>, libc, shared libs</td>
+      <td><code>java</code> binary, <code>libjvm.so</code>, JIT CodeCache, interpreter templates</td>
+    </tr>
+    <tr>
+      <td>DATA</td>
+      <td>Initialized global variables</td>
+      <td>HotSpot globals, some static JNI tables; class file constant pool → resolved entries in Metaspace</td>
+    </tr>
+    <tr>
+      <td>BSS</td>
+      <td>Uninitialized globals (zero)</td>
+      <td>Native BSS for VM; Java <code>static Object x;</code> starts null—payload not in BSS</td>
+    </tr>
+    <tr>
+      <td>Heap</td>
+      <td><code>malloc</code> / <code>free</code> arena</td>
+      <td>Java heap (generational), Metaspace, malloc for native + direct buffers, CodeCache</td>
+    </tr>
+    <tr>
+      <td>Stack</td>
+      <td>Automatic locals, return addresses</td>
+      <td>Per-thread Java stack frames sized by <code>-Xss</code>, native frames for JNI calls</td>
+    </tr>
+  </tbody>
+</table>
 
-<div class="card">
-<h3>What Happens When a Java Process Forks</h3>
-<p>Java apps almost never call <code>fork()</code> directly. But when ZooKeeper does <code>Runtime.exec(&quot;some command&quot;)</code>, the JVM internally calls <code>fork()</code> + <code>exec()</code>. Here&rsquo;s the dangerous sequence:</p>
+<h3>JIT and TEXT</h3>
+<p>Baseline bytecode starts in the interpreter (TEXT). As methods heat up, the JIT emits optimized machine code into the <strong>CodeCache</strong>—still mapped under the hood like additional TEXT-like regions with special permissions. Deoptimization bridges back to interpreter state. So “where is my code?” spans multiple mappings: shared library TEXT, per-process JIT buffers, and VM stubs.</p>
 
-<ol>
-  <li><strong>fork() duplicates the entire virtual address space</strong>:
-    <ul>
-      <li>4GB heap, 1GB of Netty direct buffers, all 200 thread stacks</li>
-      <li>With <strong>Copy-on-Write (COW)</strong>, physical pages aren&rsquo;t actually copied until modified</li>
-      <li>But the <strong>page table entries</strong> are all duplicated &mdash; for a large process, this alone can require hundreds of MB</li>
-    </ul>
-  </li>
-  <li><strong>Only ONE thread survives</strong>:
-    <ul>
-      <li>If your ZooKeeper has 200 threads and one calls <code>fork()</code>, the child gets <em>only that one thread</em></li>
-      <li>The other 199 threads simply vanish</li>
-      <li>Any <strong>mutexes they held are now permanently locked</strong> in the child</li>
-      <li>This includes JVM internal locks, GC locks, classloader locks</li>
-    </ul>
-  </li>
-  <li><strong>exec() must follow immediately</strong>:
-    <ul>
-      <li><code>exec()</code> replaces the entire address space with a new program</li>
-      <li>This cleans up the dangerous half-forked state</li>
-      <li>That&rsquo;s why <code>Runtime.exec()</code> does <code>fork()+exec()</code> as an atomic pair</li>
-    </ul>
-  </li>
-</ol>
+<h3>Indirection the JVM adds</h3>
+<p>C stacks often reference heap directly through raw pointers. Java adds <strong>verified memory safety</strong> (no arbitrary pointer arithmetic on references), <strong>compressed oops</strong>, <strong>barriers</strong> for concurrent GC, and <strong>class pointers</strong> in object headers pointing to Metaspace metadata. A field load may compile to a few instructions, but semantically it passes through these layers—visible in crash logs as checks and generated runtime routines.</p>
+
+<div class="diagram">
+  <div class="diagram-head">Figure 3 — C memory model vs JVM memory model (side by side)</div>
+  <div class="diagram-body">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 380" width="100%" height="auto" role="img" aria-label="C versus Java process memory comparison">
+      <defs>
+        <marker id="ac" markerWidth="7" markerHeight="7" refX="3.5" refY="7" orient="auto">
+          <polygon points="3.5 0, 0 7, 7 7" fill="#8250df"/>
+        </marker>
+      </defs>
+      <text x="225" y="30" text-anchor="middle" class="svg-label" font-weight="700" fill="#0969da">C Process</text>
+      <text x="675" y="30" text-anchor="middle" class="svg-label" font-weight="700" fill="#1a7f37">Java Process</text>
+
+      <rect x="40" y="45" width="370" height="310" fill="#f6f8fa" stroke="#d1d9e0"/>
+      <rect x="490" y="45" width="370" height="310" fill="#f6f8fa" stroke="#d1d9e0"/>
+
+      <!-- C column blocks -->
+      <rect x="55" y="58" width="340" height="42" fill="#ddf4ff" stroke="#0969da"/>
+      <text x="225" y="84" text-anchor="middle" class="svg-mono" font-size="11px">text — program + libc code</text>
+      <rect x="55" y="106" width="340" height="40" fill="#dafbe1" stroke="#1a7f37"/>
+      <text x="225" y="132" text-anchor="middle" class="svg-mono" font-size="11px">data — initialized globals</text>
+      <rect x="55" y="152" width="340" height="38" fill="#ffffff" stroke="#1a7f37" stroke-dasharray="4 3"/>
+      <text x="225" y="176" text-anchor="middle" class="svg-mono" font-size="11px">BSS — uninitialized globals</text>
+      <rect x="55" y="196" width="340" height="78" fill="#f5f0ff" stroke="#8250df"/>
+      <text x="225" y="222" text-anchor="middle" class="svg-mono" font-size="11px">heap — malloc / free</text>
+      <text x="225" y="240" text-anchor="middle" class="svg-muted" font-size="10px">explicit lifetime</text>
+      <rect x="55" y="282" width="340" height="58" fill="#fff8c5" stroke="#9a6700"/>
+      <text x="225" y="308" text-anchor="middle" class="svg-mono" font-size="11px">stack — automatic storage</text>
+      <text x="225" y="326" text-anchor="middle" class="svg-muted" font-size="10px">function frames</text>
+
+      <!-- Java column blocks -->
+      <rect x="505" y="58" width="340" height="42" fill="#ddf4ff" stroke="#0969da"/>
+      <text x="675" y="78" text-anchor="middle" class="svg-mono" font-size="10px">text — libjvm.so + JIT CodeCache</text>
+      <text x="675" y="92" text-anchor="middle" class="svg-muted" font-size="9px">interpreter + dynamically emitted code</text>
+      <rect x="505" y="106" width="340" height="40" fill="#dafbe1" stroke="#1a7f37"/>
+      <text x="675" y="132" text-anchor="middle" class="svg-mono" font-size="10px">data — constant pool → Metaspace tables</text>
+      <rect x="505" y="152" width="340" height="38" fill="#ffffff" stroke="#1a7f37" stroke-dasharray="4 3"/>
+      <text x="675" y="176" text-anchor="middle" class="svg-mono" font-size="10px">BSS — null static refs (native); objects on heap</text>
+      <rect x="505" y="196" width="165" height="78" fill="#f5f0ff" stroke="#8250df"/>
+      <text x="587" y="222" text-anchor="middle" class="svg-mono" font-size="10px">Java Heap</text>
+      <text x="587" y="240" text-anchor="middle" class="svg-muted" font-size="9px">Eden → S → Old</text>
+      <text x="587" y="256" text-anchor="middle" class="svg-muted" font-size="9px">GC-managed</text>
+      <rect x="678" y="196" width="167" height="78" fill="#ffebe9" stroke="#d1242f"/>
+      <text x="761" y="222" text-anchor="middle" class="svg-mono" font-size="10px">Native Heap</text>
+      <text x="761" y="240" text-anchor="middle" class="svg-muted" font-size="9px">Metaspace · DirectBuf</text>
+      <text x="761" y="256" text-anchor="middle" class="svg-muted" font-size="9px">malloc zones</text>
+      <rect x="505" y="282" width="340" height="58" fill="#fff8c5" stroke="#9a6700"/>
+      <text x="675" y="308" text-anchor="middle" class="svg-mono" font-size="10px">stack — per-thread Java frames</text>
+      <text x="675" y="326" text-anchor="middle" class="svg-muted" font-size="10px">-Xss; JNI attic frames when native</text>
+
+      <!-- Connector arrows between columns -->
+      <line x1="395" y1="79" x2="505" y2="79" stroke="#8250df" stroke-width="1.5" stroke-dasharray="5 4"/>
+      <polygon points="500,79 505,75 505,83" fill="#8250df"/>
+      <line x1="395" y1="126" x2="505" y2="126" stroke="#8250df" stroke-width="1.5" stroke-dasharray="5 4"/>
+      <polygon points="500,126 505,122 505,130" fill="#8250df"/>
+      <line x1="395" y1="171" x2="505" y2="171" stroke="#8250df" stroke-width="1.5" stroke-dasharray="5 4"/>
+      <polygon points="500,171 505,167 505,175" fill="#8250df"/>
+      <line x1="395" y1="225" x2="505" y2="225" stroke="#8250df" stroke-width="1.5" stroke-dasharray="5 4"/>
+      <polygon points="500,225 505,221 505,229" fill="#8250df"/>
+      <line x1="395" y1="311" x2="505" y2="311" stroke="#8250df" stroke-width="1.5" stroke-dasharray="5 4"/>
+      <polygon points="500,311 505,307 505,315" fill="#8250df"/>
+
+      <rect x="250" y="338" width="400" height="32" fill="#f5f0ff" stroke="#8250df" rx="4"/>
+      <text x="450" y="358" text-anchor="middle" class="svg-label" font-size="11px" fill="#8250df">Layer of indirection: bytecode verify + GC + barriers + Metaspace class metadata</text>
+    </svg>
+  </div>
+  <div class="diagram-cap">Correspondence is conceptual: exact addresses differ by JVM build, GC, and container; use maps and NMT for ground truth.</div>
+</div>
 
 <div class="warn">
-<strong>OOM Kill Risk:</strong> Redis (which forks for persistence) and large JVMs can trigger the OOM killer during <code>fork()</code>. Even with COW, the kernel needs to account for the <em>potential</em> memory if all pages were written. The <code>vm.overcommit_memory</code> sysctl controls how aggressive the kernel is about allowing this. Set to <code>1</code> (always overcommit) for Redis/large JVM workloads, or <code>0</code> (heuristic, default) for conservative behavior.
+  <p><strong>Watch out:</strong> treating “heap” as synonymous with “Java heap” ignores Metaspace leaks, direct buffer accounting, and CodeCache pressure—each can OOM the process without filling Old Gen.</p>
 </div>
 
-<pre><code># Check overcommit settings
-cat /proc/sys/vm/overcommit_memory    # 0=heuristic, 1=always, 2=never
-cat /proc/sys/vm/overcommit_ratio     # percentage of RAM (when mode=2)
+<h2 id="sec-4" style="color:#0969da">4. <code>fork()</code> in Java — the dangerous copy</h2>
 
-# See how much memory is committed vs available
-cat /proc/meminfo | grep -i commit
-# CommitLimit:     8388608 kB
-# Committed_AS:    5242880 kB  ← total memory "promised" to processes
+<p style="color:#1f2328">On Linux, <code>fork()</code> creates a child process that is a near-duplicate of the parent. Modern kernels use <strong style="color:#1f2328">copy-on-write (COW)</strong>: physical pages are shared until either process writes, at which point each side gets its own page. That sounds cheap, but it is not cheap for a JVM.</p>
 
-# Check for OOM kills
-dmesg | grep -i "oom\|killed process"
+<p style="color:#1f2328">When a Java thread invokes <code>Runtime.exec()</code> (or similar), the runtime typically uses <code>fork()</code> followed by <code>exec()</code> in the child. The child must see a consistent snapshot of memory the parent had at <code>fork()</code> time. The parent’s entire address space—including a multi-gigabyte heap, metaspace, code cache, native libraries, and mmap’d regions—is logically duplicated. COW defers physical copying, but the kernel still accounts for and tracks these mappings. Under memory pressure, touching pages in parent or child forces real copies and spikes RSS.</p>
 
-# Safer alternative to fork() in modern Java
-# ProcessBuilder uses posix_spawn() on newer JVMs (Java 9+)
-# which avoids the full fork() + address space duplication</code></pre>
+<p style="color:#1f2328"><strong style="color:#1f2328">Only one thread survives in the child.</strong> The kernel copies the calling thread’s registers and stack into the child; every other thread disappears from the child’s view. Threads that held POSIX mutexes or JVM monitors in the parent do not exist in the child—those locks are effectively abandoned from the child’s perspective while still “held” in maps inherited from COW, which is a classic source of <strong style="color:#d1242f">deadlock or undefined behavior</strong> if any forked child runs non-<code>exec()</code> code paths that touch them.</p>
+
+<p style="color:#1f2328"><strong style="color:#1f2328">OOM risk:</strong> Briefly after <code>fork()</code>, both parent and child appear to “own” the full virtual footprint. The kernel’s memory controller (cgroup v2 <code>memory.max</code>) counts charged pages toward the limit. A large heap plus COW bookkeeping can push <code>memory.current</code> near or over the limit even before the child <code>exec()</code>’s a tiny binary—triggering reclaim or <strong style="color:#d1242f">OOM kill</strong> of the container or one of the processes.</p>
+
+<p style="color:#1f2328">Best practice: avoid <code>fork()</code>-without-immediate-<code>exec()</code> from a multi-threaded JVM; prefer <code>ProcessBuilder</code> patterns that minimize extra native work, and size containers with <code>fork</code>/exec overhead in mind. JNI code that calls <code>fork()</code> directly is especially hazardous.</p>
+
+<div class="diagram" style="border-color:#d1d9e0">
+  <div class="diagram-head" style="color:#1f2328">Figure 4. <code>fork()</code> in Java — the dangerous copy</div>
+  <div class="diagram-body" style="background:#f6f8fa">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 400" aria-labelledby="fig4-title">
+      <title id="fig4-title">fork in Java dangerous copy</title>
+      <defs>
+        <marker id="arr4" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#0969da"/></marker>
+        <marker id="arr4r" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#d1242f"/></marker>
+      </defs>
+      <!-- Parent -->
+      <rect x="20" y="30" width="240" height="300" rx="6" fill="#ddf4ff" stroke="#0969da" stroke-width="2"/>
+      <text x="140" y="55" text-anchor="middle" fill="#1f2328" font-size="14" font-weight="600">Parent Process (JVM)</text>
+      <rect x="40" y="70" width="200" height="50" rx="4" fill="#f5f0ff" stroke="#8250df" stroke-width="2"/>
+      <text x="140" y="100" text-anchor="middle" fill="#1f2328" font-size="12">4GB heap</text>
+      <g transform="translate(40,130)">
+        <rect x="0" y="0" width="44" height="22" fill="#fff8c5" stroke="#9a6700" stroke-width="1"/><rect x="48" y="0" width="44" height="22" fill="#fff8c5" stroke="#9a6700" stroke-width="1"/><rect x="96" y="0" width="44" height="22" fill="#fff8c5" stroke="#9a6700" stroke-width="1"/><rect x="144" y="0" width="44" height="22" fill="#fff8c5" stroke="#9a6700" stroke-width="1"/>
+        <rect x="0" y="26" width="44" height="22" fill="#fff8c5" stroke="#9a6700" stroke-width="1"/><rect x="48" y="26" width="44" height="22" fill="#fff8c5" stroke="#9a6700" stroke-width="1"/><rect x="96" y="26" width="44" height="22" fill="#fff8c5" stroke="#9a6700" stroke-width="1"/><rect x="144" y="26" width="44" height="22" fill="#fff8c5" stroke="#9a6700" stroke-width="1"/>
+        <rect x="0" y="52" width="44" height="22" fill="#fff8c5" stroke="#9a6700" stroke-width="1"/><rect x="48" y="52" width="44" height="22" fill="#fff8c5" stroke="#9a6700" stroke-width="1"/><rect x="96" y="52" width="44" height="22" fill="#fff8c5" stroke="#9a6700" stroke-width="1"/><rect x="144" y="52" width="44" height="22" fill="#fff8c5" stroke="#9a6700" stroke-width="1"/>
+        <rect x="72" y="82" width="76" height="22" fill="#fff8c5" stroke="#9a6700" stroke-width="1"/><text x="110" y="97" text-anchor="middle" fill="#59636e" font-size="10">200 threads</text>
+      </g>
+      <rect x="40" y="230" width="200" height="40" rx="4" fill="#ffebe9" stroke="#d1242f" stroke-width="2"/>
+      <text x="140" y="255" text-anchor="middle" fill="#1f2328" font-size="12">Netty buffers</text>
+      <text x="140" y="310" text-anchor="middle" fill="#59636e" font-size="11">Thread 42 calls <tspan font-family="monospace">Runtime.exec()</tspan></text>
+
+      <!-- Arrow fork -->
+      <line x1="280" y1="180" x2="360" y2="180" stroke="#0969da" stroke-width="3" marker-end="url(#arr4)"/>
+      <text x="320" y="170" text-anchor="middle" fill="#0969da" font-size="18" font-weight="700">fork()</text>
+
+      <!-- Child -->
+      <rect x="380" y="30" width="500" height="300" rx="6" fill="#ffebe9" stroke="#d1242f" stroke-width="2" stroke-dasharray="8 4"/>
+      <text x="630" y="55" text-anchor="middle" fill="#1f2328" font-size="14" font-weight="600">Child Process</text>
+      <rect x="400" y="70" width="200" height="50" rx="4" fill="#f5f0ff" stroke="#8250df" stroke-width="2" stroke-dasharray="6 3"/>
+      <text x="500" y="100" text-anchor="middle" fill="#1f2328" font-size="12">Copy of 4GB heap</text>
+      <text x="500" y="115" text-anchor="middle" fill="#59636e" font-size="10">COW — not actually copied yet</text>
+      <rect x="400" y="130" width="90" height="36" rx="4" fill="#fff8c5" stroke="#9a6700" stroke-width="2"/>
+      <text x="445" y="152" text-anchor="middle" fill="#1f2328" font-size="11">Thread 42 only!</text>
+      <text x="520" y="150" fill="#d1242f" font-size="12" font-weight="600">199 threads vanished</text>
+      <text x="520" y="172" fill="#1f2328" font-size="11">Mutexes they held → permanently locked!</text>
+      <line x1="500" y1="200" x2="500" y2="238" stroke="#d1242f" stroke-width="2" marker-end="url(#arr4r)"/>
+      <rect x="415" y="245" width="170" height="55" rx="4" fill="#f6f8fa" stroke="#d1242f" stroke-width="2"/>
+      <text x="500" y="268" text-anchor="middle" fill="#1f2328" font-size="14" font-weight="600">exec()</text>
+      <text x="500" y="288" text-anchor="middle" fill="#59636e" font-size="11">Replaces entire address space</text>
+    </svg>
+  </div>
+  <div class="diagram-cap" style="color:#59636e">After <code>fork()</code>, the child is a new process with one thread; after <code>exec()</code>, all prior mappings are replaced by the new program.</div>
 </div>
 
-<!-- ===== SECTION 5: THREAD MAPPING ===== -->
-<h2 id="sec-5">5. Java Thread = Linux pthread = Kernel Task</h2>
+<div class="warn" style="border-color:#d1d9e0;color:#1f2328;background:#ffebe9;border-left:4px solid #d1242f">
+  <strong style="color:#d1242f">OOM kill risk.</strong> Under cgroup <code>memory.max</code>, the combined charge from COW sharing, page tables, and duplication pressure can exhaust the limit during <code>fork()</code>/<code>exec()</code> bursts—especially alongside large heaps and many mapped files. Monitor <code>memory.current</code>, <code>memory.events</code> (oom_kill), and spikes during child process creation.
+</div>
 
-<img src="images/jvm_08_thread_mapping.png" alt="Java Thread = Linux pthread = Kernel Task">
+<pre style="background:#f6f8fa;border:1px solid #d1d9e0;color:#1f2328;padding:12px;border-radius:6px;overflow:auto"><code># cgroup v2 — watch memory pressure during ProcessBuilder / fork storms
+cat /sys/fs/cgroup/memory.current
+cat /sys/fs/cgroup/memory.max
+cat /sys/fs/cgroup/memory.events
+# look for oom_kill increments</code></pre>
 
-<div class="card">
-<h3>The 1:1:1 Mapping</h3>
-<p>Every Java thread maps directly to a native OS thread:</p>
+<h2 id="sec-5" style="color:#0969da">5. Java thread = Linux pthread = kernel task</h2>
 
-<pre><code>Java Thread ("RequestProcessor-1")
-    ↓  [Thread.start() calls pthread_create()]
-Native pthread
-    ↓  [clone(CLONE_VM | CLONE_FILES | CLONE_SIGHAND)]
-Linux kernel task_struct</code></pre>
+<p style="color:#1f2328">HotSpot on Linux uses a <strong style="color:#1f2328">1:1 thread model</strong>: each <code>java.lang.Thread</code> maps to one native <code>pthread</code>, and each pthread corresponds to one kernel schedulable entity (a <code>task_struct</code> with its own TID inside the process’s thread group). They are not green threads: the kernel sees and schedules them independently.</p>
 
-<h3>What Threads Share vs Own</h3>
-<table>
-<tr><th>Shared (all threads see same data)</th><th>Per-Thread (each thread has its own)</th></tr>
-<tr>
-  <td>
-    <code>mm_struct</code> &mdash; page tables (same virtual address space)<br>
-    <code>files_struct</code> &mdash; file descriptor table<br>
-    Signal handlers<br>
-    Java Heap (all objects)<br>
-    Static/class variables<br>
-    Metaspace
-  </td>
-  <td>
-    Thread stack (<code>-Xss</code>)<br>
-    Kernel stack (for system calls)<br>
-    CPU register state<br>
-    Scheduling priority / nice value<br>
-    Thread-local storage (<code>ThreadLocal&lt;T&gt;</code>)<br>
-    <code>errno</code> value
-  </td>
+<p style="color:#1f2328"><code>Thread.start()</code> eventually calls into the VM, which creates a pthread via <code>pthread_create()</code>. At the kernel level, new threads are created with <code>clone()</code> sharing the parent’s address space and file descriptor table (flags such as <code>CLONE_VM | CLONE_FILES | CLONE_FS | CLONE_SIGHAND | CLONE_THREAD</code>), which is why they all belong to the same process ID (thread group leader) but expose distinct TIDs.</p>
+
+<table style="border-collapse:collapse;width:100%;color:#1f2328;border:1px solid #d1d9e0">
+  <thead style="background:#f6f8fa">
+    <tr><th style="border:1px solid #d1d9e0;padding:8px;text-align:left;color:#1f2328">Aspect</th><th style="border:1px solid #d1d9e0;padding:8px;text-align:left;color:#1f2328">Shared by all threads</th><th style="border:1px solid #d1d9e0;padding:8px;text-align:left;color:#1f2328">Owned per thread</th></tr>
+  </thead>
+  <tbody>
+    <tr><td style="border:1px solid #d1d9e0;padding:8px">Address space / Java heap</td><td style="border:1px solid #d1d9e0;padding:8px">Single <code>mm_struct</code>; one generational heap</td><td style="border:1px solid #d1d9e0;padding:8px">Thread-local allocation buffers (TLAB) carveouts only</td></tr>
+    <tr><td style="border:1px solid #d1d9e0;padding:8px">Open files / sockets</td><td style="border:1px solid #d1d9e0;padding:8px"><code>files_struct</code></td><td style="border:1px solid #d1d9e0;padding:8px">Per-thread interrupt mask, some JNI handles</td></tr>
+    <tr><td style="border:1px solid #d1d9e0;padding:8px">CPU scheduling</td><td style="border:1px solid #d1d9e0;padding:8px">cgroup/cpu limits for the whole cgroup</td><td style="border:1px solid #d1d9e0;padding:8px">Niceness, per-thread scheduling policy hints, own run queue state</td></tr>
+    <tr><td style="border:1px solid #d1d9e0;padding:8px">Stacks</td><td style="border:1px solid #d1d9e0;padding:8px">—</td><td style="border:1px solid #d1d9e0;padding:8px">Separate native stacks; HotSpot stack + interpreter frames</td></tr>
+    <tr><td style="border:1px solid #d1d9e0;padding:8px">Registers / PC</td><td style="border:1px solid #d1d9e0;padding:8px">—</td><td style="border:1px solid #d1d9e0;padding:8px">Each TID has its own saved context on preemption</td></tr>
+  </tbody>
+</table>
+
+<div class="diagram" style="border-color:#d1d9e0">
+  <div class="diagram-head" style="color:#1f2328">Figure 5. Thread mapping: Java → pthread → kernel</div>
+  <div class="diagram-body" style="background:#f6f8fa">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 360" aria-labelledby="fig5-title">
+      <title id="fig5-title">thread mapping Java pthread kernel</title>
+      <defs>
+        <marker id="arr5b" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#0969da"/></marker>
+        <marker id="arr5g" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#1a7f37"/></marker>
+      </defs>
+      <!-- Java layer -->
+      <rect x="30" y="20" width="560" height="90" rx="6" fill="#ddf4ff" stroke="#0969da" stroke-width="2"/>
+      <text x="40" y="42" fill="#1f2328" font-size="13" font-weight="600">Java Layer</text>
+      <rect x="50" y="52" width="120" height="48" rx="4" fill="#f6f8fa" stroke="#0969da" stroke-width="1"/><text x="110" y="80" text-anchor="middle" fill="#1f2328" font-size="11">Thread("main")</text>
+      <rect x="180" y="52" width="120" height="48" rx="4" fill="#f6f8fa" stroke="#0969da" stroke-width="1"/><text x="240" y="80" text-anchor="middle" fill="#1f2328" font-size="11">Thread("GC-0")</text>
+      <rect x="310" y="52" width="130" height="48" rx="4" fill="#f6f8fa" stroke="#0969da" stroke-width="1"/><text x="375" y="80" text-anchor="middle" fill="#1f2328" font-size="10">Thread("RequestProc-1")</text>
+      <rect x="450" y="52" width="125" height="48" rx="4" fill="#f6f8fa" stroke="#0969da" stroke-width="1"/><text x="512" y="80" text-anchor="middle" fill="#1f2328" font-size="10">Thread("EventLoop-0")</text>
+
+      <!-- Native layer -->
+      <rect x="30" y="150" width="560" height="90" rx="6" fill="#dafbe1" stroke="#1a7f37" stroke-width="2"/>
+      <text x="40" y="172" fill="#1f2328" font-size="13" font-weight="600">Native Layer</text>
+      <rect x="50" y="182" width="120" height="48" rx="4" fill="#f6f8fa" stroke="#1a7f37" stroke-width="1"/><text x="110" y="210" text-anchor="middle" fill="#1f2328" font-size="11">pthread_t</text>
+      <rect x="180" y="182" width="120" height="48" rx="4" fill="#f6f8fa" stroke="#1a7f37" stroke-width="1"/><text x="240" y="210" text-anchor="middle" fill="#1f2328" font-size="11">pthread_t</text>
+      <rect x="310" y="182" width="130" height="48" rx="4" fill="#f6f8fa" stroke="#1a7f37" stroke-width="1"/><text x="375" y="210" text-anchor="middle" fill="#1f2328" font-size="11">pthread_t</text>
+      <rect x="450" y="182" width="125" height="48" rx="4" fill="#f6f8fa" stroke="#1a7f37" stroke-width="1"/><text x="512" y="210" text-anchor="middle" fill="#1f2328" font-size="11">pthread_t</text>
+
+      <!-- Kernel layer -->
+      <rect x="30" y="280" width="560" height="70" rx="6" fill="#fff8c5" stroke="#9a6700" stroke-width="2"/>
+      <text x="40" y="302" fill="#1f2328" font-size="13" font-weight="600">Kernel Layer</text>
+      <rect x="50" y="310" width="120" height="32" rx="3" fill="#f6f8fa" stroke="#9a6700" stroke-width="1"/><text x="110" y="330" text-anchor="middle" fill="#1f2328" font-size="10">task_struct (PID 12345)</text>
+      <rect x="180" y="310" width="120" height="32" rx="3" fill="#f6f8fa" stroke="#9a6700" stroke-width="1"/><text x="240" y="330" text-anchor="middle" fill="#1f2328" font-size="10">task_struct (TID 12346)</text>
+      <rect x="310" y="310" width="130" height="32" rx="3" fill="#f6f8fa" stroke="#9a6700" stroke-width="1"/><text x="375" y="330" text-anchor="middle" fill="#1f2328" font-size="10">task_struct (TID 12347)</text>
+      <rect x="450" y="310" width="125" height="32" rx="3" fill="#f6f8fa" stroke="#9a6700" stroke-width="1"/><text x="512" y="330" text-anchor="middle" fill="#1f2328" font-size="10">task_struct (TID 12348)</text>
+
+      <!-- vertical connectors -->
+      <line x1="110" y1="118" x2="110" y2="146" stroke="#0969da" stroke-width="2" marker-end="url(#arr5b)"/>
+      <line x1="240" y1="118" x2="240" y2="146" stroke="#0969da" stroke-width="2" marker-end="url(#arr5b)"/>
+      <line x1="375" y1="118" x2="375" y2="146" stroke="#0969da" stroke-width="2" marker-end="url(#arr5b)"/>
+      <line x1="512" y1="118" x2="512" y2="146" stroke="#0969da" stroke-width="2" marker-end="url(#arr5b)"/>
+      <text x="640" y="138" fill="#59636e" font-size="11">Thread.start()</text>
+
+      <line x1="110" y1="246" x2="110" y2="274" stroke="#1a7f37" stroke-width="2" marker-end="url(#arr5g)"/>
+      <line x1="240" y1="246" x2="240" y2="274" stroke="#1a7f37" stroke-width="2" marker-end="url(#arr5g)"/>
+      <line x1="375" y1="246" x2="375" y2="274" stroke="#1a7f37" stroke-width="2" marker-end="url(#arr5g)"/>
+      <line x1="512" y1="246" x2="512" y2="274" stroke="#1a7f37" stroke-width="2" marker-end="url(#arr5g)"/>
+      <text x="640" y="268" fill="#59636e" font-size="11">clone(CLONE_VM|CLONE_FILES|CLONE_THREAD)</text>
+
+      <!-- Side annotations -->
+      <rect x="700" y="60" width="180" height="52" rx="4" fill="#f6f8fa" stroke="#d1d9e0" stroke-width="1"/>
+      <text x="708" y="78" fill="#1f2328" font-size="11" font-weight="600">All share:</text>
+      <text x="708" y="94" fill="#59636e" font-size="10">mm_struct, files_struct</text>
+      <text x="708" y="108" fill="#59636e" font-size="10">Java heap</text>
+
+      <rect x="700" y="200" width="180" height="52" rx="4" fill="#f6f8fa" stroke="#d1d9e0" stroke-width="1"/>
+      <text x="708" y="218" fill="#1f2328" font-size="11" font-weight="600">Each owns:</text>
+      <text x="708" y="234" fill="#59636e" font-size="10">stack, registers</text>
+      <text x="708" y="248" fill="#59636e" font-size="10">scheduling priority</text>
+    </svg>
+  </div>
+  <div class="diagram-cap" style="color:#59636e">PID identifies the thread group; each runnable Java thread has a unique TID visible in <code>ps -eLf</code> and <code>/proc/[pid]/task/</code>.</div>
+</div>
+
+<h2 id="sec-6" style="color:#0969da">6. CPU cores, NUMA, and cgroups</h2>
+
+<h3 style="color:#1a7f37">6.1 NUMA (non-uniform memory access)</h3>
+<p style="color:#1f2328">On multi-socket servers, RAM is physically attached per socket (“NUMA node”). A thread accessing memory allocated on its <em style="color:#1f2328">home</em> node incurs lower latency; accessing remote memory traverses CPU interconnect (QPI/UPI) and adds latency—often materially higher for churny heap workloads. The JVM can use NUMA-aware allocation (<code>-XX:+UseNUMA</code> for G1 in some configurations) to keep young objects local, but if threads migrate across sockets or if humongous regions span nodes, you still pay remote bandwidth.</p>
+
+<h3 style="color:#1a7f37">6.2 cgroups: CPU and memory walls</h3>
+<p style="color:#1f2328">Linux cgroups v2 wrap each container (and each pod on Kubernetes) in a hierarchy. <code>cpuset.cpus</code> pins eligible CPUs; <code>cpu.max</code> applies CFS bandwidth throttling (<code>BURST QUOTA PERIOD</code> style string <code>200000 100000</code> ≡ 2 CPUs quota per 100ms slice); <code>memory.max</code> caps byte accounting including anonymous and mapped file caches inside the cgroup. The JVM sees “available processors” capped by cgroup CPU controllers; mismatches versus host core count explain surprising GC thread counts unless overridden with <code>-XX:ActiveProcessorCount</code>.</p>
+
+<table style="border-collapse:collapse;width:100%;color:#1f2328;border:1px solid #d1d9e0">
+  <thead style="background:#f6f8fa">
+    <tr><th style="border:1px solid #d1d9e0;padding:8px;text-align:left;color:#0969da">cgroup knob</th><th style="border:1px solid #d1d9e0;padding:8px;text-align:left;color:#1f2328">Effect on JVM process</th></tr>
+  </thead>
+  <tbody>
+    <tr><td style="border:1px solid #d1d9e0;padding:8px"><code>cpuset.cpus</code></td><td style="border:1px solid #d1d9e0;padding:8px">Hard pin to specific hardware threads; affects scheduler placement vs other pods</td></tr>
+    <tr><td style="border:1px solid #d1d9e0;padding:8px"><code>cpu.max</code></td><td style="border:1px solid #d1d9e0;padding:8px">Throttles aggregate CPU time for all threads in the cgroup (STW GC pauses count)</td></tr>
+    <tr><td style="border:1px solid #d1d9e0;padding:8px"><code>memory.max</code></td><td style="border:1px solid #d1d9e0;padding:8px">Hard cap on memory accounting; reclaim + OOM kill when exceeded persistently</td></tr>
+    <tr><td style="border:1px solid #d1d9e0;padding:8px"><code>memory.high</code></td><td style="border:1px solid #d1d9e0;padding:8px">Soft throttle: kernel reclaims harder before hitting <code>memory.max</code></td></tr>
+  </tbody>
+</table>
+
+<pre style="background:#f6f8fa;border:1px solid #d1d9e0;color:#1f2328;padding:12px;border-radius:6px;overflow:auto"><code># Inspect effective limits inside a Kubernetes pod cgroup
+cat /sys/fs/cgroup/cpuset.cpus.effective 2>/dev/null || cat /sys/fs/cgroup/cpuset.cpus
+cat /sys/fs/cgroup/cpu.max
+cat /sys/fs/cgroup/memory.max</code></pre>
+
+<div class="diagram" style="border-color:#d1d9e0">
+  <div class="diagram-head" style="color:#1f2328">Figure 6. NUMA topology + cgroup CPU boundaries</div>
+  <div class="diagram-body" style="background:#f6f8fa">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 420" aria-labelledby="fig6-title">
+      <title id="fig6-title">NUMA and cgroup boundaries</title>
+      <defs><marker id="mh6" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#8250df"/></marker></defs>
+      <!-- NUMA sockets -->
+      <rect x="40" y="25" width="360" height="160" rx="6" fill="#ddf4ff" stroke="#0969da" stroke-width="2"/>
+      <text x="220" y="48" text-anchor="middle" fill="#1f2328" font-size="13" font-weight="600">Socket 0</text>
+      <text x="220" y="68" text-anchor="middle" fill="#59636e" font-size="11">cores 0–7 · local RAM 64GB · ~80ns local</text>
+      <rect x="60" y="85" width="320" height="40" rx="3" fill="#f6f8fa" stroke="#d1d9e0" stroke-width="1"/>
+      <text x="220" y="110" text-anchor="middle" fill="#1f2328" font-size="11">Cores 0–7</text>
+      <rect x="60" y="130" width="320" height="40" rx="3" fill="#f5f0ff" stroke="#8250df" stroke-width="1"/>
+      <text x="220" y="155" text-anchor="middle" fill="#1f2328" font-size="11">Local DRAM 64GB (NUMA node 0)</text>
+
+      <rect x="500" y="25" width="360" height="160" rx="6" fill="#dafbe1" stroke="#1a7f37" stroke-width="2"/>
+      <text x="680" y="48" text-anchor="middle" fill="#1f2328" font-size="13" font-weight="600">Socket 1</text>
+      <text x="680" y="68" text-anchor="middle" fill="#59636e" font-size="11">cores 8–15 · local RAM 64GB · ~80ns local</text>
+      <rect x="520" y="85" width="320" height="40" rx="3" fill="#f6f8fa" stroke="#d1d9e0" stroke-width="1"/>
+      <text x="680" y="110" text-anchor="middle" fill="#1f2328" font-size="11">Cores 8–15</text>
+      <rect x="520" y="130" width="320" height="40" rx="3" fill="#f5f0ff" stroke="#8250df" stroke-width="1"/>
+      <text x="680" y="155" text-anchor="middle" fill="#1f2328" font-size="11">Local DRAM 64GB (NUMA node 1)</text>
+
+      <line x1="400" y1="105" x2="500" y2="105" stroke="#9a6700" stroke-width="3" stroke-dasharray="6 4"/>
+      <text x="450" y="98" text-anchor="middle" fill="#59636e" font-size="10">QPI / UPI</text>
+      <text x="450" y="125" text-anchor="middle" fill="#9a6700" font-size="11" font-weight="600">~150ns cross-node (1.9× slower!)</text>
+
+      <!-- threads and heap arrows -->
+      <circle cx="120" cy="105" r="8" fill="#fff8c5" stroke="#9a6700" stroke-width="1"/><text x="120" y="78" text-anchor="middle" fill="#1f2328" font-size="9">JVM T1</text>
+      <path d="M120,88 L120,75" stroke="#8250df" stroke-width="1.5" marker-end="url(#mh6)"/>
+      <circle cx="200" cy="105" r="8" fill="#fff8c5" stroke="#9a6700" stroke-width="1"/><text x="200" y="78" text-anchor="middle" fill="#1f2328" font-size="9">JVM T2</text>
+      <path d="M200,88 L180,140" stroke="#8250df" stroke-width="1.5" marker-end="url(#mh6)"/>
+      <circle cx="650" cy="105" r="8" fill="#fff8c5" stroke="#9a6700" stroke-width="1"/><text x="650" y="78" text-anchor="middle" fill="#1f2328" font-size="9">JVM T3</text>
+      <path d="M650,88 L650,140" stroke="#8250df" stroke-width="1.5" marker-end="url(#mh6)"/>
+      <text x="390" y="195" fill="#59636e" font-size="11">Java threads run on varied cores; object access may be local or remote to allocation node</text>
+
+      <!-- cgroup half -->
+      <rect x="40" y="220" width="820" height="180" rx="8" fill="none" stroke="#d1242f" stroke-width="2" stroke-dasharray="10 5"/>
+      <text x="50" y="242" fill="#d1242f" font-size="12" font-weight="600">cgroup boundary</text>
+      <rect x="80" y="260" width="220" height="120" rx="4" fill="#ffebe9" stroke="#d1242f" stroke-width="1"/>
+      <text x="190" y="282" text-anchor="middle" fill="#1f2328" font-size="11" font-weight="600">CPU &amp; memory limits</text>
+      <text x="95" y="302" fill="#1f2328" font-size="10" font-family="monospace">cpuset.cpus = 0-3</text>
+      <text x="95" y="320" fill="#1f2328" font-size="10" font-family="monospace">memory.max = 4GB</text>
+      <text x="95" y="338" fill="#1f2328" font-size="10" font-family="monospace">cpu.max = 200000/100000</text>
+      <text x="95" y="358" fill="#59636e" font-size="9">(example: 2 CPUs worth of quota)</text>
+      <rect x="340" y="275" width="480" height="90" rx="6" fill="#ddf4ff" stroke="#0969da" stroke-width="2"/>
+      <text x="580" y="305" text-anchor="middle" fill="#1f2328" font-size="14" font-weight="600">JVM process (all threads)</text>
+      <text x="580" y="328" text-anchor="middle" fill="#59636e" font-size="11">scheduling + RSS charged inside this cgroup</text>
+      <text x="450" y="395" text-anchor="middle" fill="#9a6700" font-size="12" font-weight="600">Kubernetes pod = cgroup jail</text>
+    </svg>
+  </div>
+  <div class="diagram-cap" style="color:#59636e">Pinning with <code>cpuset</code> trades scheduling flexibility for predictable cache/NUMA locality; combined with <code>memory.max</code>, it defines the pod’s hard resource box.</div>
+</div>
+
+<h2 id="sec-7" style="color:#0969da">7. cgroups + page cache — the hidden memory trap</h2>
+
+<p style="color:#1f2328">Operators often assume <code>memory.max</code> only tracks the Java heap. In cgroup v2, <strong style="color:#1f2328">file-backed cache pages</strong> (page cache for jar files, memory-mapped I/O, and read-mostly datasets) commonly count toward the same memory limit unless explicitly tuned with memory controller attributes. Anonymous heap, thread stacks, metaspace, JNI mappings, kernel slab attributable to the cgroup, and retained page cache therefore compete for one budget.</p>
+
+<div class="formula card" style="background:#f6f8fa;border:1px solid #d1d9e0;padding:14px;color:#1f2328;border-radius:6px">
+  <strong style="color:#9a6700">Practical cgroup memory inequality</strong><br/>
+  <span style="color:#1f2328"><code style="background:#fff8c5">memory.current</code> ≈ anon RSS + file LRU pages + kmem/l slab + mapped file pages − (recent reclaim)</span><br/>
+  <span style="color:#59636e;font-size:14px">Exact accounting uses kernel internals; use <code>memory.stat</code> fields (<code>anon</code>, <code>file</code>, <code>kernel_stack</code>, <code>slab</code>, <code>sock</code>) for breakdowns—not only JVM heap gauges.</span>
+</div>
+
+<p style="color:#1f2328">When <code>memory.current</code> approaches <code>memory.max</code>, the kernel first tries to shrink reclaimable file cache; that shows up as slower class loading, jar reads, and I/O without an obvious Java OOM. If anonymous memory is still too high, the OOM killer selects a process in the cgroup—often pid 1 or the JVM—leading to pod restart loops that <em style="color:#1f2328">look</em> like heap issues but were actually aggregate RSS + cache pressure.</p>
+
+<table style="border-collapse:collapse;width:100%;color:#1f2328;border:1px solid #d1d9e0">
+  <thead style="background:#f6f8fa">
+    <tr><th style="border:1px solid #d1d9e0;padding:8px;text-align:left;color:#8250df">Container sizing blind spot</th><th style="border:1px solid #d1d9e0;padding:8px;text-align:left;color:#1f2328">Why it bites</th><th style="border:1px solid #d1d9e0;padding:8px;text-align:left;color:#1f2328">Mitigation</th></tr>
+  </thead>
+  <tbody>
+    <tr><td style="border:1px solid #d1d9e0;padding:8px">Heap = 70% of <code>limits.memory</code></td><td style="border:1px solid #d1d9e0;padding:8px">Leaves almost no room for Metaspace, thread stacks, direct buffers, and page cache</td><td style="border:1px solid #d1d9e0;padding:8px">Budget 20–35% headroom or set <code>-Xmx</code> conservatively vs limit</td></tr>
+    <tr><td style="border:1px solid #d1d9e0;padding:8px">Large fat JAR layers on slow storage</td><td style="border:1px solid #d1d9e0;padding:8px">Cold starts populate page cache inside cgroup; competes with heap growth</td><td style="border:1px solid #d1d9e0;padding:8px">Layer optimization, CDS archives, adequate <code>memory.max</code></td></tr>
+    <tr><td style="border:1px solid #d1d9e0;padding:8px">Many memory-mapped files / sendfile</td><td style="border:1px solid #d1d9e0;padding:8px">File mappings accrue cached pages attributed to cgroup</td><td style="border:1px solid #d1d9e0;padding:8px">Watch <code>memory.stat file</code>, reduce mmap churn</td></tr>
+    <tr><td style="border:1px solid #d1d9e0;padding:8px">Bursty Netty/directByteBuffer</td><td style="border:1px solid #d1d9e0;padding:8px">Off-heap anon memory invisible to heap MXBean</td><td style="border:1px solid #d1d9e0;padding:8px">Track native metrics; cap pools; align limit with reality</td></tr>
+  </tbody>
+</table>
+
+<div class="diagram" style="border-color:#d1d9e0">
+  <div class="diagram-head" style="color:#1f2328">Figure 7. What counts against <code>memory.max</code></div>
+  <div class="diagram-body" style="background:#f6f8fa">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 340" aria-labelledby="fig7-title">
+      <title id="fig7-title">memory max breakdown stacked bar</title>
+      <!-- bar track -->
+      <rect x="80" y="50" width="700" height="48" rx="4" fill="#f6f8fa" stroke="#d1d9e0" stroke-width="1"/>
+      <!-- scale: total usable width maps 3.4GB to ~700px => ~205.88 px/GB -->
+      <!-- 2.5GB = 514.7, 800MB = 137.45, 100MB = 17.18 -->
+      <rect x="80" y="50" width="515" height="48" fill="#f5f0ff" stroke="#8250df" stroke-width="1"/>
+      <text x="337" y="78" text-anchor="middle" fill="#1f2328" font-size="12" font-weight="600">Anon RSS (heap + stacks) 2.5GB</text>
+      <rect x="595" y="50" width="137" height="48" fill="#ddf4ff" stroke="#0969da" stroke-width="1"/>
+      <text x="663" y="78" text-anchor="middle" fill="#1f2328" font-size="11">File cache 800MB</text>
+      <rect x="732" y="50" width="48" height="48" fill="#e8eaed" stroke="#59636e" stroke-width="1"/>
+      <text x="756" y="78" text-anchor="middle" fill="#1f2328" font-size="10">slab 100MB</text>
+      <text x="430" y="115" text-anchor="middle" fill="#59636e" font-size="11">Total ≈ 3.4GB of ~4GB limit — headroom shrinking</text>
+      <!-- max line -->
+      <line x1="780" y1="40" x2="780" y2="130" stroke="#d1242f" stroke-width="3"/>
+      <text x="785" y="35" fill="#d1242f" font-size="11" font-weight="600">memory.max = 4GB</text>
+      <polygon points="780,130 775,120 785,120" fill="#d1242f"/>
+
+      <!-- steps below -->
+      <text x="80" y="165" fill="#1f2328" font-size="13" font-weight="600">When exceeded (sustained):</text>
+      <rect x="80" y="180" width="740" height="48" rx="4" fill="#fff8c5" stroke="#9a6700" stroke-width="1"/>
+      <text x="100" y="210" fill="#1f2328" font-size="12"><tspan font-weight="600" fill="#9a6700">Step 1:</tspan> Reclaim page cache → slower I/O, longer startup, noisy GC unrelated to heap</text>
+      <rect x="80" y="238" width="740" height="52" rx="4" fill="#ffebe9" stroke="#d1242f" stroke-width="2"/>
+      <text x="100" y="270" fill="#1f2328" font-size="13"><tspan font-weight="700" fill="#d1242f">Step 2:</tspan> OOM kill — cgroup picks a victim process; pod may restart</text>
+    </svg>
+  </div>
+  <div class="diagram-cap" style="color:#59636e">Correlate <code>kubectl describe pod</code> OOMKilled events with <code>/sys/fs/cgroup/memory.stat</code>—not only <code>Usage</code> from container runtime summaries.</div>
+</div>
+
+<div class="warn" style="border-color:#d1d9e0;color:#1f2328;background:#ffebe9;border-left:4px solid #d1242f">
+  <strong style="color:#d1242f">Hidden page cache traps.</strong> A JVM reporting “healthy” heap can still breach <code>memory.max</code> via anonymous direct memory plus file-backed pages. Symptoms: unexplained retries, jittery latency right after deployments, cgroup OOM kills with low old-gen utilization. Inspect <code>memory.current</code>, <code>memory.peak</code>, and per-field <code>memory.stat</code> before blaming GC tuning alone.
+</div>
+
+<pre style="background:#f6f8fa;border:1px solid #d1d9e0;color:#1f2328;padding:12px;border-radius:6px;overflow:auto"><code># Detailed cgroup v2 memory breakdown (inside container mount namespace)
+grep -E '^(anon|file|kernel_stack|slab|sock) ' /sys/fs/cgroup/memory.stat</code></pre>
+
+<pre style="background:#fff8c5;border:1px solid #d1d9e0;color:#1f2328;padding:12px;border-radius:6px;overflow:auto"><code># Example output interpretation
+# anon      → JVM heap slices, stacks, JNI malloc
+# file      → page cache (jars, data files)
+# slab      → dentry/inode kmem caches attributable to cgroup
+# Raise memory.max OR reduce -Xmx/off-heap OR shrink cold page cache churn</code></pre>
+
+<!-- Sections 8-12 continuation: Java Memory Architecture — GitHub light palette -->
+
+<section class="chapter" aria-labelledby="sec-8">
+
+<h2 id="sec-8" style="color:#0969da">8. Netty I/O — Two Worlds of Memory</h2>
+
+<p style="color:#1f2328">Network I/O in Java typically crosses three boundaries: the JVM heap (managed by the GC), <em>native</em> memory (outside the heap—direct buffers, JNI, arenas), and the kernel’s socket / page-cache path. Choosing between <strong>heap <code style="background:#f6f8fa;padding:2px 6px;border-radius:4px;border:1px solid #d1d9e0">byte[]</code></strong>, <strong>direct <code style="background:#f6f8fa;padding:2px 6px;border-radius:4px;border:1px solid #d1d9e0">ByteBuffer</code></strong>, and <strong>zero-copy transfers</strong> (for example OS <code style="background:#f6f8fa;padding:2px 6px;border-radius:4px;border:1px solid #d1d9e0">sendfile</code>-style paths surfaced by frameworks) decides how many copies occur and whether the kernel receives a stable, unpinned pointer.</p>
+
+<div class="info card" style="background:#ddf4ff;border:1px solid #d1d9e0;border-radius:8px;padding:14px 16px;margin:1rem 0">
+<p style="color:#1f2328;margin:0"><strong style="color:#0969da">Heap buffers</strong> live in Eden / survivor / old generations. To reach the NIC, bytes are usually copied into a temporary native buffer then into kernel <code style="background:#f6f8fa">sk_buff</code> chains.</p>
+</div>
+
+<div class="warn card" style="background:#fff8c5;border:1px solid #d1d9e0;border-radius:8px;padding:14px 16px;margin:1rem 0">
+<p style="color:#1f2328;margin:0"><strong style="color:#9a6700">Direct buffers</strong> allocate off-heap; the JVM pins a stable native address so the kernel and DMA engines can safely read/write without chasing a moving GC object.</p>
+</div>
+
+<p style="color:#59636e;font-size:0.92em">Frameworks like Netty pool direct memory (often via allocator arenas) and integrate with JNI / epoll paths to reduce jitter. Zero-copy skips user-space copies entirely when semantics allow—kernel page cache ↔ NIC instead of bouncing through JVM buffers.</p>
+
+<div class="tip card" style="background:#dafbe1;border:1px solid #d1d9e0;border-radius:8px;padding:14px 16px;margin:1rem 0">
+<p style="color:#1f2328;margin:0"><strong style="color:#1a7f37">Side note:</strong> GC can relocate heap objects; the kernel expects a stable physical/virtual mapping for scatter-gather DMA. Direct buffers satisfy that constraint; heap arrays do not without an extra native copy.</p>
+</div>
+
+<div class="diagram" style="border:1px solid #d1d9e0;border-radius:8px;background:#ffffff;margin:1.25rem 0;overflow:auto">
+<p class="diagram-head" style="margin:0;padding:12px 16px;background:#f6f8fa;color:#59636e;font-size:0.9em;border-bottom:1px solid #d1d9e0">Figure 8 — Netty I/O paths — heap vs direct vs zero-copy</p>
+<div class="diagram-body" style="padding:16px">
+
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 340" role="img" aria-labelledby="fig8-title fig8-desc" style="width:100%;max-width:900px;height:auto;display:block">
+<title id="fig8-title">Netty I/O paths — heap vs direct vs zero-copy</title>
+<desc id="fig8-desc">Three horizontal paths comparing two copies via heap byte array, one copy via direct ByteBuffer, and zero-copy sendfile from page cache to NIC.</desc>
+<style type="text/css"><![CDATA[
+  .t8{font-family:system-ui,-apple-system,Segoe UI,Helvetica,Arial,sans-serif;font-size:13px;fill:#1f2328}
+  .lbl8{font-family:system-ui,sans-serif;font-size:11px;font-weight:600}
+  .box{stroke:#d1d9e0;stroke-width:1;rx:6;ry:6}
+]]></style>
+<!-- Path labels -->
+<text x="20" y="52" class="lbl8" fill="#1f2328">Heap byte[]</text>
+<text x="20" y="148" class="lbl8" fill="#1f2328">Direct ByteBuffer</text>
+<text x="20" y="244" class="lbl8" fill="#1f2328">sendfile()</text>
+<!-- PATH 1 -->
+<rect x="120" y="28" width="120" height="44" class="box" fill="#f5f0ff"/><text x="180" y="55" text-anchor="middle" class="t8">JVM Heap</text>
+<polygon points="260,42 284,42 274,52 284,62 260,62 270,52" fill="#59636e"/><text x="295" y="58" class="t8" font-size="12">copy</text>
+<rect x="348" y="28" width="130" height="44" class="box" fill="#ffebe9"/><text x="413" y="55" text-anchor="middle" class="t8">Native temp</text>
+<polygon points="498,42 522,42 512,52 522,62 498,62 508,52" fill="#59636e"/><text x="533" y="58" class="t8" font-size="12">copy</text>
+<rect x="586" y="28" width="130" height="44" class="box" fill="#f6f8fa"/><text x="651" y="55" text-anchor="middle" class="t8">Kernel sk_buff</text>
+<polygon points="736,42 760,42 750,52 760,62 736,62 746,52" fill="#59636e"/>
+<rect x="774" y="28" width="86" height="44" class="box" fill="#f6f8fa"/><text x="817" y="55" text-anchor="middle" class="t8">NIC</text>
+<text x="120" y="92" class="t8" font-weight="700" fill="#d1242f">2 copies</text>
+<!-- PATH 2 -->
+<rect x="120" y="124" width="140" height="44" class="box" fill="#ffebe9"/><text x="190" y="151" text-anchor="middle" class="t8">Direct Buffer</text>
+<polygon points="280,138 304,138 294,148 304,158 280,158 290,148" fill="#59636e"/><text x="315" y="154" class="t8" font-size="12">copy</text>
+<rect x="382" y="124" width="130" height="44" class="box" fill="#f6f8fa"/><text x="447" y="151" text-anchor="middle" class="t8">Kernel sk_buff</text>
+<polygon points="532,138 556,138 546,148 556,158 532,158 542,148" fill="#59636e"/>
+<rect x="570" y="124" width="86" height="44" class="box" fill="#f6f8fa"/><text x="613" y="151" text-anchor="middle" class="t8">NIC</text>
+<text x="684" y="151" class="t8" font-weight="700" fill="#1a7f37">1 copy — faster</text>
+<!-- PATH 3 -->
+<rect x="120" y="218" width="130" height="44" class="box" fill="#ddf4ff"/><text x="185" y="246" text-anchor="middle" class="t8">Page Cache</text>
+<polygon points="270,232 294,232 284,242 294,252 270,252 280,242" fill="#59636e"/><text x="305" y="248" class="t8" font-size="12">DMA</text>
+<rect x="352" y="218" width="86" height="44" class="box" fill="#f6f8fa"/><text x="395" y="246" text-anchor="middle" class="t8">NIC</text>
+<text x="460" y="246" class="t8" font-weight="700" fill="#0969da">0 copies — zero-copy!</text>
+</svg>
+
+</div>
+<p class="diagram-cap" style="margin:0;padding:10px 16px;color:#59636e;font-size:0.88em;border-top:1px solid #d1d9e0;background:#fafbfc">Heap paths pay an extra JNI / memcpy hop; direct buffers align with stable native addresses; page-cache pipelines avoid user-space duplication when semantics permit.</p>
+</div>
+
+</section>
+
+<section class="chapter" aria-labelledby="sec-9">
+
+<h2 id="sec-9" style="color:#0969da">9. ZooKeeper Write Request — Complete Trace</h2>
+
+<p style="color:#1f2328">A synchronous write traverses kernel networking, Netty’s event loop, deserialization on-heap, request processors that touch both stack and heap, durable logging through off-heap / page cache, and finally mutates the in-memory data tree (typically old-generation pressure for long-lived structures).</p>
+
+<h3 style="color:#1a7f37;font-size:1.1em;margin-top:1.5rem">Step-by-step trace</h3>
+
+<table style="width:100%;border-collapse:collapse;font-size:0.92em;color:#1f2328;margin:1rem 0;border:1px solid #d1d9e0;border-radius:8px;overflow:hidden">
+<thead>
+<tr style="background:#f6f8fa">
+<th style="text-align:left;padding:10px 12px;border-bottom:1px solid #d1d9e0;color:#0969da">Step</th>
+<th style="text-align:left;padding:10px 12px;border-bottom:1px solid #d1d9e0;color:#0969da">Phase</th>
+<th style="text-align:left;padding:10px 12px;border-bottom:1px solid #d1d9e0;color:#0969da">Primary memory</th>
+<th style="text-align:left;padding:10px 12px;border-bottom:1px solid #d1d9e0;color:#0969da">What happens</th>
 </tr>
+</thead>
+<tbody>
+<tr><td style="padding:10px 12px;border-bottom:1px solid #d1d9e0">1</td><td style="padding:10px 12px;border-bottom:1px solid #d1d9e0">NIC → kernel</td><td style="padding:10px 12px;border-bottom:1px solid #d1d9e0"><span class="seg-kernel" style="background:#f6f8fa;padding:2px 8px;border-radius:4px;border:1px solid #d1d9e0">KERNEL</span></td><td style="padding:10px 12px;border-bottom:1px solid #d1d9e0">TCP segment lands; socket fd + <code style="background:#f6f8fa">sk_buff</code> plumbing</td></tr>
+<tr style="background:#fafbfc"><td style="padding:10px 12px;border-bottom:1px solid #d1d9e0">2</td><td style="padding:10px 12px;border-bottom:1px solid #d1d9e0">Selector wake</td><td style="padding:10px 12px;border-bottom:1px solid #d1d9e0"><span class="seg-stack" style="background:#fff8c5;padding:2px 8px;border-radius:4px;border:1px solid #d1d9e0">STACK</span> + <span class="seg-heap" style="background:#f5f0ff;padding:2px 8px;border-radius:4px;border:1px solid #d1d9e0">HEAP</span></td><td style="padding:10px 12px;border-bottom:1px solid #d1d9e0">Netty EventLoop (<code style="background:#f6f8fa">epoll_wait</code>) — stack frames, channel/task objects</td></tr>
+<tr><td style="padding:10px 12px;border-bottom:1px solid #d1d9e0">3</td><td style="padding:10px 12px;border-bottom:1px solid #d1d9e0">Read path</td><td style="padding:10px 12px;border-bottom:1px solid #d1d9e0"><span class="seg-native" style="background:#ffebe9;padding:2px 8px;border-radius:4px;border:1px solid #d1d9e0">OFF-HEAP</span></td><td style="padding:10px 12px;border-bottom:1px solid #d1d9e0">Bytes into pooled <code style="background:#f6f8fa">DirectByteBuffer</code></td></tr>
+<tr style="background:#fafbfc"><td style="padding:10px 12px;border-bottom:1px solid #d1d9e0">4</td><td style="padding:10px 12px;border-bottom:1px solid #d1d9e0">Decode</td><td style="padding:10px 12px;border-bottom:1px solid #d1d9e0"><span class="seg-heap" style="background:#f5f0ff;padding:2px 8px;border-radius:4px;border:1px solid #d1d9e0">HEAP Eden</span></td><td style="padding:10px 12px;border-bottom:1px solid #d1d9e0">Wire format → ephemeral request graphs</td></tr>
+<tr><td style="padding:10px 12px;border-bottom:1px solid #d1d9e0">5</td><td style="padding:10px 12px;border-bottom:1px solid #d1d9e0">PrepRequestProcessor</td><td style="padding:10px 12px;border-bottom:1px solid #d1d9e0"><span class="seg-stack">STACK</span> + <span class="seg-heap">HEAP</span></td><td style="padding:10px 12px;border-bottom:1px solid #d1d9e0">ACL / session validation, queue handoffs</td></tr>
+<tr style="background:#fafbfc"><td style="padding:10px 12px;border-bottom:1px solid #d1d9e0">6</td><td style="padding:10px 12px;border-bottom:1px solid #d1d9e0">SyncRequestProcessor</td><td style="padding:10px 12px;border-bottom:1px solid #d1d9e0"><span class="seg-native">OFF-HEAP</span> → page cache</td><td style="padding:10px 12px;border-bottom:1px solid #d1d9e0">Serialize txn; durable log via kernel page cache → disk</td></tr>
+<tr><td style="padding:10px 12px;border-bottom:1px solid #d1d9e0">7</td><td style="padding:10px 12px;border-bottom:1px solid #d1d9e0">FinalRequestProcessor</td><td style="padding:10px 12px;border-bottom:1px solid #d1d9e0"><span class="seg-heap">HEAP Old Gen</span></td><td style="padding:10px 12px;border-bottom:1px solid #d1d9e0">Apply to data tree (<code style="background:#f6f8fa">DataTree</code>)</td></tr>
+<tr style="background:#fafbfc"><td style="padding:10px 12px">8</td><td style="padding:10px 12px">Response</td><td style="padding:10px 12px"><span class="seg-native">OFF-HEAP</span> → <span class="seg-kernel">KERNEL</span></td><td style="padding:10px 12px">Encode; write to socket; DMA to wire</td></tr>
+</tbody>
 </table>
 
-<h3>How clone() Creates Threads</h3>
-<p><code>clone()</code> is the same system call that <code>fork()</code> uses, but with different flags:</p>
-<table>
-<tr><th>Operation</th><th>System Call</th><th>What&rsquo;s Shared</th></tr>
-<tr><td><code>fork()</code></td><td><code>clone(SIGCHLD)</code></td><td>Nothing &mdash; full copy (COW)</td></tr>
-<tr><td><code>pthread_create()</code></td><td><code>clone(CLONE_VM | CLONE_FILES | CLONE_SIGHAND | CLONE_THREAD)</code></td><td>Memory, files, signals, PID group</td></tr>
-</table>
-<p><strong>Threads ARE processes that share memory.</strong> In Linux, there is no fundamental distinction &mdash; both are <code>task_struct</code> entries. The <code>clone()</code> flags determine how much is shared.</p>
-
-<pre><code># See all threads of a Java process
-ps -T -p $(pgrep -f ZooKeeper) | head -20
-
-# Or via /proc
-ls /proc/$(pgrep -f ZooKeeper)/task/
-
-# Thread count
-cat /proc/$(pgrep -f ZooKeeper)/status | grep Threads
-# Threads:    247
-
-# See which core each thread is on
-ps -T -p $(pgrep -f ZooKeeper) -o spid,psr,pcpu,comm | head -20
-# SPID  PSR %CPU  COMMAND
-# 12345   2  0.3  java
-# 12346   0  5.1  GC-Thread-0
-# 12347   1  4.8  GC-Thread-1
-
-# Pin a thread to specific cores
-taskset -p 0x0F 12345   # cores 0-3 only</code></pre>
-</div>
-
-<!-- ===== SECTION 6: CPU NUMA CGROUPS ===== -->
-<h2 id="sec-6">6. CPU Cores, NUMA, and cgroups</h2>
-
-<img src="images/jvm_03_cpu_numa_cgroups.png" alt="CPU Cores, NUMA, and cgroups — How Java Threads Get Scheduled">
-
-<div class="card">
-<h3>CPU Core Assignment</h3>
-<p>The Linux <strong>CFS (Completely Fair Scheduler)</strong> maintains a per-core run queue implemented as a <strong>red-black tree</strong> sorted by virtual runtime. Each Java thread is a kernel-schedulable entity (a <code>task_struct</code>). The scheduler picks which core runs which thread based on fairness.</p>
-
-<ul>
-  <li>Threads are free to <strong>migrate between cores</strong> unless pinned with <code>taskset</code> or <code>sched_setaffinity()</code></li>
-  <li>In ZooKeeper, you&rsquo;d typically pin the <code>SyncRequestProcessor</code> thread (the one flushing to disk) to a specific core to avoid cache thrashing</li>
-  <li>GC threads should also be pinned to avoid NUMA penalties</li>
+<h3 style="color:#1a7f37;font-size:1.1em;margin-top:1.25rem">Component map</h3>
+<ul style="color:#1f2328;line-height:1.55">
+<li><strong>Netty layer:</strong> event loop threads, pooled direct buffers, channel metadata (heap + off-heap mix).</li>
+<li><strong>Request pipeline:</strong> single-producer / multi-consumer queues; processor objects in old gen; temporary validation state on stack.</li>
+<li><strong>Durability:</strong> transaction log via <code style="background:#f6f8fa">FileChannel</code> — user buffers may be direct; kernel owns page cache.</li>
+<li><strong>Data tree:</strong> long-lived znodes and watches → steady old-gen footprint + occasional promotion spikes.</li>
 </ul>
 
-<h3>NUMA &mdash; Non-Uniform Memory Access</h3>
-<p>On a dual-socket server (common for ZooKeeper/Espresso production boxes), each socket has its own memory controller:</p>
+<div class="diagram" style="border:1px solid #d1d9e0;border-radius:8px;background:#ffffff;margin:1.25rem 0;overflow:auto">
+<p class="diagram-head" style="margin:0;padding:12px 16px;background:#f6f8fa;color:#59636e;font-size:0.9em;border-bottom:1px solid #d1d9e0">Figure 9 — ZooKeeper write request — end-to-end memory trace</p>
+<div class="diagram-body" style="padding:16px">
 
-<table>
-<tr><th>Access Type</th><th>Latency</th><th>Example</th></tr>
-<tr><td>Local (same NUMA node)</td><td>~80ns</td><td>Core 0 accessing RAM on Socket 0</td></tr>
-<tr><td>Remote (cross-node via QPI/UPI)</td><td>~150ns</td><td>Core 0 accessing RAM on Socket 1</td></tr>
-</table>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 480" role="img" aria-labelledby="fig9-title" style="width:100%;max-width:900px;height:auto;display:block">
+<title id="fig9-title">ZooKeeper write request — end-to-end memory trace</title>
+<defs>
+<marker id="arr9" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><polygon points="0,0 8,4 0,8" fill="#59636e"/></marker>
+</defs>
+<text x="24" y="34" fill="#59636e" font-family="system-ui,sans-serif" font-size="12" font-weight="600">Memory region</text>
+<rect x="24" y="42" width="88" height="428" rx="6" fill="#fafbfc" stroke="#d1d9e0"/>
+<text x="68" y="256" fill="#59636e" font-family="system-ui,sans-serif" font-size="11" text-anchor="middle" transform="rotate(-90 68 256)">annotation rail</text>
+<text x="40" y="70" fill="#1f2328" font-family="system-ui,sans-serif" font-size="10">KERNEL</text>
+<text x="40" y="116" fill="#1f2328" font-family="system-ui,sans-serif" font-size="10">STACK+HEAP</text>
+<text x="40" y="164" fill="#1f2328" font-family="system-ui,sans-serif" font-size="10">OFF-HEAP</text>
+<text x="40" y="212" fill="#1f2328" font-family="system-ui,sans-serif" font-size="10">HEAP Eden</text>
+<text x="40" y="260" fill="#1f2328" font-family="system-ui,sans-serif" font-size="10">MIXED</text>
+<text x="40" y="308" fill="#1f2328" font-family="system-ui,sans-serif" font-size="10">OFF-HEAP</text>
+<text x="40" y="356" fill="#1f2328" font-family="system-ui,sans-serif" font-size="10">OLD GEN</text>
+<text x="40" y="404" fill="#1f2328" font-family="system-ui,sans-serif" font-size="10">RESP OUT</text>
+<g font-family="system-ui,sans-serif" font-size="11" fill="#1f2328">
+<rect x="148" y="48" width="704" height="40" rx="8" fill="#f6f8fa" stroke="#d1d9e0"/>
+<text x="166" y="72" font-size="12" font-weight="600">1. Client TCP arrives</text>
+<text x="420" y="72" font-size="10" fill="#59636e">KERNEL</text>
+<text x="500" y="72" font-size="10">socket fd, sk_buff</text>
+<line x1="500" y1="88" x2="500" y2="96" stroke="#59636e" marker-end="url(#arr9)"/>
 
-<p><strong>Almost 2x slower for cross-node access!</strong></p>
+<rect x="148" y="96" width="704" height="40" rx="8" fill="#fff8c5" stroke="#d1d9e0"/>
+<text x="166" y="120" font-size="12" font-weight="600">2. Netty EventLoop epoll_wait</text>
+<text x="420" y="120" font-size="10" fill="#9a6700">STACK</text>
+<text x="462" y="120" font-size="10">+</text>
+<text x="474" y="120" font-size="10" fill="#8250df">HEAP</text>
+<text x="530" y="120" font-size="10">EventLoop frames, tasks</text>
+<line x1="500" y1="136" x2="500" y2="144" stroke="#59636e" marker-end="url(#arr9)"/>
 
-<p>The JVM&rsquo;s <code>-XX:+UseNUMA</code> flag tells the GC to allocate young gen on the NUMA node where the allocating thread runs. Without it, a thread on core 4 (node 1) might be accessing heap pages physically located on node 0, paying the cross-node penalty on every object access.</p>
+<rect x="148" y="144" width="704" height="40" rx="8" fill="#ffebe9" stroke="#d1d9e0"/>
+<text x="166" y="168" font-size="12" font-weight="600">3. Read into Netty buffer</text>
+<text x="420" y="168" font-size="10" fill="#d1242f">OFF-HEAP</text>
+<text x="500" y="168" font-size="10">DirectByteBuffer</text>
+<line x1="500" y1="184" x2="500" y2="192" stroke="#59636e" marker-end="url(#arr9)"/>
 
-<pre><code># Check NUMA topology
-numactl --hardware
-# available: 2 nodes (0-1)
-# node 0 cpus: 0 1 2 3 4 5 6 7
-# node 0 size: 65536 MB
-# node 1 cpus: 8 9 10 11 12 13 14 15
-# node 1 size: 65536 MB
-# node distances:
-# node   0   1
-#   0:  10  21    ← 21 = cross-node, 2.1x the latency
-#   1:  21  10
+<rect x="148" y="192" width="704" height="40" rx="8" fill="#f5f0ff" stroke="#d1d9e0"/>
+<text x="166" y="216" font-size="12" font-weight="600">4. Deserialize → Request object</text>
+<text x="420" y="216" font-size="10" fill="#8250df">HEAP Eden</text>
+<text x="510" y="216" font-size="10">Short-lived graphs</text>
+<line x1="500" y1="232" x2="500" y2="240" stroke="#59636e" marker-end="url(#arr9)"/>
 
-# Check which NUMA node a process uses
-numastat -p $(pgrep -f ZooKeeper)
+<rect x="148" y="240" width="704" height="40" rx="8" fill="#fdf6e3" stroke="#d1d9e0"/>
+<text x="166" y="264" font-size="12" font-weight="600">5. PrepRequestProcessor validates</text>
+<text x="420" y="264" font-size="10" fill="#9a6700">STACK</text>
+<text x="462" y="264" font-size="10">+</text>
+<text x="474" y="264" font-size="10" fill="#8250df">HEAP</text>
+<text x="530" y="264" font-size="10">ACLs, ephemeral state</text>
+<line x1="500" y1="280" x2="500" y2="288" stroke="#59636e" marker-end="url(#arr9)"/>
 
-# Run JVM bound to a NUMA node
-numactl --cpunodebind=0 --membind=0 java -jar zookeeper.jar</code></pre>
+<rect x="148" y="288" width="704" height="40" rx="8" fill="#ffebe9" stroke="#d1d9e0"/>
+<text x="166" y="312" font-size="12" font-weight="600">6. SyncRequestProcessor → txn log</text>
+<text x="430" y="312" font-size="10">OFF-HEAP → PAGE CACHE → Disk</text>
+<line x1="500" y1="328" x2="500" y2="336" stroke="#59636e" marker-end="url(#arr9)"/>
 
-<h3>cgroups &mdash; Resource Boundaries</h3>
-<p>cgroups (control groups) limit how much CPU, memory, and I/O a process group can use. In Kubernetes, every pod gets its own cgroup.</p>
+<rect x="148" y="336" width="704" height="40" rx="8" fill="#f5f0ff" stroke="#d1d9e0"/>
+<text x="166" y="360" font-size="12" font-weight="600">7. FinalRequestProcessor → data tree</text>
+<text x="420" y="360" font-size="10" fill="#8250df">HEAP Old Gen</text>
+<text x="516" y="360" font-size="10">DataTree mutation</text>
+<line x1="500" y1="376" x2="500" y2="384" stroke="#59636e" marker-end="url(#arr9)"/>
 
-<table>
-<tr><th>cgroup Parameter</th><th>What It Controls</th><th>Example</th></tr>
-<tr><td><code>cpuset.cpus</code></td><td>Which CPU cores are allowed</td><td><code>0-3</code> (only cores 0&ndash;3)</td></tr>
-<tr><td><code>cpuset.mems</code></td><td>Which NUMA nodes for memory</td><td><code>0</code> (only node 0 RAM)</td></tr>
-<tr><td><code>memory.max</code></td><td>Hard memory limit</td><td><code>4294967296</code> (4GB)</td></tr>
-<tr><td><code>memory.current</code></td><td>Current usage</td><td>Read-only, shows actual usage</td></tr>
-<tr><td><code>cpu.max</code></td><td>CPU time limit (quota/period)</td><td><code>200000 100000</code> (2 cores worth)</td></tr>
-</table>
+<rect x="148" y="384" width="704" height="40" rx="8" fill="#f6f8fa" stroke="#d1d9e0"/>
+<text x="166" y="408" font-size="12" font-weight="600">8. Response sent back</text>
+<text x="420" y="408" font-size="10" fill="#d1242f">OFF-HEAP</text>
+<text x="488" y="408" font-size="10">→</text>
+<text x="498" y="408" font-size="10" fill="#59636e">KERNEL</text>
+<text x="562" y="408" font-size="10">→ NIC</text>
+</g>
+</svg>
 
-<pre><code># See cgroup of a process
-cat /proc/$(pgrep -f ZooKeeper)/cgroup
-
-# See memory limit
-cat /sys/fs/cgroup/memory/&lt;cgroup-path&gt;/memory.max
-
-# See current usage
-cat /sys/fs/cgroup/memory/&lt;cgroup-path&gt;/memory.current
-
-# See CPU pinning
-cat /sys/fs/cgroup/cpuset/&lt;cgroup-path&gt;/cpuset.cpus</code></pre>
+</div>
+<p class="diagram-cap" style="margin:0;padding:10px 16px;color:#59636e;font-size:0.88em;border-top:1px solid #d1d9e0;background:#fafbfc">Colored badges mirror segment classes: gray kernel, purple heap hot/cold pools, yellow stack interaction, red direct memory for I/O slabs.</p>
 </div>
 
-<!-- ===== SECTION 7: CGROUP PAGE CACHE ===== -->
-<h2 id="sec-7">7. cgroups + Page Cache &mdash; The Hidden Memory Trap</h2>
+</section>
 
-<img src="images/jvm_04_cgroup_pagecache.png" alt="cgroups + Page Cache: The Hidden Memory Trap">
+<section class="chapter" aria-labelledby="sec-10">
 
-<div class="card">
-<h3>What Counts Against memory.max</h3>
-<p>The kernel tracks <code>memory.current</code> for a cgroup as:</p>
+<h2 id="sec-10" style="color:#0969da">10. Espresso Architecture — Memory Locations</h2>
 
-<div class="formula">
-memory.current = anon RSS + file-backed pages (page cache) + kernel slab memory
-</div>
+<p style="color:#1f2328"><strong>Espresso</strong> is LinkedIn’s distributed NoSQL store built on MySQL plus a Java routing layer. Requests fan in through JVM-owned structures, traverse managed connection pools and caches, then land in InnoDB’s buffer pool mapped from the filesystem—so footprint spans heap, direct memory, mmap, and kernel caches simultaneously.</p>
 
-<p><strong>This is one of the most misunderstood aspects of cgroups.</strong> Page cache (disk cache) of multiple processes is shared and counts against the same cgroup memory limit.</p>
-
-<ul>
-  <li>When ZooKeeper reads its <strong>transaction log</strong>, those cached file pages are charged to the cgroup</li>
-  <li>When Espresso reads <strong>MySQL data files</strong>, those pages also count</li>
-  <li>Both processes&rsquo; cached disk I/O is summed into one <code>memory.current</code></li>
-</ul>
-
-<h3>What Happens at the Limit</h3>
-<ol>
-  <li><strong>First</strong>: Kernel reclaims page cache (drops clean cached pages) &mdash; I/O performance degrades but nothing crashes</li>
-  <li><strong>If still not enough</strong>: The <strong>OOM killer</strong> picks a process to terminate!</li>
-</ol>
-
-<h3>Container Sizing Formula</h3>
-<div class="formula">
-Container memory = JVM heap + off-heap (Metaspace + direct buffers + thread stacks) + page cache headroom + kernel overhead
-</div>
-
-<table>
-<tr><th>Component</th><th>ZooKeeper Example</th><th>Espresso Example</th></tr>
-<tr><td>JVM Heap (<code>-Xmx</code>)</td><td>2GB</td><td>4GB</td></tr>
-<tr><td>Metaspace</td><td>256MB</td><td>512MB</td></tr>
-<tr><td>Thread Stacks</td><td>200 &times; 1MB = 200MB</td><td>300 &times; 1MB = 300MB</td></tr>
-<tr><td>Direct Buffers</td><td>128MB</td><td>512MB</td></tr>
-<tr><td>Page Cache headroom</td><td>~500MB (txn logs)</td><td>~1GB (MySQL data)</td></tr>
-<tr><td>Kernel overhead</td><td>~100MB</td><td>~200MB</td></tr>
-<tr><td><strong>Total minimum</strong></td><td><strong>~3.2GB</strong></td><td><strong>~6.5GB</strong></td></tr>
-<tr><td><strong>Recommended cgroup</strong></td><td><strong>3.5&ndash;4GB</strong></td><td><strong>7&ndash;8GB</strong></td></tr>
-</table>
-
-<div class="warn">
-<strong>Common mistake:</strong> Setting <code>memory.max = -Xmx</code>. If your heap is 4GB and your cgroup limit is 4GB, you&rsquo;re guaranteed to get OOM killed &mdash; there&rsquo;s zero room for Metaspace, stacks, direct buffers, and page cache!
-</div>
-
-<pre><code># Monitor cgroup memory breakdown
-cat /sys/fs/cgroup/memory/&lt;path&gt;/memory.stat
-# anon 2147483648        ← heap + stacks (anonymous pages)
-# file 536870912         ← page cache (file-backed pages)
-# kernel_stack 8388608   ← kernel stacks for threads
-# sock 1048576           ← socket buffer memory
-# slab 4194304           ← kernel slab allocator
-
-# Watch for OOM events
-cat /sys/fs/cgroup/memory/&lt;path&gt;/memory.events
-# low 0
-# high 142
-# max 3           ← hit the limit 3 times!
-# oom 0
-# oom_kill 0      ← nobody killed yet, but close</code></pre>
-</div>
-
-<!-- ===== SECTION 8: NETTY MEMORY ===== -->
-<h2 id="sec-8">8. Netty I/O &mdash; Two Worlds of Memory</h2>
-
-<img src="images/jvm_07_netty_memory.png" alt="Netty I/O: Two Worlds of Memory">
-
-<div class="card">
-<h3>Why Netty Uses Off-Heap (Direct) Buffers</h3>
-<p>When performing network I/O, data must eventually reach the kernel&rsquo;s socket buffers. The path depends on buffer type:</p>
-
-<table>
-<tr><th>Buffer Type</th><th>I/O Path</th><th>Copies</th></tr>
-<tr><td>Heap <code>byte[]</code></td><td>JVM heap &rarr; <em>copy to native temp buffer</em> &rarr; kernel &rarr; NIC</td><td><strong>2 copies</strong></td></tr>
-<tr><td>Direct <code>ByteBuffer</code></td><td>Direct buffer &rarr; kernel &rarr; NIC</td><td><strong>1 copy</strong></td></tr>
-<tr><td><code>sendfile()</code></td><td>Page cache &rarr; NIC (DMA)</td><td><strong>0 copies</strong> (zero-copy!)</td></tr>
-</table>
-
-<p>The extra copy for heap buffers exists because the GC can <strong>move objects in memory</strong> during compaction. The kernel needs a stable address for its DMA transfer. Direct buffers are pinned at a fixed native address.</p>
-
-<h3>Netty&rsquo;s Memory Management</h3>
-<ul>
-  <li><strong>PooledByteBufAllocator</strong>: Netty maintains arenas of pre-allocated direct memory, slicing them into buffers as needed (avoids expensive <code>malloc</code>/<code>free</code> per request)</li>
-  <li><strong>Reference counting</strong>: Each <code>ByteBuf</code> has a reference count. <code>retain()</code> increments, <code>release()</code> decrements. When it hits 0, memory is returned to the pool</li>
-  <li>This is <strong>NOT garbage collected</strong>. Forgetting to call <code>release()</code> causes a <strong>native memory leak</strong> that won&rsquo;t show up in Java heap dumps!</li>
-</ul>
-
-<h3>Kernel Side</h3>
-<p>For each TCP connection, the kernel maintains:</p>
-<ul>
-  <li><code>struct sock</code> &mdash; socket state (TCP state machine, window size, RTT)</li>
-  <li><code>sk_buff</code> chain for send buffer (default ~87KB, tunable via <code>net.core.wmem_default</code>)</li>
-  <li><code>sk_buff</code> chain for receive buffer (default ~87KB, tunable via <code>net.core.rmem_default</code>)</li>
-  <li><code>epoll</code> interest list entry (red-black tree in kernel)</li>
-  <li>File descriptor table entry</li>
-</ul>
-
-<pre><code># Monitor Netty direct memory
-jcmd &lt;pid&gt; VM.native_memory summary | grep -A3 "Internal"
-# or check MBean:
-# java.nio:type=BufferPool,name=direct
-#   Count: 42
-#   MemoryUsed: 134217728   ← 128MB of direct buffers
-#   TotalCapacity: 134217728
-
-# See kernel socket buffer sizes
-sysctl net.core.rmem_default net.core.wmem_default
-# net.core.rmem_default = 87380
-# net.core.wmem_default = 87380
-
-# Monitor socket memory per connection
-ss -tm | head -10</code></pre>
-</div>
-
-<!-- ===== SECTION 9: ZOOKEEPER TRACE ===== -->
-<h2 id="sec-9">9. ZooKeeper Write Request &mdash; Complete Trace</h2>
-
-<img src="images/jvm_05_zookeeper_trace.png" alt="ZooKeeper Write Request — Where Every Component Lives">
-
-<div class="card">
-<h3>Tracing a Write to <code>/app/config</code></h3>
-<p>When a ZooKeeper leader processes a write request, data touches every memory region:</p>
-
-<table>
-<tr><th>Step</th><th>Component</th><th>Memory Location</th><th>Why There</th></tr>
-<tr>
-  <td>1</td>
-  <td>Client TCP connection arrives</td>
-  <td><span class="segment-label seg-kernel">KERNEL</span> Socket fd, <code>sk_buff</code> recv buffer</td>
-  <td>Kernel manages TCP state and buffers</td>
+<table style="width:100%;border-collapse:collapse;font-size:0.92em;color:#1f2328;margin:1rem 0;border:1px solid #d1d9e0;border-radius:8px;overflow:hidden">
+<thead>
+<tr style="background:#f6f8fa">
+<th style="text-align:left;padding:10px 12px;border-bottom:1px solid #d1d9e0;color:#0969da">Component</th>
+<th style="text-align:left;padding:10px 12px;border-bottom:1px solid #d1d9e0;color:#0969da">Memory Location</th>
+<th style="text-align:left;padding:10px 12px;border-bottom:1px solid #d1d9e0;color:#0969da">Details</th>
 </tr>
-<tr>
-  <td>2</td>
-  <td>Netty EventLoop picks it up (<code>epoll_wait</code>)</td>
-  <td><span class="segment-label seg-stack">STACK</span> EventLoop thread stack<br><span class="segment-label seg-heap">HEAP</span> Channel objects</td>
-  <td>Thread waits in kernel, Channel metadata on heap</td>
-</tr>
-<tr>
-  <td>3</td>
-  <td>Bytes read into Netty buffer</td>
-  <td><span class="segment-label seg-native">OFF-HEAP</span> DirectByteBuffer</td>
-  <td>Avoids heap→native copy during read()</td>
-</tr>
-<tr>
-  <td>4</td>
-  <td>Deserialized into Request object</td>
-  <td><span class="segment-label seg-heap">HEAP</span> Young Gen (Eden)</td>
-  <td>Short-lived Java object, born in Eden</td>
-</tr>
-<tr>
-  <td>5</td>
-  <td>PrepRequestProcessor validates</td>
-  <td><span class="segment-label seg-stack">STACK</span> Method locals, return addr<br><span class="segment-label seg-heap">HEAP</span> Request + txn objects</td>
-  <td>Call frame on stack, objects on heap</td>
-</tr>
-<tr>
-  <td>6</td>
-  <td>SyncRequestProcessor serializes to txn log</td>
-  <td><span class="segment-label seg-native">OFF-HEAP</span> → <span class="segment-label seg-kernel">PAGE CACHE</span> → Disk (fsync)</td>
-  <td>Direct buffer → kernel page cache → physical disk</td>
-</tr>
-<tr>
-  <td>7</td>
-  <td>FinalRequestProcessor applies to data tree</td>
-  <td><span class="segment-label seg-heap">HEAP</span> Old Gen (DataNode tree updated)</td>
-  <td>Long-lived in-memory tree, lives in tenured space</td>
-</tr>
-<tr>
-  <td>8</td>
-  <td>Response sent back</td>
-  <td><span class="segment-label seg-native">OFF-HEAP</span> → <span class="segment-label seg-kernel">KERNEL</span> socket → network</td>
-  <td>Netty direct buffer → kernel TCP send buffer → NIC</td>
-</tr>
+</thead>
+<tbody>
+<tr><td style="padding:10px 12px;border-bottom:1px solid #d1d9e0"><span class="seg-text">Router (Java)</span></td><td style="padding:10px 12px;border-bottom:1px solid #d1d9e0"><span class="seg-heap">HEAP</span> + <span class="seg-native">OFF-HEAP</span></td><td style="padding:10px 12px;border-bottom:1px solid #d1d9e0">Netty for network, heap for routing tables</td></tr>
+<tr style="background:#fafbfc"><td style="padding:10px 12px;border-bottom:1px solid #d1d9e0">MySQL storage engine</td><td style="padding:10px 12px;border-bottom:1px solid #d1d9e0"><span class="seg-kernel">KERNEL</span> + MMAP</td><td style="padding:10px 12px;border-bottom:1px solid #d1d9e0">InnoDB buffer pool uses mmap’d files</td></tr>
+<tr><td style="padding:10px 12px;border-bottom:1px solid #d1d9e0">Replication stream</td><td style="padding:10px 12px;border-bottom:1px solid #d1d9e0"><span class="seg-native">OFF-HEAP</span></td><td style="padding:10px 12px;border-bottom:1px solid #d1d9e0">Netty <code style="background:#f6f8fa">DirectByteBuffer</code> for binlog reading</td></tr>
+<tr style="background:#fafbfc"><td style="padding:10px 12px;border-bottom:1px solid #d1d9e0">Cache layer</td><td style="padding:10px 12px;border-bottom:1px solid #d1d9e0"><span class="seg-heap">HEAP Old Gen</span></td><td style="padding:10px 12px;border-bottom:1px solid #d1d9e0">Long-lived cached query results</td></tr>
+<tr><td style="padding:10px 12px">Connection pool</td><td style="padding:10px 12px"><span class="seg-kernel">KERNEL</span> + <span class="seg-heap">HEAP</span></td><td style="padding:10px 12px">File descriptors (kernel) + connection objects (heap)</td></tr>
+</tbody>
 </table>
 
-<h3>Full Component Map</h3>
-<table>
-<tr><th>Component</th><th>Location</th><th>Why</th></tr>
-<tr><td>DataNode object for <code>/app/config</code></td><td>JVM heap (old gen)</td><td>Long-lived Java object</td></tr>
-<tr><td>StatPersisted (zxid, version)</td><td>JVM heap</td><td>Attached to DataNode</td></tr>
-<tr><td>Request object being processed</td><td>JVM heap (young gen)</td><td>Short-lived, GC&rsquo;d after processing</td></tr>
-<tr><td>PrepRequestProcessor call frame</td><td>Thread stack</td><td>Method locals, return address</td></tr>
-<tr><td>Serialized bytes of txn log entry</td><td>Off-heap (direct buffer) before flush</td><td>NIO channel write buffer</td></tr>
-<tr><td>Txn log file content after fsync</td><td>Page cache (kernel)</td><td>File-backed, counts in cgroup</td></tr>
-<tr><td>Client TCP connection from follower</td><td>Kernel FD table + socket buffers</td><td>Kernel manages TCP state</td></tr>
-<tr><td>Netty EventLoop polling epoll</td><td>Thread stack + kernel epoll fd</td><td>Thread waits in kernel</td></tr>
-<tr><td>JIT-compiled hot path of <code>serialize()</code></td><td>Code cache (native memory)</td><td>JVM compiles hot methods</td></tr>
+<div class="diagram" style="border:1px solid #d1d9e0;border-radius:8px;background:#ffffff;margin:1.25rem 0;overflow:auto">
+<p class="diagram-head" style="margin:0;padding:12px 16px;background:#f6f8fa;color:#59636e;font-size:0.9em;border-bottom:1px solid #d1d9e0">Figure 10 — Espresso memory architecture</p>
+<div class="diagram-body" style="padding:16px">
+
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 360" role="img" aria-labelledby="fig10-title" style="width:100%;max-width:900px;height:auto;display:block">
+<title id="fig10-title">Espresso memory architecture</title>
+<defs><marker id="a10" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><polygon points="0,0 8,4 0,8" fill="#59636e"/></marker></defs>
+<text x="450" y="32" text-anchor="middle" font-family="system-ui,sans-serif" font-size="14" font-weight="700" fill="#1f2328">Client Request</text>
+<polygon points="450,40 458,54 442,54" fill="#59636e"/>
+<line x1="450" y1="54" x2="450" y2="78" stroke="#59636e" marker-end="url(#a10)"/>
+<rect x="200" y="84" width="500" height="120" rx="10" fill="#f6f8fa" stroke="#d1d9e0"/>
+<text x="450" y="108" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="700" fill="#0969da">Espresso Router</text>
+<rect x="220" y="118" width="140" height="44" rx="6" fill="#ffebe9" stroke="#d1d9e0"/>
+<text x="290" y="145" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12" fill="#1f2328">Netty (direct)</text>
+<rect x="380" y="118" width="140" height="44" rx="6" fill="#f5f0ff" stroke="#d1d9e0"/>
+<text x="450" y="145" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12" fill="#1f2328">Routing table (heap)</text>
+<rect x="540" y="118" width="140" height="44" rx="6" fill="#fff8c5" stroke="#d1d9e0"/>
+<text x="610" y="145" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" fill="#1f2328">Conn pool (fd+heap)</text>
+<text x="450" y="188" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" fill="#59636e">HEAP + OFF-HEAP + kernel fds</text>
+<line x1="450" y1="204" x2="450" y2="228" stroke="#59636e" marker-end="url(#a10)"/>
+<rect x="180" y="234" width="540" height="88" rx="10" fill="#dafbe1" stroke="#1a7f37" stroke-opacity="0.35"/>
+<text x="450" y="258" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="700" fill="#1a7f37">MySQL / InnoDB</text>
+<rect x="200" y="268" width="150" height="40" rx="6" fill="#ddf4ff" stroke="#d1d9e0"/>
+<text x="275" y="292" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" fill="#1f2328">Buffer pool (mmap)</text>
+<rect x="375" y="268" width="150" height="40" rx="6" fill="#f6f8fa" stroke="#d1d9e0"/>
+<text x="450" y="292" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" fill="#1f2328">WAL / redo</text>
+<rect x="550" y="268" width="150" height="40" rx="6" fill="#f6f8fa" stroke="#d1d9e0"/>
+<text x="625" y="292" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" fill="#1f2328">Data files</text>
+<line x1="450" y1="322" x2="450" y2="340" stroke="#59636e" marker-end="url(#a10)"/>
+<rect x="220" y="332" width="460" height="28" rx="6" fill="#f6f8fa" stroke="#d1d9e0"/>
+<text x="450" y="350" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" fill="#1f2328">Kernel — page cache, socket buffers, fd table</text>
+</svg>
+
+</div>
+<p class="diagram-cap" style="margin:0;padding:10px 16px;color:#59636e;font-size:0.88em;border-top:1px solid #d1d9e0;background:#fafbfc">The router’s JVM view is only part of RSS; InnoDB leverages mmap and OS cache, so RSS + page cache captures true working set pressure.</p>
+</div>
+
+</section>
+
+<section class="chapter" aria-labelledby="sec-11">
+
+<h2 id="sec-11" style="color:#0969da">11. Linux Commands for JVM Memory Investigation</h2>
+
+<p style="color:#1f2328">Correlate <span class="formula" style="font-family:ui-monospace,monospace;background:#f6f8fa;padding:2px 6px;border-radius:4px;border:1px solid #d1d9e0">RSS ≠ Java heap</span> by walking from process summary down to VMAs (<code style="background:#f6f8fa">smaps</code>), then Java natives (<code style="background:#f6f8fa">jcmd VM.native_memory</code>), cgroup accounting, and kernel-wide pressure (<code style="background:#f6f8fa">vmstat</code>, buddy).</p>
+
+<h3 style="color:#1a7f37;font-size:1.1em;margin-top:1.25rem">Diagnostic commands</h3>
+
+<pre style="background:#f6f8fa;border:1px solid #d1d9e0;border-radius:8px;padding:14px;color:#1f2328;line-height:1.45;font-size:0.88em;overflow:auto"><code># Process overview — threads, VSZ/RSS basics
+ps -o pid,user,psr,pcpu,rss,vsz,cmd -p $PID --sort=-rss | head -n 20
+
+# Live view (shift columns to RSS / swap)
+top -p $PID
+
+# cgroup-scoped totals (modern systems)
+grep -E '^(MemTotal|MemAvailable)' /proc/meminfo
+echo "current:"; cat /sys/fs/cgroup/$CGROUP/memory.current
+
+# VMA map & per-mapping RSS / dirty / swap splits
+grep -q "^0040" <<<"" 2>/dev/null; cat /proc/$PID/maps
+smem -t -p -P java  # optional SUMMARYRSS style rollups where available
+
+# Heavyweight detail — per-mapping PSS/USS/private-huge anon
+grep -v "^#" /proc/$PID/smaps | grep -E "^(004|Size|KernelPageSize|Shared|Private|PSS|USS|Swap)" -
+
+# Allocator-style dump (native detail)
+sudo pmap -XX $PID | head -n 120
+
+# Java-specific
+jcmd $PID VM.native_memory summary scale=MB
+jcmd $PID VM.native_memory detail
+jmap -heap $PID
+jstat -gcutil $PID 1000 5
+
+# cgroup v2 counters (path varies by runtime)
+cat /sys/fs/cgroup/system.slice/**/memory.stat 2>/dev/null | head
+cat /sys/fs/cgroup/system.slice/**/memory.events 2>/dev/null
+
+# Kernel pressure & fragmentation
+cat /proc/meminfo
+cat /proc/buddyinfo
+vmstat 1 10
+</code></pre>
+
+<div class="info card" style="background:#f5f0ff;border:1px solid #d1d9e0;border-radius:8px;padding:12px 16px;margin:1rem 0;color:#1f2328;font-size:0.92em">Prefer <code style="background:#ffffff;border:1px solid #d1d9e0;padding:1px 6px;border-radius:4px">jcmd … detail</code> after reproducing load; <code style="background:#ffffff;border:1px solid #d1d9e0;padding:1px 6px;border-radius:4px">smaps_rollup</code> (where available) gives a fast PSS snapshot without parsing every VMA line.</div>
+
+<div class="diagram" style="border:1px solid #d1d9e0;border-radius:8px;background:#ffffff;margin:1.25rem 0;overflow:auto">
+<p class="diagram-head" style="margin:0;padding:12px 16px;background:#f6f8fa;color:#59636e;font-size:0.9em;border-bottom:1px solid #d1d9e0">Figure 11 — JVM memory investigation toolkit</p>
+<div class="diagram-body" style="padding:16px">
+
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 300" role="img" aria-labelledby="fig11-title" style="width:100%;max-width:900px;height:auto;display:block">
+<title id="fig11-title">JVM memory investigation toolkit</title>
+<g font-family="system-ui,sans-serif" font-size="12" fill="#1f2328">
+<rect x="20" y="20" width="260" height="120" rx="8" fill="#ddf4ff" stroke="#d1d9e0"/>
+<text x="40" y="44" font-weight="700" fill="#0969da">Process Overview</text>
+<text x="40" y="68">ps · top · /proc/&lt;PID&gt;/status</text>
+<text x="40" y="92" fill="#59636e" font-size="11">Threads, VmRSS/VmPeak, limits</text>
+<rect x="320" y="20" width="260" height="120" rx="8" fill="#dafbe1" stroke="#d1d9e0"/>
+<text x="340" y="44" font-weight="700" fill="#1a7f37">Memory Map</text>
+<text x="340" y="68">/proc/&lt;PID&gt;/maps · smaps · pmap</text>
+<text x="340" y="92" fill="#59636e" font-size="11">VMA layout, anon file huge</text>
+<rect x="620" y="20" width="260" height="120" rx="8" fill="#f5f0ff" stroke="#d1d9e0"/>
+<text x="640" y="44" font-weight="700" fill="#8250df">Java Specific</text>
+<text x="640" y="68">jcmd VM.native_memory · jmap · jstat</text>
+<text x="640" y="92" fill="#59636e" font-size="11">Heap + native allocator buckets</text>
+<rect x="170" y="160" width="260" height="120" rx="8" fill="#fff8c5" stroke="#d1d9e0"/>
+<text x="190" y="184" font-weight="700" fill="#9a6700">cgroup</text>
+<text x="190" y="208">memory.stat · memory.current · events</text>
+<text x="190" y="232" fill="#59636e" font-size="11">Throttling vs host RSS</text>
+<rect x="470" y="160" width="260" height="120" rx="8" fill="#f6f8fa" stroke="#d1d9e0"/>
+<text x="490" y="184" font-weight="700" fill="#59636e">Kernel</text>
+<text x="490" y="208">/proc/meminfo · buddyinfo · vmstat</text>
+<text x="490" y="232" fill="#59636e" font-size="11">Reclaim pressure, fragmentation</text>
+</g>
+</svg>
+
+</div>
+<p class="diagram-cap" style="margin:0;padding:10px 16px;color:#59636e;font-size:0.88em;border-top:1px solid #d1d9e0;background:#fafbfc">Start wide (process cgroup), drill into maps, then bifurcate JVM vs kernel with <code style="background:#f6f8fa;padding:2px 6px;border-radius:4px">jcmd</code> + buddy/vmstat corroboration.</p>
+</div>
+
+</section>
+
+<section class="chapter" aria-labelledby="sec-12">
+
+<h2 id="sec-12" style="color:#0969da">12. Master Reference — Where Everything Lives</h2>
+
+<p style="color:#1f2328">Use this cheat sheet while reading profiles: every Java subsystem pins to one or more of <span class="seg-data" style="background:#dafbe1;padding:2px 8px;border-radius:4px;border:1px solid #d1d9e0">DATA</span> / <span class="seg-text" style="background:#ddf4ff;padding:2px 8px;border-radius:4px;border:1px solid #d1d9e0">TEXT</span> / <span class="seg-heap" style="background:#f5f0ff;padding:2px 8px;border-radius:4px;border:1px solid #d1d9e0">HEAP</span> / <span class="seg-stack" style="background:#fff8c5;padding:2px 8px;border-radius:4px;border:1px solid #d1d9e0">STACK</span> / <span class="seg-native" style="background:#ffebe9;padding:2px 8px;border-radius:4px;border:1px solid #d1d9e0">OFF-HEAP</span> / <span class="seg-kernel" style="background:#f6f8fa;padding:2px 8px;border-radius:4px;border:1px solid #d1d9e0">KERNEL</span>.</p>
+
+<table style="width:100%;border-collapse:collapse;font-size:0.88em;color:#1f2328;margin:1rem 0;border:1px solid #d1d9e0;border-radius:8px;overflow:hidden">
+<thead>
+<tr style="background:#f6f8fa">
+<th style="text-align:left;padding:8px 10px;border-bottom:1px solid #d1d9e0;color:#0969da">Java component</th>
+<th style="text-align:left;padding:8px 10px;border-bottom:1px solid #d1d9e0;color:#0969da">Primary segment</th>
+<th style="text-align:left;padding:8px 10px;border-bottom:1px solid #d1d9e0;color:#0969da">Secondary / notes</th>
+</tr>
+</thead>
+<tbody>
+<tr><td style="padding:8px 10px;border-bottom:1px solid #d1d9e0"><code style="background:#f6f8fa">libjvm.so</code>, JIT code cache</td><td style="padding:8px 10px;border-bottom:1px solid #d1d9e0"><span class="seg-text">TEXT</span> + <span class="seg-native">OFF-HEAP Code</span></td><td style="padding:8px 10px;border-bottom:1px solid #d1d9e0">RX mappings; JIT grows outside Java heap</td></tr>
+<tr style="background:#fafbfc"><td style="padding:8px 10px;border-bottom:1px solid #d1d9e0">Interpreter / adapters</td><td style="padding:8px 10px;border-bottom:1px solid #d1d9e0"><span class="seg-text">TEXT</span></td><td style="padding:8px 10px;border-bottom:1px solid #d1d9e0">VM stubs in read-only mappings</td></tr>
+<tr><td style="padding:8px 10px;border-bottom:1px solid #d1d9e0">Static finals, string intern tables</td><td style="padding:8px 10px;border-bottom:1px solid #d1d9e0"><span class="seg-data">DATA</span> / <span class="seg-heap">Metaspace</span></td><td style="padding:8px 10px;border-bottom:1px solid #d1d9e0">Class metadata vs compressed class space</td></tr>
+<tr style="background:#fafbfc"><td style="padding:8px 10px;border-bottom:1px solid #d1d9e0">Object graphs, collections</td><td style="padding:8px 10px;border-bottom:1px solid #d1d9e0"><span class="seg-heap">HEAP Young / Old</span></td><td style="padding:8px 10px;border-bottom:1px solid #d1d9e0">Promotion governs old-gen spikes</td></tr>
+<tr><td style="padding:8px 10px;border-bottom:1px solid #d1d9e0">Thread stacks, JNI frames</td><td style="padding:8px 10px;border-bottom:1px solid #d1d9e0"><span class="seg-stack">STACK</span></td><td style="padding:8px 10px;border-bottom:1px solid #d1d9e0">-Xss * thread count contributes to RSS</td></tr>
+<tr style="background:#fafbfc"><td style="padding:8px 10px;border-bottom:1px solid #d1d9e0">Direct buffers, mapped files, arenas</td><td style="padding:8px 10px;border-bottom:1px solid #d1d9e0"><span class="seg-native">OFF-HEAP</span></td><td style="padding:8px 10px;border-bottom:1px solid #d1d9e0">MaxDirectMemorySize, Netty pools</td></tr>
+<tr><td style="padding:8px 10px;border-bottom:1px solid #d1d9e0">Sockets, Files, Epoll buffers</td><td style="padding:8px 10px;border-bottom:1px solid #d1d9e0"><span class="seg-kernel">KERNEL</span></td><td style="padding:8px 10px;border-bottom:1px solid #d1d9e0">FD table + sk_buff / page cache external to JVM book-keeping</td></tr>
+<tr style="background:#fafbfc"><td style="padding:8px 10px;border-bottom:1px solid #d1d9e0">GC roots, monitors</td><td style="padding:8px 10px;border-bottom:1px solid #d1d9e0"><span class="seg-stack">STACK</span> → <span class="seg-heap">HEAP</span></td><td style="padding:8px 10px;border-bottom:1px solid #d1d9e0">JNI global refs bridge native side</td></tr>
+<tr><td style="padding:8px 10px">Unsafe / Panama off-heap APIs</td><td style="padding:8px 10px"><span class="seg-native">OFF-HEAP</span></td><td style="padding:8px 10px">Manual lifecycle—leaks show as anon RSS growth</td></tr>
+</tbody>
 </table>
-</div>
 
-<!-- ===== SECTION 10: ESPRESSO ===== -->
-<h2 id="sec-10">10. Espresso Architecture &mdash; Memory Locations</h2>
+<div class="diagram" style="border:1px solid #d1d9e0;border-radius:8px;background:#ffffff;margin:1.25rem 0;overflow:auto">
+<p class="diagram-head" style="margin:0;padding:12px 16px;background:#f6f8fa;color:#59636e;font-size:0.9em;border-bottom:1px solid #d1d9e0">Figure 12 — Master reference — everything mapped</p>
+<div class="diagram-body" style="padding:16px">
 
-<img src="images/jvm_10_espresso_memory.png" alt="Espresso Architecture — Memory Locations">
-
-<div class="card">
-<h3>Espresso = Java App + MySQL Storage</h3>
-<p>Espresso is LinkedIn&rsquo;s NoSQL store built on MySQL + Helix. It has <strong>two separate memory worlds</strong>:</p>
-
-<h4>JVM Process (Espresso Server)</h4>
-<table>
-<tr><th>Component</th><th>Memory Region</th></tr>
-<tr><td>Routing Table (Helix-based, maps partition → host)</td><td>Heap (old gen)</td></tr>
-<tr><td>Request objects (R2D2/Rest.li)</td><td>Heap (young gen, short-lived)</td></tr>
-<tr><td>Response builders</td><td>Heap (young gen)</td></tr>
-<tr><td>Application-level caches</td><td>Heap (old gen)</td></tr>
-<tr><td>Helix participant thread objects</td><td>Heap + stacks</td></tr>
-<tr><td>Netty R2D2 transport buffers</td><td>Off-heap (DirectByteBuffer)</td></tr>
-<tr><td>RocksDB block cache (via JNI)</td><td>Off-heap (native memory)</td></tr>
-<tr><td>Metaspace for loaded classes</td><td>Off-heap</td></tr>
-</table>
-
-<h4>MySQL / InnoDB (Separate Process)</h4>
-<table>
-<tr><th>Component</th><th>Memory Region</th></tr>
-<tr><td>InnoDB Buffer Pool (could be 8&ndash;16GB)</td><td>MySQL process heap</td></tr>
-<tr><td>Redo log buffer</td><td>MySQL process heap</td></tr>
-<tr><td>Doublewrite buffer</td><td>MySQL process heap</td></tr>
-<tr><td>MySQL data files cached</td><td>Kernel page cache</td></tr>
-</table>
-
-<h4>Kernel Layer (Shared)</h4>
-<ul>
-  <li><strong>Page cache</strong>: Both the Espresso JVM&rsquo;s file I/O and MySQL&rsquo;s data file reads are cached here</li>
-  <li><strong>Socket buffers</strong>: Client connections to Espresso, Espresso-to-MySQL local connections</li>
-  <li><strong>File descriptors</strong>: Data files + sockets + pipes</li>
-</ul>
-
-<p>The request flow: <strong>Client → Netty (off-heap) → Router (heap) → MySQL query → InnoDB (its process) → Disk</strong></p>
-</div>
-
-<!-- ===== SECTION 11: LINUX COMMANDS ===== -->
-<h2 id="sec-11">11. Linux Commands for JVM Memory Investigation</h2>
-
-<div class="card">
-<h3>Process-Level Commands</h3>
-<pre><code># Overview: RSS, VSZ, threads
-ps -p &lt;pid&gt; -o pid,rss,vsz,nlwp,comm
-# PID     RSS      VSZ  NLWP  COMMAND
-# 12345  3145728  8388608  247  java
-
-# Detailed memory map (shows text, heap, stack, mmap regions)
-pmap -x &lt;pid&gt; | head -40
-# or
-cat /proc/&lt;pid&gt;/maps | head -40
-
-# smaps for detailed per-region breakdown
-cat /proc/&lt;pid&gt;/smaps_rollup
-# Rss:             3145728 kB
-# Pss:             3100000 kB   ← proportional share (accounts for shared pages)
-# Shared_Clean:      45728 kB   ← shared read-only (text segment, shared libs)
-# Private_Dirty:   3000000 kB   ← heap, stacks, modified data
-
-# NUMA distribution
-numastat -p &lt;pid&gt;
-# Per-node process memory usage (in MBs)
-#          Node 0  Node 1  Total
-# Heap      2048     512   2560
-# Stack       50      12     62</code></pre>
-
-<h3>JVM-Specific Commands</h3>
-<pre><code># Native Memory Tracking (must start JVM with -XX:NativeMemoryTracking=summary)
-jcmd &lt;pid&gt; VM.native_memory summary
-# Total: reserved=6442450944, committed=5368709120
-# -          Java Heap (reserved=4294967296, committed=4294967296)
-# -              Class (reserved=1073741824, committed=268435456)    ← Metaspace
-# -             Thread (reserved=262144000, committed=262144000)     ← 250 threads
-# -               Code (reserved=251658240, committed=50331648)      ← JIT CodeCache
-# -            GC      (reserved=214748364, committed=214748364)
-# -           Internal (reserved=134217728, committed=134217728)     ← Direct buffers
-
-# Heap breakdown
-jmap -heap &lt;pid&gt;
-# Heap Configuration:
-#    MaxHeapSize     = 4294967296 (4096.0MB)
-#    NewSize         = 1073741824 (1024.0MB)
-#    OldSize         = 3221225472 (3072.0MB)
-#    SurvivorRatio   = 8
-
-# GC activity
-jstat -gcutil &lt;pid&gt; 1000
-#  S0     S1     E      O      M     CCS    YGC   YGCT    FGC   FGCT
-#  0.00  45.23  67.89  34.56  97.12  94.56   142   1.234    3   0.567
-
-# Thread dump (see what each thread is doing)
-jcmd &lt;pid&gt; Thread.print</code></pre>
-
-<h3>cgroup Commands</h3>
-<pre><code># Find the cgroup of a Java process
-cat /proc/&lt;pid&gt;/cgroup
-# 0::/kubepods/pod-abc123/container-xyz
-
-# Memory usage and limit
-cat /sys/fs/cgroup/kubepods/pod-abc123/container-xyz/memory.current
-cat /sys/fs/cgroup/kubepods/pod-abc123/container-xyz/memory.max
-
-# Detailed memory stats (anon, file, kernel_stack, sock, slab)
-cat /sys/fs/cgroup/kubepods/pod-abc123/container-xyz/memory.stat
-
-# CPU assignment
-cat /sys/fs/cgroup/kubepods/pod-abc123/container-xyz/cpuset.cpus
-# 0-3</code></pre>
-</div>
-
-<!-- ===== SECTION 12: SUMMARY TABLE ===== -->
-<h2 id="sec-12">12. Master Reference &mdash; Where Everything Lives</h2>
-
-<div class="card">
-<table>
-<tr><th>Thing</th><th>Segment</th><th>Managed By</th><th>Size Control</th></tr>
-<tr><td>JVM binary (libjvm.so)</td><td><span class="segment-label seg-text">TEXT</span></td><td>OS loader</td><td>Fixed at compile time</td></tr>
-<tr><td>JIT-compiled methods</td><td><span class="segment-label seg-native">CODE CACHE</span></td><td>JVM JIT</td><td><code>-XX:ReservedCodeCacheSize</code></td></tr>
-<tr><td>JVM constants, version strings</td><td><span class="segment-label seg-data">DATA</span></td><td>OS loader</td><td>Fixed</td></tr>
-<tr><td>Uninitialized static arrays</td><td><span class="segment-label seg-data">BSS</span></td><td>OS (zeroed)</td><td>Fixed</td></tr>
-<tr><td>Java objects (<code>new</code>)</td><td><span class="segment-label seg-heap">JAVA HEAP</span></td><td>GC</td><td><code>-Xms</code> / <code>-Xmx</code></td></tr>
-<tr><td>Young Gen (Eden + Survivors)</td><td><span class="segment-label seg-heap">JAVA HEAP</span></td><td>GC</td><td><code>-Xmn</code> or auto</td></tr>
-<tr><td>Old Gen (Tenured)</td><td><span class="segment-label seg-heap">JAVA HEAP</span></td><td>GC</td><td><code>-Xmx</code> minus young</td></tr>
-<tr><td>Class metadata (vtables)</td><td><span class="segment-label seg-native">METASPACE</span></td><td>JVM classloader</td><td><code>-XX:MaxMetaspaceSize</code></td></tr>
-<tr><td>Direct ByteBuffers (Netty)</td><td><span class="segment-label seg-native">OFF-HEAP</span></td><td>Netty ref-count</td><td><code>-XX:MaxDirectMemorySize</code></td></tr>
-<tr><td>Thread stack (per thread)</td><td><span class="segment-label seg-stack">STACK</span></td><td>Auto (LIFO)</td><td><code>-Xss</code> (default 1MB)</td></tr>
-<tr><td>Method local primitives</td><td><span class="segment-label seg-stack">STACK</span></td><td>Auto</td><td>Part of stack frame</td></tr>
-<tr><td>Object references (local)</td><td><span class="segment-label seg-stack">STACK</span></td><td>Auto</td><td>Part of stack frame</td></tr>
-<tr><td>Socket state (TCP)</td><td><span class="segment-label seg-kernel">KERNEL</span></td><td>Kernel</td><td><code>sysctl net.core.*</code></td></tr>
-<tr><td>Page cache (file I/O)</td><td><span class="segment-label seg-kernel">KERNEL</span></td><td>Kernel</td><td>Reclaimed under pressure</td></tr>
-<tr><td>File descriptors</td><td><span class="segment-label seg-kernel">KERNEL</span></td><td>Kernel</td><td><code>ulimit -n</code>, <code>file-max</code></td></tr>
-<tr><td>epoll interest list</td><td><span class="segment-label seg-kernel">KERNEL</span></td><td>Kernel</td><td>fd limit</td></tr>
-</table>
-</div>
-
-<div class="nav-links" style="margin-top:40px;">
-  <a href="index.html">&larr; Chapter 6: Processes</a>
-  <a href="chapter2.html">Chapter 2: Fundamentals</a>
-</div>
-
-<p style="text-align:center;margin:30px 0;color:#555;font-size:0.85em;">Java Memory Architecture Deep Dive &mdash; Built with diagrams for every scenario</p>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 460" role="img" aria-labelledby="fig12-title" style="width:100%;max-width:900px;height:auto;display:block">
+<title id="fig12-title">Master reference — everything mapped</title>
+<defs>
+<marker id="ar12" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><polygon points="0,0 7,3.5 0,7" fill="#59636e"/></marker>
+</defs>
+<!-- Six columns: TEXT | DATA | HEAP(young/old) | HEAP(meta/direct) | STACK | KERNEL -->
+<g font-family="system-ui,sans-serif" font-size="10" fill="#1f2328">
+<rect x="18" y="42" width="122" height="398" rx="8" fill="#ddf4ff" stroke="#d1d9e0"/>
+<text x="79" y="30" text-anchor="middle" font-size="11" font-weight="700" fill="#0969da">TEXT</text>
+<text x="28" y="74">libjvm.so</text>
+<text x="28" y="94">interpreter</text>
+<text x="28" y="114">JIT code cache</text>
+<text x="28" y="134">stubs / adapters</text>
+<rect x="152" y="42" width="122" height="398" rx="8" fill="#dafbe1" stroke="#d1d9e0"/>
+<text x="213" y="30" text-anchor="middle" font-size="11" font-weight="700" fill="#1a7f37">DATA</text>
+<text x="162" y="74">static finals</text>
+<text x="162" y="94">globals (.data)</text>
+<text x="162" y="114">intern tables</text>
+<rect x="286" y="42" width="122" height="398" rx="8" fill="#f5f0ff" stroke="#d1d9e0"/>
+<text x="347" y="30" text-anchor="middle" font-size="11" font-weight="700" fill="#8250df">HEAP</text>
+<text x="310" y="48" text-anchor="middle" font-size="9" fill="#59636e">generations</text>
+<rect x="297" y="58" width="100" height="92" rx="6" fill="#ffffff" stroke="#d1d9e0"/>
+<text x="347" y="92" text-anchor="middle" font-weight="600">Young</text>
+<text x="305" y="108" font-size="9" fill="#59636e">Eden · S0/S1</text>
+<rect x="297" y="158" width="100" height="92" rx="6" fill="#ffffff" stroke="#d1d9e0"/>
+<text x="347" y="192" text-anchor="middle" font-weight="600">Old Gen</text>
+<text x="302" y="208" font-size="9" fill="#59636e">long-lived objs</text>
+<rect x="420" y="42" width="122" height="398" rx="8" fill="#f5f0ff" stroke="#d1d9e0"/>
+<text x="481" y="30" text-anchor="middle" font-size="11" font-weight="700" fill="#8250df">HEAP</text>
+<text x="444" y="48" text-anchor="middle" font-size="9" fill="#59636e">metaspace · direct</text>
+<rect x="431" y="58" width="100" height="120" rx="6" fill="#ffffff" stroke="#d1d9e0"/>
+<text x="481" y="110" text-anchor="middle" font-weight="600">Metaspace</text>
+<text x="438" y="128" font-size="9" fill="#59636e">Klass metadata</text>
+<rect x="431" y="188" width="100" height="120" rx="6" fill="#ffebe9" stroke="#d1d9e0"/>
+<text x="481" y="240" text-anchor="middle" font-weight="600" fill="#d1242f">Direct</text>
+<text x="438" y="258" font-size="9" fill="#59636e">DBB · mmap JNI</text>
+<rect x="554" y="42" width="122" height="398" rx="8" fill="#fff8c5" stroke="#d1d9e0"/>
+<text x="615" y="30" text-anchor="middle" font-size="11" font-weight="700" fill="#9a6700">STACK</text>
+<text x="564" y="74">method frames</text>
+<text x="564" y="94">primitives</text>
+<text x="564" y="114">local refs → heap</text>
+<text x="564" y="134">JNI frames</text>
+<rect x="688" y="42" width="194" height="398" rx="8" fill="#f6f8fa" stroke="#d1d9e0"/>
+<text x="785" y="30" text-anchor="middle" font-size="11" font-weight="700" fill="#59636e">KERNEL</text>
+<text x="698" y="74">socket buffers (sk_buff)</text>
+<text x="698" y="94">page cache</text>
+<text x="698" y="114">fd table</text>
+<text x="698" y="134">block I/O / DMA</text>
+</g>
+<g stroke="#59636e" fill="none" stroke-width="1.2">
+<line x1="140" y1="120" x2="150" y2="120" marker-end="url(#ar12)"/>
+<line x1="274" y1="140" x2="284" y2="140" marker-end="url(#ar12)"/>
+<line x1="408" y1="200" x2="418" y2="200" marker-end="url(#ar12)"/>
+<line x1="542" y1="160" x2="552" y2="160" marker-end="url(#ar12)"/>
+<line x1="676" y1="180" x2="686" y2="180" marker-end="url(#ar12)"/>
+</g>
+<path d="M 347 250 C 400 290 730 290 785 260" stroke="#8250df" fill="none" stroke-dasharray="5 4" marker-end="url(#ar12)"/>
+<path d="M 785 200 C 700 170 481 170 481 178" stroke="#d1242f" fill="none" marker-end="url(#ar12)"/>
+<text x="320" y="430" fill="#59636e" font-family="system-ui,sans-serif" font-size="10">Load / execute (TEXT→DATA→HEAP↔STACK); Direct &amp; I/O arcs reach KERNEL</text>
+</svg>
 
 </div>
+<p class="diagram-cap" style="margin:0;padding:10px 16px;color:#59636e;font-size:0.88em;border-top:1px solid #d1d9e0;background:#fafbfc">Arrows emphasize hot data flow: bytecode text feeds heap allocation, stacks hold transient references, direct regions feed kernel DMA paths.</p>
+</div>
 
-    <div id="comments-section"></div>
-    <script src="comments.js"></script>
+</section>
+
+</div><!-- .container -->
 </body>
 </html>
