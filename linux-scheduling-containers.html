@@ -605,6 +605,119 @@
       </tbody>
     </table>
 
+
+    <h3 id="multicore-preemption">Multi-core reality — preemption is per-CPU</h3>
+
+    <p>
+      Preemption models are a <strong>per-CPU concept</strong> — they govern whether the task currently
+      running on <em>this core</em> can be kicked off <em>this core</em>. They say nothing about what
+      other cores can do.
+    </p>
+
+    <p>
+      So the scenario plays out fine on any preemption model, even <code>PREEMPT_NONE</code>. Core 0 is
+      grinding through a non-preemptible kernel path on behalf of process A. Process B wakes up with a
+      <code>SCHED_DEADLINE</code> reservation. The scheduler sees core 1 is idle (or running something
+      lower priority) and dispatches B there immediately. No preemption of A was ever needed — A keeps its
+      core, B gets a different one, both run in parallel. The wake-up path
+      (<code>try_to_wake_up</code> → <code>select_task_rq</code> → IPI to the target CPU) doesn't care
+      that A is uninterruptible; it's looking at where B should land.
+    </p>
+
+    <div class="diagram">
+      <div class="diagram-head">
+        <span><span class="id">Figure 4b</span> · multi-core dispatch · preemption never needed</span>
+        <span>SVG</span>
+      </div>
+      <div class="diagram-body">
+<svg viewBox="0 0 900 320" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arr_mc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0969da"/>
+    </marker>
+    <marker id="arr_mc_g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1a7f37"/>
+    </marker>
+  </defs>
+
+  <text x="20" y="22" font-size="12" font-weight="600">B wakes up · A is stuck in kernel · scheduler finds a free core instead</text>
+
+  <!-- Timeline -->
+  <line x1="120" y1="55" x2="860" y2="55" stroke="#d1d9e0" stroke-dasharray="2,4"/>
+  <text x="120" y="44" fill="#0969da" font-size="10">time →</text>
+
+  <!-- Core 0 label -->
+  <text x="20" y="85" font-size="12" font-weight="600" fill="#9a6700">Core 0</text>
+
+  <!-- Core 0: task A in kernel (non-preemptible) -->
+  <rect x="120" y="68" width="720" height="32" fill="#fff8c5" stroke="#9a6700"/>
+  <text x="480" y="89" text-anchor="middle" font-size="11">Task A · in syscall · non-preemptible · PREEMPT_NONE</text>
+
+  <!-- Lock icon on core 0 -->
+  <rect x="830" y="68" width="30" height="32" fill="#ffebe9" stroke="#d1242f"/>
+  <text x="845" y="88" text-anchor="middle" font-size="10" fill="#d1242f">🔒</text>
+
+  <!-- Core 1 label -->
+  <text x="20" y="155" font-size="12" font-weight="600" fill="#1a7f37">Core 1</text>
+
+  <!-- Core 1: idle, then B runs -->
+  <rect x="120" y="138" width="300" height="32" fill="#eaeef2" stroke="#6e7781" stroke-dasharray="3,3"/>
+  <text x="270" y="159" text-anchor="middle" font-size="11" fill="#6e7781">idle</text>
+
+  <rect x="420" y="138" width="440" height="32" fill="#dafbe1" stroke="#1a7f37" stroke-width="2"/>
+  <text x="640" y="159" text-anchor="middle" font-size="12" font-weight="600" fill="#1a7f37">Task B · SCHED_DEADLINE · runs immediately</text>
+
+  <!-- Wake-up event -->
+  <line x1="380" y1="50" x2="380" y2="100" stroke="#d1242f" stroke-width="2"/>
+  <text x="384" y="46" fill="#d1242f" font-size="10" font-weight="600">⚡ B wakes</text>
+
+  <!-- Scheduler dispatch arrow: from wake event down to core 1 -->
+  <path d="M 380 100 Q 380 120 420 138" stroke="#0969da" stroke-width="2" fill="none" marker-end="url(#arr_mc)"/>
+  <text x="410" y="125" fill="#0969da" font-size="10">select_task_rq → core 1</text>
+
+  <!-- IPI arrow -->
+  <path d="M 400 115 L 420 130" stroke="#0969da" stroke-width="1" stroke-dasharray="2,2" fill="none"/>
+  <text x="430" y="128" fill="#0969da" font-size="9">IPI</text>
+
+  <!-- Annotation box -->
+  <rect x="120" y="200" width="740" height="90" fill="#f0fdf4" stroke="#1a7f37" rx="4"/>
+  <text x="140" y="222" font-size="11" font-weight="600" fill="#1a7f37">Key insight</text>
+  <text x="140" y="242" font-size="11" fill="#59636e">try_to_wake_up() doesn't care that A is non-preemptible on core 0.</text>
+  <text x="140" y="260" font-size="11" fill="#59636e">It just asks: "which CPU should B land on?" — and picks core 1.</text>
+  <text x="140" y="278" font-size="11" fill="#59636e">A keeps its core, B gets a different one. Both run in parallel. No preemption needed.</text>
+</svg>
+      </div>
+      <div class="diagram-cap">Preemption only becomes the binding constraint when <em>all</em> cores are busy and the scheduler has decided that <em>this specific CPU</em> must give up its task. That's the latency <code>PREEMPT_RT</code> bounds.</div>
+    </div>
+
+    <p>
+      The preemption model only starts to matter when you can't sidestep with a free core — i.e. all cores
+      are busy and the scheduler has decided that this specific CPU is the one that has to give up its task
+      for the new one. That's when "is the current task in a preemptible state?" becomes the binding
+      constraint, and that's the latency <code>PREEMPT_RT</code> is trying to bound.
+    </p>
+
+    <div class="alert note">
+      <div class="alert-title">Note · cross-core lock contention</div>
+      <p>
+        The stuck syscall isn't completely free of cross-core impact. If A is holding a
+        <code>spinlock</code>, <code>mutex</code>, or <code>rw_semaphore</code> that B needs, B will
+        block on that lock regardless of which core it's on. <code>PREEMPT_RT</code> helps here too
+        because it converts most spinlocks into sleeping, priority-inheriting locks — so a low-priority
+        lock holder gets boosted rather than making the deadline task wait indefinitely.
+      </p>
+    </div>
+
+    <div class="alert tip">
+      <div class="alert-title">Tip · SCHED_DEADLINE's SMP awareness</div>
+      <p>
+        <code>SCHED_DEADLINE</code> specifically has admission control plus its own SMP-aware
+        pushing/pulling logic (the <code>dl_rq</code> push/pull machinery), so it actively migrates
+        deadline tasks to find a CPU where they can meet their deadline rather than just queuing behind
+        whatever's running.
+      </p>
+    </div>
+
     <h2 id="namespaces">Namespaces</h2>
 
     <p>
@@ -2210,6 +2323,7 @@ kubectl describe node &lt;node&gt; | sed -n '/Allocatable/,/System/p'</code></pr
     <li><a href="#models">models</a></li>
     <li><a href="#preempt-rt">preempt-rt</a></li>
     <li><a href="#rt-workload">rt-workload</a></li>
+    <li><a href="#multicore-preemption">multi-core reality</a></li>
   </ul>
   <div class="toc-section"><a href="#namespaces">Namespaces</a></div>
   <ul>
