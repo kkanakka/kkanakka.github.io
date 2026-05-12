@@ -965,68 +965,845 @@ mount -t cgroup2 none /sys/fs/cgroup</pre>
       <div class="diagram-cap">Leaf cgroups own process membership; controllers read effective settings while walking toward the root.</div>
     </div>
 
-    <h2 id="containers">Containers</h2>
+
+<h2 id="containers">Linux containers: what actually happens in the kernel</h2>
 
     <p>
-      At runtime, "container" is not a single struct — it is the composition of namespace roots, capability bounding,
-      seccomp/LSM policy, and cgroup limits. The diagram below compresses the mental model engineers use during triage.
+      A container is not a thing the Linux kernel understands directly. There is no
+      <code>struct container</code>. The kernel only knows about <strong>processes</strong>,
+      <strong>namespaces</strong>, <strong>cgroups</strong>, <strong>VFS / mount tables</strong>,
+      <strong>overlayfs</strong>, <strong>schedulers</strong>, <strong>memory accounting</strong>,
+      and <strong>capability &amp; security models</strong>. "Containers" are just orchestration
+      around those primitives.
     </p>
 
-    <div class="diagram">
-      <div class="diagram-head"><span><span class="id">Figure 8</span> · anatomy of a container workload</span><span>SVG</span></div>
-      <div class="diagram-body">
-<svg viewBox="0 0 920 300" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <marker id="f8e" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#59636e"/></marker>
-  </defs>
-  <rect x="15" y="20" width="240" height="260" fill="#dafbe1" stroke="#1a7f37" stroke-width="2" rx="6"/>
-  <text x="135" y="44" text-anchor="middle" font-size="13" font-weight="600">NAMESPACES</text>
-  <text x="30" y="68" fill="#59636e" font-size="10">Isolations via clone(2)/unshare/setns:</text>
-  <text x="35" y="92" font-size="10">· MOUNT</text>
-  <text x="35" y="110" font-size="10">· UTS</text>
-  <text x="35" y="128" font-size="10">· IPC</text>
-  <text x="35" y="146" font-size="10">· PID</text>
-  <text x="135" y="92" font-size="10">· NET</text>
-  <text x="135" y="110" font-size="10">· USER</text>
-  <text x="135" y="128" font-size="10">· CGROUP</text>
-  <text x="135" y="146" font-size="10">· TIME*</text>
-  <text x="135" y="248" text-anchor="middle" font-size="9" fill="#8250df" font-style="italic">clone / setns entry</text>
-  <rect x="280" y="20" width="320" height="260" fill="#fafbfc" stroke="#d8dee4" rx="6"/>
-  <text x="440" y="44" text-anchor="middle" font-size="13" font-weight="600">Process tree (PID.ns)</text>
-  <circle cx="340" cy="110" r="34" fill="#fff8c5" stroke="#9a6700" stroke-width="2"/><text x="340" y="115" text-anchor="middle" font-size="12" font-weight="600">init</text>
-  <circle cx="420" cy="180" r="22" fill="#ddf4ff" stroke="#0969da"/><text x="420" y="184" text-anchor="middle" font-size="10">app</text>
-  <circle cx="500" cy="175" r="18" fill="#ddf4ff" stroke="#0969da"/><text x="500" y="178" text-anchor="middle" font-size="9">w1</text>
-  <circle cx="548" cy="185" r="18" fill="#ddf4ff" stroke="#0969da"/><text x="548" y="189" text-anchor="middle" font-size="9">w2</text>
-  <line x1="340" y1="144" x2="420" y2="168" stroke="#59636e" stroke-width="1.5" marker-end="url(#f8e)"/>
-  <line x1="420" y1="180" x2="500" y2="180" stroke="#59636e" stroke-width="1.5" marker-end="url(#f8e)"/>
-  <line x1="420" y1="186" x2="548" y2="186" stroke="#59636e" stroke-width="1.5" marker-end="url(#f8e)"/>
-  <text x="440" y="230" text-anchor="middle" font-size="10" fill="#59636e">App spawns workers; all share nsproxy + cgroup path</text>
-  <rect x="625" y="20" width="280" height="260" fill="#fff8c5" stroke="#9a6700" stroke-width="2" rx="6"/>
-  <text x="765" y="44" text-anchor="middle" font-size="13" font-weight="600">CGROUP v2</text>
-  <text x="640" y="72" fill="#59636e" font-size="10">Leaf limit files (examples):</text>
-  <rect x="640" y="82" width="250" height="22" fill="#ffebe9" stroke="#d1242f" rx="2"/><text x="765" y="97" text-anchor="middle" font-size="10">memory.max</text>
-  <rect x="640" y="110" width="250" height="22" fill="#ddf4ff" stroke="#0969da" rx="2"/><text x="765" y="125" text-anchor="middle" font-size="10">cpu.max</text>
-  <rect x="640" y="138" width="250" height="22" fill="#ddf4ff" stroke="#0969da" rx="2"/><text x="765" y="153" text-anchor="middle" font-size="10">cpu.weight</text>
-  <rect x="640" y="166" width="250" height="22" fill="#dafbe1" stroke="#1a7f37" rx="2"/><text x="765" y="181" text-anchor="middle" font-size="10">io.max</text>
-  <rect x="640" y="194" width="250" height="22" fill="#fafbfc" stroke="#d8dee4" rx="2"/><text x="765" y="209" text-anchor="middle" font-size="10">pids.max</text>
-  <rect x="640" y="222" width="250" height="22" fill="#fafbfc" stroke="#d8dee4" rx="2"/><text x="765" y="237" text-anchor="middle" font-size="10">cpuset.cpus</text>
-  <line x1="255" y1="150" x2="280" y2="150" stroke="#8250df" stroke-dasharray="4"/>
-  <line x1="600" y1="150" x2="625" y2="150" stroke="#8250df" stroke-dasharray="4"/>
-</svg>
+<div class="diagram">
+  <div class="diagram-head">Figure 8a — eight kernel primitives that compose a container</div>
+  <div class="diagram-body">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 520" role="img" aria-labelledby="fig8a-title">
+      <title id="fig8a-title">eight kernel primitives that compose a container</title>
+      <defs>
+        <filter id="s" x="-2%" y="-2%" width="104%" height="104%"><feDropShadow dx="0" dy="1" stdDeviation="1" flood-opacity="0.08"/></filter>
+      </defs>
+      <!-- Kernel shell -->
+      <rect x="10" y="10" width="880" height="500" rx="14" ry="14" fill="#f6f8fa" stroke="#d1d9e0" stroke-width="2" />
+      <text x="450" y="38" text-anchor="middle" font-size="13" font-weight="600" fill="#59636e">Linux kernel · primitives used by containers</text>
 
-      </div>
-      <div class="diagram-cap">Namespaces choose <em>what you see</em>; cgroups bound <em>what you may consume</em>; orchestrators wire both per pod.</div>
-    </div>
+      <!-- Row 1 -->
+      <!-- Box 1 Processes -->
+      <g filter="url(#s)">
+        <rect x="40" y="60" width="190" height="180" rx="4" fill="#dafbe1" stroke="#d1d9e0" />
+        <rect x="40" y="60" width="190" height="30" rx="4" fill="#1a7f37" />
+        <rect x="40" y="84" width="190" height="6" fill="#1a7f37" />
+        <text x="135" y="81" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">Processes</text>
+        <text x="135" y="112" text-anchor="middle" font-size="11" fill="#1f2328">task_struct · fork/exec</text>
+        <text x="135" y="128" text-anchor="middle" font-size="11" fill="#1f2328">the schedulable unit</text>
+      </g>
+      <!-- Box 2 Namespaces -->
+      <g filter="url(#s)">
+        <rect x="250" y="60" width="190" height="180" rx="4" fill="#ddf4ff" stroke="#d1d9e0" />
+        <rect x="250" y="60" width="190" height="30" rx="4" fill="#0969da" />
+        <rect x="250" y="84" width="190" height="6" fill="#0969da" />
+        <text x="345" y="81" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">Namespaces</text>
+        <text x="345" y="112" text-anchor="middle" font-size="11" fill="#1f2328">8 types · isolate kernel views</text>
+        <text x="345" y="128" text-anchor="middle" font-size="11" fill="#1f2328">what you see</text>
+      </g>
+      <!-- Box 3 cgroups -->
+      <g filter="url(#s)">
+        <rect x="460" y="60" width="190" height="180" rx="4" fill="#fff8c5" stroke="#d1d9e0" />
+        <rect x="460" y="60" width="190" height="30" rx="4" fill="#9a6700" />
+        <rect x="460" y="84" width="190" height="6" fill="#9a6700" />
+        <text x="555" y="81" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">cgroups v2</text>
+        <text x="555" y="112" text-anchor="middle" font-size="11" fill="#1f2328">resource limits · what you consume</text>
+      </g>
+      <!-- Box 4 VFS -->
+      <g filter="url(#s)">
+        <rect x="670" y="60" width="190" height="180" rx="4" fill="#ffebe9" stroke="#d1d9e0" />
+        <rect x="670" y="60" width="190" height="30" rx="4" fill="#d1242f" />
+        <rect x="670" y="84" width="190" height="6" fill="#d1242f" />
+        <text x="765" y="81" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">VFS</text>
+        <text x="765" y="112" text-anchor="middle" font-size="11" fill="#1f2328">virtual filesystem switch</text>
+        <text x="765" y="128" text-anchor="middle" font-size="11" fill="#1f2328">single API to all FS</text>
+      </g>
 
-    <div class="alert alert-tip" role="note">
-      <p class="alert-title">Tip — close the loop</p>
-      <p>
-        When a container misbehaves, traverse in order: <strong>cgroup pressure</strong> (OOM, throttling) →
-        <strong>namespace surprise</strong> (wrong <code>/proc</code> view, hidden PIDs) →
-        <strong>host preemption model</strong> (latency tail if the node runs <code>PREEMPT_NONE</code>).
-        This sequence mirrors how the kernel resolves resources before policy.
-      </p>
+      <!-- Row 2 -->
+      <!-- Box 5 overlayfs -->
+      <g filter="url(#s)">
+        <rect x="40" y="280" width="190" height="180" rx="4" fill="#f5f0ff" stroke="#8250df" stroke-width="1.5" />
+        <rect x="40" y="280" width="190" height="30" rx="4" fill="#8250df" />
+        <rect x="40" y="304" width="190" height="6" fill="#8250df" />
+        <text x="135" y="301" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">overlayfs</text>
+        <text x="135" y="332" text-anchor="middle" font-size="11" fill="#1f2328">layer union · image +</text>
+        <text x="135" y="348" text-anchor="middle" font-size="11" fill="#1f2328">writable layer</text>
+      </g>
+      <!-- Box 6 Schedulers -->
+      <g filter="url(#s)">
+        <rect x="250" y="280" width="190" height="180" rx="4" fill="#ddf4ff" stroke="#d1d9e0" />
+        <rect x="250" y="280" width="190" height="30" rx="4" fill="#0969da" />
+        <rect x="250" y="304" width="190" height="6" fill="#0969da" />
+        <text x="345" y="301" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">Schedulers</text>
+        <text x="345" y="332" text-anchor="middle" font-size="11" fill="#1f2328">CFS/EEVDF · per-cgroup</text>
+        <text x="345" y="348" text-anchor="middle" font-size="11" fill="#1f2328">runqueues · cpu.max</text>
+      </g>
+      <!-- Box 7 Memory accounting -->
+      <g filter="url(#s)">
+        <rect x="460" y="280" width="190" height="180" rx="4" fill="#fff8c5" stroke="#d1d9e0" />
+        <rect x="460" y="280" width="190" height="30" rx="4" fill="#9a6700" />
+        <rect x="460" y="304" width="190" height="6" fill="#9a6700" />
+        <text x="555" y="301" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">Memory accounting</text>
+        <text x="555" y="332" text-anchor="middle" font-size="11" fill="#1f2328">memcg · per-cgroup OOM</text>
+        <text x="555" y="348" text-anchor="middle" font-size="11" fill="#1f2328">memory.max</text>
+      </g>
+      <!-- Box 8 Capabilities -->
+      <g filter="url(#s)">
+        <rect x="670" y="280" width="190" height="180" rx="4" fill="#dafbe1" stroke="#d1d9e0" />
+        <rect x="670" y="280" width="190" height="30" rx="4" fill="#1a7f37" />
+        <rect x="670" y="304" width="190" height="6" fill="#1a7f37" />
+        <text x="765" y="301" text-anchor="middle" font-size="12" font-weight="700" fill="#fff">Capabilities &amp; Security</text>
+        <text x="765" y="332" text-anchor="middle" font-size="11" fill="#1f2328">seccomp · LSM · cap bounding set</text>
+      </g>
+
+      <text x="450" y="498" text-anchor="middle" font-size="11.5" fill="#1f2328" font-weight="500">A &apos;container&apos; = process + namespaces + cgroup + overlayfs root + seccomp filter + reduced capabilities</text>
+    </svg>
+  </div>
+  <div class="diagram-cap">The kernel has no container abstraction. What you call a container is a process whose view of the world has been narrowed (namespaces), whose consumption has been capped (cgroups), and whose filesystem is a layered union mount (overlayfs).</div>
+</div>
+
+<h3 id="pid-internals">One task_struct, multiple PIDs</h3>
+
+<p>
+  In the kernel, a runnable thread is represented by <code>struct task_struct</code>. The PID you see
+  in userspace is not stored as a simple integer inside the task alone: <strong><code>task_struct.thread_pid</code></strong>
+  points at a heap-allocated <code>struct pid</code>, which aggregates <em>one numeric identity per PID namespace level</em>.
+  Different namespaces therefore see different integers for the same live task—the mapping lives in <code>pid-&gt;numbers[]</code>,
+  keyed by nesting depth—not in a lone <code>int pid</code> field on the task.
+</p>
+
+<pre><span class="ty">struct</span> task_struct {
+    <span class="com">...</span>
+    <span class="kw">struct</span> pid *thread_pid;
+    <span class="com">...</span>
+};
+
+<span class="ty">struct</span> pid {
+    refcount_t count;
+    <span class="kw">unsigned</span> <span class="kw">int</span> level;
+    <span class="kw">struct</span> upid numbers[];
+};
+
+<span class="ty">struct</span> upid {
+    <span class="kw">int</span> nr;
+    <span class="kw">struct</span> pid_namespace *ns;
+};</pre>
+
+<p><strong>One process, three identities</strong></p>
+<table>
+  <thead>
+    <tr><th>Namespace View</th><th>PID</th><th>Level</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Host</td><td>5234</td><td>0</td></tr>
+    <tr><td>Container A</td><td>1</td><td>1</td></tr>
+    <tr><td>Nested Container</td><td>27</td><td>2</td></tr>
+  </tbody>
+</table>
+
+<div class="diagram">
+  <div class="diagram-head">Figure 8b — PID namespace lookup flow</div>
+  <div class="diagram-body">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 440" role="img" aria-labelledby="fig8b-title">
+      <title id="fig8b-title">PID namespace lookup flow</title>
+      <defs>
+        <marker id="ag" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+          <polygon points="0 0, 10 3, 0 6" fill="#1a7f37" />
+        </marker>
+      </defs>
+      <!-- LEFT: pointer chain -->
+      <rect x="20" y="40" width="160" height="50" rx="4" fill="#fff8c5" stroke="#9a6700" stroke-width="2" />
+      <text x="100" y="62" text-anchor="middle" font-size="12" font-weight="700" fill="#1f2328">task_struct</text>
+      <text x="100" y="80" text-anchor="middle" font-size="11" fill="#1f2328">thread_pid = ▸</text>
+
+      <line x1="100" y1="90" x2="100" y2="118" stroke="#1a7f37" stroke-width="2" marker-end="url(#ag)" />
+
+      <rect x="20" y="130" width="360" height="200" rx="4" fill="#ddf4ff" stroke="#0969da" stroke-width="2" />
+      <text x="200" y="152" text-anchor="middle" font-size="13" font-weight="700" fill="#0969da">struct pid</text>
+      <text x="200" y="172" text-anchor="middle" font-size="12" fill="#1f2328">level = 2</text>
+
+      <rect x="40" y="188" width="320" height="44" rx="3" fill="#fff" stroke="#9a6700" stroke-width="2" />
+      <text x="200" y="208" text-anchor="middle" font-size="11" fill="#1f2328">numbers[0] = { nr=<tspan font-weight="600">5234</tspan>, ns=host_ns }</text>
+      <rect x="40" y="240" width="320" height="44" rx="3" fill="#fff" stroke="#1a7f37" stroke-width="2" />
+      <text x="200" y="260" text-anchor="middle" font-size="11" fill="#1f2328">numbers[1] = { nr=<tspan font-weight="600">1</tspan>, ns=container_ns }</text>
+      <rect x="40" y="292" width="320" height="30" rx="3" fill="#fff" stroke="#0969da" stroke-width="2" />
+      <text x="200" y="312" text-anchor="middle" font-size="11" fill="#1f2328">numbers[2] = { nr=<tspan font-weight="600">27</tspan>, ns=nested_ns }</text>
+
+      <!-- RIGHT: getpid flow -->
+      <text x="660" y="28" text-anchor="middle" font-size="12" font-weight="600" fill="#59636e">getpid() lookup (success path)</text>
+
+      <rect x="460" y="40" width="420" height="36" rx="4" fill="#f6f8fa" stroke="#d1d9e0" />
+      <text x="670" y="63" text-anchor="middle" font-size="12" font-weight="600">getpid() syscall</text>
+      <line x1="670" y1="76" x2="670" y2="98" stroke="#1a7f37" stroke-width="2" marker-end="url(#ag)" />
+
+      <rect x="460" y="100" width="420" height="44" rx="4" fill="#f6f8fa" stroke="#d1d9e0" />
+      <text x="670" y="122" text-anchor="middle" font-size="11" fill="#1f2328">current→nsproxy→pid_ns_for_children</text>
+      <line x1="670" y1="144" x2="670" y2="166" stroke="#1a7f37" stroke-width="2" marker-end="url(#ag)" />
+
+      <rect x="460" y="168" width="420" height="44" rx="4" fill="#f6f8fa" stroke="#d1d9e0" />
+      <text x="670" y="190" text-anchor="middle" font-size="11" fill="#1f2328">find matching level in pid.numbers[]</text>
+      <line x1="670" y1="212" x2="670" y2="234" stroke="#1a7f37" stroke-width="2" marker-end="url(#ag)" />
+
+      <rect x="460" y="236" width="420" height="36" rx="4" fill="#f6f8fa" stroke="#d1d9e0" />
+      <text x="670" y="259" text-anchor="middle" font-size="11" fill="#1f2328">return nr for that level</text>
+      <line x1="670" y1="272" x2="670" y2="294" stroke="#1a7f37" stroke-width="2" marker-end="url(#ag)" />
+
+      <rect x="460" y="304" width="130" height="52" rx="4" fill="#fff8c5" stroke="#9a6700" stroke-width="1.5" />
+      <text x="525" y="326" text-anchor="middle" font-size="10" fill="#1f2328">Host sees</text>
+      <text x="525" y="342" text-anchor="middle" font-size="11" font-weight="700">5234</text>
+
+      <rect x="605" y="304" width="130" height="52" rx="4" fill="#dafbe1" stroke="#1a7f37" stroke-width="1.5" />
+      <text x="670" y="326" text-anchor="middle" font-size="10" fill="#1f2328">Container A sees</text>
+      <text x="670" y="342" text-anchor="middle" font-size="11" font-weight="700">1</text>
+
+      <rect x="750" y="304" width="130" height="52" rx="4" fill="#ddf4ff" stroke="#0969da" stroke-width="1.5" />
+      <text x="815" y="326" text-anchor="middle" font-size="10" fill="#1f2328">Nested sees</text>
+      <text x="815" y="342" text-anchor="middle" font-size="11" font-weight="700">27</text>
+    </svg>
+  </div>
+  <div class="diagram-cap">Same kernel. Same task_struct. Different namespace-relative identities. The numbers[] array on struct pid holds one entry per nesting level.</div>
+</div>
+
+<div class="diagram">
+  <div class="diagram-head">Figure 8c — PID namespace nesting</div>
+  <div class="diagram-body">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 340" role="img" aria-labelledby="fig8c-title">
+      <title id="fig8c-title">PID namespace nesting</title>
+      <defs>
+        <marker id="ag2" markerWidth="8" markerHeight="8" refX="7" refY="2.5" orient="auto">
+          <polygon points="0 0, 8 2.5, 0 5" fill="#59636e" />
+        </marker>
+      </defs>
+      <!-- HOST -->
+      <rect x="20" y="20" width="860" height="300" rx="6" fill="#fffef5" stroke="#9a6700" stroke-width="3" />
+      <text x="40" y="44" font-size="13" font-weight="700" fill="#9a6700">HOST PID NS · level 0</text>
+      <rect x="50" y="58" width="120" height="36" rx="3" fill="#fff8c5" stroke="#d1d9e0" />
+      <text x="110" y="80" text-anchor="middle" font-size="11">systemd (pid=1)</text>
+      <rect x="190" y="58" width="120" height="36" rx="3" fill="#fff8c5" stroke="#d1d9e0" />
+      <text x="250" y="80" text-anchor="middle" font-size="11">dockerd (pid=842)</text>
+
+      <line x1="110" y1="94" x2="190" y2="58" stroke="#59636e" stroke-width="1.25" marker-end="url(#ag2)" />
+      <line x1="250" y1="94" x2="450" y2="130" stroke="#59636e" stroke-width="1.5" marker-end="url(#ag2)" />
+
+      <!-- Container A -->
+      <rect x="60" y="120" width="780" height="190" rx="6" fill="#f6fff8" stroke="#1a7f37" stroke-width="2.5" />
+      <text x="80" y="144" font-size="13" font-weight="700" fill="#1a7f37">Container A PID NS · level 1</text>
+      <rect x="90" y="158" width="200" height="40" rx="3" fill="#dafbe1" stroke="#d1d9e0" />
+      <text x="190" y="176" text-anchor="middle" font-size="10" fill="#1f2328">nginx</text>
+      <text x="190" y="190" text-anchor="middle" font-size="10" fill="#59636e">ns-pid=1, host-pid=5234</text>
+      <rect x="310" y="158" width="200" height="40" rx="3" fill="#dafbe1" stroke="#d1d9e0" />
+      <text x="410" y="176" text-anchor="middle" font-size="10" fill="#1f2328">worker</text>
+      <text x="410" y="190" text-anchor="middle" font-size="10" fill="#59636e">ns-pid=7, host-pid=5235</text>
+
+      <line x1="190" y1="198" x2="410" y2="158" stroke="#59636e" stroke-width="1.25" stroke-dasharray="4 3" marker-end="url(#ag2)" />
+      <line x1="190" y1="198" x2="320" y2="230" stroke="#59636e" stroke-width="1.5" marker-end="url(#ag2)" />
+
+      <!-- Container B nested -->
+      <rect x="120" y="215" width="680" height="85" rx="6" fill="#faf8ff" stroke="#0969da" stroke-width="2" stroke-dasharray="6 4" />
+      <text x="140" y="236" font-size="12" font-weight="700" fill="#0969da">Container B PID NS · level 2</text>
+      <rect x="200" y="248" width="520" height="44" rx="3" fill="#ddf4ff" stroke="#0969da" />
+      <text x="460" y="268" text-anchor="middle" font-size="10" fill="#1f2328">app</text>
+      <text x="460" y="282" text-anchor="middle" font-size="10" fill="#59636e">pid=1/lvl2, pid=27/lvl1, pid=9102/lvl0</text>
+    </svg>
+  </div>
+  <div class="diagram-cap">Same kernel. Same task_struct. Different namespace-relative identities. The numbers[] array on struct pid holds one entry per nesting level.</div>
+</div>
+
+<p>
+  <code>struct nsproxy</code> is not PID-specific: it holds pointers to <strong>all</strong> active namespace types
+  for a task (mount, UTS, IPC, PID, network, user, cgroup, time). Unsharing or joining a new namespace updates
+  the corresponding pointer in the nsproxy (subject to reference counting and clone flags)—so isolation of hostname,
+  mounts, IPC IDs, and network stack is orchestrated alongside PID views from one shared structure.
+</p>
+
+<div class="diagram">
+  <div class="diagram-head">Figure 8d — full namespace architecture · task_struct → nsproxy → 8 namespace types</div>
+  <div class="diagram-body">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 360" role="img" aria-labelledby="fig8d-title">
+      <title id="fig8d-title">full namespace architecture task_struct nsproxy eight namespace types</title>
+      <defs>
+        <marker id="abf" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto">
+          <polygon points="0 0, 9 3, 0 6" fill="#0969da" />
+        </marker>
+      </defs>
+      <rect x="20" y="140" width="140" height="80" rx="4" fill="#fff8c5" stroke="#9a6700" stroke-width="2" />
+      <text x="90" y="172" text-anchor="middle" font-size="13" font-weight="700">task_struct</text>
+      <text x="90" y="192" text-anchor="middle" font-size="10" fill="#59636e">→ nsproxy</text>
+
+      <line x1="160" y1="180" x2="198" y2="180" stroke="#0969da" stroke-width="2" marker-end="url(#abf)" />
+
+      <rect x="200" y="100" width="220" height="200" rx="6" fill="#f0f7ff" stroke="#0969da" stroke-width="2.5" />
+      <text x="310" y="126" text-anchor="middle" font-size="14" font-weight="700" fill="#0969da">nsproxy</text>
+      <text x="310" y="146" text-anchor="middle" font-size="10" fill="#59636e">pointers to all namespace types</text>
+
+      <!-- Column 1 ns boxes x=480 -->
+      <rect x="480" y="35" width="190" height="44" rx="3" fill="#dafbe1" stroke="#1a7f37" />
+      <text x="575" y="54" text-anchor="middle" font-size="11" font-weight="600">pid_namespace</text>
+      <text x="575" y="70" text-anchor="middle" font-size="10" fill="#59636e">PID view · own pid=1</text>
+
+      <rect x="480" y="88" width="190" height="44" rx="3" fill="#ddf4ff" stroke="#0969da" />
+      <text x="575" y="107" text-anchor="middle" font-size="11" font-weight="600">mnt_namespace</text>
+      <text x="575" y="123" text-anchor="middle" font-size="10" fill="#59636e">mount table · own /</text>
+
+      <rect x="480" y="141" width="190" height="44" rx="3" fill="#fff8c5" stroke="#9a6700" />
+      <text x="575" y="160" text-anchor="middle" font-size="11" font-weight="600">net_namespace</text>
+      <text x="575" y="176" text-anchor="middle" font-size="10" fill="#59636e">network stack · own NICs</text>
+
+      <rect x="480" y="194" width="190" height="44" rx="3" fill="#ffebe9" stroke="#d1242f" />
+      <text x="575" y="213" text-anchor="middle" font-size="11" font-weight="600">uts_namespace</text>
+      <text x="575" y="229" text-anchor="middle" font-size="10" fill="#59636e">hostname · domainname</text>
+
+      <!-- Column 2 x=700 -->
+      <rect x="700" y="35" width="180" height="44" rx="3" fill="#f5f0ff" stroke="#8250df" />
+      <text x="790" y="54" text-anchor="middle" font-size="11" font-weight="600">ipc_namespace</text>
+      <text x="790" y="70" text-anchor="middle" font-size="10" fill="#59636e">SysV IPC · POSIX mq</text>
+
+      <rect x="700" y="88" width="180" height="44" rx="3" fill="#dafbe1" stroke="#1a7f37" />
+      <text x="790" y="107" text-anchor="middle" font-size="11" font-weight="600">user_namespace</text>
+      <text x="790" y="123" text-anchor="middle" font-size="10" fill="#59636e">UID/GID mapping</text>
+
+      <rect x="700" y="141" width="180" height="44" rx="3" fill="#ddf4ff" stroke="#0969da" />
+      <text x="790" y="160" text-anchor="middle" font-size="11" font-weight="600">cgroup_namespace</text>
+      <text x="790" y="176" text-anchor="middle" font-size="10" fill="#59636e">cgroup root view</text>
+
+      <rect x="700" y="194" width="180" height="44" rx="3" fill="#fff8c5" stroke="#9a6700" />
+      <text x="790" y="213" text-anchor="middle" font-size="11" font-weight="600">time_namespace</text>
+      <text x="790" y="229" text-anchor="middle" font-size="10" fill="#59636e">clock offsets</text>
+
+      <!-- Fan-out arrows from nsproxy right edge -->
+      <line x1="420" y1="125" x2="468" y2="57" stroke="#0969da" stroke-width="1.25" marker-end="url(#abf)" />
+      <line x1="420" y1="155" x2="468" y2="110" stroke="#0969da" stroke-width="1.25" marker-end="url(#abf)" />
+      <line x1="420" y1="185" x2="468" y2="163" stroke="#0969da" stroke-width="1.25" marker-end="url(#abf)" />
+      <line x1="420" y1="215" x2="468" y2="216" stroke="#0969da" stroke-width="1.25" marker-end="url(#abf)" />
+
+      <line x1="380" y1="115" x2="688" y2="57" stroke="#0969da" stroke-width="1.25" marker-end="url(#abf)" />
+      <line x1="400" y1="175" x2="688" y2="110" stroke="#0969da" stroke-width="1.25" marker-end="url(#abf)" />
+      <line x1="400" y1="200" x2="688" y2="163" stroke="#0969da" stroke-width="1.25" marker-end="url(#abf)" />
+      <line x1="380" y1="255" x2="688" y2="216" stroke="#0969da" stroke-width="1.25" marker-end="url(#abf)" />
+    </svg>
+  </div>
+  <div class="diagram-cap">Two tasks that share the same <code>nsproxy</code> (or equivalent namespace bindings) observe the same mount table, hostname, IPC IDs, PIDs in each level, NICs, UID maps, cgroup roots, and time bases. A typical container task gets its own nsproxy wiring so each pointer targets an isolated namespace object.</div>
+</div>
+
+<div class="alert warning">
+  <strong>Warning.</strong> Namespaces isolate views, not the kernel itself. A kernel CVE is exploitable from inside a container. seccomp filters, capability dropping, and user namespace mappings are the actual security boundary.
+</div>
+
+<h3 id="cgroup-internals">cgroups resource governance</h3>
+  <p>Namespaces hide things. cgroups limit things.</p>
+
+  <h4>cgroup v2 hierarchy</h4>
+  <pre class="code-path"><code>/sys/fs/cgroup/
+└── kubepods.slice/
+    └── kubepods-burstable.slice/
+        └── kubepods-burstable-pod123.slice/
+            └── cri-containerd-abcd.scope/
+                ├── memory.max
+                ├── cpu.max
+                ├── cpu.weight
+                ├── io.max
+                ├── pids.max
+                └── cgroup.procs</code></pre>
+
+  <h4>Kubernetes → kernel flow</h4>
+  <div class="diagram">
+    <div class="diagram-head">Figure 8e — from pod YAML to kernel syscalls</div>
+    <div class="diagram-body">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 420" width="900" height="420" role="img" aria-label="From pod YAML to kernel syscalls">
+        <defs>
+          <marker id="arrow8e" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+            <polygon points="0 0, 8 4, 0 8" fill="#59636e" />
+          </marker>
+          <marker id="arrow8e-dash" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+            <polygon points="0 0, 8 4, 0 8" fill="#8250df" />
+          </marker>
+        </defs>
+        <!-- Left chain boxes -->
+        <rect x="40" y="12" width="240" height="38" rx="6" fill="#ddf4ff" stroke="#0969da" stroke-width="2"/>
+        <text x="160" y="36" text-anchor="middle" font-family="system-ui,sans-serif" font-size="13" fill="#0969da" font-weight="600">Pod YAML</text>
+        <line x1="160" y1="50" x2="160" y2="68" stroke="#59636e" stroke-width="2" marker-end="url(#arrow8e)"/>
+        <rect x="40" y="72" width="240" height="38" rx="6" fill="#f6f8fa" stroke="#d1d9e0" stroke-width="1.5"/>
+        <text x="160" y="96" text-anchor="middle" font-family="system-ui,sans-serif" font-size="13" fill="#1f2328">API Server</text>
+        <line x1="160" y1="110" x2="160" y2="128" stroke="#59636e" stroke-width="2" marker-end="url(#arrow8e)"/>
+        <rect x="40" y="132" width="240" height="38" rx="6" fill="#f6f8fa" stroke="#d1d9e0" stroke-width="1.5"/>
+        <text x="160" y="157" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12" fill="#1f2328">Scheduler picks node</text>
+        <line x1="160" y1="170" x2="160" y2="188" stroke="#59636e" stroke-width="2" marker-end="url(#arrow8e)"/>
+        <rect x="40" y="192" width="240" height="38" rx="6" fill="#dafbe1" stroke="#1a7f37" stroke-width="2"/>
+        <text x="160" y="216" text-anchor="middle" font-family="system-ui,sans-serif" font-size="13" fill="#1a7f37" font-weight="600">kubelet</text>
+        <line x1="160" y1="230" x2="160" y2="248" stroke="#59636e" stroke-width="2" marker-end="url(#arrow8e)"/>
+        <rect x="40" y="252" width="240" height="38" rx="6" fill="#f6f8fa" stroke="#d1d9e0" stroke-width="1.5"/>
+        <text x="160" y="276" text-anchor="middle" font-family="system-ui,sans-serif" font-size="13" fill="#1f2328">containerd / CRI-O</text>
+        <line x1="160" y1="290" x2="160" y2="308" stroke="#59636e" stroke-width="2" marker-end="url(#arrow8e)"/>
+        <rect x="40" y="312" width="240" height="38" rx="6" fill="#fff8c5" stroke="#9a6700" stroke-width="2"/>
+        <text x="160" y="336" text-anchor="middle" font-family="system-ui,sans-serif" font-size="13" fill="#9a6700" font-weight="600">runc</text>
+        <line x1="160" y1="350" x2="160" y2="368" stroke="#59636e" stroke-width="2" marker-end="url(#arrow8e)"/>
+        <rect x="40" y="372" width="240" height="38" rx="6" fill="#ffebe9" stroke="#d1242f" stroke-width="3"/>
+        <text x="160" y="396" text-anchor="middle" font-family="system-ui,sans-serif" font-size="13" fill="#d1242f" font-weight="600">Kernel syscalls</text>
+        <!-- Dashed connector runc -> right -->
+        <path d="M 280 331 Q 340 331 380 220" fill="none" stroke="#8250df" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arrow8e-dash)"/>
+        <!-- Right column: runc actions -->
+        <rect x="400" y="20" width="460" height="44" rx="4" fill="#f6f8fa" stroke="#d1d9e0" stroke-width="1"/>
+        <text x="415" y="47" font-family="ui-monospace,monospace" font-size="11" fill="#1f2328">mkdir /sys/fs/cgroup/.../container.scope</text>
+        <rect x="400" y="76" width="460" height="36" rx="4" fill="#f6f8fa" stroke="#d1d9e0" stroke-width="1"/>
+        <text x="415" y="99" font-family="ui-monospace,monospace" font-size="11" fill="#1f2328">echo 536870912 &gt; memory.max</text>
+        <rect x="400" y="124" width="460" height="36" rx="4" fill="#f6f8fa" stroke="#d1d9e0" stroke-width="1"/>
+        <text x="415" y="147" font-family="ui-monospace,monospace" font-size="11" fill="#1f2328">clone(CLONE_NEWPID | CLONE_NEWNS | ...)</text>
+        <rect x="400" y="172" width="460" height="36" rx="4" fill="#f6f8fa" stroke="#d1d9e0" stroke-width="1"/>
+        <text x="415" y="195" font-family="ui-monospace,monospace" font-size="11" fill="#1f2328">echo &lt;pid&gt; &gt; cgroup.procs</text>
+        <rect x="400" y="220" width="460" height="36" rx="4" fill="#f6f8fa" stroke="#d1d9e0" stroke-width="1"/>
+        <text x="415" y="243" font-family="ui-monospace,monospace" font-size="11" fill="#1f2328">pivot_root + mount</text>
+        <rect x="400" y="268" width="460" height="36" rx="4" fill="#f6f8fa" stroke="#d1d9e0" stroke-width="1"/>
+        <text x="415" y="291" font-family="ui-monospace,monospace" font-size="11" fill="#1f2328">seccomp(SECCOMP_SET_MODE_FILTER)</text>
+        <rect x="400" y="316" width="460" height="36" rx="4" fill="#f6f8fa" stroke="#d1d9e0" stroke-width="1"/>
+        <text x="415" y="339" font-family="ui-monospace,monospace" font-size="11" fill="#1f2328">execve(container entrypoint)</text>
+        <text x="630" y="395" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" fill="#59636e" font-style="italic">What runc applies on the host</text>
+      </svg>
     </div>
+    <div class="diagram-cap">The process is permanently associated with that cgroup unless explicitly moved. There is no &apos;container start&apos; syscall — just ordinary clone, mount, cgroup writes, and exec.</div>
+  </div>
+
+  <h4>Memory controller internals</h4>
+  <p>Memory cgroup (<span class="ty">mem_cgroup</span>) charging ties every page allocation to the cgroup of the task that triggered it: the kernel walks from the allocating context to the current task and attributes the charge to that task&apos;s cgroup, so RSS and cache pressure accrue in the leaf cgroup you configured in the hierarchy.</p>
+  <pre class="code-path"><code><span class="com">page fault</span> <span class="kw">→</span> <span class="fn">alloc_pages</span>() <span class="kw">→</span> <span class="fn">memcg_charge</span>() <span class="kw">→</span> <span class="ty">current</span> task<span class="str">&apos;s</span> cgroup</code></pre>
+
+  <div class="diagram">
+    <div class="diagram-head">Figure 8f — scoped OOM · cgroup-local, not system-wide</div>
+    <div class="diagram-body">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 300" width="900" height="300" role="img" aria-label="Cgroup scoped OOM">
+        <rect x="12" y="30" width="176" height="118" rx="6" fill="#fff8c5" stroke="#9a6700" stroke-width="1.5"/>
+        <text x="100" y="58" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9" fill="#9a6700">memory.current</text>
+        <text x="100" y="78" text-anchor="middle" font-family="system-ui,sans-serif" font-size="14" fill="#9a6700" font-weight="700">&gt;</text>
+        <text x="100" y="98" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9" fill="#9a6700">memory.max</text>
+        <text x="100" y="128" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9" fill="#1f2328">→ mem_cgroup_oom()</text>
+        <rect x="210" y="20" width="200" height="110" rx="6" fill="#ffebe9" stroke="#d1242f" stroke-width="2.5"/>
+        <text x="310" y="42" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12" fill="#d1242f" font-weight="700">Container A cgroup</text>
+        <text x="225" y="68" font-family="ui-monospace,monospace" font-size="13" fill="#1f2328">pid 101</text>
+        <text x="225" y="88" font-family="ui-monospace,monospace" font-size="13" fill="#1f2328">pid 102</text>
+        <text x="225" y="108" font-family="ui-monospace,monospace" font-size="13" fill="#1f2328">pid 103</text>
+        <line x1="290" y1="100" x2="345" y2="100" stroke="#d1242f" stroke-width="2"/>
+        <text x="358" y="105" font-family="system-ui,sans-serif" font-size="12" fill="#d1242f" font-weight="700">✕ OOM-killed</text>
+        <rect x="430" y="20" width="200" height="90" rx="6" fill="#dafbe1" stroke="#1a7f37" stroke-width="2"/>
+        <text x="530" y="42" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12" fill="#1a7f37" font-weight="700">Container B cgroup</text>
+        <text x="445" y="68" font-family="ui-monospace,monospace" font-size="13" fill="#1f2328">pid 201</text>
+        <text x="445" y="88" font-family="ui-monospace,monospace" font-size="13" fill="#1f2328">pid 202</text>
+        <text x="530" y="108" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" fill="#1a7f37">unaffected</text>
+        <rect x="650" y="20" width="230" height="90" rx="6" fill="#eaeef2" stroke="#59636e" stroke-width="1.5"/>
+        <text x="765" y="42" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12" fill="#59636e" font-weight="600">Host processes</text>
+        <text x="765" y="68" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" fill="#59636e">kernel threads, systemd, …</text>
+        <text x="765" y="92" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" fill="#59636e">unaffected</text>
+        <text x="450" y="168" text-anchor="middle" font-family="system-ui,sans-serif" font-size="14" fill="#d1242f" font-weight="700">NOT system-wide OOM. Only inside that cgroup.</text>
+      </svg>
+    </div>
+    <div class="diagram-cap">When a cgroup exceeds memory.max, the kernel&apos;s cgroup-scoped OOM killer picks a victim within that cgroup only.</div>
+  </div>
+
+  <h4>CPU scheduling via cgroups</h4>
+  <p>The <code>cpu.max</code> file uses a <strong>quota</strong> and <strong>period</strong> in microseconds. For example, <code><span class="num">50000</span> <span class="num">100000</span></code> means 50&nbsp;ms of CPU time per 100&nbsp;ms wall-clock period — a hard cap of 0.5 CPU for that cgroup. The scheduler refills the quota each period and throttles the whole cgroup when the allowance is exhausted.</p>
+
+  <div class="diagram">
+    <div class="diagram-head">Figure 8g — CFS throttling + weight-based fairness</div>
+    <div class="diagram-body">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 300" width="900" height="300" role="img" aria-label="CPU max and weight">
+        <defs>
+          <marker id="m8gy" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><polygon points="0 0,6 3,0 6" fill="#59636e"/></marker>
+        </defs>
+        <line x1="450" y1="10" x2="450" y2="290" stroke="#d8dee4" stroke-width="2" stroke-dasharray="4 4"/>
+        <text x="225" y="28" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12" fill="#0969da" font-weight="700">cpu.max (hard ceiling)</text>
+        <text x="675" y="28" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12" fill="#8250df" font-weight="700">cpu.weight (soft fairness)</text>
+        <!-- Left: CFS -->
+        <rect x="40" y="45" width="160" height="50" rx="6" fill="#ddf4ff" stroke="#0969da" stroke-width="2"/>
+        <text x="120" y="68" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" fill="#0969da" font-weight="600">CFS scheduler</text>
+        <text x="120" y="86" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" fill="#59636e">per-cgroup runqueue</text>
+        <polygon points="120,115 145,155 95,155" fill="#fff8c5" stroke="#9a6700" stroke-width="2"/>
+        <text x="120" y="148" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" fill="#9a6700" font-weight="600">quota</text>
+        <text x="120" y="160" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" fill="#9a6700">exhausted?</text>
+        <line x1="120" y1="155" x2="120" y2="172" stroke="#59636e" stroke-width="1"/>
+        <text x="75" y="195" font-family="system-ui,sans-serif" font-size="10" fill="#1a7f37" font-weight="600">No</text>
+        <rect x="40" y="185" width="130" height="36" rx="4" fill="#dafbe1" stroke="#1a7f37" stroke-width="1.5"/>
+        <text x="105" y="207" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" fill="#1a7f37">continue running</text>
+        <text x="168" y="195" font-family="system-ui,sans-serif" font-size="10" fill="#d1242f" font-weight="600">Yes</text>
+        <rect x="155" y="185" width="130" height="48" rx="4" fill="#ffebe9" stroke="#d1242f" stroke-width="2"/>
+        <text x="220" y="204" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#d1242f" font-weight="700">THROTTLE — entire cgroup</text>
+        <text x="220" y="220" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#d1242f">stops for rest of period</text>
+        <line x1="95" y1="155" x2="105" y2="185" stroke="#59636e" stroke-width="1.5" marker-end="url(#m8gy)"/>
+        <line x1="145" y1="155" x2="200" y2="185" stroke="#59636e" stroke-width="1.5" marker-end="url(#m8gy)"/>
+        <rect x="30" y="248" width="380" height="40" rx="4" fill="#f6f8fa" stroke="#d1d9e0"/>
+        <text x="220" y="273" text-anchor="middle" font-family="ui-monospace,monospace" font-size="11" fill="#0550ae">cpu.max = 50000 100000 → 0.5 CPU hard cap</text>
+        <!-- Right: weights + bars -->
+        <rect x="480" y="50" width="140" height="40" rx="4" fill="#ddf4ff" stroke="#0969da"/>
+        <text x="550" y="74" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" fill="#0969da">Container A · weight 100</text>
+        <rect x="630" y="50" width="140" height="40" rx="4" fill="#f5f0ff" stroke="#8250df" stroke-width="2"/>
+        <text x="700" y="74" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" fill="#8250df">Container B · weight 200</text>
+        <text x="675" y="115" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" fill="#59636e">Under CPU contention:</text>
+        <rect x="480" y="125" width="120" height="28" rx="3" fill="#dafbe1" stroke="#1a7f37"/>
+        <text x="540" y="143" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" fill="#1a7f37">A: ⅓ share</text>
+        <rect x="610" y="125" width="240" height="28" rx="3" fill="#f5f0ff" stroke="#8250df"/>
+        <text x="730" y="143" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" fill="#8250df">B: ⅔ share</text>
+        <rect x="480" y="165" width="370" height="50" rx="4" fill="#fff8c5" stroke="#bf8700"/>
+        <text x="665" y="188" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" fill="#9a6700" font-weight="600">When idle: everyone may burst to full CPU</text>
+        <text x="665" y="205" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" fill="#59636e">weights are dormant without contention</text>
+      </svg>
+    </div>
+    <div class="diagram-cap">cpu.max is a hard ceiling enforced per 100ms period. cpu.weight only matters under contention — it&apos;s a proportional share, not a cap.</div>
+  </div>
+
+  <h3 id="vfs-mounts">Mount namespaces + VFS</h3>
+  <p>Processes never talk directly to ext4 or xfs. They talk to the VFS — the virtual filesystem switch — which dispatches to the actual filesystem.</p>
+
+  <div class="diagram">
+    <div class="diagram-head">Figure 8h — VFS architecture · single API, multiple backends</div>
+    <div class="diagram-body">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 340" width="900" height="340" role="img" aria-label="VFS architecture">
+        <defs>
+          <marker id="ar8h" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><polygon points="0 0,8 4,0 8" fill="#59636e"/></marker>
+        </defs>
+        <rect x="260" y="12" width="380" height="44" rx="6" fill="#eaeef2" stroke="#59636e" stroke-width="1.5"/>
+        <text x="450" y="40" text-anchor="middle" font-family="ui-monospace,monospace" font-size="13" fill="#1f2328">read() / open() / write() syscall</text>
+        <line x1="450" y1="56" x2="450" y2="78" stroke="#59636e" stroke-width="2" marker-end="url(#ar8h)"/>
+        <rect x="220" y="82" width="460" height="72" rx="8" fill="#ddf4ff" stroke="#0969da" stroke-width="3"/>
+        <text x="450" y="118" text-anchor="middle" font-family="system-ui,sans-serif" font-size="22" fill="#0969da" font-weight="800">VFS</text>
+        <text x="450" y="142" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" fill="#59636e">virtual filesystem switch</text>
+        <line x1="320" y1="154" x2="260" y2="208" stroke="#59636e" stroke-width="2" marker-end="url(#ar8h)"/>
+        <line x1="400" y1="154" x2="370" y2="208" stroke="#59636e" stroke-width="2" marker-end="url(#ar8h)"/>
+        <line x1="450" y1="154" x2="450" y2="208" stroke="#59636e" stroke-width="2" marker-end="url(#ar8h)"/>
+        <line x1="500" y1="154" x2="530" y2="208" stroke="#59636e" stroke-width="2" marker-end="url(#ar8h)"/>
+        <line x1="580" y1="154" x2="640" y2="208" stroke="#59636e" stroke-width="2" marker-end="url(#ar8h)"/>
+        <rect x="200" y="212" width="120" height="44" rx="5" fill="#fff8c5" stroke="#9a6700" stroke-width="2"/>
+        <text x="260" y="239" text-anchor="middle" font-family="system-ui,sans-serif" font-size="13" fill="#9a6700" font-weight="600">ext4</text>
+        <rect x="332" y="212" width="120" height="44" rx="5" fill="#f5f0ff" stroke="#8250df" stroke-width="2"/>
+        <text x="392" y="239" text-anchor="middle" font-family="system-ui,sans-serif" font-size="13" fill="#8250df" font-weight="600">overlayfs</text>
+        <rect x="464" y="212" width="120" height="44" rx="5" fill="#dafbe1" stroke="#1a7f37" stroke-width="2"/>
+        <text x="524" y="239" text-anchor="middle" font-family="system-ui,sans-serif" font-size="13" fill="#1a7f37" font-weight="600">xfs</text>
+        <rect x="596" y="212" width="100" height="44" rx="5" fill="#eaeef2" stroke="#59636e" stroke-width="1.5"/>
+        <text x="646" y="239" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12" fill="#59636e" font-weight="600">procfs</text>
+        <rect x="708" y="212" width="100" height="44" rx="5" fill="#eaeef2" stroke="#59636e" stroke-width="1.5"/>
+        <text x="758" y="239" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12" fill="#59636e" font-weight="600">tmpfs</text>
+        <text x="450" y="310" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" fill="#59636e" font-style="italic">VFS predates Docker by decades — it&apos;s the kernel&apos;s universal filesystem API</text>
+      </svg>
+    </div>
+  </div>
+
+  <p>Each process observes its own mount table: the kernel stores a pointer in <span class="ty">task_struct</span> through <span class="fn">nsproxy</span> → <span class="ty">mnt_namespace</span>. Path resolution walks dentry/inode caches in that namespace, so two tasks can legitimately disagree on what <code>/</code> means while sharing one kernel.</p>
+  <table>
+    <thead>
+      <tr>
+        <th scope="col">Mount namespace</th>
+        <th scope="col">Examples</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Host</strong></td>
+        <td><code>/</code> → ext4, <code>/var</code> → xfs</td>
+      </tr>
+      <tr>
+        <td><strong>Container</strong></td>
+        <td><code>/</code> → overlayfs, <code>/proc</code> → procfs, <code>/dev</code> → tmpfs</td>
+      </tr>
+    </tbody>
+  </table>
+  <p class="com" style="margin-top:0.5rem">Same kernel. Different mount table lookup.</p>
+
+  <h3 id="overlayfs">overlayfs internals</h3>
+  <p>OverlayFS stacks a writable layer on top of one or more read-only lower directories. Containers see a unified tree; reads merge upper and lowers; writes land in the upperdir so immutable image layers ship once and many containers fork only their deltas.</p>
+
+  <div class="diagram">
+    <div class="diagram-head">Figure 8i — overlayfs layer stack + copy-up on write</div>
+    <div class="diagram-body">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 420" width="900" height="420" role="img" aria-label="OverlayFS stack">
+        <defs>
+          <marker id="m8i" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><polygon points="0 0,7 3.5,0 7" fill="#59636e"/></marker>
+          <marker id="m8ir" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><polygon points="0 0,8 4,0 8" fill="#d1242f"/></marker>
+        </defs>
+        <line x1="450" y1="8" x2="450" y2="400" stroke="#d8dee4" stroke-width="2" stroke-dasharray="5 4"/>
+        <text x="225" y="22" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" fill="#59636e" font-weight="600">Layer stack</text>
+        <text x="675" y="22" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" fill="#59636e" font-weight="600">Read path · copy-up</text>
+        <!-- LEFT stack -->
+        <rect x="80" y="35" width="290" height="40" rx="6" fill="#ddf4ff" stroke="#0969da" stroke-width="2"/>
+        <text x="225" y="60" text-anchor="middle" font-family="system-ui,sans-serif" font-size="13" fill="#0969da" font-weight="700">CONTAINER VIEW (/)</text>
+        <line x1="225" y1="75" x2="225" y2="95" stroke="#59636e" stroke-width="2" marker-end="url(#m8i)"/>
+        <rect x="100" y="99" width="250" height="44" rx="6" fill="#f5f0ff" stroke="#8250df" stroke-width="2.5"/>
+        <text x="225" y="126" text-anchor="middle" font-family="system-ui,sans-serif" font-size="14" fill="#8250df" font-weight="700">overlayfs</text>
+        <line x1="150" y1="143" x2="120" y2="188" stroke="#59636e" stroke-width="2" marker-end="url(#m8i)"/>
+        <line x1="225" y1="143" x2="225" y2="188" stroke="#59636e" stroke-width="2" marker-end="url(#m8i)"/>
+        <line x1="300" y1="143" x2="330" y2="188" stroke="#59636e" stroke-width="2" marker-end="url(#m8i)"/>
+        <rect x="50" y="192" width="140" height="46" rx="5" fill="#dafbe1" stroke="#1a7f37" stroke-width="2"/>
+        <text x="120" y="214" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" fill="#1a7f37" font-weight="600">upperdir</text>
+        <text x="120" y="230" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#59636e">writable layer</text>
+        <rect x="155" y="248" width="140" height="46" rx="5" fill="#ddf4ff" stroke="#0969da" stroke-width="2"/>
+        <text x="225" y="270" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" fill="#0969da" font-weight="600">lowerdir1</text>
+        <text x="225" y="286" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#59636e">apt install nginx</text>
+        <rect x="260" y="302" width="140" height="46" rx="5" fill="#eaeef2" stroke="#59636e" stroke-width="1.5"/>
+        <text x="330" y="324" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" fill="#59636e" font-weight="600">lowerdir2</text>
+        <text x="330" y="340" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#59636e">ubuntu base image</text>
+        <!-- RIGHT: READ PATH -->
+        <rect x="470" y="38" width="400" height="22" rx="3" fill="#eaeef2"/>
+        <text x="670" y="54" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" fill="#8250df" font-weight="700">READ PATH</text>
+        <rect x="470" y="68" width="400" height="32" rx="4" fill="#f6f8fa" stroke="#d1d9e0"/>
+        <text x="485" y="88" font-family="ui-monospace,monospace" font-size="11" fill="#1f2328">open(&apos;/etc/nginx/nginx.conf&apos;)</text>
+        <line x1="670" y1="100" x2="670" y2="118" stroke="#59636e" stroke-width="2" marker-end="url(#m8i)"/>
+        <rect x="470" y="122" width="400" height="32" rx="4" fill="#fff8c5" stroke="#9a6700"/>
+        <text x="670" y="142" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" fill="#9a6700">overlayfs checks upperdir</text>
+        <polygon points="670,168 695,198 645,198" fill="#fff8c5" stroke="#9a6700" stroke-width="2"/>
+        <text x="670" y="194" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" fill="#9a6700" font-weight="600">exists?</text>
+        <rect x="480" y="208" width="150" height="36" rx="4" fill="#dafbe1" stroke="#1a7f37"/>
+        <text x="555" y="230" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" fill="#1a7f37">Yes: return inode</text>
+        <rect x="660" y="208" width="200" height="36" rx="4" fill="#ddf4ff" stroke="#0969da"/>
+        <text x="760" y="230" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" fill="#0969da">No: search lower layers</text>
+        <line x1="655" y1="198" x2="555" y2="216" stroke="#59636e"/>
+        <line x1="685" y1="198" x2="760" y2="216" stroke="#59636e"/>
+        <!-- COPY UP -->
+        <rect x="470" y="258" width="400" height="22" rx="3" fill="#ffebe9"/>
+        <text x="670" y="274" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" fill="#d1242f" font-weight="700">COPY-UP ON WRITE</text>
+        <rect x="470" y="286" width="400" height="28" rx="4" fill="#f6f8fa" stroke="#d1d9e0"/>
+        <text x="485" y="304" font-family="system-ui,sans-serif" font-size="10" fill="#1f2328">write to lower-layer file</text>
+        <text x="485" y="332" font-family="system-ui,sans-serif" font-size="10" fill="#d1242f" font-weight="600">Step 1:</text>
+        <text x="540" y="332" font-family="system-ui,sans-serif" font-size="10" fill="#1f2328">copy entire file to upperdir</text>
+        <line x1="670" y1="318" x2="670" y2="338" stroke="#d1242f" stroke-width="3" marker-end="url(#m8ir)"/>
+        <text x="485" y="352" font-family="system-ui,sans-serif" font-size="10" fill="#1a7f37" font-weight="600">Step 2:</text>
+        <text x="540" y="352" font-family="system-ui,sans-serif" font-size="10" fill="#1f2328">modify upper copy</text>
+        <text x="670" y="378" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" fill="#59636e" font-style="italic">original image layer remains immutable</text>
+      </svg>
+    </div>
+    <div class="diagram-cap">overlayfs composes read-only image layers with a per-container writable layer. Reads fall through layers top-down; writes trigger a full-file copy-up to the upperdir.</div>
+  </div>
+
+  <p style="text-align:center; color:#59636e; font-size:0.9rem; margin:1rem 0;">100 containers sharing same readonly lower pages → Linux page cache deduplicates automatically → huge RAM savings</p>
+
+  <div class="alert tip">
+    <strong>Tip</strong>
+    This is why containers are memory-efficient: 100 containers from the same image share the same read-only page-cache pages. Only the upperdir (container-specific writes) costs unique memory.
+  </div>
+
+<h3 id="container-read-path">Full container read path</h3>
+<p>Combine everything. When a containerized process reads a file, every kernel subsystem we've covered participates in a single syscall.</p>
+
+<figure class="diagram" aria-labelledby="fig-8j-title">
+  <div class="diagram-head" id="fig-8j-title">Figure 8j — container file read · end-to-end kernel path</div>
+  <div class="diagram-body">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 560" role="img" aria-label="End-to-end kernel path for a container file read">
+      <defs>
+        <marker id="aj" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+          <path d="M0,0 L8,4 L0,8 Z" fill="#59636e" />
+        </marker>
+      </defs>
+      <text x="450" y="14" text-anchor="middle" fill="#59636e" font-size="11" font-weight="600">container file read · end-to-end kernel path</text>
+
+      <!-- Main column: boxes x=255 w=210, centered flow -->
+      <g font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif" font-size="11">
+        <!-- 1 Userspace -->
+        <rect x="255" y="22" width="210" height="38" rx="8" ry="8" fill="#dafbe1" stroke="#1a7f37" stroke-width="1.5"/>
+        <text x="360" y="40" text-anchor="middle" fill="#1a7f37" font-weight="700">Userspace process</text>
+        <text x="360" y="54" text-anchor="middle" fill="#1a7f37" font-size="10">&quot;read(&apos;/app/data.txt&apos;)&quot;</text>
+        <line x1="360" y1="60" x2="360" y2="72" stroke="#59636e" stroke-width="1.2" marker-end="url(#aj)"/>
+
+        <!-- 2 sys_read -->
+        <rect x="255" y="72" width="210" height="32" rx="6" ry="6" fill="#f6f8fa" stroke="#d1d9e0" stroke-width="1.2"/>
+        <text x="360" y="92" text-anchor="middle" fill="#59636e" font-weight="600">sys_read()</text>
+        <line x1="360" y1="104" x2="360" y2="114" stroke="#59636e" stroke-width="1.2" marker-end="url(#aj)"/>
+
+        <!-- 3 VFS path -->
+        <rect x="255" y="114" width="210" height="30" rx="6" ry="6" fill="#ddf4ff" stroke="#0969da" stroke-width="1.2"/>
+        <text x="360" y="134" text-anchor="middle" fill="#0969da" font-weight="600">VFS path lookup</text>
+        <line x1="360" y1="144" x2="360" y2="154" stroke="#59636e" stroke-width="1.2" marker-end="url(#aj)"/>
+
+        <!-- 4 mount ns -->
+        <rect x="255" y="154" width="210" height="38" rx="6" ry="6" fill="#ddf4ff" stroke="#0969da" stroke-width="1.2"/>
+        <text x="360" y="172" text-anchor="middle" fill="#0969da" font-weight="600">mount namespace lookup</text>
+        <text x="360" y="186" text-anchor="middle" fill="#59636e" font-size="10">which mount table?</text>
+        <line x1="360" y1="192" x2="360" y2="202" stroke="#59636e" stroke-width="1.2" marker-end="url(#aj)"/>
+
+        <!-- 5 overlayfs -->
+        <rect x="255" y="202" width="210" height="42" rx="6" ry="6" fill="#f5f0ff" stroke="#8250df" stroke-width="1.2"/>
+        <text x="360" y="222" text-anchor="middle" fill="#8250df" font-weight="600">overlayfs selected</text>
+        <text x="360" y="238" text-anchor="middle" fill="#59636e" font-size="10">upperdir or lowerdir?</text>
+        <line x1="360" y1="244" x2="360" y2="254" stroke="#59636e" stroke-width="1.2" marker-end="url(#aj)"/>
+
+        <!-- 6 fs -->
+        <rect x="255" y="254" width="210" height="32" rx="6" ry="6" fill="#fff8c5" stroke="#9a6700" stroke-width="1.2"/>
+        <text x="360" y="274" text-anchor="middle" fill="#9a6700" font-weight="600">actual filesystem (ext4/xfs)</text>
+        <line x1="360" y1="286" x2="360" y2="296" stroke="#59636e" stroke-width="1.2" marker-end="url(#aj)"/>
+
+        <!-- 7 page cache -->
+        <rect x="255" y="296" width="210" height="38" rx="6" ry="6" fill="#dafbe1" stroke="#1a7f37" stroke-width="1.2"/>
+        <text x="360" y="314" text-anchor="middle" fill="#1a7f37" font-weight="600">page cache</text>
+        <text x="360" y="328" text-anchor="middle" fill="#59636e" font-size="10">cached? return immediately</text>
+        <line x1="360" y1="334" x2="360" y2="344" stroke="#59636e" stroke-width="1.2" marker-end="url(#aj)"/>
+
+        <!-- 8 block -->
+        <rect x="255" y="344" width="210" height="34" rx="6" ry="6" fill="#f6f8fa" stroke="#d1d9e0" stroke-width="1.2"/>
+        <text x="360" y="360" text-anchor="middle" fill="#59636e" font-weight="600">block layer · blk-mq</text>
+        <text x="360" y="374" text-anchor="middle" fill="#59636e" font-size="9.5">(if miss)</text>
+        <line x1="360" y1="378" x2="360" y2="388" stroke="#59636e" stroke-width="1.2" marker-end="url(#aj)"/>
+
+        <!-- 9 io cgroup -->
+        <rect x="255" y="388" width="210" height="38" rx="6" ry="6" fill="#fff8c5" stroke="#9a6700" stroke-width="1.2"/>
+        <text x="360" y="406" text-anchor="middle" fill="#9a6700" font-weight="600">io cgroup controller</text>
+        <text x="360" y="420" text-anchor="middle" fill="#59636e" font-size="10">io.max throttle?</text>
+        <line x1="360" y1="426" x2="360" y2="436" stroke="#59636e" stroke-width="1.2" marker-end="url(#aj)"/>
+
+        <!-- 10 driver -->
+        <rect x="255" y="436" width="210" height="30" rx="6" ry="6" fill="#f6f8fa" stroke="#d1d9e0" stroke-width="1.2"/>
+        <text x="360" y="456" text-anchor="middle" fill="#59636e" font-weight="600">device driver</text>
+        <line x1="360" y1="466" x2="360" y2="476" stroke="#59636e" stroke-width="1.2" marker-end="url(#aj)"/>
+
+        <!-- 11 disk -->
+        <rect x="255" y="476" width="210" height="34" rx="6" ry="6" fill="#24292f" stroke="#24292f" stroke-width="1.2"/>
+        <text x="360" y="498" text-anchor="middle" fill="#ffffff" font-weight="700">disk</text>
+
+        <!-- Right annotations -->
+        <line x1="485" y1="41" x2="485" y2="104" stroke="#d8dee4" stroke-width="1" stroke-dasharray="3 2"/>
+        <text x="495" y="58" fill="#59636e" font-size="10.5" font-style="italic">process (task_struct)</text>
+        <text x="495" y="72" fill="#59636e" font-size="10.5" font-style="italic">steps 1–2</text>
+
+        <line x1="485" y1="129" x2="485" y2="192" stroke="#d8dee4" stroke-width="1" stroke-dasharray="3 2"/>
+        <text x="495" y="152" fill="#59636e" font-size="10.5" font-style="italic">namespaces (mnt_ns)</text>
+        <text x="495" y="166" fill="#59636e" font-size="10.5" font-style="italic">steps 3–4</text>
+
+        <line x1="485" y1="214" x2="485" y2="236" stroke="#d8dee4" stroke-width="1" stroke-dasharray="3 2"/>
+        <text x="495" y="228" fill="#59636e" font-size="10.5" font-style="italic">overlayfs · step 5</text>
+
+        <line x1="485" y1="262" x2="485" y2="278" stroke="#d8dee4" stroke-width="1" stroke-dasharray="3 2"/>
+        <text x="495" y="272" fill="#59636e" font-size="10.5" font-style="italic">VFS → filesystem · step 6</text>
+
+        <line x1="485" y1="305" x2="485" y2="328" stroke="#d8dee4" stroke-width="1" stroke-dasharray="3 2"/>
+        <text x="495" y="318" fill="#59636e" font-size="10.5" font-style="italic">memory (page cache)</text>
+        <text x="495" y="332" fill="#59636e" font-size="10.5" font-style="italic">step 7</text>
+
+        <line x1="485" y1="352" x2="485" y2="414" stroke="#d8dee4" stroke-width="1" stroke-dasharray="3 2"/>
+        <text x="495" y="376" fill="#59636e" font-size="10.5" font-style="italic">cgroup (io controller)</text>
+        <text x="495" y="390" fill="#59636e" font-size="10.5" font-style="italic">steps 8–9</text>
+
+        <line x1="485" y1="441" x2="485" y2="502" stroke="#d8dee4" stroke-width="1" stroke-dasharray="3 2"/>
+        <text x="495" y="468" fill="#59636e" font-size="10.5" font-style="italic">hardware</text>
+        <text x="495" y="482" fill="#59636e" font-size="10.5" font-style="italic">steps 10–11</text>
+      </g>
+    </svg>
+  </div>
+  <figcaption class="diagram-cap">A single <code>read()</code> traverses process context, namespace resolution, filesystem layering, page cache, cgroup I/O accounting, and finally the block device. Every layer is a composable kernel primitive.</figcaption>
+</figure>
+
+<h3 id="container-stack">Unified container stack</h3>
+<p>Here is the complete picture — how all eight kernel primitives compose into what we call a container.</p>
+
+<figure class="diagram" aria-labelledby="fig-8k-title">
+  <div class="diagram-head" id="fig-8k-title">Figure 8k — unified container stack · all primitives composed</div>
+  <div class="diagram-body">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 520" role="img" aria-label="Unified container stack showing namespaces, VFS, overlayfs, cgroups, and kernel security">
+      <defs>
+        <marker id="ak" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+          <path d="M0,0 L8,4 L0,8 Z" fill="#59636e" />
+        </marker>
+      </defs>
+      <text x="450" y="14" text-anchor="middle" fill="#59636e" font-size="11" font-weight="600">unified container stack · all primitives composed</text>
+
+      <g font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif" font-size="11">
+        <!-- TOP: CONTAINER PROCESS -->
+        <rect x="200" y="22" width="500" height="52" rx="10" ry="10" fill="#dafbe1" stroke="#1a7f37" stroke-width="2.5"/>
+        <text x="450" y="46" text-anchor="middle" fill="#1a7f37" font-size="13" font-weight="800">CONTAINER PROCESS</text>
+        <text x="450" y="64" text-anchor="middle" fill="#1a7f37" font-size="10.5">a normal Linux process (task_struct)</text>
+
+        <!-- Arrows down to three namespaces (from process underside to each column) -->
+        <line x1="283" y1="74" x2="165" y2="92" stroke="#59636e" stroke-width="1.2" marker-end="url(#ak)"/>
+        <line x1="450" y1="74" x2="450" y2="92" stroke="#59636e" stroke-width="1.2" marker-end="url(#ak)"/>
+        <line x1="617" y1="74" x2="735" y2="92" stroke="#59636e" stroke-width="1.2" marker-end="url(#ak)"/>
+
+        <!-- MIDDLE ROW: three namespaces -->
+        <rect x="40" y="92" width="250" height="72" rx="8" ry="8" fill="#dafbe1" stroke="#1a7f37" stroke-width="1.3"/>
+        <text x="165" y="112" text-anchor="middle" fill="#1a7f37" font-weight="700">PID Namespace</text>
+        <text x="165" y="132" text-anchor="middle" fill="#59636e" font-size="10">PID translation · own pid=1</text>
+
+        <rect x="325" y="92" width="250" height="72" rx="8" ry="8" fill="#ddf4ff" stroke="#0969da" stroke-width="1.3"/>
+        <text x="450" y="112" text-anchor="middle" fill="#0969da" font-weight="700">Mount Namespace</text>
+        <text x="450" y="132" text-anchor="middle" fill="#59636e" font-size="10">filesystem view · overlayfs root</text>
+
+        <rect x="610" y="92" width="250" height="72" rx="8" ry="8" fill="#fff8c5" stroke="#9a6700" stroke-width="1.3"/>
+        <text x="735" y="112" text-anchor="middle" fill="#9a6700" font-weight="700">Net Namespace</text>
+        <text x="735" y="132" text-anchor="middle" fill="#59636e" font-size="10">virtual NICs · own iptables</text>
+
+        <!-- Converge to VFS (from mount ns center) -->
+        <line x1="450" y1="164" x2="450" y2="182" stroke="#59636e" stroke-width="1.2" marker-end="url(#ak)"/>
+
+        <!-- VFS full width -->
+        <rect x="120" y="182" width="660" height="36" rx="6" ry="6" fill="#ddf4ff" stroke="#0969da" stroke-width="1.4"/>
+        <text x="450" y="205" text-anchor="middle" fill="#0969da" font-weight="700" font-size="12">VFS</text>
+
+        <line x1="450" y1="218" x2="450" y2="232" stroke="#59636e" stroke-width="1.2" marker-end="url(#ak)"/>
+
+        <!-- overlayfs -->
+        <rect x="300" y="232" width="300" height="34" rx="6" ry="6" fill="#f5f0ff" stroke="#8250df" stroke-width="1.4"/>
+        <text x="450" y="254" text-anchor="middle" fill="#8250df" font-weight="700">overlayfs</text>
+
+        <!-- Fork to upper / lower -->
+        <line x1="380" y1="266" x2="250" y2="288" stroke="#59636e" stroke-width="1.2" marker-end="url(#ak)"/>
+        <line x1="520" y1="266" x2="650" y2="288" stroke="#59636e" stroke-width="1.2" marker-end="url(#ak)"/>
+
+        <rect x="130" y="288" width="240" height="36" rx="6" ry="6" fill="#dafbe1" stroke="#1a7f37" stroke-width="1.2"/>
+        <text x="250" y="310" text-anchor="middle" fill="#1a7f37" font-weight="600">upperdir (writable)</text>
+
+        <rect x="530" y="288" width="240" height="36" rx="6" ry="6" fill="#f6f8fa" stroke="#d1d9e0" stroke-width="1.2"/>
+        <text x="650" y="310" text-anchor="middle" fill="#59636e" font-weight="600">lowerdirs (image layers)</text>
+
+        <!-- Join down to ext4/xfs -->
+        <line x1="250" y1="324" x2="400" y2="348" stroke="#59636e" stroke-width="1.2" marker-end="url(#ak)"/>
+        <line x1="650" y1="324" x2="500" y2="348" stroke="#59636e" stroke-width="1.2" marker-end="url(#ak)"/>
+
+        <rect x="320" y="348" width="260" height="34" rx="6" ry="6" fill="#fff8c5" stroke="#9a6700" stroke-width="1.3"/>
+        <text x="450" y="370" text-anchor="middle" fill="#9a6700" font-weight="700">ext4 / xfs</text>
+
+        <!-- To cgroups row -->
+        <line x1="350" y1="382" x2="290" y2="400" stroke="#59636e" stroke-width="1.2" marker-end="url(#ak)"/>
+        <line x1="450" y1="382" x2="450" y2="400" stroke="#59636e" stroke-width="1.2" marker-end="url(#ak)"/>
+        <line x1="550" y1="382" x2="610" y2="400" stroke="#59636e" stroke-width="1.2" marker-end="url(#ak)"/>
+
+        <!-- BOTTOM ROW cgroups -->
+        <rect x="40" y="400" width="250" height="56" rx="8" ry="8" fill="#ffebe9" stroke="#d1242f" stroke-width="1.3"/>
+        <text x="165" y="420" text-anchor="middle" fill="#d1242f" font-weight="700">memory cgroup</text>
+        <text x="165" y="438" text-anchor="middle" fill="#59636e" font-size="10">memory.max · scoped OOM</text>
+
+        <rect x="325" y="400" width="250" height="56" rx="8" ry="8" fill="#ddf4ff" stroke="#0969da" stroke-width="1.3"/>
+        <text x="450" y="420" text-anchor="middle" fill="#0969da" font-weight="700">cpu cgroup</text>
+        <text x="450" y="438" text-anchor="middle" fill="#59636e" font-size="10">cpu.max · cpu.weight · CFS</text>
+
+        <rect x="610" y="400" width="250" height="56" rx="8" ry="8" fill="#fff8c5" stroke="#9a6700" stroke-width="1.3"/>
+        <text x="735" y="420" text-anchor="middle" fill="#9a6700" font-weight="700">io cgroup</text>
+        <text x="735" y="438" text-anchor="middle" fill="#59636e" font-size="10">io.max · bandwidth caps</text>
+
+        <!-- Kernel bar -->
+        <line x1="165" y1="456" x2="165" y2="472" stroke="#59636e" stroke-width="1.2" marker-end="url(#ak)"/>
+        <line x1="450" y1="456" x2="450" y2="472" stroke="#59636e" stroke-width="1.2" marker-end="url(#ak)"/>
+        <line x1="735" y1="456" x2="735" y2="472" stroke="#59636e" stroke-width="1.2" marker-end="url(#ak)"/>
+
+        <rect x="40" y="472" width="820" height="40" rx="6" ry="6" fill="#24292f" stroke="#24292f" stroke-width="1.2"/>
+        <text x="450" y="497" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">seccomp · capabilities · LSM · the actual security boundary</text>
+      </g>
+    </svg>
+  </div>
+  <figcaption class="diagram-cap">No hypervisor. No guest kernel. Just: process isolation through selective kernel indirection.</figcaption>
+</figure>
+
+<h3 id="container-truth">The deep truth</h3>
+
+<div class="alert note">
+  <p style="margin:0"><strong>A container is fundamentally:</strong> a normal Linux process + namespace-scoped views + cgroup resource accounting + filesystem layering. No hypervisor required. No guest kernel required. Just process isolation through selective kernel indirection.</p>
+</div>
+
+<div class="alert tip">
+  <strong class="title">The elegant part</strong>
+  <p style="margin:0">None of these subsystems were originally invented &quot;for containers.&quot; VFS predates Docker by decades. cgroups came from Google process accounting. Namespaces started as isolation primitives. overlayfs solved filesystem layering. Containers emerged because these kernel mechanisms composed perfectly together.</p>
+</div>
+
+<div class="alert tip">
+  <strong class="title">Tip — debugging containers</strong>
+  <p style="margin:0">When a container misbehaves, traverse in order: cgroup pressure (OOM, throttling) → namespace surprise (wrong /proc view, hidden PIDs) → host preemption model (latency tail if the node runs PREEMPT_NONE). This sequence mirrors how the kernel resolves resources before policy.</p>
+</div>
 
 <h2 id="networking">5. NETWORKING</h2>
 
@@ -2437,8 +3214,13 @@ kubectl describe node &lt;node&gt; | sed -n '/Allocatable/,/System/p'</code></pr
   </ul>
   <div class="toc-section"><a href="#containers">Containers</a></div>
   <ul>
-    <li><a href="#birth">birth</a></li>
-    <li><a href="#closing-loop">closing-loop</a></li>
+    <li><a href="#pid-internals">pid-internals</a></li>
+    <li><a href="#cgroup-internals">cgroup-internals</a></li>
+    <li><a href="#vfs-mounts">vfs-mounts</a></li>
+    <li><a href="#overlayfs">overlayfs</a></li>
+    <li><a href="#container-read-path">container-read-path</a></li>
+    <li><a href="#container-stack">container-stack</a></li>
+    <li><a href="#container-truth">container-truth</a></li>
   </ul>
   <div class="toc-section"><a href="#networking">Networking</a></div>
   <ul>
