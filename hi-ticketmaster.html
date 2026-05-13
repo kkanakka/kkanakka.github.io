@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ticketmaster · System Design · Hello Interview</title>
+<style>
+  :root{
+    --fg:#1f2328;--fg-muted:#59636e;--fg-subtle:#6e7781;
+    --bg:#ffffff;--bg-subtle:#f6f8fa;--bg-muted:#eaeef2;
+    --border:#d1d9e0;--border-muted:#d8dee4;
+    --accent:#0969da;--accent-bg:#ddf4ff;
+    --success:#1a7f37;--success-bg:#dafbe1;
+    --attention:#9a6700;--attention-bg:#fff8c5;
+    --danger:#d1242f;--danger-bg:#ffebe9;
+    --done:#8250df;--done-bg:#fbefff;
+    --orange:#bc4c00;--orange-bg:#fff1e5;
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans",Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+
+  .topbar{border-bottom:1px solid var(--border);background:var(--bg);position:sticky;top:0;z-index:50;height:44px;display:flex;align-items:center}
+  .topbar .inner{max-width:1280px;margin:0 auto;padding:0 24px;width:100%;display:flex;align-items:center;justify-content:space-between;font-size:13px}
+  .topbar .crumbs{color:var(--fg-muted);display:flex;align-items:center;gap:8px}
+  .topbar .crumbs strong{color:var(--fg);font-weight:600}
+  .topbar .crumbs .sep{color:var(--border)}
+  .topbar .actions{display:flex;gap:14px;color:var(--fg-muted);font-size:12px}
+
+  .layout{max-width:1280px;margin:0 auto;padding:0 24px;display:grid;grid-template-columns:220px minmax(0,1fr) 200px;gap:40px}
+  @media(max-width:1024px){.layout{grid-template-columns:220px minmax(0,1fr);gap:32px}aside.toc-right{display:none}}
+  @media(max-width:760px){.layout{grid-template-columns:1fr;gap:0;padding:0 16px}aside.toc-left{display:none}}
+
+  aside.toc-left{border-right:1px solid var(--border);padding:24px 16px 24px 0;font-size:13px;position:sticky;top:44px;max-height:calc(100vh - 44px);overflow-y:auto}
+  aside.toc-left .group{margin-bottom:18px}
+  aside.toc-left .group-title{font-weight:600;color:var(--fg);padding:4px 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+  aside.toc-left a{display:block;padding:4px 10px;color:var(--fg-muted);text-decoration:none;border-radius:6px;line-height:1.4;border-left:2px solid transparent;margin-left:-2px}
+  aside.toc-left a:hover{background:var(--bg-subtle);color:var(--fg)}
+  aside.toc-left a.active{color:var(--accent);background:var(--accent-bg);border-left-color:var(--accent);font-weight:500}
+
+  main{padding:24px 0 80px;min-width:0}
+  h1{font-size:28px;font-weight:600;line-height:1.25;padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid var(--border);letter-spacing:-.01em}
+  h2{font-size:20px;font-weight:600;line-height:1.3;margin-top:28px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border-muted);scroll-margin-top:60px}
+  h3{font-size:16px;font-weight:600;line-height:1.35;margin-top:18px;margin-bottom:6px;scroll-margin-top:60px}
+  h4{font-size:13px;font-weight:600;line-height:1.35;margin-top:14px;margin-bottom:4px;color:var(--fg)}
+  p{margin-bottom:10px;max-width:760px;font-size:13.5px}
+  a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+  p code,li code,td code{font-family:var(--mono);background:var(--bg-subtle);padding:.15em .4em;border-radius:6px;font-size:.88em;color:var(--fg);border:1px solid var(--border-muted)}
+  strong{font-weight:600;color:var(--fg)}em{font-style:italic}
+  ul,ol{margin:6px 0 12px;padding-left:22px;max-width:760px;font-size:13.5px}
+  li{margin-bottom:3px;line-height:1.5}
+  pre{background:var(--bg-subtle);border:1px solid var(--border-muted);padding:10px 12px;border-radius:6px;overflow-x:auto;margin:6px 0 12px;font-family:var(--mono);font-size:12px;line-height:1.55;max-width:880px}
+
+  .alert{margin:10px 0 14px;padding:8px 14px;border-left:4px solid;border-radius:6px;background:var(--bg-subtle);max-width:860px;font-size:13px}
+  .alert .alert-title{font-weight:600;font-size:12px;margin-bottom:3px;display:flex;align-items:center;gap:6px}
+  .alert.note{border-color:var(--accent);background:#f0f7ff}.alert.note .alert-title{color:var(--accent)}
+  .alert.warning{border-color:var(--attention);background:#fff8e6}.alert.warning .alert-title{color:var(--attention)}
+  .alert.danger{border-color:var(--danger);background:#fff5f5}.alert.danger .alert-title{color:var(--danger)}
+  .alert.tip{border-color:var(--success);background:#f0fdf4}.alert.tip .alert-title{color:var(--success)}
+  .alert p{margin-bottom:3px;font-size:13px}.alert p:last-child{margin-bottom:0}
+
+  .diagram{margin:10px 0 14px;border:1px solid var(--border);background:var(--bg);border-radius:6px;overflow:hidden;max-width:980px}
+  .diagram-head{display:flex;justify-content:space-between;align-items:center;padding:5px 10px;background:var(--bg-subtle);border-bottom:1px solid var(--border-muted);font-family:var(--mono);font-size:11px;color:var(--fg-muted)}
+  .diagram-head .id{color:var(--accent);font-weight:500}
+  .diagram-body{padding:12px 10px;overflow-x:auto;background:var(--bg)}
+  .diagram-body svg{display:block;margin:0 auto;max-width:100%;height:auto}
+  .diagram-cap{padding:6px 10px;background:var(--bg-subtle);border-top:1px solid var(--border-muted);font-size:12px;color:var(--fg-muted)}
+
+  table{width:100%;max-width:880px;margin:6px 0 12px;border-collapse:collapse;font-size:12.5px;border:1px solid var(--border);border-radius:6px;overflow:hidden}
+  th{text-align:left;padding:6px 10px;background:var(--bg-subtle);color:var(--fg);font-weight:600;border-bottom:1px solid var(--border);font-size:12px}
+  td{padding:5px 10px;border-bottom:1px solid var(--border-muted);vertical-align:top}
+  tr:last-child td{border-bottom:none}tr:nth-child(even) td{background:var(--bg-subtle)}
+
+  .badges{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px}
+  .badge{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:12px;background:var(--bg-subtle);border:1px solid var(--border-muted);font-size:11px;color:var(--fg-muted);font-family:var(--mono)}
+  .badge .dot{width:6px;height:6px;border-radius:50%}
+
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0 14px;max-width:880px}
+  .col{padding:10px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg-subtle);font-size:13px}
+  .col h5{margin:0 0 4px;font-size:12px;font-weight:600}.col.pros h5{color:var(--success)}.col.cons h5{color:var(--danger)}
+  .col ul{margin:2px 0;padding-left:16px}.col li{margin:2px 0;font-size:12.5px}
+
+  .gloss-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:6px;margin:8px 0 14px}
+  .gloss-card{padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg-subtle);font-size:12.5px}
+  .gloss-card .term{font-family:var(--mono);font-weight:600;color:var(--accent);font-size:11px;margin-bottom:2px}
+  .gloss-card .def{color:var(--fg-muted);font-size:12px;line-height:1.45}
+
+  aside.toc-right{padding:24px 0;font-size:12px;position:sticky;top:44px;max-height:calc(100vh - 44px);overflow-y:auto}
+  aside.toc-right .label{text-transform:uppercase;letter-spacing:.04em;color:var(--fg-muted);font-weight:600;font-size:11px;margin-bottom:8px}
+  aside.toc-right ul{list-style:none;padding:0;margin:0}
+  aside.toc-right li{margin-bottom:3px}
+  aside.toc-right a{color:var(--fg-muted);text-decoration:none;display:block;padding:2px 0;line-height:1.4;border-left:2px solid transparent;padding-left:8px;margin-left:-10px}
+  aside.toc-right a:hover{color:var(--fg)}
+  aside.toc-right a.active{color:var(--accent);border-left-color:var(--accent);font-weight:500}
+
+  svg text{font-family:var(--mono);fill:var(--fg)}
+  ::selection{background:var(--accent-bg);color:var(--fg)}
+  .sb{fill:var(--bg-subtle);stroke:var(--border);stroke-width:1}
+  .sb-b{fill:#ddf4ff;stroke:var(--accent);stroke-width:1}
+  .sb-g{fill:#dafbe1;stroke:var(--success);stroke-width:1}
+  .sb-r{fill:#ffebe9;stroke:var(--danger);stroke-width:1}
+  .sb-y{fill:#fff8e6;stroke:var(--attention);stroke-width:1}
+  .sb-p{fill:#fbefff;stroke:var(--done);stroke-width:1}
+  .sb-o{fill:#fff1e5;stroke:var(--orange);stroke-width:1}
+  .sl{font-family:var(--sans);font-size:12px;font-weight:600;fill:var(--fg)}
+  .ss{font-family:var(--mono);font-size:10px;fill:var(--fg-muted)}
+  .sn{font-family:var(--mono);font-weight:700;font-size:11px;fill:var(--accent)}
+  .sa{stroke:var(--fg-muted);stroke-width:1.2;fill:none}
+  .sa-b{stroke:var(--accent);stroke-width:1.5;fill:none}
+  .sa-g{stroke:var(--success);stroke-width:1.5;fill:none}
+  .sa-r{stroke:var(--danger);stroke-width:1.5;fill:none}
+  .sa-p{stroke:var(--done);stroke-width:1.5;fill:none}
+</style>
+</head>
+<body>
+
+<div class="topbar"><div class="inner">
+  <div class="crumbs">
+    <a href="/" style="color:var(--fg-muted);text-decoration:none">home</a><span class="sep">/</span>
+    <a href="hi-index.html" style="color:var(--fg-muted);text-decoration:none">hello interview</a><span class="sep">/</span>
+    <strong>Ticketmaster</strong>
+  </div>
+  <div class="actions"><span>hellointerview</span><span>&middot;</span><span>2026-05</span></div>
+</div></div>
+
+<div class="layout">
+
+<aside class="toc-left">
+  <div class="group">
+    <div class="group-title">Design</div>
+    <a href="#req">01 Requirements</a>
+    <a href="#entities">02 Entities &amp; API</a>
+    <a href="#view">03 View events</a>
+    <a href="#search">04 Search events</a>
+    <a href="#book">05 Book tickets</a>
+  </div>
+  <div class="group">
+    <div class="group-title">Deep Dives</div>
+    <a href="#contention">06 Contention problem</a>
+    <a href="#redislock">07 Distributed lock</a>
+    <a href="#scale-reads">08 Scaling reads</a>
+    <a href="#waiting-room">09 Virtual waiting room</a>
+    <a href="#search-perf">10 Search (Galene)</a>
+    <a href="#real-time">11 Real-time seat map</a>
+    <a href="#full">12 Complete flow</a>
+    <a href="#glossary">13 Glossary</a>
+  </div>
+</aside>
+
+<main>
+
+<h1>Ticketmaster &mdash; System Design</h1>
+<div class="badges">
+  <span class="badge"><span class="dot" style="background:var(--orange)"></span>Ticketing</span>
+  <span class="badge"><span class="dot" style="background:var(--danger)"></span>No Double-Booking</span>
+  <span class="badge"><span class="dot" style="background:var(--accent)"></span>Search (Galene)</span>
+  <span class="badge"><span class="dot" style="background:var(--done)"></span>Distributed Locks</span>
+  <span class="badge"><span class="dot" style="background:var(--success)"></span>100:1 read:write</span>
+  <span class="badge"><span class="dot" style="background:var(--attention)"></span>10M concurrent</span>
+</div>
+
+<p>Design a system where users browse events, search by keyword/date/location, view a live seat map, and book tickets &mdash; all while preventing two users from buying the same seat. The interesting parts are <strong>contention</strong> (a seat can only be sold once), <strong>scaling reads</strong> (popular events get hammered), and <strong>graceful overload handling</strong> when 10M people refresh at the same instant.</p>
+<p><strong>LinkedIn mapping:</strong> Espresso (events/tickets/bookings), Couchbase (read cache + distributed locks), Kafka (CDC events), Samza (stream processing), Galene (search), LinkedIn CDN (static assets), d2 (service discovery + LB).</p>
+
+<!-- 01 Requirements -->
+<h2 id="req">01 &mdash; Requirements</h2>
+
+<div class="two-col">
+  <div class="col pros"><h5>In scope</h5><ul>
+    <li>View events (with seat map)</li>
+    <li>Search events by keyword, date, location, type</li>
+    <li>Book tickets (no double-booking)</li>
+  </ul></div>
+  <div class="col cons"><h5>Out of scope</h5><ul>
+    <li>View user&rsquo;s booked events</li>
+    <li>Admin event creation</li>
+    <li>Dynamic pricing / GDPR</li>
+  </ul></div>
+</div>
+
+<div class="diagram">
+  <div class="diagram-head"><span class="id">Fig 1</span> Non-functional targets &mdash; different parts have different consistency needs</div>
+  <div class="diagram-body">
+    <svg viewBox="0 0 800 110" xmlns="http://www.w3.org/2000/svg">
+      <defs><marker id="a1" markerWidth="8" markerHeight="8" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#656d76"/></marker></defs>
+      <rect class="sb-r" x="20" y="10" width="175" height="85" rx="6"/>
+      <text class="sl" x="107" y="30" text-anchor="middle">Consistency</text>
+      <text class="ss" x="107" y="48" text-anchor="middle">strict for booking</text>
+      <text class="ss" x="107" y="62" text-anchor="middle">no double-booking</text>
+      <text class="ss" x="107" y="76" text-anchor="middle">CP for write path</text>
+      <text class="ss" x="107" y="90" text-anchor="middle">AP for read path</text>
+      <rect class="sb-b" x="210" y="10" width="175" height="85" rx="6"/>
+      <text class="sl" x="297" y="30" text-anchor="middle">Read Scale</text>
+      <text class="ss" x="297" y="48" text-anchor="middle">100:1 read:write ratio</text>
+      <text class="ss" x="297" y="62" text-anchor="middle">popular events =</text>
+      <text class="ss" x="297" y="76" text-anchor="middle">10M concurrent users</text>
+      <text class="ss" x="297" y="90" text-anchor="middle">page refreshes</text>
+      <rect class="sb-g" x="400" y="10" width="175" height="85" rx="6"/>
+      <text class="sl" x="487" y="30" text-anchor="middle">Search Latency</text>
+      <text class="ss" x="487" y="48" text-anchor="middle">&lt; 500ms p99</text>
+      <text class="ss" x="487" y="62" text-anchor="middle">full-text + filters</text>
+      <text class="ss" x="487" y="76" text-anchor="middle">no full table scans</text>
+      <text class="ss" x="487" y="90" text-anchor="middle">inverted index</text>
+      <rect class="sb-p" x="590" y="10" width="175" height="85" rx="6"/>
+      <text class="sl" x="677" y="30" text-anchor="middle">Availability</text>
+      <text class="ss" x="677" y="48" text-anchor="middle">view + search</text>
+      <text class="ss" x="677" y="62" text-anchor="middle">always available</text>
+      <text class="ss" x="677" y="76" text-anchor="middle">tolerate eventual</text>
+      <text class="ss" x="677" y="90" text-anchor="middle">consistency</text>
+    </svg>
+  </div>
+  <div class="diagram-cap">Read path = AP (stale seat map OK for a few seconds). Booking path = CP (no two users get the same seat).</div>
+</div>
+
+<div class="alert danger"><div class="alert-title">The single hardest constraint</div><p>Two users CANNOT buy the same seat. If we mess this up, someone shows up to a stadium with a ticket only to find someone else in their seat. Everything else bends around this.</p></div>
+
+<!-- 02 Entities & API -->
+<h2 id="entities">02 &mdash; Core entities &amp; API</h2>
+
+<div class="diagram">
+  <div class="diagram-head"><span class="id">Fig 2</span> Six entities &mdash; all stored in Espresso. Tickets pre-created per seat when event is created.</div>
+  <div class="diagram-body">
+    <svg viewBox="0 0 800 290" xmlns="http://www.w3.org/2000/svg">
+      <rect class="sb" x="20" y="20" width="160" height="90" rx="6"/>
+      <text class="sl" x="100" y="40" text-anchor="middle">User</text>
+      <line x1="34" y1="48" x2="166" y2="48" stroke="var(--border-muted)"/>
+      <text class="ss" x="34" y="64">id, email, name</text>
+      <text class="ss" x="34" y="78">created_at</text>
+
+      <rect class="sb-p" x="220" y="20" width="180" height="90" rx="6"/>
+      <text class="sl" x="310" y="40" text-anchor="middle">Event</text>
+      <line x1="234" y1="48" x2="386" y2="48" stroke="var(--border-muted)"/>
+      <text class="ss" x="234" y="64">id, name, description</text>
+      <text class="ss" x="234" y="78">date, venue_id</text>
+      <text class="ss" x="234" y="92">performer_id, type</text>
+
+      <rect class="sb-b" x="440" y="20" width="150" height="90" rx="6"/>
+      <text class="sl" x="515" y="40" text-anchor="middle">Performer</text>
+      <line x1="454" y1="48" x2="576" y2="48" stroke="var(--border-muted)"/>
+      <text class="ss" x="454" y="64">id, name</text>
+      <text class="ss" x="454" y="78">bio, image_url</text>
+
+      <rect class="sb-y" x="620" y="20" width="150" height="90" rx="6"/>
+      <text class="sl" x="695" y="40" text-anchor="middle">Venue</text>
+      <line x1="634" y1="48" x2="756" y2="48" stroke="var(--border-muted)"/>
+      <text class="ss" x="634" y="64">id, name, address</text>
+      <text class="ss" x="634" y="78">capacity, seat_map</text>
+
+      <rect class="sb-g" x="220" y="155" width="180" height="110" rx="6"/>
+      <text class="sl" x="310" y="175" text-anchor="middle">Ticket</text>
+      <line x1="234" y1="183" x2="386" y2="183" stroke="var(--border-muted)"/>
+      <text class="ss" x="234" y="199">id, event_id</text>
+      <text class="ss" x="234" y="213">section, row, seat</text>
+      <text class="ss" x="234" y="227">price, status</text>
+      <text class="ss" x="234" y="245" fill="var(--success)">(available | booked)</text>
+
+      <rect class="sb-r" x="440" y="155" width="180" height="110" rx="6"/>
+      <text class="sl" x="530" y="175" text-anchor="middle">Booking</text>
+      <line x1="454" y1="183" x2="606" y2="183" stroke="var(--border-muted)"/>
+      <text class="ss" x="454" y="199">id, user_id</text>
+      <text class="ss" x="454" y="213">ticket_ids[]</text>
+      <text class="ss" x="454" y="227">total_price, status</text>
+      <text class="ss" x="454" y="245" fill="var(--danger)">(in-progress | confirmed)</text>
+
+      <path class="sa" d="M400,65 L438,65" marker-end="url(#a1)"/><text class="ss" x="419" y="58" text-anchor="middle">by</text>
+      <path class="sa" d="M400,85 L618,85" marker-end="url(#a1)"/><text class="ss" x="510" y="78" text-anchor="middle">at</text>
+      <path class="sa" d="M310,110 L310,153" marker-end="url(#a1)"/><text class="ss" x="320" y="138">has</text>
+      <path class="sa" d="M400,210 L438,210" marker-end="url(#a1)"/><text class="ss" x="419" y="204" text-anchor="middle">in</text>
+      <path class="sa" d="M100,110 L500,153" marker-end="url(#a1)"/><text class="ss" x="285" y="140" text-anchor="middle">books</text>
+    </svg>
+  </div>
+</div>
+
+<h4>API endpoints</h4>
+<pre><span style="color:var(--success)">GET</span>  /events/:eventId                              <span style="color:var(--fg-muted)"># returns event + venue + performer + tickets[]</span>
+<span style="color:var(--success)">GET</span>  /events/search?keyword=&amp;start=&amp;end=&amp;page=     <span style="color:var(--fg-muted)"># full-text via Galene</span>
+<span style="color:var(--accent)">POST</span> /reserve/:eventId  { ticketIds[] }             <span style="color:var(--fg-muted)"># acquire lock, create in-progress booking</span>
+<span style="color:var(--accent)">POST</span> /confirm/:bookingId { paymentToken }           <span style="color:var(--fg-muted)"># charge + finalize</span></pre>
+
+<div class="alert note"><div class="alert-title">Why a separate Booking entity?</div><p>When a user buys 4 seats in one transaction, you want them grouped under one order with one total price and one payment status. Easier to refund, easier to email a receipt.</p></div>
+
+<!-- 03 View Events -->
+<h2 id="view">03 &mdash; View events</h2>
+
+<div class="diagram">
+  <div class="diagram-head"><span class="id">Fig 3</span> View event flow &mdash; three hops</div>
+  <div class="diagram-body">
+    <svg viewBox="0 0 800 150" xmlns="http://www.w3.org/2000/svg">
+      <defs><marker id="ab" markerWidth="8" markerHeight="8" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#0969da"/></marker></defs>
+      <rect class="sb" x="20" y="30" width="120" height="50" rx="6"/><text class="sl" x="80" y="52" text-anchor="middle">Client</text><text class="ss" x="80" y="66" text-anchor="middle">web / mobile</text>
+      <rect class="sb-y" x="170" y="30" width="140" height="50" rx="6"/><text class="sl" x="240" y="52" text-anchor="middle">API Gateway (d2)</text><text class="ss" x="240" y="66" text-anchor="middle">auth, rate limit</text>
+      <rect class="sb-b" x="340" y="30" width="160" height="50" rx="6"/><text class="sl" x="420" y="52" text-anchor="middle">Event Service</text><text class="ss" x="420" y="66" text-anchor="middle">fetch details</text>
+      <rect class="sb-g" x="530" y="30" width="140" height="50" rx="6"/><text class="sl" x="600" y="52" text-anchor="middle">Espresso</text><text class="ss" x="600" y="66" text-anchor="middle">events + tickets</text>
+
+      <path class="sa-b" d="M140,55 L168,55" marker-end="url(#ab)"/><text class="sn" x="154" y="48">1</text>
+      <path class="sa-b" d="M310,55 L338,55" marker-end="url(#ab)"/><text class="sn" x="324" y="48">2</text>
+      <path class="sa-b" d="M500,55 L528,55" marker-end="url(#ab)"/><text class="sn" x="514" y="48">3</text>
+
+      <text class="ss" x="400" y="110" text-anchor="middle">Returns: event + venue + performer + tickets[] &rarr; client renders seat map</text>
+      <text class="ss" x="400" y="125" text-anchor="middle">Ticket statuses overlaid on venue&rsquo;s seat_map JSON to show available/booked</text>
+    </svg>
+  </div>
+</div>
+
+<ol>
+  <li><strong>Client requests.</strong> <code>GET /events/:eventId</code> fired when user navigates to an event page.</li>
+  <li><strong>d2 routes.</strong> Validates auth, applies rate limits, routes to Event Service via d2 client-side LB.</li>
+  <li><strong>Event Service queries Espresso.</strong> Joins Events, Venues, Performers + all Tickets for the event.</li>
+  <li><strong>Response assembled.</strong> Returns event metadata + seat_map JSON + ticket statuses. Client renders interactive seat map.</li>
+</ol>
+
+<!-- 04 Search -->
+<h2 id="search">04 &mdash; Search events</h2>
+
+<div class="diagram">
+  <div class="diagram-head"><span class="id">Fig 4</span> Naive search &mdash; good starting point, doesn&rsquo;t scale (Section 10 fixes it)</div>
+  <div class="diagram-body">
+    <svg viewBox="0 0 800 130" xmlns="http://www.w3.org/2000/svg">
+      <rect class="sb" x="20" y="20" width="120" height="50" rx="6"/><text class="sl" x="80" y="42" text-anchor="middle">Client</text><text class="ss" x="80" y="56" text-anchor="middle">search bar</text>
+      <rect class="sb-y" x="170" y="20" width="140" height="50" rx="6"/><text class="sl" x="240" y="42" text-anchor="middle">API Gateway</text>
+      <rect class="sb-p" x="340" y="20" width="160" height="50" rx="6"/><text class="sl" x="420" y="42" text-anchor="middle">Search Service</text>
+      <rect class="sb-g" x="530" y="20" width="150" height="50" rx="6"/><text class="sl" x="605" y="42" text-anchor="middle">Espresso</text><text class="ss" x="605" y="56" text-anchor="middle">LIKE &apos;%query%&apos;</text>
+
+      <path class="sa-b" d="M140,45 L168,45" marker-end="url(#ab)"/><text class="sn" x="154" y="38">1</text>
+      <path class="sa-b" d="M310,45 L338,45" marker-end="url(#ab)"/><text class="sn" x="324" y="38">2</text>
+      <path class="sa-b" d="M500,45 L528,45" marker-end="url(#ab)"/><text class="sn" x="514" y="38">3</text>
+
+      <text class="ss" x="400" y="100" text-anchor="middle" fill="var(--danger)">LIKE &apos;%Taylor%&apos; can&rsquo;t use B-tree index = full table scan = seconds per query</text>
+      <text class="ss" x="400" y="115" text-anchor="middle" fill="var(--danger)">Section 10 replaces this with Galene (LinkedIn&rsquo;s search engine)</text>
+    </svg>
+  </div>
+</div>
+
+<div class="alert warning"><div class="alert-title">Why this is bad</div><p><code>LIKE '%Taylor%'</code> can&rsquo;t use a B-tree index because of the leading <code>%</code>. It&rsquo;s a full table scan. With millions of events, that&rsquo;s seconds per query. We&rsquo;ll replace this with <strong>Galene</strong> (LinkedIn&rsquo;s search platform, built on Lucene) in Section 10.</p></div>
+
+<!-- 05 Book Tickets -->
+<h2 id="book">05 &mdash; Book tickets (simple version)</h2>
+
+<div class="diagram">
+  <div class="diagram-head"><span class="id">Fig 5</span> Simple booking flow &mdash; race conditions waiting to happen</div>
+  <div class="diagram-body">
+    <svg viewBox="0 0 800 220" xmlns="http://www.w3.org/2000/svg">
+      <rect class="sb" x="20" y="20" width="120" height="50" rx="6"/><text class="sl" x="80" y="42" text-anchor="middle">Client</text><text class="ss" x="80" y="56" text-anchor="middle">checkout page</text>
+      <rect class="sb-y" x="170" y="20" width="130" height="50" rx="6"/><text class="sl" x="235" y="42" text-anchor="middle">API Gateway</text>
+      <rect class="sb-b" x="330" y="20" width="160" height="50" rx="6"/><text class="sl" x="410" y="42" text-anchor="middle">Booking Service</text>
+      <rect class="sb-g" x="520" y="20" width="130" height="50" rx="6"/><text class="sl" x="585" y="42" text-anchor="middle">Espresso</text><text class="ss" x="585" y="56" text-anchor="middle">tickets, bookings</text>
+      <rect class="sb-p" x="330" y="120" width="160" height="50" rx="6"/><text class="sl" x="410" y="142" text-anchor="middle">Payment (Stripe)</text><text class="ss" x="410" y="156" text-anchor="middle">charge card</text>
+
+      <path class="sa-b" d="M140,45 L168,45" marker-end="url(#ab)"/><text class="sn" x="154" y="38">1</text>
+      <path class="sa-b" d="M300,45 L328,45" marker-end="url(#ab)"/><text class="sn" x="314" y="38">2</text>
+      <path class="sa-b" d="M490,45 L518,45" marker-end="url(#ab)"/><text class="sn" x="504" y="38">3</text>
+      <path class="sa-b" d="M410,70 L410,118" marker-end="url(#ab)"/><text class="sn" x="420" y="98">4</text>
+      <path class="sa-g" d="M490,145 L550,70" stroke="var(--success)" stroke-width="1.5" fill="none" marker-end="url(#ab)"/><text class="sn" x="530" y="110" fill="var(--success)">5</text>
+
+      <text class="ss" x="400" y="200" text-anchor="middle" fill="var(--danger)">Problem: user fills card details for 5 min &rarr; ticket might already be gone</text>
+    </svg>
+  </div>
+  <div class="diagram-cap">Sections 6 + 7 fix this with a reservation lock.</div>
+</div>
+
+<p>This works for low traffic but has a glaring UX problem: the user enters their card details, but during those 30+ seconds, someone else can buy the seat. User clicks pay and gets &ldquo;this seat is no longer available.&rdquo;</p>
+
+<!-- 06 Contention Problem -->
+<h2 id="contention">06 &mdash; The contention problem</h2>
+<p>For popular events, 100K users might all see one seat as available at the same moment. Only one can have it.</p>
+
+<h3>Approach 1 &mdash; Status column + cron job</h3>
+
+<div class="diagram">
+  <div class="diagram-head"><span class="id">Fig 6</span> Status + cron &mdash; works for small scale, brittle in production</div>
+  <div class="diagram-body">
+    <svg viewBox="0 0 800 180" xmlns="http://www.w3.org/2000/svg">
+      <rect class="sb-y" x="20" y="15" width="220" height="70" rx="6"/>
+      <text class="sl" x="130" y="35" text-anchor="middle">Add &lsquo;reserved&rsquo; status</text>
+      <text class="ss" x="130" y="52" text-anchor="middle">+ reserved_at timestamp</text>
+      <text class="ss" x="130" y="66" text-anchor="middle">+ reserved_by user_id</text>
+
+      <rect class="sb-b" x="280" y="15" width="200" height="70" rx="6"/>
+      <text class="sl" x="380" y="35" text-anchor="middle">User clicks seat</text>
+      <text class="ss" x="380" y="52" text-anchor="middle">UPDATE ticket</text>
+      <text class="ss" x="380" y="66" text-anchor="middle">SET status=&rsquo;reserved&rsquo;</text>
+
+      <rect class="sb-p" x="520" y="15" width="250" height="70" rx="6"/>
+      <text class="sl" x="645" y="35" text-anchor="middle">Cron job every minute</text>
+      <text class="ss" x="645" y="52" text-anchor="middle">UPDATE tickets SET status=&rsquo;available&rsquo;</text>
+      <text class="ss" x="645" y="66" text-anchor="middle">WHERE reserved_at &lt; NOW()-10m</text>
+
+      <path class="sa" d="M240,50 L278,50" marker-end="url(#a1)"/>
+      <path class="sa" d="M480,50 L518,50" marker-end="url(#a1)"/>
+
+      <rect class="sb-r" x="20" y="105" width="750" height="60" rx="6"/>
+      <text class="sl" x="34" y="125">Problems</text>
+      <text class="ss" x="34" y="140">Cron = single point of failure. If it stops, seats stay &ldquo;reserved&rdquo; forever = system appears sold out.</text>
+      <text class="ss" x="34" y="155">Cron timing imprecise. Three-state column complicates all queries.</text>
+    </svg>
+  </div>
+</div>
+
+<h3>Approach 2 &mdash; Couchbase distributed lock (the winner)</h3>
+<p>Use <strong>Couchbase</strong> (LinkedIn&rsquo;s distributed cache) to hold a short-lived reservation with automatic expiry. Espresso handles the final &ldquo;booked&rdquo; state with row-level locks; Couchbase handles the temporary reservation. Each tool does what it&rsquo;s best at.</p>
+
+<div class="two-col">
+  <div class="col pros"><h5>Why Couchbase</h5><ul>
+    <li>Native key TTL &mdash; auto-expire reservations</li>
+    <li>CAS (Compare-And-Swap) is atomic &mdash; no race on lock acquisition</li>
+    <li>In-memory &rarr; microsecond ops at high concurrency</li>
+    <li>LinkedIn already runs Couchbase at massive scale</li>
+  </ul></div>
+  <div class="col cons"><h5>Tradeoffs</h5><ul>
+    <li>Read path needs to merge Couchbase state to show &ldquo;reserved&rdquo; seats</li>
+    <li>If Couchbase goes down, fallback to Espresso-only flow with degraded UX</li>
+    <li>One more system to coordinate (but already in LinkedIn&rsquo;s stack)</li>
+  </ul></div>
+</div>
+
+<!-- 07 Distributed Lock -->
+<h2 id="redislock">07 &mdash; Distributed lock &mdash; full reservation flow</h2>
+
+<div class="diagram">
+  <div class="diagram-head"><span class="id">Fig 7</span> Full reservation + payment flow with Couchbase lock (sequence diagram)</div>
+  <div class="diagram-body">
+    <svg viewBox="0 0 800 440" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="aLb" markerWidth="8" markerHeight="8" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#0969da"/></marker>
+        <marker id="aLg" markerWidth="8" markerHeight="8" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#1a7f37"/></marker>
+        <marker id="aLp" markerWidth="8" markerHeight="8" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#8250df"/></marker>
+      </defs>
+
+      <line x1="90" y1="40" x2="90" y2="420" stroke="var(--border-muted)"/>
+      <line x1="310" y1="40" x2="310" y2="420" stroke="var(--border-muted)"/>
+      <line x1="530" y1="40" x2="530" y2="420" stroke="var(--border-muted)"/>
+      <line x1="720" y1="40" x2="720" y2="420" stroke="var(--border-muted)"/>
+
+      <rect class="sb" x="40" y="15" width="100" height="25" rx="3"/><text class="ss" x="90" y="31" text-anchor="middle">Client</text>
+      <rect class="sb-b" x="260" y="15" width="100" height="25" rx="3"/><text class="ss" x="310" y="31" text-anchor="middle">Booking Svc</text>
+      <rect class="sb-r" x="480" y="15" width="100" height="25" rx="3"/><text class="ss" x="530" y="31" text-anchor="middle">Couchbase</text>
+      <rect class="sb-g" x="670" y="15" width="100" height="25" rx="3"/><text class="ss" x="720" y="31" text-anchor="middle">Espresso</text>
+
+      <path d="M90,60 L308,60" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#aLb)"/>
+      <text class="ss" x="200" y="54" text-anchor="middle">1. POST /reserve { ticketIds }</text>
+
+      <path d="M310,85 L528,85" stroke="var(--danger)" stroke-width="1.5" marker-end="url(#a1)"/>
+      <text class="ss" x="420" y="79" text-anchor="middle">2. INSERT ticket:42 user_X TTL=600s</text>
+
+      <path d="M530,110 L312,110" stroke="var(--danger)" stroke-width="1.5" stroke-dasharray="3,2" marker-end="url(#a1)"/>
+      <text class="ss" x="420" y="104" text-anchor="middle">3. CAS OK (lock acquired)</text>
+
+      <path d="M310,140 L718,140" stroke="var(--success)" stroke-width="1.5" marker-end="url(#aLg)"/>
+      <text class="ss" x="510" y="134" text-anchor="middle">4. INSERT booking (status=&rsquo;in-progress&rsquo;)</text>
+
+      <path d="M308,170 L90,170" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="3,2" marker-end="url(#aLb)"/>
+      <text class="ss" x="200" y="164" text-anchor="middle">5. { bookingId, expiresIn: 600s }</text>
+
+      <rect class="sb-y" x="40" y="195" width="680" height="22" rx="3"/>
+      <text class="ss" x="380" y="210" text-anchor="middle">User fills payment form (up to 10 min) &middot; countdown timer shown</text>
+
+      <path d="M90,250 L308,250" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#aLb)"/>
+      <text class="ss" x="200" y="244" text-anchor="middle">7. POST /confirm { paymentToken }</text>
+
+      <path d="M310,280 L528,280" stroke="var(--done)" stroke-width="1.5" marker-end="url(#aLp)"/>
+      <text class="ss" x="420" y="274" text-anchor="middle">8. Stripe.charge() &mdash; async</text>
+
+      <path d="M310,310 L528,310" stroke="var(--danger)" stroke-width="1.5" marker-end="url(#a1)"/>
+      <text class="ss" x="420" y="304" text-anchor="middle">9. GET ticket:42 (still user_X?)</text>
+
+      <path d="M310,340 L718,340" stroke="var(--success)" stroke-width="1.5" marker-end="url(#aLg)"/>
+      <text class="ss" x="510" y="334" text-anchor="middle">10. UPDATE ticket SET status=&rsquo;booked&rsquo; (OCC check)</text>
+
+      <path d="M310,370 L528,370" stroke="var(--danger)" stroke-width="1.5" marker-end="url(#a1)"/>
+      <text class="ss" x="420" y="364" text-anchor="middle">11. DEL ticket:42 (cleanup)</text>
+
+      <path d="M308,400 L90,400" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="3,2" marker-end="url(#aLb)"/>
+      <text class="ss" x="200" y="394" text-anchor="middle">12. 200 OK booking confirmed</text>
+    </svg>
+  </div>
+  <div class="diagram-cap">Couchbase CAS (Compare-And-Swap) is atomic. Even if 1M servers try to lock the same ticket simultaneously, exactly one succeeds.</div>
+</div>
+
+<div class="alert note"><div class="alert-title">Couchbase CAS = atomic lock acquisition</div><p>Couchbase&rsquo;s INSERT with CAS is equivalent to Redis SET NX. It&rsquo;s a single atomic operation. Combined with TTL auto-expiry, it gives us distributed locks with zero race conditions and automatic cleanup.</p></div>
+
+<div class="alert warning"><div class="alert-title">Edge case: lock expires during payment</div><p>User starts payment at minute 9:55, 10-minute lock expires at 10:00, payment completes at 10:02. Another user could&rsquo;ve reserved the seat in those 2 seconds. The Espresso OCC check in step 10 catches this &rarr; issue refund via Stripe. Mitigation: set lock TTL generously (15 min), or extend the lock when payment starts.</p></div>
+
+<!-- 08 Scaling Reads -->
+<h2 id="scale-reads">08 &mdash; Scaling reads &mdash; cache pyramid</h2>
+
+<div class="diagram">
+  <div class="diagram-head"><span class="id">Fig 8</span> Cache pyramid &mdash; each layer absorbs traffic before it reaches the next</div>
+  <div class="diagram-body">
+    <svg viewBox="0 0 800 260" xmlns="http://www.w3.org/2000/svg">
+      <rect class="sb-g" x="20" y="10" width="760" height="40" rx="6"/>
+      <text class="sl" x="34" y="28">L1 &mdash; Browser cache</text>
+      <text class="ss" x="34" y="42">images, JS, CSS, fonts. Cache-Control: max-age=86400. Zero requests to us.</text>
+
+      <rect class="sb-b" x="20" y="60" width="760" height="40" rx="6"/>
+      <text class="sl" x="34" y="78">L2 &mdash; LinkedIn CDN</text>
+      <text class="ss" x="34" y="92">event page HTML + venue seat_map. stale-while-revalidate. Absorbs 95% of read traffic.</text>
+
+      <rect class="sb-y" x="20" y="110" width="760" height="40" rx="6"/>
+      <text class="sl" x="34" y="128">L3 &mdash; Couchbase (origin-side cache)</text>
+      <text class="ss" x="34" y="142">event details, performer bios. Read-through. TTL: 5 min. Invalidated on update.</text>
+
+      <rect class="sb-p" x="20" y="160" width="760" height="40" rx="6"/>
+      <text class="sl" x="34" y="178">L4 &mdash; Espresso read replicas</text>
+      <text class="ss" x="34" y="192">Event Service reads from replicas. Lag &lt; 100ms acceptable. Writes go to primary.</text>
+
+      <rect class="sb-r" x="20" y="210" width="760" height="40" rx="6"/>
+      <text class="sl" x="34" y="228">L5 &mdash; Espresso primary</text>
+      <text class="ss" x="34" y="242">writes only (bookings) + cache miss fallthroughs. Should see &lt; 1% of total traffic.</text>
+    </svg>
+  </div>
+  <div class="diagram-cap">Each layer absorbs traffic. CDN handles the thundering herd. Espresso primary only sees writes.</div>
+</div>
+
+<h4>What we DON&rsquo;T cache aggressively</h4>
+<p>Seat availability changes constantly. Caching it for 5 minutes means users see stale &ldquo;available&rdquo; seats and get errors at checkout. Two options:</p>
+<ul>
+  <li><strong>Short TTL (5&ndash;10 seconds)</strong> on seat availability, accept some staleness.</li>
+  <li><strong>Real-time push</strong> (Section 11) &mdash; client opens an SSE stream and receives seat updates as they happen.</li>
+</ul>
+
+<!-- 09 Virtual Waiting Room -->
+<h2 id="waiting-room">09 &mdash; Virtual waiting room for hot events</h2>
+
+<div class="diagram">
+  <div class="diagram-head"><span class="id">Fig 9</span> Waiting room &mdash; throttle at the door instead of crashing inside</div>
+  <div class="diagram-body">
+    <svg viewBox="0 0 800 280" xmlns="http://www.w3.org/2000/svg">
+      <defs><marker id="ag" markerWidth="8" markerHeight="8" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#1a7f37"/></marker></defs>
+      <rect class="sb-b" x="20" y="20" width="170" height="70" rx="6"/>
+      <text class="sl" x="105" y="42" text-anchor="middle">10M users hit</text>
+      <text class="sl" x="105" y="56" text-anchor="middle">&ldquo;buy tickets&rdquo;</text>
+      <text class="ss" x="105" y="76" text-anchor="middle">10:00 AM on-sale</text>
+
+      <rect class="sb-y" x="230" y="20" width="300" height="70" rx="6"/>
+      <text class="sl" x="380" y="42" text-anchor="middle">Virtual Waiting Room</text>
+      <text class="ss" x="380" y="56" text-anchor="middle">Couchbase Sorted Doc keyed by event:42:queue</text>
+      <text class="ss" x="380" y="70" text-anchor="middle">score = join_timestamp &middot; fair ordering</text>
+
+      <rect class="sb-g" x="570" y="20" width="200" height="70" rx="6"/>
+      <text class="sl" x="670" y="42" text-anchor="middle">Booking Service</text>
+      <text class="ss" x="670" y="56" text-anchor="middle">handles N users/sec</text>
+      <text class="ss" x="670" y="70" text-anchor="middle">at sustainable load</text>
+
+      <path class="sa-b" d="M190,55 L228,55" marker-end="url(#ab)"/><text class="sn" x="209" y="48">1</text>
+      <path class="sa-g" d="M530,55 L568,55" marker-end="url(#ag)"/><text class="sn" x="549" y="48">3</text>
+
+      <rect class="sb-p" x="230" y="120" width="300" height="50" rx="6"/>
+      <text class="sl" x="380" y="140" text-anchor="middle">SSE / WebSocket per waiting user</text>
+      <text class="ss" x="380" y="156" text-anchor="middle">push position: &ldquo;you are #4,231 in line&rdquo;</text>
+      <path class="sa-p" d="M380,90 L380,118" marker-end="url(#a1)"/><text class="sn" x="390" y="108">2</text>
+
+      <rect class="sb-r" x="230" y="195" width="300" height="45" rx="6"/>
+      <text class="sl" x="380" y="215" text-anchor="middle">admitted:42 Couchbase Set</text>
+      <text class="ss" x="380" y="230" text-anchor="middle">Booking Service rejects requests not in this set</text>
+      <path class="sa" d="M380,170 L380,193" marker-end="url(#a1)"/><text class="sn" x="390" y="185">4</text>
+
+      <text class="ss" x="400" y="265" text-anchor="middle">Dequeue rate matches Booking Service capacity (e.g. 5K users/min)</text>
+    </svg>
+  </div>
+</div>
+
+<div class="alert tip"><div class="alert-title">Staff-level insight</div><p>Sometimes the best engineering is recognizing you can&rsquo;t fight physics. You can&rsquo;t process 10M booking transactions per second with strong consistency. The queue gives users a fair, predictable experience and lets us match throughput to actual capacity.</p></div>
+
+<!-- 10 Search Performance -->
+<h2 id="search-perf">10 &mdash; Search performance with Galene</h2>
+<p>Espresso <code>LIKE '%query%'</code> can&rsquo;t use indexes; full table scan every search. Solution: <strong>Galene</strong>, LinkedIn&rsquo;s search platform built on Lucene with inverted indexes.</p>
+
+<h3>Inverted index: forward vs inverted</h3>
+
+<div class="diagram">
+  <div class="diagram-head"><span class="id">Fig 10</span> Inverted index makes keyword search O(1) instead of O(N)</div>
+  <div class="diagram-body">
+    <svg viewBox="0 0 800 200" xmlns="http://www.w3.org/2000/svg">
+      <text class="sl" x="20" y="18" fill="var(--danger)">Forward index (Espresso) &mdash; scan all rows</text>
+      <rect class="sb" x="20" y="28" width="360" height="75" rx="6"/>
+      <text class="ss" x="34" y="46">event_1 &rarr; &ldquo;Taylor Swift Eras Tour at MetLife&rdquo;</text>
+      <text class="ss" x="34" y="60">event_2 &rarr; &ldquo;Coldplay World Tour at SoFi&rdquo;</text>
+      <text class="ss" x="34" y="74">event_3 &rarr; &ldquo;Taylor Mac at Carnegie Hall&rdquo;</text>
+      <text class="ss" x="34" y="92" fill="var(--danger)">search &ldquo;Taylor&rdquo;: must scan ALL rows</text>
+
+      <text class="sl" x="420" y="18" fill="var(--success)">Inverted index (Galene) &mdash; O(1) lookup</text>
+      <rect class="sb-g" x="420" y="28" width="360" height="75" rx="6"/>
+      <text class="ss" x="434" y="46">&ldquo;taylor&rdquo;     &rarr; [event_1, event_3]</text>
+      <text class="ss" x="434" y="60">&ldquo;swift&rdquo;      &rarr; [event_1]</text>
+      <text class="ss" x="434" y="74">&ldquo;coldplay&rdquo;   &rarr; [event_2]</text>
+      <text class="ss" x="434" y="92" fill="var(--success)">search &ldquo;taylor&rdquo;: instant lookup</text>
+
+      <rect class="sb-b" x="20" y="120" width="760" height="65" rx="6"/>
+      <text class="sl" x="34" y="140">Galene adds on top of Lucene:</text>
+      <text class="ss" x="34" y="156">Tokenization (Taylor&rsquo;s &rarr; [&ldquo;taylor&rdquo;]) &middot; Stemming (&ldquo;running&rdquo; matches &ldquo;run&rdquo;)</text>
+      <text class="ss" x="34" y="170">Fuzzy matching (typo &ldquo;Taylr&rdquo; still finds &ldquo;Taylor&rdquo;) &middot; Geo queries, date range filters</text>
+    </svg>
+  </div>
+</div>
+
+<h3>Keeping Galene in sync with Espresso</h3>
+
+<div class="diagram">
+  <div class="diagram-head"><span class="id">Fig 11</span> Espresso stays source of truth; Kafka CDC keeps Galene eventually consistent</div>
+  <div class="diagram-body">
+    <svg viewBox="0 0 800 150" xmlns="http://www.w3.org/2000/svg">
+      <rect class="sb-g" x="20" y="20" width="150" height="50" rx="6"/><text class="sl" x="95" y="42" text-anchor="middle">Espresso</text><text class="ss" x="95" y="56" text-anchor="middle">source of truth</text>
+      <rect class="sb-y" x="210" y="20" width="150" height="50" rx="6"/><text class="sl" x="285" y="42" text-anchor="middle">CDC (Brooklin)</text><text class="ss" x="285" y="56" text-anchor="middle">reads change log</text>
+      <rect class="sb-p" x="400" y="20" width="150" height="50" rx="6"/><text class="sl" x="475" y="42" text-anchor="middle">Kafka</text><text class="ss" x="475" y="56" text-anchor="middle">event change topic</text>
+      <rect class="sb-b" x="590" y="20" width="150" height="50" rx="6"/><text class="sl" x="665" y="42" text-anchor="middle">Galene</text><text class="ss" x="665" y="56" text-anchor="middle">indexes events</text>
+
+      <path class="sa" d="M170,45 L208,45" marker-end="url(#a1)"/><text class="sn" x="189" y="38">1</text>
+      <path class="sa-p" d="M360,45 L398,45" marker-end="url(#a1)"/><text class="sn" x="379" y="38">2</text>
+      <path class="sa" d="M550,45 L588,45" marker-end="url(#a1)"/><text class="sn" x="569" y="38">3</text>
+
+      <rect class="sb" x="20" y="90" width="720" height="45" rx="6"/>
+      <text class="ss" x="380" y="108" text-anchor="middle">1. Admin updates event in Espresso. 2. Brooklin (LinkedIn CDC) captures change, publishes to Kafka.</text>
+      <text class="ss" x="380" y="124" text-anchor="middle">3. Galene indexer consumer reads from Kafka, updates inverted index. Search results stay fresh.</text>
+    </svg>
+  </div>
+</div>
+
+<h4>Caching popular search queries</h4>
+<pre>cache_key = hash(keyword + filters + page + sort)
+cache_val = JSON of result IDs
+TTL       = 60 seconds (Couchbase)
+
+flow:
+  1. Search Service computes cache_key
+  2. Try Couchbase GET. Hit &rarr; return immediately
+  3. Miss &rarr; query Galene
+  4. Store result in Couchbase with TTL
+  5. Return to client
+
+<span style="color:var(--fg-muted)">// This single optimization offloads 80%+ of search traffic on hot terms</span></pre>
+
+<!-- 11 Real-time Seat Map -->
+<h2 id="real-time">11 &mdash; Real-time seat map updates</h2>
+
+<div class="diagram">
+  <div class="diagram-head"><span class="id">Fig 12</span> Real-time seat updates via Kafka pub/sub + SSE</div>
+  <div class="diagram-body">
+    <svg viewBox="0 0 800 180" xmlns="http://www.w3.org/2000/svg">
+      <rect class="sb-b" x="20" y="20" width="160" height="50" rx="6"/><text class="sl" x="100" y="42" text-anchor="middle">Booking Service</text><text class="ss" x="100" y="56" text-anchor="middle">seat locked/booked</text>
+      <rect class="sb-p" x="220" y="20" width="160" height="50" rx="6"/><text class="sl" x="300" y="42" text-anchor="middle">Kafka topic</text><text class="ss" x="300" y="56" text-anchor="middle">event:42:seats</text>
+      <rect class="sb-g" x="420" y="20" width="160" height="50" rx="6"/><text class="sl" x="500" y="42" text-anchor="middle">Samza consumer</text><text class="ss" x="500" y="56" text-anchor="middle">&rarr; SSE servers</text>
+      <rect class="sb" x="620" y="20" width="140" height="50" rx="6"/><text class="sl" x="690" y="42" text-anchor="middle">Viewers</text><text class="ss" x="690" y="56" text-anchor="middle">live seat update</text>
+
+      <path class="sa-b" d="M180,45 L218,45" marker-end="url(#ab)"/><text class="sn" x="199" y="38">1</text>
+      <path class="sa-p" d="M380,45 L418,45" marker-end="url(#a1)"/><text class="sn" x="399" y="38">2</text>
+      <path class="sa-g" d="M580,45 L618,45" marker-end="url(#ag)"/><text class="sn" x="599" y="38">3</text>
+
+      <rect class="sb-y" x="20" y="95" width="740" height="65" rx="6"/>
+      <text class="sl" x="34" y="115">How it works</text>
+      <text class="ss" x="34" y="132">1. Seat state changes (reserved/booked) &rarr; Booking Service publishes to Kafka topic.</text>
+      <text class="ss" x="34" y="148">2. Samza consumer reads events, pushes to SSE servers. 3. SSE servers push to open browser connections.</text>
+    </svg>
+  </div>
+  <div class="diagram-cap">Users see seats turn unavailable in near-real-time, reducing failed booking attempts.</div>
+</div>
+
+<div class="alert note"><div class="alert-title">When NOT to do this</div><p>For an event with 20 seats sold over 6 months, real-time updates are overkill. Use short-TTL polling instead. Reserve SSE for high-velocity events where the seat map changes second-by-second.</p></div>
+
+<!-- 12 Complete Flow -->
+<h2 id="full">12 &mdash; Complete end-to-end architecture</h2>
+
+<div class="diagram">
+  <div class="diagram-head"><span class="id">Fig 13</span> Full architecture &mdash; LinkedIn stack</div>
+  <div class="diagram-body">
+    <svg viewBox="0 0 900 500" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="aFb" markerWidth="8" markerHeight="8" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#0969da"/></marker>
+        <marker id="aFg" markerWidth="8" markerHeight="8" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#1a7f37"/></marker>
+        <marker id="aFr" markerWidth="8" markerHeight="8" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#d1242f"/></marker>
+        <marker id="aFp" markerWidth="8" markerHeight="8" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#8250df"/></marker>
+      </defs>
+
+      <!-- Row 1: Client, CDN, API GW, Waiting Room, SSE -->
+      <rect class="sb-b" x="20" y="20" width="140" height="60" rx="6"/><text class="sl" x="90" y="42" text-anchor="middle">Client</text><text class="ss" x="90" y="56" text-anchor="middle">web + mobile + SSE</text>
+      <rect class="sb-y" x="185" y="20" width="130" height="60" rx="6"/><text class="sl" x="250" y="42" text-anchor="middle">LinkedIn CDN</text><text class="ss" x="250" y="56" text-anchor="middle">static + cached pages</text>
+      <rect class="sb-y" x="340" y="20" width="150" height="60" rx="6"/><text class="sl" x="415" y="42" text-anchor="middle">API Gateway (d2)</text><text class="ss" x="415" y="56" text-anchor="middle">auth, rate limit, LB</text>
+      <rect class="sb-o" x="515" y="20" width="150" height="60" rx="6"/><text class="sl" x="590" y="42" text-anchor="middle">Waiting Room</text><text class="ss" x="590" y="56" text-anchor="middle">hot events only</text>
+      <rect class="sb-g" x="690" y="20" width="160" height="60" rx="6"/><text class="sl" x="770" y="42" text-anchor="middle">SSE Servers</text><text class="ss" x="770" y="56" text-anchor="middle">seat + queue updates</text>
+
+      <!-- Row 2: Services -->
+      <rect class="sb-b" x="20" y="120" width="160" height="60" rx="6"/><text class="sl" x="100" y="142" text-anchor="middle">Event Service</text><text class="ss" x="100" y="156" text-anchor="middle">view + ticket statuses</text>
+      <rect class="sb-b" x="210" y="120" width="160" height="60" rx="6"/><text class="sl" x="290" y="142" text-anchor="middle">Search Service</text><text class="ss" x="290" y="156" text-anchor="middle">keyword + filters</text>
+      <rect class="sb-r" x="400" y="120" width="160" height="60" rx="6"/><text class="sl" x="480" y="142" text-anchor="middle">Booking Service</text><text class="ss" x="480" y="156" text-anchor="middle">reserve + confirm</text>
+      <rect class="sb-p" x="590" y="120" width="160" height="60" rx="6"/><text class="sl" x="670" y="142" text-anchor="middle">Stripe</text><text class="ss" x="670" y="156" text-anchor="middle">payment + webhooks</text>
+
+      <!-- Row 3: Data stores -->
+      <rect class="sb-r" x="20" y="230" width="270" height="90" rx="6"/>
+      <text class="sl" x="155" y="250" text-anchor="middle">Couchbase</text>
+      <text class="ss" x="155" y="268" text-anchor="middle">distributed locks (ticket:X)</text>
+      <text class="ss" x="155" y="282" text-anchor="middle">waiting room queue (event:X:queue)</text>
+      <text class="ss" x="155" y="296" text-anchor="middle">read cache (event:X:details)</text>
+      <text class="ss" x="155" y="310" text-anchor="middle">search result cache</text>
+
+      <rect class="sb-y" x="310" y="230" width="170" height="90" rx="6"/>
+      <text class="sl" x="395" y="250" text-anchor="middle">Galene</text>
+      <text class="ss" x="395" y="268" text-anchor="middle">inverted index of events</text>
+      <text class="ss" x="395" y="282" text-anchor="middle">fuzzy + relevance</text>
+      <text class="ss" x="395" y="296" text-anchor="middle">geo + date filters</text>
+
+      <rect class="sb-p" x="500" y="230" width="170" height="90" rx="6"/>
+      <text class="sl" x="585" y="250" text-anchor="middle">Kafka + Brooklin</text>
+      <text class="ss" x="585" y="268" text-anchor="middle">CDC &rarr; Galene sync</text>
+      <text class="ss" x="585" y="282" text-anchor="middle">seat change events</text>
+      <text class="ss" x="585" y="296" text-anchor="middle">audit stream</text>
+
+      <rect class="sb-g" x="690" y="230" width="160" height="90" rx="6"/>
+      <text class="sl" x="770" y="250" text-anchor="middle">Espresso</text>
+      <text class="ss" x="770" y="268" text-anchor="middle">Events, Tickets</text>
+      <text class="ss" x="770" y="282" text-anchor="middle">Bookings, Venues</text>
+      <text class="ss" x="770" y="296" text-anchor="middle">source of truth</text>
+
+      <!-- Row 4: Espresso replicas + Samza -->
+      <rect class="sb-b" x="690" y="360" width="160" height="50" rx="6"/>
+      <text class="sl" x="770" y="382" text-anchor="middle">Espresso replicas</text>
+      <text class="ss" x="770" y="396" text-anchor="middle">read-only, &lt;100ms lag</text>
+
+      <rect class="sb-o" x="500" y="360" width="170" height="50" rx="6"/>
+      <text class="sl" x="585" y="382" text-anchor="middle">Samza workers</text>
+      <text class="ss" x="585" y="396" text-anchor="middle">SSE fan-out, indexing</text>
+
+      <!-- Arrows -->
+      <path d="M160,50 L183,50" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#aFb)" fill="none"/>
+      <path d="M160,60 L338,50" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#aFb)" fill="none"/>
+      <path d="M160,30 L770,28 L770,78" stroke="var(--success)" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#aFg)" fill="none"/>
+      <text class="ss" x="450" y="22" fill="var(--success)">SSE</text>
+
+      <path d="M415,80 L100,118" stroke="var(--fg-muted)" stroke-width="1.2" marker-end="url(#a1)" fill="none"/>
+      <path d="M415,80 L290,118" stroke="var(--fg-muted)" stroke-width="1.2" marker-end="url(#a1)" fill="none"/>
+      <path d="M415,80 L480,118" stroke="var(--fg-muted)" stroke-width="1.2" marker-end="url(#a1)" fill="none"/>
+
+      <path d="M560,150 L588,150" stroke="var(--done)" stroke-width="1.5" marker-end="url(#aFp)" fill="none"/>
+
+      <path d="M480,180 L155,228" stroke="var(--danger)" stroke-width="1.5" marker-end="url(#aFr)" fill="none"/>
+      <text class="ss" x="310" y="200" fill="var(--danger)">locks</text>
+      <path d="M480,180 L770,228" stroke="var(--success)" stroke-width="1.5" marker-end="url(#aFg)" fill="none"/>
+      <text class="ss" x="650" y="200" fill="var(--success)">write</text>
+      <path d="M290,180 L395,228" stroke="var(--attention)" stroke-width="1.5" marker-end="url(#a1)" fill="none"/>
+      <text class="ss" x="340" y="200" fill="var(--attention)">search</text>
+      <path d="M100,180 L770,358" stroke="var(--accent)" stroke-width="1.2" stroke-dasharray="3,2" marker-end="url(#aFb)" fill="none"/>
+      <text class="ss" x="450" y="270" fill="var(--accent)">read replicas</text>
+
+      <path d="M770,320 L770,358" stroke="var(--fg-muted)" stroke-width="1.2" stroke-dasharray="3,2" marker-end="url(#a1)" fill="none"/>
+      <text class="ss" x="830" y="345">replication</text>
+
+      <path d="M770,290 L672,280" stroke="var(--done)" stroke-width="1.2" marker-end="url(#aFp)" fill="none"/>
+      <text class="ss" x="730" y="310" fill="var(--done)">CDC</text>
+      <path d="M500,290 L482,290" stroke="var(--done)" stroke-width="1.2" marker-end="url(#aFp)" fill="none"/>
+
+      <path d="M585,320 L585,358" stroke="var(--fg-muted)" stroke-width="1.2" marker-end="url(#a1)" fill="none"/>
+    </svg>
+  </div>
+  <div class="diagram-cap">View, search, and book each take a different route. Booking = CP (Couchbase lock + Espresso OCC). View/Search = AP (CDN + cache + replicas).</div>
+</div>
+
+<table>
+  <tr><th>Component</th><th>LinkedIn equivalent</th><th>Role</th></tr>
+  <tr><td>Primary DB</td><td><strong>Espresso</strong></td><td>Events, Tickets, Bookings, Venues, Performers</td></tr>
+  <tr><td>Cache + Locks</td><td><strong>Couchbase</strong></td><td>Distributed locks, read cache, search cache, waiting room queue</td></tr>
+  <tr><td>Search engine</td><td><strong>Galene</strong></td><td>Inverted index, fuzzy matching, geo + date filters</td></tr>
+  <tr><td>Event stream</td><td><strong>Kafka</strong></td><td>CDC events, seat change notifications, audit stream</td></tr>
+  <tr><td>CDC connector</td><td><strong>Brooklin</strong></td><td>Tails Espresso change log, publishes to Kafka</td></tr>
+  <tr><td>Stream processor</td><td><strong>Samza</strong></td><td>Fan-out seat updates to SSE servers, Galene indexing</td></tr>
+  <tr><td>CDN</td><td><strong>LinkedIn CDN / Akamai</strong></td><td>Edge-cached event pages, static assets</td></tr>
+  <tr><td>Service discovery</td><td><strong>d2</strong></td><td>Client-side LB, service routing, auto-scaling</td></tr>
+  <tr><td>Payment</td><td><strong>Stripe (external)</strong></td><td>PCI-compliant payment processing, webhooks</td></tr>
+</table>
+
+<h4>Complete user journey</h4>
+<ol>
+  <li><strong>Browse homepage.</strong> Static assets from LinkedIn CDN. Featured events cached at edge.</li>
+  <li><strong>Search &ldquo;Taylor Swift.&rdquo;</strong> API Gateway &rarr; Search Service &rarr; Galene (Couchbase cache for hot queries) &rarr; results.</li>
+  <li><strong>Open event page.</strong> Event Service queries Couchbase cache, falls through to Espresso read replicas.</li>
+  <li><strong>SSE connection opens.</strong> Client subscribes to seat updates for this event.</li>
+  <li><strong>Hot event? Waiting room.</strong> Admin-flagged events route users into Couchbase queue before allowing booking.</li>
+  <li><strong>Pick a seat &rarr; Reserve.</strong> Booking Service acquires Couchbase lock (CAS + TTL=600s). Creates in-progress booking row in Espresso.</li>
+  <li><strong>Seat update broadcast.</strong> Kafka &rarr; Samza &rarr; SSE servers &rarr; every viewer sees the seat go green &rarr; yellow.</li>
+  <li><strong>Enter card &rarr; Confirm.</strong> Stripe.js tokenizes card client-side. Booking Service calls Stripe PaymentIntent.</li>
+  <li><strong>Stripe webhook fires.</strong> Espresso transaction: UPDATE ticket status=&rsquo;booked&rsquo; (OCC check), UPDATE booking status=&rsquo;confirmed&rsquo;. Idempotent on Stripe event ID.</li>
+  <li><strong>Booked event broadcast.</strong> Kafka fan-out &rarr; all viewers see seat go yellow &rarr; red.</li>
+  <li><strong>Lock released.</strong> DEL the Couchbase key or let TTL expire.</li>
+  <li><strong>CDC syncs.</strong> Espresso change log &rarr; Brooklin &rarr; Kafka &rarr; Galene index updated.</li>
+</ol>
+
+<!-- 13 Glossary -->
+<h2 id="glossary">13 &mdash; Glossary</h2>
+<div class="gloss-grid">
+  <div class="gloss-card"><div class="term">Espresso</div><div class="def">LinkedIn&rsquo;s NoSQL document store (MySQL + Helix). Source of truth for events, tickets, bookings.</div></div>
+  <div class="gloss-card"><div class="term">Couchbase</div><div class="def">LinkedIn&rsquo;s distributed cache. Used here for distributed locks (CAS + TTL), read cache, search cache, and waiting room queues.</div></div>
+  <div class="gloss-card"><div class="term">Galene</div><div class="def">LinkedIn&rsquo;s search platform built on Lucene. Inverted indexes, tokenization, fuzzy matching, geo queries.</div></div>
+  <div class="gloss-card"><div class="term">Kafka</div><div class="def">LinkedIn&rsquo;s event streaming platform. CDC events, seat change notifications, audit stream.</div></div>
+  <div class="gloss-card"><div class="term">Brooklin</div><div class="def">LinkedIn&rsquo;s CDC connector. Tails Espresso change logs, publishes to Kafka. Keeps Galene in sync.</div></div>
+  <div class="gloss-card"><div class="term">Samza</div><div class="def">LinkedIn&rsquo;s stream processor. Consumes Kafka events, fans out seat updates to SSE servers.</div></div>
+  <div class="gloss-card"><div class="term">d2</div><div class="def">LinkedIn&rsquo;s service discovery + client-side load balancing. Routes requests, auto-scales services.</div></div>
+  <div class="gloss-card"><div class="term">CAS (Compare-And-Swap)</div><div class="def">Couchbase atomic operation. Insert-if-not-exists with TTL. Equivalent to Redis SET NX EX. Foundation of distributed locks.</div></div>
+  <div class="gloss-card"><div class="term">Distributed Lock</div><div class="def">Lock primitive across multiple servers. Couchbase CAS + TTL implements this with auto-expiry on reservation timeout.</div></div>
+  <div class="gloss-card"><div class="term">OCC</div><div class="def">Optimistic Concurrency Control. Check the row hasn&rsquo;t changed during transaction (WHERE status=&rsquo;available&rsquo;). Detects races at write time.</div></div>
+  <div class="gloss-card"><div class="term">Inverted Index</div><div class="def">Maps &ldquo;word &rarr; list of documents containing the word.&rdquo; Powers O(1) full-text search instead of O(N) table scans.</div></div>
+  <div class="gloss-card"><div class="term">Tokenization</div><div class="def">Breaking text into searchable units (words, stems). &ldquo;Taylor&rsquo;s&rdquo; &rarr; [&ldquo;taylor&rdquo;]. Done at index time for fast queries.</div></div>
+  <div class="gloss-card"><div class="term">Fuzzy Matching</div><div class="def">Matching words despite typos (Levenshtein edit distance). &ldquo;Taylr&rdquo; still finds &ldquo;Taylor.&rdquo;</div></div>
+  <div class="gloss-card"><div class="term">CDC</div><div class="def">Change Data Capture. Watching Espresso&rsquo;s change log and emitting events for every change. Keeps Galene in sync.</div></div>
+  <div class="gloss-card"><div class="term">Virtual Waiting Room</div><div class="def">Queue users enter before being admitted to booking. Throttles traffic to sustainable levels. Fair ordering by timestamp.</div></div>
+  <div class="gloss-card"><div class="term">SSE</div><div class="def">Server-Sent Events. HTTP-based one-way push from server to browser. Used for seat updates and queue position.</div></div>
+  <div class="gloss-card"><div class="term">Contention</div><div class="def">Multiple users trying to modify the same resource. Tickets are the contention point in this system.</div></div>
+  <div class="gloss-card"><div class="term">Stripe</div><div class="def">External payment processor. Tokenizes card data client-side (PCI compliance). Webhooks for async payment confirmation.</div></div>
+  <div class="gloss-card"><div class="term">Idempotency</div><div class="def">Same operation retried safely produces same result. Critical for Stripe webhook handlers (check event ID).</div></div>
+  <div class="gloss-card"><div class="term">Stale-While-Revalidate</div><div class="def">CDN serves stale content immediately while fetching fresh content in background. Hides origin latency.</div></div>
+  <div class="gloss-card"><div class="term">CAP Theorem</div><div class="def">Pick 2 of: Consistency, Availability, Partition tolerance. Booking = CP. View/Search = AP.</div></div>
+  <div class="gloss-card"><div class="term">Read Replica</div><div class="def">Read-only Espresso copy. Asynchronously replicated. Absorbs read load from Event Service.</div></div>
+  <div class="gloss-card"><div class="term">ACID</div><div class="def">Atomicity, Consistency, Isolation, Durability. Espresso provides this for booking transactions.</div></div>
+  <div class="gloss-card"><div class="term">PaymentIntent</div><div class="def">Stripe&rsquo;s record of an intended payment. Survives retries; idempotent by design.</div></div>
+</div>
+
+</main>
+
+<aside class="toc-right">
+  <div class="label">On this page</div>
+  <ul>
+    <li><a href="#req">01 Requirements</a></li>
+    <li><a href="#entities">02 Entities</a></li>
+    <li><a href="#view">03 View events</a></li>
+    <li><a href="#search">04 Search</a></li>
+    <li><a href="#book">05 Book tickets</a></li>
+    <li><a href="#contention">06 Contention</a></li>
+    <li><a href="#redislock">07 Dist. lock</a></li>
+    <li><a href="#scale-reads">08 Scaling reads</a></li>
+    <li><a href="#waiting-room">09 Waiting room</a></li>
+    <li><a href="#search-perf">10 Search (Galene)</a></li>
+    <li><a href="#real-time">11 Real-time seats</a></li>
+    <li><a href="#full">12 Full architecture</a></li>
+    <li><a href="#glossary">13 Glossary</a></li>
+  </ul>
+</aside>
+
+</div>
+
+<script>
+(function(){
+  const tocLinks=document.querySelectorAll('aside.toc-left a,aside.toc-right a');
+  const sections=[];
+  tocLinks.forEach(a=>{const id=a.getAttribute('href');if(id&&id.startsWith('#')){const el=document.getElementById(id.slice(1));if(el)sections.push({el,links:document.querySelectorAll('a[href="'+id+'"]')})}});
+  function onScroll(){let cur=sections[0];for(const s of sections)if(s.el.getBoundingClientRect().top<=80)cur=s;tocLinks.forEach(a=>a.classList.remove('active'));if(cur)cur.links.forEach(a=>a.classList.add('active'))}
+  window.addEventListener('scroll',onScroll,{passive:true});onScroll();
+})();
+</script>
+
+</body>
+</html>
