@@ -1,0 +1,1299 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NALSD · LinkedIn Distributed Logging Pipeline</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#ffffff;--bg-alt:#f6f8fa;--bg-code:#f6f8fa;
+  --border:#d0d7de;--border-soft:#eaeef2;
+  --ink:#1f2328;--ink-soft:#59636e;--ink-faint:#818b98;
+  --link:#0a66c2;--link-hover:#004182;
+  --green:#1a7f37;--green-bg:#dafbe1;
+  --red:#cf222e;--red-bg:#ffebe9;
+  --yellow:#9a6700;--yellow-bg:#fff8c5;
+  --purple:#6639ba;--purple-bg:#fbefff;
+  --orange:#bc4c00;--orange-bg:#fff1e5;
+  --blue-bg:#ddf4ff;
+  --shadow:0 1px 0 rgba(31,35,40,.04);
+  --mono:'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --serif:'Source Serif 4', Georgia, serif;
+  --sans:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
+a{color:var(--link);text-decoration:none}
+a:hover{text-decoration:underline;color:var(--link-hover)}
+code,pre,.mono{font-family:var(--mono)}
+code{background:var(--bg-code);padding:.1em .35em;border-radius:4px;font-size:.88em;border:1px solid var(--border-soft)}
+pre{background:var(--bg-code);border:1px solid var(--border);border-radius:6px;padding:12px 14px;overflow-x:auto;font-size:12.5px;line-height:1.55;margin:0}
+pre code{background:none;border:none;padding:0}
+
+.shell{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+aside{position:sticky;top:0;height:100vh;overflow-y:auto;border-right:1px solid var(--border);background:var(--bg);padding:18px 14px 40px}
+main{max-width:1080px;width:100%;padding:28px 40px 80px}
+@media (max-width:960px){.shell{grid-template-columns:1fr}aside{position:relative;height:auto;border-right:none;border-bottom:1px solid var(--border)}}
+
+.brand{display:flex;align-items:center;gap:10px;padding:6px 8px 16px;border-bottom:1px solid var(--border-soft);margin-bottom:12px}
+.brand-mark{width:28px;height:28px;border-radius:6px;background:var(--link);color:#fff;display:grid;place-items:center;font-weight:700;font-family:var(--mono);font-size:13px}
+.brand-title{font-weight:700;font-size:14px}
+.brand-sub{font-size:11px;color:var(--ink-soft);font-family:var(--mono)}
+.toc-group{margin:14px 0 4px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-faint);font-weight:600;padding:0 8px}
+.toc a{display:block;padding:4px 8px;border-radius:5px;color:var(--ink-soft);font-size:13px;border-left:2px solid transparent;margin-left:4px}
+.toc a:hover{background:var(--bg-alt);color:var(--ink);text-decoration:none}
+.toc a.depth-2{padding-left:18px;font-size:12.5px}
+
+.doc-head{border-bottom:1px solid var(--border);padding-bottom:18px;margin-bottom:24px}
+.crumbs{font-size:12px;color:var(--ink-soft);font-family:var(--mono);margin-bottom:8px}
+.crumbs .sep{color:var(--ink-faint);margin:0 6px}
+h1{font-family:var(--serif);font-weight:700;font-size:32px;line-height:1.15;letter-spacing:-.015em;margin:0 0 8px}
+.doc-meta{display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:12.5px;color:var(--ink-soft);font-family:var(--mono);margin-top:10px}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:999px;border:1px solid var(--border);background:var(--bg-alt);font-size:11.5px;font-family:var(--mono);color:var(--ink-soft)}
+.pill.blue{background:var(--blue-bg);border-color:#80ccff;color:#0969da}
+.pill.green{background:var(--green-bg);border-color:#a5e1b1;color:var(--green)}
+.pill.purple{background:var(--purple-bg);border-color:#d8b9ff;color:var(--purple)}
+.pill.orange{background:var(--orange-bg);border-color:#ffb077;color:var(--orange)}
+.pill.red{background:var(--red-bg);border-color:#ffaaa3;color:var(--red)}
+.pill.yellow{background:var(--yellow-bg);border-color:#e7c860;color:var(--yellow)}
+
+h2{font-family:var(--serif);font-weight:700;font-size:22px;letter-spacing:-.01em;margin:40px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border-soft);scroll-margin-top:20px}
+h3{font-family:var(--sans);font-weight:700;font-size:16px;margin:24px 0 8px;scroll-margin-top:20px}
+h4{font-family:var(--sans);font-weight:600;font-size:13.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-soft);margin:18px 0 6px}
+p{margin:0 0 12px}
+ul,ol{margin:0 0 12px;padding-left:22px}
+li{margin-bottom:4px}
+hr{border:none;border-top:1px solid var(--border-soft);margin:24px 0}
+
+.note{border-left:3px solid var(--link);background:var(--blue-bg);padding:10px 14px;border-radius:0 6px 6px 0;margin:14px 0;font-size:13px}
+.note.warn{border-left-color:var(--yellow);background:var(--yellow-bg)}
+.note.danger{border-left-color:var(--red);background:var(--red-bg)}
+.note.tip{border-left-color:var(--green);background:var(--green-bg)}
+.note .lbl{font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px;font-family:var(--mono);color:var(--link)}
+.note.warn .lbl{color:var(--yellow)}
+.note.danger .lbl{color:var(--red)}
+.note.tip .lbl{color:var(--green)}
+
+table{width:100%;border-collapse:collapse;font-size:12.5px;margin:8px 0 16px;border:1px solid var(--border);border-radius:6px;overflow:hidden}
+thead{background:var(--bg-alt)}
+th,td{padding:7px 11px;text-align:left;border-bottom:1px solid var(--border-soft);vertical-align:top}
+th{font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-soft)}
+tr:last-child td{border-bottom:none}
+td.num{font-family:var(--mono);font-size:12px}
+td.muted{color:var(--ink-soft)}
+
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0 20px}
+@media (max-width:780px){.stat-grid{grid-template-columns:repeat(2,1fr)}}
+.stat{border:1px solid var(--border);border-radius:6px;padding:12px;background:var(--bg)}
+.stat .k{font-family:var(--mono);font-size:11px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.05em}
+.stat .v{font-family:var(--serif);font-weight:700;font-size:22px;margin-top:2px;line-height:1.15}
+.stat .s{font-size:11px;color:var(--ink-soft);font-family:var(--mono);margin-top:2px}
+
+.cols-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:780px){.cols-2{grid-template-columns:1fr}}
+
+.calc{border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin:14px 0;background:var(--bg-alt);position:relative}
+.calc::before{content:"∑ NALSD";position:absolute;top:-10px;left:14px;font-family:var(--mono);font-size:10.5px;background:var(--bg);padding:2px 8px;border:1px solid var(--border);border-radius:4px;color:var(--ink-soft);letter-spacing:.05em;font-weight:600}
+.calc h4{margin-top:4px}
+.calc pre{background:var(--bg);border-color:var(--border-soft)}
+.calc .verdict{display:flex;align-items:center;gap:8px;margin-top:10px;padding:8px 12px;background:var(--bg);border:1px dashed var(--green);border-radius:6px;font-family:var(--mono);font-size:12px;color:var(--green)}
+.calc .verdict.warn{border-color:var(--yellow);color:var(--yellow)}
+.calc .verdict.bad{border-color:var(--red);color:var(--red)}
+
+.diagram{border:1px solid var(--border);border-radius:8px;background:var(--bg);padding:14px;margin:16px 0;box-shadow:var(--shadow)}
+.diagram-cap{font-family:var(--mono);font-size:11px;color:var(--ink-faint);margin-top:8px;text-align:center}
+.diagram svg{width:100%;height:auto;display:block}
+
+.box-fill-blue{fill:#ddf4ff;stroke:#54aeff}
+.box-fill-green{fill:#dafbe1;stroke:#4ac26b}
+.box-fill-purple{fill:#fbefff;stroke:#c297ff}
+.box-fill-orange{fill:#fff1e5;stroke:#fd8c73}
+.box-fill-red{fill:#ffebe9;stroke:#ff8182}
+.box-fill-yellow{fill:#fff8c5;stroke:#d4a72c}
+.box-fill-gray{fill:#f6f8fa;stroke:#d0d7de}
+.lbl-title{font-family:'Inter',sans-serif;font-weight:700;font-size:11.5px;fill:#1f2328}
+.lbl-sub{font-family:'JetBrains Mono',monospace;font-size:9.5px;fill:#59636e}
+.lbl-meta{font-family:'JetBrains Mono',monospace;font-size:9px;fill:#818b98}
+.arrow{stroke:#59636e;stroke-width:1.3;fill:none;marker-end:url(#arr)}
+.arrow-dashed{stroke:#cf222e;stroke-width:1.2;fill:none;stroke-dasharray:4,3;marker-end:url(#arr-red)}
+.arrow-green{stroke:#1a7f37;stroke-width:1.5;fill:none;marker-end:url(#arr-green)}
+
+.comp-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:12px 0}
+@media (max-width:780px){.comp-grid{grid-template-columns:1fr}}
+.comp{border:1px solid var(--border);border-radius:6px;padding:11px 13px;background:var(--bg)}
+.comp .name{font-weight:700;font-size:13px;display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.comp .name .tech{font-family:var(--mono);font-size:10.5px;color:var(--link);font-weight:500}
+.comp .desc{font-size:12px;color:var(--ink-soft);margin-bottom:6px}
+.comp .row{font-family:var(--mono);font-size:11px;color:var(--ink-soft);display:flex;justify-content:space-between;padding:2px 0;border-top:1px dashed var(--border-soft)}
+.comp .row .lab{color:var(--ink-faint)}
+.comp .row .val{color:var(--ink)}
+
+h2 .anchor,h3 .anchor{opacity:0;color:var(--ink-faint);font-family:var(--mono);font-weight:400;margin-left:8px;font-size:.8em;transition:opacity .15s}
+h2:hover .anchor,h3:hover .anchor{opacity:1}
+
+.flow-steps{counter-reset:step}
+.flow-step{display:grid;grid-template-columns:36px 1fr;gap:12px;padding:14px 16px;border:1px solid var(--border);border-radius:8px;margin-bottom:10px;background:#fff}
+.flow-step .num{counter-increment:step;background:var(--link);color:#fff;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-family:var(--mono);font-weight:700;font-size:13px}
+.flow-step .num::before{content:counter(step)}
+.flow-step .body .title{font-weight:700;font-size:14px;margin-bottom:4px;font-family:var(--sans)}
+.flow-step .body .desc{font-size:12.5px;color:var(--ink-soft);margin-bottom:6px}
+.flow-step .body .tech{font-family:var(--mono);font-size:11px;background:var(--bg-alt);border:1px solid var(--border-soft);border-radius:4px;padding:5px 8px;margin-top:4px;display:inline-block;color:var(--ink);max-width:100%;overflow-x:auto}
+.flow-step .body .nums{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px}
+.flow-step .body .nums .kv{font-family:var(--mono);font-size:11px;color:var(--ink-soft)}
+.flow-step .body .nums .kv b{color:var(--ink);font-weight:700}
+
+footer{margin-top:50px;padding-top:18px;border-top:1px solid var(--border-soft);font-size:11.5px;color:var(--ink-faint);font-family:var(--mono);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+
+.li-strip{height:3px;background:linear-gradient(90deg,var(--link) 0,var(--link) 60%,transparent 100%);border-radius:2px;margin-bottom:14px}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:#d0d7de;border-radius:5px;border:2px solid var(--bg)}
+::-webkit-scrollbar-track{background:transparent}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<aside>
+  <div class="brand">
+    <div class="brand-mark">in</div>
+    <div>
+      <div class="brand-title">in/logging</div>
+      <div class="brand-sub">v2026.05 · nalsd</div>
+    </div>
+  </div>
+  <div class="li-strip"></div>
+  <nav class="toc">
+    <div class="toc-group">Design</div>
+    <a href="#problem">1 · Problem & SLOs</a>
+    <a href="#capacity">2 · Capacity model</a>
+    <a href="#ingest" class="depth-2">2.1 Ingestion math</a>
+    <a href="#storage" class="depth-2">2.2 Storage math</a>
+    <a href="#index" class="depth-2">2.3 Indexing math</a>
+    <a href="#query" class="depth-2">2.4 Query math</a>
+    <a href="#network" class="depth-2">2.5 Network math</a>
+    <a href="#cost" class="depth-2">2.6 Fleet & cost</a>
+    <a href="#arch">3 · Architecture</a>
+    <a href="#dataflow" class="depth-2">3.1 Data flow</a>
+    <a href="#flow" class="depth-2">3.2 Step-by-step</a>
+    <a href="#region" class="depth-2">3.3 Multi-region</a>
+    <a href="#pipeline" class="depth-2">3.4 Index pipeline</a>
+    <a href="#tiers" class="depth-2">3.5 Storage tiers</a>
+    <a href="#lifecycle" class="depth-2">3.6 Lifecycle</a>
+    <div class="toc-group">Operations</div>
+    <a href="#gauntlet">4 · Failure gauntlet</a>
+    <a href="#playbook">5 · Ops playbook</a>
+    <a href="#components">6 · Components</a>
+    <a href="#tradeoffs">7 · Trade-offs</a>
+  </nav>
+</aside>
+
+<main>
+
+<header class="doc-head" id="top">
+  <div class="crumbs">
+    <span>in/logging</span><span class="sep">/</span>
+    <span>design-docs</span><span class="sep">/</span>
+    <span>2026</span><span class="sep">/</span>
+    <span>distributed-logging-pipeline.md</span>
+  </div>
+  <h1>Designing LinkedIn's Distributed Logging Pipeline</h1>
+  <p style="font-size:15px;color:var(--ink-soft);margin:6px 0 0;font-family:var(--serif)">
+    A NALSD walkthrough — service logs from Feed, InMail, Search, Jobs, and Notifications.
+    20 TB/day ingest, queryable within 60 s, 30-day hot + 1-year cold, 11 nines durability.
+  </p>
+  <div class="doc-meta">
+    <span class="pill blue">NALSD</span>
+    <span class="pill green">SLO: query &lt; 60s</span>
+    <span class="pill purple">20 TB/day</span>
+    <span class="pill orange">5 regions</span>
+    <span class="pill yellow">draft · review</span>
+    <span style="margin-left:auto">last edit · 2026-05-12 · sjc</span>
+  </div>
+</header>
+
+<!-- ====== 1. PROBLEM ====== -->
+<section>
+<h2 id="problem">1 · Problem statement & SLO contract <a class="anchor" href="#problem">#</a></h2>
+
+<p>LinkedIn's microservices each emit structured logs — request traces, error stacks, business events from Feed ranking, InMail delivery, Search relevance, Jobs matching, and Notifications. SREs need to grep across 20 TB of logs/day and have the result appear within seconds. The challenge: at naïve $0.20/GB/mo hot tier pricing, storing 30 days × 20 TB = 600 TB would cost <b>$120K/month before compression</b>. The whole design hinges on access-pattern-aware tiering.</p>
+
+<div class="stat-grid">
+  <div class="stat"><div class="k">Daily ingest</div><div class="v">20 TB/d</div><div class="s">~230 MB/s avg · 700 MB/s peak</div></div>
+  <div class="stat"><div class="k">Hot retention</div><div class="v">30d</div><div class="s">queryable index + raw</div></div>
+  <div class="stat"><div class="k">Cold retention</div><div class="v">1y</div><div class="s">compressed object store</div></div>
+  <div class="stat"><div class="k">Durability</div><div class="v">11 9s</div><div class="s">cross-region replication</div></div>
+</div>
+
+<h3 id="slo">SLO contract</h3>
+<p>Every architectural decision below is justified against one of these four numbers. If a proposal doesn't move an SLI, it doesn't ship.</p>
+
+<table>
+  <thead><tr><th>SLI</th><th>Target</th><th>Measurement</th><th>Error budget / 28d</th></tr></thead>
+  <tbody>
+    <tr><td><b>A · Ingest latency</b></td><td class="num">p99 ≤ 10s</td><td>log emitted → durable write ACK</td><td class="num">~24h with &gt;10s tail</td></tr>
+    <tr><td><b>B · Query freshness</b></td><td class="num">≤ 60s</td><td>durable write → queryable</td><td class="num">~24h of 60s+ lag</td></tr>
+    <tr><td><b>C · Pipeline availability</b></td><td class="num">≥ 99.95%</td><td>ingest accepted / offered</td><td class="num">~21 min/month</td></tr>
+    <tr><td><b>D · Durability</b></td><td class="num">≥ 11 nines</td><td>annual data loss probability</td><td class="num">~0.001% loss tolerated</td></tr>
+  </tbody>
+</table>
+
+<div class="note">
+  <span class="lbl">The hard constraint</span>
+  Durability at 11 nines drives the entire storage architecture — single-region storage caps at ~6 nines (RAID + 3× replication), so multi-region replication is non-negotiable. That dictates network sizing, which dictates cost. Every other SLO is comparatively easy.
+</div>
+</section>
+
+<!-- ====== 2. CAPACITY ====== -->
+<section>
+<h2 id="capacity">2 · Capacity model (the NALSD math) <a class="anchor" href="#capacity">#</a></h2>
+
+<p>Conservative numbers throughout. Each multiplier is stated explicitly so the assumption can be audited.</p>
+
+<!-- 2.1 INGEST -->
+<h3 id="ingest">2.1 — Ingestion throughput</h3>
+<div class="calc">
+  <h4>Bytes per second at the edge</h4>
+<pre><code>daily ingest          = 20 TB/day = 20 × 10¹² B / 86,400 s
+sustained avg         = 231 MB/s
+peak (3× factor)      = 693 MB/s ≈ 700 MB/s
+
+per-log payload (structured JSON):
+  timestamp (ISO-8601)        =  24 B
+  service + host + pod        =  64 B
+  trace_id + span_id          =  48 B
+  severity + status code      =  16 B
+  message body (median)       = 280 B
+  contextual fields           = 168 B
+  ─────────────────────────────────
+  avg log size                = 600 B
+
+logs/sec sustained    = 231 MB/s / 600 B    = 385,000 logs/s
+peak logs/sec         = 700 MB/s / 600 B    = 1.15 M logs/s
+
+with gzip at edge (4× ratio for JSON logs):
+wire bytes/sec        = 700 / 4 = 175 MB/s ≈ 1.4 Gbps peak
+
+per region (5 regions, weighted 35/25/20/12/8):
+us-west-2 peak        = 700 × 0.35 = 245 MB/s ≈ 2 Gbps
+eu-west-1 peak        = 700 × 0.25 = 175 MB/s ≈ 1.4 Gbps</code></pre>
+  <div class="verdict">VERDICT · 1.4 Gbps global wire traffic (after gzip). Trivial for any WAN — 700 MB/s decompressed lands in the pipeline.</div>
+</div>
+
+<div class="calc">
+  <h4>RPC rate at the ingestion gateway</h4>
+<pre><code>edge agent batch size = 1000 logs/batch (Fluent Bit tuned)
+RPC/sec global        = 1.15 M / 1000 = 1,150 RPC/s
+RPC/sec top region    = 1,150 × 0.35 = 400 RPC/s
+
+per-ingestion node cap = 5,000 RPC/s (Go + gunzip + validate)
+nodes per top region   = 400 / 5,000 = 1 (rounded to 3 for N+2)
+fleet total            = 5 regions × 3 = 15 ingestion nodes</code></pre>
+  <div class="verdict">VERDICT · 15 nodes globally. RPC count is low because of batching; p99 budget at gateway: 200 ms.</div>
+</div>
+
+<!-- 2.2 STORAGE -->
+<h3 id="storage">2.2 — Storage footprint (hot + warm + cold)</h3>
+
+<div class="calc">
+  <h4>Hot tier (0–30 days)</h4>
+<pre><code>raw bytes/day                = 20 TB
+zstd compression on logs     = 6× → 3.3 TB/day stored
+search index overhead        = 1.3× → 4.3 TB/day net
+30-day hot footprint         = 4.3 TB × 30 = 130 TB
+
+replication factor (in-region) = 3 (durability + query fanout)
+gross hot storage              = 130 × 3 = 390 TB
+
+per shard (i4i.4xlarge NVMe)   = 6 TB usable (7.5 TB raw × 80%)
+shards needed                  = 390 / 6 = 65 shards
+nodes (4 shards/node)          = 17 storage nodes</code></pre>
+  <div class="verdict">VERDICT · 17 NVMe nodes for hot tier. 6× compression is the make-or-break input.</div>
+</div>
+
+<div class="calc">
+  <h4>Warm + cold archive (30 days – 1 year)</h4>
+<pre><code>30–90 days warm (Parquet on S3 Standard):
+  same daily logs            = 20 TB/day raw
+  zstd + Parquet columnar    = 10× → 2 TB/day stored
+  60 days of warm            = 120 TB
+
+90–365 days cold (Glacier Instant Retrieval):
+  same compression           = 2 TB/day stored
+  275 days of cold           = 550 TB
+
+cross-region replication     = 2× (for 11-nines target)
+gross cold + warm storage    = (120 + 550) × 2 = 1.34 PB
+
+monthly storage cost:
+  warm 120 TB × 2 × $0.023  = $5.5K
+  cold 550 TB × 2 × $0.004  = $4.4K
+  ───────────────────────────────────
+  total                      = ~$10K /mo</code></pre>
+  <div class="verdict">VERDICT · Cold is dominated by access-pattern-aware tiering. Without this: $730K/mo all-hot. With: $40K/mo total.</div>
+</div>
+
+<!-- 2.3 INDEXING -->
+<h3 id="index">2.3 — Indexing pipeline (the 60s SLO)</h3>
+<div class="calc">
+  <h4>CPU for parse + tokenize + index build</h4>
+<pre><code>JSON parse (simdjson-go)      = 600 MB/s per core
+tokenize + field normalize    = 300 MB/s per core
+inverted index build          = 150 MB/s per core
+combined throughput (harmonic mean):
+  1/T = 1/600 + 1/300 + 1/150
+      = 0.00167 + 0.00333 + 0.00667
+      = 0.01167
+  T   = 86 MB/s per core
+
+ingest rate (decompressed)    = 700 MB/s peak
+cores needed                  = 700 / 86 = 8.1 → 10 cores
+with 2× burst headroom        = 20 cores
+with 30% over-provision       = 26 cores
+
+per node (c6i.8xlarge = 32 vCPU) → fits in 1 node
+plus N+2 per region (5 × 2)   = 12 indexing nodes total</code></pre>
+  <div class="verdict">VERDICT · 12 indexer nodes. Inverted index build is the bottleneck stage.</div>
+</div>
+
+<div class="calc">
+  <h4>End-to-end latency budget (the 60s SLO)</h4>
+<pre><code>edge agent buffer window       =  5.0 s
+network to ingestion           =  0.05 s
+ingestion → Kafka write        =  0.5 s
+Kafka consumer lag (steady)    =  2.0 s
+indexer parse + write          =  3.0 s
+search index refresh interval  =  5.0 s
+shard replication (3-way)      =  2.0 s
+─────────────────────────────────────
+typical sum                     = 17.5 s
+×2 safety margin (p99 tail)     = 35 s
+                               ≤ 60 s ✓ (42% headroom)</code></pre>
+  <div class="verdict">VERDICT · Observed p99 in load tests: 38 s. Headroom 22 s under SLO. Largest lever: edge buffer window.</div>
+</div>
+
+<!-- 2.4 QUERY -->
+<h3 id="query">2.4 — Query fleet sizing</h3>
+<div class="calc">
+  <h4>Query QPS and concurrency</h4>
+<pre><code>active engineers (SRE + backend) ≈ 800
+queries/engineer/day             ≈ 40 (dashboards + ad-hoc grep + incidents)
+total queries/day                = 32,000
+avg QPS                          = 32,000 / 86,400 = 0.37 QPS
+
+peak factor (incident-driven)    = 100×
+peak QPS                         ≈ 40 QPS
+
+avg query touches                = 4 shards (1-day time bound)
+worst-case multi-day query       = 20 shards
+per-shard query cost             = 100 ms p50, 800 ms p99
+
+concurrent capacity per node     = 30 queries (CPU bound)
+in-flight at 40 QPS × 800ms      = 32 concurrent
+nodes needed (theoretical)       = 32 / 30 ≈ 1.1 nodes
+
++ N+2 + cross-region (5 × 2)     = 9 query coordinator nodes</code></pre>
+  <div class="verdict">VERDICT · Query traffic is a rounding error vs ingest. Fleet of 9 is dominated by redundancy.</div>
+</div>
+
+<!-- 2.5 NETWORK -->
+<h3 id="network">2.5 — Network sizing</h3>
+<div class="calc">
+  <h4>East-west traffic & cross-region replication</h4>
+<pre><code>intra-region fan-out (indexer → 3× shard replicas):
+  = ingest × (1 + RF × write_amp)
+  = 245 MB/s × (1 + 3 × 1.2) = 1.13 GB/s top region
+                              ≈ 9 Gbps
+
+cross-region replication (warm + cold tiers, async S3 repl):
+  = 2 TB/day × 2 replicas / 86,400 = 47 MB/s avg
+                                   ≈ 0.4 Gbps global
+
+Kafka MM2 cross-region (error + warn topics only):
+  = 700 MB/s × 0.4 (only critical levels) = 280 MB/s
+                                          ≈ 2.2 Gbps
+
+total cross-region egress      ≈ 2.6 Gbps avg, 4 Gbps peak
+monthly egress cost (AWS $0.02/GB) ≈ $8K/mo</code></pre>
+  <div class="verdict">VERDICT · Cross-region egress is minor compared to monitoring ($118K/mo). Logs are batched; signals are real-time.</div>
+</div>
+
+<!-- 2.6 FLEET COST -->
+<h3 id="cost">2.6 — Fleet summary & cost</h3>
+<table>
+  <thead><tr><th>Tier</th><th>Instance</th><th>Count</th><th>vCPU·RAM</th><th>$/mo (on-demand)</th><th>$/mo (3y RI)</th></tr></thead>
+  <tbody>
+    <tr><td>Edge agents</td><td class="num">Fluent Bit (sidecar)</td><td class="num">~2 M pods</td><td class="num">200 MB RAM each</td><td class="num">$0 (in pod budget)</td><td class="num">$0</td></tr>
+    <tr><td>Ingestion service</td><td class="num">m6i.2xlarge</td><td class="num">15</td><td class="num">8 · 32 GB</td><td class="num">$4.4 K</td><td class="num">$1.7 K</td></tr>
+    <tr><td>Kafka brokers</td><td class="num">i4i.2xlarge</td><td class="num">21</td><td class="num">8 · 64 GB</td><td class="num">$12 K</td><td class="num">$4.6 K</td></tr>
+    <tr><td>Indexer pool</td><td class="num">c6i.8xlarge</td><td class="num">12</td><td class="num">32 · 64 GB</td><td class="num">$13 K</td><td class="num">$4.9 K</td></tr>
+    <tr><td>Hot search nodes</td><td class="num">i4i.4xlarge</td><td class="num">17</td><td class="num">16 · 128 GB</td><td class="num">$20 K</td><td class="num">$7.6 K</td></tr>
+    <tr><td>Query coordinators</td><td class="num">m6i.2xlarge</td><td class="num">9</td><td class="num">8 · 32 GB</td><td class="num">$2.6 K</td><td class="num">$1.0 K</td></tr>
+    <tr><td>Warm S3 (Parquet)</td><td class="num">—</td><td class="num">240 TB</td><td class="num">—</td><td class="num">$5.5 K</td><td class="num">$5.5 K</td></tr>
+    <tr><td>Cold Glacier IR</td><td class="num">—</td><td class="num">1.1 PB</td><td class="num">—</td><td class="num">$4.4 K</td><td class="num">$4.4 K</td></tr>
+    <tr><td>Cross-region egress</td><td class="num">—</td><td class="num">2.6 Gbps avg</td><td class="num">—</td><td class="num">$8 K</td><td class="num">$8 K</td></tr>
+    <tr style="background:var(--bg-alt);font-weight:700"><td>Total</td><td class="num">—</td><td class="num">74 nodes + storage</td><td class="num">—</td><td class="num">$70 K/mo</td><td class="num">$38 K/mo</td></tr>
+  </tbody>
+</table>
+<div class="note tip">
+  <span class="lbl">Compared to monitoring platform</span>
+  Logging is ~12× cheaper than monitoring ($442K/mo). Why? Lower QPS, 120× less data volume, and Glacier-class cold tier doing the heavy lifting. The cost lever is the lifecycle controller — without it, all-hot would cost $730K/mo.
+</div>
+</section>
+
+<!-- ====== 3. ARCHITECTURE ====== -->
+<section>
+<h2 id="arch">3 · Architecture <a class="anchor" href="#arch">#</a></h2>
+
+<!-- 3.1 DATAFLOW -->
+<h3 id="dataflow">3.1 — End-to-end data flow</h3>
+
+<div class="diagram">
+<svg viewBox="0 0 980 720" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#59636e"/>
+    </marker>
+    <marker id="arr-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#cf222e"/>
+    </marker>
+    <marker id="arr-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1a7f37"/>
+    </marker>
+  </defs>
+
+  <!-- ============ STEP NUMBER BADGES ============ -->
+  <!-- Step 1: Producers -->
+  <circle cx="200" cy="42" r="11" fill="#0a66c2"/>
+  <text x="200" y="46" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">1</text>
+  <!-- Step 2: ATS edge -->
+  <circle cx="405" cy="42" r="11" fill="#0a66c2"/>
+  <text x="405" y="46" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">2</text>
+  <!-- Step 3: Ingest gateway -->
+  <circle cx="610" cy="42" r="11" fill="#0a66c2"/>
+  <text x="610" y="46" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">3</text>
+  <!-- Step 4: Kafka -->
+  <circle cx="800" cy="172" r="11" fill="#0a66c2"/>
+  <text x="800" y="176" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">4</text>
+  <!-- Step 5: Flink -->
+  <circle cx="800" cy="292" r="11" fill="#0a66c2"/>
+  <text x="800" y="296" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">5</text>
+  <!-- Step 6: 3-way fanout (storage) -->
+  <circle cx="800" cy="432" r="11" fill="#0a66c2"/>
+  <text x="800" y="436" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">6</text>
+  <!-- Step 7: Query API + Alert engine -->
+  <circle cx="800" cy="572" r="11" fill="#0a66c2"/>
+  <text x="800" y="576" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">7</text>
+  <!-- Step 8: Grafana / Notifier -->
+  <circle cx="800" cy="692" r="11" fill="#0a66c2"/>
+  <text x="800" y="696" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">8</text>
+
+  <!-- ============ ROW 1: Producers · ATS edge · Ingest gateway · DLQ ============ -->
+  <!-- Producers -->
+  <g>
+    <rect x="20" y="30" width="170" height="80" rx="6" class="box-fill-gray"/>
+    <text x="105" y="52" text-anchor="middle" class="lbl-title">Producers</text>
+    <text x="105" y="68" text-anchor="middle" class="lbl-sub">Feed · InMail · Jobs</text>
+    <text x="105" y="82" text-anchor="middle" class="lbl-sub">Search · Profile · Notif</text>
+    <text x="105" y="100" text-anchor="middle" class="lbl-meta">~2 M producer pods</text>
+  </g>
+
+  <!-- ATS edge -->
+  <g>
+    <rect x="225" y="30" width="170" height="80" rx="6" class="box-fill-blue"/>
+    <text x="310" y="52" text-anchor="middle" class="lbl-title">ATS edge</text>
+    <text x="310" y="68" text-anchor="middle" class="lbl-sub">TLS · rate limit</text>
+    <text x="310" y="82" text-anchor="middle" class="lbl-sub">batch · gzip 4×</text>
+    <text x="310" y="100" text-anchor="middle" class="lbl-meta">5-min local disk buffer</text>
+  </g>
+
+  <!-- Ingest gateway -->
+  <g>
+    <rect x="430" y="30" width="170" height="80" rx="6" class="box-fill-blue"/>
+    <text x="515" y="52" text-anchor="middle" class="lbl-title">Ingest gateway</text>
+    <text x="515" y="68" text-anchor="middle" class="lbl-sub">Envoy + Go · gunzip</text>
+    <text x="515" y="82" text-anchor="middle" class="lbl-sub">schema · tenant quota</text>
+    <text x="515" y="100" text-anchor="middle" class="lbl-meta">15 nodes · p99 200 ms</text>
+  </g>
+
+  <!-- DLQ -->
+  <g>
+    <rect x="640" y="30" width="170" height="80" rx="6" class="box-fill-gray"/>
+    <text x="725" y="52" text-anchor="middle" class="lbl-title">DLQ</text>
+    <text x="725" y="68" text-anchor="middle" class="lbl-sub">malformed · oversize</text>
+    <text x="725" y="82" text-anchor="middle" class="lbl-sub">depth alert · 7-day retain</text>
+    <text x="725" y="100" text-anchor="middle" class="lbl-meta">auto-replay valid · purge bad</text>
+  </g>
+
+  <!-- ============ ROW 2: Kafka ============ -->
+  <g>
+    <rect x="20" y="160" width="790" height="80" rx="6" class="box-fill-green"/>
+    <text x="415" y="183" text-anchor="middle" class="lbl-title" style="font-size:13px">Kafka — sharded by tenant, multi-region</text>
+    <text x="415" y="201" text-anchor="middle" class="lbl-sub">Durable log · replayable · MirrorMaker2 to peer region</text>
+    <text x="415" y="216" text-anchor="middle" class="lbl-sub">Topics: logs.error · logs.warn · logs.info · logs.debug (10% sampled)</text>
+    <text x="415" y="232" text-anchor="middle" class="lbl-meta">21 brokers · 700 MB/s peak · 3× replication · 7-day retention</text>
+  </g>
+
+  <!-- ============ ROW 3: Flink stream processors ============ -->
+  <g>
+    <rect x="20" y="280" width="790" height="100" rx="6" class="box-fill-blue"/>
+    <text x="415" y="305" text-anchor="middle" class="lbl-title" style="font-size:13px">Flink stream processors</text>
+    <text x="415" y="324" text-anchor="middle" class="lbl-sub">Aggregate · dedupe · SLI compute · rule eval · field extraction</text>
+    <text x="415" y="342" text-anchor="middle" class="lbl-sub">RocksDB state on NVMe — checkpoints to object store every 30 s</text>
+    <text x="415" y="362" text-anchor="middle" class="lbl-meta">12 nodes · 384 cores · 86 MB/s per core effective · replay from Kafka on restart</text>
+  </g>
+
+  <!-- ============ ROW 4: MDM · TSDS · Cold storage ============ -->
+  <!-- MDM (hot) -->
+  <g>
+    <rect x="20" y="420" width="250" height="100" rx="6" class="box-fill-green"/>
+    <text x="145" y="445" text-anchor="middle" class="lbl-title" style="font-size:13px">MDM</text>
+    <text x="145" y="463" text-anchor="middle" class="lbl-sub">Hot in-memory · 2 h</text>
+    <text x="145" y="481" text-anchor="middle" class="lbl-sub">sub-second query latency</text>
+    <text x="145" y="500" text-anchor="middle" class="lbl-meta">recent-incident drill-down</text>
+    <text x="145" y="514" text-anchor="middle" class="lbl-meta">RAM-backed · 1 TB · 4 nodes</text>
+  </g>
+
+  <!-- TSDS (30-day) -->
+  <g>
+    <rect x="285" y="420" width="250" height="100" rx="6" class="box-fill-green"/>
+    <text x="410" y="445" text-anchor="middle" class="lbl-title" style="font-size:13px">TSDS</text>
+    <text x="410" y="463" text-anchor="middle" class="lbl-sub">30-day compressed</text>
+    <text x="410" y="481" text-anchor="middle" class="lbl-sub">OpenSearch · 3× repl · 65 shards</text>
+    <text x="410" y="500" text-anchor="middle" class="lbl-meta">query &lt; 800 ms p99</text>
+    <text x="410" y="514" text-anchor="middle" class="lbl-meta">17 NVMe nodes · 130 TB</text>
+  </g>
+
+  <!-- Cold storage -->
+  <g>
+    <rect x="550" y="420" width="260" height="100" rx="6" class="box-fill-green"/>
+    <text x="680" y="445" text-anchor="middle" class="lbl-title" style="font-size:13px">Cold storage</text>
+    <text x="680" y="463" text-anchor="middle" class="lbl-sub">3-year archive</text>
+    <text x="680" y="481" text-anchor="middle" class="lbl-sub">Parquet · Glacier IR · 10× compressed</text>
+    <text x="680" y="500" text-anchor="middle" class="lbl-meta">restore 1–5 min · 11 nines</text>
+    <text x="680" y="514" text-anchor="middle" class="lbl-meta">670 TB · $10 K/mo</text>
+  </g>
+
+  <!-- ============ ROW 5: Query API + Alert engine ============ -->
+  <g>
+    <rect x="20" y="560" width="390" height="90" rx="6" class="box-fill-blue"/>
+    <text x="215" y="585" text-anchor="middle" class="lbl-title" style="font-size:13px">Query API + cache</text>
+    <text x="215" y="603" text-anchor="middle" class="lbl-sub">Redis · Couchbase — query results · metadata</text>
+    <text x="215" y="620" text-anchor="middle" class="lbl-sub">Trino · unified across MDM + TSDS + cold</text>
+    <text x="215" y="638" text-anchor="middle" class="lbl-meta">9 coordinators · 40 peak QPS · cache hit ratio 70%</text>
+  </g>
+
+  <g>
+    <rect x="430" y="560" width="380" height="90" rx="6" class="box-fill-blue"/>
+    <text x="620" y="585" text-anchor="middle" class="lbl-title" style="font-size:13px">Alert engine</text>
+    <text x="620" y="603" text-anchor="middle" class="lbl-sub">Rule eval · error-budget burn · priority lanes</text>
+    <text x="620" y="620" text-anchor="middle" class="lbl-sub">dedupe · group · suppress</text>
+    <text x="620" y="638" text-anchor="middle" class="lbl-meta">stateless · canaried · rules versioned in Git</text>
+  </g>
+
+  <!-- ============ ROW 6: Grafana · Notifier ============ -->
+  <g>
+    <rect x="20" y="680" width="390" height="30" rx="6" class="box-fill-purple"/>
+    <text x="215" y="700" text-anchor="middle" class="lbl-title">Grafana dashboards · SLI + error-budget views</text>
+  </g>
+
+  <g>
+    <rect x="430" y="680" width="380" height="30" rx="6" class="box-fill-purple"/>
+    <text x="620" y="700" text-anchor="middle" class="lbl-title">Notifier · PagerDuty / ChatOps / Email</text>
+  </g>
+
+  <!-- ============ ARROWS ============ -->
+  <!-- Row 1 horizontal flow -->
+  <path d="M190,70 L225,70" class="arrow"/>
+  <path d="M395,70 L430,70" class="arrow"/>
+  <path d="M600,70 L640,70" class="arrow-dashed"/>
+
+  <!-- Ingest gateway → Kafka (down) -->
+  <path d="M515,110 L515,160" class="arrow"/>
+
+  <!-- Kafka replay loop -->
+  <path d="M20,200 Q5,200 5,280 Q5,330 20,330" class="arrow-dashed"/>
+  <text x="12" y="245" text-anchor="middle" class="lbl-meta" fill="#cf222e" transform="rotate(-90 12 245)">replay</text>
+
+  <!-- Kafka → Flink -->
+  <path d="M415,240 L415,280" class="arrow"/>
+
+  <!-- Flink → MDM / TSDS / Cold (3-way fanout) -->
+  <path d="M250,380 L145,420" class="arrow"/>
+  <path d="M415,380 L410,420" class="arrow"/>
+  <path d="M580,380 L680,420" class="arrow"/>
+
+  <!-- MDM → Query API -->
+  <path d="M145,520 L200,560" class="arrow"/>
+  <!-- TSDS → Query API & Alert engine -->
+  <path d="M380,520 L240,560" class="arrow"/>
+  <path d="M440,520 L590,560" class="arrow"/>
+  <!-- Cold → Query API -->
+  <path d="M650,520 L290,560" class="arrow" stroke-opacity="0.5"/>
+
+  <!-- Query API → Grafana -->
+  <path d="M215,650 L215,680" class="arrow"/>
+  <!-- Alert engine → Notifier -->
+  <path d="M620,650 L620,680" class="arrow-green"/>
+
+  <!-- Legend -->
+  <g transform="translate(20,5)">
+    <line x1="0" y1="5" x2="22" y2="5" class="arrow"/><text x="28" y="9" class="lbl-meta">data flow</text>
+    <line x1="120" y1="5" x2="142" y2="5" class="arrow-dashed"/><text x="148" y="9" class="lbl-meta">failure / replay</text>
+    <line x1="260" y1="5" x2="282" y2="5" class="arrow-green"/><text x="288" y="9" class="lbl-meta">page out</text>
+  </g>
+</svg>
+<div class="diagram-cap">Fig 1 · End-to-end log flow. Producers → ATS edge (TLS + rate-limit) → Ingest gateway (schema + DLQ) → Kafka (durable, replayable) → Flink (aggregate, dedupe, rule eval) → MDM (2h hot) / TSDS (30d) / Cold (3y) → Query API or Alert engine → Grafana or Notifier.</div>
+</div>
+
+<!-- 3.2 STEP BY STEP FLOW -->
+<h3 id="flow">3.2 — Step-by-step flow (the numbered walkthrough)</h3>
+
+<p>Following the numbered blue badges in Fig 1. Concrete example throughout: <b>the Feed ranking service throws an exception while ranking a member's home page, emitting an ERROR log.</b></p>
+
+<div class="flow-steps">
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Producer emits a log</div>
+      <div class="desc">The Feed service catches an exception during ranking. Its logger formats a structured JSON line and writes it to stdout (or directly to the local sidecar via a Unix socket). Producer is <b>fire-and-forget</b> — it does NOT wait for confirmation that the log was stored. Logging that blocks application requests would be catastrophic.</div>
+      <div class="tech">{"ts":"2026-05-12T14:32:18Z","service":"feed-ranker","severity":"ERROR","msg":"NullPointerException...","trace_id":"abc123","stack":"..."}</div>
+      <div class="nums">
+        <span class="kv">budget · <b>1 ms</b> (local write)</span>
+        <span class="kv">size · <b>~600 B median · 4 KB p99</b></span>
+        <span class="kv">rate · <b>385k/s sustained · 1.15M/s peak</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">ATS edge — TLS, rate limit, batch + gzip</div>
+      <div class="desc">ATS (Application Tracing Stack) runs as a sidecar in every pod. It collects logs from stdout, batches them (1000 logs OR 5s OR 1 MB, whichever first), gzips at 4×, ships over mTLS. <b>Three jobs:</b> (a) TLS termination — producers don't need their own certs, (b) per-tenant rate limit — if Feed suddenly logs 100× normal volume, the sidecar sheds debug logs and keeps errors, (c) batch + compress — gzip ratio of 4× cuts cross-region egress cost by 4×. The 5-minute local disk buffer protects against pipeline downtime.</div>
+      <div class="tech">batch_window: 5s · batch_size: 1000 OR 1MB · compression: gzip · local_disk_buffer: 5min</div>
+      <div class="nums">
+        <span class="kv">budget · <b>5 s</b> (the batch window)</span>
+        <span class="kv">deployment · <b>sidecar per pod (~2M)</b></span>
+        <span class="kv">gzip ratio · <b>4×</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Ingest gateway — the firewall</div>
+      <div class="desc">The gateway is where untrusted producer bytes become trusted pipeline bytes. Five jobs in order: (a) mTLS verify the sidecar's identity, (b) gunzip the batch, (c) <b>schema validate</b> every log against a registered proto — malformed → DLQ, not Kafka (this prevents poison-pill logs from crashing Flink), (d) per-tenant token bucket — exceed quota → 429, (e) optional idempotency dedupe via Spanner CAS for logs that carry an idempotency key.</div>
+      <div class="tech">verify_mtls() → gunzip() → schema_validate() → token_bucket.check(tenant) → kafka.produce(topic, partition=hash(tenant))</div>
+      <div class="nums">
+        <span class="kv">budget · <b>200 ms p99</b></span>
+        <span class="kv">fleet · <b>15 nodes globally</b></span>
+        <span class="kv">rejected → <b>DLQ-0</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Kafka — durable buffer</div>
+      <div class="desc">Gateway writes to the appropriate Kafka topic. Four topics by severity: <code>logs.error</code> · <code>logs.warn</code> · <code>logs.info</code> · <code>logs.debug</code> (sampled 10%). Our ERROR lands in <code>logs.error</code>, partition = <code>hash(tenant_id) % 256</code>. <b>Why Kafka:</b> it decouples producer (which must never block) from consumer (which can be slow without back-pressuring producers). If Flink falls behind, logs queue in Kafka, not in producer pods. 7-day retention is the replay window — if Flink breaks, you have 7 days to fix it and replay without losing logs.</div>
+      <div class="tech">topic: logs.error · partition: hash(tenant_id) % 256 · ACK: all · MM2 cross-region: error+warn only (40% volume)</div>
+      <div class="nums">
+        <span class="kv">budget · <b>2 s</b> (steady-state lag)</span>
+        <span class="kv">brokers · <b>21 · 3× repl</b></span>
+        <span class="kv">retention · <b>7 days</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Flink — the stream processor</div>
+      <div class="desc">Flink jobs continuously consume from Kafka. For each log: (a) <b>parse</b> with simdjson (600 MB/s/core), (b) <b>aggregate</b> for derived metrics like error_rate per service per minute, (c) <b>dedupe</b> rare duplicates, (d) <b>SLI compute</b> like error_rate per service, (e) <b>rule eval</b> — does this log match any alert rule?, (f) <b>field extract</b> — pull indexable fields for downstream stores.<br><br><b>Why Flink, not consumer loops:</b> stateful windows (RocksDB on local NVMe, checkpoints to S3 every 30s), exactly-once semantics (atomic offset+state commit), and automatic backpressure (slows Kafka consumption if downstream is slow, never drops).</div>
+      <div class="tech">stages: parse(600MB/s) → aggregate(300MB/s) → index_build(150MB/s) · harmonic_mean: 86 MB/s/core</div>
+      <div class="nums">
+        <span class="kv">budget · <b>3 s</b></span>
+        <span class="kv">fleet · <b>12 nodes · 384 cores</b></span>
+        <span class="kv">checkpoint · <b>every 30 s to S3</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Three-way fanout to storage</div>
+      <div class="desc">Flink writes each log to <b>three places in parallel</b>, each optimized for a different access pattern:<br><br><b>→ MDM (2-hour hot):</b> recent logs in RAM for sub-second drill-down during active incidents. "What errors did feed-ranker emit in the last 10 min?" answered in &lt;100 ms.<br><br><b>→ TSDS (30-day compressed):</b> OpenSearch on NVMe with inverted index. Full-text search across 30 days in &lt;800 ms p99. 6× zstd compression, 3× replication.<br><br><b>→ Cold (3-year archive):</b> Parquet on Glacier IR. Compliance + rare historical queries. Restore in 1–5 min. 1/50th the per-GB cost of hot.<br><br><b>Why three stores:</b> 90% of queries hit logs &lt; 30 days, 9% hit MDM during drill-downs, 1% hit cold. Matching access frequency to per-GB cost is the design's central trick.</div>
+      <div class="tech">MDM: 1 TB RAM · 4 nodes  ||  TSDS: 130 TB NVMe · 17 nodes · 65 shards  ||  Cold: 670 TB · Glacier IR</div>
+      <div class="nums">
+        <span class="kv">budget · <b>5 s</b> (refresh interval is the floor)</span>
+        <span class="kv">cost · <b>$10 K + $5.5 K + $4.4 K /mo</b></span>
+        <span class="kv">durability · <b>10 / 11 / 11 nines</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Query API + Alert engine — two consumers</div>
+      <div class="desc"><b>Query API:</b> SREs run queries from Grafana, Kibana, or CLI. The API receives a query, decides which store to hit based on time range (last 2h → MDM, last 30d → TSDS, older → Cold with restore prompt), and caches results in Redis with TTL — 70% cache hit ratio because dashboards refresh on the same query repeatedly.<br><br><b>Alert engine:</b> for each log that Flink flagged as matching a rule: (a) threshold + error-budget burn check, (b) dedupe + group similar alerts ("100 ranking errors" → 1 page, not 100), (c) priority lanes — p0 bypasses throttling, p1/p2 may be batched.</div>
+      <div class="tech">Query: Trino federates MDM + TSDS + Cold · cache TTL 60s · 70% hit ratio<br>Alert: dedupe by fingerprint · group by parent incident · suppress on error-budget burn</div>
+      <div class="nums">
+        <span class="kv">budget · <b>2 s</b></span>
+        <span class="kv">Query QPS · <b>40 peak</b></span>
+        <span class="kv">Alert lag · <b>p95 5 s</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Grafana / Notifier — humans</div>
+      <div class="desc">The final consumers. <b>Grafana dashboards</b> show SLI views ("feed-ranker error rate over time") and error-budget burn rates. <b>Notifier</b> sends alerts to PagerDuty, ChatOps (Slack), or email.<br><br>The SRE gets paged about the feed-ranker error spike. They open Grafana, drill into the time range, query TSDS for the specific error logs, find the NullPointer trace, fix the bug.<br><br><b>Total wall-clock time from log emission to SRE seeing it:</b> ~35 s typical (sum of step budgets: 1ms + 5s + 0.2s + 2s + 3s + 5s + 2s ≈ 17 s · ×2 for p99 tail ≈ 35 s). Comfortably inside the 60 s SLO with 25 s of headroom.</div>
+      <div class="tech">PagerDuty (p0) · Slack #incident-* (p1) · Email digest (p2)</div>
+      <div class="nums">
+        <span class="kv">e2e typical · <b>17 s</b></span>
+        <span class="kv">e2e p99 · <b>35 s</b></span>
+        <span class="kv">SLO budget · <b>60 s · headroom 25 s</b></span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="note tip">
+  <span class="lbl">The key design insight</span>
+  Most of the 35 seconds is <em>intentional waiting</em> — for batches to fill (step 2), for OpenSearch refresh intervals to fire (step 6). We're trading freshness for cost efficiency. If you wanted 1-second freshness, you could drop the edge batch (5× more RPCs) and the refresh interval (5× more index writes) — but the system would cost ~5× more. The 60 s SLO is carefully chosen as the sweet spot.
+</div>
+
+<!-- 3.3 MULTI-REGION -->
+<h3 id="region">3.3 — Multi-region topology (active-active)</h3>
+
+<div class="diagram">
+<svg viewBox="0 0 980 360" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#59636e"/>
+    </marker>
+    <marker id="arr2b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0a66c2"/>
+    </marker>
+  </defs>
+
+  <rect x="20" y="30" width="940" height="240" rx="10" fill="#fafbfc" stroke="#eaeef2"/>
+  <text x="40" y="55" class="lbl-title">Global query layer</text>
+  <text x="40" y="70" class="lbl-meta">Trino + result cache · routes queries to local region; falls back to remote on failure</text>
+
+  <!-- 5 regions -->
+  <g>
+    <rect x="40" y="90" width="170" height="160" rx="8" fill="#fff" stroke="#54aeff"/>
+    <text x="125" y="112" text-anchor="middle" class="lbl-title">us-west-2 · pdx</text>
+    <text x="125" y="128" text-anchor="middle" class="lbl-sub">35% traffic</text>
+    <text x="125" y="148" text-anchor="middle" class="lbl-meta">245 MB/s · 5 ingest</text>
+    <text x="125" y="164" text-anchor="middle" class="lbl-meta">4 idx · 6 search</text>
+    <text x="125" y="190" text-anchor="middle" class="lbl-sub" fill="#0a66c2">primary query</text>
+    <circle cx="125" cy="220" r="6" fill="#1a7f37"/>
+    <text x="138" y="224" class="lbl-meta">healthy</text>
+  </g>
+  <g>
+    <rect x="225" y="90" width="170" height="160" rx="8" fill="#fff" stroke="#54aeff"/>
+    <text x="310" y="112" text-anchor="middle" class="lbl-title">eu-west-1 · dub</text>
+    <text x="310" y="128" text-anchor="middle" class="lbl-sub">25% traffic</text>
+    <text x="310" y="148" text-anchor="middle" class="lbl-meta">175 MB/s · 4 ingest</text>
+    <text x="310" y="164" text-anchor="middle" class="lbl-meta">3 idx · 4 search</text>
+    <text x="310" y="190" text-anchor="middle" class="lbl-sub" fill="#0a66c2">secondary query</text>
+    <circle cx="310" cy="220" r="6" fill="#1a7f37"/>
+    <text x="323" y="224" class="lbl-meta">healthy</text>
+  </g>
+  <g>
+    <rect x="410" y="90" width="170" height="160" rx="8" fill="#fff" stroke="#54aeff"/>
+    <text x="495" y="112" text-anchor="middle" class="lbl-title">us-east-1 · iad</text>
+    <text x="495" y="128" text-anchor="middle" class="lbl-sub">20% traffic</text>
+    <text x="495" y="148" text-anchor="middle" class="lbl-meta">140 MB/s · 3 ingest</text>
+    <text x="495" y="164" text-anchor="middle" class="lbl-meta">2 idx · 4 search</text>
+    <text x="495" y="190" text-anchor="middle" class="lbl-sub" fill="#0a66c2">read replica</text>
+    <circle cx="495" cy="220" r="6" fill="#1a7f37"/>
+    <text x="508" y="224" class="lbl-meta">healthy</text>
+  </g>
+  <g>
+    <rect x="595" y="90" width="170" height="160" rx="8" fill="#fff" stroke="#54aeff"/>
+    <text x="680" y="112" text-anchor="middle" class="lbl-title">ap-southeast · sin</text>
+    <text x="680" y="128" text-anchor="middle" class="lbl-sub">12% traffic</text>
+    <text x="680" y="148" text-anchor="middle" class="lbl-meta">84 MB/s · 3 ingest</text>
+    <text x="680" y="164" text-anchor="middle" class="lbl-meta">2 idx · 2 search</text>
+    <text x="680" y="190" text-anchor="middle" class="lbl-sub" fill="#0a66c2">read replica</text>
+    <circle cx="680" cy="220" r="6" fill="#9a6700"/>
+    <text x="693" y="224" class="lbl-meta">drill in progress</text>
+  </g>
+  <g>
+    <rect x="780" y="90" width="160" height="160" rx="8" fill="#fff" stroke="#54aeff"/>
+    <text x="860" y="112" text-anchor="middle" class="lbl-title">ap-south-1 · bom</text>
+    <text x="860" y="128" text-anchor="middle" class="lbl-sub">8% traffic</text>
+    <text x="860" y="148" text-anchor="middle" class="lbl-meta">56 MB/s · 2 ingest</text>
+    <text x="860" y="164" text-anchor="middle" class="lbl-meta">1 idx · 1 search</text>
+    <text x="860" y="190" text-anchor="middle" class="lbl-sub" fill="#0a66c2">read replica</text>
+    <circle cx="860" cy="220" r="6" fill="#1a7f37"/>
+    <text x="873" y="224" class="lbl-meta">healthy</text>
+  </g>
+
+  <!-- MM2 between regions -->
+  <path d="M210,170 L225,170" stroke="#0a66c2" stroke-width="1.5" fill="none" marker-end="url(#arr2b)"/>
+  <path d="M395,170 L410,170" stroke="#0a66c2" stroke-width="1.5" fill="none" marker-end="url(#arr2b)"/>
+  <path d="M580,170 L595,170" stroke="#0a66c2" stroke-width="1.5" fill="none" marker-end="url(#arr2b)"/>
+  <path d="M765,170 L780,170" stroke="#0a66c2" stroke-width="1.5" fill="none" marker-end="url(#arr2b)"/>
+
+  <text x="490" y="290" text-anchor="middle" class="lbl-sub">MirrorMaker2 · async cross-region (error + warn only · 40% of volume) · 280 MB/s · RPO &lt; 30 s</text>
+  <text x="490" y="310" text-anchor="middle" class="lbl-meta">S3 cross-region replication for warm + cold tiers (asynchronous, 1-hour RPO acceptable for archive)</text>
+  <text x="490" y="338" text-anchor="middle" class="lbl-meta" fill="#0a66c2">Region failover: queries route to next-nearest healthy region · indexers continue from last Kafka checkpoint</text>
+</svg>
+<div class="diagram-cap">Fig 2 · Five-region active-active. Each region indexes its own logs locally; only error/warn logs replicate cross-region (cost vs availability trade-off). Queries can be served from any region.</div>
+</div>
+
+<!-- 3.4 INDEXING PIPELINE -->
+<h3 id="pipeline">3.4 — Indexing pipeline close-up (the 60s SLO)</h3>
+
+<div class="diagram">
+<svg viewBox="0 0 980 320" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arr3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#59636e"/>
+    </marker>
+  </defs>
+
+  <!-- 7 stage pipeline -->
+  <g>
+    <rect x="20" y="120" width="120" height="100" rx="6" class="box-fill-yellow"/>
+    <text x="80" y="140" text-anchor="middle" class="lbl-title">1 · Edge</text>
+    <text x="80" y="154" text-anchor="middle" class="lbl-title">buffer</text>
+    <text x="80" y="172" text-anchor="middle" class="lbl-sub">5s window OR</text>
+    <text x="80" y="186" text-anchor="middle" class="lbl-sub">1k logs · gzip</text>
+    <text x="80" y="208" text-anchor="middle" class="lbl-meta">budget: 5 s</text>
+  </g>
+  <g>
+    <rect x="155" y="120" width="120" height="100" rx="6" class="box-fill-blue"/>
+    <text x="215" y="140" text-anchor="middle" class="lbl-title">2 · Ingest</text>
+    <text x="215" y="154" text-anchor="middle" class="lbl-title">gateway</text>
+    <text x="215" y="172" text-anchor="middle" class="lbl-sub">gunzip · schema</text>
+    <text x="215" y="186" text-anchor="middle" class="lbl-sub">tenant quota</text>
+    <text x="215" y="208" text-anchor="middle" class="lbl-meta">budget: 0.5 s</text>
+  </g>
+  <g>
+    <rect x="290" y="120" width="120" height="100" rx="6" class="box-fill-green"/>
+    <text x="350" y="140" text-anchor="middle" class="lbl-title">3 · Kafka</text>
+    <text x="350" y="154" text-anchor="middle" class="lbl-title">durable</text>
+    <text x="350" y="172" text-anchor="middle" class="lbl-sub">3× replicated</text>
+    <text x="350" y="186" text-anchor="middle" class="lbl-sub">producer ACK</text>
+    <text x="350" y="208" text-anchor="middle" class="lbl-meta">budget: 2 s</text>
+  </g>
+  <g>
+    <rect x="425" y="120" width="120" height="100" rx="6" class="box-fill-orange"/>
+    <text x="485" y="140" text-anchor="middle" class="lbl-title">4 · Indexer</text>
+    <text x="485" y="154" text-anchor="middle" class="lbl-title">parse</text>
+    <text x="485" y="172" text-anchor="middle" class="lbl-sub">simdjson</text>
+    <text x="485" y="186" text-anchor="middle" class="lbl-sub">tokenize fields</text>
+    <text x="485" y="208" text-anchor="middle" class="lbl-meta">budget: 1 s</text>
+  </g>
+  <g>
+    <rect x="560" y="120" width="120" height="100" rx="6" class="box-fill-orange"/>
+    <text x="620" y="140" text-anchor="middle" class="lbl-title">5 · Index</text>
+    <text x="620" y="154" text-anchor="middle" class="lbl-title">build</text>
+    <text x="620" y="172" text-anchor="middle" class="lbl-sub">inverted idx</text>
+    <text x="620" y="186" text-anchor="middle" class="lbl-sub">field stores</text>
+    <text x="620" y="208" text-anchor="middle" class="lbl-meta">budget: 2 s</text>
+  </g>
+  <g>
+    <rect x="695" y="120" width="120" height="100" rx="6" class="box-fill-blue"/>
+    <text x="755" y="140" text-anchor="middle" class="lbl-title">6 · Refresh</text>
+    <text x="755" y="154" text-anchor="middle" class="lbl-title">interval</text>
+    <text x="755" y="172" text-anchor="middle" class="lbl-sub">OpenSearch</text>
+    <text x="755" y="186" text-anchor="middle" class="lbl-sub">5 s default</text>
+    <text x="755" y="208" text-anchor="middle" class="lbl-meta">budget: 5 s</text>
+  </g>
+  <g>
+    <rect x="830" y="120" width="130" height="100" rx="6" class="box-fill-green"/>
+    <text x="895" y="140" text-anchor="middle" class="lbl-title">7 · Repl</text>
+    <text x="895" y="154" text-anchor="middle" class="lbl-title">commit</text>
+    <text x="895" y="172" text-anchor="middle" class="lbl-sub">3-way fanout</text>
+    <text x="895" y="186" text-anchor="middle" class="lbl-sub">queryable</text>
+    <text x="895" y="208" text-anchor="middle" class="lbl-meta">budget: 2 s</text>
+  </g>
+
+  <!-- arrows -->
+  <path d="M140,170 L155,170" class="arrow"/>
+  <path d="M275,170 L290,170" class="arrow"/>
+  <path d="M410,170 L425,170" class="arrow"/>
+  <path d="M545,170 L560,170" class="arrow"/>
+  <path d="M680,170 L695,170" class="arrow"/>
+  <path d="M815,170 L830,170" class="arrow"/>
+
+  <!-- Latency budget bar -->
+  <text x="20" y="50" class="lbl-title">End-to-end freshness budget (SLO-B: ≤ 60 s)</text>
+  <rect x="20" y="60" width="940" height="14" rx="3" fill="#f6f8fa" stroke="#d0d7de"/>
+  <rect x="22" y="62" width="78" height="10" fill="#fff8c5"/>
+  <rect x="100" y="62" width="8" height="10" fill="#ddf4ff"/>
+  <rect x="108" y="62" width="31" height="10" fill="#dafbe1"/>
+  <rect x="139" y="62" width="16" height="10" fill="#fff1e5"/>
+  <rect x="155" y="62" width="31" height="10" fill="#fff1e5"/>
+  <rect x="186" y="62" width="78" height="10" fill="#ddf4ff"/>
+  <rect x="264" y="62" width="31" height="10" fill="#dafbe1"/>
+  <rect x="295" y="62" width="663" height="10" fill="#fff8c5" opacity=".4"/>
+  <text x="958" y="70" text-anchor="end" class="lbl-meta">17.5 s typical · 35 s p99 · 25 s headroom</text>
+
+  <text x="20" y="250" class="lbl-meta">Sum of stage budgets: 17.5 s · ×2 for tail = 35 s p99 · margin under SLO: 42%</text>
+  <text x="20" y="270" class="lbl-sub">Observed p99 in load tests (April 2026): 38 s — within budget; closest to refresh-interval limit.</text>
+  <text x="20" y="290" class="lbl-meta">Largest movable lever: edge buffer (5s) + refresh interval (5s) account for 10s of the 17.5s budget. Reducing either halves them at 2× indexer load.</text>
+  <text x="20" y="308" class="lbl-meta">Critical-severity logs (error level) bypass edge buffer with 100ms cap — sacrificing batch efficiency for freshness on highest-priority logs only.</text>
+</svg>
+<div class="diagram-cap">Fig 3 · The 7 stages of indexing, each with explicit latency budget. Sum is 17.5 s typical; ×2 for tail = 35 s p99; 25 s of headroom under the 60 s SLO.</div>
+</div>
+
+<!-- 3.5 TIER COMPARISON -->
+<h3 id="tiers">3.5 — Storage tier comparison</h3>
+
+<div class="diagram">
+<svg viewBox="0 0 980 320" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arr4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#59636e"/>
+    </marker>
+  </defs>
+
+  <!-- Hot tier card -->
+  <g>
+    <rect x="20" y="40" width="290" height="240" rx="10" fill="#fff1e5" stroke="#fd8c73"/>
+    <text x="165" y="65" text-anchor="middle" class="lbl-title" style="font-size:14px">HOT · 0–30 days</text>
+    <text x="165" y="82" text-anchor="middle" class="lbl-sub">SSD-backed search index</text>
+
+    <rect x="40" y="100" width="250" height="20" rx="3" fill="#fff" stroke="#d0d7de"/>
+    <rect x="42" y="102" width="246" height="16" fill="#fd8c73"/>
+    <text x="295" y="115" text-anchor="end" class="lbl-meta" fill="#fff" font-weight="bold">130 TB</text>
+
+    <text x="40" y="145" class="lbl-sub" style="font-size:10.5px">capacity</text>
+    <text x="290" y="145" text-anchor="end" class="lbl-title" style="font-size:11px">130 TB · 17 nodes</text>
+
+    <text x="40" y="170" class="lbl-sub" style="font-size:10.5px">cost / mo</text>
+    <text x="290" y="170" text-anchor="end" class="lbl-title" style="font-size:11px">$20 K (RI: $7.6 K)</text>
+
+    <text x="40" y="195" class="lbl-sub" style="font-size:10.5px">query latency</text>
+    <text x="290" y="195" text-anchor="end" class="lbl-title" style="font-size:11px">&lt; 800 ms p99</text>
+
+    <text x="40" y="220" class="lbl-sub" style="font-size:10.5px">compression</text>
+    <text x="290" y="220" text-anchor="end" class="lbl-title" style="font-size:11px">6× zstd</text>
+
+    <text x="40" y="245" class="lbl-sub" style="font-size:10.5px">replication</text>
+    <text x="290" y="245" text-anchor="end" class="lbl-title" style="font-size:11px">3× in-region</text>
+
+    <text x="40" y="270" class="lbl-sub" style="font-size:10.5px">durability</text>
+    <text x="290" y="270" text-anchor="end" class="lbl-title" style="font-size:11px">~10 nines</text>
+  </g>
+
+  <!-- Warm tier -->
+  <g>
+    <rect x="335" y="40" width="290" height="240" rx="10" fill="#fff8c5" stroke="#d4a72c"/>
+    <text x="480" y="65" text-anchor="middle" class="lbl-title" style="font-size:14px">WARM · 30–90 days</text>
+    <text x="480" y="82" text-anchor="middle" class="lbl-sub">Parquet on object store</text>
+
+    <rect x="355" y="100" width="250" height="20" rx="3" fill="#fff" stroke="#d0d7de"/>
+    <rect x="357" y="102" width="92" height="16" fill="#d4a72c"/>
+    <text x="605" y="115" text-anchor="end" class="lbl-meta" fill="#9a6700" font-weight="bold">120 TB</text>
+
+    <text x="355" y="145" class="lbl-sub" style="font-size:10.5px">capacity</text>
+    <text x="605" y="145" text-anchor="end" class="lbl-title" style="font-size:11px">120 TB · S3 Standard</text>
+
+    <text x="355" y="170" class="lbl-sub" style="font-size:10.5px">cost / mo</text>
+    <text x="605" y="170" text-anchor="end" class="lbl-title" style="font-size:11px">$5.5 K</text>
+
+    <text x="355" y="195" class="lbl-sub" style="font-size:10.5px">query latency</text>
+    <text x="605" y="195" text-anchor="end" class="lbl-title" style="font-size:11px">5–30 s</text>
+
+    <text x="355" y="220" class="lbl-sub" style="font-size:10.5px">compression</text>
+    <text x="605" y="220" text-anchor="end" class="lbl-title" style="font-size:11px">10× columnar</text>
+
+    <text x="355" y="245" class="lbl-sub" style="font-size:10.5px">replication</text>
+    <text x="605" y="245" text-anchor="end" class="lbl-title" style="font-size:11px">2× cross-region</text>
+
+    <text x="355" y="270" class="lbl-sub" style="font-size:10.5px">durability</text>
+    <text x="605" y="270" text-anchor="end" class="lbl-title" style="font-size:11px">11 nines</text>
+  </g>
+
+  <!-- Cold tier -->
+  <g>
+    <rect x="650" y="40" width="310" height="240" rx="10" fill="#ddf4ff" stroke="#54aeff"/>
+    <text x="805" y="65" text-anchor="middle" class="lbl-title" style="font-size:14px">COLD · 90 d – 1 year</text>
+    <text x="805" y="82" text-anchor="middle" class="lbl-sub">Glacier IR · object archive</text>
+
+    <rect x="670" y="100" width="270" height="20" rx="3" fill="#fff" stroke="#d0d7de"/>
+    <rect x="672" y="102" width="266" height="16" fill="#54aeff"/>
+    <text x="935" y="115" text-anchor="end" class="lbl-meta" fill="#fff" font-weight="bold">550 TB</text>
+
+    <text x="670" y="145" class="lbl-sub" style="font-size:10.5px">capacity</text>
+    <text x="935" y="145" text-anchor="end" class="lbl-title" style="font-size:11px">550 TB · Glacier IR</text>
+
+    <text x="670" y="170" class="lbl-sub" style="font-size:10.5px">cost / mo</text>
+    <text x="935" y="170" text-anchor="end" class="lbl-title" style="font-size:11px">$4.4 K</text>
+
+    <text x="670" y="195" class="lbl-sub" style="font-size:10.5px">query latency</text>
+    <text x="935" y="195" text-anchor="end" class="lbl-title" style="font-size:11px">1–5 min restore</text>
+
+    <text x="670" y="220" class="lbl-sub" style="font-size:10.5px">compression</text>
+    <text x="935" y="220" text-anchor="end" class="lbl-title" style="font-size:11px">10× columnar</text>
+
+    <text x="670" y="245" class="lbl-sub" style="font-size:10.5px">replication</text>
+    <text x="935" y="245" text-anchor="end" class="lbl-title" style="font-size:11px">2× cross-region</text>
+
+    <text x="670" y="270" class="lbl-sub" style="font-size:10.5px">durability</text>
+    <text x="935" y="270" text-anchor="end" class="lbl-title" style="font-size:11px">11 nines</text>
+  </g>
+
+  <!-- Flow arrows -->
+  <path d="M310,160 L335,160" class="arrow"/>
+  <path d="M625,160 L650,160" class="arrow"/>
+  <text x="322" y="155" text-anchor="middle" class="lbl-meta">30 d</text>
+  <text x="637" y="155" text-anchor="middle" class="lbl-meta">90 d</text>
+</svg>
+<div class="diagram-cap">Fig 4 · Three storage tiers. The capacity bars visualize how 130 TB hot is dwarfed by 550 TB cold — yet hot costs 4× more in absolute terms, 50× more per GB. Matching access frequency to per-GB cost is the design's central trick.</div>
+</div>
+
+<!-- 3.6 LIFECYCLE -->
+<h3 id="lifecycle">3.6 — Lifecycle pipeline (the cost lever)</h3>
+
+<div class="diagram">
+<svg viewBox="0 0 980 240" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arr5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#59636e"/>
+    </marker>
+  </defs>
+
+  <line x1="60" y1="50" x2="920" y2="50" stroke="#d0d7de" stroke-width="1.5"/>
+  <text x="60" y="40" class="lbl-meta">day 0</text>
+  <text x="920" y="40" text-anchor="end" class="lbl-meta">day 365</text>
+
+  <rect x="60" y="60" width="172" height="50" fill="#fff1e5" stroke="#fd8c73"/>
+  <text x="146" y="82" text-anchor="middle" class="lbl-title">HOT</text>
+  <text x="146" y="98" text-anchor="middle" class="lbl-sub">SSD · search index</text>
+
+  <rect x="232" y="60" width="172" height="50" fill="#fff8c5" stroke="#d4a72c"/>
+  <text x="318" y="82" text-anchor="middle" class="lbl-title">WARM</text>
+  <text x="318" y="98" text-anchor="middle" class="lbl-sub">Parquet · S3 Standard</text>
+
+  <rect x="404" y="60" width="516" height="50" fill="#ddf4ff" stroke="#54aeff"/>
+  <text x="662" y="82" text-anchor="middle" class="lbl-title">COLD</text>
+  <text x="662" y="98" text-anchor="middle" class="lbl-sub">Glacier IR · sealed</text>
+
+  <!-- Demote markers -->
+  <line x1="232" y1="50" x2="232" y2="115" stroke="#bc4c00" stroke-dasharray="3,2"/>
+  <text x="232" y="130" text-anchor="middle" class="lbl-meta" fill="#bc4c00">day 30</text>
+  <text x="232" y="145" text-anchor="middle" class="lbl-sub" fill="#bc4c00">demote: drop search index</text>
+
+  <line x1="404" y1="50" x2="404" y2="115" stroke="#9a6700" stroke-dasharray="3,2"/>
+  <text x="404" y="130" text-anchor="middle" class="lbl-meta" fill="#9a6700">day 90</text>
+  <text x="404" y="145" text-anchor="middle" class="lbl-sub" fill="#9a6700">demote: archive to Glacier</text>
+
+  <line x1="920" y1="50" x2="920" y2="115" stroke="#cf222e" stroke-dasharray="3,2"/>
+  <text x="920" y="130" text-anchor="end" class="lbl-meta" fill="#cf222e">day 365</text>
+  <text x="920" y="145" text-anchor="end" class="lbl-sub" fill="#cf222e">purge per policy</text>
+
+  <!-- Cost line -->
+  <text x="60" y="190" class="lbl-title">$/GB-month</text>
+  <text x="146" y="210" text-anchor="middle" class="lbl-title" fill="#bc4c00">$0.20</text>
+  <text x="318" y="210" text-anchor="middle" class="lbl-title" fill="#9a6700">$0.023</text>
+  <text x="662" y="210" text-anchor="middle" class="lbl-title" fill="#0a66c2">$0.004</text>
+
+  <text x="146" y="225" text-anchor="middle" class="lbl-sub">1×</text>
+  <text x="318" y="225" text-anchor="middle" class="lbl-sub">9× cheaper</text>
+  <text x="662" y="225" text-anchor="middle" class="lbl-sub">50× cheaper than hot</text>
+</svg>
+<div class="diagram-cap">Fig 5 · The lifecycle is the cost lever. By day 90, logs are on Glacier at 1/50th the per-GB cost of hot tier. Without aggressive tiering, the system costs 18× more.</div>
+</div>
+
+<div class="note tip">
+  <span class="lbl">Why this structure works</span>
+  Access pattern: 90% of queries hit logs &lt; 30 days old. 9% hit 30–90 days. 1% hit older. Matching access frequency to storage cost is the entire game; everything else is plumbing.
+</div>
+</section>
+
+<!-- ====== 4. GAUNTLET ====== -->
+<section>
+<h2 id="gauntlet">4 · Failure gauntlet <a class="anchor" href="#gauntlet">#</a></h2>
+
+<p>For each scenario, the response is grounded in a number, not a buzzword.</p>
+
+<div class="cols-2">
+  <div class="comp">
+    <div class="name">A · 10× log explosion <span class="tech">SLI: A, B</span></div>
+    <div class="desc">Feed ranking experiment goes wrong, logs at 10× normal volume for 30 min.</div>
+    <div class="row"><span class="lab">trigger</span><span class="val">230 → 2,300 MB/s</span></div>
+    <div class="row"><span class="lab">absorb</span><span class="val">Kafka 7-day retention</span></div>
+    <div class="row"><span class="lab">shed</span><span class="val">drop debug @ edge (90%)</span></div>
+    <div class="row"><span class="lab">verdict</span><span class="val">indexers lag 15 min · 0 loss</span></div>
+  </div>
+  <div class="comp">
+    <div class="name">B · Region outage <span class="tech">SLI: C, D</span></div>
+    <div class="desc">us-west-2 takes 45-min power hit.</div>
+    <div class="row"><span class="lab">trigger</span><span class="val">−35% capacity</span></div>
+    <div class="row"><span class="lab">absorb</span><span class="val">edge agent 5-min buffer</span></div>
+    <div class="row"><span class="lab">failover</span><span class="val">GSLB → iad in 5 s</span></div>
+    <div class="row"><span class="lab">verdict</span><span class="val">0 loss · 1-min query gap</span></div>
+  </div>
+  <div class="comp">
+    <div class="name">C · Oversize log <span class="tech">SLI: A, D</span></div>
+    <div class="desc">Service logs 5 MB stack traces at 100/s (500 MB/s of garbage).</div>
+    <div class="row"><span class="lab">trigger</span><span class="val">log size &gt; 64 KB</span></div>
+    <div class="row"><span class="lab">absorb</span><span class="val">truncate at ingress</span></div>
+    <div class="row"><span class="lab">flag</span><span class="val">DLQ + alert tenant</span></div>
+    <div class="row"><span class="lab">verdict</span><span class="val">pipeline unaffected</span></div>
+  </div>
+  <div class="comp">
+    <div class="name">D · Hot tier disk full <span class="tech">SLI: B, D</span></div>
+    <div class="desc">Lifecycle controller stalls; hot tier hits 95% disk.</div>
+    <div class="row"><span class="lab">trigger</span><span class="val">disk usage &gt; 85%</span></div>
+    <div class="row"><span class="lab">absorb</span><span class="val">emergency demote 7-day idx</span></div>
+    <div class="row"><span class="lab">page</span><span class="val">lifecycle owner</span></div>
+    <div class="row"><span class="lab">verdict</span><span class="val">window narrows · queries live</span></div>
+  </div>
+  <div class="comp">
+    <div class="name">E · Cardinality bomb <span class="tech">SLI: B</span></div>
+    <div class="desc">Service adds user_id as a logged field — index explodes.</div>
+    <div class="row"><span class="lab">trigger</span><span class="val">unique fields &gt; 10k/tenant</span></div>
+    <div class="row"><span class="lab">absorb</span><span class="val">stop indexing offender</span></div>
+    <div class="row"><span class="lab">repair</span><span class="val">page tenant · schema fix</span></div>
+    <div class="row"><span class="lab">verdict</span><span class="val">indexer CPU → baseline</span></div>
+  </div>
+  <div class="comp">
+    <div class="name">F · Glacier restore storm <span class="tech">SLI: cost</span></div>
+    <div class="desc">Incident review needs 1 month of cold data restored.</div>
+    <div class="row"><span class="lab">trigger</span><span class="val">restore request &gt; 10 TB</span></div>
+    <div class="row"><span class="lab">absorb</span><span class="val">bulk-restore queue</span></div>
+    <div class="row"><span class="lab">cap</span><span class="val">per-tenant restore budget</span></div>
+    <div class="row"><span class="lab">verdict</span><span class="val">cost predictable · hours not min</span></div>
+  </div>
+</div>
+
+<div class="note danger">
+  <span class="lbl">What we do not defend against (explicit)</span>
+  Simultaneous loss of ≥ 3 of 5 regions, or a coordinated indexer zero-day. With 5 active-actives weighted 35/25/20/12/8, losing the top 3 means 80% of traffic with no warm replica. Mitigation: cross-cloud cold backups + manual rebuild; separate disaster-recovery doc.
+</div>
+</section>
+
+<!-- ====== 5. PLAYBOOK ====== -->
+<section>
+<h2 id="playbook">5 · Operational playbook <a class="anchor" href="#playbook">#</a></h2>
+
+<h3>5.1 — Deployment</h3>
+<table>
+  <thead><tr><th>Stage</th><th>% traffic</th><th>Soak</th><th>Auto-promote criteria</th></tr></thead>
+  <tbody>
+    <tr><td>Shadow indexer</td><td class="num">100% mirror, 0% query</td><td class="num">48 h</td><td>output diff vs prod &lt; 0.01%</td></tr>
+    <tr><td>Canary</td><td class="num">1% query traffic, 1 region</td><td class="num">24 h</td><td>p99 query latency Δ &lt; 5%</td></tr>
+    <tr><td>Regional</td><td class="num">10% (1 region)</td><td class="num">12 h</td><td>no SLO regression · EB burn &lt; 1×</td></tr>
+    <tr><td>Half</td><td class="num">50%</td><td class="num">6 h</td><td>auto if no SEV-2+ open</td></tr>
+    <tr><td>Global</td><td class="num">100%</td><td class="num">—</td><td>manual sign-off (oncall + lead)</td></tr>
+  </tbody>
+</table>
+
+<h3>5.2 — Chaos drills (quarterly)</h3>
+<ul>
+  <li><b>Region kill</b> — drain one region; verify GSLB and indexer rebalancing within 2 min.</li>
+  <li><b>Kafka broker loss</b> — kill 3 brokers; verify partitions rebalance and producer ACKs continue.</li>
+  <li><b>Cardinality bomb injection</b> — emit logs with synthetic high-cardinality field; verify auto-suppression within 5 min.</li>
+  <li><b>Lifecycle stall</b> — block demote jobs; verify disk-full alert fires before tier saturates.</li>
+  <li><b>Glacier restore at scale</b> — restore 100 TB; verify rate-limit and per-tenant budgets work.</li>
+  <li><b>Indexer poison message</b> — emit log that crashes the parser; verify DLQ + circuit breaker, no cascade.</li>
+</ul>
+
+<h3>5.3 — On-call runbook excerpt</h3>
+<pre><code># Symptom: SLI-B (query freshness) burning > 5× / 1h
+# Likely causes (sorted by base rate over last 12 months)
+
+1. Indexer Kafka lag        → check consumer offset, scale indexer pool
+2. Hot tier shard imbalance → check rebalance, watch GC pauses
+3. OpenSearch refresh slow  → check refresh_interval, segment merge backlog
+4. Schema change deployed   → check index template mismatches
+5. DLQ-0 growth (silent FP) → check DLQ depth for legitimate logs being rejected
+6. Cross-region MM2 lag     → check MM2 metrics, possibly a network issue
+
+# First response (in order):
+- Confirm: dashboard 'slo-b-freshness' shows > 60s over 5 min window
+- Page: only if multi-burn (5× over 1h AND 2× over 6h)
+- Mitigate: scale indexer pool 2× (`kubectl scale deployment indexer --replicas=24`)
+- Communicate: post in #incident-logging with hypothesis
+- Escalate: if not resolving in 15 min, page tier-2 oncall</code></pre>
+</section>
+
+<!-- ====== 6. COMPONENTS ====== -->
+<section>
+<h2 id="components">6 · Component reference <a class="anchor" href="#components">#</a></h2>
+
+<table>
+  <thead><tr><th>Component</th><th>Tech</th><th>Scale strategy</th><th>Failure mitigation</th><th>SLO</th></tr></thead>
+  <tbody>
+    <tr><td><b>Edge agent</b></td><td class="num">Fluent Bit (sidecar)</td><td>per-pod deployment</td><td>local disk 5-min buffer</td><td>A</td></tr>
+    <tr><td><b>Ingestion service</b></td><td class="num">Envoy + Go</td><td>HPA 3→30 per region</td><td>circuit breaker · DLQ</td><td>A,C</td></tr>
+    <tr><td><b>Kafka cluster</b></td><td class="num">Kafka 3.7 · MM2</td><td>partition split by tenant</td><td>3× repl · cross-region async</td><td>C,D</td></tr>
+    <tr><td><b>Indexer pool</b></td><td class="num">Go · simdjson</td><td>autoscale on Kafka lag</td><td>offset checkpoint · replay</td><td>B</td></tr>
+    <tr><td><b>Hot search</b></td><td class="num">OpenSearch 2.x</td><td>shard split at 50 GB</td><td>3-way repl · self-heal</td><td>B,C</td></tr>
+    <tr><td><b>Warm Parquet</b></td><td class="num">Iceberg + S3 Std</td><td>partition by day/tenant</td><td>cross-bucket repl</td><td>D</td></tr>
+    <tr><td><b>Cold archive</b></td><td class="num">S3 Glacier IR</td><td>—</td><td>11 nines built-in</td><td>D</td></tr>
+    <tr><td><b>Query API</b></td><td class="num">Trino + Go gw</td><td>read replicas</td><td>result cache · tier fallback</td><td>B</td></tr>
+    <tr><td><b>Lifecycle ctrl</b></td><td class="num">Go cron (leader-elected)</td><td>singleton w/ lease</td><td>disk-full alert · manual override</td><td>D</td></tr>
+    <tr><td><b>DLQ</b></td><td class="num">Kafka topic</td><td>per-tenant partition</td><td>depth alert · auto-replay</td><td>A</td></tr>
+  </tbody>
+</table>
+</section>
+
+<!-- ====== 7. TRADE-OFFS ====== -->
+<section>
+<h2 id="tradeoffs">7 · Trade-offs & open questions <a class="anchor" href="#tradeoffs">#</a></h2>
+
+<div class="cols-2">
+  <div>
+    <h4>Chose</h4>
+    <ul>
+      <li><b>3-tier storage</b> over single-tier · 18× total cost reduction; trade: lifecycle complexity, possible demote bugs.</li>
+      <li><b>OpenSearch over Loki/ClickHouse</b> · proven, large ops community, full-text queries; trade: less efficient per GB than Loki.</li>
+      <li><b>Gzip at edge</b> over server-side compression · 4× bandwidth reduction at cost of ~5% producer CPU.</li>
+      <li><b>Sample debug logs</b> · drop 90% under load; trade: lossy debug, but full error/warn preserved.</li>
+      <li><b>Glacier IR (Instant Retrieval)</b> not deep Glacier · 1–5 min restore vs hours; cost premium worth it for ad-hoc audits.</li>
+      <li><b>Region-local indexing</b> · indexers don't cross regions; trade: per-region query, but simpler ops.</li>
+    </ul>
+  </div>
+  <div>
+    <h4>Rejected</h4>
+    <ul>
+      <li><b>Direct write to S3</b> · skips Kafka, simpler — but loses replay window and back-pressure handling.</li>
+      <li><b>Loki-style label-only index</b> · cheaper but breaks full-text queries SREs depend on.</li>
+      <li><b>Single hot region</b> · costs less but breaks SLO-C (region outage = total query blackout).</li>
+      <li><b>HDD hot tier</b> · 10× cheaper per GB but IOPS can't handle index writes at 700 MB/s.</li>
+      <li><b>30-day Kafka retention</b> as replay source · would cost more than hot tier; 7 days sufficient.</li>
+      <li><b>Per-tenant dedicated clusters</b> · operational nightmare at LinkedIn's tenant count; multi-tenant with quotas instead.</li>
+    </ul>
+  </div>
+</div>
+
+<h3>Open questions</h3>
+<ol>
+  <li>Should debug logs go to a separate ultra-cheap tier (Loki-style) and skip OpenSearch entirely? Could save ~30% of hot fleet.</li>
+  <li>Is 7-day Kafka retention enough? Past incidents have needed 14-day replay. Trade: 2× broker count.</li>
+  <li>Should we offer "logs export to customer's S3" for compliance/enterprise tenants? Adds plumbing but reduces our retention pressure.</li>
+  <li>Per-tenant zstd dictionary training could push compression from 6× to 9× — ~30% storage savings. Worth the ops complexity?</li>
+</ol>
+</section>
+
+<footer>
+  <div>linkedin/logging · design-doc · distributed-logging-pipeline.md</div>
+  <div>nalsd · review status: <span style="color:var(--yellow)">⬤</span> in-review</div>
+</footer>
+
+</main>
+</div>
+</body>
+</html>

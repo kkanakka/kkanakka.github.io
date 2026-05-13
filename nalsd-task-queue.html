@@ -1,0 +1,1012 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NALSD · LinkedIn Distributed Task Queue</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#ffffff;--bg-alt:#f6f8fa;--bg-code:#f6f8fa;
+  --border:#d0d7de;--border-soft:#eaeef2;
+  --ink:#1f2328;--ink-soft:#59636e;--ink-faint:#818b98;
+  --link:#0a66c2;--link-hover:#004182;
+  --green:#1a7f37;--green-bg:#dafbe1;
+  --red:#cf222e;--red-bg:#ffebe9;
+  --yellow:#9a6700;--yellow-bg:#fff8c5;
+  --purple:#6639ba;--purple-bg:#fbefff;
+  --orange:#bc4c00;--orange-bg:#fff1e5;
+  --blue-bg:#ddf4ff;
+  --shadow:0 1px 0 rgba(31,35,40,.04);
+  --mono:'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --serif:'Source Serif 4', Georgia, serif;
+  --sans:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
+a{color:var(--link);text-decoration:none}a:hover{text-decoration:underline;color:var(--link-hover)}
+code,pre,.mono{font-family:var(--mono)}
+code{background:var(--bg-code);padding:.1em .35em;border-radius:4px;font-size:.88em;border:1px solid var(--border-soft)}
+pre{background:var(--bg-code);border:1px solid var(--border);border-radius:6px;padding:12px 14px;overflow-x:auto;font-size:12.5px;line-height:1.55;margin:0}
+
+.shell{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+aside{position:sticky;top:0;height:100vh;overflow-y:auto;border-right:1px solid var(--border);background:var(--bg);padding:18px 14px 40px}
+main{max-width:1080px;width:100%;padding:28px 40px 80px}
+@media (max-width:960px){.shell{grid-template-columns:1fr}aside{position:relative;height:auto;border-right:none;border-bottom:1px solid var(--border)}}
+
+.brand{display:flex;align-items:center;gap:10px;padding:6px 8px 16px;border-bottom:1px solid var(--border-soft);margin-bottom:12px}
+.brand-mark{width:28px;height:28px;border-radius:6px;background:var(--link);color:#fff;display:grid;place-items:center;font-weight:700;font-family:var(--mono);font-size:13px}
+.brand-title{font-weight:700;font-size:14px}
+.brand-sub{font-size:11px;color:var(--ink-soft);font-family:var(--mono)}
+.toc-group{margin:14px 0 4px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-faint);font-weight:600;padding:0 8px}
+.toc a{display:block;padding:4px 8px;border-radius:5px;color:var(--ink-soft);font-size:13px;border-left:2px solid transparent;margin-left:4px}
+.toc a:hover{background:var(--bg-alt);color:var(--ink);text-decoration:none}
+.toc a.depth-2{padding-left:18px;font-size:12.5px}
+
+.doc-head{border-bottom:1px solid var(--border);padding-bottom:18px;margin-bottom:24px}
+.crumbs{font-size:12px;color:var(--ink-soft);font-family:var(--mono);margin-bottom:8px}
+.crumbs .sep{color:var(--ink-faint);margin:0 6px}
+h1{font-family:var(--serif);font-weight:700;font-size:32px;line-height:1.15;letter-spacing:-.015em;margin:0 0 8px}
+.doc-meta{display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:12.5px;color:var(--ink-soft);font-family:var(--mono);margin-top:10px}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:999px;border:1px solid var(--border);background:var(--bg-alt);font-size:11.5px;font-family:var(--mono);color:var(--ink-soft)}
+.pill.blue{background:var(--blue-bg);border-color:#80ccff;color:#0969da}
+.pill.green{background:var(--green-bg);border-color:#a5e1b1;color:var(--green)}
+.pill.purple{background:var(--purple-bg);border-color:#d8b9ff;color:var(--purple)}
+.pill.orange{background:var(--orange-bg);border-color:#ffb077;color:var(--orange)}
+.pill.red{background:var(--red-bg);border-color:#ffaaa3;color:var(--red)}
+.pill.yellow{background:var(--yellow-bg);border-color:#e7c860;color:var(--yellow)}
+
+h2{font-family:var(--serif);font-weight:700;font-size:22px;letter-spacing:-.01em;margin:40px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border-soft);scroll-margin-top:20px}
+h3{font-family:var(--sans);font-weight:700;font-size:16px;margin:24px 0 8px;scroll-margin-top:20px}
+h4{font-family:var(--sans);font-weight:600;font-size:13.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-soft);margin:18px 0 6px}
+p{margin:0 0 12px}
+ul,ol{margin:0 0 12px;padding-left:22px}
+li{margin-bottom:4px}
+
+.note{border-left:3px solid var(--link);background:var(--blue-bg);padding:10px 14px;border-radius:0 6px 6px 0;margin:14px 0;font-size:13px}
+.note.warn{border-left-color:var(--yellow);background:var(--yellow-bg)}
+.note.danger{border-left-color:var(--red);background:var(--red-bg)}
+.note.tip{border-left-color:var(--green);background:var(--green-bg)}
+.note .lbl{font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px;font-family:var(--mono);color:var(--link)}
+.note.warn .lbl{color:var(--yellow)}
+.note.danger .lbl{color:var(--red)}
+.note.tip .lbl{color:var(--green)}
+
+table{width:100%;border-collapse:collapse;font-size:12.5px;margin:8px 0 16px;border:1px solid var(--border);border-radius:6px;overflow:hidden}
+thead{background:var(--bg-alt)}
+th,td{padding:7px 11px;text-align:left;border-bottom:1px solid var(--border-soft);vertical-align:top}
+th{font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-soft)}
+tr:last-child td{border-bottom:none}
+td.num{font-family:var(--mono);font-size:12px}
+
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0 20px}
+@media (max-width:780px){.stat-grid{grid-template-columns:repeat(2,1fr)}}
+.stat{border:1px solid var(--border);border-radius:6px;padding:12px;background:var(--bg)}
+.stat .k{font-family:var(--mono);font-size:11px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.05em}
+.stat .v{font-family:var(--serif);font-weight:700;font-size:22px;margin-top:2px;line-height:1.15}
+.stat .s{font-size:11px;color:var(--ink-soft);font-family:var(--mono);margin-top:2px}
+
+.cols-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:780px){.cols-2{grid-template-columns:1fr}}
+
+.calc{border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin:14px 0;background:var(--bg-alt);position:relative}
+.calc::before{content:"∑ NALSD";position:absolute;top:-10px;left:14px;font-family:var(--mono);font-size:10.5px;background:var(--bg);padding:2px 8px;border:1px solid var(--border);border-radius:4px;color:var(--ink-soft);letter-spacing:.05em;font-weight:600}
+.calc h4{margin-top:4px}
+.calc pre{background:var(--bg);border-color:var(--border-soft)}
+.calc .verdict{display:flex;align-items:center;gap:8px;margin-top:10px;padding:8px 12px;background:var(--bg);border:1px dashed var(--green);border-radius:6px;font-family:var(--mono);font-size:12px;color:var(--green)}
+.calc .verdict.warn{border-color:var(--yellow);color:var(--yellow)}
+
+.diagram{border:1px solid var(--border);border-radius:8px;background:var(--bg);padding:14px;margin:16px 0;box-shadow:var(--shadow)}
+.diagram-cap{font-family:var(--mono);font-size:11px;color:var(--ink-faint);margin-top:8px;text-align:center}
+.diagram svg{width:100%;height:auto;display:block}
+
+.box-fill-blue{fill:#ddf4ff;stroke:#54aeff}
+.box-fill-green{fill:#dafbe1;stroke:#4ac26b}
+.box-fill-purple{fill:#fbefff;stroke:#c297ff}
+.box-fill-orange{fill:#fff1e5;stroke:#fd8c73}
+.box-fill-red{fill:#ffebe9;stroke:#ff8182}
+.box-fill-yellow{fill:#fff8c5;stroke:#d4a72c}
+.box-fill-gray{fill:#f6f8fa;stroke:#d0d7de}
+.lbl-title{font-family:'Inter',sans-serif;font-weight:700;font-size:11.5px;fill:#1f2328}
+.lbl-sub{font-family:'JetBrains Mono',monospace;font-size:9.5px;fill:#59636e}
+.lbl-meta{font-family:'JetBrains Mono',monospace;font-size:9px;fill:#818b98}
+.arrow{stroke:#59636e;stroke-width:1.3;fill:none;marker-end:url(#arr)}
+.arrow-dashed{stroke:#cf222e;stroke-width:1.2;fill:none;stroke-dasharray:4,3;marker-end:url(#arr-red)}
+.arrow-green{stroke:#1a7f37;stroke-width:1.5;fill:none;marker-end:url(#arr-green)}
+
+/* Step badge for numbered flow */
+.step-badge{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--link);color:#fff;font-family:var(--mono);font-size:11px;font-weight:700;margin-right:8px;flex-shrink:0}
+.flow-steps{counter-reset:step}
+.flow-step{display:grid;grid-template-columns:36px 1fr;gap:12px;padding:14px 16px;border:1px solid var(--border);border-radius:8px;margin-bottom:10px;background:#fff}
+.flow-step .num{counter-increment:step;background:var(--link);color:#fff;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-family:var(--mono);font-weight:700;font-size:13px}
+.flow-step .num::before{content:counter(step)}
+.flow-step .body .title{font-weight:700;font-size:14px;margin-bottom:4px;font-family:var(--sans)}
+.flow-step .body .desc{font-size:12.5px;color:var(--ink-soft);margin-bottom:6px}
+.flow-step .body .tech{font-family:var(--mono);font-size:11px;background:var(--bg-alt);border:1px solid var(--border-soft);border-radius:4px;padding:5px 8px;margin-top:4px;display:inline-block;color:var(--ink)}
+.flow-step .body .nums{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px}
+.flow-step .body .nums .kv{font-family:var(--mono);font-size:11px;color:var(--ink-soft)}
+.flow-step .body .nums .kv b{color:var(--ink);font-weight:700}
+
+.comp-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:12px 0}
+@media (max-width:780px){.comp-grid{grid-template-columns:1fr}}
+.comp{border:1px solid var(--border);border-radius:6px;padding:11px 13px;background:var(--bg)}
+.comp .name{font-weight:700;font-size:13px;display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.comp .name .tech{font-family:var(--mono);font-size:10.5px;color:var(--link);font-weight:500}
+.comp .desc{font-size:12px;color:var(--ink-soft);margin-bottom:6px}
+.comp .row{font-family:var(--mono);font-size:11px;color:var(--ink-soft);display:flex;justify-content:space-between;padding:2px 0;border-top:1px dashed var(--border-soft)}
+.comp .row .lab{color:var(--ink-faint)}
+
+h2 .anchor,h3 .anchor{opacity:0;color:var(--ink-faint);font-family:var(--mono);font-weight:400;margin-left:8px;font-size:.8em;transition:opacity .15s}
+h2:hover .anchor,h3:hover .anchor{opacity:1}
+
+footer{margin-top:50px;padding-top:18px;border-top:1px solid var(--border-soft);font-size:11.5px;color:var(--ink-faint);font-family:var(--mono);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+
+.li-strip{height:3px;background:linear-gradient(90deg,var(--link) 0,var(--link) 60%,transparent 100%);border-radius:2px;margin-bottom:14px}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:#d0d7de;border-radius:5px;border:2px solid var(--bg)}
+::-webkit-scrollbar-track{background:transparent}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<aside>
+  <div class="brand">
+    <div class="brand-mark">in</div>
+    <div>
+      <div class="brand-title">in/taskqueue</div>
+      <div class="brand-sub">v2026.05 · nalsd</div>
+    </div>
+  </div>
+  <div class="li-strip"></div>
+  <nav class="toc">
+    <div class="toc-group">Design</div>
+    <a href="#problem">1 · Problem & SLOs</a>
+    <a href="#capacity">2 · Capacity model</a>
+    <a href="#ingest" class="depth-2">2.1 Enqueue rate</a>
+    <a href="#kafka" class="depth-2">2.2 Kafka sizing</a>
+    <a href="#workers" class="depth-2">2.3 Worker pools</a>
+    <a href="#spanner" class="depth-2">2.4 State store</a>
+    <a href="#cost" class="depth-2">2.5 Fleet & cost</a>
+    <a href="#arch">3 · Architecture</a>
+    <a href="#dataflow" class="depth-2">3.1 Full diagram</a>
+    <a href="#flow" class="depth-2">3.2 Step-by-step flow</a>
+    <a href="#lease" class="depth-2">3.3 Lease mechanics</a>
+    <a href="#exactly-once" class="depth-2">3.4 Exactly-once</a>
+    <div class="toc-group">Operations</div>
+    <a href="#gauntlet">4 · Failure gauntlet</a>
+    <a href="#playbook">5 · Ops playbook</a>
+    <a href="#components">6 · Components</a>
+    <a href="#tradeoffs">7 · Trade-offs</a>
+  </nav>
+</aside>
+
+<main>
+
+<header class="doc-head">
+  <div class="crumbs">
+    <span>in/taskqueue</span><span class="sep">/</span>
+    <span>design-docs</span><span class="sep">/</span>
+    <span>2026</span><span class="sep">/</span>
+    <span>distributed-task-queue.md</span>
+  </div>
+  <h1>Designing LinkedIn's Distributed Task Queue</h1>
+  <p style="font-size:15px;color:var(--ink-soft);margin:6px 0 0;font-family:var(--serif)">
+    A NALSD walkthrough — background processing for Feed image resize, InMail send, Profile picture transcode, Jobs-digest generation, and ML inference.
+    10 M tasks/sec ingest, p99 ≤ 10 s, exactly-once with idempotency keys, 5 nines delivery.
+  </p>
+  <div class="doc-meta">
+    <span class="pill blue">NALSD</span>
+    <span class="pill green">SLO: p99 ≤ 10s</span>
+    <span class="pill purple">10 M tasks/s</span>
+    <span class="pill orange">5 regions</span>
+    <span class="pill yellow">draft · review</span>
+    <span style="margin-left:auto">last edit · 2026-05-12 · sjc</span>
+  </div>
+</header>
+
+<!-- ===== 1. PROBLEM ===== -->
+<section>
+<h2 id="problem">1 · Problem statement & SLO contract <a class="anchor" href="#problem">#</a></h2>
+
+<p>LinkedIn's product teams generate background work all day: a member uploads a profile photo (transcode + thumbnail), a recruiter sends an InMail (delivery via vendor APIs), Jobs ships a daily digest email to 50M members, a Feed ranking experiment kicks off offline ML inference. None of this can run inline on the user request — it must be queued, executed reliably, and observed.</p>
+
+<div class="stat-grid">
+  <div class="stat"><div class="k">Peak enqueue</div><div class="v">10 M/s</div><div class="s">tasks · global</div></div>
+  <div class="stat"><div class="k">Avg latency</div><div class="v">≤ 10 s</div><div class="s">p99 enqueue → start</div></div>
+  <div class="stat"><div class="k">Delivery</div><div class="v">99.999%</div><div class="s">at-least-once OR DLQ</div></div>
+  <div class="stat"><div class="k">Worker pools</div><div class="v">4 types</div><div class="s">CPU · I/O · GPU · Memory</div></div>
+</div>
+
+<h3 id="slo">SLO contract</h3>
+<p>Every component below is justified against these five SLIs. If a proposal doesn't move one, it doesn't ship.</p>
+
+<table>
+  <thead><tr><th>SLI</th><th>Target</th><th>Measurement</th><th>Error budget / 28d</th></tr></thead>
+  <tbody>
+    <tr><td><b>A · Regional latency</b></td><td class="num">p95 ≤ 2 s</td><td>enqueue → worker claim, same region</td><td class="num">~24 h with &gt;2s</td></tr>
+    <tr><td><b>B · Global latency</b></td><td class="num">p99 ≤ 10 s</td><td>enqueue → worker claim, any region</td><td class="num">~24 h with &gt;10s</td></tr>
+    <tr><td><b>C · Delivery reliability</b></td><td class="num">≥ 99.999%</td><td>tasks delivered OR moved to DLQ</td><td class="num">~5 in 10⁶ lost</td></tr>
+    <tr><td><b>D · Visibility freshness</b></td><td class="num">p95 ≤ 5 s</td><td>task event → status API reflects it</td><td class="num">~24 h stale</td></tr>
+    <tr><td><b>E · Queue availability</b></td><td class="num">≥ 99.99%</td><td>enqueue accepted / offered</td><td class="num">~4 min/month</td></tr>
+  </tbody>
+</table>
+
+<div class="note">
+  <span class="lbl">The hardest SLO</span>
+  Five nines delivery (SLI-C) is the binding constraint. It's what forces durable Kafka, lease-based claiming, conditional Spanner writes, and the DLQ. Without that target, you could get away with Redis lists and a watchdog.
+</div>
+</section>
+
+<!-- ===== 2. CAPACITY ===== -->
+<section>
+<h2 id="capacity">2 · Capacity model (the NALSD math) <a class="anchor" href="#capacity">#</a></h2>
+
+<h3 id="ingest">2.1 — Enqueue rate at the gateway</h3>
+<div class="calc">
+  <h4>Bytes per second at the edge</h4>
+<pre><code>peak tasks/sec        = 10,000,000
+
+avg task payload (proto):
+  task_id (uuid)             = 16 B
+  tenant_id + service_id     = 32 B
+  idempotency_key            = 32 B
+  task_type (enum)           =  4 B
+  priority (p0/p1/p2)        =  2 B
+  schedule (timestamp)       =  8 B
+  retry policy + retries     = 16 B
+  payload (image url / blob ref) = 290 B
+  ──────────────────────────────────
+  avg task size              = 400 B
+
+bytes/sec at peak     = 10e6 × 400 B  = 4 GB/s
+                                       ≈ 32 Gbps
+
+per-region peak (35% top region):
+  us-west-2           = 4 × 0.35 = 1.4 GB/s ≈ 11 Gbps</code></pre>
+  <div class="verdict">VERDICT · 32 Gbps global enqueue. 4 GB/s decompressed lands in Kafka after gateway.</div>
+</div>
+
+<div class="calc">
+  <h4>Gateway RPC capacity</h4>
+<pre><code>RPC batching by producer = 20 tasks/RPC
+RPC/sec global           = 10e6 / 20 = 500,000 RPC/s
+RPC/sec top region (35%) = 175,000 RPC/s
+
+per-gateway capacity (Envoy + gRPC + Spanner CAS dedupe):
+                         = 8,000 RPC/s
+                          (limited by Spanner CAS p99, NOT CPU)
+
+gateways needed per top region  = 175k / 8k = 22 instances
++ N+2 redundancy                = 24
+fleet total (5 regions, weighted) ≈ 80 gateway instances</code></pre>
+  <div class="verdict">VERDICT · 80 gateways. Spanner CAS dedupe is the bottleneck, not CPU.</div>
+</div>
+
+<h3 id="kafka">2.2 — Kafka cluster sizing</h3>
+<div class="calc">
+  <h4>Brokers, partitions, retention</h4>
+<pre><code>peak throughput        = 4 GB/s in × 3 (replication factor) = 12 GB/s gross write
+                       + 4 GB/s out (consumers)            = 16 GB/s aggregate
+per-broker capacity    = 250 MB/s sustained (i4i.4xlarge, NVMe)
+brokers needed         = 16,000 / 250 = 64 brokers
++ headroom + per-region distribution → 80 brokers
+
+partitions (need enough for parallelism):
+  tasks.p0 (critical) = 256 partitions
+  tasks.p1 (standard) = 512 partitions
+  tasks.p2 (batch)    = 256 partitions
+  total               = 1,024 partitions
+
+retention:
+  7 days at 4 GB/s    = 4 × 86,400 × 7 = 2.4 PB raw
+  with 3× repl        = 7.3 PB
+  per-broker (12 TB)  = 7,300 / 12 ÷ 80 = 7.6 TB/broker ✓ fits</code></pre>
+  <div class="verdict">VERDICT · 80 brokers · 1024 partitions · 7-day retention enables replay window for incident recovery.</div>
+</div>
+
+<h3 id="workers">2.3 — Worker pool sizing (the big number)</h3>
+
+<p>The worker fleet is the biggest cost component. Sizing depends on the <em>mix of task types</em>, not just count. Different tasks land in different pools.</p>
+
+<div class="calc">
+  <h4>Task mix and per-pool throughput</h4>
+<pre><code>task type mix (measured from production):
+  CPU pool (image resize, transcode)    = 50%  = 5 M tasks/s
+  I/O pool (email, webhooks, vendor API) = 35%  = 3.5 M tasks/s
+  GPU pool (ML inference, ranking)      =  8%  = 0.8 M tasks/s
+  Memory pool (data enrich, joins)      =  7%  = 0.7 M tasks/s
+                                          ───
+                                          10 M tasks/s
+
+per-task wall time (measured p50):
+  CPU task       = 200 ms  (image 200 KB → thumbnail)
+  I/O task       = 800 ms  (email vendor API call)
+  GPU task       = 50 ms   (small inference, batched 32×)
+  Memory task    = 500 ms  (data join + write)
+
+concurrent workers needed = tasks/s × wall time:
+  CPU pool       = 5,000,000 × 0.2 s  = 1,000,000 concurrent
+  I/O pool       = 3,500,000 × 0.8 s  = 2,800,000 concurrent
+  GPU pool       =   800,000 × 0.05 s =    40,000 concurrent
+  Memory pool    =   700,000 × 0.5 s  =   350,000 concurrent
+                                       ──────────
+                                       4,190,000 concurrent</code></pre>
+  <div class="verdict warn">VERDICT · 4.2M concurrent worker instances peak. That's a big number — packing density is critical.</div>
+</div>
+
+<div class="calc">
+  <h4>Worker packing on Kubernetes nodes</h4>
+<pre><code>concurrent workers per pod (varies by pool):
+  CPU pod (4 vCPU, 8 GB)     = 4 concurrent CPU tasks
+  I/O pod (2 vCPU, 4 GB)     = 200 concurrent I/O tasks  (mostly waiting on network)
+  GPU pod (1 GPU shared)     = 32 concurrent (batched)
+  Memory pod (2 vCPU, 32 GB) = 8 concurrent
+
+pods needed:
+  CPU pool       = 1,000,000 / 4   = 250,000 pods
+  I/O pool       = 2,800,000 / 200 =  14,000 pods
+  GPU pool       =    40,000 / 32  =   1,250 pods
+  Memory pool    =   350,000 / 8   =  44,000 pods
+                                    ──────────
+                                    309,250 pods peak
+
+nodes (pack ~20 pods per node):
+  CPU       = 250,000 / 20 = 12,500 nodes
+  I/O       = 14,000 / 100 = 140 nodes  (smaller, denser pods)
+  GPU       = 1,250 / 4    = 313 nodes  (GPU nodes hold fewer pods)
+  Memory    = 44,000 / 8   = 5,500 nodes
+  ──────────────────────────────────────
+  total                    = 18,453 nodes peak (matches HPA "1k-20k")</code></pre>
+  <div class="verdict warn">VERDICT · 18k nodes peak. Autoscale 1k baseline → 20k peak via HPA. CPU pool dominates everything.</div>
+</div>
+
+<h3 id="spanner">2.4 — State store (Spanner)</h3>
+<div class="calc">
+  <h4>QPS and storage</h4>
+<pre><code>per-task lifecycle writes to Spanner:
+  enqueue:    CAS dedupe insert    = 1 write
+  claim:      lease acquire        = 1 write
+  heartbeat:  lease renew × 3      = 3 writes (during 30s task at 10s heartbeat)
+  complete:   CAS final status     = 1 write
+  ──────────────────────────────────────
+  total                            = 6 writes per task
+
+write QPS at peak = 10e6 × 6 = 60 M writes/s
+
+per-Spanner-node capacity = 10,000 writes/s sustained
+nodes needed              = 6,000 (theoretical, not actually how Spanner scales)
+                          → use Spanner's automatic splitting
+                          → 200 splits × 30K writes/s each = serves the load
+
+storage per task row     = 500 B (metadata + lease + retry counters)
+rows retained 7 days     = 7 × 86,400 × 10M = 6 × 10¹² rows
+storage                  = 6e12 × 500 B = 3 PB
+with TTL cleanup at 7d  → roughly steady state</code></pre>
+  <div class="verdict">VERDICT · Spanner handles 60M writes/s via automatic splits. The CAS p99 is the binding latency constraint.</div>
+</div>
+
+<h3 id="cost">2.5 — Fleet summary & cost</h3>
+<table>
+  <thead><tr><th>Tier</th><th>Instance</th><th>Count</th><th>$/mo (on-demand)</th><th>$/mo (3y RI)</th></tr></thead>
+  <tbody>
+    <tr><td>Enqueue gateway</td><td class="num">m6i.4xlarge</td><td class="num">80</td><td class="num">$47 K</td><td class="num">$18 K</td></tr>
+    <tr><td>Kafka brokers</td><td class="num">i4i.4xlarge</td><td class="num">80</td><td class="num">$96 K</td><td class="num">$36 K</td></tr>
+    <tr><td>Scheduler/dispatcher</td><td class="num">m6i.2xlarge</td><td class="num">40</td><td class="num">$12 K</td><td class="num">$4.5 K</td></tr>
+    <tr><td>CPU worker pool</td><td class="num">c6i.2xlarge (avg)</td><td class="num">12,500</td><td class="num">$2.7 M</td><td class="num">$1.0 M</td></tr>
+    <tr><td>I/O worker pool</td><td class="num">m6i.large</td><td class="num">140</td><td class="num">$11 K</td><td class="num">$4.2 K</td></tr>
+    <tr><td>GPU worker pool</td><td class="num">g5.2xlarge</td><td class="num">313</td><td class="num">$280 K</td><td class="num">$106 K</td></tr>
+    <tr><td>Memory worker pool</td><td class="num">r6i.large</td><td class="num">5,500</td><td class="num">$540 K</td><td class="num">$205 K</td></tr>
+    <tr><td>Spanner state store</td><td class="num">—</td><td class="num">3 PB · 60M wps</td><td class="num">$420 K</td><td class="num">$420 K</td></tr>
+    <tr><td>DLQ + redis cache</td><td class="num">cache.r6g.large</td><td class="num">30</td><td class="num">$7 K</td><td class="num">$2.7 K</td></tr>
+    <tr><td>Cross-region egress</td><td class="num">—</td><td class="num">4 Gbps</td><td class="num">$15 K</td><td class="num">$15 K</td></tr>
+    <tr style="background:var(--bg-alt);font-weight:700"><td>Total</td><td class="num">—</td><td class="num">~19,000 nodes</td><td class="num">$4.13 M/mo</td><td class="num">$1.82 M/mo</td></tr>
+  </tbody>
+</table>
+
+<div class="note warn">
+  <span class="lbl">Cost composition</span>
+  Worker pools eat 87% of the budget — CPU pool alone is $2.7M/mo. Every saved millisecond of task wall time directly cuts hundreds of nodes. <b>Optimizing task code matters more than infrastructure choices at this scale.</b>
+</div>
+</section>
+
+<!-- ===== 3. ARCHITECTURE ===== -->
+<section>
+<h2 id="arch">3 · Architecture <a class="anchor" href="#arch">#</a></h2>
+
+<h3 id="dataflow">3.1 — Full architecture diagram</h3>
+
+<div class="diagram">
+<svg viewBox="0 0 980 880" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#59636e"/>
+    </marker>
+    <marker id="arr-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#cf222e"/>
+    </marker>
+    <marker id="arr-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1a7f37"/>
+    </marker>
+  </defs>
+
+  <!-- SLO ribbon at top -->
+  <text x="490" y="22" text-anchor="middle" class="lbl-title" style="font-size:13px">10 M tasks/sec · p95 regional ≤ 2 s · p99 global ≤ 10 s · 99.999% delivery</text>
+
+  <!-- Row 1: Producers + Enqueue gateway -->
+  <g>
+    <rect x="20" y="50" width="200" height="90" rx="6" class="box-fill-gray"/>
+    <text x="120" y="74" text-anchor="middle" class="lbl-title">Producers</text>
+    <text x="120" y="92" text-anchor="middle" class="lbl-sub">Multi-tenant services</text>
+    <text x="120" y="108" text-anchor="middle" class="lbl-sub">Feed · InMail · Jobs · Profile</text>
+    <text x="120" y="126" text-anchor="middle" class="lbl-meta">~2 M producer pods</text>
+  </g>
+
+  <text x="260" y="100" class="lbl-meta">1</text>
+  <circle cx="240" cy="95" r="11" fill="#0a66c2"/>
+  <text x="240" y="99" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">1</text>
+
+  <g>
+    <rect x="280" y="50" width="500" height="90" rx="6" class="box-fill-blue"/>
+    <text x="530" y="74" text-anchor="middle" class="lbl-title">Enqueue gateway</text>
+    <text x="530" y="92" text-anchor="middle" class="lbl-sub">Auth · schema validate · per-tenant token bucket</text>
+    <text x="530" y="108" text-anchor="middle" class="lbl-sub">Idempotency key dedupe (Spanner CAS)</text>
+    <text x="530" y="126" text-anchor="middle" class="lbl-meta">80 gateways · 8k RPC/s each · p99 50 ms</text>
+  </g>
+
+  <!-- DLQ early reject -->
+  <g>
+    <rect x="820" y="50" width="140" height="90" rx="6" class="box-fill-red"/>
+    <text x="890" y="74" text-anchor="middle" class="lbl-title">DLQ-0 (early)</text>
+    <text x="890" y="92" text-anchor="middle" class="lbl-sub">malformed</text>
+    <text x="890" y="108" text-anchor="middle" class="lbl-sub">over-quota</text>
+    <text x="890" y="126" text-anchor="middle" class="lbl-meta">auth fail</text>
+  </g>
+
+  <!-- Row 2: Kafka -->
+  <g>
+    <circle cx="530" cy="170" r="11" fill="#0a66c2"/>
+    <text x="530" y="174" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">2</text>
+  </g>
+  <g>
+    <rect x="20" y="195" width="940" height="90" rx="6" class="box-fill-green"/>
+    <text x="490" y="218" text-anchor="middle" class="lbl-title" style="font-size:13px">Kafka — partitioned by (tenant, priority)</text>
+    <text x="490" y="236" text-anchor="middle" class="lbl-sub">Topics: tasks.p0 (critical) · tasks.p1 (standard) · tasks.p2 (batch)</text>
+    <text x="490" y="252" text-anchor="middle" class="lbl-sub">MirrorMaker2 cross-region · 7-day retention · 3× replication · 1,024 partitions</text>
+    <text x="490" y="272" text-anchor="middle" class="lbl-meta">80 brokers · 4 GB/s in · 7.3 PB total · replay enables incident recovery</text>
+  </g>
+
+  <!-- Row 3: Scheduler + dispatcher -->
+  <g>
+    <circle cx="490" cy="305" r="11" fill="#0a66c2"/>
+    <text x="490" y="309" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">3</text>
+  </g>
+  <g>
+    <rect x="100" y="330" width="780" height="80" rx="6" class="box-fill-purple"/>
+    <text x="490" y="354" text-anchor="middle" class="lbl-title" style="font-size:13px">Scheduler + dispatcher</text>
+    <text x="490" y="372" text-anchor="middle" class="lbl-sub">Delayed / cron · worker-pool routing · lease issuance</text>
+    <text x="490" y="392" text-anchor="middle" class="lbl-meta">40 instances · stateless · routes by task_type → worker pool</text>
+  </g>
+
+  <!-- Row 4: 4 worker pools -->
+  <g>
+    <circle cx="125" cy="430" r="11" fill="#0a66c2"/>
+    <text x="125" y="434" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">4</text>
+  </g>
+
+  <g>
+    <rect x="20" y="455" width="225" height="115" rx="6" class="box-fill-orange"/>
+    <text x="132" y="479" text-anchor="middle" class="lbl-title">CPU pool</text>
+    <text x="132" y="497" text-anchor="middle" class="lbl-sub">image · transcode</text>
+    <text x="132" y="513" text-anchor="middle" class="lbl-sub">HPA 1k–20k pods</text>
+    <text x="132" y="535" text-anchor="middle" class="lbl-meta">12,500 nodes peak</text>
+    <text x="132" y="551" text-anchor="middle" class="lbl-meta">200 ms p50 task</text>
+    <text x="132" y="565" text-anchor="middle" class="lbl-meta">5 M tasks/s (50%)</text>
+  </g>
+
+  <g>
+    <rect x="260" y="455" width="225" height="115" rx="6" class="box-fill-orange"/>
+    <text x="372" y="479" text-anchor="middle" class="lbl-title">I/O pool</text>
+    <text x="372" y="497" text-anchor="middle" class="lbl-sub">email · webhooks</text>
+    <text x="372" y="513" text-anchor="middle" class="lbl-sub">High network</text>
+    <text x="372" y="535" text-anchor="middle" class="lbl-meta">140 nodes</text>
+    <text x="372" y="551" text-anchor="middle" class="lbl-meta">800 ms p50 task</text>
+    <text x="372" y="565" text-anchor="middle" class="lbl-meta">3.5 M tasks/s (35%)</text>
+  </g>
+
+  <g>
+    <rect x="500" y="455" width="225" height="115" rx="6" class="box-fill-orange"/>
+    <text x="612" y="479" text-anchor="middle" class="lbl-title">GPU pool</text>
+    <text x="612" y="497" text-anchor="middle" class="lbl-sub">inference · ML</text>
+    <text x="612" y="513" text-anchor="middle" class="lbl-sub">Specialized nodes</text>
+    <text x="612" y="535" text-anchor="middle" class="lbl-meta">313 GPU nodes</text>
+    <text x="612" y="551" text-anchor="middle" class="lbl-meta">50 ms batched</text>
+    <text x="612" y="565" text-anchor="middle" class="lbl-meta">0.8 M tasks/s (8%)</text>
+  </g>
+
+  <g>
+    <rect x="740" y="455" width="220" height="115" rx="6" class="box-fill-orange"/>
+    <text x="850" y="479" text-anchor="middle" class="lbl-title">Memory pool</text>
+    <text x="850" y="497" text-anchor="middle" class="lbl-sub">data enrich</text>
+    <text x="850" y="513" text-anchor="middle" class="lbl-sub">High-RAM</text>
+    <text x="850" y="535" text-anchor="middle" class="lbl-meta">5,500 nodes</text>
+    <text x="850" y="551" text-anchor="middle" class="lbl-meta">500 ms p50 task</text>
+    <text x="850" y="565" text-anchor="middle" class="lbl-meta">0.7 M tasks/s (7%)</text>
+  </g>
+
+  <text x="490" y="595" text-anchor="middle" class="lbl-sub">Workers claim with visibility timeout · heartbeat renews lease · ack on completion</text>
+
+  <!-- Row 5: Success / Failure split -->
+  <g>
+    <circle cx="170" cy="625" r="11" fill="#1a7f37"/>
+    <text x="170" y="629" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">5</text>
+  </g>
+  <g>
+    <rect x="40" y="650" width="430" height="90" rx="6" class="box-fill-green"/>
+    <text x="255" y="673" text-anchor="middle" class="lbl-title">Success path</text>
+    <text x="255" y="691" text-anchor="middle" class="lbl-sub">Commit result · update status</text>
+    <text x="255" y="708" text-anchor="middle" class="lbl-sub">Idempotent CAS on dedupe table</text>
+    <text x="255" y="728" text-anchor="middle" class="lbl-meta">conditional write: status=DONE iff status=RUNNING AND lease valid</text>
+  </g>
+
+  <g>
+    <circle cx="640" cy="625" r="11" fill="#cf222e"/>
+    <text x="640" y="629" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">6</text>
+  </g>
+  <g>
+    <rect x="510" y="650" width="450" height="90" rx="6" class="box-fill-red"/>
+    <text x="735" y="673" text-anchor="middle" class="lbl-title">Failure path</text>
+    <text x="735" y="691" text-anchor="middle" class="lbl-sub">Retry with exponential backoff</text>
+    <text x="735" y="708" text-anchor="middle" class="lbl-sub">After N attempts → DLQ</text>
+    <text x="735" y="728" text-anchor="middle" class="lbl-meta">backoff: 1s · 2s · 4s · 8s · 16s · 32s</text>
+  </g>
+
+  <!-- Row 6: State store + DLQ -->
+  <g>
+    <circle cx="170" cy="770" r="11" fill="#0a66c2"/>
+    <text x="170" y="774" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">7</text>
+  </g>
+  <g>
+    <rect x="40" y="795" width="430" height="65" rx="6" class="box-fill-blue"/>
+    <text x="255" y="817" text-anchor="middle" class="lbl-title">State store (Spanner)</text>
+    <text x="255" y="833" text-anchor="middle" class="lbl-sub">PENDING · RUNNING · DONE · FAILED</text>
+    <text x="255" y="850" text-anchor="middle" class="lbl-meta">dedupe table · retry counters · 60M writes/s · 3 PB</text>
+  </g>
+
+  <g>
+    <rect x="510" y="795" width="450" height="65" rx="6" class="box-fill-red"/>
+    <text x="735" y="817" text-anchor="middle" class="lbl-title">Dead letter queue</text>
+    <text x="735" y="833" text-anchor="middle" class="lbl-sub">Terminal failures · manual replay</text>
+    <text x="735" y="850" text-anchor="middle" class="lbl-meta">alert on depth growth · per-tenant partition</text>
+  </g>
+
+  <!-- ARROWS -->
+  <!-- Row 1 flow -->
+  <path d="M220,95 L280,95" class="arrow"/>
+  <path d="M780,80 L820,75" class="arrow-dashed"/>
+
+  <!-- Gateway → Kafka -->
+  <path d="M530,140 L530,195" class="arrow"/>
+
+  <!-- Kafka ↔ Scheduler -->
+  <path d="M490,285 L490,330" class="arrow"/>
+  <path d="M520,330 L520,285" class="arrow-dashed"/>
+  <text x="550" y="310" class="lbl-meta" fill="#cf222e">requeue</text>
+
+  <!-- Scheduler → 4 pools -->
+  <path d="M250,410 L132,455" class="arrow"/>
+  <path d="M400,410 L372,455" class="arrow"/>
+  <path d="M580,410 L612,455" class="arrow"/>
+  <path d="M730,410 L850,455" class="arrow"/>
+
+  <!-- Pools → Success + Failure -->
+  <path d="M132,570 L255,650" class="arrow-green"/>
+  <path d="M372,570 L255,650" class="arrow-green"/>
+  <path d="M612,570 L735,650" class="arrow-dashed"/>
+  <path d="M850,570 L735,650" class="arrow-dashed"/>
+
+  <!-- Success → State store -->
+  <path d="M255,740 L255,795" class="arrow"/>
+  <!-- Failure → DLQ -->
+  <path d="M735,740 L735,795" class="arrow-dashed"/>
+
+  <!-- Failure path back-arrow to scheduler (retry) -->
+  <path d="M510,695 L490,410" class="arrow-dashed" stroke-opacity="0.5"/>
+
+  <!-- Legend -->
+  <g transform="translate(20,40)">
+    <line x1="0" y1="0" x2="20" y2="0" class="arrow"/><text x="26" y="3" class="lbl-meta">happy path</text>
+    <line x1="110" y1="0" x2="130" y2="0" class="arrow-dashed"/><text x="136" y="3" class="lbl-meta">failure / retry</text>
+    <line x1="240" y1="0" x2="260" y2="0" class="arrow-green"/><text x="266" y="3" class="lbl-meta">success</text>
+  </g>
+</svg>
+<div class="diagram-cap">Fig 1 · Complete distributed task queue. Numbered circles match the step-by-step flow in §3.2. Producers enqueue through gateway → Kafka → scheduler routes to one of four specialized worker pools → success commits to Spanner, failure retries with backoff then DLQ.</div>
+</div>
+
+<!-- ===== 3.2 STEP BY STEP FLOW ===== -->
+<h3 id="flow">3.2 — Step-by-step flow (the numbered walkthrough)</h3>
+
+<p>Following the numbered circles in Fig 1. Concrete example: <b>a Profile photo upload triggering a thumbnail-generation task.</b></p>
+
+<div class="flow-steps">
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Producer enqueues the task</div>
+      <div class="desc">The Profile service finishes accepting the user's photo upload and needs to generate 5 thumbnail sizes. Instead of doing this inline (slow user response), it pushes a task to the queue.</div>
+      <div class="tech">POST /enqueue { task_type: "image_resize", payload: {blob_id, sizes:[…]}, idempotency_key: sha256(blob_id+sizes), priority: "p1" }</div>
+      <div class="nums">
+        <span class="kv">budget · <b>50 ms</b></span>
+        <span class="kv">RPC size · <b>~400 B</b></span>
+        <span class="kv">tasks/sec · <b>10 M peak</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Gateway authenticates and dedupes</div>
+      <div class="desc">The enqueue gateway does four things in sequence, fast: (a) verify mTLS, (b) validate proto schema, (c) check per-tenant token bucket — if Profile service exceeds its quota, return 429, (d) <b>idempotency dedupe</b> via Spanner CAS — "insert (tenant_id, idempotency_key) if not exists." If the key exists, return the existing task_id immediately — this kills duplicates from retried client requests.</div>
+      <div class="tech">Spanner CAS: INSERT INTO dedupe (tenant, key, task_id, ts) ON CONFLICT RETURN existing.task_id</div>
+      <div class="nums">
+        <span class="kv">budget · <b>50 ms p99</b></span>
+        <span class="kv">CAS latency · <b>~20 ms</b></span>
+        <span class="kv">rejected → <b>DLQ-0</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Task written to Kafka</div>
+      <div class="desc">Once deduped, the gateway writes to the appropriate Kafka topic. Partition is chosen as <code>hash(tenant_id) % partitions</code> — this keeps tasks from the same tenant ordered (useful when sequence matters) while spreading load across all partitions for parallelism. The task lands in <code>tasks.p1</code> because Profile thumbnails are standard priority.</div>
+      <div class="tech">topic = tasks.p1 · partition = hash(tenant_id) mod 512 · ACK = all (durability)</div>
+      <div class="nums">
+        <span class="kv">budget · <b>30 ms</b></span>
+        <span class="kv">replication · <b>3×</b></span>
+        <span class="kv">retention · <b>7 days</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Scheduler routes to the right worker pool</div>
+      <div class="desc">Scheduler instances continuously consume from Kafka. For each task, the scheduler looks at <code>task_type</code> and routes:<br>• <code>image_resize</code>, <code>transcode</code> → <b>CPU pool</b><br>• <code>send_email</code>, <code>http_webhook</code> → <b>I/O pool</b> (mostly waiting on network — pack densely)<br>• <code>run_inference</code>, <code>rank_feed</code> → <b>GPU pool</b><br>• <code>join_dataset</code>, <code>enrich_profile</code> → <b>Memory pool</b><br>The scheduler doesn't execute the task — it places it onto a per-pool work queue with a lease token.</div>
+      <div class="tech">routing table: task_type → pool · delayed tasks held in scheduler memory until ready · cron expressions evaluated per-tick</div>
+      <div class="nums">
+        <span class="kv">budget · <b>200 ms</b></span>
+        <span class="kv">worker pools · <b>4 specialized</b></span>
+        <span class="kv">scheduler instances · <b>40 stateless</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Worker claims the task with a lease</div>
+      <div class="desc">A CPU pool worker pod picks up the image_resize task. <b>It doesn't acquire a distributed lock</b> — it acquires a <em>lease</em> via a Spanner CAS: "set task.status = RUNNING, lease_owner = me, lease_expiry = now + 30s, only if status = PENDING." This is the key trick: no central lock manager, no split-brain. Two workers can race; only one wins the CAS.<br><br>While running, the worker sends heartbeats every 10s renewing the lease ("extend lease by 30s if I still own it"). If the worker crashes, the lease expires after 30s and another worker can claim the task safely.</div>
+      <div class="tech">CAS: UPDATE tasks SET status='RUNNING', owner=$me, lease_expiry=now()+30s WHERE id=$id AND status='PENDING'</div>
+      <div class="nums">
+        <span class="kv">budget · <b>1.5 s</b> (from enqueue)</span>
+        <span class="kv">lease validity · <b>30 s</b></span>
+        <span class="kv">heartbeat · <b>every 10 s</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Worker executes — branches into success or failure</div>
+      <div class="desc">The worker runs the actual task logic — fetches the photo from blob store, runs ImageMagick to generate 5 thumbnails, uploads them back.<br><br><b>Success</b> (~99.9% of attempts): writes results, then conditional Spanner CAS marks the task DONE — <i>only if</i> status is still RUNNING and the lease is still valid. This prevents double-completion: if a sibling worker also claimed the task after lease expiry, only one of the two CAS writes will succeed; the other fails harmlessly.<br><br><b>Failure</b> (~0.1%): task throws an exception OR exceeds wall-time budget OR a downstream dependency circuit-breaks. The worker writes status = FAILED with retry_count++. The scheduler picks it up and requeues with exponential backoff (1s, 2s, 4s, 8s, 16s, 32s). After N attempts (default 6), task is moved to DLQ.</div>
+      <div class="tech">success CAS: UPDATE tasks SET status='DONE', result=$r WHERE id=$id AND status='RUNNING' AND owner=$me<br>failure: UPDATE tasks SET status='FAILED', retry_count=retry_count+1, next_retry=now()+backoff</div>
+      <div class="nums">
+        <span class="kv">success rate · <b>99.9%</b></span>
+        <span class="kv">max retries · <b>6 (configurable)</b></span>
+        <span class="kv">backoff · <b>2^n seconds</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Visibility — state store and DLQ feed dashboards</div>
+      <div class="desc">All state transitions flow into Spanner: <code>PENDING → RUNNING → DONE/FAILED</code>. The Visibility API queries this for "what's the status of task X?" and tenant dashboards aggregate per-tenant counts. The DLQ has its own depth-growth alert — if DLQ depth grows faster than X/min, something is systemically broken (a vendor outage, a code regression) and oncall gets paged.<br><br>Background control loops run continuously:<br>• <b>Kafka consumer lag</b> feeds the HPA — if lag grows, scale up workers<br>• <b>ML forecasting</b> pre-warms capacity 15 min ahead based on historical patterns (so 9am Profile traffic doesn't catch us cold-started)<br>• <b>Lease sweeper</b> cleans up tasks whose owners died without releasing leases (edge case)<br>• <b>Circuit breakers</b> to downstream dependencies (image-store, email vendor) fail fast and requeue with backoff rather than letting workers hang</div>
+      <div class="tech">background loops: lag→autoscale (1 min) · forecast (5 min) · lease sweep (1 min) · DLQ depth alert (any spike)</div>
+      <div class="nums">
+        <span class="kv">visibility freshness · <b>p95 5 s</b></span>
+        <span class="kv">DLQ retention · <b>14 days</b></span>
+        <span class="kv">forecast window · <b>15 min ahead</b></span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===== 3.3 LEASE MECHANICS ===== -->
+<h3 id="lease">3.3 — Lease mechanics close-up</h3>
+
+<p>Leases instead of locks is the key design choice. Here's how the timeline plays out:</p>
+
+<div class="diagram">
+<svg viewBox="0 0 980 320" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arr-l" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#59636e"/>
+    </marker>
+  </defs>
+
+  <!-- Time axis -->
+  <line x1="40" y1="60" x2="940" y2="60" stroke="#d0d7de" stroke-width="1.5"/>
+  <text x="40" y="48" class="lbl-meta">t=0</text>
+  <text x="940" y="48" text-anchor="end" class="lbl-meta">t=45s</text>
+  <!-- Tick marks every 10s -->
+  <line x1="220" y1="55" x2="220" y2="65" stroke="#d0d7de"/>
+  <text x="220" y="48" text-anchor="middle" class="lbl-meta">10s</text>
+  <line x1="400" y1="55" x2="400" y2="65" stroke="#d0d7de"/>
+  <text x="400" y="48" text-anchor="middle" class="lbl-meta">20s</text>
+  <line x1="580" y1="55" x2="580" y2="65" stroke="#d0d7de"/>
+  <text x="580" y="48" text-anchor="middle" class="lbl-meta">30s</text>
+  <line x1="760" y1="55" x2="760" y2="65" stroke="#d0d7de"/>
+  <text x="760" y="48" text-anchor="middle" class="lbl-meta">40s</text>
+
+  <!-- Happy path -->
+  <text x="40" y="100" class="lbl-title">Happy path · Worker A</text>
+  <rect x="40" y="110" width="540" height="20" fill="#dafbe1" stroke="#1a7f37"/>
+  <text x="310" y="124" text-anchor="middle" class="lbl-sub">Worker A executes task · 30 s wall time</text>
+  <!-- Heartbeats -->
+  <line x1="220" y1="105" x2="220" y2="135" stroke="#1a7f37" stroke-width="2"/>
+  <text x="220" y="148" text-anchor="middle" class="lbl-meta" fill="#1a7f37">heartbeat 1</text>
+  <line x1="400" y1="105" x2="400" y2="135" stroke="#1a7f37" stroke-width="2"/>
+  <text x="400" y="148" text-anchor="middle" class="lbl-meta" fill="#1a7f37">heartbeat 2</text>
+  <!-- Complete -->
+  <circle cx="580" cy="120" r="8" fill="#1a7f37"/>
+  <text x="580" y="165" text-anchor="middle" class="lbl-sub" fill="#1a7f37">✓ CAS commit DONE</text>
+
+  <!-- Crash path -->
+  <text x="40" y="200" class="lbl-title">Crash path · Worker B dies at 15s</text>
+  <rect x="40" y="210" width="220" height="20" fill="#ffebe9" stroke="#cf222e"/>
+  <text x="150" y="224" text-anchor="middle" class="lbl-sub">Worker B running</text>
+  <!-- Crash -->
+  <line x1="310" y1="205" x2="310" y2="235" stroke="#cf222e" stroke-width="2"/>
+  <text x="310" y="248" text-anchor="middle" class="lbl-meta" fill="#cf222e">💥 worker crashes</text>
+
+  <!-- Lease expiry zone -->
+  <rect x="310" y="210" width="180" height="20" fill="#fff8c5" stroke="#9a6700" stroke-dasharray="3,2"/>
+  <text x="400" y="224" text-anchor="middle" class="lbl-sub" fill="#9a6700">lease still valid (until t=30s)</text>
+
+  <!-- Worker C reclaim -->
+  <line x1="490" y1="205" x2="490" y2="235" stroke="#1a7f37" stroke-width="2"/>
+  <text x="490" y="248" text-anchor="middle" class="lbl-meta" fill="#1a7f37">lease expires · sweeper marks PENDING</text>
+
+  <rect x="500" y="210" width="380" height="20" fill="#dafbe1" stroke="#1a7f37"/>
+  <text x="690" y="224" text-anchor="middle" class="lbl-sub">Worker C claims task · runs to completion</text>
+  <circle cx="880" cy="220" r="8" fill="#1a7f37"/>
+  <text x="880" y="265" text-anchor="middle" class="lbl-sub" fill="#1a7f37">✓ CAS commit DONE</text>
+
+  <text x="40" y="295" class="lbl-meta" fill="#1a7f37">Key property: even if Worker B briefly recovers and tries to commit, its CAS fails because status≠RUNNING anymore. No double-execution.</text>
+  <text x="40" y="312" class="lbl-meta">Cost: task may run twice (B partial + C full). Caller's idempotency key ensures the outcome is correct anyway.</text>
+</svg>
+<div class="diagram-cap">Fig 2 · Lease lifecycle. Happy path (top): worker heartbeats every 10s; lease never expires; CAS marks DONE. Crash path (bottom): worker dies; lease expires; sweeper resets status to PENDING; another worker claims and completes. Side effects of partial execution are absorbed by idempotency at the application level.</div>
+</div>
+
+<!-- ===== 3.4 EXACTLY-ONCE ===== -->
+<h3 id="exactly-once">3.4 — Exactly-once semantics (the subtle part)</h3>
+
+<p>Strictly, exactly-once delivery is impossible in distributed systems. What we offer is <b>at-least-once delivery + idempotent execution = exactly-once observable effect.</b> Three mechanisms cooperate:</p>
+
+<div class="cols-2">
+  <div class="comp">
+    <div class="name">1. Producer idempotency <span class="tech">at enqueue</span></div>
+    <div class="desc">Producer computes <code>idempotency_key = hash(inputs)</code> and sends it. Gateway CAS-inserts into dedupe table. Duplicate enqueue requests return the original task_id without creating a second task.</div>
+    <div class="row"><span class="lab">defends against</span><span>retry storms on client</span></div>
+    <div class="row"><span class="lab">storage cost</span><span>1 row per task in dedupe table</span></div>
+  </div>
+  <div class="comp">
+    <div class="name">2. Worker-side conditional commit <span class="tech">at completion</span></div>
+    <div class="desc">Worker's final write is a CAS: "set DONE only if status=RUNNING and lease still mine." Two workers can't both succeed; one's write will be a no-op.</div>
+    <div class="row"><span class="lab">defends against</span><span>split-brain double commit</span></div>
+    <div class="row"><span class="lab">cost</span><span>one extra Spanner round-trip</span></div>
+  </div>
+  <div class="comp">
+    <div class="name">3. Application-level idempotency <span class="tech">in task body</span></div>
+    <div class="desc">Task code uses the idempotency_key as a natural key on side effects — e.g. thumbnail filename is <code>thumb_{key}.jpg</code>. Even if the task runs twice (B partial + C full), the result is the same file in blob store.</div>
+    <div class="row"><span class="lab">defends against</span><span>retry-after-crash</span></div>
+    <div class="row"><span class="lab">cost</span><span>app developers must write idempotent code</span></div>
+  </div>
+  <div class="comp">
+    <div class="name">What we can't guarantee <span class="tech">honest limits</span></div>
+    <div class="desc">If a task sends an external email and crashes after the SMTP send but before the CAS commit, the email is sent — and on retry, it sends again. <b>Workers must use idempotent external APIs</b> (e.g. SendGrid's X-Message-Id) for true exactly-once with side effects.</div>
+    <div class="row"><span class="lab">mitigation</span><span>document the constraint clearly</span></div>
+    <div class="row"><span class="lab">cost</span><span>integration complexity per task type</span></div>
+  </div>
+</div>
+
+<div class="note tip">
+  <span class="lbl">The senior insight</span>
+  Exactly-once is a property of <em>the system including the task code</em>, not the queue alone. Selling "exactly-once delivery" without explaining this is misleading. We sell "at-least-once + idempotency primitives" and let task authors compose them.
+</div>
+
+</section>
+
+<!-- ===== 4. GAUNTLET ===== -->
+<section>
+<h2 id="gauntlet">4 · Failure gauntlet <a class="anchor" href="#gauntlet">#</a></h2>
+
+<div class="cols-2">
+  <div class="comp">
+    <div class="name">A · Worker pool saturation <span class="tech">SLI: A, B</span></div>
+    <div class="desc">A Feed launch dumps 50M tasks in 5 minutes — CPU pool can't scale fast enough.</div>
+    <div class="row"><span class="lab">trigger</span><span>Kafka consumer lag &gt; 60 s</span></div>
+    <div class="row"><span class="lab">absorb</span><span>HPA scales 10k → 20k in 5 min</span></div>
+    <div class="row"><span class="lab">overflow</span><span>Kafka 7d retention buffers</span></div>
+    <div class="row"><span class="lab">verdict</span><span>lag drains in 20 min · 0 loss</span></div>
+  </div>
+  <div class="comp">
+    <div class="name">B · Worker mass crash <span class="tech">SLI: A, C</span></div>
+    <div class="desc">A bad task crashes 30% of CPU pods in a few minutes.</div>
+    <div class="row"><span class="lab">trigger</span><span>pod restart rate &gt; baseline 10×</span></div>
+    <div class="row"><span class="lab">absorb</span><span>lease expiry → reclaim by healthy workers</span></div>
+    <div class="row"><span class="lab">cap</span><span>circuit-break the bad task type</span></div>
+    <div class="row"><span class="lab">verdict</span><span>healthy tasks unaffected · bad → DLQ</span></div>
+  </div>
+  <div class="comp">
+    <div class="name">C · Spanner hot-key contention <span class="tech">SLI: A</span></div>
+    <div class="desc">One tenant uses constant idempotency_key prefix; CAS row becomes hot.</div>
+    <div class="row"><span class="lab">trigger</span><span>Spanner CAS p99 &gt; 200 ms</span></div>
+    <div class="row"><span class="lab">absorb</span><span>hash-prefix the dedupe key</span></div>
+    <div class="row"><span class="lab">cap</span><span>per-tenant rate limit on enqueue</span></div>
+    <div class="row"><span class="lab">verdict</span><span>CAS p99 → 35 ms</span></div>
+  </div>
+  <div class="comp">
+    <div class="name">D · Region outage <span class="tech">SLI: B, E</span></div>
+    <div class="desc">us-west-2 power event takes the region offline 45 min.</div>
+    <div class="row"><span class="lab">trigger</span><span>−35% capacity</span></div>
+    <div class="row"><span class="lab">absorb</span><span>GSLB → iad in 5 s</span></div>
+    <div class="row"><span class="lab">recover</span><span>MM2 replay backlog when up</span></div>
+    <div class="row"><span class="lab">verdict</span><span>queued tasks delayed not lost</span></div>
+  </div>
+  <div class="comp">
+    <div class="name">E · DLQ flood <span class="tech">SLI: C</span></div>
+    <div class="desc">SendGrid outage → 100% of I/O tasks fail → DLQ grows 1k/sec.</div>
+    <div class="row"><span class="lab">trigger</span><span>DLQ depth growth alert</span></div>
+    <div class="row"><span class="lab">absorb</span><span>circuit-break I/O pool to SendGrid</span></div>
+    <div class="row"><span class="lab">repair</span><span>auto-replay when vendor recovers</span></div>
+    <div class="row"><span class="lab">verdict</span><span>0 tasks lost · all replayable</span></div>
+  </div>
+  <div class="comp">
+    <div class="name">F · Slow consumer poisons partition <span class="tech">SLI: A, B</span></div>
+    <div class="desc">One worker hangs on a single partition, blocking head-of-line for that tenant.</div>
+    <div class="row"><span class="lab">trigger</span><span>partition lag &gt; 5 min</span></div>
+    <div class="row"><span class="lab">absorb</span><span>lease expiry forces reclaim</span></div>
+    <div class="row"><span class="lab">cap</span><span>per-partition consumer health check</span></div>
+    <div class="row"><span class="lab">verdict</span><span>resolved in &lt; 1 min</span></div>
+  </div>
+</div>
+
+<div class="note danger">
+  <span class="lbl">Not defended against (explicit)</span>
+  Loss of Spanner for &gt; 5 min globally — that would block all CAS operations and halt the queue. Mitigation is "Spanner has its own 4-nines SLO; rely on it." For longer outages, manual escalation + read-only degraded mode.
+</div>
+</section>
+
+<!-- ===== 5. PLAYBOOK ===== -->
+<section>
+<h2 id="playbook">5 · Operational playbook <a class="anchor" href="#playbook">#</a></h2>
+
+<h3>5.1 — Deployment</h3>
+<table>
+  <thead><tr><th>Stage</th><th>% traffic</th><th>Soak</th><th>Auto-promote</th></tr></thead>
+  <tbody>
+    <tr><td>Shadow worker</td><td class="num">mirror, 0% commit</td><td class="num">24 h</td><td>diff vs prod &lt; 0.01%</td></tr>
+    <tr><td>Canary</td><td class="num">1%, 1 region</td><td class="num">24 h</td><td>p99 latency Δ &lt; 5%</td></tr>
+    <tr><td>Regional</td><td class="num">10%, 1 region</td><td class="num">12 h</td><td>SLO burn &lt; 1×</td></tr>
+    <tr><td>Half</td><td class="num">50%</td><td class="num">6 h</td><td>no SEV-2+ open</td></tr>
+    <tr><td>Global</td><td class="num">100%</td><td class="num">—</td><td>manual sign-off</td></tr>
+  </tbody>
+</table>
+
+<h3>5.2 — Chaos drills (quarterly)</h3>
+<ul>
+  <li><b>Worker mass kill</b> — terminate 50% of CPU pool; verify lease expiry → reclaim within 60s.</li>
+  <li><b>Region kill</b> — drain pdx region; verify GSLB failover and worker re-balance.</li>
+  <li><b>Spanner latency injection</b> — add 200 ms to all CAS; verify gateway falls back to "best-effort" and SLO-E holds.</li>
+  <li><b>Bad task injection</b> — emit task that always panics; verify backoff escalation and DLQ landing.</li>
+  <li><b>DLQ depth spike</b> — push 100k DLQ entries; verify alerting and replay tooling.</li>
+  <li><b>Kafka broker loss</b> — kill 3 brokers; verify partition rebalance and continued enqueue.</li>
+</ul>
+
+<h3>5.3 — Runbook excerpt</h3>
+<pre><code># Symptom: SLI-B (p99 latency) burning > 5× / 1h
+
+# Likely causes, ranked
+1. Worker pool saturation     → check Kafka consumer lag per topic
+2. Spanner CAS p99 spike      → check Spanner monitoring console
+3. Bad task type circuit open → check circuit breaker dashboard
+4. Cross-region replication   → check MM2 lag
+
+# First response (in order):
+- Confirm: dashboard 'slo-b-latency' shows > 10s p99 over 5 min
+- Identify hot pool: check lag-per-pool dashboard
+- Scale: kubectl scale deployment worker-${pool} --replicas=$((current*2))
+- Communicate: post in #incident-taskqueue with hypothesis
+- Escalate: if not resolving in 15 min, page tier-2 oncall</code></pre>
+</section>
+
+<!-- ===== 6. COMPONENTS ===== -->
+<section>
+<h2 id="components">6 · Component reference <a class="anchor" href="#components">#</a></h2>
+
+<table>
+  <thead><tr><th>Component</th><th>Tech</th><th>Scale</th><th>Failure mitigation</th><th>SLO</th></tr></thead>
+  <tbody>
+    <tr><td><b>Enqueue gateway</b></td><td class="num">Envoy + Go</td><td>HPA 30→200</td><td>circuit breaker · token bucket</td><td>A,E</td></tr>
+    <tr><td><b>Kafka cluster</b></td><td class="num">Kafka 3.7 · MM2</td><td>partition rebalance</td><td>3× repl · cross-region async</td><td>C,E</td></tr>
+    <tr><td><b>Scheduler</b></td><td class="num">Go service</td><td>stateless · LB fanout</td><td>checkpoint Kafka offsets</td><td>A,B</td></tr>
+    <tr><td><b>CPU worker pool</b></td><td class="num">K8s + HPA</td><td>1k → 20k pods</td><td>lease + restart</td><td>A,B</td></tr>
+    <tr><td><b>I/O worker pool</b></td><td class="num">K8s + HPA</td><td>dense pod packing</td><td>circuit breaker per vendor</td><td>A,B,C</td></tr>
+    <tr><td><b>GPU worker pool</b></td><td class="num">K8s + GPU nodes</td><td>batched inference</td><td>fallback to CPU pool</td><td>B</td></tr>
+    <tr><td><b>Memory worker pool</b></td><td class="num">K8s + RAM nodes</td><td>large heap workers</td><td>OOM kill → requeue</td><td>B</td></tr>
+    <tr><td><b>State store</b></td><td class="num">Spanner</td><td>region-replicated</td><td>bounded staleness reads</td><td>A,B,D</td></tr>
+    <tr><td><b>DLQ</b></td><td class="num">Kafka topic</td><td>per-tenant partition</td><td>depth-growth alert · auto-replay</td><td>C</td></tr>
+    <tr><td><b>Visibility API</b></td><td class="num">Go + Spanner</td><td>read replicas</td><td>cached responses</td><td>D</td></tr>
+  </tbody>
+</table>
+</section>
+
+<!-- ===== 7. TRADE-OFFS ===== -->
+<section>
+<h2 id="tradeoffs">7 · Trade-offs & open questions <a class="anchor" href="#tradeoffs">#</a></h2>
+
+<div class="cols-2">
+  <div>
+    <h4>Chose</h4>
+    <ul>
+      <li><b>Leases over locks</b> · no distributed lock manager, no split-brain. Trade: duplicate execution possible (mitigated by idempotency).</li>
+      <li><b>4 specialized pools</b> over 1 generic pool · packing efficiency (I/O pods at 200 concurrent vs CPU at 4). Trade: more complex routing.</li>
+      <li><b>Spanner</b> for state · serializable CAS is non-negotiable for exactly-once. Trade: $$, hot-key contention risk.</li>
+      <li><b>Kafka + scheduler</b> over direct producer → worker · durable replay window is the safety net. Trade: enqueue latency.</li>
+      <li><b>Exponential backoff</b> 1s/2s/4s/8s/16s/32s · gives downstream time to recover. Trade: long tail on transient failures.</li>
+      <li><b>3 priority tiers (p0/p1/p2)</b> over flat queue · critical paths bypass batch backlog. Trade: starvation risk on p2.</li>
+    </ul>
+  </div>
+  <div>
+    <h4>Rejected</h4>
+    <ul>
+      <li><b>Redis lists</b> as queue · simple but no durability. One Redis failure = lost work.</li>
+      <li><b>SQS / Cloud Tasks</b> · works but vendor-locked + can't tune CAS semantics ourselves.</li>
+      <li><b>Single global cluster</b> · simpler but ties availability to one region.</li>
+      <li><b>Single worker pool</b> · pads everything to worst-case resource shape; ~40% waste.</li>
+      <li><b>Synchronous Spanner write on every step</b> · would cost 2× CAS per task. We batch where possible.</li>
+      <li><b>Push instead of pull</b> · scheduler-push is simpler but loses backpressure semantics — workers must pull.</li>
+    </ul>
+  </div>
+</div>
+
+<h3>Open questions</h3>
+<ol>
+  <li>Should we expose <b>workflow / DAG semantics</b> on top of single tasks? Many use cases (image upload → resize → notify) chain 3 tasks. Workflow primitive could simplify task authoring.</li>
+  <li>Is 30s lease validity right? Some tasks legitimately take 5+ min (large ML inference) — currently they must extend lease constantly. Consider per-task-type lease length.</li>
+  <li>Per-tenant fair queuing — currently all tenants share partitions weighted by hash. Should we add explicit fair-share scheduling for noisy-neighbor cases?</li>
+  <li>Should DLQ replay be self-service per tenant or always require oncall review? Self-service is faster but riskier.</li>
+</ol>
+</section>
+
+<footer>
+  <div>linkedin/taskqueue · design-doc · distributed-task-queue.md</div>
+  <div>nalsd · review status: <span style="color:var(--yellow)">⬤</span> in-review</div>
+</footer>
+
+</main>
+</div>
+</body>
+</html>

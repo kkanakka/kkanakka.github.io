@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<title>NALSD — Non-Abstract Large System Design</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #f7f6f3;
+    --border: #e3e2de;
+    --text: #37352f;
+    --text-muted: #787774;
+    --accent: #0969da;
+    --accent2: #1a7f37;
+    --accent3: #8250df;
+    --accent4: #d9730d;
+    --accent5: #cf222e;
+    --card: #ffffff;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    font-size: 15px;
+  }
+  .container { max-width: 960px; margin: 0 auto; padding: 0 24px; }
+  .hero {
+    background: linear-gradient(180deg, #fafafa 0%, #ffffff 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 64px 0 48px;
+    text-align: center;
+  }
+  .hero h1 { font-size: 2.6em; font-weight: 700; margin-bottom: 16px; color: var(--accent5); }
+  .hero p { font-size: 1.1em; color: var(--text-muted); max-width: 680px; margin: 0 auto 24px; }
+  .breadcrumb { font-size: 0.9em; color: var(--text-muted); margin-top: 16px; }
+  .breadcrumb a { color: var(--accent); text-decoration: none; }
+  .breadcrumb a:hover { text-decoration: underline; }
+
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 24px;
+    padding: 48px 0 64px;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px 24px;
+    text-decoration: none;
+    color: var(--text);
+    transition: all 0.25s ease;
+    display: flex;
+    flex-direction: column;
+  }
+  .card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
+  .card .icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5em; margin-bottom: 16px; }
+  .card h2 { font-size: 1.25em; font-weight: 700; margin-bottom: 6px; }
+  .card .subtitle { font-size: 0.82em; font-weight: 600; margin-bottom: 10px; color: var(--text-muted); }
+  .card p { font-size: 0.9em; color: var(--text-muted); margin-bottom: 16px; flex: 1; }
+  .card .tag-row { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 14px; }
+  .card .tag { background: var(--surface); border: 1px solid var(--border); padding: 2px 8px; border-radius: 6px; font-size: 0.72em; color: var(--text-muted); }
+  .card .cta { font-size: 0.88em; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
+
+  .card-monitoring .icon { background: rgba(207,34,46,0.1); color: var(--accent5); }
+  .card-monitoring h2 { color: var(--accent5); }
+  .card-monitoring:hover { border-color: var(--accent5); }
+  .card-monitoring .cta { color: var(--accent5); }
+
+  .card-logging .icon { background: rgba(130,80,223,0.1); color: var(--accent3); }
+  .card-logging h2 { color: var(--accent3); }
+  .card-logging:hover { border-color: var(--accent3); }
+  .card-logging .cta { color: var(--accent3); }
+
+  .card-taskqueue .icon { background: rgba(217,115,13,0.1); color: var(--accent4); }
+  .card-taskqueue h2 { color: var(--accent4); }
+  .card-taskqueue:hover { border-color: var(--accent4); }
+  .card-taskqueue .cta { color: var(--accent4); }
+
+  .footer { background: var(--surface); border-top: 1px solid var(--border); padding: 32px 0; text-align: center; color: var(--text-muted); font-size: 0.9em; }
+</style>
+</head>
+<body>
+
+<section class="hero">
+  <div class="container">
+    <h1>NALSD</h1>
+    <p>Non-Abstract Large System Design &mdash; Google SRE-style exercises designing real LinkedIn infrastructure systems with capacity planning, SLOs, failure modes, and operational trade-offs.</p>
+    <div class="breadcrumb">
+      <a href="/">&larr; Back to Kiran's Tech Hub</a>
+    </div>
+  </div>
+</section>
+
+<section class="container">
+  <div class="cards">
+
+    <a href="nalsd-monitoring-platform.html" class="card card-monitoring">
+      <div class="icon">&#128200;</div>
+      <h2>Monitoring &amp; Alerting Platform</h2>
+      <div class="subtitle">NALSD &middot; LinkedIn observability stack</div>
+      <p>Design a monitoring and alerting platform for LinkedIn-scale infrastructure. Metrics ingestion, anomaly detection, alert routing, dashboard rendering, and SLO tracking.</p>
+      <div class="tag-row">
+        <span class="tag">Metrics</span>
+        <span class="tag">Alerting</span>
+        <span class="tag">SLOs</span>
+        <span class="tag">Time-Series</span>
+        <span class="tag">Anomaly Detection</span>
+      </div>
+      <div class="cta">Read the design &rarr;</div>
+    </a>
+
+    <a href="nalsd-logging-pipeline.html" class="card card-logging">
+      <div class="icon">&#128220;</div>
+      <h2>Distributed Logging Pipeline</h2>
+      <div class="subtitle">NALSD &middot; LinkedIn log infrastructure</div>
+      <p>Design a distributed logging pipeline handling billions of log events per day. Collection, transport, indexing, querying, retention policies, and cost optimization.</p>
+      <div class="tag-row">
+        <span class="tag">Log Collection</span>
+        <span class="tag">Kafka</span>
+        <span class="tag">Indexing</span>
+        <span class="tag">Retention</span>
+        <span class="tag">Query Engine</span>
+      </div>
+      <div class="cta">Read the design &rarr;</div>
+    </a>
+
+    <a href="nalsd-task-queue.html" class="card card-taskqueue">
+      <div class="icon">&#9881;</div>
+      <h2>Distributed Task Queue</h2>
+      <div class="subtitle">NALSD &middot; LinkedIn async processing</div>
+      <p>Design a distributed task queue for reliable async job execution. Task scheduling, priority queues, dead-letter handling, retry strategies, and exactly-once semantics.</p>
+      <div class="tag-row">
+        <span class="tag">Task Scheduling</span>
+        <span class="tag">Priority Queues</span>
+        <span class="tag">Retries</span>
+        <span class="tag">Dead Letter</span>
+        <span class="tag">Idempotency</span>
+      </div>
+      <div class="cta">Read the design &rarr;</div>
+    </a>
+
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="container">
+    <p>Part of <a href="/" style="color: var(--accent); text-decoration: none;">Kiran's Tech Hub</a> &mdash; system design, Linux internals, and coding guides</p>
+  </div>
+</footer>
+
+</body>
+</html>
