@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Google News · System Design · Hello Interview</title>
+<style>
+  :root{
+    --fg:#1f2328;--fg-muted:#59636e;--fg-subtle:#6e7781;
+    --bg:#ffffff;--bg-subtle:#f6f8fa;--bg-muted:#eaeef2;
+    --border:#d1d9e0;--border-muted:#d8dee4;
+    --accent:#0969da;--accent-bg:#ddf4ff;
+    --success:#1a7f37;--success-bg:#dafbe1;
+    --attention:#9a6700;--attention-bg:#fff8c5;
+    --danger:#d1242f;--danger-bg:#ffebe9;
+    --done:#8250df;--done-bg:#fbefff;
+    --orange:#bc4c00;--orange-bg:#fff1e5;
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans",Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+
+  .topbar{border-bottom:1px solid var(--border);background:var(--bg);position:sticky;top:0;z-index:50;height:44px;display:flex;align-items:center}
+  .topbar .inner{max-width:1280px;margin:0 auto;padding:0 24px;width:100%;display:flex;align-items:center;justify-content:space-between;font-size:13px}
+  .topbar .crumbs{color:var(--fg-muted);display:flex;align-items:center;gap:8px}
+  .topbar .crumbs strong{color:var(--fg);font-weight:600}
+  .topbar .crumbs .sep{color:var(--border)}
+  .topbar .actions{display:flex;gap:14px;color:var(--fg-muted);font-size:12px}
+
+  .layout{max-width:1280px;margin:0 auto;padding:0 24px;display:grid;grid-template-columns:220px minmax(0,1fr) 200px;gap:40px}
+  @media(max-width:1024px){.layout{grid-template-columns:220px minmax(0,1fr);gap:32px}aside.toc-right{display:none}}
+  @media(max-width:760px){.layout{grid-template-columns:1fr;gap:0;padding:0 16px}aside.toc-left{display:none}}
+
+  aside.toc-left{border-right:1px solid var(--border);padding:24px 16px 24px 0;font-size:13px;position:sticky;top:44px;max-height:calc(100vh - 44px);overflow-y:auto}
+  aside.toc-left .group{margin-bottom:18px}
+  aside.toc-left .group-title{font-weight:600;color:var(--fg);padding:4px 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+  aside.toc-left a{display:block;padding:4px 10px;color:var(--fg-muted);text-decoration:none;border-radius:6px;line-height:1.4;border-left:2px solid transparent;margin-left:-2px}
+  aside.toc-left a:hover{background:var(--bg-subtle);color:var(--fg)}
+  aside.toc-left a.active{color:var(--accent);background:var(--accent-bg);border-left-color:var(--accent);font-weight:500}
+
+  main{padding:24px 0 80px;min-width:0}
+  h1{font-size:28px;font-weight:600;line-height:1.25;padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid var(--border);letter-spacing:-.01em}
+  .subtitle{color:var(--fg-muted);font-size:15px;margin-bottom:20px;max-width:720px}
+  h2{font-size:20px;font-weight:600;line-height:1.3;margin-top:28px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border-muted);scroll-margin-top:60px}
+  h3{font-size:16px;font-weight:600;line-height:1.35;margin-top:18px;margin-bottom:6px;scroll-margin-top:60px}
+  h4{font-size:13px;font-weight:600;line-height:1.35;margin-top:14px;margin-bottom:4px;color:var(--fg)}
+  p{margin-bottom:10px;max-width:760px;font-size:13.5px}
+  a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+  p code,li code,td code{font-family:var(--mono);background:var(--bg-subtle);padding:.15em .4em;border-radius:6px;font-size:.88em;color:var(--fg);border:1px solid var(--border-muted)}
+  strong{font-weight:600;color:var(--fg)}em{font-style:italic}
+  ul,ol{margin:6px 0 12px;padding-left:22px;max-width:760px;font-size:13.5px}
+  li{margin-bottom:3px;line-height:1.5}
+  pre{background:var(--bg-subtle);border:1px solid var(--border-muted);padding:10px 12px;border-radius:6px;overflow-x:auto;margin:6px 0 12px;font-family:var(--mono);font-size:12px;line-height:1.55;max-width:880px}
+
+  .alert{margin:10px 0 14px;padding:8px 14px;border-left:4px solid;border-radius:6px;background:var(--bg-subtle);max-width:860px;font-size:13px}
+  .alert .alert-title{font-weight:600;font-size:12px;margin-bottom:3px;display:flex;align-items:center;gap:6px}
+  .alert.note{border-color:var(--accent);background:#f0f7ff}.alert.note .alert-title{color:var(--accent)}
+  .alert.warning{border-color:var(--attention);background:#fff8e6}.alert.warning .alert-title{color:var(--attention)}
+  .alert.danger{border-color:var(--danger);background:#fff5f5}.alert.danger .alert-title{color:var(--danger)}
+  .alert.tip{border-color:var(--success);background:#f0fdf4}.alert.tip .alert-title{color:var(--success)}
+  .alert p{margin-bottom:3px;font-size:13px}.alert p:last-child{margin-bottom:0}
+
+  .diagram{margin:10px 0 14px;border:1px solid var(--border);background:var(--bg);border-radius:6px;overflow:hidden;max-width:980px}
+  .diagram-head{display:flex;justify-content:space-between;align-items:center;padding:5px 10px;background:var(--bg-subtle);border-bottom:1px solid var(--border-muted);font-family:var(--mono);font-size:11px;color:var(--fg-muted)}
+  .diagram-head .id{color:var(--accent);font-weight:500}
+  .diagram-body{padding:12px 10px;overflow-x:auto;background:var(--bg)}
+  .diagram-body svg{display:block;margin:0 auto;max-width:100%;height:auto}
+  .diagram-cap{padding:6px 10px;background:var(--bg-subtle);border-top:1px solid var(--border-muted);font-size:12px;color:var(--fg-muted)}
+
+  table{width:100%;max-width:880px;margin:6px 0 12px;border-collapse:collapse;font-size:12.5px;border:1px solid var(--border);border-radius:6px;overflow:hidden}
+  th{text-align:left;padding:6px 10px;background:var(--bg-subtle);color:var(--fg);font-weight:600;border-bottom:1px solid var(--border);font-size:12px}
+  td{padding:5px 10px;border-bottom:1px solid var(--border-muted);vertical-align:top}
+  tr:last-child td{border-bottom:none}tr:nth-child(even) td{background:var(--bg-subtle)}
+
+  .badges{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px}
+  .badge{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:12px;background:var(--bg-subtle);border:1px solid var(--border-muted);font-size:11px;color:var(--fg-muted);font-family:var(--mono)}
+  .badge .dot{width:6px;height:6px;border-radius:50%}
+
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0 14px;max-width:880px}
+  .col{padding:10px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg-subtle);font-size:13px}
+  .col h5{margin:0 0 4px;font-size:12px;font-weight:600}.col.pros h5{color:var(--success)}.col.cons h5{color:var(--danger)}
+  .col ul{margin:2px 0;padding-left:16px}.col li{margin:2px 0;font-size:12.5px}
+
+  .gloss-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:6px;margin:8px 0 14px}
+  .gloss-card{padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg-subtle);font-size:12.5px}
+  .gloss-card .term{font-family:var(--mono);font-weight:600;color:var(--accent);font-size:11px;margin-bottom:2px}
+  .gloss-card .def{color:var(--fg-muted);font-size:12px;line-height:1.45}
+
+  aside.toc-right{padding:24px 0;font-size:12px;position:sticky;top:44px;max-height:calc(100vh - 44px);overflow-y:auto}
+  aside.toc-right .label{text-transform:uppercase;letter-spacing:.04em;color:var(--fg-muted);font-weight:600;font-size:11px;margin-bottom:8px}
+  aside.toc-right ul{list-style:none;padding:0;margin:0}
+  aside.toc-right li{margin-bottom:3px}
+  aside.toc-right a{color:var(--fg-muted);text-decoration:none;display:block;padding:2px 0;line-height:1.4;border-left:2px solid transparent;padding-left:8px;margin-left:-10px}
+  aside.toc-right a:hover{color:var(--fg)}
+  aside.toc-right a.active{color:var(--accent);border-left-color:var(--accent);font-weight:500}
+
+  svg text{font-family:var(--mono);fill:var(--fg)}
+  ::selection{background:var(--accent-bg);color:var(--fg)}
+  .sb{fill:var(--bg-subtle);stroke:var(--border);stroke-width:1}
+  .sb-b{fill:#ddf4ff;stroke:var(--accent);stroke-width:1}
+  .sb-g{fill:#dafbe1;stroke:var(--success);stroke-width:1}
+  .sb-r{fill:#ffebe9;stroke:var(--danger);stroke-width:1}
+  .sb-y{fill:#fff8e6;stroke:var(--attention);stroke-width:1}
+  .sb-p{fill:#fbefff;stroke:var(--done);stroke-width:1}
+  .sb-o{fill:#fff1e5;stroke:var(--orange);stroke-width:1}
+  .sl{font-family:var(--sans);font-size:12px;font-weight:600;fill:var(--fg)}
+  .ss{font-family:var(--mono);font-size:10px;fill:var(--fg-muted)}
+  .sn{font-family:var(--mono);font-weight:700;font-size:11px;fill:var(--accent)}
+  .sa{stroke:var(--fg-muted);stroke-width:1.2;fill:none}
+  .sa-b{stroke:var(--accent);stroke-width:1.5;fill:none}
+  .sa-g{stroke:var(--success);stroke-width:1.5;fill:none}
+  .sa-r{stroke:var(--danger);stroke-width:1.5;fill:none}
+  .sa-p{stroke:var(--done);stroke-width:1.5;fill:none}
+</style>
+</head>
+<body>
+
+<div class="topbar"><div class="inner">
+  <div class="crumbs">
+    <a href="/" style="color:var(--fg-muted);text-decoration:none">home</a><span class="sep">/</span>
+    <a href="hi-index.html" style="color:var(--fg-muted);text-decoration:none">hello interview</a><span class="sep">/</span>
+    <strong>Google News</strong>
+  </div>
+  <div class="actions"><span>hellointerview</span><span>&middot;</span><span>2026-05</span></div>
+</div></div>
+
+<div class="layout">
+
+<aside class="toc-left">
+  <div class="group">
+    <div class="group-title">Design</div>
+    <a href="#problem">Understanding</a>
+    <a href="#req">01 Requirements</a>
+    <a href="#entities">02 Entities &amp; API</a>
+    <a href="#collection">03 Data collection</a>
+    <a href="#feed">04 Feed delivery</a>
+    <a href="#scroll">05 Infinite scroll</a>
+    <a href="#highlevel">06 Architecture</a>
+  </div>
+  <div class="group">
+    <div class="group-title">Deep Dives</div>
+    <a href="#cursor">07 Cursor pagination</a>
+    <a href="#latency">08 Low-latency feeds</a>
+    <a href="#freshness">09 Content freshness</a>
+    <a href="#media">10 Media / thumbnails</a>
+    <a href="#spikes">11 Traffic spikes</a>
+    <a href="#categories">12 Categories</a>
+    <a href="#personalization">13 Personalization</a>
+    <a href="#glossary">14 Glossary</a>
+  </div>
+</aside>
+
+<main>
+
+<h1>Google News &mdash; System Design</h1>
+<div class="badges">
+  <span class="badge"><span class="dot" style="background:var(--accent)"></span>News Aggregator</span>
+  <span class="badge"><span class="dot" style="background:var(--success)"></span>100M DAU</span>
+  <span class="badge"><span class="dot" style="background:var(--done)"></span>RSS + Webhooks</span>
+  <span class="badge"><span class="dot" style="background:var(--attention)"></span>&lt; 200ms feeds</span>
+  <span class="badge"><span class="dot" style="background:var(--orange)"></span>Cursor Pagination</span>
+  <span class="badge"><span class="dot" style="background:var(--danger)"></span>CDC + Caching</span>
+</div>
+
+<p>Design a news aggregation service that collects articles from thousands of publishers worldwide and serves personalized, low-latency feeds to 100M+ daily users with infinite scroll.</p>
+<p><strong>LinkedIn mapping:</strong> Espresso (metadata), Couchbase/Redis (feed cache), Kafka (CDC + events), Samza (stream processing), Ambry (thumbnails), LinkedIn CDN (edge delivery), d2 (service discovery + LB).</p>
+
+<!-- Understanding -->
+<h2 id="problem">Understanding the problem</h2>
+<p>Google News is a digital service that aggregates and displays news articles from thousands of publishers worldwide. Users see a scrollable feed of articles &mdash; they don&rsquo;t read on Google News itself, they click through to the publisher&rsquo;s site. The interesting design challenges are: (1) ingesting content from thousands of heterogeneous sources, (2) serving low-latency feeds at massive scale, and (3) handling traffic spikes during breaking news.</p>
+
+<!-- 01 Requirements -->
+<h2 id="req">01 &mdash; Requirements</h2>
+
+<div class="two-col">
+  <div class="col pros"><h5>In scope</h5><ul>
+    <li>View aggregated feed from thousands of publishers</li>
+    <li>Infinite scroll through the feed</li>
+    <li>Click article &rarr; redirect to publisher site</li>
+  </ul></div>
+  <div class="col cons"><h5>Out of scope</h5><ul>
+    <li>Customize feed by interests</li>
+    <li>Save articles for later</li>
+    <li>Share articles on social media</li>
+  </ul></div>
+</div>
+
+<div class="diagram">
+  <div class="diagram-head"><span class="id">Fig 1</span> Non-functional pillars</div>
+  <div class="diagram-body">
+    <svg viewBox="0 0 800 110" xmlns="http://www.w3.org/2000/svg">
+      <defs><marker id="a1" markerWidth="8" markerHeight="8" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#656d76"/></marker></defs>
+      <rect class="sb-b" x="20" y="10" width="175" height="85" rx="6"/>
+      <text class="sl" x="107" y="30" text-anchor="middle">Availability &gt; Consistency</text>
+      <text class="ss" x="107" y="48" text-anchor="middle">AP system (CAP)</text>
+      <text class="ss" x="107" y="62" text-anchor="middle">stale news &gt; no news</text>
+      <text class="ss" x="107" y="76" text-anchor="middle">eventual consistency OK</text>
+      <rect class="sb-y" x="210" y="10" width="175" height="85" rx="6"/>
+      <text class="sl" x="297" y="30" text-anchor="middle">Scale</text>
+      <text class="ss" x="297" y="48" text-anchor="middle">100M DAU</text>
+      <text class="ss" x="297" y="62" text-anchor="middle">spikes to 500M</text>
+      <text class="ss" x="297" y="76" text-anchor="middle">thousands of publishers</text>
+      <rect class="sb-g" x="400" y="10" width="175" height="85" rx="6"/>
+      <text class="sl" x="487" y="30" text-anchor="middle">Latency</text>
+      <text class="ss" x="487" y="48" text-anchor="middle">feed load &lt; 200ms</text>
+      <text class="ss" x="487" y="62" text-anchor="middle">pre-computed feeds</text>
+      <text class="ss" x="487" y="76" text-anchor="middle">edge caching</text>
+      <rect class="sb-p" x="590" y="10" width="175" height="85" rx="6"/>
+      <text class="sl" x="677" y="30" text-anchor="middle">Freshness</text>
+      <text class="ss" x="677" y="48" text-anchor="middle">breaking news &lt; 30min</text>
+      <text class="ss" x="677" y="62" text-anchor="middle">webhooks for real-time</text>
+      <text class="ss" x="677" y="76" text-anchor="middle">RSS polling fallback</text>
+    </svg>
+  </div>
+</div>
+
+<div class="alert note"><div class="alert-title">CAP trade-off</div><p>Users prefer slightly stale news over no news at all. We choose <strong>availability + eventual consistency</strong> (AP). A user in Mumbai seeing an article 2 seconds later than a user in NYC is perfectly acceptable.</p></div>
+
+<!-- 02 Entities & API -->
+<h2 id="entities">02 &mdash; Core entities &amp; API</h2>
+
+<div class="diagram">
+  <div class="diagram-head"><span class="id">Fig 2</span> Core entities &mdash; metadata in Espresso, thumbnails in Ambry</div>
+  <div class="diagram-body">
+    <svg viewBox="0 0 800 150" xmlns="http://www.w3.org/2000/svg">
+      <rect class="sb-b" x="20" y="15" width="210" height="120" rx="6"/>
+      <text class="sl" x="125" y="36" text-anchor="middle">Article</text>
+      <line x1="34" y1="44" x2="216" y2="44" stroke="var(--border-muted)"/>
+      <text class="ss" x="34" y="60">id (ULID), title, summary</text>
+      <text class="ss" x="34" y="74">thumbnail_url (Ambry)</text>
+      <text class="ss" x="34" y="88">publish_date, publisher_id</text>
+      <text class="ss" x="34" y="102">region, category</text>
+      <text class="ss" x="34" y="116">source_url (publisher link)</text>
+
+      <rect class="sb-g" x="280" y="15" width="200" height="120" rx="6"/>
+      <text class="sl" x="380" y="36" text-anchor="middle">Publisher</text>
+      <line x1="294" y1="44" x2="466" y2="44" stroke="var(--border-muted)"/>
+      <text class="ss" x="294" y="60">id, name, url</text>
+      <text class="ss" x="294" y="74">feed_url (RSS endpoint)</text>
+      <text class="ss" x="294" y="88">webhook_secret</text>
+      <text class="ss" x="294" y="102">poll_interval, region</text>
+
+      <rect class="sb" x="530" y="15" width="200" height="120" rx="6"/>
+      <text class="sl" x="630" y="36" text-anchor="middle">User</text>
+      <line x1="544" y1="44" x2="716" y2="44" stroke="var(--border-muted)"/>
+      <text class="ss" x="544" y="60">id, region</text>
+      <text class="ss" x="544" y="74">(inferred from IP</text>
+      <text class="ss" x="544" y="88"> or explicit setting)</text>
+      <text class="ss" x="544" y="102">preference_vector</text>
+
+      <path class="sa" d="M230,75 L278,75" marker-end="url(#a1)"/>
+      <text class="ss" x="254" y="68" text-anchor="middle">belongs to</text>
+    </svg>
+  </div>
+  <div class="diagram-cap">Article IDs use ULIDs (monotonically increasing + sortable) &mdash; this simplifies cursor pagination later.</div>
+</div>
+
+<h4>API endpoints</h4>
+<pre>GET /feed?region={r}&amp;limit={n}&amp;cursor={c}    <span style="color:var(--fg-muted)"># paginated feed (cursor = last article ULID)</span>
+GET /feed?region={r}&amp;category={cat}&amp;cursor={c} <span style="color:var(--fg-muted)"># category-filtered feed</span>
+POST /webhooks/article-published              <span style="color:var(--fg-muted)"># publisher push notification</span></pre>
+
+<div class="alert tip"><div class="alert-title">No &ldquo;read article&rdquo; endpoint</div><p>When users click an article, the browser navigates directly to <code>source_url</code> on the publisher&rsquo;s site. We&rsquo;re an aggregator, not a host. (In production, you&rsquo;d add a redirect endpoint for click analytics.)</p></div>
+
+<!-- 03 Data Collection -->
+<h2 id="collection">03 &mdash; Data collection: ingesting from publishers</h2>
+
+<p>Two distinct challenges: <strong>collecting content</strong> from thousands of publishers, and <strong>serving it</strong> to millions of users. They have completely different scaling profiles (write-heavy batch vs read-heavy real-time), so we separate them.</p>
+
+<div class="diagram">
+  <div class="diagram-head"><span class="id">Fig 3</span> Data collection pipeline &mdash; RSS polling + thumbnail extraction</div>
+  <div class="diagram-body">
+    <svg viewBox="0 0 800 240" xmlns="http://www.w3.org/2000/svg">
+      <defs><marker id="ab" markerWidth="8" markerHeight="8" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#0969da"/></marker></defs>
+      <rect class="sb-o" x="20" y="20" width="140" height="70" rx="6"/>
+      <text class="sl" x="90" y="42" text-anchor="middle">Publishers</text>
+      <text class="ss" x="90" y="56" text-anchor="middle">thousands of sources</text>
+      <text class="ss" x="90" y="70" text-anchor="middle">RSS feeds / APIs</text>
+
+      <rect class="sb-b" x="210" y="20" width="180" height="70" rx="6"/>
+      <text class="sl" x="300" y="42" text-anchor="middle">Data Collection Svc</text>
+      <text class="ss" x="300" y="56" text-anchor="middle">polls RSS every 3-6h</text>
+      <text class="ss" x="300" y="70" text-anchor="middle">parses XML, extracts data</text>
+
+      <rect class="sb-g" x="440" y="20" width="150" height="70" rx="6"/>
+      <text class="sl" x="515" y="42" text-anchor="middle">Espresso</text>
+      <text class="ss" x="515" y="56" text-anchor="middle">articles + publishers</text>
+      <text class="ss" x="515" y="70" text-anchor="middle">metadata store</text>
+
+      <rect class="sb-p" x="640" y="20" width="140" height="70" rx="6"/>
+      <text class="sl" x="710" y="42" text-anchor="middle">Ambry</text>
+      <text class="ss" x="710" y="56" text-anchor="middle">thumbnails</text>
+      <text class="ss" x="710" y="70" text-anchor="middle">standardized sizes</text>
+
+      <path class="sa-b" d="M160,55 L208,55" marker-end="url(#ab)"/>
+      <text class="sn" x="184" y="48">1</text>
+      <path class="sa-b" d="M390,45 L438,45" marker-end="url(#ab)"/>
+      <text class="sn" x="414" y="38">2</text>
+      <path class="sa-b" d="M390,65 L638,55" marker-end="url(#ab)"/>
+      <text class="sn" x="510" y="82">3</text>
+
+      <rect class="sb-y" x="210" y="120" width="570" height="95" rx="6"/>
+      <text class="sl" x="495" y="140" text-anchor="middle">Data Collection Workflow</text>
+      <text class="ss" x="230" y="160">1. Query Espresso for publisher list + RSS feed URLs</text>
+      <text class="ss" x="230" y="176">2. Poll each publisher&rsquo;s RSS feed (HTTP GET &rarr; XML response)</text>
+      <text class="ss" x="230" y="192">3. Extract article metadata, download source image, resize to standard thumbnails</text>
+      <text class="ss" x="230" y="208">4. Store thumbnails in Ambry, save article row in Espresso with Ambry URL</text>
+    </svg>
+  </div>
+  <div class="diagram-cap">RSS is HTTP-based XML &mdash; just GET the feed URL. We store our own thumbnails in Ambry for reliability and consistent sizing.</div>
+</div>
+
+<div class="alert note"><div class="alert-title">Why store our own thumbnails?</div><p>Publisher images can be slow, change URLs, or go down. Downloading to Ambry gives us control over sizing, format, and availability. LinkedIn CDN then serves them at edge speed.</p></div>
+
+<!-- 04 Feed Delivery -->
+<h2 id="feed">04 &mdash; Feed delivery: serving articles to users</h2>
+
+<div class="diagram">
+  <div class="diagram-head"><span class="id">Fig 4</span> Feed serving flow</div>
+  <div class="diagram-body">
+    <svg viewBox="0 0 800 180" xmlns="http://www.w3.org/2000/svg">
+      <rect class="sb" x="20" y="20" width="120" height="50" rx="6"/>
+      <text class="sl" x="80" y="42" text-anchor="middle">Client</text>
+      <text class="ss" x="80" y="56" text-anchor="middle">web / mobile</text>
+
+      <rect class="sb-y" x="180" y="20" width="140" height="50" rx="6"/>
+      <text class="sl" x="250" y="42" text-anchor="middle">API Gateway</text>
+      <text class="ss" x="250" y="56" text-anchor="middle">auth, rate-limit, d2</text>
+
+      <rect class="sb-b" x="360" y="20" width="140" height="50" rx="6"/>
+      <text class="sl" x="430" y="42" text-anchor="middle">Feed Service</text>
+      <text class="ss" x="430" y="56" text-anchor="middle">query + format</text>
+
+      <rect class="sb-g" x="540" y="20" width="120" height="50" rx="6"/>
+      <text class="sl" x="600" y="42" text-anchor="middle">Espresso</text>
+      <text class="ss" x="600" y="56" text-anchor="middle">article metadata</text>
+
+      <rect class="sb-p" x="540" y="100" width="120" height="50" rx="6"/>
+      <text class="sl" x="600" y="122" text-anchor="middle">Ambry</text>
+      <text class="ss" x="600" y="136" text-anchor="middle">thumbnail URLs</text>
+
+      <path class="sa-b" d="M140,45 L178,45" marker-end="url(#ab)"/><text class="sn" x="159" y="38">1</text>
+      <path class="sa-b" d="M320,45 L358,45" marker-end="url(#ab)"/><text class="sn" x="339" y="38">2</text>
+      <path class="sa-b" d="M500,45 L538,45" marker-end="url(#ab)"/><text class="sn" x="519" y="38">3</text>
+      <path class="sa" d="M600,70 L600,98" marker-end="url(#a1)"/><text class="ss" x="615" y="88">refs</text>
+
+      <text class="ss" x="20" y="120">1: GET /feed?region=US&amp;limit=20</text>
+      <text class="ss" x="20" y="136">2: route to Feed Service (d2 load balancing)</text>
+      <text class="ss" x="20" y="152">3: query Espresso for recent articles in region, ordered by publish_date</text>
+      <text class="ss" x="20" y="168">4: return articles with thumbnail URLs pointing to Ambry via LinkedIn CDN</text>
+    </svg>
+  </div>
+</div>
+
+<!-- 05 Infinite Scroll -->
+<h2 id="scroll">05 &mdash; Infinite scroll</h2>
+
+<div class="diagram">
+  <div class="diagram-head"><span class="id">Fig 5</span> Offset pagination vs cursor pagination</div>
+  <div class="diagram-body">
+    <svg viewBox="0 0 800 210" xmlns="http://www.w3.org/2000/svg">
+      <text class="sl" x="20" y="18" fill="var(--danger)">&#x2717; Offset-based: page=2 breaks when new articles are inserted</text>
+      <rect class="sb-r" x="20" y="28" width="360" height="60" rx="6"/>
+      <text class="ss" x="200" y="48" text-anchor="middle">Page 1: articles [1-20] &middot; User reads them</text>
+      <text class="ss" x="200" y="64" text-anchor="middle">5 new articles published &rarr; page 2 now has OVERLAP</text>
+      <text class="ss" x="200" y="78" text-anchor="middle">User sees duplicates or misses articles entirely</text>
+      <rect class="sb-r" x="400" y="28" width="360" height="60" rx="6"/>
+      <text class="ss" x="580" y="48" text-anchor="middle">SQL: SELECT ... OFFSET 20 LIMIT 20</text>
+      <text class="ss" x="580" y="64" text-anchor="middle">Offset recalculated after inserts = drift</text>
+      <text class="ss" x="580" y="78" text-anchor="middle">Also: OFFSET scans &amp; discards rows = slow</text>
+
+      <line x1="20" y1="105" x2="780" y2="105" stroke="var(--border-muted)"/>
+
+      <text class="sl" x="20" y="125" fill="var(--success)">&#x2713; Cursor-based: &ldquo;give me articles after this ULID&rdquo;</text>
+      <rect class="sb-g" x="20" y="135" width="360" height="60" rx="6"/>
+      <text class="ss" x="200" y="155" text-anchor="middle">Page 1: articles [A-T], cursor = T&rsquo;s ULID</text>
+      <text class="ss" x="200" y="171" text-anchor="middle">5 new articles published &rarr; doesn&rsquo;t matter</text>
+      <text class="ss" x="200" y="187" text-anchor="middle">Page 2: WHERE id &lt; cursor ORDER BY id DESC</text>
+      <rect class="sb-g" x="400" y="135" width="360" height="60" rx="6"/>
+      <text class="ss" x="580" y="155" text-anchor="middle">ULIDs are monotonically increasing</text>
+      <text class="ss" x="580" y="171" text-anchor="middle">Stable cursor = no duplicates, no gaps</text>
+      <text class="ss" x="580" y="187" text-anchor="middle">Index seek, not scan &rarr; O(log n) always</text>
+    </svg>
+  </div>
+  <div class="diagram-cap">ULID-based cursors: simple, fast, immune to content drift. Used by Twitter, Instagram, LinkedIn.</div>
+</div>
+
+<pre><span style="color:var(--fg-muted)">// First page</span>
+GET /feed?region=US&amp;limit=20
+<span style="color:var(--fg-muted)">// Next page: pass last article's ULID as cursor</span>
+GET /feed?region=US&amp;limit=20&amp;cursor=01HX9F3K...</pre>
+
+<!-- 06 Architecture -->
+<h2 id="highlevel">06 &mdash; High-level architecture</h2>
+
+<div class="diagram">
+  <div class="diagram-head"><span class="id">Fig 6</span> Full architecture &mdash; LinkedIn stack</div>
+  <div class="diagram-body">
+    <svg viewBox="0 0 900 440" xmlns="http://www.w3.org/2000/svg">
+      <defs><marker id="ag" markerWidth="8" markerHeight="8" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#1a7f37"/></marker></defs>
+
+      <rect class="sb-o" x="20" y="20" width="140" height="50" rx="6"/><text class="sl" x="90" y="42" text-anchor="middle">Publishers</text><text class="ss" x="90" y="56" text-anchor="middle">RSS + webhooks</text>
+      <rect class="sb" x="20" y="100" width="140" height="50" rx="6"/><text class="sl" x="90" y="122" text-anchor="middle">Users</text><text class="ss" x="90" y="136" text-anchor="middle">100M DAU</text>
+
+      <rect class="sb-b" x="220" y="20" width="160" height="50" rx="6"/><text class="sl" x="300" y="42" text-anchor="middle">Data Collection Svc</text><text class="ss" x="300" y="56" text-anchor="middle">polls RSS, processes hooks</text>
+      <rect class="sb-y" x="220" y="100" width="160" height="50" rx="6"/><text class="sl" x="300" y="122" text-anchor="middle">API Gateway (d2)</text><text class="ss" x="300" y="136" text-anchor="middle">TLS, auth, rate-limit</text>
+
+      <rect class="sb-b" x="440" y="100" width="160" height="50" rx="6"/><text class="sl" x="520" y="122" text-anchor="middle">Feed Service</text><text class="ss" x="520" y="136" text-anchor="middle">reads cache, formats</text>
+
+      <rect class="sb-g" x="660" y="20" width="180" height="55" rx="6"/><text class="sl" x="750" y="42" text-anchor="middle">Espresso</text><text class="ss" x="750" y="56" text-anchor="middle">articles + publishers metadata</text>
+
+      <rect class="sb-r" x="660" y="100" width="180" height="55" rx="6"/><text class="sl" x="750" y="122" text-anchor="middle">Couchbase / Redis</text><text class="ss" x="750" y="136" text-anchor="middle">pre-computed regional feeds</text>
+
+      <rect class="sb-p" x="440" y="220" width="160" height="50" rx="6"/><text class="sl" x="520" y="242" text-anchor="middle">Ambry</text><text class="ss" x="520" y="256" text-anchor="middle">thumbnails</text>
+      <rect class="sb-o" x="660" y="220" width="180" height="50" rx="6"/><text class="sl" x="750" y="242" text-anchor="middle">LinkedIn CDN</text><text class="ss" x="750" y="256" text-anchor="middle">edge delivery</text>
+
+      <rect class="sb-y" x="440" y="320" width="400" height="55" rx="6"/><text class="sl" x="640" y="342" text-anchor="middle">Kafka (CDC events)</text><text class="ss" x="640" y="358" text-anchor="middle">new-article events trigger cache refresh via Samza workers</text>
+
+      <rect class="sb-p" x="440" y="400" width="160" height="30" rx="6"/><text class="sl" x="520" y="420" text-anchor="middle">Samza workers</text>
+      <rect class="sb-g" x="660" y="400" width="180" height="30" rx="6"/><text class="sl" x="750" y="420" text-anchor="middle">Feed Gen &rarr; cache update</text>
+
+      <path d="M160,45 L218,45" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#ab)" fill="none"/>
+      <path d="M160,125 L218,125" stroke="var(--fg-muted)" stroke-width="1.5" marker-end="url(#a1)" fill="none"/>
+      <path d="M380,125 L438,125" stroke="var(--fg-muted)" stroke-width="1.5" marker-end="url(#a1)" fill="none"/>
+
+      <path d="M380,45 L658,45" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#ab)" fill="none"/>
+      <text class="ss" x="500" y="38" fill="var(--accent)">write articles</text>
+
+      <path d="M520,150 L750,158 L750,155" stroke="var(--success)" stroke-width="1.5" marker-end="url(#ag)" fill="none"/>
+      <text class="ss" x="620" y="168" fill="var(--success)">read cache</text>
+
+      <path d="M520,150 L520,218" stroke="var(--fg-muted)" stroke-width="1.5" stroke-dasharray="3,2" marker-end="url(#a1)" fill="none"/>
+      <text class="ss" x="535" y="195">thumb refs</text>
+      <path d="M600,245 L658,245" stroke="var(--fg-muted)" stroke-width="1.5" stroke-dasharray="3,2" marker-end="url(#a1)" fill="none"/>
+
+      <path d="M750,75 L640,318" stroke="var(--danger)" stroke-width="1.5" stroke-dasharray="3,2" marker-end="url(#a1)" fill="none"/>
+      <text class="ss" x="710" y="200" fill="var(--danger)">CDC</text>
+
+      <path d="M640,375 L520,398" stroke="var(--fg-muted)" stroke-width="1.5" marker-end="url(#a1)" fill="none"/>
+      <path d="M640,375 L750,398" stroke="var(--fg-muted)" stroke-width="1.5" marker-end="url(#a1)" fill="none"/>
+    </svg>
+  </div>
+  <div class="diagram-cap">Write path (collection) and read path (feed) are fully separated. CDC via Kafka keeps caches fresh without polling.</div>
+</div>
+
+<table>
+  <tr><th>Component</th><th>LinkedIn equivalent</th><th>Role</th></tr>
+  <tr><td>Metadata DB</td><td><strong>Espresso</strong></td><td>Articles, publishers, user prefs</td></tr>
+  <tr><td>Feed cache</td><td><strong>Couchbase / Redis</strong></td><td>Pre-computed sorted sets per region</td></tr>
+  <tr><td>Event stream</td><td><strong>Kafka</strong></td><td>CDC events, new-article notifications</td></tr>
+  <tr><td>Stream processor</td><td><strong>Samza</strong></td><td>Consumes CDC, updates feed caches</td></tr>
+  <tr><td>Blob store</td><td><strong>Ambry</strong></td><td>Thumbnails, resized images</td></tr>
+  <tr><td>CDN</td><td><strong>LinkedIn CDN / Akamai</strong></td><td>Edge-cached thumbnails + static assets</td></tr>
+  <tr><td>Service discovery / LB</td><td><strong>d2</strong></td><td>Client-side LB, service routing</td></tr>
+</table>
+
+<!-- 07 Deep Dive: Cursor Pagination -->
+<h2 id="cursor">07 &mdash; Deep dive: cursor pagination with ULIDs</h2>
+
+<p>We use <strong>ULIDs</strong> (Universally Unique Lexicographically Sortable Identifiers) as article IDs. ULIDs encode a timestamp in their first 48 bits, so they&rsquo;re naturally monotonically increasing. This means article ID order = chronological order, and we can use the ID itself as the cursor.</p>
+
+<div class="diagram">
+  <div class="diagram-head"><span class="id">Fig 7</span> ULID structure &mdash; timestamp + randomness = sortable unique IDs</div>
+  <div class="diagram-body">
+    <svg viewBox="0 0 800 100" xmlns="http://www.w3.org/2000/svg">
+      <rect class="sb-b" x="60" y="20" width="300" height="50" rx="6"/>
+      <text class="sl" x="210" y="42" text-anchor="middle">Timestamp (48 bits)</text>
+      <text class="ss" x="210" y="58" text-anchor="middle">ms since Unix epoch &rarr; sortable</text>
+      <rect class="sb-g" x="370" y="20" width="300" height="50" rx="6"/>
+      <text class="sl" x="520" y="42" text-anchor="middle">Randomness (80 bits)</text>
+      <text class="ss" x="520" y="58" text-anchor="middle">uniqueness within same ms</text>
+      <text class="ss" x="400" y="90" text-anchor="middle">01HX9F3K7M... = 2024-01-15T10:30:00.123Z + random</text>
+    </svg>
+  </div>
+  <div class="diagram-cap">No composite cursors needed. No timestamp collisions. The single ULID is the cursor.</div>
+</div>
+
+<pre><span style="color:var(--fg-muted)">-- Espresso query (cursor-based)</span>
+SELECT * FROM articles
+WHERE region = 'US'
+  AND id &lt; :cursor_ulid    <span style="color:var(--fg-muted)">-- simple index seek</span>
+ORDER BY id DESC
+LIMIT 20</pre>
+
+<div class="alert tip"><div class="alert-title">Why not composite timestamp+ID cursors?</div><p>With ULIDs, the ID <em>is</em> the timestamp (plus randomness). One field does both jobs. No tuple comparisons, no encoding/decoding. Twitter and Discord use similar approaches.</p></div>
+
+<!-- 08 Deep Dive: Low-latency feeds -->
+<h2 id="latency">08 &mdash; Deep dive: low-latency feeds (&lt; 200ms)</h2>
+
+<p>100M DAU &times; 5-10 refreshes = 500M&ndash;1B feed requests/day. Querying Espresso directly for each request won&rsquo;t hit &lt; 200ms at scale. We need pre-computed, cached feeds.</p>
+
+<div class="diagram">
+  <div class="diagram-head"><span class="id">Fig 8</span> CDC-powered real-time feed caching</div>
+  <div class="diagram-body">
+    <svg viewBox="0 0 800 260" xmlns="http://www.w3.org/2000/svg">
+      <rect class="sb-b" x="20" y="20" width="160" height="50" rx="6"/><text class="sl" x="100" y="42" text-anchor="middle">Data Collection Svc</text><text class="ss" x="100" y="56" text-anchor="middle">writes new article</text>
+
+      <rect class="sb-g" x="230" y="20" width="130" height="50" rx="6"/><text class="sl" x="295" y="42" text-anchor="middle">Espresso</text><text class="ss" x="295" y="56" text-anchor="middle">INSERT article</text>
+
+      <rect class="sb-y" x="410" y="20" width="160" height="50" rx="6"/><text class="sl" x="490" y="42" text-anchor="middle">Kafka (CDC topic)</text><text class="ss" x="490" y="56" text-anchor="middle">new-article event</text>
+
+      <rect class="sb-p" x="620" y="20" width="160" height="50" rx="6"/><text class="sl" x="700" y="42" text-anchor="middle">Samza workers</text><text class="ss" x="700" y="56" text-anchor="middle">determine region feeds</text>
+
+      <rect class="sb-r" x="620" y="110" width="160" height="55" rx="6"/><text class="sl" x="700" y="130" text-anchor="middle">Couchbase / Redis</text><text class="ss" x="700" y="146" text-anchor="middle">ZADD feed:US score=ts</text>
+      <text class="ss" x="700" y="158" text-anchor="middle">ZREMRANGEBYRANK (cap N)</text>
+
+      <path class="sa-b" d="M180,45 L228,45" marker-end="url(#ab)"/><text class="sn" x="204" y="38">1</text>
+      <path class="sa-b" d="M360,45 L408,45" marker-end="url(#ab)"/><text class="sn" x="384" y="38">2</text>
+      <path class="sa-b" d="M570,45 L618,45" marker-end="url(#ab)"/><text class="sn" x="594" y="38">3</text>
+      <path class="sa-r" d="M700,70 L700,108" marker-end="url(#a1)"/><text class="sn" x="715" y="92" fill="var(--danger)">4</text>
+
+      <rect class="sb" x="20" y="110" width="120" height="50" rx="6"/><text class="sl" x="80" y="132" text-anchor="middle">Client</text><text class="ss" x="80" y="146" text-anchor="middle">GET /feed</text>
+      <rect class="sb-b" x="180" y="110" width="130" height="50" rx="6"/><text class="sl" x="245" y="132" text-anchor="middle">Feed Service</text>
+      <path class="sa-g" d="M310,135 L618,135" marker-end="url(#ag)"/><text class="ss" x="460" y="128" fill="var(--success)">ZREVRANGE feed:US 0 19 (&lt; 5ms)</text>
+      <path class="sa" d="M140,135 L178,135" marker-end="url(#a1)"/>
+
+      <rect class="sb-y" x="20" y="200" width="760" height="45" rx="6"/>
+      <text class="sl" x="400" y="218" text-anchor="middle">Cache strategy: sorted sets per region, capped at ~2000 articles</text>
+      <text class="ss" x="400" y="234" text-anchor="middle">New articles added via ZADD (score=timestamp) &middot; Old articles trimmed via ZREMRANGEBYRANK &middot; No TTL needed</text>
+    </svg>
+  </div>
+  <div class="diagram-cap">Write path: collection &rarr; Espresso &rarr; CDC &rarr; Kafka &rarr; Samza &rarr; cache. Read path: client &rarr; Feed Service &rarr; cache (&lt; 5ms).</div>
+</div>
+
+<div class="alert note"><div class="alert-title">Why CDC instead of TTL-based cache invalidation?</div><p>TTL means feeds go stale for the entire TTL window. CDC via Kafka gives us <strong>sub-second cache freshness</strong> &mdash; the moment an article is written to Espresso, the cache is updated. Breaking news appears in feeds within seconds, not minutes.</p></div>
+
+<!-- 09 Deep Dive: Content Freshness -->
+<h2 id="freshness">09 &mdash; Deep dive: content freshness (&lt; 30min)</h2>
+
+<p>Polling RSS every 3&ndash;6h means breaking news could be hours late. We need faster options.</p>
+
+<div class="diagram">
+  <div class="diagram-head"><span class="id">Fig 9</span> Hybrid ingestion: webhooks (push) + RSS polling (fallback)</div>
+  <div class="diagram-body">
+    <svg viewBox="0 0 800 240" xmlns="http://www.w3.org/2000/svg">
+      <defs><marker id="ap2" markerWidth="8" markerHeight="8" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#8250df"/></marker></defs>
+      <text class="sl" x="20" y="18" fill="var(--success)">Path A: Webhook (real-time, seconds)</text>
+      <rect class="sb-o" x="20" y="28" width="140" height="50" rx="6"/><text class="sl" x="90" y="48" text-anchor="middle">Publisher</text><text class="ss" x="90" y="62" text-anchor="middle">publishes article</text>
+      <rect class="sb-g" x="200" y="28" width="180" height="50" rx="6"/><text class="sl" x="290" y="48" text-anchor="middle">POST /webhooks</text><text class="ss" x="290" y="62" text-anchor="middle">HMAC-signed payload</text>
+      <rect class="sb-b" x="420" y="28" width="160" height="50" rx="6"/><text class="sl" x="500" y="48" text-anchor="middle">Data Collection Svc</text><text class="ss" x="500" y="62" text-anchor="middle">validate + process</text>
+      <rect class="sb-p" x="620" y="28" width="140" height="50" rx="6"/><text class="sl" x="690" y="48" text-anchor="middle">Kafka &rarr; cache</text><text class="ss" x="690" y="62" text-anchor="middle">&lt; 30 seconds</text>
+      <path d="M160,53 L198,53" stroke="var(--done)" stroke-width="1.5" marker-end="url(#ap2)" fill="none"/>
+      <path d="M380,53 L418,53" stroke="var(--done)" stroke-width="1.5" marker-end="url(#ap2)" fill="none"/>
+      <path d="M580,53 L618,53" stroke="var(--done)" stroke-width="1.5" marker-end="url(#ap2)" fill="none"/>
+
+      <line x1="20" y1="100" x2="780" y2="100" stroke="var(--border-muted)"/>
+
+      <text class="sl" x="20" y="120" fill="var(--attention)">Path B: RSS polling (fallback, 15-60 min)</text>
+      <rect class="sb-o" x="20" y="130" width="140" height="50" rx="6"/><text class="sl" x="90" y="150" text-anchor="middle">Publisher</text><text class="ss" x="90" y="164" text-anchor="middle">no webhook support</text>
+      <rect class="sb-y" x="200" y="130" width="180" height="50" rx="6"/><text class="sl" x="290" y="150" text-anchor="middle">RSS Poller (cron)</text><text class="ss" x="290" y="164" text-anchor="middle">adaptive: 15min-6h</text>
+      <rect class="sb-b" x="420" y="130" width="160" height="50" rx="6"/><text class="sl" x="500" y="150" text-anchor="middle">Data Collection Svc</text><text class="ss" x="500" y="164" text-anchor="middle">parse XML, dedup</text>
+      <rect class="sb-g" x="620" y="130" width="140" height="50" rx="6"/><text class="sl" x="690" y="150" text-anchor="middle">Espresso &rarr; CDC</text><text class="ss" x="690" y="164" text-anchor="middle">eventual freshness</text>
+      <path class="sa" d="M160,155 L198,155" marker-end="url(#a1)"/>
+      <path class="sa" d="M380,155 L418,155" marker-end="url(#a1)"/>
+      <path class="sa" d="M580,155 L618,155" marker-end="url(#a1)"/>
+
+      <rect class="sb" x="20" y="200" width="740" height="30" rx="6"/>
+      <text class="ss" x="390" y="220" text-anchor="middle">With 100M DAU, publishers <em>want</em> to be on our platform &rarr; strong incentive to implement webhooks</text>
+    </svg>
+  </div>
+  <div class="diagram-cap">Webhooks for premium real-time (&lt; 30s). Adaptive RSS polling for the rest. Both feed into the same CDC pipeline.</div>
+</div>
+
+<!-- 10 Media -->
+<h2 id="media">10 &mdash; Deep dive: media / thumbnails</h2>
+
+<div class="diagram">
+  <div class="diagram-head"><span class="id">Fig 10</span> Thumbnail pipeline: download, resize, serve via CDN</div>
+  <div class="diagram-body">
+    <svg viewBox="0 0 800 130" xmlns="http://www.w3.org/2000/svg">
+      <rect class="sb-o" x="20" y="15" width="130" height="45" rx="6"/><text class="sl" x="85" y="35" text-anchor="middle">Publisher image</text><text class="ss" x="85" y="50" text-anchor="middle">variable size/quality</text>
+      <rect class="sb-b" x="180" y="15" width="150" height="45" rx="6"/><text class="sl" x="255" y="35" text-anchor="middle">Image Processor</text><text class="ss" x="255" y="50" text-anchor="middle">resize: 320px, 640px, 1x</text>
+      <rect class="sb-p" x="360" y="15" width="130" height="45" rx="6"/><text class="sl" x="425" y="35" text-anchor="middle">Ambry</text><text class="ss" x="425" y="50" text-anchor="middle">3 sizes per article</text>
+      <rect class="sb-g" x="520" y="15" width="140" height="45" rx="6"/><text class="sl" x="590" y="35" text-anchor="middle">LinkedIn CDN</text><text class="ss" x="590" y="50" text-anchor="middle">edge cached</text>
+      <rect class="sb" x="690" y="15" width="80" height="45" rx="6"/><text class="sl" x="730" y="35" text-anchor="middle">Client</text><text class="ss" x="730" y="50" text-anchor="middle">&lt; 50ms</text>
+
+      <path class="sa-b" d="M150,37 L178,37" marker-end="url(#ab)"/>
+      <path class="sa-b" d="M330,37 L358,37" marker-end="url(#ab)"/>
+      <path class="sa-b" d="M490,37 L518,37" marker-end="url(#ab)"/>
+      <path class="sa-g" d="M660,37 L688,37" marker-end="url(#ag)"/>
+
+      <rect class="sb-y" x="20" y="80" width="740" height="35" rx="6"/>
+      <text class="ss" x="390" y="100" text-anchor="middle">Responsive: mobile gets 320px, tablet 640px, desktop full. Content-Type negotiation for WebP/AVIF.</text>
+    </svg>
+  </div>
+</div>
+
+<!-- 11 Traffic Spikes -->
+<h2 id="spikes">11 &mdash; Deep dive: traffic spikes (breaking news)</h2>
+
+<p>Breaking news can spike 10M concurrent users in minutes. Three layers need to scale:</p>
+
+<div class="diagram">
+  <div class="diagram-head"><span class="id">Fig 11</span> Regional scaling &mdash; each layer independently scalable</div>
+  <div class="diagram-body">
+    <svg viewBox="0 0 800 280" xmlns="http://www.w3.org/2000/svg">
+      <text class="sl" x="20" y="18">Feed Service (stateless &rarr; horizontal scaling)</text>
+      <rect class="sb-b" x="20" y="28" width="360" height="55" rx="6"/>
+      <text class="ss" x="200" y="48" text-anchor="middle">Each instance handles 10K-100K concurrent connections</text>
+      <text class="ss" x="200" y="62" text-anchor="middle">10M users / 100K = 100 instances. Auto-scale via d2.</text>
+      <text class="ss" x="200" y="76" text-anchor="middle">Stateless &rarr; spin up in seconds, tear down on cool-off.</text>
+      <rect class="sb-g" x="400" y="28" width="370" height="55" rx="6"/>
+      <text class="sl" x="585" y="48" text-anchor="middle">d2 auto-scaling</text>
+      <text class="ss" x="585" y="62" text-anchor="middle">LinkedIn&rsquo;s d2 framework detects load and adds instances</text>
+      <text class="ss" x="585" y="76" text-anchor="middle">No AWS ALB needed &mdash; client-side LB built into d2</text>
+
+      <line x1="20" y1="100" x2="780" y2="100" stroke="var(--border-muted)"/>
+
+      <text class="sl" x="20" y="118">Espresso (database &mdash; mostly bypassed)</text>
+      <rect class="sb-g" x="20" y="128" width="750" height="40" rx="6"/>
+      <text class="ss" x="395" y="148" text-anchor="middle">All feed reads hit cache (Couchbase). Espresso only handles writes + CDC. Cache absorbs the spike.</text>
+      <text class="ss" x="395" y="162" text-anchor="middle">At LinkedIn, Espresso handles 4.8M reads/sec anyway &mdash; but we don&rsquo;t need it for feed reads.</text>
+
+      <line x1="20" y1="185" x2="780" y2="185" stroke="var(--border-muted)"/>
+
+      <text class="sl" x="20" y="203">Couchbase / Redis (cache &mdash; the hot path)</text>
+      <rect class="sb-r" x="20" y="213" width="370" height="55" rx="6"/>
+      <text class="ss" x="205" y="233" text-anchor="middle">Single Redis: ~100K req/sec</text>
+      <text class="ss" x="205" y="247" text-anchor="middle">10M concurrent &rarr; need ~100 instances</text>
+      <text class="ss" x="205" y="261" text-anchor="middle">Read replicas for throughput, master for writes</text>
+      <rect class="sb-g" x="410" y="213" width="360" height="55" rx="6"/>
+      <text class="sl" x="590" y="233" text-anchor="middle">Regional deployment</text>
+      <text class="ss" x="590" y="247" text-anchor="middle">US spike doesn&rsquo;t affect India cluster</text>
+      <text class="ss" x="590" y="261" text-anchor="middle">Each region scales independently</text>
+    </svg>
+  </div>
+  <div class="diagram-cap">News consumption is regional &mdash; deploy per-region clusters. Spikes are isolated. Cache is the hero.</div>
+</div>
+
+<div class="diagram">
+  <div class="diagram-head"><span class="id">Fig 12</span> Redis/Couchbase read replica scaling</div>
+  <div class="diagram-body">
+    <svg viewBox="0 0 800 150" xmlns="http://www.w3.org/2000/svg">
+      <rect class="sb-r" x="300" y="15" width="150" height="45" rx="6"/><text class="sl" x="375" y="35" text-anchor="middle">Master</text><text class="ss" x="375" y="50" text-anchor="middle">writes only (ZADD)</text>
+
+      <rect class="sb-b" x="50" y="90" width="120" height="40" rx="4"/><text class="ss" x="110" y="114" text-anchor="middle">Replica 1</text>
+      <rect class="sb-b" x="190" y="90" width="120" height="40" rx="4"/><text class="ss" x="250" y="114" text-anchor="middle">Replica 2</text>
+      <rect class="sb-b" x="330" y="90" width="120" height="40" rx="4"/><text class="ss" x="390" y="114" text-anchor="middle">Replica 3</text>
+      <rect class="sb-b" x="470" y="90" width="120" height="40" rx="4"/><text class="ss" x="530" y="114" text-anchor="middle">Replica N</text>
+      <rect class="sb" x="610" y="90" width="120" height="40" rx="4"/><text class="ss" x="670" y="106" text-anchor="middle">... scale out</text><text class="ss" x="670" y="120" text-anchor="middle">as needed</text>
+
+      <path class="sa" d="M340,60 L110,88" marker-end="url(#a1)"/>
+      <path class="sa" d="M360,60 L250,88" marker-end="url(#a1)"/>
+      <path class="sa" d="M390,60 L390,88" marker-end="url(#a1)"/>
+      <path class="sa" d="M410,60 L530,88" marker-end="url(#a1)"/>
+
+      <text class="ss" x="375" y="148" text-anchor="middle">Reads round-robin across replicas &middot; Replication lag &lt; 200ms &middot; Sentinel auto-failover</text>
+    </svg>
+  </div>
+</div>
+
+<!-- 12 Categories -->
+<h2 id="categories">12 &mdash; Deep dive: category feeds</h2>
+
+<p>Users want Sports, Politics, Tech, etc. &mdash; not just a regional dump. The simplest approach: <strong>store category metadata in the cache, filter in-memory</strong>.</p>
+
+<div class="diagram">
+  <div class="diagram-head"><span class="id">Fig 13</span> In-memory category filtering (no separate category caches)</div>
+  <div class="diagram-body">
+    <svg viewBox="0 0 800 150" xmlns="http://www.w3.org/2000/svg">
+      <rect class="sb-r" x="20" y="15" width="200" height="55" rx="6"/>
+      <text class="sl" x="120" y="35" text-anchor="middle">Cache: feed:US</text>
+      <text class="ss" x="120" y="50" text-anchor="middle">2000 articles, each has</text>
+      <text class="ss" x="120" y="62" text-anchor="middle">id, title, category, url, ts</text>
+
+      <rect class="sb-b" x="270" y="15" width="180" height="55" rx="6"/>
+      <text class="sl" x="360" y="35" text-anchor="middle">Feed Service</text>
+      <text class="ss" x="360" y="50" text-anchor="middle">ZREVRANGE feed:US 0 999</text>
+      <text class="ss" x="360" y="62" text-anchor="middle">filter: category == &ldquo;sports&rdquo;</text>
+
+      <rect class="sb-g" x="500" y="15" width="160" height="55" rx="6"/>
+      <text class="sl" x="580" y="35" text-anchor="middle">Client</text>
+      <text class="ss" x="580" y="50" text-anchor="middle">20 sports articles</text>
+      <text class="ss" x="580" y="62" text-anchor="middle">&lt; 12ms total</text>
+
+      <path class="sa-b" d="M220,42 L268,42" marker-end="url(#ab)"/>
+      <text class="ss" x="244" y="36" text-anchor="middle">&lt;10ms</text>
+      <path class="sa-g" d="M450,42 L498,42" marker-end="url(#ag)"/>
+      <text class="ss" x="474" y="36" text-anchor="middle">&lt;2ms</text>
+
+      <rect class="sb-y" x="20" y="90" width="640" height="45" rx="6"/>
+      <text class="sl" x="340" y="108" text-anchor="middle">Why this works</text>
+      <text class="ss" x="340" y="124" text-anchor="middle">Reading 1000 articles from cache: &lt; 10ms. Filtering in-memory: &lt; 2ms. No separate category caches to maintain.</text>
+    </svg>
+  </div>
+  <div class="diagram-cap">Each article in the cache already has its category. Filter application-side. Simple beats clever.</div>
+</div>
+
+<!-- 13 Personalization -->
+<h2 id="personalization">13 &mdash; Deep dive: personalization</h2>
+
+<p>Instead of 100M user-specific caches, we maintain a few hundred <strong>category + region caches</strong> and assemble personalized feeds on-the-fly by mixing them.</p>
+
+<div class="diagram">
+  <div class="diagram-head"><span class="id">Fig 14</span> Feed assembly from category caches + user preference vector</div>
+  <div class="diagram-body">
+    <svg viewBox="0 0 800 200" xmlns="http://www.w3.org/2000/svg">
+      <rect class="sb-r" x="20" y="20" width="130" height="40" rx="6"/><text class="ss" x="85" y="44" text-anchor="middle">feed:tech:US (60%)</text>
+      <rect class="sb-r" x="20" y="70" width="130" height="40" rx="6"/><text class="ss" x="85" y="94" text-anchor="middle">feed:biz:US (30%)</text>
+      <rect class="sb-r" x="20" y="120" width="130" height="40" rx="6"/><text class="ss" x="85" y="144" text-anchor="middle">feed:trend:US (10%)</text>
+
+      <rect class="sb-b" x="220" y="50" width="180" height="70" rx="6"/>
+      <text class="sl" x="310" y="72" text-anchor="middle">Feed Assembly</text>
+      <text class="ss" x="310" y="88" text-anchor="middle">mix by preference_vector</text>
+      <text class="ss" x="310" y="102" text-anchor="middle">rank by recency + relevance</text>
+
+      <rect class="sb" x="200" y="150" width="100" height="35" rx="6"/><text class="ss" x="250" y="171" text-anchor="middle">user prefs</text>
+      <text class="ss" x="250" y="185" text-anchor="middle">(Espresso)</text>
+
+      <rect class="sb-g" x="470" y="60" width="140" height="50" rx="6"/><text class="sl" x="540" y="82" text-anchor="middle">Personalized feed</text><text class="ss" x="540" y="96" text-anchor="middle">20 articles, mixed</text>
+
+      <rect class="sb" x="670" y="60" width="100" height="50" rx="6"/><text class="sl" x="720" y="82" text-anchor="middle">Client</text>
+
+      <path class="sa" d="M150,40 L218,70" marker-end="url(#a1)"/>
+      <path class="sa" d="M150,90 L218,88" marker-end="url(#a1)"/>
+      <path class="sa" d="M150,140 L218,105" marker-end="url(#a1)"/>
+      <path class="sa" d="M250,150 L295,122" marker-end="url(#a1)"/>
+      <path class="sa-g" d="M400,85 L468,85" marker-end="url(#ag)"/>
+      <path class="sa" d="M610,85 L668,85" marker-end="url(#a1)"/>
+    </svg>
+  </div>
+  <div class="diagram-cap">100x less memory than per-user caches. Preference vectors are kilobytes. Category caches already exist.</div>
+</div>
+
+<div class="alert note"><div class="alert-title">Breaking news boost</div><p>During major events, the assembly algorithm temporarily increases the <code>trending</code> weight for all users, ensuring breaking news surfaces even for users with narrow interest profiles.</p></div>
+
+<!-- 14 Glossary -->
+<h2 id="glossary">14 &mdash; Glossary</h2>
+<div class="gloss-grid">
+  <div class="gloss-card"><div class="term">RSS</div><div class="def">XML syndication format. Publishers expose article lists via HTTP GET. Lightweight, standardized, widely supported.</div></div>
+  <div class="gloss-card"><div class="term">Webhook</div><div class="def">Publisher POSTs to our endpoint when a new article is published. Real-time push model, HMAC-signed for auth.</div></div>
+  <div class="gloss-card"><div class="term">ULID</div><div class="def">Universally Unique Lexicographically Sortable Identifier. 48-bit timestamp + 80-bit random. Monotonically increasing = natural cursor.</div></div>
+  <div class="gloss-card"><div class="term">Cursor pagination</div><div class="def">&ldquo;Give me items after this ID.&rdquo; Immune to insertion drift. O(log n) index seek. Used by Twitter, Instagram, LinkedIn.</div></div>
+  <div class="gloss-card"><div class="term">CDC</div><div class="def">Change Data Capture. Database changes streamed to Kafka in real-time. Drives cache updates without polling.</div></div>
+  <div class="gloss-card"><div class="term">Sorted set (ZSET)</div><div class="def">Redis/Couchbase data structure. Members scored by timestamp. ZADD, ZREVRANGE, ZREMRANGEBYRANK for feed ops.</div></div>
+  <div class="gloss-card"><div class="term">Espresso</div><div class="def">LinkedIn&rsquo;s NoSQL document store (MySQL + Helix). Articles, publishers, user prefs.</div></div>
+  <div class="gloss-card"><div class="term">Couchbase / Redis</div><div class="def">LinkedIn uses Couchbase for some caching. Redis sorted sets for feed caches. Both support read replicas.</div></div>
+  <div class="gloss-card"><div class="term">Kafka</div><div class="def">LinkedIn&rsquo;s event streaming platform. CDC events, new-article notifications, click analytics.</div></div>
+  <div class="gloss-card"><div class="term">Samza</div><div class="def">LinkedIn&rsquo;s stream processor. Consumes Kafka events, updates feed caches, triggers notifications.</div></div>
+  <div class="gloss-card"><div class="term">Ambry</div><div class="def">LinkedIn&rsquo;s distributed blob store. Thumbnails stored here, served via CDN.</div></div>
+  <div class="gloss-card"><div class="term">d2</div><div class="def">LinkedIn&rsquo;s service discovery + client-side load balancing framework. Routes requests, auto-scales.</div></div>
+  <div class="gloss-card"><div class="term">CAP theorem</div><div class="def">Pick 2 of 3: Consistency, Availability, Partition tolerance. News feeds are AP &mdash; stale &gt; unavailable.</div></div>
+  <div class="gloss-card"><div class="term">Read replica</div><div class="def">Copy of master that serves reads. Scale read throughput linearly by adding replicas. Lag &lt; 200ms.</div></div>
+  <div class="gloss-card"><div class="term">Adaptive polling</div><div class="def">Vary poll frequency per publisher based on how often they actually publish. Active publishers polled more often.</div></div>
+  <div class="gloss-card"><div class="term">Content-Type negotiation</div><div class="def">Serve WebP/AVIF to browsers that support it, JPEG fallback. Smaller images = faster loads.</div></div>
+  <div class="gloss-card"><div class="term">Offset pagination</div><div class="def">OFFSET + LIMIT SQL. Breaks when new rows are inserted (drift). Slow for large offsets (scans rows). Avoid.</div></div>
+  <div class="gloss-card"><div class="term">Feed assembly</div><div class="def">Mix multiple category caches using user preference weights. Cheaper than per-user caches (100x less memory).</div></div>
+</div>
+
+</main>
+
+<aside class="toc-right">
+  <div class="label">On this page</div>
+  <ul>
+    <li><a href="#problem">Understanding</a></li>
+    <li><a href="#req">01 Requirements</a></li>
+    <li><a href="#entities">02 Entities</a></li>
+    <li><a href="#collection">03 Data collection</a></li>
+    <li><a href="#feed">04 Feed delivery</a></li>
+    <li><a href="#scroll">05 Infinite scroll</a></li>
+    <li><a href="#highlevel">06 Architecture</a></li>
+    <li><a href="#cursor">07 Cursor pagination</a></li>
+    <li><a href="#latency">08 Low-latency</a></li>
+    <li><a href="#freshness">09 Freshness</a></li>
+    <li><a href="#media">10 Media</a></li>
+    <li><a href="#spikes">11 Traffic spikes</a></li>
+    <li><a href="#categories">12 Categories</a></li>
+    <li><a href="#personalization">13 Personalization</a></li>
+    <li><a href="#glossary">14 Glossary</a></li>
+  </ul>
+</aside>
+
+</div>
+
+<script>
+(function(){
+  const tocLinks=document.querySelectorAll('aside.toc-left a,aside.toc-right a');
+  const sections=[];
+  tocLinks.forEach(a=>{const id=a.getAttribute('href');if(id&&id.startsWith('#')){const el=document.getElementById(id.slice(1));if(el)sections.push({el,links:document.querySelectorAll('a[href="'+id+'"]')})}});
+  function onScroll(){let cur=sections[0];for(const s of sections)if(s.el.getBoundingClientRect().top<=80)cur=s;tocLinks.forEach(a=>a.classList.remove('active'));if(cur)cur.links.forEach(a=>a.classList.add('active'))}
+  window.addEventListener('scroll',onScroll,{passive:true});onScroll();
+})();
+</script>
+
+</body>
+</html>

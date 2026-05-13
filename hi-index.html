@@ -72,6 +72,11 @@
   .card-dropbox:hover { border-color: var(--accent); }
   .card-dropbox .cta { color: var(--accent); }
 
+  .card-news .icon { background: rgba(26,127,55,0.1); color: var(--accent2); }
+  .card-news h2 { color: var(--accent2); }
+  .card-news:hover { border-color: var(--accent2); }
+  .card-news .cta { color: var(--accent2); }
+
   .card-placeholder .icon { background: rgba(0,0,0,0.04); color: var(--text-muted); }
   .card-placeholder { opacity: 0.5; cursor: default; }
   .card-placeholder h2 { color: var(--text-muted); }
@@ -110,10 +115,27 @@
       <div class="cta">Read the design &rarr;</div>
     </a>
 
+    <a href="hi-google-news.html" class="card card-news">
+      <div class="icon">&#128240;</div>
+      <h2>Google News</h2>
+      <div class="subtitle">News aggregation &middot; 14 diagrams &middot; LinkedIn stack</div>
+      <p>Aggregate articles from thousands of publishers. RSS + webhooks ingestion, CDC-powered caching, cursor pagination with ULIDs, regional scaling for 100M DAU.</p>
+      <div class="tag-row">
+        <span class="tag">Espresso</span>
+        <span class="tag">Couchbase</span>
+        <span class="tag">Kafka</span>
+        <span class="tag">Samza</span>
+        <span class="tag">ULID</span>
+        <span class="tag">CDC</span>
+        <span class="tag">Webhooks</span>
+      </div>
+      <div class="cta">Read the design &rarr;</div>
+    </a>
+
     <div class="card card-placeholder">
       <div class="icon">&#128274;</div>
       <h2>More coming soon</h2>
-      <div class="subtitle">Twitter, WhatsApp, URL shortener, etc.</div>
+      <div class="subtitle">Ticketmaster, WhatsApp, URL shortener, etc.</div>
       <p>Additional system design problems will be added here with the same visual format and LinkedIn mappings.</p>
       <div class="tag-row">
         <span class="tag">Coming soon</span>
