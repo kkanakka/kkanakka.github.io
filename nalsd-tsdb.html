@@ -1,0 +1,1033 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NALSD · LinkedIn Time Series Database (TSDB)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#ffffff;--bg-alt:#f6f8fa;--bg-code:#f6f8fa;
+  --border:#d0d7de;--border-soft:#eaeef2;
+  --ink:#1f2328;--ink-soft:#59636e;--ink-faint:#818b98;
+  --link:#0a66c2;--link-hover:#004182;
+  --green:#1a7f37;--green-bg:#dafbe1;
+  --red:#cf222e;--red-bg:#ffebe9;
+  --yellow:#9a6700;--yellow-bg:#fff8c5;
+  --purple:#6639ba;--purple-bg:#fbefff;
+  --orange:#bc4c00;--orange-bg:#fff1e5;
+  --blue-bg:#ddf4ff;
+  --shadow:0 1px 0 rgba(31,35,40,.04);
+  --mono:'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --serif:'Source Serif 4', Georgia, serif;
+  --sans:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
+a{color:var(--link);text-decoration:none}a:hover{text-decoration:underline}
+code,pre,.mono{font-family:var(--mono)}
+code{background:var(--bg-code);padding:.1em .35em;border-radius:4px;font-size:.88em;border:1px solid var(--border-soft)}
+pre{background:var(--bg-code);border:1px solid var(--border);border-radius:6px;padding:12px 14px;overflow-x:auto;font-size:12.5px;line-height:1.55;margin:0}
+
+.shell{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+aside{position:sticky;top:0;height:100vh;overflow-y:auto;border-right:1px solid var(--border);background:var(--bg);padding:18px 14px 40px}
+main{max-width:1080px;width:100%;padding:28px 40px 80px}
+@media (max-width:960px){.shell{grid-template-columns:1fr}aside{position:relative;height:auto;border-right:none;border-bottom:1px solid var(--border)}}
+
+.brand{display:flex;align-items:center;gap:10px;padding:6px 8px 16px;border-bottom:1px solid var(--border-soft);margin-bottom:12px}
+.brand-mark{width:28px;height:28px;border-radius:6px;background:var(--link);color:#fff;display:grid;place-items:center;font-weight:700;font-family:var(--mono);font-size:13px}
+.brand-title{font-weight:700;font-size:14px}
+.brand-sub{font-size:11px;color:var(--ink-soft);font-family:var(--mono)}
+.toc-group{margin:14px 0 4px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-faint);font-weight:600;padding:0 8px}
+.toc a{display:block;padding:4px 8px;border-radius:5px;color:var(--ink-soft);font-size:13px;border-left:2px solid transparent;margin-left:4px}
+.toc a:hover{background:var(--bg-alt);color:var(--ink);text-decoration:none}
+.toc a.depth-2{padding-left:18px;font-size:12.5px}
+
+.doc-head{border-bottom:1px solid var(--border);padding-bottom:18px;margin-bottom:24px}
+.crumbs{font-size:12px;color:var(--ink-soft);font-family:var(--mono);margin-bottom:8px}
+.crumbs .sep{color:var(--ink-faint);margin:0 6px}
+h1{font-family:var(--serif);font-weight:700;font-size:32px;line-height:1.15;letter-spacing:-.015em;margin:0 0 8px}
+.doc-meta{display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:12.5px;color:var(--ink-soft);font-family:var(--mono);margin-top:10px}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:999px;border:1px solid var(--border);background:var(--bg-alt);font-size:11.5px;font-family:var(--mono);color:var(--ink-soft)}
+.pill.blue{background:var(--blue-bg);border-color:#80ccff;color:#0969da}
+.pill.green{background:var(--green-bg);border-color:#a5e1b1;color:var(--green)}
+.pill.purple{background:var(--purple-bg);border-color:#d8b9ff;color:var(--purple)}
+.pill.orange{background:var(--orange-bg);border-color:#ffb077;color:var(--orange)}
+.pill.red{background:var(--red-bg);border-color:#ffaaa3;color:var(--red)}
+.pill.yellow{background:var(--yellow-bg);border-color:#e7c860;color:var(--yellow)}
+
+h2{font-family:var(--serif);font-weight:700;font-size:22px;letter-spacing:-.01em;margin:40px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border-soft);scroll-margin-top:20px}
+h3{font-family:var(--sans);font-weight:700;font-size:16px;margin:24px 0 8px;scroll-margin-top:20px}
+h4{font-family:var(--sans);font-weight:600;font-size:13.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-soft);margin:18px 0 6px}
+p{margin:0 0 12px}
+ul,ol{margin:0 0 12px;padding-left:22px}
+li{margin-bottom:4px}
+
+.note{border-left:3px solid var(--link);background:var(--blue-bg);padding:10px 14px;border-radius:0 6px 6px 0;margin:14px 0;font-size:13px}
+.note.warn{border-left-color:var(--yellow);background:var(--yellow-bg)}
+.note.danger{border-left-color:var(--red);background:var(--red-bg)}
+.note.tip{border-left-color:var(--green);background:var(--green-bg)}
+.note .lbl{font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px;font-family:var(--mono);color:var(--link)}
+.note.warn .lbl{color:var(--yellow)}
+.note.danger .lbl{color:var(--red)}
+.note.tip .lbl{color:var(--green)}
+
+table{width:100%;border-collapse:collapse;font-size:12.5px;margin:8px 0 16px;border:1px solid var(--border);border-radius:6px;overflow:hidden}
+thead{background:var(--bg-alt)}
+th,td{padding:7px 11px;text-align:left;border-bottom:1px solid var(--border-soft);vertical-align:top}
+th{font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-soft)}
+tr:last-child td{border-bottom:none}
+td.num{font-family:var(--mono);font-size:12px}
+
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0 20px}
+@media (max-width:780px){.stat-grid{grid-template-columns:repeat(2,1fr)}}
+.stat{border:1px solid var(--border);border-radius:6px;padding:12px;background:var(--bg)}
+.stat .k{font-family:var(--mono);font-size:11px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.05em}
+.stat .v{font-family:var(--serif);font-weight:700;font-size:22px;margin-top:2px;line-height:1.15}
+.stat .s{font-size:11px;color:var(--ink-soft);font-family:var(--mono);margin-top:2px}
+
+.cols-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:780px){.cols-2{grid-template-columns:1fr}}
+
+.calc{border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin:14px 0;background:var(--bg-alt);position:relative}
+.calc::before{content:"∑ NALSD";position:absolute;top:-10px;left:14px;font-family:var(--mono);font-size:10.5px;background:var(--bg);padding:2px 8px;border:1px solid var(--border);border-radius:4px;color:var(--ink-soft);letter-spacing:.05em;font-weight:600}
+.calc h4{margin-top:4px}
+.calc pre{background:var(--bg);border-color:var(--border-soft)}
+.calc .verdict{display:flex;align-items:center;gap:8px;margin-top:10px;padding:8px 12px;background:var(--bg);border:1px dashed var(--green);border-radius:6px;font-family:var(--mono);font-size:12px;color:var(--green)}
+.calc .verdict.warn{border-color:var(--yellow);color:var(--yellow)}
+
+.diagram{border:1px solid var(--border);border-radius:8px;background:var(--bg);padding:14px;margin:16px 0;box-shadow:var(--shadow)}
+.diagram-cap{font-family:var(--mono);font-size:11px;color:var(--ink-faint);margin-top:8px;text-align:center}
+.diagram svg{width:100%;height:auto;display:block}
+
+.box-fill-blue{fill:#ddf4ff;stroke:#54aeff}
+.box-fill-green{fill:#dafbe1;stroke:#4ac26b}
+.box-fill-purple{fill:#fbefff;stroke:#c297ff}
+.box-fill-orange{fill:#fff1e5;stroke:#fd8c73}
+.box-fill-red{fill:#ffebe9;stroke:#ff8182}
+.box-fill-yellow{fill:#fff8c5;stroke:#d4a72c}
+.box-fill-gray{fill:#f6f8fa;stroke:#d0d7de}
+.lbl-title{font-family:'Inter',sans-serif;font-weight:700;font-size:11.5px;fill:#1f2328}
+.lbl-sub{font-family:'JetBrains Mono',monospace;font-size:9.5px;fill:#59636e}
+.lbl-meta{font-family:'JetBrains Mono',monospace;font-size:9px;fill:#818b98}
+.arrow{stroke:#59636e;stroke-width:1.3;fill:none;marker-end:url(#arr)}
+.arrow-dashed{stroke:#cf222e;stroke-width:1.2;fill:none;stroke-dasharray:4,3;marker-end:url(#arr-red)}
+.arrow-green{stroke:#1a7f37;stroke-width:1.5;fill:none;marker-end:url(#arr-green)}
+
+.flow-steps{counter-reset:step}
+.flow-step{display:grid;grid-template-columns:36px 1fr;gap:12px;padding:14px 16px;border:1px solid var(--border);border-radius:8px;margin-bottom:10px;background:#fff}
+.flow-step .num{counter-increment:step;background:var(--link);color:#fff;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-family:var(--mono);font-weight:700;font-size:13px}
+.flow-step .num::before{content:counter(step)}
+.flow-step .body .title{font-weight:700;font-size:14px;margin-bottom:4px;font-family:var(--sans)}
+.flow-step .body .desc{font-size:12.5px;color:var(--ink-soft);margin-bottom:6px}
+.flow-step .body .tech{font-family:var(--mono);font-size:11px;background:var(--bg-alt);border:1px solid var(--border-soft);border-radius:4px;padding:5px 8px;margin-top:4px;display:inline-block;color:var(--ink);max-width:100%;overflow-x:auto}
+.flow-step .body .nums{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px}
+.flow-step .body .nums .kv{font-family:var(--mono);font-size:11px;color:var(--ink-soft)}
+.flow-step .body .nums .kv b{color:var(--ink);font-weight:700}
+
+.comp-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:12px 0}
+@media (max-width:780px){.comp-grid{grid-template-columns:1fr}}
+.comp{border:1px solid var(--border);border-radius:6px;padding:11px 13px;background:var(--bg)}
+.comp .name{font-weight:700;font-size:13px;display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.comp .name .tech{font-family:var(--mono);font-size:10.5px;color:var(--link);font-weight:500}
+.comp .desc{font-size:12px;color:var(--ink-soft);margin-bottom:6px}
+.comp .row{font-family:var(--mono);font-size:11px;color:var(--ink-soft);display:flex;justify-content:space-between;padding:2px 0;border-top:1px dashed var(--border-soft)}
+.comp .row .lab{color:var(--ink-faint)}
+
+/* Tier strip visualizer */
+.tier-strip{display:flex;height:34px;border:1px solid var(--border);border-radius:6px;overflow:hidden;margin:6px 0;font-family:var(--mono);font-size:11px;font-weight:600}
+.tier-strip .seg{display:flex;align-items:center;justify-content:center;color:#fff;padding:0 8px;text-align:center}
+.tier-strip .ram{background:var(--red);width:6%}
+.tier-strip .hot{background:var(--orange);width:14%}
+.tier-strip .warm{background:#0969da;width:20%}
+.tier-strip .cold1{background:var(--purple);width:18%}
+.tier-strip .cold5{background:#6639ba;width:18%}
+.tier-strip .cold1h{background:var(--ink-soft);width:24%}
+
+footer{margin-top:50px;padding-top:18px;border-top:1px solid var(--border-soft);font-size:11.5px;color:var(--ink-faint);font-family:var(--mono);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+
+.li-strip{height:3px;background:linear-gradient(90deg,var(--link) 0,var(--link) 60%,transparent 100%);border-radius:2px;margin-bottom:14px}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:#d0d7de;border-radius:5px;border:2px solid var(--bg)}
+::-webkit-scrollbar-track{background:transparent}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<aside>
+  <div class="brand">
+    <div class="brand-mark">in</div>
+    <div>
+      <div class="brand-title">in/tsdb</div>
+      <div class="brand-sub">v2026.05 · nalsd</div>
+    </div>
+  </div>
+  <div class="li-strip"></div>
+  <nav class="toc">
+    <div class="toc-group">Design</div>
+    <a href="#problem">1 · Problem & SLOs</a>
+    <a href="#capacity">2 · Capacity model</a>
+    <a href="#ingest" class="depth-2">2.1 Ingest rate</a>
+    <a href="#compress" class="depth-2">2.2 Compression</a>
+    <a href="#cardinality" class="depth-2">2.3 Cardinality</a>
+    <a href="#tiers" class="depth-2">2.4 Tier sizing</a>
+    <a href="#fleet" class="depth-2">2.5 Fleet & cost</a>
+    <a href="#arch">3 · Architecture</a>
+    <a href="#dataflow" class="depth-2">3.1 Full diagram</a>
+    <a href="#flow" class="depth-2">3.2 Step-by-step</a>
+    <a href="#encoding" class="depth-2">3.3 Gorilla encoding</a>
+    <a href="#tiering" class="depth-2">3.4 Tier strategy</a>
+    <div class="toc-group">Operations</div>
+    <a href="#gauntlet">4 · Failure gauntlet</a>
+    <a href="#playbook">5 · Ops playbook</a>
+    <a href="#components">6 · Components</a>
+    <a href="#tradeoffs">7 · Trade-offs</a>
+  </nav>
+</aside>
+
+<main>
+
+<header class="doc-head">
+  <div class="crumbs">
+    <span>in/tsdb</span><span class="sep">/</span>
+    <span>design-docs</span><span class="sep">/</span>
+    <span>2026</span><span class="sep">/</span>
+    <span>time-series-database.md</span>
+  </div>
+  <h1>Designing LinkedIn's Time Series Database</h1>
+  <p style="font-size:15px;color:var(--ink-soft);margin:6px 0 0;font-family:var(--serif)">
+    A NALSD walkthrough — the storage and query engine under the monitoring platform.
+    10M samples/sec/region, ~1.3 bytes/sample after Gorilla compression, PromQL-flavored queries,
+    p99 recent reads &lt; 500 ms, multi-year retention via deterministic downsampling.
+  </p>
+  <div class="doc-meta">
+    <span class="pill blue">NALSD</span>
+    <span class="pill green">recent p99 &lt; 500ms</span>
+    <span class="pill purple">100M samples/s global</span>
+    <span class="pill orange">≥ 10× compression</span>
+    <span class="pill yellow">draft · review</span>
+    <span style="margin-left:auto">last edit · 2026-05-12 · sjc</span>
+  </div>
+</header>
+
+<!-- ===== 1. PROBLEM ===== -->
+<section>
+<h2 id="problem">1 · Problem statement & SLO contract</h2>
+
+<p>A time series database is <b>not</b> a generic key-value store with timestamps. Its workload has structural regularity that unlocks 10× engineering leverage: timestamps are monotonic per series (delta-of-delta encoding), values are autocorrelated (XOR encoding with leading/trailing zero suppression), access is overwhelmingly time-range scans (time-partitioned shards with min/max pruning), and the log is append-only with bounded out-of-order corrections (LSM-style compaction). Get encoding wrong → 10× cost overrun. Get cardinality wrong → existential failure (index explosion, planner can't prune, hot shards). This doc designs the TSDB beneath LinkedIn's monitoring platform — the system that turns 138 TB/day of raw samples into ~11 TB/day of compressed, queryable, multi-tenant time-series data.</p>
+
+<div class="stat-grid">
+  <div class="stat"><div class="k">Samples/sec global</div><div class="v">100 M</div><div class="s">10 M/region peak</div></div>
+  <div class="stat"><div class="k">Active series</div><div class="v">10 M</div><div class="s">per region · 100M cumulative</div></div>
+  <div class="stat"><div class="k">Recent query p99</div><div class="v">&lt; 500 ms</div><div class="s">last 6h windows</div></div>
+  <div class="stat"><div class="k">Compression</div><div class="v">≥ 10×</div><div class="s">vs naïve 16B/sample</div></div>
+</div>
+
+<h3 id="slo">SLO contract — nine SLIs</h3>
+
+<table>
+  <thead><tr><th>SLI</th><th>Target</th><th>What it protects</th></tr></thead>
+  <tbody>
+    <tr><td><b>A · Ingest latency</b></td><td class="num">p99 ≤ 5 s</td><td>write → durable ACK (WAL fsync + M-of-N quorum)</td></tr>
+    <tr><td><b>B · Recent query</b></td><td class="num">p99 ≤ 500 ms</td><td>queries over last 6h on RAM/SSD tiers</td></tr>
+    <tr><td><b>C · Mid-range query</b></td><td class="num">p99 ≤ 5 s</td><td>days–weeks · warm SSD/object</td></tr>
+    <tr><td><b>D · Cold query</b></td><td class="num">p99 ≤ 30 s</td><td>months+ · downsampled tiers</td></tr>
+    <tr><td><b>E · Durability</b></td><td class="num">11 nines</td><td>WAL + quorum + object replication</td></tr>
+    <tr><td><b>F · Availability</b></td><td class="num">≥ 99.95%</td><td>ingest + query API uptime</td></tr>
+    <tr><td><b>G · Compression efficiency</b></td><td class="num">≥ 10×</td><td>finance lever — recurring storage + egress $</td></tr>
+    <tr><td><b>H · Cardinality governance</b></td><td class="num">per-tenant quotas</td><td>EXISTENTIAL — without it the index dominates RAM</td></tr>
+    <tr><td><b>I · Query fairness</b></td><td class="num">no persistent noisy neighbor</td><td>alert &gt; dashboard &gt; batch priority</td></tr>
+  </tbody>
+</table>
+
+<div class="note">
+  <span class="lbl">The two life-or-death SLOs</span>
+  <b>G (compression)</b> is the CFO question — each byte is recurring cost at PB scale. <b>H (cardinality)</b> is existential — it determines whether your architecture stays a TSDB or collapses into a distributed grep. <b>B vs D</b> exposes whether you understand tiering: mixing cold expectations into a hot SLO is how candidates doom the design.
+</div>
+
+<h4>The defining property — structural regularity</h4>
+<table>
+  <thead><tr><th>Property</th><th>Engineering leverage</th><th>What goes wrong without it</th></tr></thead>
+  <tbody>
+    <tr><td>Monotonic time (per series)</td><td>delta-of-delta, ~1 bit/ts after warmup</td><td>generic varint, 4-8 B/ts</td></tr>
+    <tr><td>Autocorrelated values</td><td>XOR vs previous, 5-10× compression</td><td>raw 8 B doubles forever</td></tr>
+    <tr><td>Range-heavy reads</td><td>time partitioning, min/max pruning</td><td>full scans every query</td></tr>
+    <tr><td>Append-only + tiered</td><td>LSM-style compaction · cheap cold</td><td>random rewrites · uniform tier cost</td></tr>
+  </tbody>
+</table>
+</section>
+
+<!-- ===== 2. CAPACITY ===== -->
+<section>
+<h2 id="capacity">2 · Capacity model (the NALSD math)</h2>
+
+<h3 id="ingest">2.1 — Ingest rate</h3>
+<div class="calc">
+  <h4>Samples and bytes at peak</h4>
+<pre><code>peak samples/sec/region    = 10,000,000
+global peak (5 regions)    = 100,000,000 samples/sec
+with 3× burst headroom     = 30,000,000/region (capacity plan)
+
+naïve sample size (raw):
+  timestamp (8 B) + value (8 B) = 16 B
+  → 100M × 16 B/s = 1.6 GB/s = 12.8 Gbps global
+  → 100M × 16 B × 86,400 s = 138 TB/day RAW
+
+per-region bytes (us-west-2, 35% share):
+  10M × 16 B = 160 MB/s raw
+  ≈ 1.3 Gbps in</code></pre>
+  <div class="verdict warn">VERDICT · 138 TB/day naïve. Unsustainable. Compression is the entire margin story.</div>
+</div>
+
+<h3 id="compress">2.2 — Compression (Gorilla-style)</h3>
+
+<div class="calc">
+  <h4>What encoding actually buys us</h4>
+<pre><code>timestamp encoding — delta-of-delta:
+  ts1 stored raw  (8 B)
+  ts2 = ts1 + Δt   (varint Δt, ~2 B)
+  ts3+ = Δ(Δt)     (often 0 → 1 bit "same Δ as before")
+  → typical ~1 bit/sample after chunk warmup
+  → ~10× reduction on time
+
+value encoding — XOR vs previous:
+  v_n XOR v_{n-1} → many leading/trailing zeros on smooth metrics
+  store leading-zero count + meaningful bits + trailing-zero count
+  counters → ~5× compression
+  smooth gauges → ~8-10× compression
+  noisy values (e.g., random load) → ~3× worst case
+  → typical 5-10× reduction on value
+
+chunk amortization:
+  120 samples per chunk (~20 min @ 10s scrape)
+  one shared header → headers amortized to near zero
+  vectorized decode (SIMD-friendly) on read path
+
+net effective:
+  ~1.3 bytes/sample post-compression on real prod data
+  100M samples/s × 1.3 B = 130 MB/s = ~1 Gbps
+  100M × 1.3 B × 86,400 s = 11 TB/day compressed
+  138 TB / 11 TB = 12.6× compression
+
+monthly hot footprint: 11 TB × 30 = 330 TB compressed hot
+yearly compressed (with downsampling): ~67 TB long-tail
+total multi-tier footprint: ~600 TB vs ~6 PB if naïve</code></pre>
+  <div class="verdict">VERDICT · 138 TB/day → 11 TB/day. The difference between funded and fantasy.</div>
+</div>
+
+<h3 id="cardinality">2.3 — Cardinality math (the existential one)</h3>
+
+<div class="calc">
+  <h4>What "cardinality" means and why it kills systems</h4>
+<pre><code>a "series" = unique combination of (metric_name + label_values)
+  e.g., http_requests_total{service="feed",region="iad",status="200"}
+       http_requests_total{service="feed",region="iad",status="500"}
+       http_requests_total{service="feed",region="pdx",status="200"}
+       → 3 different series, even though same metric
+
+active series per region:
+  10M unique series steady-state
+  100M cumulative across retention window (churn from deploys, ephemeral pods)
+
+inverted index sizing:
+  posting list = label_kv → bitmap of series IDs containing it
+  avg posting size at our cardinality = ~3 KB
+  postings per region = ~5 billion entries (every label_value:value pair)
+  → ~15 TB hot inverted index per region
+
+what kills you: adding user_id as a label
+  500M users × 50 metrics × 8 dims = 200 BILLION series
+  → index alone would be 600 TB just for posting lists
+  → matchers degrade from "intersect bitmaps" to "scan everything"
+  → query latency goes from 200 ms to never-completes
+
+defenses (the cardinality governance stack):
+  1. per-tenant HLL counter at ingest (rolling 1h estimate)
+  2. hard quota: max active series per tenant
+  3. label allowlist for known-safe labels (region, service, status, version)
+  4. label denylist for known-poison (user_id, session_id, request_id)
+  5. circuit breaker: STOP THE WORLD on tenant explode → reject 100%
+  6. recording rules: aggregate-away high-cardinality dims at ingest</code></pre>
+  <div class="verdict warn">VERDICT · Cardinality governance is a tier-0 SLO. Without it, the architecture collapses in days.</div>
+</div>
+
+<h3 id="tiers">2.4 — Tier sizing (the 95/5 story)</h3>
+
+<div class="calc">
+  <h4>Storage media match access pattern</h4>
+<pre><code>query distribution (measured):
+  95% of queries hit data < 6h old      → RAM / hot SSD
+   4% queries hit days-to-weeks         → warm object
+   1% queries hit months-to-years       → cold downsampled
+
+per-region tier sizing (us-west-2 share):
+  HOT TIER (RAM in ingester heads, 2h):
+    10M series × 720 samples (2h@10s) × 1.3 B = 9 GB heap per ingester
+    × replication factor 3 × 8 ingesters/ring = 216 GB hot RAM total
+  
+  WARM TIER (NVMe SSD, 1-7 days raw):
+    160 MB/s × 86,400 × 7 = 96 TB raw
+    × 1.3 / 16 compression = 7.8 TB on disk
+    + 3× replication = 23 TB SSD across cluster
+  
+  COLD #1 (Object · S3, full-res 7-30d):
+    160 MB/s × 86,400 × 23 = 318 TB raw
+    × compression = 26 TB
+    + replication done by object store (11 nines built-in)
+  
+  COLD #2 (1-min rollups, 30d-6mo):
+    raw → 1min downsample = 6× reduction in time resolution
+    26 TB / 6 × 5 (months) = 22 TB
+  
+  COLD #3 (5-min, 6mo-1yr):
+    22 TB / 5 × 6 = 26 TB additional
+  
+  COLD #4 (1-hour, 1yr-3yr+):
+    cumulative ~70 TB long tail
+    legal/compliance hold</code></pre>
+  <div class="verdict">VERDICT · Tier 0 (RAM) is tiny. Tier 1 (SSD) is the working set. Tiers 2-4 are where multi-year retention becomes affordable.</div>
+</div>
+
+<h3 id="fleet">2.5 — Fleet summary & cost</h3>
+<table>
+  <thead><tr><th>Tier</th><th>Instance</th><th>Count</th><th>$/mo (on-demand)</th><th>$/mo (3y RI)</th></tr></thead>
+  <tbody>
+    <tr><td>Distributor (stateless)</td><td class="num">m6i.2xlarge</td><td class="num">30</td><td class="num">$8.8 K</td><td class="num">$3.3 K</td></tr>
+    <tr><td>Ingester (stateful, ring)</td><td class="num">r6i.4xlarge (128 GB RAM, NVMe)</td><td class="num">40 (8/region)</td><td class="num">$96 K</td><td class="num">$36 K</td></tr>
+    <tr><td>Inverted index nodes</td><td class="num">r6i.2xlarge</td><td class="num">30</td><td class="num">$24 K</td><td class="num">$9 K</td></tr>
+    <tr><td>Hot SSD storage</td><td class="num">i4i.4xlarge (NVMe)</td><td class="num">25</td><td class="num">$30 K</td><td class="num">$11 K</td></tr>
+    <tr><td>Compactor (batch)</td><td class="num">c6i.4xlarge</td><td class="num">20</td><td class="num">$12 K</td><td class="num">$4.5 K</td></tr>
+    <tr><td>Downsampler</td><td class="num">c6i.2xlarge</td><td class="num">15</td><td class="num">$4.5 K</td><td class="num">$1.7 K</td></tr>
+    <tr><td>Query gateway</td><td class="num">m6i.2xlarge</td><td class="num">20</td><td class="num">$5.8 K</td><td class="num">$2.2 K</td></tr>
+    <tr><td>Querier pool (stateless)</td><td class="num">m6i.4xlarge</td><td class="num">60</td><td class="num">$35 K</td><td class="num">$13 K</td></tr>
+    <tr><td>Warm + cold object storage</td><td class="num">S3 Standard + IA + Glacier</td><td class="num">~120 TB total</td><td class="num">$3.5 K</td><td class="num">$3.5 K</td></tr>
+    <tr><td>Result cache (Redis)</td><td class="num">cache.r6g.xlarge</td><td class="num">9</td><td class="num">$3 K</td><td class="num">$1.1 K</td></tr>
+    <tr style="background:var(--bg-alt);font-weight:700"><td>Total</td><td class="num">—</td><td class="num">~250 nodes</td><td class="num">$222 K/mo</td><td class="num">$85 K/mo</td></tr>
+  </tbody>
+</table>
+
+<div class="note tip">
+  <span class="lbl">Cost composition</span>
+  Ingesters (RAM-heavy, with NVMe) are <b>42% of cost</b>. SSD storage tier is <b>13%</b>. Object storage is shockingly cheap — only <b>4%</b> despite holding most of the data. <em>Compression is what makes this pencil out</em>: 12.6× reduction at the source flows through to every downstream tier.
+</div>
+</section>
+
+<!-- ===== 3. ARCHITECTURE ===== -->
+<section>
+<h2 id="arch">3 · Architecture</h2>
+
+<h3 id="dataflow">3.1 — Full architecture diagram</h3>
+
+<div class="diagram">
+<svg viewBox="0 0 980 860" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#59636e"/>
+    </marker>
+    <marker id="arr-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#cf222e"/>
+    </marker>
+    <marker id="arr-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1a7f37"/>
+    </marker>
+  </defs>
+
+  <!-- Top SLO ribbon -->
+  <text x="490" y="22" text-anchor="middle" class="lbl-title" style="font-size:13px">100M samples/s · ~1.3 B/sample · recent p99 &lt; 500ms · per-tenant cardinality quotas · stateful ingest / stateless query</text>
+
+  <!-- Step badges -->
+  <circle cx="155" cy="58" r="11" fill="#0a66c2"/>
+  <text x="155" y="62" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">1</text>
+  <circle cx="490" cy="58" r="11" fill="#0a66c2"/>
+  <text x="490" y="62" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">2</text>
+  <circle cx="490" cy="195" r="11" fill="#0a66c2"/>
+  <text x="490" y="199" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">3</text>
+  <circle cx="155" cy="335" r="11" fill="#0a66c2"/>
+  <text x="155" y="339" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">4</text>
+  <circle cx="820" cy="335" r="11" fill="#0a66c2"/>
+  <text x="820" y="339" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">5</text>
+  <circle cx="155" cy="490" r="11" fill="#0a66c2"/>
+  <text x="155" y="494" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">6</text>
+  <circle cx="490" cy="490" r="11" fill="#0a66c2"/>
+  <text x="490" y="494" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">7</text>
+  <circle cx="820" cy="490" r="11" fill="#0a66c2"/>
+  <text x="820" y="494" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">8</text>
+  <circle cx="320" cy="640" r="11" fill="#0a66c2"/>
+  <text x="320" y="644" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">9</text>
+  <circle cx="660" cy="640" r="11" fill="#0a66c2"/>
+  <text x="660" y="644" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">10</text>
+  <circle cx="490" cy="790" r="11" fill="#0a66c2"/>
+  <text x="490" y="794" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">11</text>
+
+  <!-- ============ ROW 1: Producers + Distributor ============ -->
+  <g>
+    <rect x="20" y="80" width="270" height="80" rx="6" class="box-fill-gray"/>
+    <text x="155" y="103" text-anchor="middle" class="lbl-title">Producers</text>
+    <text x="155" y="121" text-anchor="middle" class="lbl-sub">monitoring agents · remote-write</text>
+    <text x="155" y="137" text-anchor="middle" class="lbl-sub">Prom + custom exporters · batched</text>
+    <text x="155" y="155" text-anchor="middle" class="lbl-meta">10M samples/s/region · 500/batch typical</text>
+  </g>
+
+  <g>
+    <rect x="320" y="80" width="640" height="80" rx="6" class="box-fill-blue"/>
+    <text x="640" y="103" text-anchor="middle" class="lbl-title">Distributor (stateless front door)</text>
+    <text x="640" y="121" text-anchor="middle" class="lbl-sub">authn/z · cardinality check (HLL) · circuit breaker · consistent hash → ring</text>
+    <text x="640" y="137" text-anchor="middle" class="lbl-sub">returns ACK only when M-of-N ingester replicas durable</text>
+    <text x="640" y="155" text-anchor="middle" class="lbl-meta">30 nodes · 60k batches/s · p99 5 ms before fan-out</text>
+  </g>
+
+  <!-- ============ ROW 2: Ingester ring ============ -->
+  <rect x="20" y="220" width="940" height="100" rx="8" fill="#fafbfc" stroke="#eaeef2"/>
+  <text x="490" y="245" text-anchor="middle" class="lbl-title" style="font-size:13px">Ingester ring · consistent hash · replication N=3, ACK on M=2 quorum</text>
+
+  <g>
+    <rect x="40" y="260" width="140" height="55" rx="4" class="box-fill-orange"/>
+    <text x="110" y="278" text-anchor="middle" class="lbl-title">Ingester A</text>
+    <text x="110" y="293" text-anchor="middle" class="lbl-sub">2h head · WAL · NVMe</text>
+    <text x="110" y="307" text-anchor="middle" class="lbl-meta">head→Gorilla chunk</text>
+  </g>
+  <g>
+    <rect x="200" y="260" width="140" height="55" rx="4" class="box-fill-orange"/>
+    <text x="270" y="278" text-anchor="middle" class="lbl-title">Ingester B</text>
+    <text x="270" y="293" text-anchor="middle" class="lbl-sub">2h head · WAL · NVMe</text>
+    <text x="270" y="307" text-anchor="middle" class="lbl-meta">9 GB RAM working</text>
+  </g>
+  <g>
+    <rect x="360" y="260" width="140" height="55" rx="4" class="box-fill-orange"/>
+    <text x="430" y="278" text-anchor="middle" class="lbl-title">Ingester C</text>
+    <text x="430" y="293" text-anchor="middle" class="lbl-sub">2h head · WAL · NVMe</text>
+    <text x="430" y="307" text-anchor="middle" class="lbl-meta">chunk seal at 120 samples</text>
+  </g>
+  <text x="540" y="293" text-anchor="middle" class="lbl-title" style="font-size:18px">···</text>
+  <g>
+    <rect x="580" y="260" width="140" height="55" rx="4" class="box-fill-orange"/>
+    <text x="650" y="278" text-anchor="middle" class="lbl-title">Ingester N-1</text>
+    <text x="650" y="293" text-anchor="middle" class="lbl-sub">2h head · WAL · NVMe</text>
+    <text x="650" y="307" text-anchor="middle" class="lbl-meta">drain/handoff capable</text>
+  </g>
+  <g>
+    <rect x="740" y="260" width="180" height="55" rx="4" class="box-fill-orange"/>
+    <text x="830" y="278" text-anchor="middle" class="lbl-title">Ingester N (40 total)</text>
+    <text x="830" y="293" text-anchor="middle" class="lbl-sub">8 per region · 5 regions</text>
+    <text x="830" y="307" text-anchor="middle" class="lbl-meta">OOO window 1h</text>
+  </g>
+
+  <!-- ============ ROW 3: Storage layers ============ -->
+  <g>
+    <rect x="20" y="360" width="270" height="100" rx="6" class="box-fill-purple"/>
+    <text x="155" y="383" text-anchor="middle" class="lbl-title">Inverted index</text>
+    <text x="155" y="400" text-anchor="middle" class="lbl-sub">label → posting bitmap</text>
+    <text x="155" y="416" text-anchor="middle" class="lbl-sub">Roaring bitmaps · sharded</text>
+    <text x="155" y="433" text-anchor="middle" class="lbl-meta">30 nodes · 15 TB/region</text>
+    <text x="155" y="447" text-anchor="middle" class="lbl-meta">drives matcher pruning</text>
+  </g>
+
+  <g>
+    <rect x="320" y="360" width="280" height="100" rx="6" class="box-fill-green"/>
+    <text x="460" y="383" text-anchor="middle" class="lbl-title">Hot SSD (1-7d)</text>
+    <text x="460" y="400" text-anchor="middle" class="lbl-sub">Gorilla chunks · NVMe</text>
+    <text x="460" y="416" text-anchor="middle" class="lbl-sub">time-partitioned blocks</text>
+    <text x="460" y="433" text-anchor="middle" class="lbl-meta">25 nodes · 23 TB/region</text>
+    <text x="460" y="447" text-anchor="middle" class="lbl-meta">95% of queries land here</text>
+  </g>
+
+  <g>
+    <rect x="630" y="360" width="330" height="100" rx="6" class="box-fill-blue"/>
+    <text x="795" y="383" text-anchor="middle" class="lbl-title">Warm + cold object store</text>
+    <text x="795" y="400" text-anchor="middle" class="lbl-sub">S3 · full-res 7-30d · downsampled 30d+</text>
+    <text x="795" y="416" text-anchor="middle" class="lbl-sub">1min · 5min · 1hr rollups (deterministic)</text>
+    <text x="795" y="433" text-anchor="middle" class="lbl-meta">~120 TB across all regions</text>
+    <text x="795" y="447" text-anchor="middle" class="lbl-meta">11 nines durability · cheap</text>
+  </g>
+
+  <!-- ============ ROW 4: Compactor + Downsampler + Query gateway ============ -->
+  <g>
+    <rect x="20" y="515" width="270" height="100" rx="6" class="box-fill-yellow"/>
+    <text x="155" y="538" text-anchor="middle" class="lbl-title">Compactor</text>
+    <text x="155" y="555" text-anchor="middle" class="lbl-sub">merge overlapping chunks</text>
+    <text x="155" y="571" text-anchor="middle" class="lbl-sub">dedup replicas · re-encode</text>
+    <text x="155" y="588" text-anchor="middle" class="lbl-meta">20 nodes · idempotent</text>
+    <text x="155" y="603" text-anchor="middle" class="lbl-meta">publishes immutable blocks → warm</text>
+  </g>
+
+  <g>
+    <rect x="320" y="515" width="280" height="100" rx="6" class="box-fill-yellow"/>
+    <text x="460" y="538" text-anchor="middle" class="lbl-title">Downsampler</text>
+    <text x="460" y="555" text-anchor="middle" class="lbl-sub">raw → 1min → 5min → 1hr</text>
+    <text x="460" y="571" text-anchor="middle" class="lbl-sub">deterministic · idempotent</text>
+    <text x="460" y="588" text-anchor="middle" class="lbl-meta">15 nodes · checkpoint-replayable</text>
+    <text x="460" y="603" text-anchor="middle" class="lbl-meta">≈6× reduction per hop</text>
+  </g>
+
+  <g>
+    <rect x="630" y="515" width="330" height="100" rx="6" class="box-fill-blue"/>
+    <text x="795" y="538" text-anchor="middle" class="lbl-title">Query gateway</text>
+    <text x="795" y="555" text-anchor="middle" class="lbl-sub">authn/z · per-tenant rate limit · cost est</text>
+    <text x="795" y="571" text-anchor="middle" class="lbl-sub">result cache (30s TTL) · query class priority</text>
+    <text x="795" y="588" text-anchor="middle" class="lbl-meta">20 nodes · alert &gt; dashboard &gt; batch</text>
+    <text x="795" y="603" text-anchor="middle" class="lbl-meta">PromQL AST entry point</text>
+  </g>
+
+  <!-- ============ ROW 5: Planner + Queriers ============ -->
+  <g>
+    <rect x="180" y="665" width="280" height="100" rx="6" class="box-fill-purple"/>
+    <text x="320" y="688" text-anchor="middle" class="lbl-title">Query planner</text>
+    <text x="320" y="705" text-anchor="middle" class="lbl-sub">PromQL AST rewrite</text>
+    <text x="320" y="721" text-anchor="middle" class="lbl-sub">tier selection · pushdown</text>
+    <text x="320" y="738" text-anchor="middle" class="lbl-meta">cardinality estimation</text>
+    <text x="320" y="753" text-anchor="middle" class="lbl-meta">fail-fast on absurd queries</text>
+  </g>
+
+  <g>
+    <rect x="520" y="665" width="280" height="100" rx="6" class="box-fill-orange"/>
+    <text x="660" y="688" text-anchor="middle" class="lbl-title">Querier pool (stateless)</text>
+    <text x="660" y="705" text-anchor="middle" class="lbl-sub">streaming evaluation</text>
+    <text x="660" y="721" text-anchor="middle" class="lbl-sub">per-tenant quotas · partial results</text>
+    <text x="660" y="738" text-anchor="middle" class="lbl-meta">60 nodes · pulls from all tiers</text>
+    <text x="660" y="753" text-anchor="middle" class="lbl-meta">retry-safe</text>
+  </g>
+
+  <!-- ============ ROW 6: Consumers ============ -->
+  <g>
+    <rect x="320" y="810" width="340" height="50" rx="6" class="box-fill-green"/>
+    <text x="490" y="828" text-anchor="middle" class="lbl-title">Consumers — dashboards · alert eval · BI</text>
+    <text x="490" y="844" text-anchor="middle" class="lbl-sub">Grafana · alert ruler · capacity planning</text>
+  </g>
+
+  <!-- ============ ARROWS ============ -->
+  <path d="M290,120 L320,120" class="arrow"/>
+  <path d="M490,160 L490,220" class="arrow"/>
+  <path d="M490,320 L155,360" class="arrow" stroke-dasharray="3,2"/>
+  <text x="280" y="345" class="lbl-meta">index updates</text>
+  <path d="M490,320 L460,360" class="arrow"/>
+  <path d="M490,320 L795,360" class="arrow" stroke-dasharray="3,2"/>
+  <text x="700" y="345" class="lbl-meta">async compact → warm</text>
+  <path d="M460,460 L155,515" class="arrow"/>
+  <path d="M460,460 L460,515" class="arrow"/>
+  <path d="M460,460 L795,515" class="arrow"/>
+  <path d="M795,615 L660,665" class="arrow"/>
+  <path d="M795,615 L320,665" class="arrow"/>
+  <path d="M460,765 L490,810" class="arrow"/>
+  <path d="M660,765 L490,810" class="arrow"/>
+
+  <!-- Query reads from tiers (dashed cyan-ish) -->
+  <path d="M660,665 L155,460" class="arrow" stroke-dasharray="3,2" stroke-opacity="0.5"/>
+  <path d="M660,665 L460,460" class="arrow" stroke-dasharray="3,2" stroke-opacity="0.5"/>
+  <path d="M660,665 L795,460" class="arrow" stroke-dasharray="3,2" stroke-opacity="0.5"/>
+  <text x="600" y="565" class="lbl-meta">query reads</text>
+</svg>
+<div class="diagram-cap">Fig 1 · TSDB architecture. Numbered circles map to the step-by-step flow in §3.2. Stateful ingest plane (top) writes through distributor → ingester ring → tiered storage. Stateless query plane (bottom) reads via gateway → planner → querier pool spanning all tiers.</div>
+</div>
+
+<!-- 3.2 STEP-BY-STEP FLOW -->
+<h3 id="flow">3.2 — Step-by-step flow (the numbered walkthrough)</h3>
+
+<p>Following the numbered blue badges in Fig 1. We trace <b>two scenarios</b>: <b>(A)</b> a write — Feed ranker's <code>http_requests_total{service="feed",status="200"}</code> gets scraped and stored (steps 1-8), then <b>(B)</b> a read — a Grafana dashboard panel showing 1h of Feed error rate (steps 9-11).</p>
+
+<div class="flow-steps">
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Producer ships a batch of samples</div>
+      <div class="desc">The Feed service's Prometheus client scrapes its metrics endpoint every 10 seconds. A batch of ~500 samples (one per active series on this pod for this scrape) is gzipped and sent to the regional TSDB via <code>POST /api/v1/write</code> with mTLS auth. Producer is fire-and-forget after retries — it doesn't block on durability ACK.<br><br>Batch size matters: 500 samples per RPC = 60k RPCs/sec instead of 30M individual RPCs/sec. <b>Batching is what makes the network tractable.</b></div>
+      <div class="tech">POST /api/v1/write · Content-Encoding: snappy · body: TimeSeries[] proto · ~500 samples/batch</div>
+      <div class="nums">
+        <span class="kv">scrape interval · <b>10 s default</b></span>
+        <span class="kv">batch size · <b>500 samples avg</b></span>
+        <span class="kv">batches/sec · <b>~60 k/region</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Distributor: auth, cardinality check, hash, fan-out</div>
+      <div class="desc">The stateless distributor is the front door. Five jobs in order:<br><br>(a) <b>mTLS auth</b> → identify tenant<br>(b) <b>HLL cardinality check</b> — the tenant has a rolling HyperLogLog estimate of unique series in the last hour. If they're at 95% of their quota, slow down. If 100%, reject with HTTP 429. <b>This is the circuit breaker that prevents existential failure.</b><br>(c) <b>Schema validation</b> — well-formed proto, allowed label names<br>(d) <b>Consistent hash</b> on <code>(tenant, series_id)</code> → identifies the 3 ingester replicas responsible (replication factor N=3)<br>(e) <b>Parallel fan-out</b> to all 3 replicas; wait for M=2 quorum before returning ACK<br><br>For our Feed sample at series_id = hash("feed.requests.200"), distributor hashes to ingesters {A, D, F} → fans out → waits for 2 of 3 to confirm WAL write.</div>
+      <div class="tech">consistent_hash(tenant + series_id) % ring_size → [A, D, F] · ParallelInvoke · ACK on M-of-N (2/3)</div>
+      <div class="nums">
+        <span class="kv">budget · <b>5 ms p99</b></span>
+        <span class="kv">replication · <b>N=3, ACK on M=2</b></span>
+        <span class="kv">fleet · <b>30 distributors (stateless)</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Ingester ring — WAL write + head chunk update</div>
+      <div class="desc">Each of the 3 chosen ingesters does the same thing in parallel: <br><br>(a) <b>Append to WAL</b> on local NVMe → fsync. This is the durability commit point — once fsync returns, the sample survives a crash.<br>(b) <b>Update the in-memory "head" chunk</b> for that series. The head holds the last ~2 hours of samples. Each new sample is delta-encoded against the previous one.<br>(c) When a head chunk reaches 120 samples (~20 min @ 10s scrape) it's <b>sealed</b> into a Gorilla-compressed immutable chunk and a new head starts.<br>(d) Acknowledge back to distributor.<br><br>Critical detail: the ingester is <b>stateful</b>. It has a 2-hour working set in RAM (~9 GB heap for 10M series) plus a WAL on local NVMe. Restarts replay the WAL to reconstruct head state. This is what makes ingest fast AND durable — RAM speed for current chunk, NVMe speed for durability commit.</div>
+      <div class="tech">wal.append(sample) · fsync · head[series_id].push(sample) · if len(head)==120: chunk = gorilla.compress(head)</div>
+      <div class="nums">
+        <span class="kv">budget · <b>2 s p99 (includes fsync)</b></span>
+        <span class="kv">head retention · <b>2 hours in RAM</b></span>
+        <span class="kv">chunk size · <b>120 samples</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Inverted index update (label → series posting)</div>
+      <div class="desc">In parallel with the data write, the ingester updates the inverted index. The index maps <code>label_name:value</code> → posting (a Roaring bitmap of series_ids containing that label).<br><br>For our Feed sample, the index already has:<br>• <code>service:feed</code> → bitmap with series_id set<br>• <code>status:200</code> → bitmap with series_id set<br>• <code>region:iad</code> → bitmap with series_id set<br><br>If this is a new series (first time seen), the series_id bit gets added to each posting. Roaring bitmaps compress well (typically 1-10 KB per posting, even for popular labels with millions of series).<br><br>The inverted index runs as a separate fleet (30 nodes, 15 TB hot per region) so its memory pressure doesn't compete with ingester RAM. Updates are batched and asynchronously flushed.</div>
+      <div class="tech">for label, value in sample.labels: index[label:value].bitmap_set(series_id) · roaring bitmap encoding</div>
+      <div class="nums">
+        <span class="kv">budget · <b>50 ms async</b></span>
+        <span class="kv">index size · <b>15 TB/region hot</b></span>
+        <span class="kv">posting compression · <b>Roaring bitmaps</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Compactor merges sealed chunks → warm tier</div>
+      <div class="desc">Every ~2 hours, the compactor runs in the background. For each ingester, it: <br><br>(a) Reads sealed chunks from local NVMe<br>(b) <b>Merges</b> chunks from the 3 replicas of each series — they should be identical, but compactor handles any out-of-order corrections<br>(c) <b>Deduplicates</b> — replicas can have minor timestamp/value differences from network jitter; uses M-of-N agreement to pick canonical values<br>(d) <b>Re-encodes</b> with optimal chunk sizing (block-level instead of per-replica)<br>(e) <b>Publishes</b> immutable blocks to warm object storage (S3)<br>(f) After publish + verify, deletes the source from ingester NVMe<br><br>This is the most CPU-heavy job in the system — it re-encodes large amounts of data. But it's an <em>offline batch</em> path: pausing it for 30 minutes just causes hot SSD to fill up; it doesn't break the live path.</div>
+      <div class="tech">compactor.merge(replicas) · dedup_by_quorum(ts, val) · gorilla.reencode(block) · s3.put(block_id) · checkpoint(manifest)</div>
+      <div class="nums">
+        <span class="kv">cadence · <b>~every 2 h</b></span>
+        <span class="kv">fleet · <b>20 nodes batch</b></span>
+        <span class="kv">output · <b>immutable blocks in object store</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Downsampler creates cold-tier rollups</div>
+      <div class="desc">As data ages past 30 days, the downsampler runs deterministic rollups. For each series, it reads the full-resolution warm data and computes pre-aggregated rollups for coarser time resolutions:<br><br>• <b>1-min rollups</b> (30d-6mo): rate, avg, min, max, count, sum, p50, p99<br>• <b>5-min rollups</b> (6mo-1yr): same set<br>• <b>1-hour rollups</b> (1yr+): same set, with reduced precision<br><br>Each hop reduces storage by ~6× (60s/10s = 6× compression in time resolution). Crucially, these rollups are <b>deterministic</b> — re-running the downsampler on the same input produces bit-identical output. This makes the pipeline replayable: if we find a downsample bug 6 months later, we can re-run and trust the output.<br><br>For histogram metrics, the downsampler preserves bucket counts (not raw observations) so <code>histogram_quantile()</code> still works at coarser resolutions.</div>
+      <div class="tech">downsample(block, 60s) → {rate, avg, min, max, count, sum, p50, p99} per minute · idempotent · checkpoint-replayable</div>
+      <div class="nums">
+        <span class="kv">fleet · <b>15 nodes</b></span>
+        <span class="kv">size reduction · <b>~6× per hop</b></span>
+        <span class="kv">runs · <b>continuously, throttled</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Storage tiers in place — write path complete</div>
+      <div class="desc">After steps 1-6, our Feed sample exists in multiple places simultaneously:<br><br>• <b>3 ingester WALs</b> (durable, will be replayed on crash)<br>• <b>3 ingester head chunks</b> in RAM (hot read source for the next 2 hours)<br>• <b>Inverted index</b> (so queries can find the series by label)<br>• Eventually: <b>warm object store block</b> after compaction (~2 h later)<br>• Eventually: <b>cold downsampled rollup</b> after 30+ days<br><br>The data is now queryable through any tier. The <b>planner</b> chooses which tier based on the query's time range and resolution requirements. <b>This is where SLO B/C/D divergence comes from</b> — recent queries hit RAM (500 ms), mid-range hit SSD/warm object (5 s), cold queries hit downsampled tiers (30 s).</div>
+      <div class="tech">data location matrix:<br>0-2h:    ingester RAM (head chunks)<br>2h-7d:   hot SSD (sealed chunks)<br>7d-30d:  warm S3 (immutable blocks, full resolution)<br>30d+:    cold S3 (1min/5min/1hr downsamples)</div>
+      <div class="nums">
+        <span class="kv">tiers · <b>5 (RAM · SSD · warm · 3 cold)</b></span>
+        <span class="kv">durability · <b>11 nines (object) + WAL quorum</b></span>
+        <span class="kv">replication · <b>3× ingester · object internal</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">SCENARIO B: query arrives at gateway</div>
+      <div class="desc">A user opens Grafana to view Feed error rate. The dashboard panel issues a PromQL query:<br><br><code>rate(http_requests_total{service="feed",status=~"5.."}[5m])</code><br><br>The query gateway is the front door for reads. It does:<br><br>(a) <b>Auth + tenant resolution</b><br>(b) <b>Rate limit check</b> — this tenant's QPS budget<br>(c) <b>Query class assignment</b> — dashboard = priority 2 (alert eval = 1, batch = 3)<br>(d) <b>Result cache lookup</b> (Redis, 30s TTL) — most dashboards refresh on the same query, 30-50% hit rate<br>(e) On cache miss, forward to planner<br><br>For our Feed query: it's an interactive dashboard query over the last 5 minutes — class 2 priority, definitely uncached on first load.</div>
+      <div class="tech">cache.get(query_hash) → miss → planner.plan(ast, tenant_class, deadline) · 60s server timeout</div>
+      <div class="nums">
+        <span class="kv">budget · <b>10 ms gateway</b></span>
+        <span class="kv">fleet · <b>20 gateway nodes</b></span>
+        <span class="kv">cache hit rate · <b>~40%</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Planner: AST analysis, tier selection, pushdown</div>
+      <div class="desc">The planner is where the query gets <em>smart</em>. Five jobs:<br><br>(a) <b>Parse PromQL → AST</b> — break down the query into label matchers, range vectors, functions<br>(b) <b>Time range analysis</b> — the query asks for "now − 5min". Tier = RAM head chunks. <b>Recent query → cheap path.</b><br>(c) <b>Label matcher pushdown</b> — <code>service="feed"</code> is an equality match, <code>status=~"5.."</code> is a regex. Both go to the inverted index FIRST to find candidate series IDs, BEFORE touching any sample data.<br>(d) <b>Cardinality estimation</b> — estimate "how many series match these labels?" If the estimate is huge (e.g., a regex matches a million series), reject with a helpful error message: "your query would touch 1.2M series; please add more label filters."<br>(e) <b>Plan generation</b> — output a parallel execution plan that fans out to the right ingesters/storage nodes<br><br>For our Feed query: planner uses index to find ~50 matching series (Feed pods × status codes), tier = ingester RAM, plan = parallel fetch from 8 ingesters.</div>
+      <div class="tech">ast = promql.parse(query) · series_ids = index.match(labels) · tier = select_tier(time_range) · plan = generate(series_ids, tier, parallelism)</div>
+      <div class="nums">
+        <span class="kv">budget · <b>50 ms p99</b></span>
+        <span class="kv">cardinality limit · <b>50k series/query</b></span>
+        <span class="kv">parallelism · <b>per-tenant quota</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Querier pool: streaming evaluation across tiers</div>
+      <div class="desc">The querier pool is stateless — pick any node, give it a plan, it executes. For our Feed query, queriers do:<br><br>(a) <b>Fetch chunks</b> from the right tier (here: ingester RAM for recent data, possibly warm S3 if range crosses boundary)<br>(b) <b>Decompress</b> Gorilla chunks (SIMD-vectorized)<br>(c) <b>Streaming evaluation</b> — apply rate() function, aggregate over 5-min window. Result is one number per series.<br>(d) <b>Bounded RAM</b> — queriers limit memory per query; oversize queries get killed with a clear error<br>(e) <b>Partial results</b> — if 1 of 8 ingesters times out, return <code>partial: true</code> with the data from the other 7. Dashboards can fail-open; alert eval fails-closed.<br><br>Result returns through gateway → cached → Grafana renders.<br><br><b>Total wall-clock time:</b> ~200 ms p99 for our 5-minute Feed query. Well under the 500 ms SLO-B. For a 6-hour query, ~400 ms. For 30-day query (warm tier), ~3 s — under SLO-C.</div>
+      <div class="tech">parallel_for ingester in plan: chunks = fetch(ingester, series_ids) · for chunk: decompress() · rate(window) · aggregate</div>
+      <div class="nums">
+        <span class="kv">recent (RAM) p99 · <b>~200 ms ✓ SLO-B 500ms</b></span>
+        <span class="kv">mid (SSD/warm) p99 · <b>~3 s ✓ SLO-C 5s</b></span>
+        <span class="kv">cold p99 · <b>~15 s ✓ SLO-D 30s</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Results delivered to consumers</div>
+      <div class="desc">The result is delivered to one of three consumer classes:<br><br><b>Dashboards (Grafana):</b> visualizes time series as line/area/heatmap charts. May refresh every 30 s. Cache hits here are very common — same query, same time window, different users.<br><br><b>Alert ruler:</b> evaluates PromQL expressions on a fixed schedule (typically 15 s or 1 min). Outputs go to the alert engine (separate system). High QPS but predictable shape — ~100k queries/sec steady-state. Cached aggressively because the same recording rules run repeatedly.<br><br><b>Capacity planning / BI:</b> batch jobs running cold-tier queries over months or years. Priority 3 — gets deprioritized during alert storms or dashboard hot moments.<br><br>Per-tenant cost attribution (cardinality + scanned bytes + CPU seconds) is computed and surfaced to tenants on a billing dashboard — closes the feedback loop and creates incentives for clean label hygiene.</div>
+      <div class="tech">consumer classes: alert_eval (P1) · dashboard (P2) · batch (P3) · per-query attribution: tenant + scanned_bytes + cpu_sec</div>
+      <div class="nums">
+        <span class="kv">consumers · <b>3 priority classes</b></span>
+        <span class="kv">alert eval QPS · <b>~100k steady-state</b></span>
+        <span class="kv">cost attribution · <b>per-tenant billing</b></span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="note tip">
+  <span class="lbl">The key design insight</span>
+  Notice the system's bones: <b>stateful ingest + stateless query</b>. Ingest owns ordering, WAL durability, head chunks — restarts are slow and careful. Query is pure compute on immutable storage — can scale up and down at will. This split is the bedrock pattern for high-throughput durable systems. Get this right and everything else (compression, tiering, cardinality) follows naturally. Get it wrong and you're fighting your architecture forever.
+</div>
+
+<!-- 3.3 GORILLA ENCODING CLOSE-UP -->
+<h3 id="encoding">3.3 — Gorilla-style chunk encoding</h3>
+
+<p>The 10× compression isn't magic — it's <em>exploiting structural regularity</em>. Two encodings working in parallel:</p>
+
+<div class="cols-2">
+  <div class="comp">
+    <div class="name">Timestamp: delta-of-delta <span class="tech">~1 bit/sample</span></div>
+    <div class="desc">Store first timestamp raw (8 B). Store second as Δt (varint, ~2 B). Store third+ as Δ(Δt) — the change in delta. Since scrape intervals are regular (10 s, 10 s, 10 s...), the second derivative is usually 0, encoded as 1 bit "same as before."<br><br>Even with occasional jitter (10.1 s, 9.9 s, 10.0 s), the ΔΔ values are tiny and pack into a few bits.</div>
+    <div class="row"><span class="lab">exploits</span><span>monotonic time, regular scrapes</span></div>
+    <div class="row"><span class="lab">compression</span><span>~10× vs 8 B raw</span></div>
+  </div>
+  <div class="comp">
+    <div class="name">Value: XOR vs previous <span class="tech">5-10× compression</span></div>
+    <div class="desc">For a 64-bit float, XOR the current value with the previous one. For autocorrelated data (which most metrics are), the XOR result has many leading and trailing zero bits.<br><br>Store: leading zero count + meaningful middle bits + trailing zero count. A slowly-rising counter (request count) XORs to mostly-zeros with just a few changed bits — packed into ~1 byte instead of 8.</div>
+    <div class="row"><span class="lab">exploits</span><span>autocorrelated values, smooth metrics</span></div>
+    <div class="row"><span class="lab">compression</span><span>5-10× vs 8 B raw</span></div>
+  </div>
+</div>
+
+<div class="note">
+  <span class="lbl">Chunk boundaries reset the bases</span>
+  Each chunk (120 samples ≈ 20 min @ 10 s scrape) starts fresh — timestamps reset, XOR base resets. This is critical: it means corrupted chunks don't cascade, and we can decompress any chunk independently (parallel reads, point-in-time queries). The overhead per chunk header is tiny relative to 120 samples of data, so amortizes to near zero.
+</div>
+
+<!-- 3.4 TIER STRATEGY -->
+<h3 id="tiering">3.4 — Storage tier strategy (the 95/5 story)</h3>
+
+<p>The biggest cost optimization is matching storage medium to access frequency. 95% of queries hit data &lt; 6h old; we put that data in RAM and SSD. The other 5% hit older data; we put that in object storage.</p>
+
+<div class="tier-strip">
+  <div class="seg ram">RAM<br>2h</div>
+  <div class="seg hot">Hot SSD<br>1-7d</div>
+  <div class="seg warm">Warm S3 full-res<br>7-30d</div>
+  <div class="seg cold1">Cold 1min<br>30d-6mo</div>
+  <div class="seg cold5">Cold 5min<br>6mo-1yr</div>
+  <div class="seg cold1h">Cold 1hr<br>1yr+</div>
+</div>
+
+<table>
+  <thead><tr><th>Tier</th><th>Medium</th><th>Window</th><th>Resolution</th><th>$/GB-mo</th><th>Access p99</th></tr></thead>
+  <tbody>
+    <tr><td>0 · Head</td><td>RAM</td><td>0-2h</td><td>10 s raw</td><td class="num">$50</td><td class="num">&lt; 5 ms</td></tr>
+    <tr><td>1 · Hot</td><td>NVMe SSD</td><td>1-7d</td><td>10 s raw</td><td class="num">$0.13</td><td class="num">&lt; 20 ms</td></tr>
+    <tr><td>2 · Warm</td><td>Object (S3)</td><td>7-30d</td><td>10 s raw</td><td class="num">$0.023</td><td class="num">~300 ms</td></tr>
+    <tr><td>3 · Cold 1min</td><td>Object</td><td>30d-6mo</td><td>1 min</td><td class="num">$0.023</td><td class="num">~1 s</td></tr>
+    <tr><td>4 · Cold 5min</td><td>Object (IA)</td><td>6mo-1yr</td><td>5 min</td><td class="num">$0.013</td><td class="num">~3 s</td></tr>
+    <tr><td>5 · Cold 1hr</td><td>Object (Glacier)</td><td>1yr+</td><td>1 hour</td><td class="num">$0.004</td><td class="num">~30 s</td></tr>
+  </tbody>
+</table>
+
+<div class="note tip">
+  <span class="lbl">Tier ratio: 12,500× from RAM to Glacier</span>
+  RAM at $50/GB-mo · Glacier at $0.004/GB-mo · ratio 12,500×. <b>Every byte placed in the right tier saves ~10⁴ on storage cost.</b> The planner's job is to know which tier can answer each query, and the downsampler's job is to make sure coarser tiers exist by the time queries ask for them.
+</div>
+
+</section>
+
+<!-- ===== 4. GAUNTLET ===== -->
+<section>
+<h2 id="gauntlet">4 · Failure gauntlet</h2>
+
+<div class="cols-2">
+  <div class="comp">
+    <div class="name">A · Single ingester crash <span class="tech">SLI: A, E</span></div>
+    <div class="desc">An ingester pod dies; 1/Nth of writes affected for that ring slot.</div>
+    <div class="row"><span class="lab">trigger</span><span>health probe fail &gt; 5 s</span></div>
+    <div class="row"><span class="lab">absorb</span><span>distributor still gets M=2 from other 2 replicas</span></div>
+    <div class="row"><span class="lab">recover</span><span>new ingester replays WAL from peer · ~10 min</span></div>
+    <div class="row"><span class="lab">verdict</span><span>no data loss · brief elevated p99</span></div>
+  </div>
+  <div class="comp">
+    <div class="name">B · Cardinality bomb <span class="tech">SLI: H</span></div>
+    <div class="desc">A tenant deploys a new service that adds <code>request_id</code> as a label.</div>
+    <div class="row"><span class="lab">trigger</span><span>HLL estimate &gt; 95% of tenant quota</span></div>
+    <div class="row"><span class="lab">absorb</span><span>distributor returns 429 to offending tenant</span></div>
+    <div class="row"><span class="lab">cap</span><span>circuit breaker stops ingest entirely if &gt; 110% quota</span></div>
+    <div class="row"><span class="lab">verdict</span><span>tenant pages own oncall · cluster stable</span></div>
+  </div>
+  <div class="comp">
+    <div class="name">C · Monstrous ad-hoc query <span class="tech">SLI: B, I</span></div>
+    <div class="desc">Someone runs <code>{__name__=~".+"}[30d]</code> — touch every series for 30 days.</div>
+    <div class="row"><span class="lab">trigger</span><span>planner cardinality estimate &gt; 1M series</span></div>
+    <div class="row"><span class="lab">absorb</span><span>planner rejects with "query touches 1.2M series, please filter"</span></div>
+    <div class="row"><span class="lab">protect</span><span>per-tenant CPU/RAM quotas prevent collateral damage</span></div>
+    <div class="row"><span class="lab">verdict</span><span>other tenants unaffected (SLO-I)</span></div>
+  </div>
+  <div class="comp">
+    <div class="name">D · Compactor falls behind <span class="tech">SLI: A, B</span></div>
+    <div class="desc">A bug in compactor causes it to process 5× slower than data arrival rate.</div>
+    <div class="row"><span class="lab">trigger</span><span>compaction lag &gt; 6 h</span></div>
+    <div class="row"><span class="lab">absorb</span><span>hot SSD fills · alert at 70%</span></div>
+    <div class="row"><span class="lab">backpressure</span><span>distributor slows accept rate · alerting on backpressure</span></div>
+    <div class="row"><span class="lab">verdict</span><span>elevated latency · no data loss · catch-up over hours</span></div>
+  </div>
+  <div class="comp">
+    <div class="name">E · Object storage outage <span class="tech">SLI: C, D, F</span></div>
+    <div class="desc">S3 in the region has degraded availability for 2 hours.</div>
+    <div class="row"><span class="lab">trigger</span><span>S3 error rate &gt; 1%</span></div>
+    <div class="row"><span class="lab">absorb</span><span>recent queries (RAM/SSD) unaffected — most traffic</span></div>
+    <div class="row"><span class="lab">degraded</span><span>cold queries return partial: true with block errors</span></div>
+    <div class="row"><span class="lab">verdict</span><span>recent dashboards unaffected; cold scans warned</span></div>
+  </div>
+  <div class="comp">
+    <div class="name">F · WAL corruption <span class="tech">SLI: E</span></div>
+    <div class="desc">Bad NVMe; a chunk of WAL becomes unreadable.</div>
+    <div class="row"><span class="lab">trigger</span><span>chunk checksum mismatch on replay</span></div>
+    <div class="row"><span class="lab">absorb</span><span>recover from peer ingester (we have 2 other replicas)</span></div>
+    <div class="row"><span class="lab">repair</span><span>replace NVMe · re-sync from peer</span></div>
+    <div class="row"><span class="lab">verdict</span><span>0 data loss because of M-of-N</span></div>
+  </div>
+</div>
+
+<div class="note danger">
+  <span class="lbl">Not defended against</span>
+  Simultaneous loss of all 3 replicas for the same ring slot (data center fire affecting one ring partition). Mitigation: cross-AZ replica placement, regular WAL backups to cross-region object storage. The math: with 3 replicas in 3 AZs, simultaneous failure probability is roughly (annual AZ failure rate)³ ≈ 10⁻⁹.
+</div>
+</section>
+
+<!-- ===== 5. PLAYBOOK ===== -->
+<section>
+<h2 id="playbook">5 · Operational playbook</h2>
+
+<h3>5.1 — Deployment</h3>
+<table>
+  <thead><tr><th>Tier</th><th>Strategy</th><th>Soak</th><th>Care needed</th></tr></thead>
+  <tbody>
+    <tr><td>Distributors</td><td>rolling, surge=2</td><td class="num">30 min</td><td>stateless · easy</td></tr>
+    <tr><td>Ingesters</td><td>drain + handoff, 1 at a time</td><td class="num">30 min/node</td><td>stateful · slow · WAL replay budget</td></tr>
+    <tr><td>Compactor / Downsampler</td><td>pause → upgrade → resume</td><td class="num">15 min</td><td>checkpointed · safe to pause</td></tr>
+    <tr><td>Queriers / Gateway</td><td>rolling, surge=4</td><td class="num">15 min</td><td>stateless · trivial</td></tr>
+    <tr><td>Storage format migration</td><td>shadow write, dual read, cutover</td><td class="num">multi-month</td><td>backwards-compatible · slow</td></tr>
+  </tbody>
+</table>
+
+<h3>5.2 — Chaos drills (quarterly)</h3>
+<ul>
+  <li><b>Kill 1 ingester</b> — verify M-of-N quorum survives; WAL replay completes within budget.</li>
+  <li><b>Kill 2 ingesters simultaneously</b> — verify M-of-N degrades correctly (ACK fails closed); alerts fire on replication lag.</li>
+  <li><b>Cardinality bomb injection</b> — synthesize a tenant exceeding quota; verify HLL breaker trips; tenant throttled cleanly.</li>
+  <li><b>Monstrous query injection</b> — run absurd PromQL; verify planner rejects with helpful error; other tenants unaffected.</li>
+  <li><b>Compactor pause for 4 h</b> — verify hot SSD fills gracefully; alerts at 70/80/90%; catch-up doesn't dupe data.</li>
+  <li><b>Object storage throttle</b> — inject 1s latency on S3; verify recent queries unaffected; cold queries degrade gracefully.</li>
+  <li><b>WAL corruption</b> — corrupt a WAL file on one ingester; verify peer recovery in &lt; 30 min.</li>
+  <li><b>Producer time skew</b> — push samples with timestamps 2h in past; verify OOO window handles or rejects cleanly.</li>
+</ul>
+
+<h3>5.3 — Runbook excerpt</h3>
+<pre><code># Symptom: SLO-B burning — recent query p99 > 500 ms
+
+# Likely causes (ranked)
+1. Ingester head chunk pressure   → check head_chunk_age + RAM utilization
+2. Cardinality explosion          → check per-tenant HLL count
+3. Querier pool saturation        → check querier CPU + queue depth
+4. Inverted index slow            → check index node p99 lookup latency
+
+# First response (in order):
+- Confirm: dashboard 'tsdb-slo-b' shows > 500 ms p99
+- Identify hot tenant: scanned_bytes_by_tenant sorted desc
+- If single tenant: enforce rate limit + notify their oncall
+- If across-the-board: scale querier pool 2x
+- If ingester pressure: check for failed compactor → restart if needed
+- Communicate: post in #incident-tsdb with hypothesis
+- Escalate: if not resolving in 15 min, page tier-2 oncall</code></pre>
+</section>
+
+<!-- ===== 6. COMPONENTS ===== -->
+<section>
+<h2 id="components">6 · Component reference</h2>
+
+<table>
+  <thead><tr><th>Component</th><th>Tech</th><th>Scale strategy</th><th>Failure mitigation</th><th>SLO</th></tr></thead>
+  <tbody>
+    <tr><td><b>Distributor</b></td><td class="num">Go service</td><td>HPA 30→90 stateless</td><td>circuit breaker · HLL</td><td>A,F,H</td></tr>
+    <tr><td><b>Ingester ring</b></td><td class="num">Go + WAL + RAM heads</td><td>consistent hash · N=3 repl</td><td>quorum M=2 · WAL replay</td><td>A,E</td></tr>
+    <tr><td><b>Inverted index</b></td><td class="num">Roaring bitmaps</td><td>30 nodes sharded by tenant</td><td>2× replica per shard</td><td>B,C,H</td></tr>
+    <tr><td><b>Hot SSD</b></td><td class="num">NVMe local</td><td>25 nodes per region</td><td>3× replica · checksums</td><td>B,C</td></tr>
+    <tr><td><b>Warm + cold object</b></td><td class="num">S3 / S3-IA / Glacier</td><td>auto-scale</td><td>11 nines durability built-in</td><td>D,E</td></tr>
+    <tr><td><b>Compactor</b></td><td class="num">Go batch service</td><td>20 nodes</td><td>idempotent · checkpoint replay</td><td>E</td></tr>
+    <tr><td><b>Downsampler</b></td><td class="num">Go batch service</td><td>15 nodes</td><td>deterministic · re-runnable</td><td>D</td></tr>
+    <tr><td><b>Query gateway</b></td><td class="num">Envoy + Go</td><td>20 nodes stateless</td><td>cache · rate limit · timeout</td><td>F,I</td></tr>
+    <tr><td><b>Query planner</b></td><td class="num">Go service</td><td>colocated w/ gateway</td><td>cardinality estimation · fail-fast</td><td>B,C,D,H,I</td></tr>
+    <tr><td><b>Querier pool</b></td><td class="num">Go service · stateless</td><td>60 nodes · HPA</td><td>partial results · streaming</td><td>B,C,D,I</td></tr>
+  </tbody>
+</table>
+</section>
+
+<!-- ===== 7. TRADE-OFFS ===== -->
+<section>
+<h2 id="tradeoffs">7 · Trade-offs & open questions</h2>
+
+<div class="cols-2">
+  <div>
+    <h4>Chose</h4>
+    <ul>
+      <li><b>Stateful ingester + WAL</b> over fully async write · low-latency hot writes + durability; trade: ops-heavy restarts (drain protocol).</li>
+      <li><b>Hard cardinality quotas</b> over best-effort · predictable index size; trade: developer friction, self-serve estimators needed.</li>
+      <li><b>Gorilla-style compression</b> over generic gzip · 12× compression specific to time-series shape; trade: CPU on hot paths, mitigated by SIMD.</li>
+      <li><b>Object store cold tier</b> over local-SSD-only · cheap multi-year retention; trade: latency variance, parallel fetch + cache mitigations.</li>
+      <li><b>Deterministic downsampling</b> over streaming · idempotent pipelines, re-runnable; trade: lossy analytics caveats, UI must disclose.</li>
+      <li><b>PromQL AST compatibility</b> over custom DSL · ecosystem reuse (Grafana, recording rules); trade: complex planner.</li>
+      <li><b>Partial query responses</b> over fail-closed · graceful degradation during partial outages; trade: client must handle.</li>
+      <li><b>N=3 replication</b> across AZs · 11 nines durability; trade: 3× write amplification.</li>
+      <li><b>Stateless query, stateful ingest</b> · the bedrock pattern; ops simplicity on query side, ordering guarantees on ingest side.</li>
+    </ul>
+  </div>
+  <div>
+    <h4>Rejected</h4>
+    <ul>
+      <li><b>Single homogeneous tier</b> · simpler but cannot satisfy 500 ms recent AND 30 s cold simultaneously.</li>
+      <li><b>Raw 16 B/sample</b> · 138 TB/day vs 11 TB/day — not financially viable.</li>
+      <li><b>Best-effort cardinality limits</b> · would mean periodic existential outages — not acceptable.</li>
+      <li><b>Custom query DSL</b> · would lose the entire Prometheus + Grafana ecosystem.</li>
+      <li><b>Strong consistency cross-region</b> · would tank write latency to 100ms+; eventual is fine for dashboards.</li>
+      <li><b>InfluxDB / TimescaleDB direct</b> · capable but SQL ergonomics fight PromQL ecosystem; columnar Arrow path interesting but operationally heavier.</li>
+      <li><b>Bigtable-as-storage</b> · would re-invent compaction worse than dedicated time-series codec; doesn't exploit ΔΔ/XOR.</li>
+      <li><b>Single global cluster</b> · would tie all reliability to one region's availability; per-region rings are mandatory for SLO-F.</li>
+    </ul>
+  </div>
+</div>
+
+<h3>Open questions</h3>
+<ol>
+  <li>Should we support <b>native sparse histograms</b> (Prom 2.40+) to cut bucket series count 5-10×? Migration cost is real but the cardinality savings compound forever.</li>
+  <li>How to handle <b>GDPR delete-by-label</b> efficiently? Tombstone + compaction works but is expensive; we currently process these in batches monthly.</li>
+  <li>Is the 2-hour head window right? Longer → more lossless OOO; shorter → faster ingester restarts, smaller WAL.</li>
+  <li>Should query result cache TTL be dynamic (longer for cold queries, shorter for alert eval)? Currently 30 s for everything.</li>
+  <li>Should we offer <b>federated cross-region queries</b> for global SLO dashboards? Currently each region is independent; federation adds latency and complexity but enables "global Feed availability."</li>
+  <li>Cardinality quota should be expressed in $ not in series-count — give tenants a budget they can allocate however they want. Currently raw series count is easier to enforce.</li>
+</ol>
+</section>
+
+<footer>
+  <div>linkedin/tsdb · design-doc · time-series-database.md</div>
+  <div>nalsd · review status: <span style="color:var(--yellow)">⬤</span> in-review</div>
+</footer>
+
+</main>
+</div>
+</body>
+</html>

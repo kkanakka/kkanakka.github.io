@@ -106,6 +106,16 @@
   .card-incident:hover { border-color: var(--accent5); }
   .card-incident .cta { color: var(--accent5); }
 
+  .card-tsdb .icon { background: rgba(9,105,218,0.1); color: var(--accent); }
+  .card-tsdb h2 { color: var(--accent); }
+  .card-tsdb:hover { border-color: var(--accent); }
+  .card-tsdb .cta { color: var(--accent); }
+
+  .card-dht .icon { background: rgba(26,127,55,0.1); color: var(--accent2); }
+  .card-dht h2 { color: var(--accent2); }
+  .card-dht:hover { border-color: var(--accent2); }
+  .card-dht .cta { color: var(--accent2); }
+
   .footer { background: var(--surface); border-top: 1px solid var(--border); padding: 32px 0; text-align: center; color: var(--text-muted); font-size: 0.9em; }
 </style>
 </head>
@@ -240,6 +250,36 @@
         <span class="tag">War Room</span>
         <span class="tag">Post-Mortem</span>
         <span class="tag">Failover</span>
+      </div>
+      <div class="cta">Read the design &rarr;</div>
+    </a>
+
+    <a href="nalsd-tsdb.html" class="card card-tsdb">
+      <div class="icon">&#128200;</div>
+      <h2>Time Series Database (TSDB)</h2>
+      <div class="subtitle">NALSD &middot; LinkedIn metrics storage</div>
+      <p>Design a time series database for LinkedIn-scale metrics. Write-optimized storage, downsampling, retention tiers, query engine, and compaction strategies.</p>
+      <div class="tag-row">
+        <span class="tag">Time Series</span>
+        <span class="tag">Downsampling</span>
+        <span class="tag">Compaction</span>
+        <span class="tag">Retention</span>
+        <span class="tag">Write-Optimized</span>
+      </div>
+      <div class="cta">Read the design &rarr;</div>
+    </a>
+
+    <a href="nalsd-dht.html" class="card card-dht">
+      <div class="icon">&#128279;</div>
+      <h2>Distributed Hash Table</h2>
+      <div class="subtitle">NALSD &middot; LinkedIn DHT infrastructure</div>
+      <p>Design a distributed hash table for LinkedIn-scale key-value lookups. Consistent hashing, virtual nodes, replication, membership protocol, and failure recovery.</p>
+      <div class="tag-row">
+        <span class="tag">Consistent Hashing</span>
+        <span class="tag">Virtual Nodes</span>
+        <span class="tag">Replication</span>
+        <span class="tag">Gossip Protocol</span>
+        <span class="tag">Failure Recovery</span>
       </div>
       <div class="cta">Read the design &rarr;</div>
     </a>

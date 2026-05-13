@@ -1,0 +1,1049 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NALSD · LinkedIn Distributed Hash Table</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#ffffff;--bg-alt:#f6f8fa;--bg-code:#f6f8fa;
+  --border:#d0d7de;--border-soft:#eaeef2;
+  --ink:#1f2328;--ink-soft:#59636e;--ink-faint:#818b98;
+  --link:#0a66c2;--link-hover:#004182;
+  --green:#1a7f37;--green-bg:#dafbe1;
+  --red:#cf222e;--red-bg:#ffebe9;
+  --yellow:#9a6700;--yellow-bg:#fff8c5;
+  --purple:#6639ba;--purple-bg:#fbefff;
+  --orange:#bc4c00;--orange-bg:#fff1e5;
+  --blue-bg:#ddf4ff;
+  --shadow:0 1px 0 rgba(31,35,40,.04);
+  --mono:'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --serif:'Source Serif 4', Georgia, serif;
+  --sans:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
+a{color:var(--link);text-decoration:none}a:hover{text-decoration:underline}
+code,pre,.mono{font-family:var(--mono)}
+code{background:var(--bg-code);padding:.1em .35em;border-radius:4px;font-size:.88em;border:1px solid var(--border-soft)}
+pre{background:var(--bg-code);border:1px solid var(--border);border-radius:6px;padding:12px 14px;overflow-x:auto;font-size:12.5px;line-height:1.55;margin:0}
+
+.shell{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+aside{position:sticky;top:0;height:100vh;overflow-y:auto;border-right:1px solid var(--border);background:var(--bg);padding:18px 14px 40px}
+main{max-width:1080px;width:100%;padding:28px 40px 80px}
+@media (max-width:960px){.shell{grid-template-columns:1fr}aside{position:relative;height:auto;border-right:none;border-bottom:1px solid var(--border)}}
+
+.brand{display:flex;align-items:center;gap:10px;padding:6px 8px 16px;border-bottom:1px solid var(--border-soft);margin-bottom:12px}
+.brand-mark{width:28px;height:28px;border-radius:6px;background:var(--link);color:#fff;display:grid;place-items:center;font-weight:700;font-family:var(--mono);font-size:13px}
+.brand-title{font-weight:700;font-size:14px}
+.brand-sub{font-size:11px;color:var(--ink-soft);font-family:var(--mono)}
+.toc-group{margin:14px 0 4px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-faint);font-weight:600;padding:0 8px}
+.toc a{display:block;padding:4px 8px;border-radius:5px;color:var(--ink-soft);font-size:13px;border-left:2px solid transparent;margin-left:4px}
+.toc a:hover{background:var(--bg-alt);color:var(--ink);text-decoration:none}
+.toc a.depth-2{padding-left:18px;font-size:12.5px}
+
+.doc-head{border-bottom:1px solid var(--border);padding-bottom:18px;margin-bottom:24px}
+.crumbs{font-size:12px;color:var(--ink-soft);font-family:var(--mono);margin-bottom:8px}
+.crumbs .sep{color:var(--ink-faint);margin:0 6px}
+h1{font-family:var(--serif);font-weight:700;font-size:32px;line-height:1.15;letter-spacing:-.015em;margin:0 0 8px}
+.doc-meta{display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:12.5px;color:var(--ink-soft);font-family:var(--mono);margin-top:10px}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:999px;border:1px solid var(--border);background:var(--bg-alt);font-size:11.5px;font-family:var(--mono);color:var(--ink-soft)}
+.pill.blue{background:var(--blue-bg);border-color:#80ccff;color:#0969da}
+.pill.green{background:var(--green-bg);border-color:#a5e1b1;color:var(--green)}
+.pill.purple{background:var(--purple-bg);border-color:#d8b9ff;color:var(--purple)}
+.pill.orange{background:var(--orange-bg);border-color:#ffb077;color:var(--orange)}
+.pill.red{background:var(--red-bg);border-color:#ffaaa3;color:var(--red)}
+.pill.yellow{background:var(--yellow-bg);border-color:#e7c860;color:var(--yellow)}
+
+h2{font-family:var(--serif);font-weight:700;font-size:22px;letter-spacing:-.01em;margin:40px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border-soft);scroll-margin-top:20px}
+h3{font-family:var(--sans);font-weight:700;font-size:16px;margin:24px 0 8px;scroll-margin-top:20px}
+h4{font-family:var(--sans);font-weight:600;font-size:13.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-soft);margin:18px 0 6px}
+p{margin:0 0 12px}
+ul,ol{margin:0 0 12px;padding-left:22px}
+li{margin-bottom:4px}
+
+.note{border-left:3px solid var(--link);background:var(--blue-bg);padding:10px 14px;border-radius:0 6px 6px 0;margin:14px 0;font-size:13px}
+.note.warn{border-left-color:var(--yellow);background:var(--yellow-bg)}
+.note.danger{border-left-color:var(--red);background:var(--red-bg)}
+.note.tip{border-left-color:var(--green);background:var(--green-bg)}
+.note .lbl{font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px;font-family:var(--mono);color:var(--link)}
+.note.warn .lbl{color:var(--yellow)}
+.note.danger .lbl{color:var(--red)}
+.note.tip .lbl{color:var(--green)}
+
+table{width:100%;border-collapse:collapse;font-size:12.5px;margin:8px 0 16px;border:1px solid var(--border);border-radius:6px;overflow:hidden}
+thead{background:var(--bg-alt)}
+th,td{padding:7px 11px;text-align:left;border-bottom:1px solid var(--border-soft);vertical-align:top}
+th{font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-soft)}
+tr:last-child td{border-bottom:none}
+td.num{font-family:var(--mono);font-size:12px}
+
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0 20px}
+@media (max-width:780px){.stat-grid{grid-template-columns:repeat(2,1fr)}}
+.stat{border:1px solid var(--border);border-radius:6px;padding:12px;background:var(--bg)}
+.stat .k{font-family:var(--mono);font-size:11px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.05em}
+.stat .v{font-family:var(--serif);font-weight:700;font-size:22px;margin-top:2px;line-height:1.15}
+.stat .s{font-size:11px;color:var(--ink-soft);font-family:var(--mono);margin-top:2px}
+
+.cols-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:780px){.cols-2{grid-template-columns:1fr}}
+
+.calc{border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin:14px 0;background:var(--bg-alt);position:relative}
+.calc::before{content:"∑ NALSD";position:absolute;top:-10px;left:14px;font-family:var(--mono);font-size:10.5px;background:var(--bg);padding:2px 8px;border:1px solid var(--border);border-radius:4px;color:var(--ink-soft);letter-spacing:.05em;font-weight:600}
+.calc h4{margin-top:4px}
+.calc pre{background:var(--bg);border-color:var(--border-soft)}
+.calc .verdict{display:flex;align-items:center;gap:8px;margin-top:10px;padding:8px 12px;background:var(--bg);border:1px dashed var(--green);border-radius:6px;font-family:var(--mono);font-size:12px;color:var(--green)}
+.calc .verdict.warn{border-color:var(--yellow);color:var(--yellow)}
+
+.diagram{border:1px solid var(--border);border-radius:8px;background:var(--bg);padding:14px;margin:16px 0;box-shadow:var(--shadow)}
+.diagram-cap{font-family:var(--mono);font-size:11px;color:var(--ink-faint);margin-top:8px;text-align:center}
+.diagram svg{width:100%;height:auto;display:block}
+
+.box-fill-blue{fill:#ddf4ff;stroke:#54aeff}
+.box-fill-green{fill:#dafbe1;stroke:#4ac26b}
+.box-fill-purple{fill:#fbefff;stroke:#c297ff}
+.box-fill-orange{fill:#fff1e5;stroke:#fd8c73}
+.box-fill-red{fill:#ffebe9;stroke:#ff8182}
+.box-fill-yellow{fill:#fff8c5;stroke:#d4a72c}
+.box-fill-gray{fill:#f6f8fa;stroke:#d0d7de}
+.lbl-title{font-family:'Inter',sans-serif;font-weight:700;font-size:11.5px;fill:#1f2328}
+.lbl-sub{font-family:'JetBrains Mono',monospace;font-size:9.5px;fill:#59636e}
+.lbl-meta{font-family:'JetBrains Mono',monospace;font-size:9px;fill:#818b98}
+.arrow{stroke:#59636e;stroke-width:1.3;fill:none;marker-end:url(#arr)}
+.arrow-dashed{stroke:#cf222e;stroke-width:1.2;fill:none;stroke-dasharray:4,3;marker-end:url(#arr-red)}
+.arrow-green{stroke:#1a7f37;stroke-width:1.5;fill:none;marker-end:url(#arr-green)}
+
+.flow-steps{counter-reset:step}
+.flow-step{display:grid;grid-template-columns:36px 1fr;gap:12px;padding:14px 16px;border:1px solid var(--border);border-radius:8px;margin-bottom:10px;background:#fff}
+.flow-step .num{counter-increment:step;background:var(--link);color:#fff;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-family:var(--mono);font-weight:700;font-size:13px}
+.flow-step .num::before{content:counter(step)}
+.flow-step .body .title{font-weight:700;font-size:14px;margin-bottom:4px;font-family:var(--sans)}
+.flow-step .body .desc{font-size:12.5px;color:var(--ink-soft);margin-bottom:6px}
+.flow-step .body .tech{font-family:var(--mono);font-size:11px;background:var(--bg-alt);border:1px solid var(--border-soft);border-radius:4px;padding:5px 8px;margin-top:4px;display:inline-block;color:var(--ink);max-width:100%;overflow-x:auto}
+.flow-step .body .nums{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px}
+.flow-step .body .nums .kv{font-family:var(--mono);font-size:11px;color:var(--ink-soft)}
+.flow-step .body .nums .kv b{color:var(--ink);font-weight:700}
+
+.comp-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:12px 0}
+@media (max-width:780px){.comp-grid{grid-template-columns:1fr}}
+.comp{border:1px solid var(--border);border-radius:6px;padding:11px 13px;background:var(--bg)}
+.comp .name{font-weight:700;font-size:13px;display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.comp .name .tech{font-family:var(--mono);font-size:10.5px;color:var(--link);font-weight:500}
+.comp .desc{font-size:12px;color:var(--ink-soft);margin-bottom:6px}
+.comp .row{font-family:var(--mono);font-size:11px;color:var(--ink-soft);display:flex;justify-content:space-between;padding:2px 0;border-top:1px dashed var(--border-soft)}
+.comp .row .lab{color:var(--ink-faint)}
+
+footer{margin-top:50px;padding-top:18px;border-top:1px solid var(--border-soft);font-size:11.5px;color:var(--ink-faint);font-family:var(--mono);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+
+.li-strip{height:3px;background:linear-gradient(90deg,var(--link) 0,var(--link) 60%,transparent 100%);border-radius:2px;margin-bottom:14px}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:#d0d7de;border-radius:5px;border:2px solid var(--bg)}
+::-webkit-scrollbar-track{background:transparent}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<aside>
+  <div class="brand">
+    <div class="brand-mark">in</div>
+    <div>
+      <div class="brand-title">in/dht</div>
+      <div class="brand-sub">v2026.05 · nalsd</div>
+    </div>
+  </div>
+  <div class="li-strip"></div>
+  <nav class="toc">
+    <div class="toc-group">Design</div>
+    <a href="#problem">1 · Problem & SLOs</a>
+    <a href="#capacity">2 · Capacity model</a>
+    <a href="#workload" class="depth-2">2.1 Workload</a>
+    <a href="#routing" class="depth-2">2.2 Routing math</a>
+    <a href="#storage" class="depth-2">2.3 Storage / replication</a>
+    <a href="#fleet" class="depth-2">2.4 Fleet & cost</a>
+    <a href="#arch">3 · Architecture</a>
+    <a href="#dataflow" class="depth-2">3.1 Full diagram</a>
+    <a href="#flow" class="depth-2">3.2 Step-by-step</a>
+    <a href="#ring" class="depth-2">3.3 Ring + finger table</a>
+    <a href="#join" class="depth-2">3.4 Node join/leave</a>
+    <div class="toc-group">Operations</div>
+    <a href="#gauntlet">4 · Failure gauntlet</a>
+    <a href="#playbook">5 · Ops playbook</a>
+    <a href="#components">6 · Components</a>
+    <a href="#tradeoffs">7 · Trade-offs</a>
+  </nav>
+</aside>
+
+<main>
+
+<header class="doc-head">
+  <div class="crumbs">
+    <span>in/dht</span><span class="sep">/</span>
+    <span>design-docs</span><span class="sep">/</span>
+    <span>2026</span><span class="sep">/</span>
+    <span>distributed-hash-table.md</span>
+  </div>
+  <h1>Designing LinkedIn's Distributed Hash Table</h1>
+  <p style="font-size:15px;color:var(--ink-soft);margin:6px 0 0;font-family:var(--serif)">
+    A NALSD walkthrough — the storage substrate beneath Profile, InMail attachments, Connect graphs, and feature stores.
+    1 PB of key-value data, 5 M ops/sec, p99 ≤ 10 ms reads,
+    self-organizing through node join/leave with consistent hashing + virtual nodes.
+  </p>
+  <div class="doc-meta">
+    <span class="pill blue">NALSD</span>
+    <span class="pill green">p99 ≤ 10 ms</span>
+    <span class="pill purple">5M ops/s</span>
+    <span class="pill orange">1 PB · 1000 nodes</span>
+    <span class="pill yellow">draft · review</span>
+    <span style="margin-left:auto">last edit · 2026-05-12 · sjc</span>
+  </div>
+</header>
+
+<!-- ===== 1. PROBLEM ===== -->
+<section>
+<h2 id="problem">1 · Problem statement & SLO contract</h2>
+
+<p>A DHT is the canonical distributed-systems primitive: a key-value store partitioned across N nodes such that any client can locate any key in O(log N) hops without consulting a central coordinator. Inspired by Chord, Kademlia, and Dynamo, the design provides <b>self-organization</b> (nodes join and leave continuously without operator intervention), <b>load balance</b> (consistent hashing with virtual nodes spreads keys uniformly), <b>fault tolerance</b> (N-replica writes survive node loss), and <b>eventual consistency</b> (replicas converge after partition healing). At LinkedIn, this substrate underlies Profile blob storage, attachment metadata, distributed locks, feature vectors, and the Connect graph adjacency lists.</p>
+
+<div class="stat-grid">
+  <div class="stat"><div class="k">Data volume</div><div class="v">1 PB</div><div class="s">key-value pairs</div></div>
+  <div class="stat"><div class="k">Ops/sec</div><div class="v">5 M</div><div class="s">80% reads · 20% writes</div></div>
+  <div class="stat"><div class="k">Read latency</div><div class="v">≤ 10 ms</div><div class="s">p99 within region</div></div>
+  <div class="stat"><div class="k">Cluster size</div><div class="v">~1,000</div><div class="s">nodes per region</div></div>
+</div>
+
+<h3 id="slo">SLO contract</h3>
+
+<table>
+  <thead><tr><th>SLI</th><th>Target</th><th>Measurement</th><th>Error budget / 28d</th></tr></thead>
+  <tbody>
+    <tr><td><b>A · Read latency</b></td><td class="num">p99 ≤ 10 ms</td><td>client GET → response</td><td class="num">~24 h tail</td></tr>
+    <tr><td><b>B · Write latency</b></td><td class="num">p99 ≤ 20 ms</td><td>client PUT → W-of-N ACK</td><td class="num">~24 h tail</td></tr>
+    <tr><td><b>C · Availability</b></td><td class="num">≥ 99.99%</td><td>ops accepted / offered</td><td class="num">~4 min/month</td></tr>
+    <tr><td><b>D · Durability</b></td><td class="num">11 nines</td><td>RF=3 + cross-region async</td><td class="num">measured via audit</td></tr>
+    <tr><td><b>E · Convergence</b></td><td class="num">p99 ≤ 5 s</td><td>last-replica replication delay</td><td class="num">eventual consistency window</td></tr>
+    <tr><td><b>F · Load skew</b></td><td class="num">±10% max</td><td>per-node key count vs mean</td><td class="num">rebalancing target</td></tr>
+    <tr><td><b>G · Routing hops</b></td><td class="num">O(log N)</td><td>median 1, p99 ≤ 3 hops</td><td class="num">finger-table SLO</td></tr>
+  </tbody>
+</table>
+
+<div class="note">
+  <span class="lbl">The defining property: self-organization</span>
+  Unlike sharded SQL or traditional caches (which need an operator or coordinator to manage shard placement), a DHT <em>routes itself</em>. Add a node — it joins the ring, takes over a slice of the keyspace, and starts serving traffic within seconds. Remove a node — its successor takes over its range. <b>This makes DHTs ideal for highly elastic workloads</b> where capacity changes constantly (e.g., feature stores during model training peaks).
+</div>
+
+<h4>The CAP trade we're making</h4>
+<p>DHTs sit firmly in the <b>AP corner</b> (Availability + Partition tolerance, eventual Consistency). On a network partition, both sides keep accepting writes; conflicts resolve via vector clocks + last-writer-wins (with optional CRDT semantics for counters). This is what enables 4 nines availability and the elastic node-add behavior. If you need strong consistency, use Spanner; if you can tolerate ~5 seconds of eventual convergence, a DHT is 10× cheaper and 100× more elastic.</p>
+</section>
+
+<!-- ===== 2. CAPACITY ===== -->
+<section>
+<h2 id="capacity">2 · Capacity model (the NALSD math)</h2>
+
+<h3 id="workload">2.1 — Workload characterization</h3>
+<div class="calc">
+  <h4>Ops, bytes, and key distribution</h4>
+<pre><code>peak ops/sec global       = 5,000,000
+  reads (80%)             = 4,000,000 GET/s
+  writes (20%)            = 1,000,000 PUT/s
+
+avg key size              = 32 B (uuid + namespace prefix)
+avg value size            = 2 KB (Profile blob, feature vector, etc.)
+                              p99 value size = 64 KB (large attachments)
+
+read bytes/sec global     = 4M × 2 KB = 8 GB/s ≈ 64 Gbps
+write bytes/sec global    = 1M × 2 KB = 2 GB/s ≈ 16 Gbps
+  with 3× replication on writes: 6 GB/s ≈ 48 Gbps
+
+per region (5 regions, weighted 35/25/20/12/8):
+us-west-2 peak read       = 8 × 0.35 = 2.8 GB/s ≈ 22 Gbps
+us-west-2 peak write      = 6 × 0.35 = 2.1 GB/s ≈ 17 Gbps  (incl. repl)</code></pre>
+  <div class="verdict">VERDICT · 22 Gbps top region read. 100 Gbps spine handles it with headroom.</div>
+</div>
+
+<h3 id="routing">2.2 — Routing math (where O(log N) comes from)</h3>
+
+<div class="calc">
+  <h4>Naïve vs. Chord finger table</h4>
+<pre><code>cluster size              = 1,000 nodes per region
+keyspace                  = SHA-256, treated as 2^160 ring
+keys per node             = 2^160 / 1,000 ≈ 10^48 IDs (effectively continuous)
+
+NAIVE LOOKUP (no routing info):
+  client knows 1 node, asks it
+  worst case: that node forwards around entire ring
+  → O(N) hops = up to 1,000 RPCs
+  → completely impractical
+
+LINEAR FORWARDING (each node knows successor):
+  walk around ring until you find owner
+  → O(N/2) average hops = 500
+  → still terrible
+
+CHORD FINGER TABLE (O(log N)):
+  each node maintains log2(N) "finger" pointers:
+    finger[i] = successor of (my_id + 2^i)
+  for N = 1000: log2(1000) ≈ 10 fingers per node
+  → each hop halves the remaining distance
+  → O(log N) = ~10 hops worst case
+  → in practice: 1-3 hops average due to client caching
+
+storage per node for finger table:
+  10 entries × ~100 B each (node_id + ip + port + status)
+  = 1 KB per node — trivial</code></pre>
+  <div class="verdict">VERDICT · 10 fingers per node → median 1 hop, p99 ≤ 3 hops. SLO-G met with 1 KB of state per node.</div>
+</div>
+
+<div class="calc">
+  <h4>Why we still cache routing client-side</h4>
+<pre><code>even 1-3 hops × 0.5 ms each = 1.5-4.5 ms wasted on routing
+client SDK caches "last known owner" for each key prefix
+  cache size: ~10k entries × 200 B = 2 MB per client
+  TTL: 60 seconds (refreshes during normal operation)
+  invalidation: server returns 307 redirect on cache miss
+
+with client cache hit (~95% of requests):
+  client → owner direct, 0 routing hops
+  total latency = 1 network RTT + storage lookup ≈ 5 ms
+
+without cache (5% of requests):
+  client → coordinator → owner = 1-3 hops
+  total latency = 3-10 ms
+
+p99 read latency budget:
+  client RTT to coord       = 1 ms
+  routing (when needed)     = 3 ms  (1-3 hops)
+  storage read on owner     = 2 ms  (NVMe random read)
+  response back             = 1 ms
+  ─────────────────────────────────
+  total p99                  = 7 ms ✓ under 10 ms SLO</code></pre>
+  <div class="verdict">VERDICT · Client cache + O(log N) finger table = 7 ms p99 read. 3 ms headroom.</div>
+</div>
+
+<h3 id="storage">2.3 — Storage and replication sizing</h3>
+
+<div class="calc">
+  <h4>Per-node storage, replication overhead</h4>
+<pre><code>total data per region (us-west-2, 35% share):
+  1 PB × 0.35 = 350 TB logical
+
+with RF=3 replication:
+  350 × 3 = 1,050 TB = ~1 PB physical per region
+
+per-node storage (1000 nodes/region):
+  1 PB / 1000 = 1 TB per node
+  with 30% headroom for tombstones, indexes = 1.3 TB
+
+instance choice: i4i.4xlarge
+  16 vCPU, 128 GB RAM, 7.5 TB NVMe (plenty of headroom)
+  ~30K IOPS sustained, ~150K peak
+  $1,200/month on-demand, ~$450/month 3y RI
+
+replication strategy:
+  RF=3 placed on 3 successive nodes in the ring
+  AZ-aware: each replica in a different AZ
+  cross-region: async (eventually consistent, ~5s lag)
+
+write quorum: W=2 of 3 → durable on 2 nodes before ACK
+read quorum: R=1 of 3 → reads any one replica (fast path)
+  if R+W > N: strong consistency (rarely used here, R=1)
+  if R+W ≤ N: eventual consistency (default, fast)</code></pre>
+  <div class="verdict">VERDICT · 1.3 TB/node × 1000 nodes/region · RF=3 · W=2 · R=1.</div>
+</div>
+
+<div class="calc">
+  <h4>Memory tier (hot key cache)</h4>
+<pre><code>each node also has:
+  in-memory LRU cache: 32 GB per node
+  caches ~16M keys (avg 2 KB value) per node
+  ratio: 32/1024 = 3% of disk in RAM
+
+cache hit ratio (measured): ~85%
+  hit → 0.5 ms read (RAM)
+  miss → 2 ms read (NVMe)
+  weighted avg = 0.5 × 0.85 + 2 × 0.15 = 0.7 ms storage time
+  → most of the 7ms latency is network, not storage</code></pre>
+  <div class="verdict">VERDICT · 32 GB hot cache per node yields 85% hit rate. Storage is rarely the bottleneck.</div>
+</div>
+
+<h3 id="fleet">2.4 — Fleet summary & cost</h3>
+<table>
+  <thead><tr><th>Tier</th><th>Instance</th><th>Count</th><th>$/mo (on-demand)</th><th>$/mo (3y RI)</th></tr></thead>
+  <tbody>
+    <tr><td>DHT nodes (storage + routing)</td><td class="num">i4i.4xlarge</td><td class="num">5,000 (1000 × 5 regions)</td><td class="num">$6 M</td><td class="num">$2.25 M</td></tr>
+    <tr><td>Coordinator / seed nodes</td><td class="num">m6i.2xlarge</td><td class="num">25 (5/region)</td><td class="num">$7 K</td><td class="num">$2.7 K</td></tr>
+    <tr><td>Anti-entropy workers</td><td class="num">m6i.xlarge</td><td class="num">15</td><td class="num">$2.6 K</td><td class="num">$1 K</td></tr>
+    <tr><td>Cross-region replication</td><td class="num">—</td><td class="num">2 Gbps avg</td><td class="num">$13 K</td><td class="num">$13 K</td></tr>
+    <tr><td>Bootstrap / config store</td><td class="num">Spanner</td><td class="num">3 nodes</td><td class="num">$12 K</td><td class="num">$12 K</td></tr>
+    <tr><td>Observability</td><td class="num">m6i.large</td><td class="num">12</td><td class="num">$1 K</td><td class="num">$0.4 K</td></tr>
+    <tr style="background:var(--bg-alt);font-weight:700"><td>Total</td><td class="num">—</td><td class="num">~5,067 nodes</td><td class="num">$6.04 M/mo</td><td class="num">$2.28 M/mo</td></tr>
+  </tbody>
+</table>
+
+<div class="note tip">
+  <span class="lbl">Cost composition</span>
+  Storage nodes dominate at <b>98% of cost</b>. The DHT itself is essentially "free" overhead — the actual cost is storing 1 PB × 3 replicas × 5 regions = 15 PB physical with NVMe-grade performance. Compared to Spanner-equivalent storage (~$15M/mo at this scale), the DHT is <b>~6× cheaper</b> by accepting eventual consistency.
+</div>
+</section>
+
+<!-- ===== 3. ARCHITECTURE ===== -->
+<section>
+<h2 id="arch">3 · Architecture</h2>
+
+<h3 id="dataflow">3.1 — Full architecture diagram</h3>
+
+<div class="diagram">
+<svg viewBox="0 0 980 820" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#59636e"/>
+    </marker>
+    <marker id="arr-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#cf222e"/>
+    </marker>
+    <marker id="arr-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1a7f37"/>
+    </marker>
+  </defs>
+
+  <!-- SLO ribbon -->
+  <text x="490" y="22" text-anchor="middle" class="lbl-title" style="font-size:13px">1 PB · 5M ops/s · p99 ≤ 10 ms · O(log N) routing · RF=3 · W=2 R=1 · self-organizing</text>
+
+  <!-- Step badges -->
+  <circle cx="155" cy="60" r="11" fill="#0a66c2"/>
+  <text x="155" y="64" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">1</text>
+  <circle cx="490" cy="60" r="11" fill="#0a66c2"/>
+  <text x="490" y="64" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">2</text>
+  <circle cx="820" cy="60" r="11" fill="#0a66c2"/>
+  <text x="820" y="64" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">3</text>
+  <circle cx="490" cy="195" r="11" fill="#0a66c2"/>
+  <text x="490" y="199" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">4</text>
+  <circle cx="155" cy="345" r="11" fill="#0a66c2"/>
+  <text x="155" y="349" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">5</text>
+  <circle cx="490" cy="345" r="11" fill="#0a66c2"/>
+  <text x="490" y="349" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">6</text>
+  <circle cx="820" cy="345" r="11" fill="#0a66c2"/>
+  <text x="820" y="349" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">7</text>
+  <circle cx="155" cy="510" r="11" fill="#0a66c2"/>
+  <text x="155" y="514" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">8</text>
+  <circle cx="490" cy="510" r="11" fill="#0a66c2"/>
+  <text x="490" y="514" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">9</text>
+  <circle cx="820" cy="510" r="11" fill="#0a66c2"/>
+  <text x="820" y="514" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">10</text>
+  <circle cx="490" cy="670" r="11" fill="#0a66c2"/>
+  <text x="490" y="674" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">11</text>
+
+  <!-- ============ ROW 1: Clients · Coordinator · Bootstrap ============ -->
+  <g>
+    <rect x="20" y="85" width="270" height="80" rx="6" class="box-fill-gray"/>
+    <text x="155" y="108" text-anchor="middle" class="lbl-title">Client SDK</text>
+    <text x="155" y="125" text-anchor="middle" class="lbl-sub">Profile · InMail · Features · Connect</text>
+    <text x="155" y="141" text-anchor="middle" class="lbl-sub">key cache (60 s TTL) · retry logic</text>
+    <text x="155" y="157" text-anchor="middle" class="lbl-meta">~2 M app pods using SDK</text>
+  </g>
+
+  <g>
+    <rect x="320" y="85" width="340" height="80" rx="6" class="box-fill-blue"/>
+    <text x="490" y="108" text-anchor="middle" class="lbl-title">Coordinator (any node)</text>
+    <text x="490" y="125" text-anchor="middle" class="lbl-sub">finger-table lookup · routes to owner</text>
+    <text x="490" y="141" text-anchor="middle" class="lbl-sub">handles W/R quorum on behalf of client</text>
+    <text x="490" y="157" text-anchor="middle" class="lbl-meta">stateless role · every DHT node can act</text>
+  </g>
+
+  <g>
+    <rect x="680" y="85" width="280" height="80" rx="6" class="box-fill-yellow"/>
+    <text x="820" y="108" text-anchor="middle" class="lbl-title">Bootstrap / config (Spanner)</text>
+    <text x="820" y="125" text-anchor="middle" class="lbl-sub">seed node list · cluster membership</text>
+    <text x="820" y="141" text-anchor="middle" class="lbl-sub">topology version · RF/quorum config</text>
+    <text x="820" y="157" text-anchor="middle" class="lbl-meta">consulted once at SDK startup</text>
+  </g>
+
+  <!-- ============ ROW 2: The Ring (the heart) ============ -->
+  <rect x="20" y="225" width="940" height="100" rx="8" fill="#fafbfc" stroke="#eaeef2"/>
+  <text x="490" y="250" text-anchor="middle" class="lbl-title" style="font-size:13px">The Ring · 1000 DHT nodes per region · consistent hash on SHA-256 keyspace · 256 vnodes/node</text>
+
+  <g>
+    <rect x="40" y="265" width="130" height="55" rx="4" class="box-fill-green"/>
+    <text x="105" y="282" text-anchor="middle" class="lbl-title">Node N₁</text>
+    <text x="105" y="297" text-anchor="middle" class="lbl-sub">id: 0x07ab...</text>
+    <text x="105" y="310" text-anchor="middle" class="lbl-meta">10 fingers · 32 GB cache</text>
+  </g>
+  <g>
+    <rect x="190" y="265" width="130" height="55" rx="4" class="box-fill-green"/>
+    <text x="255" y="282" text-anchor="middle" class="lbl-title">Node N₂</text>
+    <text x="255" y="297" text-anchor="middle" class="lbl-sub">id: 0x14f3...</text>
+    <text x="255" y="310" text-anchor="middle" class="lbl-meta">vnodes · finger table</text>
+  </g>
+  <g>
+    <rect x="340" y="265" width="130" height="55" rx="4" class="box-fill-green"/>
+    <text x="405" y="282" text-anchor="middle" class="lbl-title">Node N₃</text>
+    <text x="405" y="297" text-anchor="middle" class="lbl-sub">id: 0x29bc...</text>
+    <text x="405" y="310" text-anchor="middle" class="lbl-meta">1.3 TB NVMe</text>
+  </g>
+  <text x="510" y="297" text-anchor="middle" class="lbl-title" style="font-size:18px">···</text>
+  <g>
+    <rect x="540" y="265" width="130" height="55" rx="4" class="box-fill-green"/>
+    <text x="605" y="282" text-anchor="middle" class="lbl-title">Node Nₖ</text>
+    <text x="605" y="297" text-anchor="middle" class="lbl-sub">id: 0x9b21...</text>
+    <text x="605" y="310" text-anchor="middle" class="lbl-meta">range owner for key K</text>
+  </g>
+  <g>
+    <rect x="690" y="265" width="130" height="55" rx="4" class="box-fill-green"/>
+    <text x="755" y="282" text-anchor="middle" class="lbl-title">Node Nₖ₊₁</text>
+    <text x="755" y="297" text-anchor="middle" class="lbl-sub">id: 0xa3e7...</text>
+    <text x="755" y="310" text-anchor="middle" class="lbl-meta">replica 2</text>
+  </g>
+  <g>
+    <rect x="840" y="265" width="120" height="55" rx="4" class="box-fill-green"/>
+    <text x="900" y="282" text-anchor="middle" class="lbl-title">Node N₁₀₀₀</text>
+    <text x="900" y="297" text-anchor="middle" class="lbl-sub">replica 3</text>
+    <text x="900" y="310" text-anchor="middle" class="lbl-meta">N=3</text>
+  </g>
+
+  <!-- ============ ROW 3: Per-node responsibilities ============ -->
+  <g>
+    <rect x="20" y="370" width="270" height="100" rx="6" class="box-fill-purple"/>
+    <text x="155" y="393" text-anchor="middle" class="lbl-title">Routing layer</text>
+    <text x="155" y="410" text-anchor="middle" class="lbl-sub">finger table · 10 entries</text>
+    <text x="155" y="426" text-anchor="middle" class="lbl-sub">successor list (next 3 nodes)</text>
+    <text x="155" y="443" text-anchor="middle" class="lbl-meta">stabilization protocol</text>
+    <text x="155" y="457" text-anchor="middle" class="lbl-meta">O(log N) lookup</text>
+  </g>
+
+  <g>
+    <rect x="320" y="370" width="340" height="100" rx="6" class="box-fill-orange"/>
+    <text x="490" y="393" text-anchor="middle" class="lbl-title">Storage layer</text>
+    <text x="490" y="410" text-anchor="middle" class="lbl-sub">LSM tree on NVMe · 1.3 TB/node</text>
+    <text x="490" y="426" text-anchor="middle" class="lbl-sub">in-memory LRU cache · 32 GB · 85% hit</text>
+    <text x="490" y="443" text-anchor="middle" class="lbl-meta">vector clock per key for conflict resolution</text>
+    <text x="490" y="457" text-anchor="middle" class="lbl-meta">tombstones · TTLs · merkle tree per range</text>
+  </g>
+
+  <g>
+    <rect x="680" y="370" width="280" height="100" rx="6" class="box-fill-blue"/>
+    <text x="820" y="393" text-anchor="middle" class="lbl-title">Gossip + failure detection</text>
+    <text x="820" y="410" text-anchor="middle" class="lbl-sub">SWIM protocol (every 1 s)</text>
+    <text x="820" y="426" text-anchor="middle" class="lbl-sub">heartbeats to k=log(N) peers</text>
+    <text x="820" y="443" text-anchor="middle" class="lbl-meta">detect failures &lt; 10 s</text>
+    <text x="820" y="457" text-anchor="middle" class="lbl-meta">spread via epidemic protocol</text>
+  </g>
+
+  <!-- ============ ROW 4: Replication, Anti-entropy, Cross-region ============ -->
+  <g>
+    <rect x="20" y="535" width="270" height="100" rx="6" class="box-fill-red"/>
+    <text x="155" y="558" text-anchor="middle" class="lbl-title">Replication path</text>
+    <text x="155" y="575" text-anchor="middle" class="lbl-sub">RF=3, AZ-aware placement</text>
+    <text x="155" y="591" text-anchor="middle" class="lbl-sub">W=2 quorum on write</text>
+    <text x="155" y="608" text-anchor="middle" class="lbl-meta">R=1 on read (fast path)</text>
+    <text x="155" y="622" text-anchor="middle" class="lbl-meta">hinted handoff if replica down</text>
+  </g>
+
+  <g>
+    <rect x="320" y="535" width="340" height="100" rx="6" class="box-fill-yellow"/>
+    <text x="490" y="558" text-anchor="middle" class="lbl-title">Anti-entropy (background)</text>
+    <text x="490" y="575" text-anchor="middle" class="lbl-sub">Merkle tree comparison every 1 h</text>
+    <text x="490" y="591" text-anchor="middle" class="lbl-sub">read-repair on inconsistency at read time</text>
+    <text x="490" y="608" text-anchor="middle" class="lbl-meta">heals partition divergence</text>
+    <text x="490" y="622" text-anchor="middle" class="lbl-meta">15 worker pool, throttled</text>
+  </g>
+
+  <g>
+    <rect x="680" y="535" width="280" height="100" rx="6" class="box-fill-purple"/>
+    <text x="820" y="558" text-anchor="middle" class="lbl-title">Cross-region replication</text>
+    <text x="820" y="575" text-anchor="middle" class="lbl-sub">async to peer regions</text>
+    <text x="820" y="591" text-anchor="middle" class="lbl-sub">~5 s lag · invalidate (not replicate)</text>
+    <text x="820" y="608" text-anchor="middle" class="lbl-meta">tombstone propagation</text>
+    <text x="820" y="622" text-anchor="middle" class="lbl-meta">read-your-writes via cookies</text>
+  </g>
+
+  <!-- ============ ROW 5: Observability + admission ============ -->
+  <g>
+    <rect x="20" y="700" width="940" height="80" rx="6" class="box-fill-gray"/>
+    <text x="490" y="723" text-anchor="middle" class="lbl-title" style="font-size:13px">Observability · admin · admission control</text>
+    <text x="490" y="740" text-anchor="middle" class="lbl-sub">per-node metrics · ring topology dashboard · load skew alerts · rate limiting</text>
+    <text x="490" y="760" text-anchor="middle" class="lbl-meta">chaos injection: random node kill · network partition · slow node simulation</text>
+  </g>
+
+  <!-- ARROWS -->
+  <path d="M290,125 L320,125" class="arrow"/>
+  <text x="305" y="120" text-anchor="middle" class="lbl-meta">request</text>
+  <path d="M660,125 L680,125" class="arrow" stroke-dasharray="3,2"/>
+  <text x="670" y="120" text-anchor="middle" class="lbl-meta">cluster meta</text>
+  <path d="M490,165 L490,225" class="arrow"/>
+
+  <path d="M105,320 L155,370" class="arrow"/>
+  <path d="M255,320 L490,370" class="arrow"/>
+  <path d="M755,320 L820,370" class="arrow"/>
+
+  <path d="M155,470 L155,535" class="arrow"/>
+  <path d="M490,470 L490,535" class="arrow"/>
+  <path d="M820,470 L820,535" class="arrow"/>
+
+  <path d="M155,635 L490,700" class="arrow"/>
+  <path d="M490,635 L490,700" class="arrow"/>
+  <path d="M820,635 L490,700" class="arrow"/>
+</svg>
+<div class="diagram-cap">Fig 1 · Complete DHT architecture. Numbered circles match the step-by-step flow in §3.2. Every node is a peer playing multiple roles (routing, storage, gossip). The ring is the "topology"; each node owns a slice and replicates to N-1 successors.</div>
+</div>
+
+<!-- 3.2 STEP-BY-STEP FLOW -->
+<h3 id="flow">3.2 — Step-by-step flow (the numbered walkthrough)</h3>
+
+<p>Following the numbered blue badges in Fig 1. We trace <b>two scenarios</b>: <b>(A)</b> a Profile blob GET (steps 1-7 — the hot read path), then <b>(B)</b> an InMail attachment PUT (steps 8-11 — the write path).</p>
+
+<div class="flow-steps">
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Client issues GET for a Profile blob</div>
+      <div class="desc"><b>Scenario A:</b> A Feed render needs Profile blob for user 12345. The app pod calls <code>dht.get("profile:user:12345")</code> via the embedded SDK.<br><br>The SDK first checks its <b>local key cache</b> (60s TTL). If we recently fetched this key, the cache tells us which DHT node currently owns it — we can go direct, skipping routing. Cache hit rate is ~95% during steady state.<br><br>For our example, this is the first request for user 12345 — cache miss. The SDK picks any DHT node from its seed list and sends the GET there. That node will act as the <b>coordinator</b> for this request.</div>
+      <div class="tech">key = "profile:user:12345" · hash = SHA256(key) · cache.lookup(key) → MISS · coord = pick_random(seed_list)</div>
+      <div class="nums">
+        <span class="kv">budget · <b>1 ms client-side</b></span>
+        <span class="kv">cache hit rate · <b>~95%</b></span>
+        <span class="kv">cache TTL · <b>60 s</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Coordinator node receives request, looks up owner</div>
+      <div class="desc">Any DHT node can play coordinator — there's no special "router" tier. The chosen node (say N₂₇) receives the GET, hashes the key, and consults its <b>finger table</b> to find the closest predecessor of <code>hash(key)</code>.<br><br>The finger table has 10 entries (log₂(1000)). The lookup:<br>1. Compute <code>target = SHA256("profile:user:12345") = 0x9b21...</code><br>2. Find the largest finger entry whose ID precedes the target<br>3. Forward the request to that finger (one hop)<br>4. That node repeats — but its finger table covers a finer region of the ring<br>5. After ~3 hops, we reach the actual owner<br><br>The coordinator could also do this lookup eagerly (fetch successor list and route directly) — saves hops but burns more state. We use lazy single-hop forwarding for simplicity.</div>
+      <div class="tech">finger_table.find_predecessor(target) → forward(next_hop) · until hash(key) ∈ (predecessor, successor]</div>
+      <div class="nums">
+        <span class="kv">budget · <b>3 ms (max 3 hops × 0.5 ms each + 1 ms node lookup)</b></span>
+        <span class="kv">hops · <b>median 1, p99 ≤ 3</b></span>
+        <span class="kv">finger table size · <b>10 entries</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Bootstrap / config provides cluster metadata</div>
+      <div class="desc">Out-of-band but critical: the bootstrap service (running on Spanner) is the source of truth for cluster topology. SDKs and DHT nodes consult it on startup to get the seed node list, current RF/quorum config, and topology version.<br><br><b>Why not let the ring be its own source of truth?</b> Because new joiners need to know SOMEONE to ask first. The bootstrap service is the "rendezvous point" — once you've found any one ring member, gossip teaches you the rest. After startup, the bootstrap service is rarely consulted (only on config change or full rejoin).</div>
+      <div class="tech">spanner.read(cluster_meta) → {seed_nodes, RF, W, R, topology_version} · cached client-side</div>
+      <div class="nums">
+        <span class="kv">consult frequency · <b>once per SDK init</b></span>
+        <span class="kv">cache TTL · <b>1 hour</b></span>
+        <span class="kv">storage · <b>Spanner (strong consistency)</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Request lands on owner node (Nₖ)</div>
+      <div class="desc">After 1-3 hops, the request reaches the actual owner — node Nₖ whose ID range contains <code>hash("profile:user:12345")</code>. Nₖ is now the coordinator for this read.<br><br>Nₖ has three options:<br>(a) <b>Local read (R=1, fast path)</b> — read from its own storage and respond. Used 95% of the time. ~2 ms latency.<br>(b) <b>Quorum read (R=2)</b> — read from 2 of 3 replicas, return the one with the highest vector clock. Used when caller passes <code>consistency=strong</code>.<br>(c) <b>Read-repair</b> — read from all 3 replicas, return the latest, and asynchronously push the latest version to any stale replicas. Used periodically for anti-entropy.<br><br>For our Feed render, we want R=1 (fast) — eventual consistency is fine for Profile data.</div>
+      <div class="tech">if hash(key) ∈ my_range: serve from local; else: forward · consistency=eventual → R=1</div>
+      <div class="nums">
+        <span class="kv">budget · <b>3 ms on owner</b></span>
+        <span class="kv">R=1 default · <b>~95% of reads</b></span>
+        <span class="kv">R=2 strong · <b>~5% of reads</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Routing layer maintains finger table (continuous)</div>
+      <div class="desc">In parallel with serving requests, every node continuously maintains its routing state:<br><br><b>Stabilization protocol (every 30 s):</b><br>- Each node asks its successor "who is your predecessor?"<br>- If the answer isn't this node, the topology shifted (someone joined between us)<br>- Update successor pointer; the joiner's stabilization will see us and update its predecessor<br><br><b>Finger table refresh (every 60 s):</b><br>- Periodically re-lookup each finger entry to detect failed nodes<br>- Replace dead entries with their successors via successor list<br><br><b>Successor list (length 3):</b><br>- Each node tracks its next 3 successors, not just one<br>- Survives transient node failure without full re-stabilization</div>
+      <div class="tech">every 30s: stabilize() · every 60s: fix_fingers() · failure detection via SWIM gossip</div>
+      <div class="nums">
+        <span class="kv">stabilization period · <b>30 s</b></span>
+        <span class="kv">finger refresh · <b>60 s</b></span>
+        <span class="kv">successor list · <b>length 3</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Storage layer reads from LSM tree (or RAM cache)</div>
+      <div class="desc">The actual storage engine on Nₖ is an LSM tree (similar to RocksDB) on local NVMe. Its read path:<br><br>1. <b>Check in-memory LRU cache</b> first (32 GB). For our Profile blob, cache hit rate is ~85% because hot profiles are repeatedly accessed. Cache hit → return in 0.5 ms.<br>2. On cache miss, check the active memtable (recent writes).<br>3. On miss, walk SSTables from newest to oldest, using bloom filters to skip most files.<br>4. Read the value from NVMe (1-2 ms with NVMe random read).<br>5. Promote to cache; return.<br><br>The key also carries a <b>vector clock</b> for conflict resolution. On read, we just return the value; on write, the clock advances. If two replicas diverge, the vector clock tells us which one is "later" (or that they conflict, requiring application-level merge).</div>
+      <div class="tech">cache.get(key) → on miss: memtable + sstables (bloom-filtered) · value+vclock returned</div>
+      <div class="nums">
+        <span class="kv">cache hit · <b>0.5 ms</b></span>
+        <span class="kv">cache miss · <b>2 ms (NVMe random read)</b></span>
+        <span class="kv">weighted avg · <b>~0.7 ms</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Gossip + failure detection runs continuously (independent)</div>
+      <div class="desc">Independent of any request, every node participates in the gossip protocol (we use a SWIM-style design):<br><br>- Every 1 s, each node picks <b>k = log(N) ≈ 10</b> random peers and exchanges heartbeats<br>- Heartbeats also piggyback "metadata diffs" — recent membership changes, suspicions of node failure<br>- If a node hasn't responded in 5 s, peers ask the suspected dead node's neighbors to check<br>- After 10 s of confirmed silence, the node is marked dead and removed from the ring<br><br><b>Why this matters for the read path:</b> when Nₖ's finger pointer to "Nₖ₊₃" is stale (Nₖ₊₃ died 2 minutes ago), the gossip protocol ensures Nₖ knows quickly and routes around the failure. SLO-A (10ms p99) depends on this fast failure detection.</div>
+      <div class="tech">SWIM: every 1s, ping(random_peer); if fail: indirect_probe via k=3 witnesses; mark dead after 10 s</div>
+      <div class="nums">
+        <span class="kv">gossip cadence · <b>1 s</b></span>
+        <span class="kv">failure detection · <b>&lt; 10 s</b></span>
+        <span class="kv">gossip fanout · <b>k = log(N) = 10</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">SCENARIO B: Client writes (PUT) an attachment</div>
+      <div class="desc">A user sends an InMail with a PDF attachment. After uploading the PDF to blob storage, the InMail service stores the metadata (sender, recipient, attachment URL, vector clock) via <code>dht.put("inmail:msg:abc123", metadata)</code>.<br><br>Same flow as the read: SDK consults cache, contacts a coordinator (could be the same Nₖ or a different node), which forwards to the owner.<br><br>The key difference: <b>the coordinator now talks to all 3 replicas in parallel</b>. It sends the write to Nₖ (primary), Nₖ₊₁ (replica 2), and Nₖ₊₂ (replica 3). It waits for W=2 successful ACKs before responding to the client. The third replica is updated asynchronously.</div>
+      <div class="tech">put(key, val) → coord forwards to [Nₖ, Nₖ₊₁, Nₖ₊₂] · vclock advance · ACK when W=2 of 3 succeed</div>
+      <div class="nums">
+        <span class="kv">budget · <b>20 ms p99 (write)</b></span>
+        <span class="kv">replicas · <b>3 (RF=3)</b></span>
+        <span class="kv">quorum · <b>W=2</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Replication path with hinted handoff</div>
+      <div class="desc">What if one of the replicas is temporarily down? Without protection, the write might block waiting for ACK, or worse, succeed at W=2 but leave the third replica permanently stale.<br><br><b>Hinted handoff:</b> When the coordinator can't reach Nₖ₊₂, it stores the write locally with a "hint" indicating which node it was meant for. Periodically, the coordinator retries delivering hints. When Nₖ₊₂ comes back online, the hints flush in order.<br><br>This is what gives us "always writable" semantics — the write succeeds as long as <em>any</em> W nodes anywhere in the ring can accept it. Even during severe failures, writes don't block.<br><br>Combined with vector clocks for conflict resolution, this is the <b>Dynamo-style "AP" property</b>: prioritize availability over strict consistency.</div>
+      <div class="tech">on replica unreachable: store(value, hint={target_node, vclock}) · on peer return: flush_hints_in_order(target)</div>
+      <div class="nums">
+        <span class="kv">hint TTL · <b>3 days</b></span>
+        <span class="kv">hint storage · <b>per-coordinator local</b></span>
+        <span class="kv">always-writable · <b>yes</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Anti-entropy heals long-term divergence</div>
+      <div class="desc">Hinted handoff fixes brief outages, but what about longer ones — a node down for hours, or a network partition that swallowed writes?<br><br>The <b>anti-entropy</b> mechanism runs in the background. Every hour, replica pairs exchange <b>Merkle tree hashes</b> of their key ranges:<br>- Compute hash of all keys in each sub-range<br>- Exchange tree roots; if equal, all keys are consistent<br>- If unequal, recurse into children; identify the divergent ranges<br>- Sync only the divergent keys (logarithmic data transfer, not full scan)<br><br>Additionally, <b>read-repair</b> happens inline: if a read with R=2 returns inconsistent values across replicas, the coordinator asynchronously pushes the latest version to stale replicas. SLO-E (convergence p99 ≤ 5s) is met through this combination — hinted handoff for &lt;1s outages, read-repair for steady state, anti-entropy for long-term healing.</div>
+      <div class="tech">every 1h: exchange_merkle_roots(peer) · diff identifies divergent ranges · sync only those keys</div>
+      <div class="nums">
+        <span class="kv">cadence · <b>1 h scan · inline read-repair</b></span>
+        <span class="kv">workers · <b>15 (throttled)</b></span>
+        <span class="kv">data transfer · <b>logarithmic in divergence</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Observability + admission control close the loop</div>
+      <div class="desc">All five SLIs are continuously monitored: read p99, write p99, availability, durability (via audit replicas), convergence delay, load skew. Crucial dashboards include:<br><br>- <b>Load skew alert</b> if any node holds &gt;110% of mean keys (rebalance trigger)<br>- <b>Ring topology view</b> showing current membership, finger correctness, suspected failures<br>- <b>Per-tenant rate limiting</b> at the coordinator to prevent noisy neighbors<br>- <b>Chaos injection</b> running continuously in staging (kill random nodes, induce partitions, slow disk)<br><br>For our scenarios: the GET completed in ~7 ms (1 ms client + 3 ms routing + 3 ms read). The PUT completed in ~15 ms (1 ms client + 3 ms routing + 11 ms W=2 quorum). Both under SLO budgets.<br><br><b>Total wall-clock for the hot read path:</b> 7 ms p99. <b>For the write path:</b> 15 ms p99. The system handles 5M ops/sec, self-organizes under churn, and has 6× lower cost than the strongly-consistent alternative (Spanner). That's the DHT value proposition.</div>
+      <div class="tech">metrics: read_p99, write_p99, avail, conv_delay, load_skew · admission control via token bucket per tenant</div>
+      <div class="nums">
+        <span class="kv">read p99 · <b>~7 ms ✓ (SLO 10 ms)</b></span>
+        <span class="kv">write p99 · <b>~15 ms ✓ (SLO 20 ms)</b></span>
+        <span class="kv">availability · <b>4 nines</b></span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="note tip">
+  <span class="lbl">The key design insight</span>
+  Notice that <em>every node plays every role</em> — there's no special "router," "coordinator," or "leader." Each node holds a finger table, stores data, gossips, and can coordinate any request. <b>This is what gives DHTs their elasticity: adding a node doesn't require operator intervention, schema migration, or capacity planning — the new node just joins the ring and the system rebalances.</b> The cost is eventual consistency, which is acceptable for most workloads but unacceptable for, say, monetary transactions (use Spanner there).
+</div>
+
+<!-- 3.3 RING CLOSE-UP -->
+<h3 id="ring">3.3 — Ring topology and finger table close-up</h3>
+
+<p>The hash ring is the heart of the DHT. Here's the topology with 8 example nodes (in production: 1,000 per region) and how the finger table works.</p>
+
+<div class="diagram">
+<svg viewBox="0 0 980 420" xmlns="http://www.w3.org/2000/svg">
+  <!-- Ring circle -->
+  <circle cx="290" cy="210" r="150" fill="none" stroke="#d0d7de" stroke-width="2"/>
+
+  <!-- 8 nodes positioned -->
+  <circle cx="290" cy="60" r="20" fill="#ddf4ff" stroke="#54aeff" stroke-width="2"/>
+  <text x="290" y="65" text-anchor="middle" class="lbl-title">N₀</text>
+  <text x="290" y="40" text-anchor="middle" class="lbl-meta">0x00</text>
+
+  <circle cx="395" cy="100" r="20" fill="#ddf4ff" stroke="#54aeff" stroke-width="2"/>
+  <text x="395" y="105" text-anchor="middle" class="lbl-title">N₁</text>
+  <text x="425" y="90" class="lbl-meta">0x20</text>
+
+  <circle cx="440" cy="210" r="20" fill="#dafbe1" stroke="#4ac26b" stroke-width="3"/>
+  <text x="440" y="215" text-anchor="middle" class="lbl-title">N₂</text>
+  <text x="470" y="215" class="lbl-meta">0x40 ← owner of key K</text>
+
+  <circle cx="395" cy="320" r="20" fill="#ddf4ff" stroke="#54aeff" stroke-width="2"/>
+  <text x="395" y="325" text-anchor="middle" class="lbl-title">N₃</text>
+  <text x="425" y="325" class="lbl-meta">0x60</text>
+
+  <circle cx="290" cy="360" r="20" fill="#ddf4ff" stroke="#54aeff" stroke-width="2"/>
+  <text x="290" y="365" text-anchor="middle" class="lbl-title">N₄</text>
+  <text x="290" y="395" text-anchor="middle" class="lbl-meta">0x80</text>
+
+  <circle cx="185" cy="320" r="20" fill="#ddf4ff" stroke="#54aeff" stroke-width="2"/>
+  <text x="185" y="325" text-anchor="middle" class="lbl-title">N₅</text>
+  <text x="155" y="325" text-anchor="end" class="lbl-meta">0xA0</text>
+
+  <circle cx="140" cy="210" r="20" fill="#fff1e5" stroke="#fd8c73" stroke-width="3"/>
+  <text x="140" y="215" text-anchor="middle" class="lbl-title">N₆</text>
+  <text x="110" y="215" text-anchor="end" class="lbl-meta">0xC0 ← request enters</text>
+
+  <circle cx="185" cy="100" r="20" fill="#ddf4ff" stroke="#54aeff" stroke-width="2"/>
+  <text x="185" y="105" text-anchor="middle" class="lbl-title">N₇</text>
+  <text x="155" y="90" text-anchor="end" class="lbl-meta">0xE0</text>
+
+  <!-- Finger arrows from N6 -->
+  <path d="M155 200 Q 200 130 280 80" stroke="#0a66c2" stroke-width="2" fill="none" marker-end="url(#arr-blue)" stroke-dasharray="4,2"/>
+  <path d="M160 200 Q 280 130 420 200" stroke="#0a66c2" stroke-width="2.5" fill="none" marker-end="url(#arr-blue)"/>
+  <text x="280" y="160" class="lbl-meta" fill="#0a66c2">finger to N₂ (hop 1)</text>
+
+  <defs>
+    <marker id="arr-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0a66c2"/>
+    </marker>
+  </defs>
+
+  <!-- Right side: finger table explanation -->
+  <text x="560" y="50" class="lbl-title" style="font-size:13px">N₆'s finger table (8 nodes example)</text>
+
+  <rect x="560" y="65" width="380" height="220" fill="#f6f8fa" stroke="#d0d7de"/>
+  <text x="580" y="85" class="lbl-meta" font-family="JetBrains Mono">i  | start          | successor</text>
+  <text x="580" y="100" class="lbl-meta" font-family="JetBrains Mono">─────────────────────────────</text>
+  <text x="580" y="115" class="lbl-sub" font-family="JetBrains Mono">0  | 0xC0 + 2^0     | N₇</text>
+  <text x="580" y="130" class="lbl-sub" font-family="JetBrains Mono">1  | 0xC0 + 2^1     | N₇</text>
+  <text x="580" y="145" class="lbl-sub" font-family="JetBrains Mono">2  | 0xC0 + 2^2     | N₇</text>
+  <text x="580" y="160" class="lbl-sub" font-family="JetBrains Mono">3  | 0xC0 + 2^3     | N₇</text>
+  <text x="580" y="175" class="lbl-sub" font-family="JetBrains Mono">4  | 0xC0 + 2^4     | N₀</text>
+  <text x="580" y="190" class="lbl-sub" font-family="JetBrains Mono">5  | 0xC0 + 2^5     | N₁</text>
+  <text x="580" y="205" class="lbl-sub" font-family="JetBrains Mono" font-weight="700" fill="#0a66c2">6  | 0xC0 + 2^6     | N₂ ←</text>
+  <text x="580" y="220" class="lbl-sub" font-family="JetBrains Mono">7  | 0xC0 + 2^7     | N₅</text>
+
+  <text x="560" y="265" class="lbl-title" style="font-size:13px">Lookup for key K (hash 0x40):</text>
+  <text x="560" y="285" class="lbl-sub">1. K is at 0x40, far from N₆ (0xC0)</text>
+  <text x="560" y="300" class="lbl-sub">2. N₆ scans finger table backwards</text>
+  <text x="560" y="315" class="lbl-sub">3. Largest finger preceding K = N₂</text>
+  <text x="560" y="330" class="lbl-sub">4. Forward to N₂ → DONE (1 hop!)</text>
+  <text x="560" y="350" class="lbl-meta" fill="#0a66c2">Without fingers: 4 successor hops</text>
+  <text x="560" y="365" class="lbl-meta" fill="#0a66c2">With fingers: 1 hop</text>
+  <text x="560" y="385" class="lbl-meta">In production (N=1000): 10 fingers → max 10 hops, average ≤ 3</text>
+</svg>
+<div class="diagram-cap">Fig 2 · Ring topology with 8 example nodes. N₆ receives a lookup for key at hash 0x40. Without fingers, it would forward to successor (N₇), which forwards to N₀, then N₁, then N₂ — 4 hops. With finger table, N₆ finds the largest finger preceding 0x40 (N₂) and forwards directly — 1 hop.</div>
+</div>
+
+<!-- 3.4 NODE JOIN/LEAVE -->
+<h3 id="join">3.4 — Node join/leave (the self-organizing part)</h3>
+
+<p>The defining feature of a DHT: you don't manually plan capacity. You add a node and it integrates itself. Here's the protocol:</p>
+
+<table>
+  <thead><tr><th>Event</th><th>Step</th><th>Action</th><th>Time</th></tr></thead>
+  <tbody>
+    <tr><td rowspan="5"><b>Node JOIN</b></td><td class="num">1</td><td>New node N* picks a random ID (UUID-based, ensures uniform placement)</td><td class="num">instant</td></tr>
+    <tr><td class="num">2</td><td>N* contacts a seed node, asks "who is the successor of my ID?"</td><td class="num">+10 ms</td></tr>
+    <tr><td class="num">3</td><td>N* tells its successor "I'm your new predecessor"; successor updates its predecessor pointer</td><td class="num">+10 ms</td></tr>
+    <tr><td class="num">4</td><td>Successor transfers the relevant key range to N* (only the range N* should own)</td><td class="num">+30-60 s</td></tr>
+    <tr><td class="num">5</td><td>Stabilization propagates: within 1-2 minutes, all other nodes' finger tables converge to include N*</td><td class="num">+90 s</td></tr>
+    <tr><td rowspan="4"><b>Node LEAVE (graceful)</b></td><td class="num">1</td><td>Departing node announces departure via gossip</td><td class="num">instant</td></tr>
+    <tr><td class="num">2</td><td>Successor takes over the departing node's key range (already has copies as replica)</td><td class="num">+5 s</td></tr>
+    <tr><td class="num">3</td><td>Other replicas are promoted; new replica chosen to maintain RF=3</td><td class="num">+30 s</td></tr>
+    <tr><td class="num">4</td><td>Finger tables converge via stabilization</td><td class="num">+90 s</td></tr>
+    <tr><td rowspan="4"><b>Node FAIL (crash)</b></td><td class="num">1</td><td>SWIM gossip detects unreachable node within 10 s</td><td class="num">+10 s</td></tr>
+    <tr><td class="num">2</td><td>Successor list activates: next live successor takes over range</td><td class="num">+10 s</td></tr>
+    <tr><td class="num">3</td><td>Read traffic for that range continues uninterrupted (replicas still serve)</td><td class="num">continuous</td></tr>
+    <tr><td class="num">4</td><td>Replication maintenance: replicate to new replica to restore RF=3</td><td class="num">+5 min</td></tr>
+  </tbody>
+</table>
+
+<div class="note">
+  <span class="lbl">Why "virtual nodes" matter</span>
+  Each physical node actually owns <b>256 virtual nodes</b> on the ring, each with its own ID. Why? <b>Without vnodes:</b> when a node fails, ALL its keys move to one successor — that node now has 2× its share, getting hammered. <b>With 256 vnodes:</b> the failed node's 256 vnodes are spread across 256 different successors, each taking only a small fraction. <b>Load remains uniform during churn.</b> Same trick as the distributed cache doc, applied to a different problem.
+</div>
+
+</section>
+
+<!-- ===== 4. GAUNTLET ===== -->
+<section>
+<h2 id="gauntlet">4 · Failure gauntlet</h2>
+
+<div class="cols-2">
+  <div class="comp">
+    <div class="name">A · Single node crash <span class="tech">SLI: A, C</span></div>
+    <div class="desc">A DHT node dies; its keys (range + replica copies) are affected.</div>
+    <div class="row"><span class="lab">trigger</span><span>SWIM marks node dead &lt; 10 s</span></div>
+    <div class="row"><span class="lab">absorb</span><span>successor takes over range; other replicas serve reads</span></div>
+    <div class="row"><span class="lab">heal</span><span>new replica created within 5 min to restore RF=3</span></div>
+    <div class="row"><span class="lab">verdict</span><span>no data loss · brief latency tail</span></div>
+  </div>
+  <div class="comp">
+    <div class="name">B · Network partition <span class="tech">SLI: B, E</span></div>
+    <div class="desc">AZ split — ring is divided into two halves that can't talk.</div>
+    <div class="row"><span class="lab">trigger</span><span>gossip-detected partition</span></div>
+    <div class="row"><span class="lab">absorb (AP)</span><span>both halves continue accepting reads/writes</span></div>
+    <div class="row"><span class="lab">heal</span><span>anti-entropy + read-repair merge divergent values via vclocks</span></div>
+    <div class="row"><span class="lab">verdict</span><span>availability preserved; convergence p99 ≤ 5 s</span></div>
+  </div>
+  <div class="comp">
+    <div class="name">C · Hot key <span class="tech">SLI: A, F</span></div>
+    <div class="desc">A viral profile gets 100K GET/s — single node saturates.</div>
+    <div class="row"><span class="lab">trigger</span><span>per-node QPS &gt; 50K</span></div>
+    <div class="row"><span class="lab">absorb</span><span>replica-side read load balancing (R=1 across 3 replicas)</span></div>
+    <div class="row"><span class="lab">cap</span><span>client-side L1 cache for hot keys (1 s TTL)</span></div>
+    <div class="row"><span class="lab">verdict</span><span>hot key spread across 3 replicas + client cache</span></div>
+  </div>
+  <div class="comp">
+    <div class="name">D · Concurrent writes (conflict) <span class="tech">SLI: E</span></div>
+    <div class="desc">Two clients write to the same key simultaneously from different regions.</div>
+    <div class="row"><span class="lab">trigger</span><span>vclock comparison shows concurrent writes</span></div>
+    <div class="row"><span class="lab">absorb (simple)</span><span>last-writer-wins by timestamp</span></div>
+    <div class="row"><span class="lab">absorb (CRDT)</span><span>app-level merge function called by SDK</span></div>
+    <div class="row"><span class="lab">verdict</span><span>both writes preserved or merged</span></div>
+  </div>
+  <div class="comp">
+    <div class="name">E · Cascading failure <span class="tech">SLI: A, C</span></div>
+    <div class="desc">Failed node's load shifts to successor; successor overloads and fails.</div>
+    <div class="row"><span class="lab">trigger</span><span>2+ consecutive node failures in same range</span></div>
+    <div class="row"><span class="lab">absorb</span><span>vnodes mean load spreads to 256 successors, not 1</span></div>
+    <div class="row"><span class="lab">protect</span><span>admission control caps per-node QPS</span></div>
+    <div class="row"><span class="lab">verdict</span><span>no cascade — load remains spread</span></div>
+  </div>
+  <div class="comp">
+    <div class="name">F · Join storm <span class="tech">SLI: A, F</span></div>
+    <div class="desc">Auto-scaler adds 200 nodes simultaneously.</div>
+    <div class="row"><span class="lab">trigger</span><span>topology version churning</span></div>
+    <div class="row"><span class="lab">absorb</span><span>throttle joins to N/min via bootstrap service</span></div>
+    <div class="row"><span class="lab">protect</span><span>data transfer rate-limited during join</span></div>
+    <div class="row"><span class="lab">verdict</span><span>~1 min per join; total 200 nodes added in &lt; 1 h</span></div>
+  </div>
+</div>
+
+<div class="note danger">
+  <span class="lbl">Cannot defend against</span>
+  Complete loss of all 3 replicas for the same key (data center fire affecting one ring slice across AZs). Mitigation: cross-region async replication (1+ region always alive). Math: probability of all 3 AZs failing simultaneously ≈ 10⁻⁹/year, mitigated to 10⁻¹²/year with cross-region.
+</div>
+</section>
+
+<!-- ===== 5. PLAYBOOK ===== -->
+<section>
+<h2 id="playbook">5 · Operational playbook</h2>
+
+<h3>5.1 — Deployment</h3>
+<table>
+  <thead><tr><th>Stage</th><th>Strategy</th><th>Care needed</th></tr></thead>
+  <tbody>
+    <tr><td>DHT nodes</td><td class="num">rolling, 1 node at a time</td><td>drain → handoff → restart; ~5 min/node</td></tr>
+    <tr><td>SDK rollout</td><td class="num">canary 1% → 10% → 100%</td><td>SDK changes affect every app pod; canary first</td></tr>
+    <tr><td>Protocol upgrades</td><td class="num">backwards-compatible only</td><td>two-phase: read old/write old → write new → read new</td></tr>
+    <tr><td>Major topology changes</td><td class="num">scheduled maintenance window</td><td>rebalancing data movement is expensive</td></tr>
+  </tbody>
+</table>
+
+<h3>5.2 — Chaos drills (quarterly)</h3>
+<ul>
+  <li><b>Random node kill (1)</b> — verify successor takes over within 10 s; no read errors.</li>
+  <li><b>Random node kill (multiple)</b> — kill 3 nodes simultaneously; verify successor list activates correctly.</li>
+  <li><b>Network partition</b> — induce AZ split; verify both sides keep serving; verify convergence post-heal.</li>
+  <li><b>Slow node</b> — inject 100ms latency on one node's responses; verify other replicas absorb the read load.</li>
+  <li><b>Join storm</b> — add 50 nodes simultaneously; verify rebalancing doesn't degrade SLOs.</li>
+  <li><b>Vclock conflict injection</b> — write same key from 3 regions concurrently; verify conflict resolution.</li>
+  <li><b>Hot key simulation</b> — synthesize 200k QPS on one key; verify replica fan-out + client cache absorption.</li>
+</ul>
+
+<h3>5.3 — Runbook excerpt</h3>
+<pre><code># Symptom: SLO-A burning — read p99 > 10 ms
+
+# Likely causes (ranked)
+1. Routing table stale            → check stabilization metrics
+2. Hot key on single replica      → check per-key QPS
+3. Slow node in critical path     → check per-node response time
+4. Network partition              → check gossip view consistency
+
+# First response (in order):
+- Confirm: dashboard 'dht-slo-a' shows > 10 ms p99
+- Check ring topology: nodes with stale fingers / suspected failures
+- Identify hot key (if any): top keys by QPS, replicate to client cache
+- If specific node slow: drain it (gracefully exit ring), restart
+- Communicate: post in #incident-dht
+- Escalate: if not resolving in 15 min, page tier-2 oncall</code></pre>
+</section>
+
+<!-- ===== 6. COMPONENTS ===== -->
+<section>
+<h2 id="components">6 · Component reference</h2>
+
+<table>
+  <thead><tr><th>Component</th><th>Tech</th><th>Scale</th><th>Failure mitigation</th><th>SLO</th></tr></thead>
+  <tbody>
+    <tr><td><b>Client SDK</b></td><td class="num">Go / Java library</td><td>~2M app pods</td><td>local cache · seed list · retry</td><td>A,B</td></tr>
+    <tr><td><b>DHT node (routing)</b></td><td class="num">finger table · successor list</td><td>1000 nodes/region</td><td>stabilization · gossip</td><td>A,G</td></tr>
+    <tr><td><b>DHT node (storage)</b></td><td class="num">LSM tree + LRU cache</td><td>1.3 TB/node · 32 GB RAM</td><td>3× replica · vclock</td><td>A,B,D</td></tr>
+    <tr><td><b>Gossip / failure detect</b></td><td class="num">SWIM</td><td>k=log(N) fanout</td><td>indirect probes · suspicion</td><td>C</td></tr>
+    <tr><td><b>Replication path</b></td><td class="num">async fanout</td><td>RF=3, W=2, R=1</td><td>hinted handoff</td><td>B,C,D</td></tr>
+    <tr><td><b>Anti-entropy</b></td><td class="num">Merkle tree sync</td><td>15 workers throttled</td><td>scheduled + read-repair</td><td>E</td></tr>
+    <tr><td><b>Cross-region replication</b></td><td class="num">async stream</td><td>2 Gbps avg</td><td>retry · catch-up via merkle</td><td>D,E</td></tr>
+    <tr><td><b>Bootstrap / config</b></td><td class="num">Spanner</td><td>3 nodes region-replicated</td><td>strong consistency</td><td>C</td></tr>
+    <tr><td><b>Coordinator role</b></td><td class="num">any DHT node</td><td>stateless function</td><td>any other node can take over</td><td>A,B</td></tr>
+    <tr><td><b>Observability</b></td><td class="num">Prometheus + chaos</td><td>per-node metrics</td><td>synthetic tests, load skew alerts</td><td>all</td></tr>
+  </tbody>
+</table>
+</section>
+
+<!-- ===== 7. TRADE-OFFS ===== -->
+<section>
+<h2 id="tradeoffs">7 · Trade-offs & open questions</h2>
+
+<div class="cols-2">
+  <div>
+    <h4>Chose</h4>
+    <ul>
+      <li><b>AP over CP</b> · availability and partition tolerance over strong consistency; trade: eventual consistency (5 s convergence window).</li>
+      <li><b>Consistent hashing with 256 vnodes</b> · uniform load even during churn; trade: more per-node state (256× ring entries).</li>
+      <li><b>Finger tables (O(log N))</b> over flat routing · ~3 hops max instead of 500; trade: 1 KB state per node + maintenance overhead.</li>
+      <li><b>Vector clocks</b> over physical timestamps · captures concurrency correctly; trade: storage cost (~50 B per key).</li>
+      <li><b>Hinted handoff</b> · always-writable behavior; trade: temporary inconsistency, hint TTL management.</li>
+      <li><b>Per-node coordinator role</b> · any node can serve; trade: no admin shortcut for "find the leader."</li>
+      <li><b>LSM tree on NVMe</b> · high write throughput; trade: read amplification (mitigated by bloom filters + cache).</li>
+      <li><b>SWIM gossip</b> · scales to thousands of nodes; trade: ~10 s failure detection (not sub-second).</li>
+    </ul>
+  </div>
+  <div>
+    <h4>Rejected</h4>
+    <ul>
+      <li><b>Single coordinator</b> (Cassandra-style "token-aware client") · client complexity; SDK approach is more transparent.</li>
+      <li><b>Strong consistency (Paxos/Raft per shard)</b> · would tank write latency from 15 ms to 100+ ms.</li>
+      <li><b>No virtual nodes</b> · simpler but creates dramatic load imbalance during failures.</li>
+      <li><b>Full state synchronization</b> · would saturate network; Merkle trees give logarithmic sync cost.</li>
+      <li><b>Manual shard placement</b> · operationally heavy; consistent hashing automates it.</li>
+      <li><b>Bigtable / DynamoDB managed</b> · vendor lock-in; we own the protocol and can tune for our workloads.</li>
+      <li><b>Spanner</b> for the same use cases · 6× more expensive at this scale; only worth it for strong consistency requirements.</li>
+    </ul>
+  </div>
+</div>
+
+<h3>Open questions</h3>
+<ol>
+  <li>Should we support <b>per-key consistency levels</b> as a write-time parameter (e.g., monetary transactions: R=2, W=3; profile data: R=1, W=2)? Currently global config.</li>
+  <li>Is 256 vnodes the right number? Higher = better load balance, but more ring metadata to maintain. Need to measure.</li>
+  <li>Should we offer <b>multi-key transactions</b>? Some workloads (Connect graph updates) want "atomically update 5 keys." Currently single-key only.</li>
+  <li>Should the SDK support <b>local secondary indexes</b>? "Find all keys with attribute X = Y" requires scatter-gather across all nodes. Add this complexity, or push to a separate indexing service?</li>
+  <li>How aggressive should cross-region replication be? Currently async (~5 s lag); some workloads want sync (read-your-writes globally). Adds latency + cost.</li>
+  <li>Should we add <b>compression at the SDK layer</b> for large values? Avg value is 2 KB; with zstd we'd save ~50% storage. Trade: CPU on client.</li>
+</ol>
+</section>
+
+<footer>
+  <div>linkedin/dht · design-doc · distributed-hash-table.md</div>
+  <div>nalsd · review status: <span style="color:var(--yellow)">⬤</span> in-review</div>
+</footer>
+
+</main>
+</div>
+</body>
+</html>
