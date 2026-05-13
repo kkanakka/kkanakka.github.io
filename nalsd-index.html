@@ -81,6 +81,16 @@
   .card-taskqueue:hover { border-color: var(--accent4); }
   .card-taskqueue .cta { color: var(--accent4); }
 
+  .card-slo .icon { background: rgba(9,105,218,0.1); color: var(--accent); }
+  .card-slo h2 { color: var(--accent); }
+  .card-slo:hover { border-color: var(--accent); }
+  .card-slo .cta { color: var(--accent); }
+
+  .card-canary .icon { background: rgba(26,127,55,0.1); color: var(--accent2); }
+  .card-canary h2 { color: var(--accent2); }
+  .card-canary:hover { border-color: var(--accent2); }
+  .card-canary .cta { color: var(--accent2); }
+
   .footer { background: var(--surface); border-top: 1px solid var(--border); padding: 32px 0; text-align: center; color: var(--text-muted); font-size: 0.9em; }
 </style>
 </head>
@@ -140,6 +150,36 @@
         <span class="tag">Retries</span>
         <span class="tag">Dead Letter</span>
         <span class="tag">Idempotency</span>
+      </div>
+      <div class="cta">Read the design &rarr;</div>
+    </a>
+
+    <a href="nalsd-slo-tracker.html" class="card card-slo">
+      <div class="icon">&#127919;</div>
+      <h2>SLO Error Budget Tracker</h2>
+      <div class="subtitle">NALSD &middot; LinkedIn reliability tracking</div>
+      <p>Design an SLO error budget tracker for LinkedIn-scale services. Budget calculation, burn-rate alerts, multi-window detection, and automated policy enforcement.</p>
+      <div class="tag-row">
+        <span class="tag">SLOs</span>
+        <span class="tag">Error Budget</span>
+        <span class="tag">Burn Rate</span>
+        <span class="tag">Multi-Window</span>
+        <span class="tag">Policy</span>
+      </div>
+      <div class="cta">Read the design &rarr;</div>
+    </a>
+
+    <a href="nalsd-canary-controller.html" class="card card-canary">
+      <div class="icon">&#128038;</div>
+      <h2>Canary Deployment Controller</h2>
+      <div class="subtitle">NALSD &middot; LinkedIn safe deployments</div>
+      <p>Design a canary deployment controller for progressive rollouts. Traffic shifting, automated rollback, metric analysis, and multi-stage promotion gates.</p>
+      <div class="tag-row">
+        <span class="tag">Canary</span>
+        <span class="tag">Progressive Rollout</span>
+        <span class="tag">Rollback</span>
+        <span class="tag">Traffic Shifting</span>
+        <span class="tag">Metrics</span>
       </div>
       <div class="cta">Read the design &rarr;</div>
     </a>

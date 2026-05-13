@@ -1,0 +1,911 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NALSD · LinkedIn Canary Deployment Controller</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#ffffff;--bg-alt:#f6f8fa;--bg-code:#f6f8fa;
+  --border:#d0d7de;--border-soft:#eaeef2;
+  --ink:#1f2328;--ink-soft:#59636e;--ink-faint:#818b98;
+  --link:#0a66c2;--link-hover:#004182;
+  --green:#1a7f37;--green-bg:#dafbe1;
+  --red:#cf222e;--red-bg:#ffebe9;
+  --yellow:#9a6700;--yellow-bg:#fff8c5;
+  --purple:#6639ba;--purple-bg:#fbefff;
+  --orange:#bc4c00;--orange-bg:#fff1e5;
+  --blue-bg:#ddf4ff;
+  --shadow:0 1px 0 rgba(31,35,40,.04);
+  --mono:'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --serif:'Source Serif 4', Georgia, serif;
+  --sans:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
+a{color:var(--link);text-decoration:none}a:hover{text-decoration:underline}
+code,pre,.mono{font-family:var(--mono)}
+code{background:var(--bg-code);padding:.1em .35em;border-radius:4px;font-size:.88em;border:1px solid var(--border-soft)}
+pre{background:var(--bg-code);border:1px solid var(--border);border-radius:6px;padding:12px 14px;overflow-x:auto;font-size:12.5px;line-height:1.55;margin:0}
+
+.shell{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+aside{position:sticky;top:0;height:100vh;overflow-y:auto;border-right:1px solid var(--border);background:var(--bg);padding:18px 14px 40px}
+main{max-width:1080px;width:100%;padding:28px 40px 80px}
+@media (max-width:960px){.shell{grid-template-columns:1fr}aside{position:relative;height:auto;border-right:none;border-bottom:1px solid var(--border)}}
+
+.brand{display:flex;align-items:center;gap:10px;padding:6px 8px 16px;border-bottom:1px solid var(--border-soft);margin-bottom:12px}
+.brand-mark{width:28px;height:28px;border-radius:6px;background:var(--link);color:#fff;display:grid;place-items:center;font-weight:700;font-family:var(--mono);font-size:13px}
+.brand-title{font-weight:700;font-size:14px}
+.brand-sub{font-size:11px;color:var(--ink-soft);font-family:var(--mono)}
+.toc-group{margin:14px 0 4px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-faint);font-weight:600;padding:0 8px}
+.toc a{display:block;padding:4px 8px;border-radius:5px;color:var(--ink-soft);font-size:13px;border-left:2px solid transparent;margin-left:4px}
+.toc a:hover{background:var(--bg-alt);color:var(--ink);text-decoration:none}
+.toc a.depth-2{padding-left:18px;font-size:12.5px}
+
+.doc-head{border-bottom:1px solid var(--border);padding-bottom:18px;margin-bottom:24px}
+.crumbs{font-size:12px;color:var(--ink-soft);font-family:var(--mono);margin-bottom:8px}
+.crumbs .sep{color:var(--ink-faint);margin:0 6px}
+h1{font-family:var(--serif);font-weight:700;font-size:32px;line-height:1.15;letter-spacing:-.015em;margin:0 0 8px}
+.doc-meta{display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:12.5px;color:var(--ink-soft);font-family:var(--mono);margin-top:10px}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:999px;border:1px solid var(--border);background:var(--bg-alt);font-size:11.5px;font-family:var(--mono);color:var(--ink-soft)}
+.pill.blue{background:var(--blue-bg);border-color:#80ccff;color:#0969da}
+.pill.green{background:var(--green-bg);border-color:#a5e1b1;color:var(--green)}
+.pill.purple{background:var(--purple-bg);border-color:#d8b9ff;color:var(--purple)}
+.pill.orange{background:var(--orange-bg);border-color:#ffb077;color:var(--orange)}
+.pill.red{background:var(--red-bg);border-color:#ffaaa3;color:var(--red)}
+.pill.yellow{background:var(--yellow-bg);border-color:#e7c860;color:var(--yellow)}
+
+h2{font-family:var(--serif);font-weight:700;font-size:22px;letter-spacing:-.01em;margin:40px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border-soft);scroll-margin-top:20px}
+h3{font-family:var(--sans);font-weight:700;font-size:16px;margin:24px 0 8px;scroll-margin-top:20px}
+h4{font-family:var(--sans);font-weight:600;font-size:13.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-soft);margin:18px 0 6px}
+p{margin:0 0 12px}
+ul,ol{margin:0 0 12px;padding-left:22px}
+li{margin-bottom:4px}
+
+.note{border-left:3px solid var(--link);background:var(--blue-bg);padding:10px 14px;border-radius:0 6px 6px 0;margin:14px 0;font-size:13px}
+.note.warn{border-left-color:var(--yellow);background:var(--yellow-bg)}
+.note.danger{border-left-color:var(--red);background:var(--red-bg)}
+.note.tip{border-left-color:var(--green);background:var(--green-bg)}
+.note .lbl{font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px;font-family:var(--mono);color:var(--link)}
+.note.warn .lbl{color:var(--yellow)}
+.note.danger .lbl{color:var(--red)}
+.note.tip .lbl{color:var(--green)}
+
+table{width:100%;border-collapse:collapse;font-size:12.5px;margin:8px 0 16px;border:1px solid var(--border);border-radius:6px;overflow:hidden}
+thead{background:var(--bg-alt)}
+th,td{padding:7px 11px;text-align:left;border-bottom:1px solid var(--border-soft);vertical-align:top}
+th{font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-soft)}
+tr:last-child td{border-bottom:none}
+td.num{font-family:var(--mono);font-size:12px}
+
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0 20px}
+@media (max-width:780px){.stat-grid{grid-template-columns:repeat(2,1fr)}}
+.stat{border:1px solid var(--border);border-radius:6px;padding:12px;background:var(--bg)}
+.stat .k{font-family:var(--mono);font-size:11px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.05em}
+.stat .v{font-family:var(--serif);font-weight:700;font-size:22px;margin-top:2px;line-height:1.15}
+.stat .s{font-size:11px;color:var(--ink-soft);font-family:var(--mono);margin-top:2px}
+
+.cols-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:780px){.cols-2{grid-template-columns:1fr}}
+
+.calc{border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin:14px 0;background:var(--bg-alt);position:relative}
+.calc::before{content:"∑ NALSD";position:absolute;top:-10px;left:14px;font-family:var(--mono);font-size:10.5px;background:var(--bg);padding:2px 8px;border:1px solid var(--border);border-radius:4px;color:var(--ink-soft);letter-spacing:.05em;font-weight:600}
+.calc h4{margin-top:4px}
+.calc pre{background:var(--bg);border-color:var(--border-soft)}
+.calc .verdict{display:flex;align-items:center;gap:8px;margin-top:10px;padding:8px 12px;background:var(--bg);border:1px dashed var(--green);border-radius:6px;font-family:var(--mono);font-size:12px;color:var(--green)}
+.calc .verdict.warn{border-color:var(--yellow);color:var(--yellow)}
+
+.diagram{border:1px solid var(--border);border-radius:8px;background:var(--bg);padding:14px;margin:16px 0;box-shadow:var(--shadow)}
+.diagram-cap{font-family:var(--mono);font-size:11px;color:var(--ink-faint);margin-top:8px;text-align:center}
+.diagram svg{width:100%;height:auto;display:block}
+
+.box-fill-blue{fill:#ddf4ff;stroke:#54aeff}
+.box-fill-green{fill:#dafbe1;stroke:#4ac26b}
+.box-fill-purple{fill:#fbefff;stroke:#c297ff}
+.box-fill-orange{fill:#fff1e5;stroke:#fd8c73}
+.box-fill-red{fill:#ffebe9;stroke:#ff8182}
+.box-fill-yellow{fill:#fff8c5;stroke:#d4a72c}
+.box-fill-gray{fill:#f6f8fa;stroke:#d0d7de}
+.lbl-title{font-family:'Inter',sans-serif;font-weight:700;font-size:11.5px;fill:#1f2328}
+.lbl-sub{font-family:'JetBrains Mono',monospace;font-size:9.5px;fill:#59636e}
+.lbl-meta{font-family:'JetBrains Mono',monospace;font-size:9px;fill:#818b98}
+.arrow{stroke:#59636e;stroke-width:1.3;fill:none;marker-end:url(#arr)}
+.arrow-dashed{stroke:#cf222e;stroke-width:1.2;fill:none;stroke-dasharray:4,3;marker-end:url(#arr-red)}
+.arrow-green{stroke:#1a7f37;stroke-width:1.5;fill:none;marker-end:url(#arr-green)}
+
+.flow-steps{counter-reset:step}
+.flow-step{display:grid;grid-template-columns:36px 1fr;gap:12px;padding:14px 16px;border:1px solid var(--border);border-radius:8px;margin-bottom:10px;background:#fff}
+.flow-step .num{counter-increment:step;background:var(--link);color:#fff;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-family:var(--mono);font-weight:700;font-size:13px}
+.flow-step .num::before{content:counter(step)}
+.flow-step .body .title{font-weight:700;font-size:14px;margin-bottom:4px;font-family:var(--sans)}
+.flow-step .body .desc{font-size:12.5px;color:var(--ink-soft);margin-bottom:6px}
+.flow-step .body .tech{font-family:var(--mono);font-size:11px;background:var(--bg-alt);border:1px solid var(--border-soft);border-radius:4px;padding:5px 8px;margin-top:4px;display:inline-block;color:var(--ink);max-width:100%;overflow-x:auto}
+.flow-step .body .nums{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px}
+.flow-step .body .nums .kv{font-family:var(--mono);font-size:11px;color:var(--ink-soft)}
+.flow-step .body .nums .kv b{color:var(--ink);font-weight:700}
+
+.comp-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:12px 0}
+@media (max-width:780px){.comp-grid{grid-template-columns:1fr}}
+.comp{border:1px solid var(--border);border-radius:6px;padding:11px 13px;background:var(--bg)}
+.comp .name{font-weight:700;font-size:13px;display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.comp .name .tech{font-family:var(--mono);font-size:10.5px;color:var(--link);font-weight:500}
+.comp .desc{font-size:12px;color:var(--ink-soft);margin-bottom:6px}
+.comp .row{font-family:var(--mono);font-size:11px;color:var(--ink-soft);display:flex;justify-content:space-between;padding:2px 0;border-top:1px dashed var(--border-soft)}
+.comp .row .lab{color:var(--ink-faint)}
+
+/* Traffic split visualizer */
+.split-bar{display:flex;height:36px;border:1px solid var(--border);border-radius:6px;overflow:hidden;margin:10px 0;font-family:var(--mono);font-size:11px;font-weight:600}
+.split-bar .seg{display:flex;align-items:center;justify-content:center;color:#fff;padding:0 8px}
+.split-bar .seg.baseline{background:#0a66c2}
+.split-bar .seg.canary{background:#bc4c00}
+.split-bar .seg.fail{background:#cf222e}
+
+footer{margin-top:50px;padding-top:18px;border-top:1px solid var(--border-soft);font-size:11.5px;color:var(--ink-faint);font-family:var(--mono);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+
+.li-strip{height:3px;background:linear-gradient(90deg,var(--link) 0,var(--link) 60%,transparent 100%);border-radius:2px;margin-bottom:14px}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:#d0d7de;border-radius:5px;border:2px solid var(--bg)}
+::-webkit-scrollbar-track{background:transparent}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<aside>
+  <div class="brand">
+    <div class="brand-mark">in</div>
+    <div>
+      <div class="brand-title">in/canary</div>
+      <div class="brand-sub">v2026.05 · nalsd</div>
+    </div>
+  </div>
+  <div class="li-strip"></div>
+  <nav class="toc">
+    <div class="toc-group">Design</div>
+    <a href="#problem">1 · Problem & SLOs</a>
+    <a href="#capacity">2 · Capacity model</a>
+    <a href="#deploy-rate" class="depth-2">2.1 Deploy rate</a>
+    <a href="#metrics" class="depth-2">2.2 Metrics volume</a>
+    <a href="#decision" class="depth-2">2.3 Decision compute</a>
+    <a href="#fleet" class="depth-2">2.4 Fleet & cost</a>
+    <a href="#arch">3 · Architecture</a>
+    <a href="#dataflow" class="depth-2">3.1 Full diagram</a>
+    <a href="#flow" class="depth-2">3.2 Step-by-step</a>
+    <a href="#stages" class="depth-2">3.3 Stage progression</a>
+    <a href="#stats" class="depth-2">3.4 Statistical decision</a>
+    <div class="toc-group">Operations</div>
+    <a href="#gauntlet">4 · Failure gauntlet</a>
+    <a href="#playbook">5 · Ops playbook</a>
+    <a href="#components">6 · Components</a>
+    <a href="#tradeoffs">7 · Trade-offs</a>
+  </nav>
+</aside>
+
+<main>
+
+<header class="doc-head">
+  <div class="crumbs">
+    <span>in/canary</span><span class="sep">/</span>
+    <span>design-docs</span><span class="sep">/</span>
+    <span>2026</span><span class="sep">/</span>
+    <span>canary-deployment-controller.md</span>
+  </div>
+  <h1>Designing LinkedIn's Canary Deployment Controller</h1>
+  <p style="font-size:15px;color:var(--ink-soft);margin:6px 0 0;font-family:var(--serif)">
+    A NALSD walkthrough — the control brain that decides whether a Feed/InMail/Jobs/Search release is healthy enough to go to 100%.
+    Progressive rollout with statistical significance testing, error-budget awareness, and automatic rollback in under 60 seconds.
+  </p>
+  <div class="doc-meta">
+    <span class="pill blue">NALSD</span>
+    <span class="pill green">detect &lt; 60s</span>
+    <span class="pill purple">rollback 99.99%</span>
+    <span class="pill orange">FP &lt; 0.1%</span>
+    <span class="pill yellow">draft · review</span>
+    <span style="margin-left:auto">last edit · 2026-05-12 · sjc</span>
+  </div>
+</header>
+
+<!-- ===== 1. PROBLEM ===== -->
+<section>
+<h2 id="problem">1 · Problem statement & SLO contract</h2>
+
+<p>LinkedIn ships thousands of deployments per day across Feed, InMail, Jobs, Search, Profile, Notifications, and hundreds of supporting services. A bad deploy at 100% traffic can take down a region in minutes — and historically has. The canary controller is the <b>risk-management system with code as its interface</b>: it routes a small slice of production traffic to the new version, watches metrics, and decides whether to keep going or roll back.</p>
+
+<div class="stat-grid">
+  <div class="stat"><div class="k">Daily deploys</div><div class="v">~3,000</div><div class="s">across all services</div></div>
+  <div class="stat"><div class="k">Detection</div><div class="v">&lt; 60s</div><div class="s">p95 anomaly → decision</div></div>
+  <div class="stat"><div class="k">Rollback</div><div class="v">99.99%</div><div class="s">success rate</div></div>
+  <div class="stat"><div class="k">False positive</div><div class="v">&lt; 0.1%</div><div class="s">unjustified rollbacks</div></div>
+</div>
+
+<h3 id="slo">SLO contract</h3>
+<p>Five SLIs. Every design choice below maps to at least one.</p>
+
+<table>
+  <thead><tr><th>SLI</th><th>Target</th><th>Measurement</th><th>Error budget / 28d</th></tr></thead>
+  <tbody>
+    <tr><td><b>A · Detection latency</b></td><td class="num">p95 ≤ 60 s</td><td>regression onset → decision emitted</td><td class="num">~24h slow tail</td></tr>
+    <tr><td><b>B · Rollback success</b></td><td class="num">≥ 99.99%</td><td>rollback initiated → baseline restored</td><td class="num">~3 failed/month</td></tr>
+    <tr><td><b>C · False positive rate</b></td><td class="num">&lt; 0.1%</td><td>unjustified rollbacks / promotions</td><td class="num">~3 per 3,000 deploys</td></tr>
+    <tr><td><b>D · Controller availability</b></td><td class="num">≥ 99.99%</td><td>controller able to accept deploys</td><td class="num">~4 min/month</td></tr>
+    <tr><td><b>E · Metric parity</b></td><td class="num">± 5%</td><td>canary vs baseline SLI delta tolerance</td><td class="num">configurable per-service</td></tr>
+  </tbody>
+</table>
+
+<div class="note">
+  <span class="lbl">The hard one</span>
+  False-positive rate &lt; 0.1% is the binding constraint. If the controller rolls back 5% of deploys spuriously, developers stop trusting it and force-promote everything — defeating the purpose. Precision is what earns the right to be in the critical path.
+</div>
+</section>
+
+<!-- ===== 2. CAPACITY ===== -->
+<section>
+<h2 id="capacity">2 · Capacity model (the NALSD math)</h2>
+
+<h3 id="deploy-rate">2.1 — Deploy rate & concurrency</h3>
+<div class="calc">
+  <h4>Daily deploys and concurrent canaries</h4>
+<pre><code>services at LinkedIn          ≈ 500
+avg deploys/service/day       ≈ 6  (active services; many sub-1/day)
+total deploys/day             ≈ 3,000
+                              ≈ 125/hour avg
+                              ≈ 500/hour peak (post-standup waves)
+
+per-canary observation window = 20 minutes (5 stages × ~4 min each)
+concurrent canaries at peak  = 500/h × (20/60)
+                              = 167 active canaries
+
+per region (5 regions, weighted 35/25/20/12/8):
+us-west-2 peak                = 167 × 0.35 = 58 concurrent canaries
+eu-west-1 peak                = 167 × 0.25 = 42 concurrent canaries</code></pre>
+  <div class="verdict">VERDICT · ~170 concurrent canaries at peak globally. Controller must hold 170 live decision contexts simultaneously.</div>
+</div>
+
+<h3 id="metrics">2.2 — Metrics volume from canaries</h3>
+<div class="calc">
+  <h4>SLI samples per canary per second</h4>
+<pre><code>per-service SLIs we track:
+  latency: p50, p95, p99               = 3 series
+  error rates: 4xx, 5xx, timeout       = 3 series
+  throughput: QPS                      = 1 series
+  resource: CPU, memory, network       = 3 series
+  business metrics (varies):           = 2 series
+  ─────────────────────────────────────
+  per canary                            = 12 series
+
+we track BOTH canary AND baseline:    = 24 series per deployment
+samples/series/sec (1-sec interval)   = 1
+
+global metrics samples/sec at peak:
+  167 canaries × 24 series × 1 sample = 4,008 samples/s
+
+with metadata per sample (~200 B):
+  bytes/sec                            = 4,000 × 200 = 800 KB/s
+                                       ≈ 6 Mbps total</code></pre>
+  <div class="verdict">VERDICT · Metrics volume is TINY (6 Mbps). Why? Because we're sampling SLIs, not raw events. Decisions are made on aggregated signals.</div>
+</div>
+
+<h3 id="decision">2.3 — Decision engine compute</h3>
+<div class="calc">
+  <h4>Statistical analysis per canary per evaluation cycle</h4>
+<pre><code>evaluation cycle              = every 10 seconds per canary
+samples per cycle             = 10 sec × 12 series = 120 samples (canary)
+                                + 120 samples (baseline) = 240 samples
+
+statistical tests per cycle:
+  Mann-Whitney U (per series) = 12 tests × ~5 ms each = 60 ms
+  Welch's t-test (per series) = 12 tests × ~2 ms each = 24 ms
+  effect size (Cohen's d)     = 12 calcs × ~1 ms each = 12 ms
+  error-budget burn check     = 1 query to budget service = 20 ms
+  composite confidence score  = ML inference (random forest) = 30 ms
+  ─────────────────────────────────────────────────────
+  total per evaluation cycle  = 146 ms
+
+evaluations/sec at peak       = 167 canaries × (1 / 10s) = 17 eval/s
+CPU cores needed              = 17 × 0.146 s = 2.5 cores
+                              + 10× over-provision (latency, P99) = 25 cores
+                              + N+2 per region (5 × 2) = 35 cores
+
+per-node (c6i.4xlarge, 16 vCPU) → 35 / 16 = 3 nodes
+plus redundancy + warm standby = 12 decision engine nodes total</code></pre>
+  <div class="verdict">VERDICT · Tiny fleet (12 nodes). Decision engine is CPU-light because most work is small-batch statistics, not big-data ML.</div>
+</div>
+
+<div class="calc">
+  <h4>Latency budget for SLI-A (detect in 60s)</h4>
+<pre><code>metric ingestion lag (Prometheus)   = 15 s   (15s scrape interval)
+metric scrape → storage             =  2 s
+evaluation cycle frequency          = 10 s   (worst case wait)
+statistical test computation        =  0.15 s
+decision emit to traffic splitter   =  0.5 s
+Istio rollout flush                 =  2 s
+─────────────────────────────────────────
+total typical                        = 30 s
+×2 for p99 tail                      = 60 s   ← at the SLO edge!</code></pre>
+  <div class="verdict warn">VERDICT · 60s SLO is TIGHT. The 15s Prometheus scrape interval eats half the budget. Reducing to 5s gets us to 20s typical, 40s p99.</div>
+</div>
+
+<h3 id="fleet">2.4 — Fleet summary & cost</h3>
+<table>
+  <thead><tr><th>Tier</th><th>Instance</th><th>Count</th><th>$/mo (on-demand)</th><th>$/mo (3y RI)</th></tr></thead>
+  <tbody>
+    <tr><td>Controller (orchestrator)</td><td class="num">m6i.2xlarge</td><td class="num">15</td><td class="num">$4.4 K</td><td class="num">$1.7 K</td></tr>
+    <tr><td>Decision engine</td><td class="num">c6i.4xlarge</td><td class="num">12</td><td class="num">$7 K</td><td class="num">$2.7 K</td></tr>
+    <tr><td>Metrics collector</td><td class="num">m6i.large</td><td class="num">25</td><td class="num">$1.8 K</td><td class="num">$0.7 K</td></tr>
+    <tr><td>Audit Kafka</td><td class="num">i4i.large</td><td class="num">9</td><td class="num">$5 K</td><td class="num">$1.9 K</td></tr>
+    <tr><td>State store (Spanner)</td><td class="num">—</td><td class="num">low QPS</td><td class="num">$8 K</td><td class="num">$8 K</td></tr>
+    <tr><td>Redis (active state)</td><td class="num">cache.r6g.large</td><td class="num">15</td><td class="num">$3.5 K</td><td class="num">$1.3 K</td></tr>
+    <tr style="background:var(--bg-alt);font-weight:700"><td>Total</td><td class="num">—</td><td class="num">~76 nodes</td><td class="num">$29.7 K/mo</td><td class="num">$16.3 K/mo</td></tr>
+  </tbody>
+</table>
+
+<div class="note tip">
+  <span class="lbl">Compared to others</span>
+  Cheapest doc in the series — $29K/mo vs $851K (monitoring), $74K (logging), $4.1M (task queue). Why? The controller is a thin <em>decision</em> layer, not a data pipeline. It reads metrics from existing observability (free) and writes commands to existing K8s/Istio (free). Its only cost is the brain.
+</div>
+</section>
+
+<!-- ===== 3. ARCHITECTURE ===== -->
+<section>
+<h2 id="arch">3 · Architecture</h2>
+
+<h3 id="dataflow">3.1 — Full architecture diagram</h3>
+
+<div class="diagram">
+<svg viewBox="0 0 980 740" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#59636e"/>
+    </marker>
+    <marker id="arr-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#cf222e"/>
+    </marker>
+    <marker id="arr-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1a7f37"/>
+    </marker>
+  </defs>
+
+  <!-- SLO ribbon -->
+  <text x="490" y="20" text-anchor="middle" class="lbl-title" style="font-size:13px">3,000 deploys/day · detect &lt; 60s · rollback 99.99% · FP &lt; 0.1% · 5-stage progression</text>
+
+  <!-- ============ STEP NUMBER BADGES ============ -->
+  <circle cx="155" cy="58" r="11" fill="#0a66c2"/>
+  <text x="155" y="62" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">1</text>
+  <circle cx="490" cy="58" r="11" fill="#0a66c2"/>
+  <text x="490" y="62" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">2</text>
+  <circle cx="800" cy="58" r="11" fill="#0a66c2"/>
+  <text x="800" y="62" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">3</text>
+  <circle cx="490" cy="195" r="11" fill="#0a66c2"/>
+  <text x="490" y="199" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">4</text>
+  <circle cx="490" cy="330" r="11" fill="#0a66c2"/>
+  <text x="490" y="334" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">5</text>
+  <circle cx="155" cy="470" r="11" fill="#0a66c2"/>
+  <text x="155" y="474" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">6</text>
+  <circle cx="490" cy="470" r="11" fill="#0a66c2"/>
+  <text x="490" y="474" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">7</text>
+  <circle cx="820" cy="470" r="11" fill="#0a66c2"/>
+  <text x="820" y="474" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">8</text>
+  <circle cx="490" cy="620" r="11" fill="#0a66c2"/>
+  <text x="490" y="624" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">9</text>
+
+  <!-- ============ ROW 1: CI/CD → Controller → Audit ============ -->
+  <g>
+    <rect x="20" y="80" width="240" height="80" rx="6" class="box-fill-gray"/>
+    <text x="140" y="103" text-anchor="middle" class="lbl-title">CI/CD trigger</text>
+    <text x="140" y="121" text-anchor="middle" class="lbl-sub">Spinnaker · Jenkins · Argo</text>
+    <text x="140" y="137" text-anchor="middle" class="lbl-sub">"deploy v2.3.1 of feed-ranker"</text>
+    <text x="140" y="153" text-anchor="middle" class="lbl-meta">~3,000 deploys/day</text>
+  </g>
+
+  <g>
+    <rect x="320" y="80" width="340" height="80" rx="6" class="box-fill-blue"/>
+    <text x="490" y="103" text-anchor="middle" class="lbl-title">Canary controller (orchestrator)</text>
+    <text x="490" y="121" text-anchor="middle" class="lbl-sub">accept deploy · plan stages · drive state machine</text>
+    <text x="490" y="137" text-anchor="middle" class="lbl-sub">leader-elected · multi-region hot standby</text>
+    <text x="490" y="153" text-anchor="middle" class="lbl-meta">15 nodes · ~170 active deploys</text>
+  </g>
+
+  <g>
+    <rect x="700" y="80" width="260" height="80" rx="6" class="box-fill-yellow"/>
+    <text x="830" y="103" text-anchor="middle" class="lbl-title">Audit log (Kafka)</text>
+    <text x="830" y="121" text-anchor="middle" class="lbl-sub">event-sourced state transitions</text>
+    <text x="830" y="137" text-anchor="middle" class="lbl-sub">immutable · 1y retention</text>
+    <text x="830" y="153" text-anchor="middle" class="lbl-meta">every decision recorded</text>
+  </g>
+
+  <!-- ============ ROW 2: Traffic splitter (Istio) ============ -->
+  <g>
+    <rect x="20" y="220" width="940" height="80" rx="6" class="box-fill-orange"/>
+    <text x="490" y="245" text-anchor="middle" class="lbl-title" style="font-size:13px">Traffic splitter — Istio / Envoy service mesh</text>
+    <text x="490" y="263" text-anchor="middle" class="lbl-sub">weighted virtual service: 1% → 5% → 25% → 50% → 100% canary</text>
+    <text x="490" y="280" text-anchor="middle" class="lbl-meta">per-cluster · per-region · live mutation via K8s CRD (rollout time ~2 s)</text>
+  </g>
+
+  <!-- ============ ROW 3: Baseline + Canary ============ -->
+  <g>
+    <rect x="40" y="350" width="400" height="80" rx="6" class="box-fill-green"/>
+    <text x="240" y="375" text-anchor="middle" class="lbl-title">Baseline (v2.3.0)</text>
+    <text x="240" y="393" text-anchor="middle" class="lbl-sub">current production version</text>
+    <text x="240" y="410" text-anchor="middle" class="lbl-meta">95% traffic at stage 1 · used as control group</text>
+  </g>
+
+  <g>
+    <rect x="460" y="350" width="240" height="80" rx="6" class="box-fill-orange"/>
+    <text x="580" y="375" text-anchor="middle" class="lbl-title">Canary (v2.3.1)</text>
+    <text x="580" y="393" text-anchor="middle" class="lbl-sub">new version under test</text>
+    <text x="580" y="410" text-anchor="middle" class="lbl-meta">1–100% per stage</text>
+  </g>
+
+  <g>
+    <rect x="720" y="350" width="240" height="80" rx="6" class="box-fill-purple"/>
+    <text x="840" y="375" text-anchor="middle" class="lbl-title">Metrics collector</text>
+    <text x="840" y="393" text-anchor="middle" class="lbl-sub">Prometheus + Grafana</text>
+    <text x="840" y="410" text-anchor="middle" class="lbl-meta">SLI scrape @ 15 s · per-version labels</text>
+  </g>
+
+  <!-- ============ ROW 4: Decision engine inputs ============ -->
+  <g>
+    <rect x="40" y="490" width="240" height="100" rx="6" class="box-fill-blue"/>
+    <text x="160" y="513" text-anchor="middle" class="lbl-title">SLI comparator</text>
+    <text x="160" y="531" text-anchor="middle" class="lbl-sub">Mann-Whitney U</text>
+    <text x="160" y="547" text-anchor="middle" class="lbl-sub">Welch's t-test · Cohen's d</text>
+    <text x="160" y="565" text-anchor="middle" class="lbl-meta">p-value &lt; 0.01 threshold</text>
+    <text x="160" y="580" text-anchor="middle" class="lbl-meta">12 SLIs compared</text>
+  </g>
+
+  <g>
+    <rect x="300" y="490" width="240" height="100" rx="6" class="box-fill-blue"/>
+    <text x="420" y="513" text-anchor="middle" class="lbl-title">ML decision engine</text>
+    <text x="420" y="531" text-anchor="middle" class="lbl-sub">Random Forest ensemble</text>
+    <text x="420" y="547" text-anchor="middle" class="lbl-sub">trained on 2y of deploys</text>
+    <text x="420" y="565" text-anchor="middle" class="lbl-meta">confidence score 0..1</text>
+    <text x="420" y="580" text-anchor="middle" class="lbl-meta">12 nodes · 30 ms inference</text>
+  </g>
+
+  <g>
+    <rect x="560" y="490" width="240" height="100" rx="6" class="box-fill-yellow"/>
+    <text x="680" y="513" text-anchor="middle" class="lbl-title">Error-budget service</text>
+    <text x="680" y="531" text-anchor="middle" class="lbl-sub">per-service monthly budget</text>
+    <text x="680" y="547" text-anchor="middle" class="lbl-sub">current burn rate</text>
+    <text x="680" y="565" text-anchor="middle" class="lbl-meta">&gt; 80% used → tighter</text>
+    <text x="680" y="580" text-anchor="middle" class="lbl-meta">thresholds + shorter window</text>
+  </g>
+
+  <g>
+    <rect x="820" y="490" width="140" height="100" rx="6" class="box-fill-gray"/>
+    <text x="890" y="513" text-anchor="middle" class="lbl-title">Manual override</text>
+    <text x="890" y="531" text-anchor="middle" class="lbl-sub">SRE escape hatch</text>
+    <text x="890" y="547" text-anchor="middle" class="lbl-sub">force promote</text>
+    <text x="890" y="565" text-anchor="middle" class="lbl-meta">or force rollback</text>
+    <text x="890" y="580" text-anchor="middle" class="lbl-meta">audited</text>
+  </g>
+
+  <!-- ============ ROW 5: Action — promote / hold / rollback ============ -->
+  <g>
+    <rect x="20" y="640" width="280" height="80" rx="6" class="box-fill-green"/>
+    <text x="160" y="665" text-anchor="middle" class="lbl-title">✓ PROMOTE</text>
+    <text x="160" y="683" text-anchor="middle" class="lbl-sub">advance to next stage</text>
+    <text x="160" y="700" text-anchor="middle" class="lbl-meta">1% → 5% → 25% → 50% → 100%</text>
+  </g>
+
+  <g>
+    <rect x="320" y="640" width="280" height="80" rx="6" class="box-fill-yellow"/>
+    <text x="460" y="665" text-anchor="middle" class="lbl-title">⏸ HOLD</text>
+    <text x="460" y="683" text-anchor="middle" class="lbl-sub">wait one more cycle</text>
+    <text x="460" y="700" text-anchor="middle" class="lbl-meta">inconclusive · extend observation</text>
+  </g>
+
+  <g>
+    <rect x="620" y="640" width="340" height="80" rx="6" class="box-fill-red"/>
+    <text x="790" y="665" text-anchor="middle" class="lbl-title">✗ ROLLBACK</text>
+    <text x="790" y="683" text-anchor="middle" class="lbl-sub">restore baseline · alert deploy owner</text>
+    <text x="790" y="700" text-anchor="middle" class="lbl-meta">circuit-break further deploys until reviewed</text>
+  </g>
+
+  <!-- ============ ARROWS ============ -->
+  <path d="M260,120 L320,120" class="arrow"/>
+  <path d="M660,110 L700,100" class="arrow" stroke-dasharray="3,2"/>
+  <path d="M490,160 L490,220" class="arrow"/>
+  <path d="M490,300 L490,350" class="arrow"/>
+  <path d="M240,430 L840,430" stroke="#59636e" stroke-width="0.8" stroke-dasharray="2,2"/>
+  <path d="M240,430 L160,490" class="arrow"/>
+  <path d="M580,430 L420,490" class="arrow"/>
+  <path d="M840,430 L680,490" class="arrow"/>
+  <path d="M160,590 L160,640" class="arrow-green"/>
+  <path d="M420,590 L460,640" class="arrow"/>
+  <path d="M420,590 L790,640" class="arrow-dashed" stroke-opacity="0.6"/>
+  <path d="M680,590 L790,640" class="arrow-dashed"/>
+  <!-- Rollback feedback to traffic splitter -->
+  <path d="M790,640 Q940,640 940,260 Q940,220 920,220" class="arrow-dashed"/>
+  <path d="M160,720 Q20,720 20,260 Q20,220 40,220" class="arrow-green"/>
+</svg>
+<div class="diagram-cap">Fig 1 · The complete canary controller. Numbered circles correspond to the step-by-step flow in §3.2. CI/CD triggers deploy → controller plans stages → traffic splitter routes percentage → metrics collected → decision engine evaluates → promote / hold / rollback → feedback loop adjusts traffic split.</div>
+</div>
+
+<!-- 3.2 STEP-BY-STEP FLOW -->
+<h3 id="flow">3.2 — Step-by-step flow (the numbered walkthrough)</h3>
+
+<p>Following the numbered blue badges in Fig 1. Concrete example throughout: <b>a developer pushes v2.3.1 of the Feed ranker. The canary catches a 4% p99 latency regression and rolls back in 45 seconds.</b></p>
+
+<div class="flow-steps">
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">CI/CD triggers a deploy</div>
+      <div class="desc">A developer merges a PR; Jenkins builds and pushes <code>feed-ranker:v2.3.1</code> to the artifact registry. Spinnaker creates a deploy request and calls the canary controller API. The request includes: service name, new version, previous (baseline) version, deployment policy reference (defines stages, SLO thresholds, max duration), and a deploy owner contact.</div>
+      <div class="tech">POST /deploy {service: "feed-ranker", new: "v2.3.1", baseline: "v2.3.0", policy: "default-5stage", owner: "alice@..."}</div>
+      <div class="nums">
+        <span class="kv">budget · <b>200 ms</b> (API accept)</span>
+        <span class="kv">rate · <b>~3,000/day · 500/h peak</b></span>
+        <span class="kv">CI/CD tools · <b>Spinnaker · Jenkins · Argo</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Canary controller plans the rollout</div>
+      <div class="desc">The orchestrator validates the request (service exists, policy is current, no other deploy in flight for this service), then computes the rollout plan: 5 stages at 1% → 5% → 25% → 50% → 100%, with 4 minutes of observation per stage. It writes the deploy record to Spanner with state=PENDING and emits an event to the Kafka audit log. The controller is leader-elected per region with multi-region hot-standby.</div>
+      <div class="tech">stages = [(1, 4min), (5, 4min), (25, 4min), (50, 4min), (100, 4min)] · total_max = 20 min · state = PENDING</div>
+      <div class="nums">
+        <span class="kv">budget · <b>500 ms</b></span>
+        <span class="kv">fleet · <b>15 orchestrator nodes</b></span>
+        <span class="kv">concurrent deploys · <b>~170 peak</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Every decision is audit-logged</div>
+      <div class="desc">Before any side effect, the controller appends an event to the Kafka audit log: <code>{deploy_id, timestamp, state_transition, reason}</code>. Same pattern for every promote/hold/rollback decision later. <b>Immutable audit trail</b> is non-negotiable for post-incident review and regulatory compliance — "why was v2.3.1 rolled back?" must always have a definitive answer 6 months later.</div>
+      <div class="tech">audit.append({deploy_id, ts, state_from, state_to, decision_inputs, reason, owner_action})</div>
+      <div class="nums">
+        <span class="kv">retention · <b>1 year hot · 7 years cold</b></span>
+        <span class="kv">writes · <b>~10/deploy</b></span>
+        <span class="kv">queryable via Visibility API</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Traffic splitter (Istio) routes 1% to canary</div>
+      <div class="desc">The controller writes an Istio <code>VirtualService</code> CRD update: weight=99 to baseline pods, weight=1 to canary pods. Istio's sidecars in every Feed ranker caller pick up the config within ~2 seconds and start routing 1% of real production traffic to v2.3.1. <b>This is the moment risk begins</b> — bad code is now serving live users.<br><br>Routing is consistent-hash by user_id so the same user always hits the same version during the deploy (avoids weird A/B-mid-session glitches).</div>
+      <div class="tech">kubectl apply -f virtualservice.yaml · weight: {baseline: 99, canary: 1} · hash_by: user_id</div>
+      <div class="nums">
+        <span class="kv">budget · <b>2 s</b> (Istio propagation)</span>
+        <span class="kv">stages · <b>1% → 5% → 25% → 50% → 100%</b></span>
+        <span class="kv">routing · <b>consistent hash on user_id</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Metrics collected from both versions in parallel</div>
+      <div class="desc">Prometheus scrapes Feed ranker pods every 15 seconds. Crucially, pods are labeled with <code>version=v2.3.0</code> or <code>version=v2.3.1</code>, so the same metric series is captured separately for baseline and canary. For our example, here's what's measured in stage 1:<br><br>• Baseline (v2.3.0): p99 latency 780 ms, error rate 0.4%<br>• Canary (v2.3.1): p99 latency 810 ms, error rate 0.45%<br><br>Looks similar at first glance — but is the +30 ms difference real or noise? That's the decision engine's job.</div>
+      <div class="tech">prometheus scrape interval: 15 s · labels: {version, region, cluster} · stored 30 days</div>
+      <div class="nums">
+        <span class="kv">SLIs per version · <b>12</b></span>
+        <span class="kv">scrape interval · <b>15 s</b></span>
+        <span class="kv">stored in TSDB · <b>30 days</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">SLI comparator runs statistical tests</div>
+      <div class="desc">Every 10 seconds, the SLI comparator pulls the last 4 minutes of metrics for both versions and runs three tests per SLI:<br><br><b>Mann-Whitney U test</b> — is the canary's distribution different from baseline's? (non-parametric, handles non-Gaussian)<br><b>Welch's t-test</b> — is the mean different? (parametric, faster)<br><b>Cohen's d</b> — what's the effect size? (statistical significance ≠ practical significance)<br><br>For our Feed example: Mann-Whitney returns p=0.003 (significant difference), Cohen's d = 0.18 (small but non-trivial effect). The latency regression is real.</div>
+      <div class="tech">scipy.stats.mannwhitneyu(canary_p99, baseline_p99) → p=0.003 · cohens_d → 0.18 · threshold: p&lt;0.01 AND d&gt;0.2 = rollback</div>
+      <div class="nums">
+        <span class="kv">budget · <b>146 ms/cycle</b></span>
+        <span class="kv">tests per SLI · <b>3</b></span>
+        <span class="kv">p-value threshold · <b>0.01</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">ML engine composes a confidence score</div>
+      <div class="desc">Raw statistical tests give one signal per SLI, but real deploys need <b>multi-signal correlation</b>. The ML engine (a Random Forest trained on 2 years of historical deploys, each labeled with its eventual outcome) takes all 12 SLI deltas + statistical results + service-level context (which service, time of day, error budget state) and outputs a single confidence score in [0, 1].<br><br>For Feed v2.3.1: confidence = 0.31 → <b>below the 0.5 threshold → rollback recommendation</b>. The model "saw" similar latency regressions cause incidents in past Feed deploys.</div>
+      <div class="tech">random_forest.predict([sli_deltas, p_values, effect_sizes, service_meta, time_features]) → 0.31</div>
+      <div class="nums">
+        <span class="kv">inference latency · <b>30 ms</b></span>
+        <span class="kv">model · <b>Random Forest · 500 trees</b></span>
+        <span class="kv">training set · <b>2 years · ~2M deploys</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Error-budget service applies the safety override</div>
+      <div class="desc">Before any final decision, the controller queries the error-budget service: "What's Feed's current monthly error-budget burn?" Feed has burned 65% of its monthly budget already (it's the 20th of the month). That's elevated but not yet critical, so the controller applies <b>stricter thresholds</b> — confidence must be ≥ 0.65 to promote (vs 0.5 default), observation windows extend from 4 min to 6 min per stage.<br><br>If budget burn were &gt; 80%, the controller would auto-rollback on any negative signal. If budget were healthy (&lt; 40% burned), the canary might've been allowed to proceed with a borderline confidence score.<br><br><b>This is the "release velocity directly tied to user-facing reliability" link.</b> A team can't ship recklessly when they've already paid for it in user-facing errors.</div>
+      <div class="tech">budget_burn = 0.65 → adjusted_threshold = 0.65 (from 0.5) · canary confidence 0.31 &lt;&lt; 0.65 → ROLLBACK</div>
+      <div class="nums">
+        <span class="kv">budget &lt; 40% · <b>standard thresholds</b></span>
+        <span class="kv">budget 40-80% · <b>tightened</b></span>
+        <span class="kv">budget &gt; 80% · <b>defensive (any negative → rollback)</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Decision: rollback — and the loop closes</div>
+      <div class="desc">Final verdict: <b>ROLLBACK</b>. The controller:<br><br>(a) Writes new Istio VirtualService with weight 100/0 → all traffic back to v2.3.0. Propagation ~2s.<br>(b) Triggers K8s to scale canary pods down (releasing resources).<br>(c) Pages the deploy owner (alice@) via the notifier with the decision rationale and links to the SLI graphs.<br>(d) Writes the final state transition to the audit log.<br>(e) <b>Circuit-breaks further deploys</b> of feed-ranker until alice reviews — prevents auto-retry of a known-bad commit.<br><br><b>Total wall-clock time from first bad metric to baseline fully restored:</b> ~45 seconds. Inside the 60 s SLO with 15 s margin. The deploy outcome — including the rollback — is in the audit log; alice gets a clean root-cause link.</div>
+      <div class="tech">istio.set_weights(100, 0) · k8s.scale("canary", replicas=0) · notifier.page(owner) · audit.append("ROLLBACK", reason) · circuit_breaker.open(service)</div>
+      <div class="nums">
+        <span class="kv">e2e typical · <b>~30 s</b></span>
+        <span class="kv">e2e p99 · <b>~45 s</b></span>
+        <span class="kv">SLO target · <b>&lt; 60 s ✓ 15s headroom</b></span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="note tip">
+  <span class="lbl">The key design insight</span>
+  Notice this is fundamentally a <b>control system</b> — perception (collect metrics) → inference (statistical + ML) → action (Istio reconfig) → feedback (next cycle). The same loop runs on every evaluation cycle until the deploy either reaches 100% or rolls back. Treating deploys as control problems (not as scripts) is what makes the system <em>predictable</em>: you can reason about failure modes the same way you reason about a thermostat or autopilot.
+</div>
+
+<!-- 3.3 STAGE PROGRESSION -->
+<h3 id="stages">3.3 — Stage progression visualizer</h3>
+
+<p>Each stage either promotes (advance), holds (wait one cycle), or rolls back. A normal happy-path deploy takes ~20 minutes. A bad deploy is caught in 45–90 seconds and rolled back.</p>
+
+<h4>Happy path — clean promotion</h4>
+<div class="split-bar">
+  <div class="seg baseline" style="width:99%">baseline 99%</div><div class="seg canary" style="width:1%">1%</div>
+</div>
+<div class="split-bar">
+  <div class="seg baseline" style="width:95%">baseline 95%</div><div class="seg canary" style="width:5%">canary 5%</div>
+</div>
+<div class="split-bar">
+  <div class="seg baseline" style="width:75%">baseline 75%</div><div class="seg canary" style="width:25%">canary 25%</div>
+</div>
+<div class="split-bar">
+  <div class="seg baseline" style="width:50%">baseline 50%</div><div class="seg canary" style="width:50%">canary 50%</div>
+</div>
+<div class="split-bar">
+  <div class="seg canary" style="width:100%">canary 100% (now baseline)</div>
+</div>
+
+<h4>Rollback path — bad canary caught at stage 1</h4>
+<div class="split-bar">
+  <div class="seg baseline" style="width:99%">baseline 99%</div><div class="seg fail" style="width:1%">!</div>
+</div>
+<div class="split-bar">
+  <div class="seg baseline" style="width:100%">baseline 100% (rolled back · 45s after stage 1 start)</div>
+</div>
+
+<table>
+  <thead><tr><th>Stage</th><th>Canary %</th><th>Observation</th><th>Decision threshold</th><th>What's tested</th></tr></thead>
+  <tbody>
+    <tr><td class="num">1</td><td class="num">1%</td><td class="num">4 min</td><td class="num">conf ≥ 0.5 (or 0.65 if EB&gt;40%)</td><td>does it work at all?</td></tr>
+    <tr><td class="num">2</td><td class="num">5%</td><td class="num">4 min</td><td class="num">conf ≥ 0.6</td><td>are SLIs comparable at scale?</td></tr>
+    <tr><td class="num">3</td><td class="num">25%</td><td class="num">4 min</td><td class="num">conf ≥ 0.7</td><td>tail behavior, resource use</td></tr>
+    <tr><td class="num">4</td><td class="num">50%</td><td class="num">4 min</td><td class="num">conf ≥ 0.75</td><td>load-balancer convergence</td></tr>
+    <tr><td class="num">5</td><td class="num">100%</td><td class="num">4 min stabilize</td><td class="num">monitor only</td><td>final settle, declare promoted</td></tr>
+  </tbody>
+</table>
+
+<!-- 3.4 STATISTICAL DECISION CLOSE-UP -->
+<h3 id="stats">3.4 — Statistical decision close-up (why p &lt; 0.01)</h3>
+
+<div class="cols-2">
+  <div class="comp">
+    <div class="name">Mann-Whitney U <span class="tech">non-parametric</span></div>
+    <div class="desc">Asks: "Are these two distributions different?" Doesn't assume Gaussian. Robust to outliers. Used as the primary test because real latency distributions are heavy-tailed and skewed.</div>
+    <div class="row"><span class="lab">strength</span><span>robust, distribution-free</span></div>
+    <div class="row"><span class="lab">weakness</span><span>slower to detect small shifts</span></div>
+  </div>
+  <div class="comp">
+    <div class="name">Welch's t-test <span class="tech">parametric</span></div>
+    <div class="desc">Asks: "Are the means different?" Assumes Gaussian-ish data (CLT helps with large samples). Faster to compute and very sensitive to mean shifts. Used as a tiebreaker.</div>
+    <div class="row"><span class="lab">strength</span><span>sensitive to small mean shifts</span></div>
+    <div class="row"><span class="lab">weakness</span><span>fooled by non-normal data</span></div>
+  </div>
+  <div class="comp">
+    <div class="name">Cohen's d <span class="tech">effect size</span></div>
+    <div class="desc">Asks: "How big is the difference?" Distinct from statistical significance. A 0.001 ms difference can be statistically significant at huge sample sizes but practically meaningless. We require BOTH p&lt;0.01 AND d&gt;0.2 to flag a regression.</div>
+    <div class="row"><span class="lab">guards against</span><span>"statistically significant noise"</span></div>
+    <div class="row"><span class="lab">threshold</span><span>d &gt; 0.2 (small effect)</span></div>
+  </div>
+  <div class="comp">
+    <div class="name">Why p &lt; 0.01 (not 0.05) <span class="tech">FP control</span></div>
+    <div class="desc">SLO-C requires FP rate &lt; 0.1%. At p&lt;0.05 with 12 SLIs tested per cycle, family-wise FP rate would be ~46% — disastrous. p&lt;0.01 with Bonferroni correction (effectively p&lt;0.001 per test) keeps family-wise FP under 1%, combined with ML scoring brings actual rollback FP under 0.1%.</div>
+    <div class="row"><span class="lab">family-wise FP @ p&lt;0.05, 12 tests</span><span>~46% (bad)</span></div>
+    <div class="row"><span class="lab">family-wise FP @ p&lt;0.001</span><span>~1.2% (acceptable)</span></div>
+  </div>
+</div>
+
+<div class="note">
+  <span class="lbl">The senior insight</span>
+  Naïve canary controllers fail by checking "is canary error rate &gt; threshold?". This misses everything subtle: a 4% p99 latency creep that doesn't trip the alert threshold but eventually compounds into an outage. Statistical comparison against the <em>concurrent baseline</em> catches drift that absolute thresholds miss. The baseline is the real control group — comparing v2.3.1 vs v2.3.0 running at the same instant cancels out time-of-day effects, traffic mix, dependency latencies, everything.
+</div>
+
+</section>
+
+<!-- ===== 4. GAUNTLET ===== -->
+<section>
+<h2 id="gauntlet">4 · Failure gauntlet</h2>
+
+<div class="cols-2">
+  <div class="comp">
+    <div class="name">A · Metrics pipeline lag <span class="tech">SLI: A</span></div>
+    <div class="desc">Prometheus federation is 90 s behind reality — decisions are made on stale data.</div>
+    <div class="row"><span class="lab">trigger</span><span>scrape lag &gt; 30 s</span></div>
+    <div class="row"><span class="lab">absorb</span><span>HOLD decision until lag &lt; 20 s</span></div>
+    <div class="row"><span class="lab">fallback</span><span>extend observation window</span></div>
+    <div class="row"><span class="lab">verdict</span><span>no bad rollback · slightly slower detect</span></div>
+  </div>
+  <div class="comp">
+    <div class="name">B · Decision engine crash <span class="tech">SLI: D</span></div>
+    <div class="desc">All decision engine pods OOM during a model update.</div>
+    <div class="row"><span class="lab">trigger</span><span>engine unreachable &gt; 30 s</span></div>
+    <div class="row"><span class="lab">absorb</span><span>fail-safe: HOLD all canaries</span></div>
+    <div class="row"><span class="lab">recover</span><span>secondary region engine takes over</span></div>
+    <div class="row"><span class="lab">verdict</span><span>deploys pause · nothing wrongly rolled back</span></div>
+  </div>
+  <div class="comp">
+    <div class="name">C · Bad model deploy <span class="tech">SLI: C</span></div>
+    <div class="desc">A new ML model regresses; FP rate jumps to 5%.</div>
+    <div class="row"><span class="lab">trigger</span><span>FP rate &gt; 1% over 24h</span></div>
+    <div class="row"><span class="lab">absorb</span><span>auto-fallback to previous model</span></div>
+    <div class="row"><span class="lab">cap</span><span>shadow-test every new model</span></div>
+    <div class="row"><span class="lab">verdict</span><span>FP returns to baseline</span></div>
+  </div>
+  <div class="comp">
+    <div class="name">D · Istio config push fails <span class="tech">SLI: B</span></div>
+    <div class="desc">Istio CRD apply fails (etcd partition or webhook issue) during rollback.</div>
+    <div class="row"><span class="lab">trigger</span><span>weight not applied after 10 s</span></div>
+    <div class="row"><span class="lab">absorb</span><span>retry with exp backoff</span></div>
+    <div class="row"><span class="lab">escalate</span><span>page SRE; manual kubectl override</span></div>
+    <div class="row"><span class="lab">verdict</span><span>rollback succeeds &lt; 60 s</span></div>
+  </div>
+  <div class="comp">
+    <div class="name">E · Baseline itself is broken <span class="tech">SLI: C</span></div>
+    <div class="desc">Baseline v2.3.0 has its own ongoing incident. Every canary "looks good" relative to a broken baseline.</div>
+    <div class="row"><span class="lab">trigger</span><span>baseline SLI absolute threshold breached</span></div>
+    <div class="row"><span class="lab">absorb</span><span>pause all canaries for that service</span></div>
+    <div class="row"><span class="lab">repair</span><span>require baseline recovery before resuming</span></div>
+    <div class="row"><span class="lab">verdict</span><span>prevents shipping on top of broken</span></div>
+  </div>
+  <div class="comp">
+    <div class="name">F · Cosmic-ray promotion <span class="tech">SLI: C</span></div>
+    <div class="desc">By chance, all 12 SLIs of a bad canary look similar to baseline for the observation window.</div>
+    <div class="row"><span class="lab">defense 1</span><span>5 stages of progressive exposure</span></div>
+    <div class="row"><span class="lab">defense 2</span><span>error-budget alert post-promote</span></div>
+    <div class="row"><span class="lab">defense 3</span><span>1h "watch window" after 100%</span></div>
+    <div class="row"><span class="lab">verdict</span><span>detected at stage 3 or post-promote</span></div>
+  </div>
+</div>
+
+<div class="note danger">
+  <span class="lbl">Not defended against</span>
+  Long-tail regressions that emerge only after 24+ hours (memory leaks, GC drift, queue buildup). The canary observation window is 20 min total — way too short. Mitigation: post-promote monitoring with an alert if any SLI drifts in the 24h after full rollout, with the deploy linked as a likely suspect.
+</div>
+</section>
+
+<!-- ===== 5. PLAYBOOK ===== -->
+<section>
+<h2 id="playbook">5 · Operational playbook</h2>
+
+<h3>5.1 — Self-deployment (recursion)</h3>
+<p>The canary controller deploys <b>itself</b> using the canary controller. This sounds risky but is actually safer: any regression in the controller is caught by the same statistical rigor it applies to other services. The bootstrap problem (controller v1 deploying controller v2) is solved by keeping v1 alive in a separate region during v2 rollout — if v2 breaks, v1 rolls it back from outside.</p>
+
+<h3>5.2 — Chaos drills (quarterly)</h3>
+<ul>
+  <li><b>Inject latency in canary pods</b> — verify detection within SLO.</li>
+  <li><b>Inject high error rate in baseline</b> — verify all canaries paused.</li>
+  <li><b>Crash decision engine</b> — verify fail-safe HOLD behavior.</li>
+  <li><b>Corrupt audit log</b> — verify replay from Kafka.</li>
+  <li><b>Istio control-plane outage</b> — verify retry and SRE escalation.</li>
+  <li><b>Saturation test</b> — push 500 concurrent canaries; verify no backpressure.</li>
+</ul>
+
+<h3>5.3 — Runbook excerpt</h3>
+<pre><code># Symptom: "my deploy is stuck in HOLD for 15 minutes"
+# Likely causes (ranked)
+
+1. SLI signal is noisy (low traffic service)
+   → check signal-to-noise ratio; consider longer observation window
+2. Error budget high → tighter thresholds → harder to meet
+   → check service's budget burn; may need to wait
+3. Metrics pipeline lag
+   → check Prometheus federation lag dashboard
+4. Decision engine model uncertainty
+   → check confidence score history; flat 0.4-0.5 = inconclusive
+
+# First response:
+- Check deploy state via Visibility API
+- Pull last 5 evaluation cycles
+- If clearly fine: SRE can manual-promote with audit reason
+- If unclear: extend observation window 2× and let next cycle decide</code></pre>
+</section>
+
+<!-- ===== 6. COMPONENTS ===== -->
+<section>
+<h2 id="components">6 · Component reference</h2>
+
+<table>
+  <thead><tr><th>Component</th><th>Tech</th><th>Scale</th><th>Failure mitigation</th><th>SLO</th></tr></thead>
+  <tbody>
+    <tr><td><b>Orchestrator</b></td><td class="num">Go service</td><td>leader-elected · multi-region</td><td>hot standby in 2 regions</td><td>D</td></tr>
+    <tr><td><b>Traffic splitter</b></td><td class="num">Istio + Envoy</td><td>per-cluster CRD</td><td>fallback to kubectl manual</td><td>B</td></tr>
+    <tr><td><b>Metrics collector</b></td><td class="num">Prometheus federation</td><td>per-region scrape</td><td>cache last-good for 60s</td><td>A,E</td></tr>
+    <tr><td><b>SLI comparator</b></td><td class="num">Python + scipy</td><td>per-canary cycle</td><td>fail-safe HOLD</td><td>A,C</td></tr>
+    <tr><td><b>ML engine</b></td><td class="num">Random Forest (sklearn)</td><td>12 nodes</td><td>fallback to threshold rules</td><td>C</td></tr>
+    <tr><td><b>Error-budget service</b></td><td class="num">Go + Spanner</td><td>region-replicated</td><td>cached values 5 min</td><td>C</td></tr>
+    <tr><td><b>Audit log</b></td><td class="num">Kafka + S3 archive</td><td>per-tenant partition</td><td>3× repl · 1y retention</td><td>—</td></tr>
+    <tr><td><b>Visibility API</b></td><td class="num">Go + Spanner</td><td>read replicas</td><td>cached responses</td><td>D</td></tr>
+    <tr><td><b>Notifier</b></td><td class="num">Go (shared with monitoring)</td><td>multi-vendor</td><td>vendor fallback chain</td><td>—</td></tr>
+    <tr><td><b>Manual override</b></td><td class="num">UI + API</td><td>SRE-only</td><td>requires reason + audit</td><td>—</td></tr>
+  </tbody>
+</table>
+</section>
+
+<!-- ===== 7. TRADE-OFFS ===== -->
+<section>
+<h2 id="tradeoffs">7 · Trade-offs & open questions</h2>
+
+<div class="cols-2">
+  <div>
+    <h4>Chose</h4>
+    <ul>
+      <li><b>Statistical comparison vs absolute thresholds</b> · catches subtle regressions; trade: needs sufficient traffic per stage.</li>
+      <li><b>5 stages over 3</b> · finer-grained risk gradient; trade: longer rollout (20 min vs 12 min).</li>
+      <li><b>Random Forest over deep learning</b> · explainable ("which SLI drove the decision?"); trade: 1% worse accuracy.</li>
+      <li><b>Mann-Whitney + Welch + Cohen</b> ensemble · no single test fooled by edge cases; trade: 3× CPU per evaluation.</li>
+      <li><b>Error-budget integration</b> · velocity tied to reliability; trade: harder to ship at end of month.</li>
+      <li><b>Per-user consistent-hash routing</b> · no mid-session version swaps; trade: harder to test demographic-specific issues.</li>
+    </ul>
+  </div>
+  <div>
+    <h4>Rejected</h4>
+    <ul>
+      <li><b>Time-based progression</b> (just "wait 5 min between stages") · trades safety for simplicity; rejected as it ignores signal.</li>
+      <li><b>Big-bang deploy with monitoring</b> · what most companies do; we already had outages from this in 2024.</li>
+      <li><b>Single SLI gate (error rate only)</b> · misses latency creep, resource issues, business-metric regressions.</li>
+      <li><b>Blue/green without traffic split</b> · less risk per deploy but no real production signal until 100% cut over.</li>
+      <li><b>Self-service force-promote without audit</b> · would erode trust in the system; manual override always logs reason.</li>
+      <li><b>Per-region independent decisions</b> · would split traffic semantics; we decide globally per service.</li>
+    </ul>
+  </div>
+</div>
+
+<h3>Open questions</h3>
+<ol>
+  <li>Should we support <b>shadow deploys</b> (mirror prod traffic, write nothing) for write-heavy services that can't tolerate any canary risk?</li>
+  <li>The ML model is currently service-agnostic. Would <b>per-service models</b> improve precision? Trade: 500 models to train and maintain.</li>
+  <li>Should the controller support <b>multi-version canaries</b> (test 3 candidate versions at once)? Useful for A/B/n experiments but explodes the statistical surface.</li>
+  <li>How to handle <b>low-traffic services</b> where statistical significance is impossible in 4 minutes? Currently we just extend windows up to 1h, but that's not always acceptable.</li>
+</ol>
+</section>
+
+<footer>
+  <div>linkedin/canary · design-doc · canary-deployment-controller.md</div>
+  <div>nalsd · review status: <span style="color:var(--yellow)">⬤</span> in-review</div>
+</footer>
+
+</main>
+</div>
+</body>
+</html>

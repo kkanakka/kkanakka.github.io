@@ -1,0 +1,920 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NALSD · LinkedIn SLO Error Budget Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#ffffff;--bg-alt:#f6f8fa;--bg-code:#f6f8fa;
+  --border:#d0d7de;--border-soft:#eaeef2;
+  --ink:#1f2328;--ink-soft:#59636e;--ink-faint:#818b98;
+  --link:#0a66c2;--link-hover:#004182;
+  --green:#1a7f37;--green-bg:#dafbe1;
+  --red:#cf222e;--red-bg:#ffebe9;
+  --yellow:#9a6700;--yellow-bg:#fff8c5;
+  --purple:#6639ba;--purple-bg:#fbefff;
+  --orange:#bc4c00;--orange-bg:#fff1e5;
+  --blue-bg:#ddf4ff;
+  --shadow:0 1px 0 rgba(31,35,40,.04);
+  --mono:'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --serif:'Source Serif 4', Georgia, serif;
+  --sans:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
+a{color:var(--link);text-decoration:none}a:hover{text-decoration:underline}
+code,pre,.mono{font-family:var(--mono)}
+code{background:var(--bg-code);padding:.1em .35em;border-radius:4px;font-size:.88em;border:1px solid var(--border-soft)}
+pre{background:var(--bg-code);border:1px solid var(--border);border-radius:6px;padding:12px 14px;overflow-x:auto;font-size:12.5px;line-height:1.55;margin:0}
+
+.shell{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+aside{position:sticky;top:0;height:100vh;overflow-y:auto;border-right:1px solid var(--border);background:var(--bg);padding:18px 14px 40px}
+main{max-width:1080px;width:100%;padding:28px 40px 80px}
+@media (max-width:960px){.shell{grid-template-columns:1fr}aside{position:relative;height:auto;border-right:none;border-bottom:1px solid var(--border)}}
+
+.brand{display:flex;align-items:center;gap:10px;padding:6px 8px 16px;border-bottom:1px solid var(--border-soft);margin-bottom:12px}
+.brand-mark{width:28px;height:28px;border-radius:6px;background:var(--link);color:#fff;display:grid;place-items:center;font-weight:700;font-family:var(--mono);font-size:13px}
+.brand-title{font-weight:700;font-size:14px}
+.brand-sub{font-size:11px;color:var(--ink-soft);font-family:var(--mono)}
+.toc-group{margin:14px 0 4px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-faint);font-weight:600;padding:0 8px}
+.toc a{display:block;padding:4px 8px;border-radius:5px;color:var(--ink-soft);font-size:13px;border-left:2px solid transparent;margin-left:4px}
+.toc a:hover{background:var(--bg-alt);color:var(--ink);text-decoration:none}
+.toc a.depth-2{padding-left:18px;font-size:12.5px}
+
+.doc-head{border-bottom:1px solid var(--border);padding-bottom:18px;margin-bottom:24px}
+.crumbs{font-size:12px;color:var(--ink-soft);font-family:var(--mono);margin-bottom:8px}
+.crumbs .sep{color:var(--ink-faint);margin:0 6px}
+h1{font-family:var(--serif);font-weight:700;font-size:32px;line-height:1.15;letter-spacing:-.015em;margin:0 0 8px}
+.doc-meta{display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:12.5px;color:var(--ink-soft);font-family:var(--mono);margin-top:10px}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:999px;border:1px solid var(--border);background:var(--bg-alt);font-size:11.5px;font-family:var(--mono);color:var(--ink-soft)}
+.pill.blue{background:var(--blue-bg);border-color:#80ccff;color:#0969da}
+.pill.green{background:var(--green-bg);border-color:#a5e1b1;color:var(--green)}
+.pill.purple{background:var(--purple-bg);border-color:#d8b9ff;color:var(--purple)}
+.pill.orange{background:var(--orange-bg);border-color:#ffb077;color:var(--orange)}
+.pill.red{background:var(--red-bg);border-color:#ffaaa3;color:var(--red)}
+.pill.yellow{background:var(--yellow-bg);border-color:#e7c860;color:var(--yellow)}
+
+h2{font-family:var(--serif);font-weight:700;font-size:22px;letter-spacing:-.01em;margin:40px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border-soft);scroll-margin-top:20px}
+h3{font-family:var(--sans);font-weight:700;font-size:16px;margin:24px 0 8px;scroll-margin-top:20px}
+h4{font-family:var(--sans);font-weight:600;font-size:13.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-soft);margin:18px 0 6px}
+p{margin:0 0 12px}
+ul,ol{margin:0 0 12px;padding-left:22px}
+li{margin-bottom:4px}
+
+.note{border-left:3px solid var(--link);background:var(--blue-bg);padding:10px 14px;border-radius:0 6px 6px 0;margin:14px 0;font-size:13px}
+.note.warn{border-left-color:var(--yellow);background:var(--yellow-bg)}
+.note.danger{border-left-color:var(--red);background:var(--red-bg)}
+.note.tip{border-left-color:var(--green);background:var(--green-bg)}
+.note .lbl{font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px;font-family:var(--mono);color:var(--link)}
+.note.warn .lbl{color:var(--yellow)}
+.note.danger .lbl{color:var(--red)}
+.note.tip .lbl{color:var(--green)}
+
+table{width:100%;border-collapse:collapse;font-size:12.5px;margin:8px 0 16px;border:1px solid var(--border);border-radius:6px;overflow:hidden}
+thead{background:var(--bg-alt)}
+th,td{padding:7px 11px;text-align:left;border-bottom:1px solid var(--border-soft);vertical-align:top}
+th{font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-soft)}
+tr:last-child td{border-bottom:none}
+td.num{font-family:var(--mono);font-size:12px}
+
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0 20px}
+@media (max-width:780px){.stat-grid{grid-template-columns:repeat(2,1fr)}}
+.stat{border:1px solid var(--border);border-radius:6px;padding:12px;background:var(--bg)}
+.stat .k{font-family:var(--mono);font-size:11px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.05em}
+.stat .v{font-family:var(--serif);font-weight:700;font-size:22px;margin-top:2px;line-height:1.15}
+.stat .s{font-size:11px;color:var(--ink-soft);font-family:var(--mono);margin-top:2px}
+
+.cols-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:780px){.cols-2{grid-template-columns:1fr}}
+
+.calc{border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin:14px 0;background:var(--bg-alt);position:relative}
+.calc::before{content:"∑ NALSD";position:absolute;top:-10px;left:14px;font-family:var(--mono);font-size:10.5px;background:var(--bg);padding:2px 8px;border:1px solid var(--border);border-radius:4px;color:var(--ink-soft);letter-spacing:.05em;font-weight:600}
+.calc h4{margin-top:4px}
+.calc pre{background:var(--bg);border-color:var(--border-soft)}
+.calc .verdict{display:flex;align-items:center;gap:8px;margin-top:10px;padding:8px 12px;background:var(--bg);border:1px dashed var(--green);border-radius:6px;font-family:var(--mono);font-size:12px;color:var(--green)}
+.calc .verdict.warn{border-color:var(--yellow);color:var(--yellow)}
+
+.diagram{border:1px solid var(--border);border-radius:8px;background:var(--bg);padding:14px;margin:16px 0;box-shadow:var(--shadow)}
+.diagram-cap{font-family:var(--mono);font-size:11px;color:var(--ink-faint);margin-top:8px;text-align:center}
+.diagram svg{width:100%;height:auto;display:block}
+
+.box-fill-blue{fill:#ddf4ff;stroke:#54aeff}
+.box-fill-green{fill:#dafbe1;stroke:#4ac26b}
+.box-fill-purple{fill:#fbefff;stroke:#c297ff}
+.box-fill-orange{fill:#fff1e5;stroke:#fd8c73}
+.box-fill-red{fill:#ffebe9;stroke:#ff8182}
+.box-fill-yellow{fill:#fff8c5;stroke:#d4a72c}
+.box-fill-gray{fill:#f6f8fa;stroke:#d0d7de}
+.lbl-title{font-family:'Inter',sans-serif;font-weight:700;font-size:11.5px;fill:#1f2328}
+.lbl-sub{font-family:'JetBrains Mono',monospace;font-size:9.5px;fill:#59636e}
+.lbl-meta{font-family:'JetBrains Mono',monospace;font-size:9px;fill:#818b98}
+.arrow{stroke:#59636e;stroke-width:1.3;fill:none;marker-end:url(#arr)}
+.arrow-dashed{stroke:#cf222e;stroke-width:1.2;fill:none;stroke-dasharray:4,3;marker-end:url(#arr-red)}
+.arrow-green{stroke:#1a7f37;stroke-width:1.5;fill:none;marker-end:url(#arr-green)}
+
+.flow-steps{counter-reset:step}
+.flow-step{display:grid;grid-template-columns:36px 1fr;gap:12px;padding:14px 16px;border:1px solid var(--border);border-radius:8px;margin-bottom:10px;background:#fff}
+.flow-step .num{counter-increment:step;background:var(--link);color:#fff;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-family:var(--mono);font-weight:700;font-size:13px}
+.flow-step .num::before{content:counter(step)}
+.flow-step .body .title{font-weight:700;font-size:14px;margin-bottom:4px;font-family:var(--sans)}
+.flow-step .body .desc{font-size:12.5px;color:var(--ink-soft);margin-bottom:6px}
+.flow-step .body .tech{font-family:var(--mono);font-size:11px;background:var(--bg-alt);border:1px solid var(--border-soft);border-radius:4px;padding:5px 8px;margin-top:4px;display:inline-block;color:var(--ink);max-width:100%;overflow-x:auto}
+.flow-step .body .nums{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px}
+.flow-step .body .nums .kv{font-family:var(--mono);font-size:11px;color:var(--ink-soft)}
+.flow-step .body .nums .kv b{color:var(--ink);font-weight:700}
+
+.comp-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:12px 0}
+@media (max-width:780px){.comp-grid{grid-template-columns:1fr}}
+.comp{border:1px solid var(--border);border-radius:6px;padding:11px 13px;background:var(--bg)}
+.comp .name{font-weight:700;font-size:13px;display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.comp .name .tech{font-family:var(--mono);font-size:10.5px;color:var(--link);font-weight:500}
+.comp .desc{font-size:12px;color:var(--ink-soft);margin-bottom:6px}
+.comp .row{font-family:var(--mono);font-size:11px;color:var(--ink-soft);display:flex;justify-content:space-between;padding:2px 0;border-top:1px dashed var(--border-soft)}
+.comp .row .lab{color:var(--ink-faint)}
+
+/* Burn-rate budget visualizer */
+.burn-bar{display:flex;align-items:center;height:30px;border:1px solid var(--border);border-radius:6px;overflow:hidden;margin:6px 0;font-family:var(--mono);font-size:11px;font-weight:600}
+.burn-bar .used{background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;height:100%}
+.burn-bar .warn{background:var(--yellow);color:#fff;display:flex;align-items:center;justify-content:center;height:100%}
+.burn-bar .ok{background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;height:100%}
+.burn-bar .remain{flex:1;background:var(--bg-alt);color:var(--ink-soft);display:flex;align-items:center;justify-content:center;height:100%}
+
+footer{margin-top:50px;padding-top:18px;border-top:1px solid var(--border-soft);font-size:11.5px;color:var(--ink-faint);font-family:var(--mono);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+
+.li-strip{height:3px;background:linear-gradient(90deg,var(--link) 0,var(--link) 60%,transparent 100%);border-radius:2px;margin-bottom:14px}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:#d0d7de;border-radius:5px;border:2px solid var(--bg)}
+::-webkit-scrollbar-track{background:transparent}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<aside>
+  <div class="brand">
+    <div class="brand-mark">in</div>
+    <div>
+      <div class="brand-title">in/slo-tracker</div>
+      <div class="brand-sub">v2026.05 · nalsd</div>
+    </div>
+  </div>
+  <div class="li-strip"></div>
+  <nav class="toc">
+    <div class="toc-group">Design</div>
+    <a href="#problem">1 · Problem & SLOs</a>
+    <a href="#capacity">2 · Capacity model</a>
+    <a href="#sli-rate" class="depth-2">2.1 SLI ingestion</a>
+    <a href="#windows" class="depth-2">2.2 Window state</a>
+    <a href="#burn" class="depth-2">2.3 Burn-rate math</a>
+    <a href="#fleet" class="depth-2">2.4 Fleet & cost</a>
+    <a href="#arch">3 · Architecture</a>
+    <a href="#dataflow" class="depth-2">3.1 Full diagram</a>
+    <a href="#flow" class="depth-2">3.2 Step-by-step</a>
+    <a href="#windows-detail" class="depth-2">3.3 Multi-window</a>
+    <a href="#budget-viz" class="depth-2">3.4 Budget visual</a>
+    <div class="toc-group">Operations</div>
+    <a href="#gauntlet">4 · Failure gauntlet</a>
+    <a href="#playbook">5 · Ops playbook</a>
+    <a href="#components">6 · Components</a>
+    <a href="#tradeoffs">7 · Trade-offs</a>
+  </nav>
+</aside>
+
+<main>
+
+<header class="doc-head">
+  <div class="crumbs">
+    <span>in/slo-tracker</span><span class="sep">/</span>
+    <span>design-docs</span><span class="sep">/</span>
+    <span>2026</span><span class="sep">/</span>
+    <span>slo-error-budget-tracker.md</span>
+  </div>
+  <h1>Designing LinkedIn's SLO Error Budget Tracker</h1>
+  <p style="font-size:15px;color:var(--ink-soft);margin:6px 0 0;font-family:var(--serif)">
+    A NALSD walkthrough — the backend brain that watches every service's reliability budget and decides
+    when product teams must pivot from features to fixes. Multi-window burn-rate alerting,
+    99.99% computation accuracy, alert delivery in &lt; 5 minutes.
+  </p>
+  <div class="doc-meta">
+    <span class="pill blue">NALSD</span>
+    <span class="pill green">compute &lt; 60s</span>
+    <span class="pill purple">99.99% accuracy</span>
+    <span class="pill orange">5,000 SLOs tracked</span>
+    <span class="pill yellow">draft · review</span>
+    <span style="margin-left:auto">last edit · 2026-05-12 · sjc</span>
+  </div>
+</header>
+
+<!-- ===== 1. PROBLEM ===== -->
+<section>
+<h2 id="problem">1 · Problem statement & SLO contract</h2>
+
+<p>Every service at LinkedIn has SLOs: Feed homepage at 99.95% availability, InMail delivery at 99.9%, Search results in &lt; 500ms p95. An <b>error budget</b> is the inverse: 0.05% / 0.1% / 5% of allowed badness per 30 days. The tracker is the system that <b>continuously computes how much of each budget has been consumed</b> and decides when to alert. When the budget is green, product teams ship features freely. When it goes red, engineering pivots to reliability work. The tracker is therefore a <b>data-driven contract between product and reliability</b>, not just a dashboard.</p>
+
+<div class="stat-grid">
+  <div class="stat"><div class="k">SLOs tracked</div><div class="v">~5,000</div><div class="s">across 500 services</div></div>
+  <div class="stat"><div class="k">Compute latency</div><div class="v">&lt; 60s</div><div class="s">p95 SLI → SLO state</div></div>
+  <div class="stat"><div class="k">Accuracy</div><div class="v">99.99%</div><div class="s">data consistency</div></div>
+  <div class="stat"><div class="k">Alert delay</div><div class="v">&lt; 5 min</div><div class="s">burn threshold → page</div></div>
+</div>
+
+<h3 id="slo">SLO contract (for the tracker itself)</h3>
+<p>The senior move: define SLOs for the SLO tracker. Eating your own dogfood — the tracker is instrumented as ruthlessly as a user-facing service.</p>
+
+<table>
+  <thead><tr><th>SLI</th><th>Target</th><th>Measurement</th><th>Error budget / 28d</th></tr></thead>
+  <tbody>
+    <tr><td><b>A · Compute latency</b></td><td class="num">p95 ≤ 60 s</td><td>SLI emit → SLO state updated</td><td class="num">~24h of &gt;60s</td></tr>
+    <tr><td><b>B · Computation accuracy</b></td><td class="num">≥ 99.99%</td><td>data consistency on replay</td><td class="num">~1 in 10⁴ errors</td></tr>
+    <tr><td><b>C · System availability</b></td><td class="num">≥ 99.99%</td><td>API uptime, queryable state</td><td class="num">~4 min/month</td></tr>
+    <tr><td><b>D · Alert delay</b></td><td class="num">&lt; 5 min p95</td><td>burn threshold → page delivered</td><td class="num">~24h with &gt;5min</td></tr>
+    <tr><td><b>E · Alert precision</b></td><td class="num">≥ 95%</td><td>actionable / total pages</td><td class="num">~5% noise allowed</td></tr>
+  </tbody>
+</table>
+
+<div class="note">
+  <span class="lbl">Why this design exists</span>
+  Without an error-budget contract, every team negotiates "how reliable should we be?" continuously and politically. With it, the discussion becomes data-driven: <em>"We've burned 80% of the budget this month — features pause, reliability work starts."</em> The tracker is what makes that contract auditable.
+</div>
+</section>
+
+<!-- ===== 2. CAPACITY ===== -->
+<section>
+<h2 id="capacity">2 · Capacity model (the NALSD math)</h2>
+
+<h3 id="sli-rate">2.1 — SLI ingestion rate</h3>
+<div class="calc">
+  <h4>SLI events per second across all tracked services</h4>
+<pre><code>tracked services           ≈ 500
+SLOs per service           ≈ 10 (avail, latency p50/p95/p99, errors, etc.)
+total SLOs                 = 5,000
+
+per-SLO event rate at ingestion:
+  request-based SLIs (avail) = stream every request bucketed
+                              ≈ 100,000 events/s per active service
+  time-based SLIs (uptime)   = sampled per minute
+                              ≈ 1 sample/min per SLO
+
+aggregate ingest at peak:
+  500 services × 100k events/s = 50,000,000 events/s = 50 M/s
+
+→ this is the SAME monitoring stream from §monitoring doc
+→ tracker is a CONSUMER, not a producer of telemetry
+→ we read pre-aggregated SLI streams from Kafka, NOT raw signals
+
+post-aggregation rate (1-min windows from upstream):
+  5,000 SLOs × (1 / 60s) = 83 SLI samples/s entering the tracker
+  with 6 window sizes (1m, 5m, 1h, 6h, 24h, 30d) computed
+                       = 83 × 6 = 500 window updates/s</code></pre>
+  <div class="verdict">VERDICT · Tracker is a thin layer on top of monitoring. Ingest is ~500 updates/s — trivial volume.</div>
+</div>
+
+<h3 id="windows">2.2 — Window state size</h3>
+<div class="calc">
+  <h4>How much state must we keep in memory?</h4>
+<pre><code>per-SLO state for each window:
+  good_events count        =  8 B
+  total_events count       =  8 B
+  slo_target (config)      =  8 B
+  budget_remaining ratio   =  8 B
+  burn_rate (current)      =  8 B
+  last_updated_ts          =  8 B
+  ─────────────────────────────
+  per (SLO, window) state  = 48 B
+
+6 windows per SLO × 5,000 SLOs = 30,000 (SLO, window) cells
+total state in memory          = 30,000 × 48 B = 1.4 MB
+
+with all historical points retained 30 days at 1-min granularity:
+  5,000 SLOs × 6 windows × 60 × 24 × 30 = 1.3 B rows
+  × 48 B/row                            = 62 GB total state
+
+stored in Bigtable, queried with row-key prefix scan:
+  row key: {service}#{slo_name}#{window}#{ts}
+  hot data (last 24h):  ~2 GB in memory cache
+  warm data (last 30d): ~62 GB in Bigtable
+  cold data (>30d):     archived to GCS</code></pre>
+  <div class="verdict">VERDICT · 62 GB hot state. Bigtable handles this with one tablet; we don't even need horizontal sharding.</div>
+</div>
+
+<h3 id="burn">2.3 — Burn-rate math (the heart of the system)</h3>
+
+<p>This is the entire SLO methodology in one box. Understand this and you understand the system.</p>
+
+<div class="calc">
+  <h4>What is burn rate?</h4>
+<pre><code>SLO        = 99.9% over 30 days
+error budget = 100% - 99.9% = 0.1%
+            = 0.001 × (30d × 24h × 60min × 60s)
+            = 2,592 seconds of badness allowed per 30 days
+            = 43.2 minutes per 30 days
+            = 1.44 minutes per day (steady state)
+
+current error rate (over some window):
+  if errors are 0.1% (matches SLO) → burn rate = 1.0× (sustainable)
+  if errors are 0.5%               → burn rate = 5.0× (burning 5× faster)
+  if errors are 1.5%               → burn rate = 15.0× (CRITICAL)
+
+formula:
+  burn_rate = (current_error_rate) / (1 - SLO_target)
+            = (current_error_rate) / (error_budget_per_unit_time)</code></pre>
+  <div class="verdict">VERDICT · Burn rate is just "how fast are we eating the budget compared to sustainable pace?"</div>
+</div>
+
+<div class="calc">
+  <h4>The multi-window strategy (Google SRE classic)</h4>
+<pre><code>Why multiple windows? Each catches different failure modes:
+
+  1h window  · 14.4× threshold → fast, intense burns
+                                  → "service is on fire RIGHT NOW"
+                                  → would consume 2% of monthly budget in 1h
+
+  6h window  · 6× threshold    → sustained problems
+                                  → "ongoing degradation across multiple subsystems"
+                                  → would consume 5% of budget in 6h
+
+  24h window · 3× threshold    → slow leaks
+                                  → "we're drifting, something is wrong"
+                                  → would consume 10% of budget in 24h
+
+  30d window · 1× threshold    → budget exhaustion alarm
+                                  → "we have spent the whole month's reliability"
+
+ALERTING RULE: fire only when BOTH a short AND long window cross threshold
+  → "1h × 14.4× AND 5min × 14.4×" → page (fast)
+  → "6h × 6× AND 30min × 6×"      → page (medium)
+  → "24h × 3× AND 2h × 3×"        → ticket (slow)
+
+WHY THE PAIR: short window catches the spike, long window confirms it's not a blip
+  → avoids paging on 30-second outages that auto-recover
+  → catches both fast burns AND drift</code></pre>
+  <div class="verdict">VERDICT · The dual-window AND-condition is what makes this precise. Single-window alerting is either too jumpy or too slow.</div>
+</div>
+
+<h3 id="fleet">2.4 — Fleet summary & cost</h3>
+<table>
+  <thead><tr><th>Tier</th><th>Instance</th><th>Count</th><th>$/mo (on-demand)</th><th>$/mo (3y RI)</th></tr></thead>
+  <tbody>
+    <tr><td>Normalization service</td><td class="num">m6i.large</td><td class="num">12</td><td class="num">$1 K</td><td class="num">$0.4 K</td></tr>
+    <tr><td>Dataflow (compute engine)</td><td class="num">n2-standard-4</td><td class="num">20</td><td class="num">$3.5 K</td><td class="num">$1.3 K</td></tr>
+    <tr><td>Alert engine</td><td class="num">m6i.2xlarge</td><td class="num">9</td><td class="num">$2.6 K</td><td class="num">$1.0 K</td></tr>
+    <tr><td>Bigtable (window state)</td><td class="num">—</td><td class="num">3 nodes · 62 GB</td><td class="num">$1.2 K</td><td class="num">$1.2 K</td></tr>
+    <tr><td>Spanner (config store)</td><td class="num">—</td><td class="num">2 nodes</td><td class="num">$2 K</td><td class="num">$2 K</td></tr>
+    <tr><td>Redis (API cache)</td><td class="num">cache.r6g.large</td><td class="num">9</td><td class="num">$2 K</td><td class="num">$0.8 K</td></tr>
+    <tr><td>API + Dashboard service</td><td class="num">m6i.large</td><td class="num">15</td><td class="num">$1.3 K</td><td class="num">$0.5 K</td></tr>
+    <tr><td>Audit Kafka</td><td class="num">i4i.large</td><td class="num">6</td><td class="num">$3.4 K</td><td class="num">$1.3 K</td></tr>
+    <tr style="background:var(--bg-alt);font-weight:700"><td>Total</td><td class="num">—</td><td class="num">~76 nodes</td><td class="num">$17 K/mo</td><td class="num">$8.5 K/mo</td></tr>
+  </tbody>
+</table>
+
+<div class="note tip">
+  <span class="lbl">Cost compared</span>
+  Even cheaper than the canary controller ($17K vs $30K) — because this is pure derived state. SLI streams already exist (monitoring pipeline pays). The tracker is 76 boxes doing arithmetic on aggregated streams.
+</div>
+</section>
+
+<!-- ===== 3. ARCHITECTURE ===== -->
+<section>
+<h2 id="arch">3 · Architecture</h2>
+
+<h3 id="dataflow">3.1 — Full architecture diagram</h3>
+
+<div class="diagram">
+<svg viewBox="0 0 980 820" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#59636e"/>
+    </marker>
+    <marker id="arr-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#cf222e"/>
+    </marker>
+    <marker id="arr-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1a7f37"/>
+    </marker>
+  </defs>
+
+  <!-- Top ribbon -->
+  <text x="490" y="22" text-anchor="middle" class="lbl-title" style="font-size:13px">5,000 SLOs · 500 services · compute &lt; 60s · 99.99% accuracy · alert &lt; 5min</text>
+
+  <!-- ============ STEP NUMBER BADGES ============ -->
+  <circle cx="155" cy="60" r="11" fill="#0a66c2"/>
+  <text x="155" y="64" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">1</text>
+  <circle cx="490" cy="60" r="11" fill="#0a66c2"/>
+  <text x="490" y="64" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">2</text>
+  <circle cx="800" cy="60" r="11" fill="#0a66c2"/>
+  <text x="800" y="64" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">3</text>
+  <circle cx="490" cy="200" r="11" fill="#0a66c2"/>
+  <text x="490" y="204" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">4</text>
+  <circle cx="155" cy="345" r="11" fill="#0a66c2"/>
+  <text x="155" y="349" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">5</text>
+  <circle cx="490" cy="345" r="11" fill="#0a66c2"/>
+  <text x="490" y="349" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">6</text>
+  <circle cx="820" cy="345" r="11" fill="#0a66c2"/>
+  <text x="820" y="349" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">7</text>
+  <circle cx="155" cy="510" r="11" fill="#0a66c2"/>
+  <text x="155" y="514" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">8</text>
+  <circle cx="820" cy="510" r="11" fill="#0a66c2"/>
+  <text x="820" y="514" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">9</text>
+  <circle cx="490" cy="680" r="11" fill="#0a66c2"/>
+  <text x="490" y="684" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">10</text>
+
+  <!-- ============ ROW 1: SLI sources ============ -->
+  <g>
+    <rect x="20" y="85" width="280" height="80" rx="6" class="box-fill-gray"/>
+    <text x="160" y="108" text-anchor="middle" class="lbl-title">SLI data sources</text>
+    <text x="160" y="125" text-anchor="middle" class="lbl-sub">LB · API gw · app · DB · infra</text>
+    <text x="160" y="141" text-anchor="middle" class="lbl-sub">Prometheus · OpenTelemetry</text>
+    <text x="160" y="157" text-anchor="middle" class="lbl-meta">request counts · latencies · errors</text>
+  </g>
+
+  <g>
+    <rect x="340" y="85" width="300" height="80" rx="6" class="box-fill-blue"/>
+    <text x="490" y="108" text-anchor="middle" class="lbl-title">Ingestion + normalization</text>
+    <text x="490" y="125" text-anchor="middle" class="lbl-sub">scrape + push gateway · schema validate</text>
+    <text x="490" y="141" text-anchor="middle" class="lbl-sub">unit convert · timestamp normalize · classify</text>
+    <text x="490" y="157" text-anchor="middle" class="lbl-meta">12 nodes · 5k SLOs · 500 updates/s</text>
+  </g>
+
+  <g>
+    <rect x="680" y="85" width="280" height="80" rx="6" class="box-fill-yellow"/>
+    <text x="820" y="108" text-anchor="middle" class="lbl-title">SLO config store</text>
+    <text x="820" y="125" text-anchor="middle" class="lbl-sub">Spanner — versioned · audited</text>
+    <text x="820" y="141" text-anchor="middle" class="lbl-sub">target · window · alert rules</text>
+    <text x="820" y="157" text-anchor="middle" class="lbl-meta">GitOps · approval workflow · rollback</text>
+  </g>
+
+  <!-- ============ ROW 2: Kafka ============ -->
+  <g>
+    <rect x="20" y="225" width="940" height="70" rx="6" class="box-fill-green"/>
+    <text x="490" y="248" text-anchor="middle" class="lbl-title" style="font-size:13px">Kafka — normalized SLI stream (multi-region, replayable)</text>
+    <text x="490" y="266" text-anchor="middle" class="lbl-sub">topics: sli.events (request-bucketed) · sli.samples (time-sampled)</text>
+    <text x="490" y="284" text-anchor="middle" class="lbl-meta">9 brokers · 7-day retention · 3× replication · exactly-once producer</text>
+  </g>
+
+  <!-- ============ ROW 3: Dataflow (3 components inside one band) ============ -->
+  <rect x="20" y="370" width="940" height="110" rx="8" fill="#fafbfc" stroke="#eaeef2"/>
+  <text x="490" y="395" text-anchor="middle" class="lbl-title" style="font-size:13px">Real-time SLO computation engine — Apache Beam / Dataflow</text>
+
+  <g>
+    <rect x="40" y="410" width="280" height="60" rx="6" class="box-fill-purple"/>
+    <text x="180" y="430" text-anchor="middle" class="lbl-title">Sliding windows</text>
+    <text x="180" y="445" text-anchor="middle" class="lbl-sub">1m · 5m · 1h · 6h · 24h · 30d</text>
+    <text x="180" y="460" text-anchor="middle" class="lbl-meta">watermark · exactly-once · late data</text>
+  </g>
+
+  <g>
+    <rect x="340" y="410" width="300" height="60" rx="6" class="box-fill-purple"/>
+    <text x="490" y="430" text-anchor="middle" class="lbl-title">SLO rule evaluator</text>
+    <text x="490" y="445" text-anchor="middle" class="lbl-sub">SLI → SLO compliance % · per service</text>
+    <text x="490" y="460" text-anchor="middle" class="lbl-meta">config hot-reload · per-tenant rules</text>
+  </g>
+
+  <g>
+    <rect x="660" y="410" width="280" height="60" rx="6" class="box-fill-purple"/>
+    <text x="800" y="430" text-anchor="middle" class="lbl-title">Burn-rate calculator</text>
+    <text x="800" y="445" text-anchor="middle" class="lbl-sub">1h: 14.4× · 6h: 6× · 24h: 3×</text>
+    <text x="800" y="460" text-anchor="middle" class="lbl-meta">multi-window AND condition</text>
+  </g>
+
+  <!-- ============ ROW 4: State store + Alert engine + Audit ============ -->
+  <g>
+    <rect x="20" y="540" width="280" height="100" rx="6" class="box-fill-blue"/>
+    <text x="160" y="563" text-anchor="middle" class="lbl-title">SLO state store</text>
+    <text x="160" y="580" text-anchor="middle" class="lbl-sub">Bigtable · row-key:</text>
+    <text x="160" y="595" text-anchor="middle" class="lbl-sub">service#slo#window#ts</text>
+    <text x="160" y="614" text-anchor="middle" class="lbl-meta">good · total · target · remain · burn</text>
+    <text x="160" y="628" text-anchor="middle" class="lbl-meta">3 nodes · 62 GB · sharded by service</text>
+  </g>
+
+  <g>
+    <rect x="340" y="540" width="300" height="100" rx="6" class="box-fill-red"/>
+    <text x="490" y="563" text-anchor="middle" class="lbl-title">Alert generator</text>
+    <text x="490" y="580" text-anchor="middle" class="lbl-sub">fast burn (14.4× 1h+5m) → page</text>
+    <text x="490" y="595" text-anchor="middle" class="lbl-sub">medium burn (6× 6h+30m) → page</text>
+    <text x="490" y="612" text-anchor="middle" class="lbl-sub">slow burn (3× 24h+2h) → ticket</text>
+    <text x="490" y="628" text-anchor="middle" class="lbl-meta">9 nodes · dedupe · suppress on EB &gt; 90%</text>
+  </g>
+
+  <g>
+    <rect x="680" y="540" width="280" height="100" rx="6" class="box-fill-yellow"/>
+    <text x="820" y="563" text-anchor="middle" class="lbl-title">Audit Kafka</text>
+    <text x="820" y="580" text-anchor="middle" class="lbl-sub">event-sourced state log</text>
+    <text x="820" y="595" text-anchor="middle" class="lbl-sub">every transition recorded</text>
+    <text x="820" y="614" text-anchor="middle" class="lbl-meta">replayable · 1y retention</text>
+    <text x="820" y="628" text-anchor="middle" class="lbl-meta">forensics + accuracy verify</text>
+  </g>
+
+  <!-- ============ ROW 5: API + Dashboard + Notifier ============ -->
+  <g>
+    <rect x="40" y="705" width="280" height="80" rx="6" class="box-fill-green"/>
+    <text x="180" y="728" text-anchor="middle" class="lbl-title">Query API + cache</text>
+    <text x="180" y="745" text-anchor="middle" class="lbl-sub">GraphQL · REST · Redis cache</text>
+    <text x="180" y="761" text-anchor="middle" class="lbl-sub">filters · aggregations</text>
+    <text x="180" y="777" text-anchor="middle" class="lbl-meta">15 nodes · 70% cache hit</text>
+  </g>
+
+  <g>
+    <rect x="340" y="705" width="300" height="80" rx="6" class="box-fill-green"/>
+    <text x="490" y="728" text-anchor="middle" class="lbl-title">Dashboard service</text>
+    <text x="490" y="745" text-anchor="middle" class="lbl-sub">real-time SLO views · burn trends</text>
+    <text x="490" y="761" text-anchor="middle" class="lbl-sub">alert timeline · multi-service rollup</text>
+    <text x="490" y="777" text-anchor="middle" class="lbl-meta">React + WebSocket</text>
+  </g>
+
+  <g>
+    <rect x="660" y="705" width="280" height="80" rx="6" class="box-fill-purple"/>
+    <text x="800" y="728" text-anchor="middle" class="lbl-title">Notifier</text>
+    <text x="800" y="745" text-anchor="middle" class="lbl-sub">PagerDuty · Slack · Email</text>
+    <text x="800" y="761" text-anchor="middle" class="lbl-sub">priority lanes · team routing</text>
+    <text x="800" y="777" text-anchor="middle" class="lbl-meta">on-call rotation aware</text>
+  </g>
+
+  <!-- ============ ARROWS ============ -->
+  <path d="M300,125 L340,125" class="arrow"/>
+  <path d="M640,125 L680,125" class="arrow" stroke-dasharray="3,2"/>
+  <path d="M490,165 L490,225" class="arrow"/>
+  <path d="M490,295 L490,370" class="arrow"/>
+  <path d="M180,470 L160,540" class="arrow"/>
+  <path d="M490,470 L490,540" class="arrow"/>
+  <path d="M800,470 L820,540" class="arrow"/>
+  <path d="M160,640 L180,705" class="arrow"/>
+  <path d="M490,640 L490,705" class="arrow"/>
+  <path d="M490,640 L800,705" class="arrow-dashed" stroke-opacity="0.6"/>
+  <path d="M820,640 L820,705" class="arrow"/>
+  <path d="M820,108 L820,225" class="arrow" stroke-dasharray="3,2"/>
+  <text x="855" y="170" class="lbl-meta">config feeds rule engine</text>
+
+</svg>
+<div class="diagram-cap">Fig 1 · Complete SLO Error Budget Tracker. Numbered circles map to the step-by-step flow in §3.2. SLI sources → ingestion → Kafka → Dataflow (windows + rules + burn rate) → state store → alert engine → API/dashboard/notifier. SLO configs flow from Spanner into the rule evaluator.</div>
+</div>
+
+<!-- 3.2 STEP-BY-STEP FLOW -->
+<h3 id="flow">3.2 — Step-by-step flow (the numbered walkthrough)</h3>
+
+<p>Following the numbered blue badges in Fig 1. Concrete example: <b>the InMail delivery service is having a bad afternoon — 0.5% failure rate sustained for 10 minutes triggers a page within 4 minutes of the regression starting.</b></p>
+
+<div class="flow-steps">
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">SLI sources emit raw telemetry</div>
+      <div class="desc">The InMail send service runs across 200 pods. Each pod increments two counters per request: <code>inmail.requests_total</code> and <code>inmail.requests_failed_total</code>. The local Prometheus client maintains these in memory; an exporter exposes them at <code>/metrics</code>.<br><br>Other SLI sources contribute too: the API gateway tracks 4xx/5xx, the database tracks query timeouts, infrastructure tracks pod health. <b>All measure the same SLO contributors</b> for InMail availability.</div>
+      <div class="tech">prometheus_counter("inmail.requests_total", labels={tenant, region}) · _failed_total · exposed at /metrics</div>
+      <div class="nums">
+        <span class="kv">SLI sources · <b>5 layers</b></span>
+        <span class="kv">services tracked · <b>500</b></span>
+        <span class="kv">SLO count · <b>~5,000 total</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Ingestion + normalization layer</div>
+      <div class="desc">A federation of Prometheus scrapers pulls SLI data from every service every 15s. A push gateway accepts batch ingestion from services that can't be scraped (one-off jobs, edge networks). The normalization engine then: (a) <b>validates schema</b> against the SLI registry, (b) <b>converts units</b> (some teams emit milliseconds, others microseconds), (c) <b>normalizes timestamps</b> to UTC nanoseconds, (d) <b>enriches metadata</b> (service ownership team, on-call rotation), (e) <b>classifies SLI type</b> (availability / latency / throughput / error rate).<br><br>Output: a uniform schema regardless of source. <b>This is the contract that makes everything downstream possible.</b></div>
+      <div class="tech">normalized SLI event: { service, slo_name, sli_type, timestamp_ns, good_count, total_count, labels{...}}</div>
+      <div class="nums">
+        <span class="kv">scrape interval · <b>15 s</b></span>
+        <span class="kv">ingest rate · <b>500 updates/s</b></span>
+        <span class="kv">fleet · <b>12 normalizer nodes</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">SLO config store (Spanner)</div>
+      <div class="desc">Parallel to the data path, SLO configurations live in Spanner. An SLO config is: <code>{service: "inmail-send", sli: "availability", target: 0.999, window: "30d", alert_rules: [...]}</code>. Configs are version-controlled in Git, edited via PR, approved by service owner + SRE, then applied via GitOps. Each change is audited.<br><br>The config store also holds <b>burn-rate alert rules</b>: multi-window thresholds, which teams to page, what time-of-day suppression to apply, etc. These can be reloaded without restarting the compute engine.</div>
+      <div class="tech">slo_config: {target: 0.999, window: "30d", alerts: [{fast: "14.4× over 1h+5m"}, {slow: "3× over 24h+2h"}]}</div>
+      <div class="nums">
+        <span class="kv">Spanner nodes · <b>2 (region-replicated)</b></span>
+        <span class="kv">change workflow · <b>GitOps + approval</b></span>
+        <span class="kv">hot-reload · <b>5 s propagation</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Kafka — normalized SLI stream</div>
+      <div class="desc">Normalized events land in Kafka topics. Two topics: <code>sli.events</code> (request-bucketed: good_count + total_count over a small window) and <code>sli.samples</code> (time-sampled SLIs like uptime). Partitioned by <code>hash(service)</code> so each service's stream is ordered. 7-day retention means we can <b>replay the last week</b> if the compute engine fails or a config change requires recomputation.<br><br><b>Exactly-once producer</b> semantics on the way in. Combined with Dataflow's exactly-once consumer, this gives us the 99.99% accuracy SLO.</div>
+      <div class="tech">topic: sli.events · partition: hash(service) · ACK: all · idempotent producer · 7-day retention</div>
+      <div class="nums">
+        <span class="kv">brokers · <b>9</b></span>
+        <span class="kv">retention · <b>7 days</b></span>
+        <span class="kv">processing semantic · <b>exactly-once</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Sliding windows in Dataflow</div>
+      <div class="desc">Apache Beam / Dataflow maintains <b>six concurrent windows</b> for every SLO: 1m, 5m, 1h, 6h, 24h, 30d. As each SLI event arrives, it's added to all six windows simultaneously. Beam handles late data via <b>watermarks</b> — if an event arrives 30 seconds late, the affected windows are reprocessed.<br><br>For our InMail example at minute T (when the regression starts): the 1m window shows error rate jumping from 0.05% to 0.5%. The 5m window starts to follow as more samples arrive. The 1h window is still mostly clean because most of the hour was healthy. <b>That's exactly the multi-window strategy at work — different windows see the same event with different sensitivities.</b></div>
+      <div class="tech">Beam pipeline: KafkaIO → ParDo(normalize) → Window.into([1m, 5m, 1h, 6h, 24h, 30d]) → CombinePerKey(sum) → Bigtable.write</div>
+      <div class="nums">
+        <span class="kv">windows per SLO · <b>6</b></span>
+        <span class="kv">Dataflow workers · <b>20 autoscaling</b></span>
+        <span class="kv">state store · <b>Bigtable checkpoints</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">SLO rule evaluator + burn-rate calculator</div>
+      <div class="desc">For each window update, the rule evaluator computes: <code>compliance = good_events / total_events</code> and compares to the SLO target. The burn-rate calculator then computes: <code>burn_rate = (1 - compliance) / (1 - SLO_target)</code>.<br><br>For our InMail case, after 10 minutes of 0.5% failure rate:<br>• <b>1m window:</b> compliance = 99.5%, burn rate = 5× (above 14.4× threshold? No — but close)<br>• <b>5m window:</b> compliance = 99.5%, burn rate = 5× (sustained)<br>• <b>1h window:</b> compliance = 99.85%, burn rate = 1.5× (still mostly clean)<br><br>At T+15 minutes, the 1h window hits burn rate 4× and the 5m window is at 5×. The fast-burn pair (14.4× threshold) isn't met yet, but the medium-burn pair (6× threshold over 6h+30m) is close.</div>
+      <div class="tech">burn_rate = (1 - compliance) / (1 - target) · evaluated every 30s · output: {window, burn_rate, compliance, budget_remaining}</div>
+      <div class="nums">
+        <span class="kv">eval frequency · <b>30 s</b></span>
+        <span class="kv">SLOs evaluated · <b>5,000</b></span>
+        <span class="kv">CPU per eval · <b>~3 ms</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">SLO state stored in Bigtable</div>
+      <div class="desc">Every (service, SLO, window, timestamp) tuple is written to Bigtable. Row key is <code>service#slo#window#ts</code> — sorted lexicographically so range scans for "InMail availability over last hour" are sequential disk reads.<br><br>Columns include: <code>good_events</code>, <code>total_events</code>, <code>slo_target</code>, <code>budget_remaining</code>, <code>burn_rate</code>. This is the canonical source of truth — every dashboard query and alert evaluation reads from here.<br><br>30 days × 6 windows × 5,000 SLOs at 1-min granularity = ~62 GB. Bigtable handles this with one tablet; we shard by service to enable parallel queries.</div>
+      <div class="tech">row key: inmail-send#availability#1h#1715520600 · column family: cf:{good, total, target, remain, burn}</div>
+      <div class="nums">
+        <span class="kv">Bigtable nodes · <b>3</b></span>
+        <span class="kv">hot state · <b>62 GB</b></span>
+        <span class="kv">row scan latency · <b>~10 ms p99</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">API + dashboard serve queries</div>
+      <div class="desc">SREs and product managers query the system in two ways:<br><br><b>Query API (GraphQL):</b> "what's InMail's availability over the last 24h, grouped by region?" Returns from Bigtable, cached in Redis with 60s TTL (70% cache hit rate because dashboards refresh on the same queries repeatedly).<br><br><b>Dashboard:</b> React UI with WebSocket subscriptions for real-time burn-rate updates. Shows current SLO compliance, time-series of burn rate across all windows, error budget remaining as a thermometer, alert timeline of past incidents.<br><br>Product managers use this to see "we have 35% of the month's budget left and 12 days remaining — we can ship that risky feature." SREs use it to see which services are red.</div>
+      <div class="tech">GraphQL: query { service(name: "inmail-send") { slo(name: "availability") { compliance(window: "24h") burnRate } } }</div>
+      <div class="nums">
+        <span class="kv">API fleet · <b>15 nodes</b></span>
+        <span class="kv">cache hit · <b>70%</b></span>
+        <span class="kv">dashboard latency · <b>p99 200 ms</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Alert engine evaluates burn-rate rules</div>
+      <div class="desc">Independent of the API path, the alert engine continuously evaluates burn-rate rules. For our InMail example at T+18 minutes:<br><br>• <b>5m window burn rate:</b> 5.2×<br>• <b>1h window burn rate:</b> 4.8× (approaching threshold)<br>• <b>Medium-burn pair check:</b> "30m AND 6h both &gt; 6×?" → Not yet<br><br>At T+22 minutes:<br>• <b>5m window:</b> 5.5×<br>• <b>30m window:</b> 6.1×<br>• <b>6h window:</b> 6.2× — <b>BOTH thresholds met</b><br><br>The alert engine fires: <code>{service: "inmail-send", slo: "availability", severity: "page", reason: "medium-burn 6× over 6h+30m"}</code>. Dedupes against any existing open alert for this SLO. Then routes to the notifier.</div>
+      <div class="tech">alert_rule: burn_rate(5m) > 6 AND burn_rate(6h) > 6 → page · suppress if EB &gt; 90% already alerted</div>
+      <div class="nums">
+        <span class="kv">eval frequency · <b>15 s</b></span>
+        <span class="kv">alert fleet · <b>9 nodes</b></span>
+        <span class="kv">dedupe window · <b>per (service, SLO) tuple</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Notifier delivers the page</div>
+      <div class="desc">The alert hits the notifier, which looks up InMail's on-call rotation in the team-ownership service, formats the page with context (which SLO, current burn rate, budget remaining, link to dashboard, recent deploys for context), and delivers via PagerDuty for the current on-call engineer.<br><br><b>Total wall-clock time from the SLI regression starting to the on-call's phone ringing: ~4 minutes.</b> Well within the 5-minute SLI-D target. The notification includes a deep link to the dashboard pre-filtered to InMail availability over the last 30 minutes — the engineer can see the regression on-screen before they finish reading the page.<br><br>Throughout this entire flow, every state transition has been written to the audit Kafka. Six months later, someone can reconstruct exactly when this incident started, what the burn rate was at each step, who was paged, and when it was resolved.</div>
+      <div class="tech">page: {service: "inmail-send", slo: "availability", burn_rate: 6.2, budget_remaining: 0.42, oncall: "bob@", dashboard_url: ...}</div>
+      <div class="nums">
+        <span class="kv">e2e regression → page · <b>~4 min</b></span>
+        <span class="kv">SLI-D target · <b>&lt; 5 min ✓</b></span>
+        <span class="kv">audit trail · <b>every step logged</b></span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="note tip">
+  <span class="lbl">The key design insight</span>
+  Notice the <em>tracker itself</em> never decides what to do — it just measures and informs. The product team decides whether to ship features when budget is green. The engineering team decides what reliability work to do when budget is red. The tracker is a referee, not a coach. That's what makes it trusted: it has no agenda except accurate measurement.
+</div>
+
+<!-- 3.3 MULTI-WINDOW DETAIL -->
+<h3 id="windows-detail">3.3 — Multi-window burn-rate detail (the SRE classic)</h3>
+
+<p>The multi-window strategy is the heart of this system. Single-window alerting is either too jumpy (1-min triggers on noise) or too slow (1-day misses fast burns). The dual-window AND-condition is the senior trick.</p>
+
+<table>
+  <thead><tr><th>Alert tier</th><th>Long window</th><th>Short window</th><th>Burn threshold</th><th>Budget consumed</th><th>Response</th></tr></thead>
+  <tbody>
+    <tr><td><b>Fast burn</b></td><td class="num">1 h</td><td class="num">5 min</td><td class="num">14.4×</td><td class="num">2% in 1h</td><td>page immediately</td></tr>
+    <tr><td><b>Medium burn</b></td><td class="num">6 h</td><td class="num">30 min</td><td class="num">6×</td><td class="num">5% in 6h</td><td>page during business</td></tr>
+    <tr><td><b>Slow burn</b></td><td class="num">24 h</td><td class="num">2 h</td><td class="num">3×</td><td class="num">10% in 24h</td><td>file ticket</td></tr>
+    <tr><td><b>Budget warn</b></td><td class="num">30 d</td><td class="num">—</td><td class="num">1× cumulative</td><td class="num">75% total</td><td>email service owner</td></tr>
+    <tr><td><b>Budget critical</b></td><td class="num">30 d</td><td class="num">—</td><td class="num">1× cumulative</td><td class="num">95% total</td><td>auto-pause deploys</td></tr>
+  </tbody>
+</table>
+
+<div class="note">
+  <span class="lbl">Why 14.4× for the fast burn?</span>
+  Math: at 14.4× sustained for 1 hour, you'd consume <code>14.4 × (1/720)</code> = 2% of the monthly budget. The 14.4 isn't magic; it's <code>30 days × 24 h / 1 h × 2%</code>. The Google SRE book picks 14.4 because 2% in an hour is "definitely an emergency" — a real outage burns the monthly budget catastrophically fast.
+</div>
+
+<!-- 3.4 BUDGET VISUAL -->
+<h3 id="budget-viz">3.4 — Error budget visualizer</h3>
+
+<p>Three example services in different states. The visual <b>is</b> the contract: green means ship features, red means pivot.</p>
+
+<h4>InMail availability (currently burning)</h4>
+<div class="burn-bar">
+  <div class="used" style="width:78%">78% consumed</div>
+  <div class="remain">22% remaining · 8 days left in month</div>
+</div>
+<div style="font-family:var(--mono);font-size:11px;color:var(--ink-soft);margin-bottom:14px">Budget burning at 4× expected pace · slow-burn alert active · feature freeze recommended</div>
+
+<h4>Feed availability (healthy)</h4>
+<div class="burn-bar">
+  <div class="ok" style="width:18%">18% consumed</div>
+  <div class="remain">82% remaining · 8 days left in month</div>
+</div>
+<div style="font-family:var(--mono);font-size:11px;color:var(--ink-soft);margin-bottom:14px">Budget burning at 0.7× expected pace · safe to ship</div>
+
+<h4>Search latency (warning)</h4>
+<div class="burn-bar">
+  <div class="warn" style="width:52%">52% consumed</div>
+  <div class="remain">48% remaining · 8 days left in month</div>
+</div>
+<div style="font-family:var(--mono);font-size:11px;color:var(--ink-soft);margin-bottom:14px">Burning at 1.8× expected pace · ship cautiously · canary thresholds tightened</div>
+
+</section>
+
+<!-- ===== 4. GAUNTLET ===== -->
+<section>
+<h2 id="gauntlet">4 · Failure gauntlet</h2>
+
+<div class="cols-2">
+  <div class="comp">
+    <div class="name">A · Late-arriving SLI data <span class="tech">SLI: A, B</span></div>
+    <div class="desc">A region's metrics pipeline lags 90s; events arrive out of order.</div>
+    <div class="row"><span class="lab">trigger</span><span>watermark lag &gt; 30 s</span></div>
+    <div class="row"><span class="lab">absorb</span><span>Beam reprocesses windows on late data</span></div>
+    <div class="row"><span class="lab">guard</span><span>refuse to fire alerts on stale windows</span></div>
+    <div class="row"><span class="lab">verdict</span><span>data eventually correct · alerts delayed not wrong</span></div>
+  </div>
+  <div class="comp">
+    <div class="name">B · Bad SLO config <span class="tech">SLI: E</span></div>
+    <div class="desc">Someone configures SLO target = 100% (impossible).</div>
+    <div class="row"><span class="lab">trigger</span><span>target ≥ 0.99999 or window mismatch</span></div>
+    <div class="row"><span class="lab">absorb</span><span>validation in config PR blocks merge</span></div>
+    <div class="row"><span class="lab">override</span><span>SRE approval required for &gt; 99.99% targets</span></div>
+    <div class="row"><span class="lab">verdict</span><span>impossible configs never reach prod</span></div>
+  </div>
+  <div class="comp">
+    <div class="name">C · Bigtable hot spot <span class="tech">SLI: A, C</span></div>
+    <div class="desc">One service produces 100× the SLI volume; its row range becomes hot.</div>
+    <div class="row"><span class="lab">trigger</span><span>row p99 latency &gt; 50 ms</span></div>
+    <div class="row"><span class="lab">absorb</span><span>row key hash prefix spreads writes</span></div>
+    <div class="row"><span class="lab">scale</span><span>Bigtable adds nodes automatically</span></div>
+    <div class="row"><span class="lab">verdict</span><span>self-resolves in &lt; 5 min</span></div>
+  </div>
+  <div class="comp">
+    <div class="name">D · Dataflow worker crash <span class="tech">SLI: A</span></div>
+    <div class="desc">A whole worker pool restarts during a deploy.</div>
+    <div class="row"><span class="lab">trigger</span><span>checkpoint lag &gt; 60 s</span></div>
+    <div class="row"><span class="lab">absorb</span><span>Beam restarts from last checkpoint</span></div>
+    <div class="row"><span class="lab">replay</span><span>Kafka has 7-day buffer</span></div>
+    <div class="row"><span class="lab">verdict</span><span>no data loss · brief alert delay</span></div>
+  </div>
+  <div class="comp">
+    <div class="name">E · Alert storm <span class="tech">SLI: E</span></div>
+    <div class="desc">Major incident burns 50 services' budgets simultaneously.</div>
+    <div class="row"><span class="lab">trigger</span><span>concurrent alerts &gt; 20/min</span></div>
+    <div class="row"><span class="lab">absorb</span><span>group by parent incident (1 page)</span></div>
+    <div class="row"><span class="lab">cap</span><span>per-tenant alert rate limit</span></div>
+    <div class="row"><span class="lab">verdict</span><span>50 alerts → 1 actionable page</span></div>
+  </div>
+  <div class="comp">
+    <div class="name">F · Audit Kafka loss <span class="tech">SLI: B</span></div>
+    <div class="desc">Audit topic loses a partition; some history gone.</div>
+    <div class="row"><span class="lab">trigger</span><span>partition health check fail</span></div>
+    <div class="row"><span class="lab">absorb</span><span>rebuild from Bigtable backwards</span></div>
+    <div class="row"><span class="lab">gap</span><span>cold archive in GCS as 3rd copy</span></div>
+    <div class="row"><span class="lab">verdict</span><span>audit reconstructed within 24h</span></div>
+  </div>
+</div>
+
+<div class="note danger">
+  <span class="lbl">What we cannot defend against</span>
+  Gaming the SLOs — a team that picks low SLO targets to avoid red status. The tracker measures honestly but cannot verify the targets are reasonable. Mitigation: <b>SLO review process</b> where targets must be approved by VP Eng + SRE leadership, with quarterly retrospectives on actual user-perceived reliability vs SLO target.
+</div>
+</section>
+
+<!-- ===== 5. PLAYBOOK ===== -->
+<section>
+<h2 id="playbook">5 · Operational playbook</h2>
+
+<h3>5.1 — Eating our own dogfood</h3>
+<p>The tracker tracks the tracker. We define and publish SLOs for our own compute latency, accuracy, availability, and alert delay. These flow through the same pipeline — recursive but well-defined since the data path is independent of self-monitoring. If the tracker's own compute SLO burns red, we get paged by an external monitoring system (the §monitoring doc) which doesn't depend on us.</p>
+
+<h3>5.2 — Chaos drills (quarterly)</h3>
+<ul>
+  <li><b>Late data injection</b> — inject 5-min late SLI events; verify window reprocessing.</li>
+  <li><b>Bigtable failover</b> — drain a region's Bigtable; verify read failover within 10 s.</li>
+  <li><b>Bad config push</b> — submit an impossible SLO target; verify validation blocks.</li>
+  <li><b>Dataflow pool kill</b> — kill all workers; verify replay from Kafka.</li>
+  <li><b>Alert storm injection</b> — synthesize 100 simultaneous breaches; verify dedupe + rate limiting.</li>
+  <li><b>Accuracy verification</b> — replay 24h of audit log; verify reconstructed state matches Bigtable within 0.01%.</li>
+</ul>
+
+<h3>5.3 — Runbook excerpt</h3>
+<pre><code># Symptom: "SLI-D burning — alerts taking > 5 min"
+
+# Likely causes, ranked
+1. Dataflow worker lag        → check checkpoint lag dashboard
+2. Bigtable write latency     → check row p99 latency
+3. Kafka consumer group stall → check lag per partition
+4. Alert engine evaluation lag → check eval-per-cycle metric
+
+# First response (in order):
+- Confirm: dashboard 'tracker-slo-d' shows > 5 min p95
+- If Dataflow: scale workers 2× (gcloud dataflow jobs ... --workers=40)
+- If Bigtable: check for hot row prefix, kick autoscaling
+- Communicate: post in #incident-slo-tracker with hypothesis
+- Escalate: if not resolving in 10 min, page tier-2 oncall</code></pre>
+</section>
+
+<!-- ===== 6. COMPONENTS ===== -->
+<section>
+<h2 id="components">6 · Component reference</h2>
+
+<table>
+  <thead><tr><th>Component</th><th>Tech</th><th>Scale strategy</th><th>Failure mitigation</th><th>SLO</th></tr></thead>
+  <tbody>
+    <tr><td><b>Normalization service</b></td><td class="num">Go service</td><td>HPA 12→30</td><td>circuit breaker · DLQ</td><td>A,B</td></tr>
+    <tr><td><b>Kafka SLI stream</b></td><td class="num">Kafka 3.7</td><td>partition by service</td><td>3× repl · 7d retention</td><td>B,C</td></tr>
+    <tr><td><b>Compute engine</b></td><td class="num">Apache Beam / Dataflow</td><td>autoscaling workers</td><td>checkpoint · exactly-once</td><td>A,B</td></tr>
+    <tr><td><b>State store</b></td><td class="num">Bigtable</td><td>auto-sharding</td><td>multi-region replication</td><td>B,C</td></tr>
+    <tr><td><b>Config store</b></td><td class="num">Spanner</td><td>region-replicated</td><td>strong consistency</td><td>C</td></tr>
+    <tr><td><b>Alert engine</b></td><td class="num">Go service</td><td>stateless · LB fanout</td><td>dedupe · rate limit</td><td>D,E</td></tr>
+    <tr><td><b>Query API</b></td><td class="num">GraphQL + REST</td><td>read replicas</td><td>Redis cache</td><td>C</td></tr>
+    <tr><td><b>Dashboard</b></td><td class="num">React + WebSocket</td><td>CDN distribution</td><td>cached SLO state</td><td>—</td></tr>
+    <tr><td><b>Audit Kafka</b></td><td class="num">Kafka topic</td><td>per-tenant partition</td><td>3× repl · GCS archive</td><td>B</td></tr>
+    <tr><td><b>Notifier</b></td><td class="num">shared service</td><td>multi-vendor</td><td>vendor fallback</td><td>D</td></tr>
+  </tbody>
+</table>
+</section>
+
+<!-- ===== 7. TRADE-OFFS ===== -->
+<section>
+<h2 id="tradeoffs">7 · Trade-offs & open questions</h2>
+
+<div class="cols-2">
+  <div>
+    <h4>Chose</h4>
+    <ul>
+      <li><b>Multi-window dual-condition alerting</b> over single window · catches both fast burns and drift; trade: more compute per evaluation.</li>
+      <li><b>Apache Beam / Dataflow</b> over custom stream · exactly-once + late data handling is hard to write yourself.</li>
+      <li><b>Bigtable</b> for state · row-key range scans match query patterns; trade: less flexible than SQL.</li>
+      <li><b>Spanner for config</b> · strong consistency + global replication; trade: $$.</li>
+      <li><b>SLO config as code</b> (GitOps) · auditable changes, approval workflow; trade: slower iteration than UI editing.</li>
+      <li><b>14.4× / 6× / 3× thresholds</b> from Google SRE book · battle-tested defaults; trade: not tuned to LinkedIn specifically (yet).</li>
+    </ul>
+  </div>
+  <div>
+    <h4>Rejected</h4>
+    <ul>
+      <li><b>Single rolling window</b> · simpler but either jumpy or slow.</li>
+      <li><b>Prometheus recording rules</b> alone · works for small fleets, doesn't scale to 5,000 SLOs across regions.</li>
+      <li><b>Custom stream processor</b> · would re-implement Beam poorly.</li>
+      <li><b>InfluxDB / TimescaleDB</b> · capable but doesn't match Bigtable's row-scan economics at scale.</li>
+      <li><b>Web UI for SLO editing</b> · would lose audit trail and review workflow.</li>
+      <li><b>Manual burn-rate thresholds per service</b> · 5,000 SLOs × bespoke tuning = nobody maintains.</li>
+    </ul>
+  </div>
+</div>
+
+<h3>Open questions</h3>
+<ol>
+  <li>Should the system support <b>SLO objectives that span multiple services</b> (e.g., "end-to-end Feed homepage availability" = product of feed-ranker × feed-storage × feed-api)? Currently each SLO is a single service.</li>
+  <li>How to handle <b>time-of-day patterns</b>? Maintenance windows that intentionally burn budget shouldn't trigger pages. Currently we just suppress alerts during declared windows.</li>
+  <li>Should burn rates account for <b>traffic volume changes</b>? A 1% error rate at 10 QPS is 6 errors/min; at 10k QPS is 6,000 errors/min — same percentage, very different user impact.</li>
+  <li>Should we move toward <b>per-user-journey SLOs</b> instead of per-service? "Did this user successfully complete the InMail send flow?" matters more than "did the inmail-send microservice return 200?".</li>
+</ol>
+</section>
+
+<footer>
+  <div>linkedin/slo-tracker · design-doc · slo-error-budget-tracker.md</div>
+  <div>nalsd · review status: <span style="color:var(--yellow)">⬤</span> in-review</div>
+</footer>
+
+</main>
+</div>
+</body>
+</html>
