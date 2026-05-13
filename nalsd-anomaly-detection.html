@@ -1,0 +1,957 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NALSD · LinkedIn AI Anomaly Detection Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#ffffff;--bg-alt:#f6f8fa;--bg-code:#f6f8fa;
+  --border:#d0d7de;--border-soft:#eaeef2;
+  --ink:#1f2328;--ink-soft:#59636e;--ink-faint:#818b98;
+  --link:#0a66c2;--link-hover:#004182;
+  --green:#1a7f37;--green-bg:#dafbe1;
+  --red:#cf222e;--red-bg:#ffebe9;
+  --yellow:#9a6700;--yellow-bg:#fff8c5;
+  --purple:#6639ba;--purple-bg:#fbefff;
+  --orange:#bc4c00;--orange-bg:#fff1e5;
+  --blue-bg:#ddf4ff;
+  --shadow:0 1px 0 rgba(31,35,40,.04);
+  --mono:'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --serif:'Source Serif 4', Georgia, serif;
+  --sans:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
+a{color:var(--link);text-decoration:none}a:hover{text-decoration:underline}
+code,pre,.mono{font-family:var(--mono)}
+code{background:var(--bg-code);padding:.1em .35em;border-radius:4px;font-size:.88em;border:1px solid var(--border-soft)}
+pre{background:var(--bg-code);border:1px solid var(--border);border-radius:6px;padding:12px 14px;overflow-x:auto;font-size:12.5px;line-height:1.55;margin:0}
+
+.shell{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+aside{position:sticky;top:0;height:100vh;overflow-y:auto;border-right:1px solid var(--border);background:var(--bg);padding:18px 14px 40px}
+main{max-width:1080px;width:100%;padding:28px 40px 80px}
+@media (max-width:960px){.shell{grid-template-columns:1fr}aside{position:relative;height:auto;border-right:none;border-bottom:1px solid var(--border)}}
+
+.brand{display:flex;align-items:center;gap:10px;padding:6px 8px 16px;border-bottom:1px solid var(--border-soft);margin-bottom:12px}
+.brand-mark{width:28px;height:28px;border-radius:6px;background:var(--link);color:#fff;display:grid;place-items:center;font-weight:700;font-family:var(--mono);font-size:13px}
+.brand-title{font-weight:700;font-size:14px}
+.brand-sub{font-size:11px;color:var(--ink-soft);font-family:var(--mono)}
+.toc-group{margin:14px 0 4px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-faint);font-weight:600;padding:0 8px}
+.toc a{display:block;padding:4px 8px;border-radius:5px;color:var(--ink-soft);font-size:13px;border-left:2px solid transparent;margin-left:4px}
+.toc a:hover{background:var(--bg-alt);color:var(--ink);text-decoration:none}
+.toc a.depth-2{padding-left:18px;font-size:12.5px}
+
+.doc-head{border-bottom:1px solid var(--border);padding-bottom:18px;margin-bottom:24px}
+.crumbs{font-size:12px;color:var(--ink-soft);font-family:var(--mono);margin-bottom:8px}
+.crumbs .sep{color:var(--ink-faint);margin:0 6px}
+h1{font-family:var(--serif);font-weight:700;font-size:32px;line-height:1.15;letter-spacing:-.015em;margin:0 0 8px}
+.doc-meta{display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:12.5px;color:var(--ink-soft);font-family:var(--mono);margin-top:10px}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:999px;border:1px solid var(--border);background:var(--bg-alt);font-size:11.5px;font-family:var(--mono);color:var(--ink-soft)}
+.pill.blue{background:var(--blue-bg);border-color:#80ccff;color:#0969da}
+.pill.green{background:var(--green-bg);border-color:#a5e1b1;color:var(--green)}
+.pill.purple{background:var(--purple-bg);border-color:#d8b9ff;color:var(--purple)}
+.pill.orange{background:var(--orange-bg);border-color:#ffb077;color:var(--orange)}
+.pill.red{background:var(--red-bg);border-color:#ffaaa3;color:var(--red)}
+.pill.yellow{background:var(--yellow-bg);border-color:#e7c860;color:var(--yellow)}
+
+h2{font-family:var(--serif);font-weight:700;font-size:22px;letter-spacing:-.01em;margin:40px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border-soft);scroll-margin-top:20px}
+h3{font-family:var(--sans);font-weight:700;font-size:16px;margin:24px 0 8px;scroll-margin-top:20px}
+h4{font-family:var(--sans);font-weight:600;font-size:13.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-soft);margin:18px 0 6px}
+p{margin:0 0 12px}
+ul,ol{margin:0 0 12px;padding-left:22px}
+li{margin-bottom:4px}
+
+.note{border-left:3px solid var(--link);background:var(--blue-bg);padding:10px 14px;border-radius:0 6px 6px 0;margin:14px 0;font-size:13px}
+.note.warn{border-left-color:var(--yellow);background:var(--yellow-bg)}
+.note.danger{border-left-color:var(--red);background:var(--red-bg)}
+.note.tip{border-left-color:var(--green);background:var(--green-bg)}
+.note .lbl{font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px;font-family:var(--mono);color:var(--link)}
+.note.warn .lbl{color:var(--yellow)}
+.note.danger .lbl{color:var(--red)}
+.note.tip .lbl{color:var(--green)}
+
+table{width:100%;border-collapse:collapse;font-size:12.5px;margin:8px 0 16px;border:1px solid var(--border);border-radius:6px;overflow:hidden}
+thead{background:var(--bg-alt)}
+th,td{padding:7px 11px;text-align:left;border-bottom:1px solid var(--border-soft);vertical-align:top}
+th{font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-soft)}
+tr:last-child td{border-bottom:none}
+td.num{font-family:var(--mono);font-size:12px}
+
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0 20px}
+@media (max-width:780px){.stat-grid{grid-template-columns:repeat(2,1fr)}}
+.stat{border:1px solid var(--border);border-radius:6px;padding:12px;background:var(--bg)}
+.stat .k{font-family:var(--mono);font-size:11px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.05em}
+.stat .v{font-family:var(--serif);font-weight:700;font-size:22px;margin-top:2px;line-height:1.15}
+.stat .s{font-size:11px;color:var(--ink-soft);font-family:var(--mono);margin-top:2px}
+
+.cols-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:780px){.cols-2{grid-template-columns:1fr}}
+
+.calc{border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin:14px 0;background:var(--bg-alt);position:relative}
+.calc::before{content:"∑ NALSD";position:absolute;top:-10px;left:14px;font-family:var(--mono);font-size:10.5px;background:var(--bg);padding:2px 8px;border:1px solid var(--border);border-radius:4px;color:var(--ink-soft);letter-spacing:.05em;font-weight:600}
+.calc h4{margin-top:4px}
+.calc pre{background:var(--bg);border-color:var(--border-soft)}
+.calc .verdict{display:flex;align-items:center;gap:8px;margin-top:10px;padding:8px 12px;background:var(--bg);border:1px dashed var(--green);border-radius:6px;font-family:var(--mono);font-size:12px;color:var(--green)}
+.calc .verdict.warn{border-color:var(--yellow);color:var(--yellow)}
+
+.diagram{border:1px solid var(--border);border-radius:8px;background:var(--bg);padding:14px;margin:16px 0;box-shadow:var(--shadow)}
+.diagram-cap{font-family:var(--mono);font-size:11px;color:var(--ink-faint);margin-top:8px;text-align:center}
+.diagram svg{width:100%;height:auto;display:block}
+
+.box-fill-blue{fill:#ddf4ff;stroke:#54aeff}
+.box-fill-green{fill:#dafbe1;stroke:#4ac26b}
+.box-fill-purple{fill:#fbefff;stroke:#c297ff}
+.box-fill-orange{fill:#fff1e5;stroke:#fd8c73}
+.box-fill-red{fill:#ffebe9;stroke:#ff8182}
+.box-fill-yellow{fill:#fff8c5;stroke:#d4a72c}
+.box-fill-gray{fill:#f6f8fa;stroke:#d0d7de}
+.lbl-title{font-family:'Inter',sans-serif;font-weight:700;font-size:11.5px;fill:#1f2328}
+.lbl-sub{font-family:'JetBrains Mono',monospace;font-size:9.5px;fill:#59636e}
+.lbl-meta{font-family:'JetBrains Mono',monospace;font-size:9px;fill:#818b98}
+.arrow{stroke:#59636e;stroke-width:1.3;fill:none;marker-end:url(#arr)}
+.arrow-dashed{stroke:#cf222e;stroke-width:1.2;fill:none;stroke-dasharray:4,3;marker-end:url(#arr-red)}
+.arrow-green{stroke:#1a7f37;stroke-width:1.5;fill:none;marker-end:url(#arr-green)}
+
+.flow-steps{counter-reset:step}
+.flow-step{display:grid;grid-template-columns:36px 1fr;gap:12px;padding:14px 16px;border:1px solid var(--border);border-radius:8px;margin-bottom:10px;background:#fff}
+.flow-step .num{counter-increment:step;background:var(--link);color:#fff;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-family:var(--mono);font-weight:700;font-size:13px}
+.flow-step .num::before{content:counter(step)}
+.flow-step .body .title{font-weight:700;font-size:14px;margin-bottom:4px;font-family:var(--sans)}
+.flow-step .body .desc{font-size:12.5px;color:var(--ink-soft);margin-bottom:6px}
+.flow-step .body .tech{font-family:var(--mono);font-size:11px;background:var(--bg-alt);border:1px solid var(--border-soft);border-radius:4px;padding:5px 8px;margin-top:4px;display:inline-block;color:var(--ink);max-width:100%;overflow-x:auto}
+.flow-step .body .nums{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px}
+.flow-step .body .nums .kv{font-family:var(--mono);font-size:11px;color:var(--ink-soft)}
+.flow-step .body .nums .kv b{color:var(--ink);font-weight:700}
+
+.comp-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:12px 0}
+@media (max-width:780px){.comp-grid{grid-template-columns:1fr}}
+.comp{border:1px solid var(--border);border-radius:6px;padding:11px 13px;background:var(--bg)}
+.comp .name{font-weight:700;font-size:13px;display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.comp .name .tech{font-family:var(--mono);font-size:10.5px;color:var(--link);font-weight:500}
+.comp .desc{font-size:12px;color:var(--ink-soft);margin-bottom:6px}
+.comp .row{font-family:var(--mono);font-size:11px;color:var(--ink-soft);display:flex;justify-content:space-between;padding:2px 0;border-top:1px dashed var(--border-soft)}
+.comp .row .lab{color:var(--ink-faint)}
+
+/* Confusion matrix style box */
+.matrix{display:grid;grid-template-columns:120px 1fr 1fr;gap:0;margin:14px 0;border:1px solid var(--border);border-radius:6px;overflow:hidden;font-size:12px}
+.matrix > div{padding:8px 10px;border-right:1px solid var(--border-soft);border-bottom:1px solid var(--border-soft)}
+.matrix > div:nth-child(3n){border-right:none}
+.matrix .hdr{background:var(--bg-alt);font-weight:700;font-family:var(--mono);font-size:11px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em}
+.matrix .tp{background:var(--green-bg);font-family:var(--mono)}
+.matrix .fp{background:var(--red-bg);font-family:var(--mono)}
+.matrix .fn{background:var(--yellow-bg);font-family:var(--mono)}
+.matrix .tn{background:var(--bg-alt);font-family:var(--mono)}
+
+footer{margin-top:50px;padding-top:18px;border-top:1px solid var(--border-soft);font-size:11.5px;color:var(--ink-faint);font-family:var(--mono);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+
+.li-strip{height:3px;background:linear-gradient(90deg,var(--link) 0,var(--link) 60%,transparent 100%);border-radius:2px;margin-bottom:14px}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:#d0d7de;border-radius:5px;border:2px solid var(--bg)}
+::-webkit-scrollbar-track{background:transparent}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<aside>
+  <div class="brand">
+    <div class="brand-mark">in</div>
+    <div>
+      <div class="brand-title">in/anomaly</div>
+      <div class="brand-sub">v2026.05 · nalsd</div>
+    </div>
+  </div>
+  <div class="li-strip"></div>
+  <nav class="toc">
+    <div class="toc-group">Design</div>
+    <a href="#problem">1 · Problem & SLOs</a>
+    <a href="#capacity">2 · Capacity model</a>
+    <a href="#ingest" class="depth-2">2.1 Series ingest</a>
+    <a href="#features" class="depth-2">2.2 Feature engineering</a>
+    <a href="#inference" class="depth-2">2.3 Model inference</a>
+    <a href="#fleet" class="depth-2">2.4 Fleet & cost</a>
+    <a href="#arch">3 · Architecture</a>
+    <a href="#dataflow" class="depth-2">3.1 Full diagram</a>
+    <a href="#flow" class="depth-2">3.2 Step-by-step</a>
+    <a href="#ensemble" class="depth-2">3.3 Ensemble close-up</a>
+    <a href="#feedback" class="depth-2">3.4 Feedback loop</a>
+    <div class="toc-group">Operations</div>
+    <a href="#gauntlet">4 · Failure gauntlet</a>
+    <a href="#playbook">5 · Ops playbook</a>
+    <a href="#components">6 · Components</a>
+    <a href="#tradeoffs">7 · Trade-offs</a>
+  </nav>
+</aside>
+
+<main>
+
+<header class="doc-head">
+  <div class="crumbs">
+    <span>in/anomaly</span><span class="sep">/</span>
+    <span>design-docs</span><span class="sep">/</span>
+    <span>2026</span><span class="sep">/</span>
+    <span>ai-anomaly-detection.md</span>
+  </div>
+  <h1>Designing LinkedIn's AI Anomaly Detection Platform</h1>
+  <p style="font-size:15px;color:var(--ink-soft);margin:6px 0 0;font-family:var(--serif)">
+    A NALSD walkthrough — the system that catches the outage before your pager does.
+    Continuously monitor 5,000 SLOs across 500 services with an ensemble of ML models,
+    detect drift in &lt; 2 min, FP rate ≤ 1%, and feed predictions into the error-budget tracker.
+  </p>
+  <div class="doc-meta">
+    <span class="pill blue">NALSD</span>
+    <span class="pill green">detect &lt; 2 min</span>
+    <span class="pill purple">FP ≤ 1%</span>
+    <span class="pill orange">5k SLOs · 5 models</span>
+    <span class="pill yellow">draft · review</span>
+    <span style="margin-left:auto">last edit · 2026-05-12 · sjc</span>
+  </div>
+</header>
+
+<!-- ===== 1. PROBLEM ===== -->
+<section>
+<h2 id="problem">1 · Problem statement & SLO contract</h2>
+
+<p>Threshold-based alerting catches only what we already know to look for. Real outages start with subtle drifts: p99 latency creeping from 50 ms to 60 ms over an hour, error rates ticking up 0.05% before the 5×-burn threshold trips, GC pause distributions widening. Humans don't see these. An ML system trained on what "normal" looks like for each service can — and forward the prediction to the SLO tracker so it raises tighter thresholds before the budget burns. The anomaly platform is <b>the eyes that watch for change</b>, not the alarm that fires on a known signature.</p>
+
+<div class="stat-grid">
+  <div class="stat"><div class="k">Series monitored</div><div class="v">~2 M</div><div class="s">across all services</div></div>
+  <div class="stat"><div class="k">Detection latency</div><div class="v">&lt; 2 min</div><div class="s">p95 anomaly → notification</div></div>
+  <div class="stat"><div class="k">FP rate</div><div class="v">≤ 1%</div><div class="s">precision target</div></div>
+  <div class="stat"><div class="k">Models in ensemble</div><div class="v">5</div><div class="s">specialized per anomaly type</div></div>
+</div>
+
+<h3 id="slo">SLO contract (for the ML system itself)</h3>
+<p>An ML detector is just another production system. Monitor it, canary it, page it when it drifts. Its most important SLI is <em>the trust of the on-call engineer</em> — and trust is built on the FP rate.</p>
+
+<table>
+  <thead><tr><th>SLI</th><th>Target</th><th>Measurement</th><th>Error budget / 28d</th></tr></thead>
+  <tbody>
+    <tr><td><b>A · Detection latency</b></td><td class="num">p95 ≤ 2 min</td><td>regression onset → anomaly emitted</td><td class="num">~24h with &gt;2min</td></tr>
+    <tr><td><b>B · False positive rate</b></td><td class="num">≤ 1%</td><td>flagged / not actionable</td><td class="num">strict — drives trust</td></tr>
+    <tr><td><b>C · False negative rate</b></td><td class="num">≤ 2%</td><td>real anomalies missed</td><td class="num">measured via post-incident audit</td></tr>
+    <tr><td><b>D · System uptime</b></td><td class="num">≥ 99.99%</td><td>detection pipeline availability</td><td class="num">~4 min/month</td></tr>
+    <tr><td><b>E · Coverage</b></td><td class="num">≥ 95%</td><td>SLO metrics with active models</td><td class="num">5% cold-start gap allowed</td></tr>
+  </tbody>
+</table>
+
+<h4>Why the FP/FN trade matters</h4>
+<p>A detector with 50% FP rate but 0% FN rate is useless — the on-call will ignore it. A detector with 0% FP rate but 50% FN rate is dangerous — the on-call thinks it's covered when it isn't. The sweet spot is the bottom-right corner:</p>
+
+<div class="matrix">
+  <div class="hdr"></div>
+  <div class="hdr">Predicted: anomaly</div>
+  <div class="hdr">Predicted: normal</div>
+  <div class="hdr">Actual: anomaly</div>
+  <div class="tp"><b>TP</b> · ~3,000/mo<br>real anomalies caught</div>
+  <div class="fn"><b>FN</b> · ≤ 60/mo<br>missed anomalies (FN ≤ 2%)</div>
+  <div class="hdr">Actual: normal</div>
+  <div class="fp"><b>FP</b> · ≤ 30/mo<br>spurious alarms (FP ≤ 1%)</div>
+  <div class="tn"><b>TN</b> · everything else<br>quietly correct</div>
+</div>
+
+<div class="note">
+  <span class="lbl">The senior insight</span>
+  Anomaly detection is <em>not</em> alert generation. It feeds the SLO tracker — which already has dedupe, correlation, and routing. The anomaly platform's job is to produce <b>high-precision early signals</b> that integrate with the existing pipeline. It's a sensor, not a siren.
+</div>
+</section>
+
+<!-- ===== 2. CAPACITY ===== -->
+<section>
+<h2 id="capacity">2 · Capacity model (the NALSD math)</h2>
+
+<h3 id="ingest">2.1 — Time series ingestion</h3>
+<div class="calc">
+  <h4>Series volume — bigger than you'd think</h4>
+<pre><code>SLO-tracked services         ≈ 500
+metrics per service (SLIs)   ≈ 50  (latency p50/95/99, errors, throughput, CPU, mem, etc.)
+dimensions per metric (host, region, version)
+                              = avg 8 active dimensions
+total tracked series         = 500 × 50 × 8 = 200,000 unique series
+
+with multi-modal expansion (logs, traces, events as features):
+  text-derived features      = +5× series count
+  trace-derived features     = +3× series count
+  total monitored series     = 200,000 × (1 + 5 + 3) = ~2 M series
+
+per-series sample rate       = 1 sample / 15 sec (matches Prom)
+ingest rate                  = 2M / 15 = 133,000 samples/s
+
+per-sample size (compact):
+  series_id (8 B) + ts (8 B) + value (8 B) + meta (40 B) = 64 B
+bytes/sec at peak            = 133,000 × 64 B = 8.5 MB/s ≈ 68 Mbps</code></pre>
+  <div class="verdict">VERDICT · 2 M series, 133k samples/s, 68 Mbps. Tiny vs the monitoring firehose — we consume aggregated SLIs, not raw.</div>
+</div>
+
+<h3 id="features">2.2 — Feature engineering volume</h3>
+<div class="calc">
+  <h4>Features per series per window</h4>
+<pre><code>features per series per cycle (computed every 15 s):
+  statistical: mean, std, min, max, p50/95/99, skew, kurtosis = 10
+  temporal: lag-1/5/30/60min, EMA, rate-of-change                = 12
+  seasonal: hour-of-day, day-of-week residuals                    = 6
+  graph: parent/child SLI correlations                            = 8
+  text: log-derived (severity ratio, novel terms)                 = 6
+  trace: span tree shape · error spans                            = 4
+  ──────────────────────────────────────────────────────────────────
+  total features per series                                       = 46
+
+feature ops/sec global:
+  2M series × 46 features ÷ 15 s = 6.1 M feature computations/s
+  per Beam worker capacity        = 30,000 ops/sec
+  workers needed                  = 6.1M / 30K = 203 workers
+  with N+2 + cross-region buffer  = 240 Beam workers
+
+feature store sizing:
+  features × series              = 46 × 2M = 92 M features
+  hot store (last 24h)           = 92M × (96 samples/24h) × 8 B
+                                   = 70 GB → fits in Redis cluster
+  warm store (last 30d)          = 70 GB × 30 = 2.1 TB → Bigtable</code></pre>
+  <div class="verdict">VERDICT · 6M feature ops/s. The biggest fleet in this design (240 nodes) — feature engineering is the bottleneck, not inference.</div>
+</div>
+
+<h3 id="inference">2.3 — Model inference latency budget</h3>
+<div class="calc">
+  <h4>Where the 2-minute SLO budget goes</h4>
+<pre><code>metric emission lag (Prom scrape)         = 15 s
+feature computation (Beam window)         = 15 s
+ensemble inference (5 models in parallel) =  2 s
+consensus voting                          =  1 s
+confidence scoring + business context     =  1 s
+output to SLO tracker / alert engine      =  1 s
+notification delivery                     =  5 s
+──────────────────────────────────────────────
+typical p50                                = 40 s
+×2 for p99 tail                            = 80 s ≈ 1.3 min
+SLO target                                 = 120 s ✓ 40s headroom</code></pre>
+  <div class="verdict">VERDICT · 80 s p99. Inside the 2-min SLO. The two 15s waits (scrape + window) eat half the budget — can't escape them.</div>
+</div>
+
+<div class="calc">
+  <h4>Inference compute</h4>
+<pre><code>anomaly score requests per second (per series):
+  series × eval interval = 2M / 15 = 133,000 inferences/s
+
+ensemble fan-out (5 models in parallel):
+  effective inferences = 133K × 5 = 665,000 model-inferences/s
+
+per-model latencies (small models on CPU):
+  Isolation Forest             = 0.5 ms
+  LSTM Autoencoder             = 2.0 ms
+  Variational Autoencoder      = 1.5 ms
+  One-Class SVM                = 0.5 ms
+  Transformer (small)          = 3.0 ms
+  ────────────────────────────────────
+  parallel max                  = 3.0 ms (longest model)
+
+inferences per inference node (c6i.4xlarge, 16 cores):
+  133K / 16 cores = 8.3K series/sec/node theoretical
+  with realistic batching       = 25K series/sec/node
+  nodes needed                  = 133K / 25K = 5.3
+  with 3× redundancy + N+2      = 18 nodes per region
+  global (5 regions, weighted)  = 60 inference nodes</code></pre>
+  <div class="verdict">VERDICT · 60 inference nodes globally. Small fleet because we batch and run lightweight models on CPU.</div>
+</div>
+
+<h3 id="fleet">2.4 — Fleet summary & cost</h3>
+<table>
+  <thead><tr><th>Tier</th><th>Instance</th><th>Count</th><th>$/mo (on-demand)</th><th>$/mo (3y RI)</th></tr></thead>
+  <tbody>
+    <tr><td>Ingestion / normalizer</td><td class="num">m6i.large</td><td class="num">12</td><td class="num">$1 K</td><td class="num">$0.4 K</td></tr>
+    <tr><td>Feature engineering (Beam)</td><td class="num">n2-standard-4</td><td class="num">240</td><td class="num">$42 K</td><td class="num">$16 K</td></tr>
+    <tr><td>Feature store (Redis hot)</td><td class="num">cache.r6g.large</td><td class="num">30</td><td class="num">$7 K</td><td class="num">$2.7 K</td></tr>
+    <tr><td>Feature store (Bigtable warm)</td><td class="num">—</td><td class="num">3 nodes · 2.1 TB</td><td class="num">$1.5 K</td><td class="num">$1.5 K</td></tr>
+    <tr><td>Inference (ensemble)</td><td class="num">c6i.4xlarge</td><td class="num">60</td><td class="num">$35 K</td><td class="num">$13 K</td></tr>
+    <tr><td>Model registry / store</td><td class="num">—</td><td class="num">S3 + Postgres</td><td class="num">$1 K</td><td class="num">$1 K</td></tr>
+    <tr><td>Training cluster (offline)</td><td class="num">g5.4xlarge</td><td class="num">8 (avg)</td><td class="num">$11 K</td><td class="num">$4 K</td></tr>
+    <tr><td>Decision engine</td><td class="num">m6i.xlarge</td><td class="num">15</td><td class="num">$3 K</td><td class="num">$1 K</td></tr>
+    <tr><td>Feedback loop / labeling</td><td class="num">m6i.large</td><td class="num">9</td><td class="num">$0.8 K</td><td class="num">$0.3 K</td></tr>
+    <tr><td>Kafka audit + Spanner state</td><td class="num">—</td><td class="num">—</td><td class="num">$5 K</td><td class="num">$3 K</td></tr>
+    <tr style="background:var(--bg-alt);font-weight:700"><td>Total</td><td class="num">—</td><td class="num">~377 nodes</td><td class="num">$107 K/mo</td><td class="num">$42 K/mo</td></tr>
+  </tbody>
+</table>
+
+<div class="note tip">
+  <span class="lbl">Cost composition</span>
+  Feature engineering (Beam fleet) is <b>40% of total cost</b> — way more than inference. This is the consistent ML lesson: feature pipelines dominate. Training is cheap because we retrain weekly, not constantly.
+</div>
+</section>
+
+<!-- ===== 3. ARCHITECTURE ===== -->
+<section>
+<h2 id="arch">3 · Architecture</h2>
+
+<h3 id="dataflow">3.1 — Full architecture diagram</h3>
+
+<div class="diagram">
+<svg viewBox="0 0 980 880" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#59636e"/>
+    </marker>
+    <marker id="arr-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#cf222e"/>
+    </marker>
+    <marker id="arr-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1a7f37"/>
+    </marker>
+  </defs>
+
+  <!-- Top SLO ribbon -->
+  <text x="490" y="22" text-anchor="middle" class="lbl-title" style="font-size:13px">2M series · detect &lt; 2 min · FP ≤ 1% · 5-model ensemble · feedback loop</text>
+
+  <!-- Step badges -->
+  <circle cx="155" cy="58" r="11" fill="#0a66c2"/>
+  <text x="155" y="62" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">1</text>
+  <circle cx="490" cy="58" r="11" fill="#0a66c2"/>
+  <text x="490" y="62" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">2</text>
+  <circle cx="820" cy="58" r="11" fill="#0a66c2"/>
+  <text x="820" y="62" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">3</text>
+  <circle cx="490" cy="200" r="11" fill="#0a66c2"/>
+  <text x="490" y="204" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">4</text>
+  <circle cx="490" cy="340" r="11" fill="#0a66c2"/>
+  <text x="490" y="344" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">5</text>
+  <circle cx="490" cy="510" r="11" fill="#0a66c2"/>
+  <text x="490" y="514" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">6</text>
+  <circle cx="155" cy="650" r="11" fill="#0a66c2"/>
+  <text x="155" y="654" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">7</text>
+  <circle cx="490" cy="650" r="11" fill="#0a66c2"/>
+  <text x="490" y="654" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">8</text>
+  <circle cx="820" cy="650" r="11" fill="#0a66c2"/>
+  <text x="820" y="654" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">9</text>
+  <circle cx="490" cy="800" r="11" fill="#0a66c2"/>
+  <text x="490" y="804" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">10</text>
+
+  <!-- ============ ROW 1: Data sources · Ingest · Model registry ============ -->
+  <g>
+    <rect x="20" y="80" width="270" height="80" rx="6" class="box-fill-gray"/>
+    <text x="155" y="103" text-anchor="middle" class="lbl-title">Multi-modal data sources</text>
+    <text x="155" y="121" text-anchor="middle" class="lbl-sub">metrics · logs · traces · events</text>
+    <text x="155" y="137" text-anchor="middle" class="lbl-sub">monitoring · logging · APM</text>
+    <text x="155" y="155" text-anchor="middle" class="lbl-meta">2M series · 133k samples/s</text>
+  </g>
+
+  <g>
+    <rect x="320" y="80" width="340" height="80" rx="6" class="box-fill-blue"/>
+    <text x="490" y="103" text-anchor="middle" class="lbl-title">Ingestion + normalization</text>
+    <text x="490" y="121" text-anchor="middle" class="lbl-sub">unified time-series schema</text>
+    <text x="490" y="137" text-anchor="middle" class="lbl-sub">deduplication · validation · enrichment</text>
+    <text x="490" y="155" text-anchor="middle" class="lbl-meta">12 nodes · subscribes to monitoring Kafka</text>
+  </g>
+
+  <g>
+    <rect x="680" y="80" width="280" height="80" rx="6" class="box-fill-yellow"/>
+    <text x="820" y="103" text-anchor="middle" class="lbl-title">Model registry</text>
+    <text x="820" y="121" text-anchor="middle" class="lbl-sub">5 model artifacts per service</text>
+    <text x="820" y="137" text-anchor="middle" class="lbl-sub">version-controlled · canary deployable</text>
+    <text x="820" y="155" text-anchor="middle" class="lbl-meta">S3 storage · Postgres metadata</text>
+  </g>
+
+  <!-- ============ ROW 2: Kafka ============ -->
+  <g>
+    <rect x="20" y="225" width="940" height="80" rx="6" class="box-fill-green"/>
+    <text x="490" y="248" text-anchor="middle" class="lbl-title" style="font-size:13px">Kafka — unified metric stream</text>
+    <text x="490" y="266" text-anchor="middle" class="lbl-sub">topics: metrics.raw · logs.embeddings · traces.spans · events.audit</text>
+    <text x="490" y="282" text-anchor="middle" class="lbl-meta">partitioned by series_id · 7-day retention · 3× replication</text>
+  </g>
+
+  <!-- ============ ROW 3: Feature engineering pipeline ============ -->
+  <rect x="20" y="365" width="940" height="100" rx="8" fill="#fafbfc" stroke="#eaeef2"/>
+  <text x="490" y="390" text-anchor="middle" class="lbl-title" style="font-size:13px">Feature engineering (Apache Beam · 240 workers)</text>
+
+  <g>
+    <rect x="40" y="405" width="180" height="50" rx="4" class="box-fill-purple"/>
+    <text x="130" y="423" text-anchor="middle" class="lbl-title">Statistical</text>
+    <text x="130" y="438" text-anchor="middle" class="lbl-sub">mean · std · p50/95/99</text>
+    <text x="130" y="450" text-anchor="middle" class="lbl-meta">10 features</text>
+  </g>
+  <g>
+    <rect x="240" y="405" width="180" height="50" rx="4" class="box-fill-purple"/>
+    <text x="330" y="423" text-anchor="middle" class="lbl-title">Temporal</text>
+    <text x="330" y="438" text-anchor="middle" class="lbl-sub">lag · EMA · rate</text>
+    <text x="330" y="450" text-anchor="middle" class="lbl-meta">12 features</text>
+  </g>
+  <g>
+    <rect x="440" y="405" width="180" height="50" rx="4" class="box-fill-purple"/>
+    <text x="530" y="423" text-anchor="middle" class="lbl-title">Seasonal</text>
+    <text x="530" y="438" text-anchor="middle" class="lbl-sub">hour · day · residual</text>
+    <text x="530" y="450" text-anchor="middle" class="lbl-meta">6 features</text>
+  </g>
+  <g>
+    <rect x="640" y="405" width="160" height="50" rx="4" class="box-fill-purple"/>
+    <text x="720" y="423" text-anchor="middle" class="lbl-title">Graph</text>
+    <text x="720" y="438" text-anchor="middle" class="lbl-sub">SLI correlations</text>
+    <text x="720" y="450" text-anchor="middle" class="lbl-meta">8 features</text>
+  </g>
+  <g>
+    <rect x="820" y="405" width="120" height="50" rx="4" class="box-fill-purple"/>
+    <text x="880" y="423" text-anchor="middle" class="lbl-title">Text + trace</text>
+    <text x="880" y="438" text-anchor="middle" class="lbl-sub">log · span</text>
+    <text x="880" y="450" text-anchor="middle" class="lbl-meta">10 features</text>
+  </g>
+
+  <!-- ============ ROW 4: Feature store ============ -->
+  <g>
+    <rect x="20" y="535" width="940" height="80" rx="6" class="box-fill-blue"/>
+    <text x="490" y="558" text-anchor="middle" class="lbl-title" style="font-size:13px">Feature store</text>
+    <text x="490" y="576" text-anchor="middle" class="lbl-sub">Redis (24h hot · 70 GB) · Bigtable (30d warm · 2.1 TB)</text>
+    <text x="490" y="594" text-anchor="middle" class="lbl-meta">point-in-time correctness · feature versioning · online + offline serve</text>
+  </g>
+
+  <!-- ============ ROW 5: 5-model ensemble ============ -->
+  <rect x="20" y="675" width="940" height="100" rx="8" fill="#fafbfc" stroke="#eaeef2"/>
+  <text x="490" y="700" text-anchor="middle" class="lbl-title" style="font-size:13px">Ensemble inference (60 nodes · 5 models in parallel)</text>
+
+  <g>
+    <rect x="40" y="715" width="170" height="50" rx="4" class="box-fill-orange"/>
+    <text x="125" y="732" text-anchor="middle" class="lbl-title">Isolation Forest</text>
+    <text x="125" y="747" text-anchor="middle" class="lbl-sub">outliers · 0.5 ms</text>
+    <text x="125" y="760" text-anchor="middle" class="lbl-meta">high-dim points</text>
+  </g>
+  <g>
+    <rect x="225" y="715" width="170" height="50" rx="4" class="box-fill-orange"/>
+    <text x="310" y="732" text-anchor="middle" class="lbl-title">LSTM Autoencoder</text>
+    <text x="310" y="747" text-anchor="middle" class="lbl-sub">sequences · 2 ms</text>
+    <text x="310" y="760" text-anchor="middle" class="lbl-meta">temporal patterns</text>
+  </g>
+  <g>
+    <rect x="410" y="715" width="170" height="50" rx="4" class="box-fill-orange"/>
+    <text x="495" y="732" text-anchor="middle" class="lbl-title">VAE</text>
+    <text x="495" y="747" text-anchor="middle" class="lbl-sub">generative · 1.5 ms</text>
+    <text x="495" y="760" text-anchor="middle" class="lbl-meta">distribution shifts</text>
+  </g>
+  <g>
+    <rect x="595" y="715" width="170" height="50" rx="4" class="box-fill-orange"/>
+    <text x="680" y="732" text-anchor="middle" class="lbl-title">One-Class SVM</text>
+    <text x="680" y="747" text-anchor="middle" class="lbl-sub">boundary · 0.5 ms</text>
+    <text x="680" y="760" text-anchor="middle" class="lbl-meta">novelty</text>
+  </g>
+  <g>
+    <rect x="780" y="715" width="160" height="50" rx="4" class="box-fill-orange"/>
+    <text x="860" y="732" text-anchor="middle" class="lbl-title">Transformer</text>
+    <text x="860" y="747" text-anchor="middle" class="lbl-sub">multi-modal · 3 ms</text>
+    <text x="860" y="760" text-anchor="middle" class="lbl-meta">context-aware</text>
+  </g>
+
+  <!-- ============ ROW 6: Decision engine, downstream ============ -->
+  <g>
+    <rect x="40" y="820" width="280" height="50" rx="6" class="box-fill-yellow"/>
+    <text x="180" y="838" text-anchor="middle" class="lbl-title">Consensus + decision engine</text>
+    <text x="180" y="852" text-anchor="middle" class="lbl-sub">weighted vote · business context</text>
+    <text x="180" y="865" text-anchor="middle" class="lbl-meta">15 nodes</text>
+  </g>
+  <g>
+    <rect x="340" y="820" width="280" height="50" rx="6" class="box-fill-blue"/>
+    <text x="480" y="838" text-anchor="middle" class="lbl-title">→ SLO tracker (signal feed)</text>
+    <text x="480" y="852" text-anchor="middle" class="lbl-sub">tighten alert thresholds early</text>
+    <text x="480" y="865" text-anchor="middle" class="lbl-meta">existing pipeline does paging</text>
+  </g>
+  <g>
+    <rect x="640" y="820" width="300" height="50" rx="6" class="box-fill-green"/>
+    <text x="790" y="838" text-anchor="middle" class="lbl-title">Feedback loop · online learner</text>
+    <text x="790" y="852" text-anchor="middle" class="lbl-sub">human labels · retrain trigger</text>
+    <text x="790" y="865" text-anchor="middle" class="lbl-meta">A/B testing for new models</text>
+  </g>
+
+  <!-- Arrows -->
+  <path d="M290,120 L320,120" class="arrow"/>
+  <path d="M660,120 L680,120" class="arrow" stroke-dasharray="3,2"/>
+  <text x="675" y="113" text-anchor="middle" class="lbl-meta">model lookup</text>
+  <path d="M490,160 L490,225" class="arrow"/>
+  <path d="M490,305 L490,365" class="arrow"/>
+  <path d="M490,465 L490,535" class="arrow"/>
+  <path d="M490,615 L490,675" class="arrow"/>
+  <path d="M495,775 L180,820" class="arrow"/>
+  <path d="M495,775 L480,820" class="arrow"/>
+  <path d="M495,775 L790,820" class="arrow"/>
+  <!-- Feedback back to model registry -->
+  <path d="M940,840 Q975,840 975,170 Q975,120 950,120" class="arrow-green" stroke-dasharray="3,3"/>
+  <text x="945" y="500" class="lbl-meta" fill="#1a7f37">retrain</text>
+</svg>
+<div class="diagram-cap">Fig 1 · AI Anomaly Detection Platform. Numbered circles match the step-by-step flow in §3.2. Data sources → ingest → Kafka → feature engineering (5 feature types) → feature store → 5-model ensemble → consensus decision → SLO tracker signal feed → feedback loop retrains models.</div>
+</div>
+
+<!-- 3.2 STEP-BY-STEP FLOW -->
+<h3 id="flow">3.2 — Step-by-step flow (the numbered walkthrough)</h3>
+
+<p>Following the numbered blue badges in Fig 1. Concrete example: <b>the Feed ranker's p99 latency starts drifting upward at 14:30 UTC — not enough to trip a static threshold, but the anomaly platform spots it at 14:31 and flags it to the SLO tracker, which tightens its burn-rate alert window. The incident is contained 8 minutes earlier than it would have been otherwise.</b></p>
+
+<div class="flow-steps">
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Multi-modal data sources emit telemetry</div>
+      <div class="desc">The anomaly platform consumes from <b>four sources</b> simultaneously: metrics (Prometheus SLI scrapes), logs (parsed JSON from the logging pipeline with severity/error-keyword features extracted), traces (span trees from the APM system), and events (deploys, config changes, scaling events from the audit logs of other systems).<br><br>Crucially, this isn't its own data plane — it <b>subscribes to existing pipelines</b>. The monitoring platform's metric stream, the logging pipeline's parsed output, etc. are the inputs. No double-ingest.</div>
+      <div class="tech">subscribes to: monitoring.metrics · logging.parsed · apm.spans · audit.events</div>
+      <div class="nums">
+        <span class="kv">series monitored · <b>~2 M</b></span>
+        <span class="kv">sample rate · <b>1/15s per series</b></span>
+        <span class="kv">ingest · <b>133k samples/s · 68 Mbps</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Ingestion + normalization unifies the schema</div>
+      <div class="desc">Each input source has its own schema. The normalizer flattens them all into a unified time-series record: <code>{series_id, ts, value, meta{source, service, region, slo_id}}</code>. This includes a critical step: <b>linking each series to its SLO</b> by lookup against the SLO config store. A metric without an SLO link gets lower priority (we still monitor it, but its anomalies don't reach the SLO tracker).<br><br>The normalizer also dedupes (same metric from multiple sources), validates against the schema registry, and enriches with team owner + dependency-graph info.</div>
+      <div class="tech">normalize() → dedupe() → schema_validate() → enrich(slo_id, team, deps) → kafka.produce(unified-stream)</div>
+      <div class="nums">
+        <span class="kv">budget · <b>500 ms</b></span>
+        <span class="kv">fleet · <b>12 nodes</b></span>
+        <span class="kv">SLO-linked coverage · <b>≥ 95%</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Model registry holds versioned model artifacts</div>
+      <div class="desc">Parallel to the data path, the model registry holds <b>5 trained models per service</b> (Isolation Forest, LSTM-AE, VAE, OC-SVM, Transformer). Models are version-controlled like code — every model has a git commit, training data hash, evaluation scores, and a deployment status (canary / production / shadow).<br><br>Per-service models are essential. A "high CPU" anomaly for the Feed ranker has different baseline behavior than for the Profile DB. Each service's ensemble is trained on its own historical data.<br><br>Models are deployed via the canary controller (§canary doc) — new models start in shadow mode, then canary, then promoted only if FP/FN rates improve.</div>
+      <div class="tech">model_id: "feed-ranker-v17/lstm-ae:2026-05-01" · stored in S3 · metadata in Postgres</div>
+      <div class="nums">
+        <span class="kv">models per service · <b>5</b></span>
+        <span class="kv">total models · <b>500 × 5 = 2,500</b></span>
+        <span class="kv">retrain cadence · <b>weekly</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Kafka durably buffers the unified stream</div>
+      <div class="desc">Normalized records land in Kafka topics. Partitioned by <code>hash(series_id)</code> so all updates for a given series stay in order on one partition — important for temporal features (LSTM needs ordered sequences).<br><br><b>Why Kafka here:</b> if feature engineering or inference falls behind, data queues durably. 7-day retention is the replay window — if we deploy a buggy model, we can rerun the past week against the corrected version and audit what we missed.</div>
+      <div class="tech">topics: metrics.normalized · logs.normalized · traces.normalized · events.normalized · partitioned by hash(series_id)</div>
+      <div class="nums">
+        <span class="kv">brokers · <b>shared with monitoring (9)</b></span>
+        <span class="kv">retention · <b>7 days</b></span>
+        <span class="kv">budget · <b>2 s consumer lag</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Feature engineering computes 46 features per series</div>
+      <div class="desc">This is the heart of the system. For each new data point, Apache Beam workers compute 46 features across 5 categories:<br><br>• <b>Statistical (10):</b> rolling mean, std, percentiles, skew, kurtosis<br>• <b>Temporal (12):</b> lag-1 / lag-5min / lag-30min, EMA, rate-of-change, autocorrelation<br>• <b>Seasonal (6):</b> hour-of-day, day-of-week residuals against expected seasonal pattern<br>• <b>Graph (8):</b> correlations with parent/child SLIs in the dependency graph<br>• <b>Text + trace (10):</b> log-derived (severity-shift ratios, novel terms), trace-shape statistics<br><br>For Feed ranker at 14:30, the rate-of-change feature for p99 latency starts showing a positive trend (0.5 ms/min upward). Statistical features show p99 = 850 ms (vs 30-day baseline of 780 ms). Seasonal residual = +60 ms above expected for this time of day. These are subtle — no single feature trips a threshold — but together they form a pattern.</div>
+      <div class="tech">Beam pipeline: KafkaIO → CoGroupByKey(series) → ComputeFeatures(46) → BigQueryIO + Redis sink</div>
+      <div class="nums">
+        <span class="kv">features per series · <b>46</b></span>
+        <span class="kv">ops/sec global · <b>6.1 M</b></span>
+        <span class="kv">workers · <b>240 (biggest fleet)</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Feature store serves features online and offline</div>
+      <div class="desc">Computed features land in two stores:<br><br><b>Redis (24h hot · 70 GB):</b> for online inference. Inference fetches the last N feature values for each series in &lt; 1 ms. This is the performance-critical path.<br><br><b>Bigtable (30d warm · 2.1 TB):</b> for training. Periodic retraining jobs read 30 days of features as model training data. Also serves the analytics dashboards that compare current state to historical patterns.<br><br><b>Point-in-time correctness</b> is the trickiest part: when training a model, we must serve features as they existed at training time, not as they are now (otherwise the model learns from future data — "data leakage"). The feature store is versioned for this reason.</div>
+      <div class="tech">redis.MGET("features:feed-ranker:lstm-ae:t-100..t-0") · bigtable.scan(prefix="features:feed-ranker:", start_ts, end_ts)</div>
+      <div class="nums">
+        <span class="kv">hot read p99 · <b>&lt; 1 ms</b></span>
+        <span class="kv">warm read p99 · <b>~50 ms</b></span>
+        <span class="kv">point-in-time · <b>versioned per feature</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Ensemble inference — 5 models run in parallel</div>
+      <div class="desc">For each series + new feature vector, all 5 models run <b>in parallel</b>, each computing an anomaly score in [0,1]:<br><br>• <b>Isolation Forest</b> (0.5ms) — high-dim outlier detection. Score from path length in random forests.<br>• <b>LSTM Autoencoder</b> (2.0ms) — encodes the time-series and reconstructs it. Reconstruction error = anomaly score.<br>• <b>VAE (Variational Autoencoder)</b> (1.5ms) — generative model; how unlikely is this point under the learned distribution?<br>• <b>One-Class SVM</b> (0.5ms) — distance from learned boundary in feature space.<br>• <b>Transformer (small)</b> (3.0ms) — attention over (metric, log, trace, event) multi-modal context. Catches anomalies visible only in combinations.<br><br>For Feed ranker: LSTM-AE returns <b>0.78</b> (high — sequence diverging from learned pattern). VAE returns <b>0.71</b> (unusual distribution). Others return moderate scores. The "wall-time" is 3 ms (longest model) because they're parallelized.</div>
+      <div class="tech">parallel: [if.predict(), lstm.encode_decode(), vae.likelihood(), svm.distance(), tfm.attend()]<br>output: [score_if=0.42, score_lstm=0.78, score_vae=0.71, score_svm=0.45, score_tfm=0.66]</div>
+      <div class="nums">
+        <span class="kv">budget · <b>3 ms (parallel max)</b></span>
+        <span class="kv">inferences/sec global · <b>665k (5 × 133k)</b></span>
+        <span class="kv">fleet · <b>60 inference nodes</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Consensus engine + business context check</div>
+      <div class="desc">The 5 model scores are combined into a single confidence score by a meta-learner that weights each model based on historical accuracy <em>for this specific anomaly type and service</em>. For Feed ranker temporal sequences, LSTM-AE has historically been most accurate (weight 0.35); Transformer 0.25; VAE 0.20; others 0.10 each.<br><br>Weighted score for Feed ranker: <code>0.35×0.78 + 0.25×0.66 + 0.20×0.71 + 0.10×0.42 + 0.10×0.45 = 0.66</code><br><br>Then business context applies: time of day (weekday business hours → high impact), service criticality (Feed = tier-0), recent deploys (yes — feed-ranker:v2.3.1 deployed 20 min ago, suspicious). The decision engine outputs: <b>confidence 0.74 → flag as anomaly · severity P1 · likely cause: recent deploy</b>.</div>
+      <div class="tech">final_score = Σ(weight_i × score_i) · context_features = [time, criticality, recent_deploys] · meta_classifier.predict → severity</div>
+      <div class="nums">
+        <span class="kv">budget · <b>1 s</b></span>
+        <span class="kv">fleet · <b>15 decision engine nodes</b></span>
+        <span class="kv">decision threshold · <b>0.7 (tuned for FP ≤ 1%)</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Signal feeds the SLO tracker (does NOT page directly)</div>
+      <div class="desc">This is the senior design choice: <b>the anomaly platform does not page humans directly</b>. It emits a signal to the SLO tracker, which then decides whether to tighten its burn-rate alert window for this service.<br><br>For Feed ranker at confidence 0.74: the SLO tracker receives the anomaly signal, looks up Feed's current burn rate (1.2× — slightly elevated), and <b>tightens the medium-burn threshold from 6× to 4×</b> for the next 30 min. The alert engine is now more sensitive — a smaller deviation will fire a page. If the regression continues, the page fires several minutes earlier than it would have otherwise.<br><br>This achieves the system's goal — <em>catching the outage before your pager does</em> — without bypassing the existing alert pipeline. No new on-call interface. No new ack workflow. Just earlier and tighter thresholds when an anomaly is detected.</div>
+      <div class="tech">slo_tracker.signal({service: "feed-ranker", anomaly_score: 0.74, suggested_threshold: "tighten 4×", duration: "30min"})</div>
+      <div class="nums">
+        <span class="kv">budget · <b>1 s</b></span>
+        <span class="kv">integration · <b>signals only, no paging</b></span>
+        <span class="kv">FP-impact-on-SLO · <b>tighter thresholds, not pages</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Feedback loop closes — retraining + A/B testing</div>
+      <div class="desc">Every anomaly decision is recorded. After the incident is resolved (whether the platform was right or wrong), human SREs can label the decision: <b>TP</b> (anomaly was real), <b>FP</b> (alarm but nothing wrong), <b>FN</b> (we missed a real anomaly), <b>TN</b> (silent and correct).<br><br>These labels feed two systems: (a) <b>online learning</b> updates model weights in the consensus engine in near-real-time (don't retrain models, just adjust how much we trust each one), (b) <b>weekly retraining</b> uses the labeled data as fresh training examples. New model versions are deployed via the canary controller — shadow mode first, then 1%, 5%, 25% canary, with statistical FP/FN comparison vs current production. Only promoted if metrics improve.<br><br><b>Total wall-clock time for the detection path:</b> ~80 s p99. Under the 2-min SLO. The earliest the platform can catch an anomaly is bounded by the 15s scrape + 15s window — that's physics, not a design choice.</div>
+      <div class="tech">audit.append({decision, label, ts}) · weights.update(ema) · weekly: retrain(labeled_data) · canary deploy via §canary doc</div>
+      <div class="nums">
+        <span class="kv">e2e typical · <b>~40 s</b></span>
+        <span class="kv">e2e p99 · <b>~80 s</b></span>
+        <span class="kv">SLO target · <b>p95 ≤ 2 min ✓ 40s headroom</b></span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="note tip">
+  <span class="lbl">The key design insight</span>
+  Notice this is fundamentally a <b>sensor system, not an alert system</b>. The output is a probabilistic signal, not a binary page. By feeding signals into the existing SLO tracker rather than minting a parallel paging pipeline, we get all the benefits (dedupe, correlation, on-call routing, audit) for free. ML is plugged into the reliability stack, not bolted on the side. The on-call engineer still sees pages from one system — they trust — not from a new ML system they don't.
+</div>
+
+<!-- 3.3 ENSEMBLE CLOSE-UP -->
+<h3 id="ensemble">3.3 — Why an ensemble of 5 models (not 1 big model)</h3>
+
+<p>Each anomaly type has different "shape" and different best-detector. No single model dominates. Here's the matrix of what each model catches well:</p>
+
+<table>
+  <thead><tr><th>Model</th><th>Best at</th><th>Worst at</th><th>Latency</th><th>Ensemble weight (Feed)</th></tr></thead>
+  <tbody>
+    <tr><td><b>Isolation Forest</b></td><td>high-dim outliers · single bad point</td><td>gradual drift</td><td class="num">0.5 ms</td><td class="num">0.10</td></tr>
+    <tr><td><b>LSTM Autoencoder</b></td><td>temporal sequences · pattern breaks</td><td>cold start / new services</td><td class="num">2.0 ms</td><td class="num">0.35</td></tr>
+    <tr><td><b>VAE</b></td><td>distribution shifts · multi-modal data</td><td>very short sequences</td><td class="num">1.5 ms</td><td class="num">0.20</td></tr>
+    <tr><td><b>One-Class SVM</b></td><td>novelty · clear boundaries</td><td>high-dim spaces</td><td class="num">0.5 ms</td><td class="num">0.10</td></tr>
+    <tr><td><b>Transformer (small)</b></td><td>multi-modal context (metric+log+trace)</td><td>compute cost · interpretability</td><td class="num">3.0 ms</td><td class="num">0.25</td></tr>
+  </tbody>
+</table>
+
+<div class="note warn">
+  <span class="lbl">Why not just one big model?</span>
+  A single deep model would have higher peak accuracy but worse <em>tail</em> behavior — it'd fail catastrophically on anomaly types it hadn't seen during training. The ensemble degrades gracefully: if 1 model is wrong, 4 others still vote. We trade some peak accuracy for robustness. <b>This is the same logic as the multi-window burn-rate alert in the SLO tracker — never trust a single signal.</b>
+</div>
+
+<!-- 3.4 FEEDBACK LOOP -->
+<h3 id="feedback">3.4 — Feedback loop & continuous learning</h3>
+
+<p>The feedback loop is what keeps the system honest over time. Without it, models drift as services change and FP/FN rates silently degrade. Here's the cycle:</p>
+
+<div class="cols-2">
+  <div class="comp">
+    <div class="name">Online labeling <span class="tech">post-incident</span></div>
+    <div class="desc">After every incident (resolved or stood-down), SREs label past anomaly decisions in a labeling UI: TP, FP, FN, or TN. Takes ~30 sec per label. Builds a continuously fresh training set.</div>
+    <div class="row"><span class="lab">labels per week</span><span>~1,500</span></div>
+    <div class="row"><span class="lab">tooling</span><span>Snorkel + custom UI</span></div>
+  </div>
+  <div class="comp">
+    <div class="name">Online weight tuning <span class="tech">near-real-time</span></div>
+    <div class="desc">A FP label causes the consensus engine to slightly reduce the weight of whichever model voted strongly for "anomaly." A FN label slightly increases the weight of models that voted softly. Exponential moving average keeps the adjustment smooth.</div>
+    <div class="row"><span class="lab">update interval</span><span>every 1 min</span></div>
+    <div class="row"><span class="lab">smoothing</span><span>EMA alpha=0.05</span></div>
+  </div>
+  <div class="comp">
+    <div class="name">Weekly retraining <span class="tech">offline batch</span></div>
+    <div class="desc">Every Sunday night, the training cluster (8 GPU nodes) retrains all 5 models for each service on the past 30 days of labeled data. New models tagged as candidates.</div>
+    <div class="row"><span class="lab">training time</span><span>~6 h per cohort</span></div>
+    <div class="row"><span class="lab">candidates per week</span><span>~50 retrained models</span></div>
+  </div>
+  <div class="comp">
+    <div class="name">A/B canary via §canary <span class="tech">production gates</span></div>
+    <div class="desc">New model versions deploy via the canary controller — shadow → 1% → 5% → 25% → 100%, with statistical FP/FN comparison at each stage. Only promoted if metrics improve vs production. Same gates as any other production service.</div>
+    <div class="row"><span class="lab">promotion rate</span><span>~60% (40% rolled back)</span></div>
+    <div class="row"><span class="lab">model SLO</span><span>FP/FN must improve or hold</span></div>
+  </div>
+</div>
+
+<div class="note tip">
+  <span class="lbl">The feedback loop IS the SLO</b></span>
+  Without retraining, an ML system is just a fixed function that decays over time. Without canary deployment, retraining is a liability. Without labels, canary deployment is blind. The loop is what makes ML systems behave like other production code: deployable, testable, rollback-able.
+</div>
+
+</section>
+
+<!-- ===== 4. GAUNTLET ===== -->
+<section>
+<h2 id="gauntlet">4 · Failure gauntlet</h2>
+
+<div class="cols-2">
+  <div class="comp">
+    <div class="name">A · Model drift undetected <span class="tech">SLI: B, C</span></div>
+    <div class="desc">A service changes its behavior; old model now over-fires (FP spike).</div>
+    <div class="row"><span class="lab">trigger</span><span>FP rate &gt; 2% over 7 days</span></div>
+    <div class="row"><span class="lab">absorb</span><span>online weight tuning reduces model's influence</span></div>
+    <div class="row"><span class="lab">cap</span><span>auto-rollback to previous model version</span></div>
+    <div class="row"><span class="lab">verdict</span><span>FP returns to ≤1% within 1 week</span></div>
+  </div>
+  <div class="comp">
+    <div class="name">B · New service with no model <span class="tech">SLI: E</span></div>
+    <div class="desc">A new microservice gets deployed; no trained model yet.</div>
+    <div class="row"><span class="lab">trigger</span><span>service has no model in registry</span></div>
+    <div class="row"><span class="lab">absorb</span><span>fall back to generic "global" model</span></div>
+    <div class="row"><span class="lab">repair</span><span>auto-trigger training after 7d of data</span></div>
+    <div class="row"><span class="lab">verdict</span><span>coverage gap closed within 1 week</span></div>
+  </div>
+  <div class="comp">
+    <div class="name">C · Feature pipeline lag <span class="tech">SLI: A</span></div>
+    <div class="desc">Beam workers fall behind; features stale by 5+ min.</div>
+    <div class="row"><span class="lab">trigger</span><span>feature watermark lag &gt; 60 s</span></div>
+    <div class="row"><span class="lab">absorb</span><span>Beam autoscale adds workers</span></div>
+    <div class="row"><span class="lab">guard</span><span>decision engine refuses stale features → emit NO_DECISION</span></div>
+    <div class="row"><span class="lab">verdict</span><span>SLI-A delay logged, not silent</span></div>
+  </div>
+  <div class="comp">
+    <div class="name">D · Bad retrained model <span class="tech">SLI: B, C</span></div>
+    <div class="desc">Weekly retraining produces a worse model (data quality issue).</div>
+    <div class="row"><span class="lab">trigger</span><span>canary FP/FN worse than baseline</span></div>
+    <div class="row"><span class="lab">absorb</span><span>canary controller refuses to promote</span></div>
+    <div class="row"><span class="lab">repair</span><span>stays on previous model · investigates next cycle</span></div>
+    <div class="row"><span class="lab">verdict</span><span>bad model never reaches production</span></div>
+  </div>
+  <div class="comp">
+    <div class="name">E · Adversarial drift <span class="tech">SLI: C</span></div>
+    <div class="desc">A deploy introduces gradual change → models adapt to "new normal" → real outage looks normal.</div>
+    <div class="row"><span class="lab">defense 1</span><span>30-day training window (slow to adapt)</span></div>
+    <div class="row"><span class="lab">defense 2</span><span>anomaly platform doesn't override SLO thresholds, only suggests</span></div>
+    <div class="row"><span class="lab">defense 3</span><span>static fallback alerts always remain</span></div>
+    <div class="row"><span class="lab">verdict</span><span>worst case: ML adds nothing, doesn't subtract</span></div>
+  </div>
+  <div class="comp">
+    <div class="name">F · Label scarcity <span class="tech">SLI: B, C</span></div>
+    <div class="desc">SREs busy; labels aren't getting added; retraining starves.</div>
+    <div class="row"><span class="lab">trigger</span><span>label rate &lt; 100/week</span></div>
+    <div class="row"><span class="lab">absorb</span><span>weekly retraining skipped (keep current models)</span></div>
+    <div class="row"><span class="lab">repair</span><span>auto-label TNs (most decisions); ask humans only on uncertain cases</span></div>
+    <div class="row"><span class="lab">verdict</span><span>system stays current with reduced human cost</span></div>
+  </div>
+</div>
+
+<div class="note danger">
+  <span class="lbl">Cannot defend against</span>
+  Completely novel failure modes the system has never seen. An ML detector is fundamentally a "pattern recognizer" trained on history — a truly unprecedented event (first-time-ever hardware bug, novel attack vector) will look "normal" enough to slip past. Mitigation: keep traditional threshold alerts as the safety net. ML <em>adds</em> to detection; it doesn't replace.
+</div>
+</section>
+
+<!-- ===== 5. PLAYBOOK ===== -->
+<section>
+<h2 id="playbook">5 · Operational playbook</h2>
+
+<h3>5.1 — Treating the ML system as a production system</h3>
+<p>This is the cultural shift the system requires: ML pipelines must be treated like any other tier-0 production service. SLOs, canary deploys, post-incident reviews, on-call rotations, error budgets — all of it. The most common failure mode for ML systems is being treated as "research" and slipping into untracked, unreliable territory.</p>
+
+<h3>5.2 — Chaos drills (quarterly)</h3>
+<ul>
+  <li><b>Drift injection</b> — synthetically shift one service's distribution; verify detection within 2 min.</li>
+  <li><b>Model rollback</b> — push a known-bad model; verify canary FP/FN gate blocks promotion.</li>
+  <li><b>Feature pipeline kill</b> — terminate Beam workers; verify autoscaling and NO_DECISION fallback.</li>
+  <li><b>Label drought simulation</b> — block label submission for 2 weeks; verify graceful degradation.</li>
+  <li><b>FP storm</b> — synthetically flood with FP labels; verify online weight tuning responds correctly.</li>
+  <li><b>Cold-start drill</b> — deploy a synthetic new service; verify fallback to global model within 5 min.</li>
+</ul>
+
+<h3>5.3 — Runbook excerpt</h3>
+<pre><code># Symptom: SLI-B burning — FP rate > 1%
+
+# Likely causes (ranked)
+1. Recent model drift on hot service     → check FP-by-service dashboard
+2. Recent SLO config change              → check SLO tracker change log
+3. Bad retrained model promoted          → check canary promotion log
+4. Feature pipeline producing nulls      → check feature freshness
+
+# First response (in order):
+- Confirm: dashboard 'anomaly-slo-b' shows > 1% FP rate
+- Identify worst service: FP-by-service sorted desc
+- If single service: rollback that service's model to previous version
+- If multi-service: investigate recent labeling distribution shift
+- Communicate: post in #incident-anomaly
+- Escalate: if not resolving in 30 min, page tier-2 (ML platform team)</code></pre>
+</section>
+
+<!-- ===== 6. COMPONENTS ===== -->
+<section>
+<h2 id="components">6 · Component reference</h2>
+
+<table>
+  <thead><tr><th>Component</th><th>Tech</th><th>Scale</th><th>Failure mitigation</th><th>SLO</th></tr></thead>
+  <tbody>
+    <tr><td><b>Ingestion / normalizer</b></td><td class="num">Go service</td><td>HPA 12→30</td><td>circuit breaker · DLQ</td><td>A,E</td></tr>
+    <tr><td><b>Kafka unified stream</b></td><td class="num">shared with monitoring</td><td>per series_id</td><td>3× repl · 7d retention</td><td>A,D</td></tr>
+    <tr><td><b>Feature engineering</b></td><td class="num">Apache Beam / Dataflow</td><td>240 autoscaling workers</td><td>checkpoint · exactly-once</td><td>A,D</td></tr>
+    <tr><td><b>Feature store (hot)</b></td><td class="num">Redis cluster</td><td>30 nodes</td><td>multi-region replicas</td><td>A</td></tr>
+    <tr><td><b>Feature store (warm)</b></td><td class="num">Bigtable</td><td>3 nodes auto-shard</td><td>strong consistency</td><td>—</td></tr>
+    <tr><td><b>Model registry</b></td><td class="num">S3 + Postgres</td><td>versioned · auditable</td><td>cross-region S3 repl</td><td>—</td></tr>
+    <tr><td><b>Inference fleet</b></td><td class="num">CPU + small models</td><td>60 nodes · 5 models parallel</td><td>fallback to single model</td><td>A,B,C</td></tr>
+    <tr><td><b>Decision engine</b></td><td class="num">Go service</td><td>15 nodes stateless</td><td>NO_DECISION on stale features</td><td>A,B</td></tr>
+    <tr><td><b>Training cluster</b></td><td class="num">GPU (g5.4xlarge)</td><td>8 nodes batch</td><td>retry · checkpoint</td><td>—</td></tr>
+    <tr><td><b>Feedback / labeling</b></td><td class="num">Snorkel + custom UI</td><td>9 nodes</td><td>auto-label TNs · skip retrain on drought</td><td>B,C</td></tr>
+  </tbody>
+</table>
+</section>
+
+<!-- ===== 7. TRADE-OFFS ===== -->
+<section>
+<h2 id="tradeoffs">7 · Trade-offs & open questions</h2>
+
+<div class="cols-2">
+  <div>
+    <h4>Chose</h4>
+    <ul>
+      <li><b>Ensemble of 5 models</b> over single big model · graceful degradation, interpretable per-model; trade: 5× inference work.</li>
+      <li><b>Signal feed to SLO tracker</b> (not paging directly) · reuses existing alert pipeline; trade: cap on max anomaly latency improvement.</li>
+      <li><b>Per-service models</b> over global · much higher accuracy; trade: 2,500 models to retrain weekly.</li>
+      <li><b>CPU inference</b> over GPU · models are small, batching is enough; trade: would need GPU if models grow.</li>
+      <li><b>Apache Beam</b> for features · exactly-once + late-data; trade: harder to author than Spark.</li>
+      <li><b>Online weight tuning + weekly retrain</b> · responsive AND stable; trade: 2 mechanisms to maintain.</li>
+      <li><b>Treating ML as a prod system</b> · canary, SLO, on-call · trade: more process; pays off in trust.</li>
+    </ul>
+  </div>
+  <div>
+    <h4>Rejected</h4>
+    <ul>
+      <li><b>Single deep model</b> · higher peak accuracy but catastrophic tail; ensemble is safer.</li>
+      <li><b>ML-direct paging</b> · would duplicate alert infrastructure; tradeoff doesn't pencil.</li>
+      <li><b>Global model only</b> · doesn't capture service-specific patterns; FP rate would be 5×+.</li>
+      <li><b>Continuous online retraining</b> · interesting but hard to test, hard to rollback; weekly batch is enough.</li>
+      <li><b>Heavyweight LLM-based detector</b> · 100× inference cost · marginal accuracy gain · not worth it.</li>
+      <li><b>"ML-only" detection</b> (no threshold fallback) · risky; static alerts remain as safety net.</li>
+    </ul>
+  </div>
+</div>
+
+<h3>Open questions</h3>
+<ol>
+  <li>Should we expose <b>"why" explanations</b> with each anomaly? SHAP values from the meta-learner could tell on-call "the model flagged this because of seasonal residual and LSTM reconstruction error." Adds value but adds compute.</li>
+  <li>How aggressive should <b>online learning</b> be? Too slow = stale; too fast = chasing noise. Currently EMA alpha=0.05 — probably needs A/B tuning.</li>
+  <li>Should we support <b>cross-service anomaly correlation</b> at the ML layer (vs leaving it to the incident response system's dependency graph)? Could catch "this is a coordinated failure" earlier.</li>
+  <li>Is the 30-day training window right? Shorter = adapts faster but more noise; longer = more stable but slower to learn new patterns.</li>
+  <li>Should we offer <b>predictive burn-rate forecasting</b> (not just current-state anomalies)? "Burn rate will exceed 6× within 30 minutes if current trajectory continues" is more actionable than current-state anomaly scoring alone.</li>
+</ol>
+</section>
+
+<footer>
+  <div>linkedin/anomaly · design-doc · ai-anomaly-detection.md</div>
+  <div>nalsd · review status: <span style="color:var(--yellow)">⬤</span> in-review</div>
+</footer>
+
+</main>
+</div>
+</body>
+</html>

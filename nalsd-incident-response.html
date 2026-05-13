@@ -1,0 +1,1020 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NALSD · LinkedIn Global Incident Response System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#ffffff;--bg-alt:#f6f8fa;--bg-code:#f6f8fa;
+  --border:#d0d7de;--border-soft:#eaeef2;
+  --ink:#1f2328;--ink-soft:#59636e;--ink-faint:#818b98;
+  --link:#0a66c2;--link-hover:#004182;
+  --green:#1a7f37;--green-bg:#dafbe1;
+  --red:#cf222e;--red-bg:#ffebe9;
+  --yellow:#9a6700;--yellow-bg:#fff8c5;
+  --purple:#6639ba;--purple-bg:#fbefff;
+  --orange:#bc4c00;--orange-bg:#fff1e5;
+  --blue-bg:#ddf4ff;
+  --shadow:0 1px 0 rgba(31,35,40,.04);
+  --mono:'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --serif:'Source Serif 4', Georgia, serif;
+  --sans:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
+a{color:var(--link);text-decoration:none}a:hover{text-decoration:underline}
+code,pre,.mono{font-family:var(--mono)}
+code{background:var(--bg-code);padding:.1em .35em;border-radius:4px;font-size:.88em;border:1px solid var(--border-soft)}
+pre{background:var(--bg-code);border:1px solid var(--border);border-radius:6px;padding:12px 14px;overflow-x:auto;font-size:12.5px;line-height:1.55;margin:0}
+
+.shell{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+aside{position:sticky;top:0;height:100vh;overflow-y:auto;border-right:1px solid var(--border);background:var(--bg);padding:18px 14px 40px}
+main{max-width:1080px;width:100%;padding:28px 40px 80px}
+@media (max-width:960px){.shell{grid-template-columns:1fr}aside{position:relative;height:auto;border-right:none;border-bottom:1px solid var(--border)}}
+
+.brand{display:flex;align-items:center;gap:10px;padding:6px 8px 16px;border-bottom:1px solid var(--border-soft);margin-bottom:12px}
+.brand-mark{width:28px;height:28px;border-radius:6px;background:var(--link);color:#fff;display:grid;place-items:center;font-weight:700;font-family:var(--mono);font-size:13px}
+.brand-title{font-weight:700;font-size:14px}
+.brand-sub{font-size:11px;color:var(--ink-soft);font-family:var(--mono)}
+.toc-group{margin:14px 0 4px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-faint);font-weight:600;padding:0 8px}
+.toc a{display:block;padding:4px 8px;border-radius:5px;color:var(--ink-soft);font-size:13px;border-left:2px solid transparent;margin-left:4px}
+.toc a:hover{background:var(--bg-alt);color:var(--ink);text-decoration:none}
+.toc a.depth-2{padding-left:18px;font-size:12.5px}
+
+.doc-head{border-bottom:1px solid var(--border);padding-bottom:18px;margin-bottom:24px}
+.crumbs{font-size:12px;color:var(--ink-soft);font-family:var(--mono);margin-bottom:8px}
+.crumbs .sep{color:var(--ink-faint);margin:0 6px}
+h1{font-family:var(--serif);font-weight:700;font-size:32px;line-height:1.15;letter-spacing:-.015em;margin:0 0 8px}
+.doc-meta{display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:12.5px;color:var(--ink-soft);font-family:var(--mono);margin-top:10px}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:999px;border:1px solid var(--border);background:var(--bg-alt);font-size:11.5px;font-family:var(--mono);color:var(--ink-soft)}
+.pill.blue{background:var(--blue-bg);border-color:#80ccff;color:#0969da}
+.pill.green{background:var(--green-bg);border-color:#a5e1b1;color:var(--green)}
+.pill.purple{background:var(--purple-bg);border-color:#d8b9ff;color:var(--purple)}
+.pill.orange{background:var(--orange-bg);border-color:#ffb077;color:var(--orange)}
+.pill.red{background:var(--red-bg);border-color:#ffaaa3;color:var(--red)}
+.pill.yellow{background:var(--yellow-bg);border-color:#e7c860;color:var(--yellow)}
+
+h2{font-family:var(--serif);font-weight:700;font-size:22px;letter-spacing:-.01em;margin:40px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border-soft);scroll-margin-top:20px}
+h3{font-family:var(--sans);font-weight:700;font-size:16px;margin:24px 0 8px;scroll-margin-top:20px}
+h4{font-family:var(--sans);font-weight:600;font-size:13.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-soft);margin:18px 0 6px}
+p{margin:0 0 12px}
+ul,ol{margin:0 0 12px;padding-left:22px}
+li{margin-bottom:4px}
+
+.note{border-left:3px solid var(--link);background:var(--blue-bg);padding:10px 14px;border-radius:0 6px 6px 0;margin:14px 0;font-size:13px}
+.note.warn{border-left-color:var(--yellow);background:var(--yellow-bg)}
+.note.danger{border-left-color:var(--red);background:var(--red-bg)}
+.note.tip{border-left-color:var(--green);background:var(--green-bg)}
+.note .lbl{font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px;font-family:var(--mono);color:var(--link)}
+.note.warn .lbl{color:var(--yellow)}
+.note.danger .lbl{color:var(--red)}
+.note.tip .lbl{color:var(--green)}
+
+table{width:100%;border-collapse:collapse;font-size:12.5px;margin:8px 0 16px;border:1px solid var(--border);border-radius:6px;overflow:hidden}
+thead{background:var(--bg-alt)}
+th,td{padding:7px 11px;text-align:left;border-bottom:1px solid var(--border-soft);vertical-align:top}
+th{font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-soft)}
+tr:last-child td{border-bottom:none}
+td.num{font-family:var(--mono);font-size:12px}
+
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0 20px}
+@media (max-width:780px){.stat-grid{grid-template-columns:repeat(2,1fr)}}
+.stat{border:1px solid var(--border);border-radius:6px;padding:12px;background:var(--bg)}
+.stat .k{font-family:var(--mono);font-size:11px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.05em}
+.stat .v{font-family:var(--serif);font-weight:700;font-size:22px;margin-top:2px;line-height:1.15}
+.stat .s{font-size:11px;color:var(--ink-soft);font-family:var(--mono);margin-top:2px}
+
+.cols-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:780px){.cols-2{grid-template-columns:1fr}}
+
+.calc{border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin:14px 0;background:var(--bg-alt);position:relative}
+.calc::before{content:"∑ NALSD";position:absolute;top:-10px;left:14px;font-family:var(--mono);font-size:10.5px;background:var(--bg);padding:2px 8px;border:1px solid var(--border);border-radius:4px;color:var(--ink-soft);letter-spacing:.05em;font-weight:600}
+.calc h4{margin-top:4px}
+.calc pre{background:var(--bg);border-color:var(--border-soft)}
+.calc .verdict{display:flex;align-items:center;gap:8px;margin-top:10px;padding:8px 12px;background:var(--bg);border:1px dashed var(--green);border-radius:6px;font-family:var(--mono);font-size:12px;color:var(--green)}
+.calc .verdict.warn{border-color:var(--yellow);color:var(--yellow)}
+
+.diagram{border:1px solid var(--border);border-radius:8px;background:var(--bg);padding:14px;margin:16px 0;box-shadow:var(--shadow)}
+.diagram-cap{font-family:var(--mono);font-size:11px;color:var(--ink-faint);margin-top:8px;text-align:center}
+.diagram svg{width:100%;height:auto;display:block}
+
+.box-fill-blue{fill:#ddf4ff;stroke:#54aeff}
+.box-fill-green{fill:#dafbe1;stroke:#4ac26b}
+.box-fill-purple{fill:#fbefff;stroke:#c297ff}
+.box-fill-orange{fill:#fff1e5;stroke:#fd8c73}
+.box-fill-red{fill:#ffebe9;stroke:#ff8182}
+.box-fill-yellow{fill:#fff8c5;stroke:#d4a72c}
+.box-fill-gray{fill:#f6f8fa;stroke:#d0d7de}
+.lbl-title{font-family:'Inter',sans-serif;font-weight:700;font-size:11.5px;fill:#1f2328}
+.lbl-sub{font-family:'JetBrains Mono',monospace;font-size:9.5px;fill:#59636e}
+.lbl-meta{font-family:'JetBrains Mono',monospace;font-size:9px;fill:#818b98}
+.arrow{stroke:#59636e;stroke-width:1.3;fill:none;marker-end:url(#arr)}
+.arrow-dashed{stroke:#cf222e;stroke-width:1.2;fill:none;stroke-dasharray:4,3;marker-end:url(#arr-red)}
+.arrow-green{stroke:#1a7f37;stroke-width:1.5;fill:none;marker-end:url(#arr-green)}
+
+.flow-steps{counter-reset:step}
+.flow-step{display:grid;grid-template-columns:36px 1fr;gap:12px;padding:14px 16px;border:1px solid var(--border);border-radius:8px;margin-bottom:10px;background:#fff}
+.flow-step .num{counter-increment:step;background:var(--link);color:#fff;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-family:var(--mono);font-weight:700;font-size:13px}
+.flow-step .num::before{content:counter(step)}
+.flow-step .body .title{font-weight:700;font-size:14px;margin-bottom:4px;font-family:var(--sans)}
+.flow-step .body .desc{font-size:12.5px;color:var(--ink-soft);margin-bottom:6px}
+.flow-step .body .tech{font-family:var(--mono);font-size:11px;background:var(--bg-alt);border:1px solid var(--border-soft);border-radius:4px;padding:5px 8px;margin-top:4px;display:inline-block;color:var(--ink);max-width:100%;overflow-x:auto}
+.flow-step .body .nums{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px}
+.flow-step .body .nums .kv{font-family:var(--mono);font-size:11px;color:var(--ink-soft)}
+.flow-step .body .nums .kv b{color:var(--ink);font-weight:700}
+
+.comp-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:12px 0}
+@media (max-width:780px){.comp-grid{grid-template-columns:1fr}}
+.comp{border:1px solid var(--border);border-radius:6px;padding:11px 13px;background:var(--bg)}
+.comp .name{font-weight:700;font-size:13px;display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.comp .name .tech{font-family:var(--mono);font-size:10.5px;color:var(--link);font-weight:500}
+.comp .desc{font-size:12px;color:var(--ink-soft);margin-bottom:6px}
+.comp .row{font-family:var(--mono);font-size:11px;color:var(--ink-soft);display:flex;justify-content:space-between;padding:2px 0;border-top:1px dashed var(--border-soft)}
+.comp .row .lab{color:var(--ink-faint)}
+
+/* Severity pill / chips */
+.sev-chip{display:inline-block;padding:2px 8px;border-radius:4px;font-family:var(--mono);font-size:11px;font-weight:700;margin-right:4px}
+.sev-chip.p0{background:var(--red-bg);color:var(--red);border:1px solid #ffaaa3}
+.sev-chip.p1{background:var(--orange-bg);color:var(--orange);border:1px solid #ffb077}
+.sev-chip.p2{background:var(--yellow-bg);color:var(--yellow);border:1px solid #e7c860}
+.sev-chip.p3{background:var(--bg-alt);color:var(--ink-soft);border:1px solid var(--border)}
+
+footer{margin-top:50px;padding-top:18px;border-top:1px solid var(--border-soft);font-size:11.5px;color:var(--ink-faint);font-family:var(--mono);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+
+.li-strip{height:3px;background:linear-gradient(90deg,var(--link) 0,var(--link) 60%,transparent 100%);border-radius:2px;margin-bottom:14px}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:#d0d7de;border-radius:5px;border:2px solid var(--bg)}
+::-webkit-scrollbar-track{background:transparent}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<aside>
+  <div class="brand">
+    <div class="brand-mark">in</div>
+    <div>
+      <div class="brand-title">in/incident</div>
+      <div class="brand-sub">v2026.05 · nalsd</div>
+    </div>
+  </div>
+  <div class="li-strip"></div>
+  <nav class="toc">
+    <div class="toc-group">Design</div>
+    <a href="#problem">1 · Problem & SLOs</a>
+    <a href="#capacity">2 · Capacity model</a>
+    <a href="#ingest" class="depth-2">2.1 Alert ingest</a>
+    <a href="#dedupe" class="depth-2">2.2 Dedupe math</a>
+    <a href="#correlate" class="depth-2">2.3 Correlation</a>
+    <a href="#fleet" class="depth-2">2.4 Fleet & cost</a>
+    <a href="#arch">3 · Architecture</a>
+    <a href="#dataflow" class="depth-2">3.1 Full diagram</a>
+    <a href="#flow" class="depth-2">3.2 Step-by-step</a>
+    <a href="#correlate-detail" class="depth-2">3.3 Causality engine</a>
+    <a href="#delivery" class="depth-2">3.4 Delivery fanout</a>
+    <div class="toc-group">Operations</div>
+    <a href="#gauntlet">4 · Failure gauntlet</a>
+    <a href="#playbook">5 · Ops playbook</a>
+    <a href="#components">6 · Components</a>
+    <a href="#tradeoffs">7 · Trade-offs</a>
+  </nav>
+</aside>
+
+<main>
+
+<header class="doc-head">
+  <div class="crumbs">
+    <span>in/incident</span><span class="sep">/</span>
+    <span>design-docs</span><span class="sep">/</span>
+    <span>2026</span><span class="sep">/</span>
+    <span>global-incident-response.md</span>
+  </div>
+  <h1>Designing LinkedIn's Global Incident Response System</h1>
+  <p style="font-size:15px;color:var(--ink-soft);margin:6px 0 0;font-family:var(--serif)">
+    A NALSD walkthrough — the layer between "something fired an alert" and "the right human gets paged with context."
+    5 M alerts/day, p99 delivery in 30 s, 5 nines reliability, semantic correlation to collapse 10,000 related alerts into 1 actionable page.
+  </p>
+  <div class="doc-meta">
+    <span class="pill blue">NALSD</span>
+    <span class="pill green">deliver &lt; 30s</span>
+    <span class="pill purple">99.999% reliability</span>
+    <span class="pill orange">5M alerts/day</span>
+    <span class="pill yellow">draft · review</span>
+    <span style="margin-left:auto">last edit · 2026-05-12 · sjc</span>
+  </div>
+</header>
+
+<!-- ===== 1. PROBLEM ===== -->
+<section>
+<h2 id="problem">1 · Problem statement & SLO contract</h2>
+
+<p>At LinkedIn scale, monitoring systems (Prometheus, Stackdriver, Datadog) fire alerts non-stop. During a real incident, <b>one root cause produces thousands of correlated symptoms</b> — DB CPU spike fires, then query latency, then API errors, then user-facing 5xxs, then customer-support pages. If we forward all of them to PagerDuty, we get an <b>alert storm</b> that drowns the on-call. The Global Incident Response system is the brain between the raw alert torrent and the human on-call: it dedupes, correlates root causes, prioritizes, and delivers with redundancy across channels.</p>
+
+<div class="stat-grid">
+  <div class="stat"><div class="k">Daily alerts (in)</div><div class="v">5 M</div><div class="s">~60/sec avg · 1k/sec storm</div></div>
+  <div class="stat"><div class="k">Daily pages (out)</div><div class="v">~3 K</div><div class="s">post dedupe + correlate</div></div>
+  <div class="stat"><div class="k">Delivery</div><div class="v">&lt; 30 s</div><div class="s">p99 alert → on-call</div></div>
+  <div class="stat"><div class="k">Reliability</div><div class="v">99.999%</div><div class="s">5 nines delivery</div></div>
+</div>
+
+<h3 id="slo">SLO contract</h3>
+
+<table>
+  <thead><tr><th>SLI</th><th>Target</th><th>Measurement</th><th>Error budget / 28d</th></tr></thead>
+  <tbody>
+    <tr><td><b>A · Delivery latency</b></td><td class="num">p99 ≤ 30 s</td><td>ingress → notification ACK</td><td class="num">~24h with &gt;30s</td></tr>
+    <tr><td><b>B · Delivery reliability</b></td><td class="num">≥ 99.999%</td><td>delivered / offered (P0/P1 alerts)</td><td class="num">~5 in 10⁶ lost</td></tr>
+    <tr><td><b>C · Dedupe accuracy</b></td><td class="num">≥ 99.5%</td><td>identical-alert collapse rate</td><td class="num">0.5% leak through</td></tr>
+    <tr><td><b>D · ACK propagation</b></td><td class="num">≤ 10 s global</td><td>ack click → all regions consistent</td><td class="num">configurable</td></tr>
+    <tr><td><b>E · System availability</b></td><td class="num">≥ 99.99%</td><td>controller API uptime</td><td class="num">~4 min/month</td></tr>
+  </tbody>
+</table>
+
+<div class="note">
+  <span class="lbl">The hardest one — 5 nines</span>
+  99.999% delivery reliability means <em>~5 lost pages per million</em>. This is harder than the monitoring pipeline's 99.95% because a missed page = humans don't know about an outage. It demands multi-region active-active + multi-channel fallback (PagerDuty → SMS → Slack → mobile push). No single vendor or region failure can prevent delivery.
+</div>
+</section>
+
+<!-- ===== 2. CAPACITY ===== -->
+<section>
+<h2 id="capacity">2 · Capacity model (the NALSD math)</h2>
+
+<h3 id="ingest">2.1 — Alert ingestion rate</h3>
+<div class="calc">
+  <h4>Throughput at the alert gateway</h4>
+<pre><code>daily alerts ingested        = 5,000,000
+sustained avg                = 5M / 86,400 s = 58 alerts/s
+peak (storm factor 20×)      = 1,160 alerts/s ≈ 1 K/s
+absolute worst (region-wide) = 10,000 alerts/s (cascading outage)
+
+avg alert payload (JSON):
+  fingerprint (sha256)          = 64 B
+  service · severity · tenant   = 40 B
+  source (prom/sd/dd)           = 16 B
+  labels (map of 10 KV pairs)   = 200 B
+  annotation (human description)= 280 B
+  metadata + timestamp + trace  = 100 B
+  ─────────────────────────────────
+  avg alert size                = 700 B
+
+ingest bytes/sec at peak = 1,160 × 700 = 812 KB/s ≈ 6.5 Mbps
+absolute worst case      = 10,000 × 700 = 7 MB/s ≈ 56 Mbps
+
+per region (5 regions, weighted 35/25/20/12/8):
+us-west-2 peak               = 1,160 × 0.35 = 406 alerts/s</code></pre>
+  <div class="verdict">VERDICT · Volume is TINY by data-pipeline standards. 6.5 Mbps peak. Reliability matters far more than throughput here.</div>
+</div>
+
+<div class="calc">
+  <h4>Gateway capacity</h4>
+<pre><code>per-gateway capacity        = 2,000 alerts/s (Go service, validation + dedupe lookup)
+gateways needed at peak     = 1,160 / 2,000 = 1 (rounded to 3 per region for N+2)
+fleet across 5 regions      = 15 gateway instances
+
+absolute worst case (10k/s):
+  needs 5 gateways/region   → HPA scales 3 → 8 in 30 s</code></pre>
+  <div class="verdict">VERDICT · 15 gateways base, scales to ~40 during major incidents.</div>
+</div>
+
+<h3 id="dedupe">2.2 — Deduplication math</h3>
+
+<div class="calc">
+  <h4>How much does dedupe save?</h4>
+<pre><code>raw alert volume / day            = 5,000,000
+empirical dedupe ratio (measured) = ~95%
+  → 5,000,000 × 0.95 = 4,750,000 dedup'd
+  → 5,000,000 × 0.05 = 250,000 unique alerts/day
+
+after correlation grouping (composite alerts):
+  ~10× reduction on top of dedupe (clustering by root cause)
+  → 250,000 / 10 = 25,000 alert groups/day
+
+after priority routing (P2/P3 → ticket, not page):
+  P0/P1 (pageable) ≈ 12% of groups
+  → 25,000 × 0.12 = 3,000 pages/day
+
+so the funnel is:
+  5,000,000  raw alerts (incoming firehose)
+    250,000  unique after dedupe              (20× reduction)
+     25,000  alert groups after correlation   (10× reduction)
+      3,000  actual human pages               (8× reduction)
+
+aggregate noise reduction: 5,000,000 / 3,000 = 1,667× compression</code></pre>
+  <div class="verdict">VERDICT · The funnel turns a firehose of 5M alerts into 3K actionable pages. This is the entire point of the system.</div>
+</div>
+
+<div class="calc">
+  <h4>Dedupe cache sizing</h4>
+<pre><code>active fingerprints in cache:
+  rolling window           = 15 min (alert flap protection)
+  unique alerts in 15 min  = 250k/day × (15/1440) = 2,600
+  with cache overhead 3×   = ~8,000 active entries
+  per-entry size           = 256 B (fingerprint + meta + count)
+  total cache size         = 2 MB  ← fits easily in any Redis
+
+Redis ops/sec:
+  reads (every alert checks dedupe) = 1,160 reads/s peak
+  writes (new alert, count update)  = ~60 writes/s
+  Redis single instance handles 100k ops/s → 1000× headroom</code></pre>
+  <div class="verdict">VERDICT · Redis dedupe layer is trivial. 2 MB cache, &lt; 1k ops/s peak.</div>
+</div>
+
+<h3 id="correlate">2.3 — Correlation engine (causality)</h3>
+
+<div class="calc">
+  <h4>Service dependency graph size</h4>
+<pre><code>services at LinkedIn         = ~500
+avg dependencies per service = 8
+graph edges                  = 500 × 8 = 4,000 directed edges
+graph storage                = 4,000 × 200 B = 800 KB total
+  → fits in memory of every correlation worker
+
+correlation query per alert:
+  1. lookup alert's service in graph        =  1 ms
+  2. fetch downstream services (BFS depth 2)= 10 ms
+  3. check active alerts in those services  = 20 ms (Redis MGET)
+  4. score correlation strength             =  5 ms
+  ──────────────────────────────────────────────
+  total per alert                            = 36 ms
+
+correlator capacity per node = 1000/36 = 28 alerts/s
+fleet at peak (1,160 alerts/s) = 1,160 / 28 = ~42 workers
+with N+2 + cross-region buffer = 50 correlator nodes</code></pre>
+  <div class="verdict">VERDICT · 50 correlator workers handle peak with headroom. Graph fits in RAM — no DB lookup per alert.</div>
+</div>
+
+<h3 id="fleet">2.4 — Fleet summary & cost</h3>
+<table>
+  <thead><tr><th>Tier</th><th>Instance</th><th>Count</th><th>$/mo (on-demand)</th><th>$/mo (3y RI)</th></tr></thead>
+  <tbody>
+    <tr><td>Alert gateway</td><td class="num">m6i.large</td><td class="num">15</td><td class="num">$1.3 K</td><td class="num">$0.5 K</td></tr>
+    <tr><td>Kafka brokers</td><td class="num">i4i.large</td><td class="num">9</td><td class="num">$5 K</td><td class="num">$1.9 K</td></tr>
+    <tr><td>Dedupe engine</td><td class="num">m6i.large</td><td class="num">12</td><td class="num">$1 K</td><td class="num">$0.4 K</td></tr>
+    <tr><td>Correlator</td><td class="num">m6i.xlarge</td><td class="num">50</td><td class="num">$8.7 K</td><td class="num">$3.3 K</td></tr>
+    <tr><td>Routing service</td><td class="num">m6i.large</td><td class="num">15</td><td class="num">$1.3 K</td><td class="num">$0.5 K</td></tr>
+    <tr><td>Notifier (multi-channel)</td><td class="num">m6i.large</td><td class="num">18</td><td class="num">$1.6 K</td><td class="num">$0.6 K</td></tr>
+    <tr><td>Redis (dedupe cache)</td><td class="num">cache.r6g.large</td><td class="num">9</td><td class="num">$2 K</td><td class="num">$0.8 K</td></tr>
+    <tr><td>Spanner (state store)</td><td class="num">—</td><td class="num">3 nodes</td><td class="num">$12 K</td><td class="num">$12 K</td></tr>
+    <tr><td>Audit Kafka + archive</td><td class="num">i4i.large + S3</td><td class="num">6 + 1 TB</td><td class="num">$3.5 K</td><td class="num">$1.4 K</td></tr>
+    <tr><td>Notification vendor cost</td><td class="num">PagerDuty + Twilio</td><td class="num">—</td><td class="num">$25 K</td><td class="num">$25 K</td></tr>
+    <tr style="background:var(--bg-alt);font-weight:700"><td>Total</td><td class="num">—</td><td class="num">~134 nodes</td><td class="num">$61 K/mo</td><td class="num">$46 K/mo</td></tr>
+  </tbody>
+</table>
+
+<div class="note tip">
+  <span class="lbl">Cost note</span>
+  Notice <b>40% of cost is vendor APIs</b> (PagerDuty, Twilio SMS, etc.) not infrastructure. Compute is cheap; reliable notification delivery to humans is expensive. Worth it — a missed page can mean a multi-hour outage.
+</div>
+</section>
+
+<!-- ===== 3. ARCHITECTURE ===== -->
+<section>
+<h2 id="arch">3 · Architecture</h2>
+
+<h3 id="dataflow">3.1 — Full architecture diagram</h3>
+
+<div class="diagram">
+<svg viewBox="0 0 980 820" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#59636e"/>
+    </marker>
+    <marker id="arr-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#cf222e"/>
+    </marker>
+    <marker id="arr-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1a7f37"/>
+    </marker>
+  </defs>
+
+  <!-- Top SLO ribbon -->
+  <text x="490" y="22" text-anchor="middle" class="lbl-title" style="font-size:13px">5M alerts/day · p99 ≤ 30s delivery · 99.999% reliability · 1,667× noise reduction</text>
+
+  <!-- Step number badges -->
+  <circle cx="155" cy="60" r="11" fill="#0a66c2"/>
+  <text x="155" y="64" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">1</text>
+  <circle cx="490" cy="60" r="11" fill="#0a66c2"/>
+  <text x="490" y="64" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">2</text>
+  <circle cx="820" cy="60" r="11" fill="#0a66c2"/>
+  <text x="820" y="64" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">3</text>
+  <circle cx="490" cy="200" r="11" fill="#0a66c2"/>
+  <text x="490" y="204" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">4</text>
+  <circle cx="155" cy="335" r="11" fill="#0a66c2"/>
+  <text x="155" y="339" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">5</text>
+  <circle cx="490" cy="335" r="11" fill="#0a66c2"/>
+  <text x="490" y="339" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">6</text>
+  <circle cx="820" cy="335" r="11" fill="#0a66c2"/>
+  <text x="820" y="339" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">7</text>
+  <circle cx="490" cy="495" r="11" fill="#0a66c2"/>
+  <text x="490" y="499" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">8</text>
+  <circle cx="155" cy="665" r="11" fill="#0a66c2"/>
+  <text x="155" y="669" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">9</text>
+  <circle cx="820" cy="665" r="11" fill="#0a66c2"/>
+  <text x="820" y="669" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">10</text>
+
+  <!-- ============ ROW 1: Alert sources · Gateway · DLQ ============ -->
+  <g>
+    <rect x="20" y="85" width="270" height="80" rx="6" class="box-fill-gray"/>
+    <text x="155" y="108" text-anchor="middle" class="lbl-title">Alert sources</text>
+    <text x="155" y="125" text-anchor="middle" class="lbl-sub">Prometheus · Stackdriver</text>
+    <text x="155" y="141" text-anchor="middle" class="lbl-sub">Datadog · NewRelic · custom</text>
+    <text x="155" y="157" text-anchor="middle" class="lbl-meta">webhooks · gRPC · TLS auth</text>
+  </g>
+
+  <g>
+    <rect x="320" y="85" width="340" height="80" rx="6" class="box-fill-blue"/>
+    <text x="490" y="108" text-anchor="middle" class="lbl-title">Alert gateway (multi-region)</text>
+    <text x="490" y="125" text-anchor="middle" class="lbl-sub">auth · rate limit · schema normalize</text>
+    <text x="490" y="141" text-anchor="middle" class="lbl-sub">enrich (team owner · runbook URL)</text>
+    <text x="490" y="157" text-anchor="middle" class="lbl-meta">15 nodes · 2k alerts/s each · HPA to 40</text>
+  </g>
+
+  <g>
+    <rect x="680" y="85" width="280" height="80" rx="6" class="box-fill-red"/>
+    <text x="820" y="108" text-anchor="middle" class="lbl-title">DLQ (malformed)</text>
+    <text x="820" y="125" text-anchor="middle" class="lbl-sub">bad schema · auth fail · over quota</text>
+    <text x="820" y="141" text-anchor="middle" class="lbl-sub">depth alert + auto-replay valid</text>
+    <text x="820" y="157" text-anchor="middle" class="lbl-meta">retained 7 days</text>
+  </g>
+
+  <!-- ============ ROW 2: Kafka ============ -->
+  <g>
+    <rect x="20" y="225" width="940" height="80" rx="6" class="box-fill-green"/>
+    <text x="490" y="248" text-anchor="middle" class="lbl-title" style="font-size:13px">Kafka — raw-alerts (durable, multi-region)</text>
+    <text x="490" y="266" text-anchor="middle" class="lbl-sub">partitioned by hash(service + fingerprint) · 500 partitions · 3× replication</text>
+    <text x="490" y="282" text-anchor="middle" class="lbl-sub">MirrorMaker2 cross-region async · 7-day retention</text>
+    <text x="490" y="298" text-anchor="middle" class="lbl-meta">9 brokers · 1k alerts/s peak · 7-day replay window</text>
+  </g>
+
+  <!-- ============ ROW 3: Dedupe · Correlate · Route ============ -->
+  <g>
+    <rect x="20" y="360" width="280" height="120" rx="6" class="box-fill-purple"/>
+    <text x="160" y="383" text-anchor="middle" class="lbl-title">Deduplication engine</text>
+    <text x="160" y="400" text-anchor="middle" class="lbl-sub">fingerprint cache (Redis)</text>
+    <text x="160" y="415" text-anchor="middle" class="lbl-sub">15-min rolling window</text>
+    <text x="160" y="432" text-anchor="middle" class="lbl-sub">storm prevention: 10/min/svc cap</text>
+    <text x="160" y="450" text-anchor="middle" class="lbl-meta">12 nodes · 2 MB cache</text>
+    <text x="160" y="465" text-anchor="middle" class="lbl-meta">5M → 250K (20× reduction)</text>
+  </g>
+
+  <g>
+    <rect x="320" y="360" width="340" height="120" rx="6" class="box-fill-purple"/>
+    <text x="490" y="383" text-anchor="middle" class="lbl-title">Correlation &amp; grouping (causality engine)</text>
+    <text x="490" y="400" text-anchor="middle" class="lbl-sub">service dependency graph (real-time)</text>
+    <text x="490" y="415" text-anchor="middle" class="lbl-sub">temporal window: 60 s post-root cause</text>
+    <text x="490" y="432" text-anchor="middle" class="lbl-sub">topological correlation (BFS depth 2)</text>
+    <text x="490" y="450" text-anchor="middle" class="lbl-meta">50 nodes · 4k graph edges in RAM</text>
+    <text x="490" y="465" text-anchor="middle" class="lbl-meta">250K → 25K (10× reduction · composite alerts)</text>
+  </g>
+
+  <g>
+    <rect x="680" y="360" width="280" height="120" rx="6" class="box-fill-purple"/>
+    <text x="820" y="383" text-anchor="middle" class="lbl-title">Priority + routing</text>
+    <text x="820" y="400" text-anchor="middle" class="lbl-sub">severity map: P0/P1/P2/P3</text>
+    <text x="820" y="415" text-anchor="middle" class="lbl-sub">on-call scheduler lookup</text>
+    <text x="820" y="432" text-anchor="middle" class="lbl-sub">team rotation + tz awareness</text>
+    <text x="820" y="450" text-anchor="middle" class="lbl-meta">15 nodes · stateless</text>
+    <text x="820" y="465" text-anchor="middle" class="lbl-meta">25K → 3K pages (8× reduction)</text>
+  </g>
+
+  <!-- ============ ROW 4: Notifier (channels) ============ -->
+  <g>
+    <rect x="20" y="520" width="940" height="100" rx="6" class="box-fill-orange"/>
+    <text x="490" y="543" text-anchor="middle" class="lbl-title" style="font-size:13px">Multi-channel notifier (delivery fanout)</text>
+
+    <rect x="40" y="555" width="220" height="55" rx="4" fill="#fff" stroke="#fd8c73"/>
+    <text x="150" y="573" text-anchor="middle" class="lbl-title">PRIMARY</text>
+    <text x="150" y="590" text-anchor="middle" class="lbl-sub">PagerDuty · Email SMTP</text>
+    <text x="150" y="603" text-anchor="middle" class="lbl-meta">circuit breaker · retry backoff</text>
+
+    <rect x="285" y="555" width="220" height="55" rx="4" fill="#fff" stroke="#fd8c73"/>
+    <text x="395" y="573" text-anchor="middle" class="lbl-title">SECONDARY</text>
+    <text x="395" y="590" text-anchor="middle" class="lbl-sub">Slack · MS Teams webhooks</text>
+    <text x="395" y="603" text-anchor="middle" class="lbl-meta">rich formatting · action buttons</text>
+
+    <rect x="530" y="555" width="220" height="55" rx="4" fill="#fff" stroke="#fd8c73"/>
+    <text x="640" y="573" text-anchor="middle" class="lbl-title">FALLBACK</text>
+    <text x="640" y="590" text-anchor="middle" class="lbl-sub">SMS · push · phone call</text>
+    <text x="640" y="603" text-anchor="middle" class="lbl-meta">P0/P1 only · last resort</text>
+
+    <rect x="775" y="555" width="170" height="55" rx="4" fill="#fff" stroke="#fd8c73"/>
+    <text x="860" y="573" text-anchor="middle" class="lbl-title">DELIVERY</text>
+    <text x="860" y="590" text-anchor="middle" class="lbl-sub">strategy chain</text>
+    <text x="860" y="603" text-anchor="middle" class="lbl-meta">P→S→F if no ACK</text>
+  </g>
+
+  <!-- ============ ROW 5: State + Audit + On-call ============ -->
+  <g>
+    <rect x="40" y="690" width="280" height="100" rx="6" class="box-fill-blue"/>
+    <text x="180" y="713" text-anchor="middle" class="lbl-title">State store (Spanner)</text>
+    <text x="180" y="730" text-anchor="middle" class="lbl-sub">FIRING · ACKED · RESOLVED</text>
+    <text x="180" y="746" text-anchor="middle" class="lbl-sub">ESCALATED · SUPPRESSED</text>
+    <text x="180" y="763" text-anchor="middle" class="lbl-meta">global consistency · CRDT for ACK sync</text>
+    <text x="180" y="778" text-anchor="middle" class="lbl-meta">3 nodes · ACK propagation &lt; 10 s</text>
+  </g>
+
+  <g>
+    <rect x="340" y="690" width="300" height="100" rx="6" class="box-fill-yellow"/>
+    <text x="490" y="713" text-anchor="middle" class="lbl-title">Audit + analytics</text>
+    <text x="490" y="730" text-anchor="middle" class="lbl-sub">event-sourced Kafka · 1y retention</text>
+    <text x="490" y="746" text-anchor="middle" class="lbl-sub">time-to-ack · MTTR · FP rate</text>
+    <text x="490" y="763" text-anchor="middle" class="lbl-meta">channel success rate · team scoreboard</text>
+    <text x="490" y="778" text-anchor="middle" class="lbl-meta">feeds SLO tracker</text>
+  </g>
+
+  <g>
+    <rect x="660" y="690" width="300" height="100" rx="6" class="box-fill-green"/>
+    <text x="810" y="713" text-anchor="middle" class="lbl-title">On-call engineer</text>
+    <text x="810" y="730" text-anchor="middle" class="lbl-sub">receives 1 composite page</text>
+    <text x="810" y="746" text-anchor="middle" class="lbl-sub">acks via PD or Slack button</text>
+    <text x="810" y="763" text-anchor="middle" class="lbl-meta">links to dashboards · runbook · trace</text>
+    <text x="810" y="778" text-anchor="middle" class="lbl-meta">ack flows back via state store globally</text>
+  </g>
+
+  <!-- ============ ARROWS ============ -->
+  <path d="M290,125 L320,125" class="arrow"/>
+  <path d="M660,110 L680,105" class="arrow-dashed"/>
+  <path d="M490,165 L490,225" class="arrow"/>
+  <path d="M490,305 L490,360" class="arrow"/>
+  <path d="M300,420 L320,420" class="arrow"/>
+  <path d="M660,420 L680,420" class="arrow"/>
+  <path d="M820,480 L820,520" class="arrow"/>
+  <path d="M150,610 L180,690" class="arrow"/>
+  <path d="M395,610 L490,690" class="arrow"/>
+  <path d="M640,610 L810,690" class="arrow-green"/>
+  <path d="M810,778 Q900,760 900,720 Q900,690 800,690" class="arrow-green" stroke-dasharray="3,3"/>
+  <text x="912" y="730" class="lbl-meta" fill="#1a7f37">ACK back</text>
+
+</svg>
+<div class="diagram-cap">Fig 1 · Complete global incident response system. Numbered circles map to the step-by-step flow in §3.2. The funnel is the entire story: 5M alerts → 250K dedup'd → 25K composite groups → 3K actionable pages → 1 paged engineer per incident.</div>
+</div>
+
+<!-- 3.2 STEP BY STEP FLOW -->
+<h3 id="flow">3.2 — Step-by-step flow (the numbered walkthrough)</h3>
+
+<p>Following the numbered blue badges in Fig 1. Concrete example: <b>the Profile DB has a CPU spike. Within 90 seconds, 12,000 related alerts fire across 8 dependent services. The on-call engineer receives exactly ONE page that says "Profile DB CPU high (root cause), 8 downstream services affected."</b></p>
+
+<div class="flow-steps">
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Alert sources fire webhooks</div>
+      <div class="desc">Profile DB's Prometheus instance evaluates a rule: <code>node_cpu_usage{service="profile-db"} &gt; 90% for 1m</code>. The rule fires and Prometheus posts an alert webhook to our gateway. Simultaneously, Datadog (which monitors the same DB from outside) fires its own alert for the same condition. Stackdriver fires another for downstream API error rate climbing.<br><br>Each source posts an HTTPS webhook with its own payload schema — Prometheus uses its native format, Datadog uses its own JSON, Stackdriver uses GCP's structure. The system accepts all of them.</div>
+      <div class="tech">POST /v1/alert · TLS · auth header · body: {fingerprint, service, severity, labels, annotations}</div>
+      <div class="nums">
+        <span class="kv">sources · <b>Prom · Stackdriver · Datadog · custom</b></span>
+        <span class="kv">avg payload · <b>700 B</b></span>
+        <span class="kv">peak rate · <b>~1k alerts/s</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Alert gateway authenticates, normalizes, enriches</div>
+      <div class="desc">The gateway does five things in sequence: (a) <b>verify mTLS</b> or webhook auth header, (b) <b>rate-limit</b> per source (one buggy Prometheus rule can't drown the system), (c) <b>schema normalize</b> — translate each source's format to our common alert schema, (d) <b>schema validate</b> — bad payload → DLQ-0, (e) <b>enrich</b> with team owner (from service registry), runbook URL, related dashboards, recent deploys.<br><br>Output: a uniform alert event regardless of source. This is the contract that makes everything downstream simple.</div>
+      <div class="tech">verify_auth() → rate_limit(source) → normalize_to_common_schema() → enrich(team_owner, runbook) → kafka.produce(raw-alerts)</div>
+      <div class="nums">
+        <span class="kv">budget · <b>50 ms p99</b></span>
+        <span class="kv">fleet · <b>15 nodes · HPA to 40</b></span>
+        <span class="kv">rejected → <b>DLQ-0</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">DLQ catches malformed alerts</div>
+      <div class="desc">Auth failures, schema mismatches, oversize payloads, and over-quota tenants land in DLQ-0. The DLQ has its own <b>depth-growth alarm</b> — if it grows faster than 10/sec, something is systematically broken (a new monitoring system mis-configured, or an attacker probing endpoints) and SRE gets paged.<br><br>Valid-but-flagged alerts can be replayed after a manual schema fix; truly bad ones (auth fail) are purged after 7 days.</div>
+      <div class="tech">retained 7 days · auto-replay on schema fix · depth-growth alert at 10/s</div>
+      <div class="nums">
+        <span class="kv">retention · <b>7 days</b></span>
+        <span class="kv">replay · <b>self-service via API</b></span>
+        <span class="kv">audit · <b>every rejection logged</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Kafka durably buffers raw alerts</div>
+      <div class="desc">Normalized alerts land in the <code>raw-alerts</code> Kafka topic. Partitioned by <code>hash(service + fingerprint)</code> so alerts about the same condition land on the same partition — gives deterministic ordering for dedupe downstream.<br><br><b>Why Kafka here:</b> alerts must NEVER be lost. If the dedupe/correlation/notifier pipeline crashes, alerts queue in Kafka with 7-day retention. We can replay everything once the downstream is healthy. This is what unlocks 5-nines reliability.</div>
+      <div class="tech">topic: raw-alerts · partition: hash(service + fingerprint) · ACK: all · 3× replication</div>
+      <div class="nums">
+        <span class="kv">brokers · <b>9 · 3× repl</b></span>
+        <span class="kv">retention · <b>7 days (replay window)</b></span>
+        <span class="kv">budget · <b>500 ms</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Deduplication engine collapses identical alerts</div>
+      <div class="desc">For our Profile DB example: Prometheus + Datadog + Stackdriver all fire alerts with effectively the same fingerprint (<code>profile-db-cpu-high</code>). The dedupe engine looks up the fingerprint in Redis (15-min rolling window). First arrival → cache miss → forward, mark "active." Second arrival within 15 min → cache hit → increment count, drop the alert (but track that it fired).<br><br>For the storm scenario (12,000 alerts in 90 s), most are dedup'd to a few hundred unique fingerprints. Storm prevention also caps each service at 10 unique alerts/min — if a service emits 50 unique fingerprints in 1 minute, the system suppresses the excess and emits one meta-alert "service X is in storm state."</div>
+      <div class="tech">redis.SET fingerprint NX EX 900 → if exists: INCR count, drop; else: forward to correlator</div>
+      <div class="nums">
+        <span class="kv">window · <b>15 min rolling</b></span>
+        <span class="kv">reduction · <b>~20× (5M → 250K)</b></span>
+        <span class="kv">storm cap · <b>10/min per service</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Correlation engine groups by causality</div>
+      <div class="desc">This is the <b>staff-level magic</b>. Each unique alert enters the causality engine, which does three things:<br><br>(a) <b>Service dependency lookup:</b> "What depends on profile-db?" → returns [profile-api, search, feed-ranker, ...] via BFS on the dependency graph.<br><br>(b) <b>Temporal correlation:</b> When the Profile DB alert fires at T, the engine opens a 60-second window. Any alerts arriving in [T, T+60s] from <em>downstream</em> services are topologically tagged as "likely caused by profile-db incident."<br><br>(c) <b>Composite alert generation:</b> Instead of forwarding 8 separate alerts, the engine emits ONE enriched composite:<br><br><i>[P0] Profile DB CPU high — root cause</i><br><i>Downstream impact: API frontend (high error rate), Search (high latency), Feed-ranker (5xx spike)</i><br><br>The on-call engineer now sees ONE actionable page with the causal chain laid out, not a flood of symptoms.</div>
+      <div class="tech">depends_on(profile-db) → [api, search, feed-ranker] · within 60s window: group as composite · emit single P0 with full impact list</div>
+      <div class="nums">
+        <span class="kv">graph edges · <b>~4000 in memory</b></span>
+        <span class="kv">temporal window · <b>60 s</b></span>
+        <span class="kv">reduction · <b>~10× (250K → 25K)</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Priority + routing assigns severity and on-call</div>
+      <div class="desc">The composite alert needs a severity and a destination. The routing service:<br><br>(a) Looks up severity in the SLO config — Profile DB has SLO of 99.95% availability; CPU saturation that affects availability = <span class="sev-chip p0">P0</span> = page immediately.<br>(b) Resolves the on-call rotation for the Profile platform team via the on-call scheduler (Profile platform's on-call right now is "bob@" in eu-west region; primary contact = phone + PagerDuty).<br>(c) Applies any business-hour or timezone rules (e.g. <span class="sev-chip p2">P2</span> alerts during business hours only; outside business hours they wait until morning).<br>(d) Outputs the routing decision: <code>{composite_id, severity: P0, recipients: [bob@, escalation: alice@], channels: [pagerduty, sms, slack]}</code>.</div>
+      <div class="tech">slo_lookup(service) → severity · oncall_scheduler.who(team, now) → recipient · tz_check → channels</div>
+      <div class="nums">
+        <span class="kv">P0 (page immediately) · <b>~12%</b></span>
+        <span class="kv">P1 (page in 5min) · <b>~8%</b></span>
+        <span class="kv">P2/P3 (ticket only) · <b>80%</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Multi-channel notifier delivers with fallback chain</div>
+      <div class="desc">The notifier dispatches the page across multiple channels in parallel for P0/P1:<br><br><b>Primary:</b> PagerDuty API call → bob's phone rings within 5 s. If PagerDuty returns 5xx or no ACK in 15 s → try secondary.<br><b>Secondary:</b> Slack DM with action buttons (ACK / Escalate / Resolve). If no response in 15 s → try fallback.<br><b>Fallback:</b> SMS via Twilio + push notification + (for P0 only) phone call via Twilio Voice.<br><br>The delivery strategy is configurable per severity. For P0, all three layers fire in parallel — redundancy beats sequential retries when seconds matter. For P2/P3 ticket-only, just Slack DM.<br><br><b>5-nines reliability</b> comes from this redundancy: no single vendor failure (PagerDuty outage, Twilio API issues) prevents delivery.</div>
+      <div class="tech">P0 fanout: parallel[pagerduty, slack, sms] · ACK from any wins · retry chain if all fail</div>
+      <div class="nums">
+        <span class="kv">budget · <b>20 s (most of the 30s SLO)</b></span>
+        <span class="kv">vendor cost · <b>$25K/mo</b></span>
+        <span class="kv">delivery confirmation · <b>per channel</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">State store tracks alert lifecycle globally</div>
+      <div class="desc">Every state transition is written to Spanner: <code>FIRING → ACKNOWLEDGED → RESOLVED</code> (or <code>ESCALATED → SUPPRESSED</code>). Why Spanner? Because <b>global ACK propagation</b> within 10 s is required (SLI-D) — when bob clicks "ACK" in PagerDuty, the same alert in Slack must show "Acked by bob" within 10 s, regardless of which region bob is in.<br><br>For ACK conflict resolution (two engineers click ACK simultaneously from different channels), the state store uses <b>CRDTs</b> (conflict-free replicated data types) — both ACKs are recorded; whoever fires first wins the "primary acker" status; the other is logged as co-responder. No human-visible race condition.</div>
+      <div class="tech">spanner.cas(alert_id, state="ACKED", acker=bob, ts=now) WHERE state="FIRING" · CRDT merge for concurrent updates</div>
+      <div class="nums">
+        <span class="kv">Spanner nodes · <b>3 region-replicated</b></span>
+        <span class="kv">ACK propagation · <b>p95 5 s · p99 10 s</b></span>
+        <span class="kv">states tracked · <b>5 lifecycle</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Audit + analytics close the loop</div>
+      <div class="desc">Every event (alert received, dedup'd, correlated, routed, delivered, acked, resolved) flows into the audit Kafka topic with 1-year retention. The analytics pipeline computes:<br><br>• <b>Time-to-acknowledge</b> per team — slow ACK = on-call training issue<br>• <b>MTTR</b> — mean time to resolve, per service<br>• <b>False-positive rate</b> — alerts that were ACKed but never investigated → tune dedupe/correlation thresholds<br>• <b>Channel success rate</b> — if Twilio fails 0.5%, we know to budget for it<br>• <b>Team scoreboard</b> — surfaces ops health to engineering leadership<br><br>Crucially, this feedback loop tunes the correlation engine: if "Profile DB CPU high" + "API error rate" co-occur 95% of the time, the engine raises its confidence in linking them.<br><br><b>Total wall-clock time from first alert fire to bob seeing the composite on his phone: ~12 seconds.</b> Inside the 30 s SLO with 18 s margin.</div>
+      <div class="tech">analytics pipeline: time_to_ack · MTTR · FP rate · channel success · feedback loop tunes correlation thresholds</div>
+      <div class="nums">
+        <span class="kv">e2e typical · <b>~12 s</b></span>
+        <span class="kv">e2e p99 · <b>~25 s</b></span>
+        <span class="kv">SLO target · <b>p99 ≤ 30 s ✓ 18s headroom</b></span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="note tip">
+  <span class="lbl">The key design insight</span>
+  Every box in this system exists to <b>reduce cognitive load on the on-call human</b>. Dedupe kills duplicates; correlation kills symptoms-of-the-same-cause; priority kills noise; redundant channels ensure the one alert that matters reaches them. The system processes 5M alerts/day so that <em>one engineer at 3 AM sees one page</em>. Empathy for the operator is the design principle.
+</div>
+
+<!-- 3.3 CORRELATION CLOSE-UP -->
+<h3 id="correlate-detail">3.3 — Causality engine close-up (the staff-level differentiator)</h3>
+
+<p>Below is the dependency graph snippet for the Profile DB scenario. The causality engine traverses this in 60-second windows to group correlated alerts.</p>
+
+<div class="diagram">
+<svg viewBox="0 0 980 360" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arr-c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#59636e"/>
+    </marker>
+  </defs>
+
+  <!-- Root cause -->
+  <g>
+    <circle cx="490" cy="50" r="34" fill="#ffebe9" stroke="#cf222e" stroke-width="2"/>
+    <text x="490" y="48" text-anchor="middle" class="lbl-title" style="font-size:11px" fill="#cf222e">Profile DB</text>
+    <text x="490" y="62" text-anchor="middle" class="lbl-meta" fill="#cf222e">CPU high</text>
+    <text x="490" y="95" text-anchor="middle" class="lbl-sub" fill="#cf222e">T+0s · root cause</text>
+  </g>
+
+  <!-- Depth 1 -->
+  <g>
+    <circle cx="220" cy="180" r="32" fill="#fff1e5" stroke="#fd8c73"/>
+    <text x="220" y="178" text-anchor="middle" class="lbl-title" style="font-size:11px" fill="#bc4c00">Profile API</text>
+    <text x="220" y="192" text-anchor="middle" class="lbl-meta" fill="#bc4c00">latency p99</text>
+    <text x="220" y="225" text-anchor="middle" class="lbl-sub" fill="#bc4c00">T+8s · depth 1</text>
+  </g>
+  <g>
+    <circle cx="400" cy="180" r="32" fill="#fff1e5" stroke="#fd8c73"/>
+    <text x="400" y="178" text-anchor="middle" class="lbl-title" style="font-size:11px" fill="#bc4c00">Search idx</text>
+    <text x="400" y="192" text-anchor="middle" class="lbl-meta" fill="#bc4c00">errors</text>
+    <text x="400" y="225" text-anchor="middle" class="lbl-sub" fill="#bc4c00">T+12s · depth 1</text>
+  </g>
+  <g>
+    <circle cx="580" cy="180" r="32" fill="#fff1e5" stroke="#fd8c73"/>
+    <text x="580" y="178" text-anchor="middle" class="lbl-title" style="font-size:11px" fill="#bc4c00">Connect svc</text>
+    <text x="580" y="192" text-anchor="middle" class="lbl-meta" fill="#bc4c00">timeouts</text>
+    <text x="580" y="225" text-anchor="middle" class="lbl-sub" fill="#bc4c00">T+18s · depth 1</text>
+  </g>
+  <g>
+    <circle cx="760" cy="180" r="32" fill="#fff1e5" stroke="#fd8c73"/>
+    <text x="760" y="178" text-anchor="middle" class="lbl-title" style="font-size:11px" fill="#bc4c00">Notif svc</text>
+    <text x="760" y="192" text-anchor="middle" class="lbl-meta" fill="#bc4c00">lag</text>
+    <text x="760" y="225" text-anchor="middle" class="lbl-sub" fill="#bc4c00">T+25s · depth 1</text>
+  </g>
+
+  <!-- Depth 2 -->
+  <g>
+    <circle cx="120" cy="290" r="28" fill="#fff8c5" stroke="#d4a72c"/>
+    <text x="120" y="288" text-anchor="middle" class="lbl-title" style="font-size:10px" fill="#9a6700">Feed UI</text>
+    <text x="120" y="300" text-anchor="middle" class="lbl-meta" fill="#9a6700">5xx</text>
+  </g>
+  <g>
+    <circle cx="320" cy="290" r="28" fill="#fff8c5" stroke="#d4a72c"/>
+    <text x="320" y="288" text-anchor="middle" class="lbl-title" style="font-size:10px" fill="#9a6700">Feed rank</text>
+    <text x="320" y="300" text-anchor="middle" class="lbl-meta" fill="#9a6700">errors</text>
+  </g>
+  <g>
+    <circle cx="520" cy="290" r="28" fill="#fff8c5" stroke="#d4a72c"/>
+    <text x="520" y="288" text-anchor="middle" class="lbl-title" style="font-size:10px" fill="#9a6700">Jobs API</text>
+    <text x="520" y="300" text-anchor="middle" class="lbl-meta" fill="#9a6700">errors</text>
+  </g>
+  <g>
+    <circle cx="720" cy="290" r="28" fill="#fff8c5" stroke="#d4a72c"/>
+    <text x="720" y="288" text-anchor="middle" class="lbl-title" style="font-size:10px" fill="#9a6700">Email send</text>
+    <text x="720" y="300" text-anchor="middle" class="lbl-meta" fill="#9a6700">delay</text>
+  </g>
+  <g>
+    <circle cx="880" cy="290" r="28" fill="#fff8c5" stroke="#d4a72c"/>
+    <text x="880" y="288" text-anchor="middle" class="lbl-title" style="font-size:10px" fill="#9a6700">Push svc</text>
+    <text x="880" y="300" text-anchor="middle" class="lbl-meta" fill="#9a6700">queue</text>
+  </g>
+
+  <!-- Edges -->
+  <line x1="465" y1="78" x2="245" y2="155" stroke="#cf222e" stroke-width="1.5"/>
+  <line x1="480" y1="84" x2="408" y2="150" stroke="#cf222e" stroke-width="1.5"/>
+  <line x1="500" y1="84" x2="571" y2="150" stroke="#cf222e" stroke-width="1.5"/>
+  <line x1="515" y1="78" x2="735" y2="155" stroke="#cf222e" stroke-width="1.5"/>
+
+  <line x1="208" y1="208" x2="135" y2="265" stroke="#bc4c00" stroke-width="1"/>
+  <line x1="232" y1="208" x2="308" y2="265" stroke="#bc4c00" stroke-width="1"/>
+  <line x1="588" y1="208" x2="535" y2="265" stroke="#bc4c00" stroke-width="1"/>
+  <line x1="568" y1="208" x2="332" y2="265" stroke="#bc4c00" stroke-width="1"/>
+  <line x1="748" y1="208" x2="735" y2="265" stroke="#bc4c00" stroke-width="1"/>
+  <line x1="775" y1="208" x2="868" y2="265" stroke="#bc4c00" stroke-width="1"/>
+
+  <text x="20" y="345" class="lbl-sub">Causality window: 60 s post-root-cause · BFS depth 2 · alerts in red box correlated as caused by Profile DB CPU</text>
+</svg>
+<div class="diagram-cap">Fig 2 · Causality graph for the Profile DB incident. One root cause → 4 depth-1 services → 5 depth-2 services, 10 services total. Without correlation, on-call would receive 10+ separate pages. With correlation, ONE composite page with the full impact tree.</div>
+</div>
+
+<table>
+  <thead><tr><th>Without correlation</th><th>With correlation</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>10 pages, 10 different services, on-call must mentally re-construct the dependency chain.</td>
+      <td>1 page with title "[P0] Profile DB CPU high — root cause" and impact tree visible.</td>
+    </tr>
+    <tr>
+      <td>Time to root cause identification: 10–30 minutes.</td>
+      <td>Time to root cause identification: instant (it's in the page title).</td>
+    </tr>
+    <tr>
+      <td>10 separate ack actions, possibly to different on-calls.</td>
+      <td>1 ack closes the composite; downstream pages auto-suppress.</td>
+    </tr>
+    <tr>
+      <td>Alert fatigue → next outage's pages get ignored.</td>
+      <td>Each page is high signal → on-call trusts them.</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- 3.4 DELIVERY FANOUT -->
+<h3 id="delivery">3.4 — Delivery fanout strategy</h3>
+
+<p>For P0/P1, parallel fanout across channels. For lower severity, sequential. This is what unlocks 5-nines.</p>
+
+<table>
+  <thead><tr><th>Severity</th><th>Primary</th><th>Secondary (15s later if no ACK)</th><th>Fallback (30s later)</th><th>Escalation (5min if still no ACK)</th></tr></thead>
+  <tbody>
+    <tr><td><span class="sev-chip p0">P0</span> page now</td><td>PagerDuty + SMS + Slack (parallel)</td><td>Phone call</td><td>Backup on-call</td><td>Manager + tier-2</td></tr>
+    <tr><td><span class="sev-chip p1">P1</span> page 5min</td><td>PagerDuty</td><td>Slack</td><td>SMS</td><td>Backup on-call</td></tr>
+    <tr><td><span class="sev-chip p2">P2</span> ticket</td><td>Slack channel</td><td>Email digest (next morning)</td><td>—</td><td>—</td></tr>
+    <tr><td><span class="sev-chip p3">P3</span> metric</td><td>Dashboard only</td><td>—</td><td>—</td><td>—</td></tr>
+  </tbody>
+</table>
+
+<div class="note">
+  <span class="lbl">Why parallel for P0</span>
+  Sequential delivery (PD → wait 15 s → SMS → wait 15 s → call) would consume 30+ seconds before fallback fires — eating the entire SLO. Parallel fire means whichever channel succeeds first gets the ACK; the others are cancelled. This is the difference between "the on-call gets paged within 30 s" and "we deliver the page eventually" — only the first matters during a real outage.
+</div>
+
+</section>
+
+<!-- ===== 4. GAUNTLET ===== -->
+<section>
+<h2 id="gauntlet">4 · Failure gauntlet</h2>
+
+<div class="cols-2">
+  <div class="comp">
+    <div class="name">A · Alert source flood <span class="tech">SLI: A, E</span></div>
+    <div class="desc">A buggy Prometheus rule fires 10k alerts/sec from one cluster.</div>
+    <div class="row"><span class="lab">trigger</span><span>per-source rate &gt; 100/s</span></div>
+    <div class="row"><span class="lab">absorb</span><span>gateway rate limit kicks in</span></div>
+    <div class="row"><span class="lab">collapse</span><span>dedupe → ~1 alert/min</span></div>
+    <div class="row"><span class="lab">verdict</span><span>pipeline unaffected · source notified</span></div>
+  </div>
+  <div class="comp">
+    <div class="name">B · PagerDuty outage <span class="tech">SLI: B</span></div>
+    <div class="desc">PagerDuty API returns 5xx for 20 min.</div>
+    <div class="row"><span class="lab">trigger</span><span>PD success rate &lt; 95% over 1 min</span></div>
+    <div class="row"><span class="lab">absorb</span><span>circuit-break PD, route to SMS+Slack</span></div>
+    <div class="row"><span class="lab">recover</span><span>replay queued PD alerts on recovery</span></div>
+    <div class="row"><span class="lab">verdict</span><span>0 missed P0 pages</span></div>
+  </div>
+  <div class="comp">
+    <div class="name">C · Region outage <span class="tech">SLI: B, E</span></div>
+    <div class="desc">us-west-2 power event takes the region offline 45 min.</div>
+    <div class="row"><span class="lab">trigger</span><span>region health probe fail</span></div>
+    <div class="row"><span class="lab">absorb</span><span>GSLB redirects to iad/dub in &lt; 10 s</span></div>
+    <div class="row"><span class="lab">replay</span><span>MM2 backfills on recovery</span></div>
+    <div class="row"><span class="lab">verdict</span><span>alerts delayed not lost</span></div>
+  </div>
+  <div class="comp">
+    <div class="name">D · Correlation engine wrong <span class="tech">SLI: C</span></div>
+    <div class="desc">Engine groups unrelated alerts (false correlation).</div>
+    <div class="row"><span class="lab">trigger</span><span>FP rate &gt; 5% over 7 days</span></div>
+    <div class="row"><span class="lab">absorb</span><span>fall back to dedup-only (no correlation)</span></div>
+    <div class="row"><span class="lab">repair</span><span>retrain correlation model offline</span></div>
+    <div class="row"><span class="lab">verdict</span><span>extra pages but no missed ones</span></div>
+  </div>
+  <div class="comp">
+    <div class="name">E · Spanner ACK divergence <span class="tech">SLI: D</span></div>
+    <div class="desc">Two engineers ACK the same alert from different regions simultaneously.</div>
+    <div class="row"><span class="lab">trigger</span><span>concurrent ACK timestamps within 1 s</span></div>
+    <div class="row"><span class="lab">absorb</span><span>CRDT merge: both recorded, first wins primary</span></div>
+    <div class="row"><span class="lab">audit</span><span>both visible in incident log</span></div>
+    <div class="row"><span class="lab">verdict</span><span>no race · clean audit</span></div>
+  </div>
+  <div class="comp">
+    <div class="name">F · On-call asleep <span class="tech">SLI: B</span></div>
+    <div class="desc">P0 fires, primary on-call doesn't ACK within 5 min.</div>
+    <div class="row"><span class="lab">trigger</span><span>no ACK after 5 min on P0</span></div>
+    <div class="row"><span class="lab">escalate</span><span>backup on-call + manager paged</span></div>
+    <div class="row"><span class="lab">escalate 2</span><span>tier-2 + executive at 15 min</span></div>
+    <div class="row"><span class="lab">verdict</span><span>incident always reaches someone</span></div>
+  </div>
+</div>
+
+<div class="note danger">
+  <span class="lbl">Cannot defend against</span>
+  Simultaneous outage of <b>all notification vendors</b> (PagerDuty + Twilio + Slack at the same time). This is an external dependency we can't control. Mitigation: monitor vendor health independently; if &gt; 2 are down, on-call dashboards show "DEGRADED — call manually" mode.
+</div>
+</section>
+
+<!-- ===== 5. PLAYBOOK ===== -->
+<section>
+<h2 id="playbook">5 · Operational playbook</h2>
+
+<h3>5.1 — Deployment (canary)</h3>
+<table>
+  <thead><tr><th>Stage</th><th>% traffic</th><th>Soak</th><th>Auto-promote</th></tr></thead>
+  <tbody>
+    <tr><td>Shadow</td><td class="num">mirror, 0% delivery</td><td class="num">48 h</td><td>diff vs prod &lt; 0.1%</td></tr>
+    <tr><td>Canary</td><td class="num">1% alert traffic</td><td class="num">24 h</td><td>delivery latency Δ &lt; 5%</td></tr>
+    <tr><td>Regional</td><td class="num">10% (1 region)</td><td class="num">12 h</td><td>SLO burn &lt; 1×</td></tr>
+    <tr><td>Half</td><td class="num">50%</td><td class="num">6 h</td><td>auto if no SEV-2+</td></tr>
+    <tr><td>Global</td><td class="num">100%</td><td class="num">—</td><td>manual sign-off</td></tr>
+  </tbody>
+</table>
+
+<h3>5.2 — Chaos drills (quarterly)</h3>
+<ul>
+  <li><b>PagerDuty kill</b> — simulate PD 100% 5xx; verify SMS+Slack fallback within 30 s.</li>
+  <li><b>Region kill</b> — drain primary region; verify GSLB failover.</li>
+  <li><b>Alert storm injection</b> — emit 50k synthetic alerts/min; verify dedupe + storm cap.</li>
+  <li><b>Bad correlation model</b> — push a model that miscorrelates; verify auto-rollback.</li>
+  <li><b>Sleeping on-call drill</b> — simulate primary not ACKing P0; verify escalation chain.</li>
+  <li><b>Audit replay</b> — replay 24 h of audit log; verify state reconstruction matches Spanner.</li>
+</ul>
+
+<h3>5.3 — Runbook excerpt</h3>
+<pre><code># Symptom: SLI-A burning — alerts delivered > 30 s
+
+# Likely causes (ranked)
+1. PagerDuty API latency       → check vendor status dashboard
+2. Correlation engine lag      → check correlator Kafka lag
+3. Spanner CAS contention      → check Spanner monitoring
+4. Notifier rate limited       → check per-channel success rates
+5. Gateway HPA not scaling     → check pod count vs alert rate
+
+# First response (in order):
+- Confirm: dashboard 'slo-a-delivery' shows > 30 s p99
+- Scale correlator: kubectl scale ... --replicas=2x
+- Check vendor health: status.pagerduty.com, status.twilio.com
+- If vendor down: circuit-break and rely on fallback
+- Communicate: #incident-response with hypothesis
+- Escalate: tier-2 oncall if not resolving in 15 min</code></pre>
+</section>
+
+<!-- ===== 6. COMPONENTS ===== -->
+<section>
+<h2 id="components">6 · Component reference</h2>
+
+<table>
+  <thead><tr><th>Component</th><th>Tech</th><th>Scale</th><th>Failure mitigation</th><th>SLO</th></tr></thead>
+  <tbody>
+    <tr><td><b>Alert gateway</b></td><td class="num">Go service</td><td>HPA 15→40</td><td>circuit breaker · DLQ</td><td>A,E</td></tr>
+    <tr><td><b>Kafka raw-alerts</b></td><td class="num">Kafka 3.7</td><td>500 partitions</td><td>3× repl · MM2</td><td>B,E</td></tr>
+    <tr><td><b>Dedupe engine</b></td><td class="num">Go + Redis</td><td>12 nodes stateless</td><td>cache rebuild on miss</td><td>C</td></tr>
+    <tr><td><b>Correlator</b></td><td class="num">Go + in-mem graph</td><td>50 nodes</td><td>fallback to dedup-only</td><td>C</td></tr>
+    <tr><td><b>Routing service</b></td><td class="num">Go service</td><td>stateless · LB</td><td>cached on-call schedules</td><td>A</td></tr>
+    <tr><td><b>Notifier</b></td><td class="num">Go · multi-vendor</td><td>priority queue</td><td>vendor fallback chain</td><td>A,B</td></tr>
+    <tr><td><b>State store</b></td><td class="num">Spanner</td><td>3 nodes region-replicated</td><td>CRDT for ACK conflicts</td><td>D,E</td></tr>
+    <tr><td><b>Audit Kafka</b></td><td class="num">Kafka topic</td><td>per-tenant partition</td><td>3× repl · GCS archive</td><td>—</td></tr>
+    <tr><td><b>On-call scheduler</b></td><td class="num">Go + Spanner</td><td>read replicas</td><td>cached for 1 hour</td><td>A</td></tr>
+    <tr><td><b>Dashboard</b></td><td class="num">React + WebSocket</td><td>CDN</td><td>cached state</td><td>—</td></tr>
+  </tbody>
+</table>
+</section>
+
+<!-- ===== 7. TRADE-OFFS ===== -->
+<section>
+<h2 id="tradeoffs">7 · Trade-offs & open questions</h2>
+
+<div class="cols-2">
+  <div>
+    <h4>Chose</h4>
+    <ul>
+      <li><b>Semantic correlation</b> over dedup-only · cuts on-call cognitive load 10×; trade: false-correlation risk.</li>
+      <li><b>Parallel multi-channel delivery</b> for P0 · 5-nines reliability; trade: vendor cost ($25K/mo).</li>
+      <li><b>Spanner + CRDTs</b> for ACK state · global consistency in &lt; 10 s; trade: $$.</li>
+      <li><b>Service dependency graph in RAM</b> · sub-ms BFS lookups; trade: 50 nodes carry duplicated graph.</li>
+      <li><b>60-second correlation window</b> · catches downstream propagation; trade: 60 s extra alert latency for correlated alerts.</li>
+      <li><b>P0 escalation chain</b> · always reaches a human; trade: ladder takes 15+ min in worst case.</li>
+    </ul>
+  </div>
+  <div>
+    <h4>Rejected</h4>
+    <ul>
+      <li><b>Single notification channel</b> · simpler but can't hit 5 nines.</li>
+      <li><b>Dedup-only (no correlation)</b> · works but on-call drowns during real outages.</li>
+      <li><b>Custom on-call/escalation</b> · "build vs buy" — PagerDuty does this well, partner with them.</li>
+      <li><b>ML model for severity classification</b> · risky; rule-based + SLO config is auditable.</li>
+      <li><b>Synchronous cross-region Kafka</b> · would tank latency; async MM2 with replay is enough.</li>
+      <li><b>"Smart suppress" of P3 alerts during outages</b> · could hide useful signal; we let them flow.</li>
+    </ul>
+  </div>
+</div>
+
+<h3>Open questions</h3>
+<ol>
+  <li>Should the correlation engine support <b>cross-team dependencies</b>? Currently dependencies are per-service; should we model "the Profile team depends on the Platform team's auth service" at the team level for org-level views?</li>
+  <li>How do we handle <b>maintenance windows</b>? Some teams want to suppress paging during planned work, but P0 should always fire. Currently we have a binary "suppress all" switch — too coarse.</li>
+  <li>Should we offer <b>"self-resolved" auto-detection</b>? If an alert stops firing for 5 min, mark it resolved automatically. Risk: hides flapping issues.</li>
+  <li>Should the system support <b>tenant-specific delivery preferences</b>? E.g. some teams want everything to Slack first, others want PagerDuty first. Currently severity-driven only.</li>
+</ol>
+</section>
+
+<footer>
+  <div>linkedin/incident · design-doc · global-incident-response.md</div>
+  <div>nalsd · review status: <span style="color:var(--yellow)">⬤</span> in-review</div>
+</footer>
+
+</main>
+</div>
+</body>
+</html>

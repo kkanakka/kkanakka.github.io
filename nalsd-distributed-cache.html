@@ -1,0 +1,1016 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NALSD · LinkedIn Global Distributed Cache</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#ffffff;--bg-alt:#f6f8fa;--bg-code:#f6f8fa;
+  --border:#d0d7de;--border-soft:#eaeef2;
+  --ink:#1f2328;--ink-soft:#59636e;--ink-faint:#818b98;
+  --link:#0a66c2;--link-hover:#004182;
+  --green:#1a7f37;--green-bg:#dafbe1;
+  --red:#cf222e;--red-bg:#ffebe9;
+  --yellow:#9a6700;--yellow-bg:#fff8c5;
+  --purple:#6639ba;--purple-bg:#fbefff;
+  --orange:#bc4c00;--orange-bg:#fff1e5;
+  --blue-bg:#ddf4ff;
+  --shadow:0 1px 0 rgba(31,35,40,.04);
+  --mono:'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --serif:'Source Serif 4', Georgia, serif;
+  --sans:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
+a{color:var(--link);text-decoration:none}a:hover{text-decoration:underline}
+code,pre,.mono{font-family:var(--mono)}
+code{background:var(--bg-code);padding:.1em .35em;border-radius:4px;font-size:.88em;border:1px solid var(--border-soft)}
+pre{background:var(--bg-code);border:1px solid var(--border);border-radius:6px;padding:12px 14px;overflow-x:auto;font-size:12.5px;line-height:1.55;margin:0}
+
+.shell{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+aside{position:sticky;top:0;height:100vh;overflow-y:auto;border-right:1px solid var(--border);background:var(--bg);padding:18px 14px 40px}
+main{max-width:1080px;width:100%;padding:28px 40px 80px}
+@media (max-width:960px){.shell{grid-template-columns:1fr}aside{position:relative;height:auto;border-right:none;border-bottom:1px solid var(--border)}}
+
+.brand{display:flex;align-items:center;gap:10px;padding:6px 8px 16px;border-bottom:1px solid var(--border-soft);margin-bottom:12px}
+.brand-mark{width:28px;height:28px;border-radius:6px;background:var(--link);color:#fff;display:grid;place-items:center;font-weight:700;font-family:var(--mono);font-size:13px}
+.brand-title{font-weight:700;font-size:14px}
+.brand-sub{font-size:11px;color:var(--ink-soft);font-family:var(--mono)}
+.toc-group{margin:14px 0 4px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-faint);font-weight:600;padding:0 8px}
+.toc a{display:block;padding:4px 8px;border-radius:5px;color:var(--ink-soft);font-size:13px;border-left:2px solid transparent;margin-left:4px}
+.toc a:hover{background:var(--bg-alt);color:var(--ink);text-decoration:none}
+.toc a.depth-2{padding-left:18px;font-size:12.5px}
+
+.doc-head{border-bottom:1px solid var(--border);padding-bottom:18px;margin-bottom:24px}
+.crumbs{font-size:12px;color:var(--ink-soft);font-family:var(--mono);margin-bottom:8px}
+.crumbs .sep{color:var(--ink-faint);margin:0 6px}
+h1{font-family:var(--serif);font-weight:700;font-size:32px;line-height:1.15;letter-spacing:-.015em;margin:0 0 8px}
+.doc-meta{display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:12.5px;color:var(--ink-soft);font-family:var(--mono);margin-top:10px}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:999px;border:1px solid var(--border);background:var(--bg-alt);font-size:11.5px;font-family:var(--mono);color:var(--ink-soft)}
+.pill.blue{background:var(--blue-bg);border-color:#80ccff;color:#0969da}
+.pill.green{background:var(--green-bg);border-color:#a5e1b1;color:var(--green)}
+.pill.purple{background:var(--purple-bg);border-color:#d8b9ff;color:var(--purple)}
+.pill.orange{background:var(--orange-bg);border-color:#ffb077;color:var(--orange)}
+.pill.red{background:var(--red-bg);border-color:#ffaaa3;color:var(--red)}
+.pill.yellow{background:var(--yellow-bg);border-color:#e7c860;color:var(--yellow)}
+
+h2{font-family:var(--serif);font-weight:700;font-size:22px;letter-spacing:-.01em;margin:40px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border-soft);scroll-margin-top:20px}
+h3{font-family:var(--sans);font-weight:700;font-size:16px;margin:24px 0 8px;scroll-margin-top:20px}
+h4{font-family:var(--sans);font-weight:600;font-size:13.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-soft);margin:18px 0 6px}
+p{margin:0 0 12px}
+ul,ol{margin:0 0 12px;padding-left:22px}
+li{margin-bottom:4px}
+
+.note{border-left:3px solid var(--link);background:var(--blue-bg);padding:10px 14px;border-radius:0 6px 6px 0;margin:14px 0;font-size:13px}
+.note.warn{border-left-color:var(--yellow);background:var(--yellow-bg)}
+.note.danger{border-left-color:var(--red);background:var(--red-bg)}
+.note.tip{border-left-color:var(--green);background:var(--green-bg)}
+.note .lbl{font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px;font-family:var(--mono);color:var(--link)}
+.note.warn .lbl{color:var(--yellow)}
+.note.danger .lbl{color:var(--red)}
+.note.tip .lbl{color:var(--green)}
+
+table{width:100%;border-collapse:collapse;font-size:12.5px;margin:8px 0 16px;border:1px solid var(--border);border-radius:6px;overflow:hidden}
+thead{background:var(--bg-alt)}
+th,td{padding:7px 11px;text-align:left;border-bottom:1px solid var(--border-soft);vertical-align:top}
+th{font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-soft)}
+tr:last-child td{border-bottom:none}
+td.num{font-family:var(--mono);font-size:12px}
+
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0 20px}
+@media (max-width:780px){.stat-grid{grid-template-columns:repeat(2,1fr)}}
+.stat{border:1px solid var(--border);border-radius:6px;padding:12px;background:var(--bg)}
+.stat .k{font-family:var(--mono);font-size:11px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.05em}
+.stat .v{font-family:var(--serif);font-weight:700;font-size:22px;margin-top:2px;line-height:1.15}
+.stat .s{font-size:11px;color:var(--ink-soft);font-family:var(--mono);margin-top:2px}
+
+.cols-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:780px){.cols-2{grid-template-columns:1fr}}
+
+.calc{border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin:14px 0;background:var(--bg-alt);position:relative}
+.calc::before{content:"∑ NALSD";position:absolute;top:-10px;left:14px;font-family:var(--mono);font-size:10.5px;background:var(--bg);padding:2px 8px;border:1px solid var(--border);border-radius:4px;color:var(--ink-soft);letter-spacing:.05em;font-weight:600}
+.calc h4{margin-top:4px}
+.calc pre{background:var(--bg);border-color:var(--border-soft)}
+.calc .verdict{display:flex;align-items:center;gap:8px;margin-top:10px;padding:8px 12px;background:var(--bg);border:1px dashed var(--green);border-radius:6px;font-family:var(--mono);font-size:12px;color:var(--green)}
+.calc .verdict.warn{border-color:var(--yellow);color:var(--yellow)}
+
+.diagram{border:1px solid var(--border);border-radius:8px;background:var(--bg);padding:14px;margin:16px 0;box-shadow:var(--shadow)}
+.diagram-cap{font-family:var(--mono);font-size:11px;color:var(--ink-faint);margin-top:8px;text-align:center}
+.diagram svg{width:100%;height:auto;display:block}
+
+.box-fill-blue{fill:#ddf4ff;stroke:#54aeff}
+.box-fill-green{fill:#dafbe1;stroke:#4ac26b}
+.box-fill-purple{fill:#fbefff;stroke:#c297ff}
+.box-fill-orange{fill:#fff1e5;stroke:#fd8c73}
+.box-fill-red{fill:#ffebe9;stroke:#ff8182}
+.box-fill-yellow{fill:#fff8c5;stroke:#d4a72c}
+.box-fill-gray{fill:#f6f8fa;stroke:#d0d7de}
+.lbl-title{font-family:'Inter',sans-serif;font-weight:700;font-size:11.5px;fill:#1f2328}
+.lbl-sub{font-family:'JetBrains Mono',monospace;font-size:9.5px;fill:#59636e}
+.lbl-meta{font-family:'JetBrains Mono',monospace;font-size:9px;fill:#818b98}
+.arrow{stroke:#59636e;stroke-width:1.3;fill:none;marker-end:url(#arr)}
+.arrow-dashed{stroke:#cf222e;stroke-width:1.2;fill:none;stroke-dasharray:4,3;marker-end:url(#arr-red)}
+.arrow-green{stroke:#1a7f37;stroke-width:1.5;fill:none;marker-end:url(#arr-green)}
+
+.flow-steps{counter-reset:step}
+.flow-step{display:grid;grid-template-columns:36px 1fr;gap:12px;padding:14px 16px;border:1px solid var(--border);border-radius:8px;margin-bottom:10px;background:#fff}
+.flow-step .num{counter-increment:step;background:var(--link);color:#fff;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-family:var(--mono);font-weight:700;font-size:13px}
+.flow-step .num::before{content:counter(step)}
+.flow-step .body .title{font-weight:700;font-size:14px;margin-bottom:4px;font-family:var(--sans)}
+.flow-step .body .desc{font-size:12.5px;color:var(--ink-soft);margin-bottom:6px}
+.flow-step .body .tech{font-family:var(--mono);font-size:11px;background:var(--bg-alt);border:1px solid var(--border-soft);border-radius:4px;padding:5px 8px;margin-top:4px;display:inline-block;color:var(--ink);max-width:100%;overflow-x:auto}
+.flow-step .body .nums{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px}
+.flow-step .body .nums .kv{font-family:var(--mono);font-size:11px;color:var(--ink-soft)}
+.flow-step .body .nums .kv b{color:var(--ink);font-weight:700}
+
+.comp-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:12px 0}
+@media (max-width:780px){.comp-grid{grid-template-columns:1fr}}
+.comp{border:1px solid var(--border);border-radius:6px;padding:11px 13px;background:var(--bg)}
+.comp .name{font-weight:700;font-size:13px;display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.comp .name .tech{font-family:var(--mono);font-size:10.5px;color:var(--link);font-weight:500}
+.comp .desc{font-size:12px;color:var(--ink-soft);margin-bottom:6px}
+.comp .row{font-family:var(--mono);font-size:11px;color:var(--ink-soft);display:flex;justify-content:space-between;padding:2px 0;border-top:1px dashed var(--border-soft)}
+.comp .row .lab{color:var(--ink-faint)}
+
+/* Latency ladder visualizer */
+.lat-bar{display:flex;align-items:center;height:32px;border-radius:5px;margin:4px 0;font-family:var(--mono);font-size:11px;font-weight:600;color:#fff}
+.lat-bar .seg{height:100%;display:flex;align-items:center;justify-content:center;padding:0 8px}
+.lat-l1{background:var(--green);width:8%}
+.lat-l2{background:#54aeff;width:12%}
+.lat-l3{background:#fd8c73;width:30%}
+.lat-l4{background:var(--red);width:50%}
+
+footer{margin-top:50px;padding-top:18px;border-top:1px solid var(--border-soft);font-size:11.5px;color:var(--ink-faint);font-family:var(--mono);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+
+.li-strip{height:3px;background:linear-gradient(90deg,var(--link) 0,var(--link) 60%,transparent 100%);border-radius:2px;margin-bottom:14px}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:#d0d7de;border-radius:5px;border:2px solid var(--bg)}
+::-webkit-scrollbar-track{background:transparent}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<aside>
+  <div class="brand">
+    <div class="brand-mark">in</div>
+    <div>
+      <div class="brand-title">in/cache</div>
+      <div class="brand-sub">v2026.05 · nalsd</div>
+    </div>
+  </div>
+  <div class="li-strip"></div>
+  <nav class="toc">
+    <div class="toc-group">Design</div>
+    <a href="#problem">1 · Problem & SLOs</a>
+    <a href="#capacity">2 · Capacity model</a>
+    <a href="#workload" class="depth-2">2.1 Workload mix</a>
+    <a href="#memory" class="depth-2">2.2 Memory sizing</a>
+    <a href="#shards" class="depth-2">2.3 Shard count</a>
+    <a href="#network" class="depth-2">2.4 Network math</a>
+    <a href="#fleet" class="depth-2">2.5 Fleet & cost</a>
+    <a href="#arch">3 · Architecture</a>
+    <a href="#dataflow" class="depth-2">3.1 Full diagram</a>
+    <a href="#flow" class="depth-2">3.2 Step-by-step</a>
+    <a href="#hashring" class="depth-2">3.3 Consistent hashing</a>
+    <a href="#writeprop" class="depth-2">3.4 Write propagation</a>
+    <div class="toc-group">Operations</div>
+    <a href="#gauntlet">4 · Failure gauntlet</a>
+    <a href="#playbook">5 · Ops playbook</a>
+    <a href="#components">6 · Components</a>
+    <a href="#tradeoffs">7 · Trade-offs</a>
+  </nav>
+</aside>
+
+<main>
+
+<header class="doc-head">
+  <div class="crumbs">
+    <span>in/cache</span><span class="sep">/</span>
+    <span>design-docs</span><span class="sep">/</span>
+    <span>2026</span><span class="sep">/</span>
+    <span>global-distributed-cache.md</span>
+  </div>
+  <h1>Designing LinkedIn's Global Distributed Cache</h1>
+  <p style="font-size:15px;color:var(--ink-soft);margin:6px 0 0;font-family:var(--serif)">
+    A NALSD walkthrough — the tier between user-facing services (Feed, Profile, Search, InMail) and persistent stores.
+    500M users, 10M reads/sec, 1M writes/sec, p99 ≤ 5 ms regional reads, global invalidation in &lt; 1 s.
+  </p>
+  <div class="doc-meta">
+    <span class="pill blue">NALSD</span>
+    <span class="pill green">read p99 &lt; 5ms</span>
+    <span class="pill purple">10M RPS read</span>
+    <span class="pill orange">≥ 95% hit rate</span>
+    <span class="pill yellow">draft · review</span>
+    <span style="margin-left:auto">last edit · 2026-05-12 · sjc</span>
+  </div>
+</header>
+
+<!-- ===== 1. PROBLEM ===== -->
+<section>
+<h2 id="problem">1 · Problem statement & SLO contract</h2>
+
+<p>Every Feed render reads ~30 Profile records. Every Search results in 100 user-card lookups. Every InMail sent invalidates the recipient's notification count. None of these can hit Postgres directly — at 10 M reads/sec, the database fleet alone would cost more than the entire monitoring platform. The distributed cache sits between the application tier and persistent storage, absorbing the hot path. Most reads (≥ 95%) terminate in the cache and never touch a database.</p>
+
+<div class="stat-grid">
+  <div class="stat"><div class="k">Active users</div><div class="v">500 M</div><div class="s">global</div></div>
+  <div class="stat"><div class="k">Read RPS</div><div class="v">10 M</div><div class="s">peak global</div></div>
+  <div class="stat"><div class="k">Write RPS</div><div class="v">1 M</div><div class="s">peak global</div></div>
+  <div class="stat"><div class="k">Read latency</div><div class="v">&lt; 5 ms</div><div class="s">p99 regional</div></div>
+</div>
+
+<h3 id="slo">SLO contract</h3>
+
+<table>
+  <thead><tr><th>SLI</th><th>Target</th><th>Measurement</th><th>Error budget / 28d</th></tr></thead>
+  <tbody>
+    <tr><td><b>A · Read latency</b></td><td class="num">p99 ≤ 5 ms</td><td>client → cache hit → response</td><td class="num">~24h with &gt;5ms tail</td></tr>
+    <tr><td><b>B · Write propagation</b></td><td class="num">p99 ≤ 1 s</td><td>write at origin → visible all regions</td><td class="num">configurable per key class</td></tr>
+    <tr><td><b>C · Availability</b></td><td class="num">≥ 99.99%</td><td>read path uptime per region</td><td class="num">~4 min/month</td></tr>
+    <tr><td><b>D · Hit ratio</b></td><td class="num">≥ 95%</td><td>cache hits / total reads</td><td class="num">~5% misses budget</td></tr>
+    <tr><td><b>E · Data integrity</b></td><td class="num">&lt; 0.001%</td><td>stale reads beyond SLO window</td><td class="num">strict</td></tr>
+    <tr><td><b>F · Cost efficiency</b></td><td class="num">≤ $0.05</td><td>per million reads</td><td class="num">budget pressure</td></tr>
+  </tbody>
+</table>
+
+<div class="note">
+  <span class="lbl">The latency vs cost trade</span>
+  Every order of magnitude tighter on latency costs ~10× more (RAM &gt; SSD &gt; HDD). Every order of magnitude better hit rate above 95% requires exponentially more memory. The art is finding the sweet spot where reads are fast enough <em>and</em> cheap enough <em>and</em> hit rate is high enough — all three at once. SLO-F (≤ $0.05/M reads) is what keeps the design honest.
+</div>
+
+<h4>The latency ladder this design lives in</h4>
+<div class="lat-bar"><div class="seg lat-l1">RAM ~100 ns</div></div>
+<div style="font-family:var(--mono);font-size:11px;color:var(--ink-soft);margin-bottom:6px">L1 cache, JVM heap, Redis in-process</div>
+<div class="lat-bar"><div class="seg lat-l2">DC round-trip ~500 µs</div></div>
+<div style="font-family:var(--mono);font-size:11px;color:var(--ink-soft);margin-bottom:6px">App pod ↔ cache pod inside region — this is OUR budget</div>
+<div class="lat-bar"><div class="seg lat-l3">SSD random read ~100 µs</div></div>
+<div style="font-family:var(--mono);font-size:11px;color:var(--ink-soft);margin-bottom:6px">DB fallback path on cache miss</div>
+<div class="lat-bar"><div class="seg lat-l4">Cross-region ~100 ms</div></div>
+<div style="font-family:var(--mono);font-size:11px;color:var(--ink-soft);margin-bottom:14px">Cross-region read — must NEVER be in the read path</div>
+
+</section>
+
+<!-- ===== 2. CAPACITY ===== -->
+<section>
+<h2 id="capacity">2 · Capacity model (the NALSD math)</h2>
+
+<h3 id="workload">2.1 — Workload mix</h3>
+<div class="calc">
+  <h4>Bytes per second across reads + writes</h4>
+<pre><code>peak read RPS          = 10,000,000
+peak write RPS         =  1,000,000  (10% of reads, typical R/W ratio)
+
+avg value size (profile + session data):
+  user_id (key)            =  16 B
+  profile JSON blob        = 2 KB  (name, headline, photo URL, etc.)
+  session token blob       = 512 B
+  notification counts      = 128 B
+  ─────────────────────────────────
+  avg value per key        = 2 KB (round up, simple)
+
+read traffic bytes/sec    = 10e6 × 2 KB = 20 GB/s ≈ 160 Gbps global
+write traffic bytes/sec   =  1e6 × 2 KB =  2 GB/s ≈  16 Gbps global
+
+per region (5 regions, weighted 35/25/20/12/8):
+us-west-2 peak read       = 20 × 0.35 = 7 GB/s ≈ 56 Gbps
+us-west-2 peak write      =  2 × 0.35 = 700 MB/s ≈ 5.6 Gbps</code></pre>
+  <div class="verdict">VERDICT · 56 Gbps top region. 4× 25Gbps NICs per rack handles it.</div>
+</div>
+
+<h3 id="memory">2.2 — Memory sizing (the hot working set)</h3>
+<div class="calc">
+  <h4>How much RAM do we need?</h4>
+<pre><code>active users globally     = 500,000,000
+per-user cache footprint:
+  profile blob             = 2 KB
+  3 recent sessions        = 1.5 KB
+  notification counts      = 0.5 KB
+  ─────────────────────────────────
+  per-user data            = 4 KB
+
+theoretical 100% hit working set:
+  500M × 4 KB              = 2 TB
+
+practical observation: 90/10 rule
+  90% of reads hit 10% of users (top 50M users)
+  hot working set          = 50M × 4 KB = 200 GB
+  warm working set         = 150M × 4 KB = 600 GB
+                              (cumulative 95% of reads → keep in cache)
+
+cache size target          = 800 GB hot working set per region (largest)
+  → covers 95% hit rate for top region (us-west-2)
+  → smaller regions need proportionally less
+
+with 2× replication for durability + 30% growth headroom:
+  per region: 800 × 2 × 1.3 = 2.1 TB</code></pre>
+  <div class="verdict">VERDICT · 2.1 TB per top region. Cache miss budget (5%) absorbs the long tail of cold users.</div>
+</div>
+
+<h3 id="shards">2.3 — Shard count and node sizing</h3>
+<div class="calc">
+  <h4>How many Redis nodes per region?</h4>
+<pre><code>per-Redis-node specs (cache.r6g.4xlarge):
+  memory                    = 128 GB
+  network                   = 12 Gbps (1.5 GB/s)
+  ops/sec capacity          = ~150,000 ops/sec sustained
+                            ← BOUNDED by ops/sec, not memory
+
+shards needed by MEMORY (top region):
+  2.1 TB / 128 GB           = 17 shards
+
+shards needed by OPS (top region):
+  read RPS top region       = 10M × 0.35 = 3,500,000 RPS
+  per-shard cap (150k)      = 24 shards
+
+  → ops bounds, not memory → need 24 shards
+
+with 2 replicas per shard (master + 2 replicas):
+  nodes per top region      = 24 × 3 = 72 nodes
+
+total fleet (5 regions, scaled by traffic share):
+  pdx (35%) = 72 nodes
+  dub (25%) = 51 nodes
+  iad (20%) = 41 nodes
+  sin (12%) = 25 nodes
+  bom  (8%) = 17 nodes
+  ──────────────────────────
+  total                    = 206 cache nodes</code></pre>
+  <div class="verdict">VERDICT · 206 cache nodes globally. Ops/sec, not memory, is the binding constraint at this scale.</div>
+</div>
+
+<h3 id="network">2.4 — Network sizing</h3>
+<div class="calc">
+  <h4>Intra-region + cross-region traffic</h4>
+<pre><code>intra-region read fan-out (top region):
+  app pods → cache pods    = 7 GB/s (one request, one response)
+  with response = 2 KB     = same 7 GB/s back
+  total bidirectional       = 14 GB/s ≈ 112 Gbps
+  per-rack with 100 GbE TOR  → 2 racks accommodate
+
+cross-region invalidation traffic (writes):
+  global write RPS          = 1M writes/s
+  invalidation message size = 64 B (key + timestamp + region origin)
+  bytes/sec global          = 1M × 64 B = 64 MB/s ≈ 512 Mbps
+
+  per region to peer regions (4 peers via MM2):
+  64 MB/s × 4 dest peers    = 256 MB/s ≈ 2 Gbps cross-region
+  AWS egress cost @ $0.02/GB = $4,400/mo per region
+  total cross-region cost    = ~$22K/mo
+
+note: this is INVALIDATION traffic, NOT full value replication
+  → just key + tombstone, not 2 KB blob
+  → key insight: regions re-fetch from local DB on miss</code></pre>
+  <div class="verdict">VERDICT · Cross-region traffic is small (2 Gbps per region) because we send invalidations, not values.</div>
+</div>
+
+<h3 id="fleet">2.5 — Fleet summary & cost</h3>
+<table>
+  <thead><tr><th>Tier</th><th>Instance</th><th>Count</th><th>$/mo (on-demand)</th><th>$/mo (3y RI)</th></tr></thead>
+  <tbody>
+    <tr><td>Regional proxy</td><td class="num">m6i.2xlarge</td><td class="num">40</td><td class="num">$12 K</td><td class="num">$4.5 K</td></tr>
+    <tr><td>Cache nodes (Redis)</td><td class="num">cache.r6g.4xlarge</td><td class="num">206</td><td class="num">$340 K</td><td class="num">$129 K</td></tr>
+    <tr><td>Write coordinator</td><td class="num">m6i.xlarge</td><td class="num">15</td><td class="num">$2.6 K</td><td class="num">$1 K</td></tr>
+    <tr><td>Kafka (invalidation bus)</td><td class="num">i4i.large</td><td class="num">9</td><td class="num">$5 K</td><td class="num">$1.9 K</td></tr>
+    <tr><td>Warming service</td><td class="num">m6i.large</td><td class="num">12</td><td class="num">$1 K</td><td class="num">$0.4 K</td></tr>
+    <tr><td>DB fallback (read replicas)</td><td class="num">db.r6g.4xlarge</td><td class="num">25</td><td class="num">$78 K</td><td class="num">$30 K</td></tr>
+    <tr><td>Cross-region egress</td><td class="num">—</td><td class="num">2 Gbps avg</td><td class="num">$22 K</td><td class="num">$22 K</td></tr>
+    <tr style="background:var(--bg-alt);font-weight:700"><td>Total</td><td class="num">—</td><td class="num">~307 nodes</td><td class="num">$461 K/mo</td><td class="num">$189 K/mo</td></tr>
+  </tbody>
+</table>
+
+<div class="calc">
+  <h4>Cost per million reads (the SLI-F check)</h4>
+<pre><code>monthly reads             = 10M RPS × 86,400 × 30 = 26 trillion reads/month
+
+cost per million reads (on-demand):
+  $461,000 / 26,000,000   = $0.0177 per million reads
+  ✓ well under $0.05 SLO target
+
+cost per million reads (RI):
+  $189,000 / 26,000,000   = $0.0073 per million reads
+  ✓ ~7× cheaper than budget</code></pre>
+  <div class="verdict">VERDICT · $0.007/M reads with RIs. Far under SLO-F target of $0.05.</div>
+</div>
+</section>
+
+<!-- ===== 3. ARCHITECTURE ===== -->
+<section>
+<h2 id="arch">3 · Architecture</h2>
+
+<h3 id="dataflow">3.1 — Full architecture diagram</h3>
+
+<div class="diagram">
+<svg viewBox="0 0 980 820" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#59636e"/>
+    </marker>
+    <marker id="arr-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#cf222e"/>
+    </marker>
+    <marker id="arr-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1a7f37"/>
+    </marker>
+  </defs>
+
+  <!-- Top SLO ribbon -->
+  <text x="490" y="22" text-anchor="middle" class="lbl-title" style="font-size:13px">500M users · 10M reads/s · 1M writes/s · p99 ≤ 5ms · ≥ 95% hit rate · global write &lt; 1s</text>
+
+  <!-- Step badges -->
+  <circle cx="155" cy="58" r="11" fill="#0a66c2"/>
+  <text x="155" y="62" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">1</text>
+  <circle cx="490" cy="58" r="11" fill="#0a66c2"/>
+  <text x="490" y="62" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">2</text>
+  <circle cx="820" cy="58" r="11" fill="#0a66c2"/>
+  <text x="820" y="62" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">3</text>
+  <circle cx="490" cy="200" r="11" fill="#0a66c2"/>
+  <text x="490" y="204" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">4</text>
+  <circle cx="155" cy="345" r="11" fill="#0a66c2"/>
+  <text x="155" y="349" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">5</text>
+  <circle cx="820" cy="345" r="11" fill="#0a66c2"/>
+  <text x="820" y="349" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">6</text>
+  <circle cx="490" cy="490" r="11" fill="#0a66c2"/>
+  <text x="490" y="494" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">7</text>
+  <circle cx="155" cy="630" r="11" fill="#0a66c2"/>
+  <text x="155" y="634" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">8</text>
+  <circle cx="490" cy="630" r="11" fill="#0a66c2"/>
+  <text x="490" y="634" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">9</text>
+  <circle cx="820" cy="630" r="11" fill="#0a66c2"/>
+  <text x="820" y="634" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">10</text>
+
+  <!-- ============ ROW 1: Clients · Proxy · Hash ring lookup ============ -->
+  <g>
+    <rect x="20" y="80" width="270" height="80" rx="6" class="box-fill-gray"/>
+    <text x="155" y="103" text-anchor="middle" class="lbl-title">Client services</text>
+    <text x="155" y="121" text-anchor="middle" class="lbl-sub">Feed · Search · InMail · Profile</text>
+    <text x="155" y="137" text-anchor="middle" class="lbl-sub">Jobs · Notif · Connect</text>
+    <text x="155" y="155" text-anchor="middle" class="lbl-meta">~2 M app pods · gRPC client SDK</text>
+  </g>
+
+  <g>
+    <rect x="320" y="80" width="340" height="80" rx="6" class="box-fill-blue"/>
+    <text x="490" y="103" text-anchor="middle" class="lbl-title">Regional proxy (per-region)</text>
+    <text x="490" y="121" text-anchor="middle" class="lbl-sub">Envoy + consistent hash · rate limit · health</text>
+    <text x="490" y="137" text-anchor="middle" class="lbl-sub">connection pooling · pipelining · circuit breaker</text>
+    <text x="490" y="155" text-anchor="middle" class="lbl-meta">40 nodes · p99 LB latency &lt; 1 ms</text>
+  </g>
+
+  <g>
+    <rect x="680" y="80" width="280" height="80" rx="6" class="box-fill-yellow"/>
+    <text x="820" y="103" text-anchor="middle" class="lbl-title">Hash ring config (Spanner)</text>
+    <text x="820" y="121" text-anchor="middle" class="lbl-sub">CRC32 ring with 256 virtual nodes/shard</text>
+    <text x="820" y="137" text-anchor="middle" class="lbl-sub">version-controlled · gossip propagation</text>
+    <text x="820" y="155" text-anchor="middle" class="lbl-meta">updates on shard add/remove · failover</text>
+  </g>
+
+  <!-- ============ ROW 2: Cache cluster mesh ============ -->
+  <rect x="20" y="225" width="940" height="100" rx="8" fill="#fafbfc" stroke="#eaeef2"/>
+  <text x="490" y="250" text-anchor="middle" class="lbl-title" style="font-size:13px">Cache cluster mesh (per-region · 24 shards × 3 nodes each = 72 nodes top region)</text>
+
+  <g>
+    <rect x="40" y="265" width="115" height="50" rx="4" class="box-fill-green"/>
+    <text x="97" y="282" text-anchor="middle" class="lbl-title">Shard 01</text>
+    <text x="97" y="297" text-anchor="middle" class="lbl-sub">128 GB · 150k QPS</text>
+    <text x="97" y="310" text-anchor="middle" class="lbl-meta">M + 2R</text>
+  </g>
+  <g>
+    <rect x="170" y="265" width="115" height="50" rx="4" class="box-fill-green"/>
+    <text x="227" y="282" text-anchor="middle" class="lbl-title">Shard 02</text>
+    <text x="227" y="297" text-anchor="middle" class="lbl-sub">128 GB · 150k QPS</text>
+    <text x="227" y="310" text-anchor="middle" class="lbl-meta">M + 2R</text>
+  </g>
+  <g>
+    <rect x="300" y="265" width="115" height="50" rx="4" class="box-fill-green"/>
+    <text x="357" y="282" text-anchor="middle" class="lbl-title">Shard 03</text>
+    <text x="357" y="297" text-anchor="middle" class="lbl-sub">128 GB · 150k QPS</text>
+    <text x="357" y="310" text-anchor="middle" class="lbl-meta">M + 2R</text>
+  </g>
+  <g>
+    <rect x="430" y="265" width="115" height="50" rx="4" class="box-fill-green"/>
+    <text x="487" y="282" text-anchor="middle" class="lbl-title">Shard 04</text>
+    <text x="487" y="297" text-anchor="middle" class="lbl-sub">128 GB · 150k QPS</text>
+    <text x="487" y="310" text-anchor="middle" class="lbl-meta">M + 2R</text>
+  </g>
+  <text x="600" y="297" text-anchor="middle" class="lbl-title" style="font-size:18px">···</text>
+  <g>
+    <rect x="630" y="265" width="115" height="50" rx="4" class="box-fill-green"/>
+    <text x="687" y="282" text-anchor="middle" class="lbl-title">Shard 23</text>
+    <text x="687" y="297" text-anchor="middle" class="lbl-sub">128 GB · 150k QPS</text>
+    <text x="687" y="310" text-anchor="middle" class="lbl-meta">M + 2R</text>
+  </g>
+  <g>
+    <rect x="760" y="265" width="115" height="50" rx="4" class="box-fill-green"/>
+    <text x="817" y="282" text-anchor="middle" class="lbl-title">Shard 24</text>
+    <text x="817" y="297" text-anchor="middle" class="lbl-sub">128 GB · 150k QPS</text>
+    <text x="817" y="310" text-anchor="middle" class="lbl-meta">M + 2R</text>
+  </g>
+
+  <!-- ============ ROW 3: Cache miss path + DB fallback ============ -->
+  <g>
+    <rect x="20" y="370" width="280" height="100" rx="6" class="box-fill-red"/>
+    <text x="160" y="393" text-anchor="middle" class="lbl-title">Cache miss handler</text>
+    <text x="160" y="410" text-anchor="middle" class="lbl-sub">DB read · request coalescing</text>
+    <text x="160" y="427" text-anchor="middle" class="lbl-sub">thundering-herd prevention</text>
+    <text x="160" y="445" text-anchor="middle" class="lbl-meta">circuit breaker on DB</text>
+    <text x="160" y="460" text-anchor="middle" class="lbl-meta">populates cache on success</text>
+  </g>
+
+  <g>
+    <rect x="340" y="370" width="300" height="100" rx="6" class="box-fill-gray"/>
+    <text x="490" y="393" text-anchor="middle" class="lbl-title">Database fallback (read replicas)</text>
+    <text x="490" y="410" text-anchor="middle" class="lbl-sub">Postgres + Spanner read replicas</text>
+    <text x="490" y="427" text-anchor="middle" class="lbl-sub">connection pool · bulkhead</text>
+    <text x="490" y="445" text-anchor="middle" class="lbl-meta">25 replicas · 50ms p99 read</text>
+    <text x="490" y="460" text-anchor="middle" class="lbl-meta">protected by circuit breakers</text>
+  </g>
+
+  <g>
+    <rect x="680" y="370" width="280" height="100" rx="6" class="box-fill-purple"/>
+    <text x="820" y="393" text-anchor="middle" class="lbl-title">Warming service</text>
+    <text x="820" y="410" text-anchor="middle" class="lbl-sub">ML key prediction</text>
+    <text x="820" y="427" text-anchor="middle" class="lbl-sub">time-of-day patterns · user-based</text>
+    <text x="820" y="445" text-anchor="middle" class="lbl-meta">batch preload before peak</text>
+    <text x="820" y="460" text-anchor="middle" class="lbl-meta">target 80% warming hit rate</text>
+  </g>
+
+  <!-- ============ ROW 4: Write coordinator ============ -->
+  <g>
+    <rect x="20" y="515" width="940" height="80" rx="6" class="box-fill-orange"/>
+    <text x="490" y="538" text-anchor="middle" class="lbl-title" style="font-size:13px">Cross-region write coordinator</text>
+    <text x="490" y="555" text-anchor="middle" class="lbl-sub">write-through to primary region cache · async fanout to peer regions via Kafka</text>
+    <text x="490" y="573" text-anchor="middle" class="lbl-sub">conflict resolution: last-writer-wins (timestamps) or CRDTs for counters</text>
+    <text x="490" y="590" text-anchor="middle" class="lbl-meta">15 nodes · target propagation p99 &lt; 1 s</text>
+  </g>
+
+  <!-- ============ ROW 5: Invalidation bus + State + Observability ============ -->
+  <g>
+    <rect x="20" y="655" width="280" height="100" rx="6" class="box-fill-green"/>
+    <text x="160" y="678" text-anchor="middle" class="lbl-title">Invalidation bus (Kafka)</text>
+    <text x="160" y="695" text-anchor="middle" class="lbl-sub">topic: cache.invalidations</text>
+    <text x="160" y="712" text-anchor="middle" class="lbl-sub">partitioned by key · 24h retention</text>
+    <text x="160" y="730" text-anchor="middle" class="lbl-meta">MirrorMaker2 cross-region async</text>
+    <text x="160" y="745" text-anchor="middle" class="lbl-meta">tombstones only · not full values</text>
+  </g>
+
+  <g>
+    <rect x="340" y="655" width="300" height="100" rx="6" class="box-fill-blue"/>
+    <text x="490" y="678" text-anchor="middle" class="lbl-title">Regional invalidation subscriber</text>
+    <text x="490" y="695" text-anchor="middle" class="lbl-sub">consumes per-region from Kafka</text>
+    <text x="490" y="712" text-anchor="middle" class="lbl-sub">applies DEL to local cache shards</text>
+    <text x="490" y="730" text-anchor="middle" class="lbl-meta">next read from that region misses</text>
+    <text x="490" y="745" text-anchor="middle" class="lbl-meta">→ re-fetches from local DB replica</text>
+  </g>
+
+  <g>
+    <rect x="680" y="655" width="280" height="100" rx="6" class="box-fill-yellow"/>
+    <text x="820" y="678" text-anchor="middle" class="lbl-title">Observability + chaos</text>
+    <text x="820" y="695" text-anchor="middle" class="lbl-sub">hit ratio · latency · memory · keys</text>
+    <text x="820" y="712" text-anchor="middle" class="lbl-sub">synthetic tests every 30s</text>
+    <text x="820" y="730" text-anchor="middle" class="lbl-meta">chaos: shard kill · network partition</text>
+    <text x="820" y="745" text-anchor="middle" class="lbl-meta">auto-remediation playbooks</text>
+  </g>
+
+  <!-- ============ ARROWS ============ -->
+  <path d="M290,120 L320,120" class="arrow-green"/>
+  <text x="305" y="115" text-anchor="middle" class="lbl-meta" fill="#1a7f37">READ</text>
+  <path d="M660,120 L680,120" class="arrow" stroke-dasharray="3,2"/>
+  <text x="670" y="115" text-anchor="middle" class="lbl-meta">ring lookup</text>
+  <path d="M490,160 L490,225" class="arrow-green"/>
+  <path d="M490,325 L160,370" class="arrow-dashed"/>
+  <text x="240" y="358" text-anchor="middle" class="lbl-meta" fill="#cf222e">cache miss (~5%)</text>
+  <path d="M300,420 L340,420" class="arrow"/>
+  <path d="M640,420 L680,420" class="arrow" stroke-dasharray="3,2"/>
+  <text x="660" y="412" text-anchor="middle" class="lbl-meta">preload</text>
+  <path d="M160,470 L160,515" class="arrow" stroke-dasharray="3,2"/>
+  <path d="M820,470 L820,515" class="arrow" stroke-dasharray="3,2"/>
+  <path d="M490,595 L160,655" class="arrow"/>
+  <text x="330" y="630" text-anchor="middle" class="lbl-meta">async fanout</text>
+  <path d="M300,705 L340,705" class="arrow"/>
+  <path d="M640,705 L490,420" class="arrow" stroke-dasharray="3,2"/>
+  <text x="600" y="540" text-anchor="middle" class="lbl-meta">apply DEL → next read misses</text>
+
+</svg>
+<div class="diagram-cap">Fig 1 · Complete global distributed cache. Numbered circles match the step-by-step flow in §3.2. Green arrows = hot read path; dashed red = rare miss path; orange band = the cross-region write coordinator. The architecture lives or dies on keeping the green path short.</div>
+</div>
+
+<!-- 3.2 STEP-BY-STEP FLOW -->
+<h3 id="flow">3.2 — Step-by-step flow (the numbered walkthrough)</h3>
+
+<p>Following the numbered blue badges in Fig 1. We trace <b>two scenarios</b>: (A) a Feed render reading a Profile (95% of traffic — the hot read path), then (B) an InMail send invalidating a notification counter (the cross-region write path).</p>
+
+<div class="flow-steps">
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Client service issues a read</div>
+      <div class="desc"><b>Scenario A:</b> A member opens their LinkedIn home page. Feed ranker needs ~30 Profile blobs (one per post author shown in the feed). It issues 30 gRPC <code>GET</code> calls to the regional cache proxy with keys like <code>profile:user_12345</code>.<br><br>The client SDK <b>pipelines</b> these — single TCP connection, 30 requests in flight simultaneously. This is critical: 30 serial RTTs at 500 µs each = 15 ms, well over budget; pipelined = ~1.5 ms total.</div>
+      <div class="tech">cache.MultiGet(["profile:user_12345", "profile:user_67890", ...]) → pipelined gRPC</div>
+      <div class="nums">
+        <span class="kv">budget · <b>1 ms client → proxy</b></span>
+        <span class="kv">rate · <b>10 M reads/s peak</b></span>
+        <span class="kv">avg keys per call · <b>~30 (Feed) · 1 (others)</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Regional proxy applies consistent hashing</div>
+      <div class="desc">The proxy is the <b>traffic director</b>. For each key, it:<br><br>(a) Computes <code>CRC32(key) mod 2^32</code> to get a position on the hash ring.<br>(b) Looks up the ring (cached in proxy RAM) to find the shard responsible for that ring position.<br>(c) Routes the request to one of the shard's nodes (master for writes; least-loaded replica for reads).<br>(d) Maintains a long-lived connection pool to each cache node — connection setup is too expensive at 10 M RPS.<br><br><b>Consistent hashing</b> is the key trick. When we add or remove a shard, only ~1/N of keys remap — not all of them. Without consistent hashing, a single shard failure would invalidate the entire cache.</div>
+      <div class="tech">shard = ring.lookup(CRC32(key) mod 2^32) · node = shard.pick_replica(load_balance) · conn = pool.get(node)</div>
+      <div class="nums">
+        <span class="kv">budget · <b>0.5 ms (in-memory lookup)</b></span>
+        <span class="kv">fleet · <b>40 proxy nodes</b></span>
+        <span class="kv">vnodes per shard · <b>256 (smooth distribution)</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Hash ring config is the source of truth</div>
+      <div class="desc">The hash ring isn't hardcoded — it's a versioned config in Spanner. When SRE adds a new shard or one fails, the ring is updated: new vnodes added (or removed), and the change is <b>gossiped</b> to all proxy nodes within ~3 seconds.<br><br>Proxies hold a hot copy of the ring in memory (it's small — a few KB), so lookups are sub-microsecond. Stale ring versions during gossip propagation are handled by a retry: if a proxy routes to shard 7 but shard 7's node says "I'm shard 8 now," the proxy refetches the ring and retries.<br><br><b>Why Spanner:</b> the ring change is metadata, not hot data. Strong consistency for the config; ring change once per week vs reads at 10M/s — totally fine.</div>
+      <div class="tech">spanner.read(hash_ring) · gossip to 40 proxies · proxies cache ring · version-aware retry on mismatch</div>
+      <div class="nums">
+        <span class="kv">ring updates · <b>~1/week (operational)</b></span>
+        <span class="kv">gossip propagation · <b>~3 s</b></span>
+        <span class="kv">ring size · <b>~30 KB (small)</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Cache shard returns the value (95% of the time)</div>
+      <div class="desc">The selected Redis node receives the GET. Best case (and 95% of the time), the key is in memory. Redis returns the 2 KB value blob in &lt; 500 µs.<br><br>Total wall time so far: client → proxy (1 ms) + proxy lookup (0.5 ms) + Redis fetch (0.5 ms) + response back (1 ms) = <b>~3 ms p99</b>. Under the 5 ms SLO with 2 ms headroom.<br><br><b>What makes this fast:</b><br>• Single network hop (proxy is in same DC)<br>• Redis in pure in-memory mode (no AOF fsync on hot path)<br>• Long-lived connection pool (no TCP handshake)<br>• Connection pipelining (no head-of-line blocking)<br>• Local replicas for reads (master-only for writes)</div>
+      <div class="tech">redis.GET("profile:user_12345") → in-mem hash table lookup → return 2 KB</div>
+      <div class="nums">
+        <span class="kv">budget · <b>1 ms shard fetch</b></span>
+        <span class="kv">hit rate · <b>≥ 95% (SLO-D)</b></span>
+        <span class="kv">value size · <b>~2 KB avg</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Cache miss → fallback handler + thundering herd protection</div>
+      <div class="desc"><b>5% of the time</b>, Redis returns NULL (key not in cache). The proxy can't just return null — the client needs the data. The miss handler:<br><br>(a) <b>Single-flight coalescing</b> — if 100 requests for <code>profile:user_99999</code> all miss simultaneously, only ONE DB read is issued. The other 99 wait for the same future. This is critical: without it, a popular user "going viral" with a cold cache would hammer the DB with 100,000 identical queries.<br><br>(b) <b>Circuit breaker on DB</b> — if DB latency exceeds threshold, requests fail-fast rather than queuing up. Protects the entire system from a slow DB.<br><br>(c) <b>Bulkhead pattern</b> — fixed pool of DB connections per service. One bad service can't starve others.</div>
+      <div class="tech">if cache.miss(): future = singleflight.do(key, () => db.read(key)) · circuit_breaker.guard()</div>
+      <div class="nums">
+        <span class="kv">miss rate budget · <b>≤ 5%</b></span>
+        <span class="kv">miss latency · <b>p99 50 ms</b></span>
+        <span class="kv">coalescing factor · <b>10-100× on hot keys</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Warming service prevents cold-start misses</div>
+      <div class="desc">Independent of the read path, a background warming service uses ML to predict which keys will be hot soon. Time-of-day patterns (US morning rush at 09:00 PT = pre-warm North American profiles), user-behavior patterns (someone just logged in → likely needs their session, connections, notifications next), seasonal patterns (Sunday evenings get higher Feed reads).<br><br>It runs batch jobs <b>before</b> traffic spikes, populating caches with predicted hot keys. Target: 80% of "expected hot keys" are already in cache when they're requested.<br><br><b>Why this matters:</b> without warming, every cache deploy or shard restart causes a 10-30 minute miss-storm. With warming, recovery is &lt; 2 min.</div>
+      <div class="tech">ml_model.predict_hot_keys(time, user_patterns) → batch_get_from_db → cache.MSET</div>
+      <div class="nums">
+        <span class="kv">warming hit rate · <b>~80%</b></span>
+        <span class="kv">runs per day · <b>continuous, batched</b></span>
+        <span class="kv">cost · <b>$1K/mo (small fleet)</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Write coordinator handles cross-region writes</div>
+      <div class="desc"><b>Scenario B starts here.</b> A member reads an InMail. The InMail service needs to: (1) decrement the unread counter for that member, (2) make this visible globally within 1 s so the badge disappears on their phone too.<br><br>The write coordinator: (a) writes-through to the <b>primary region cache</b> for that key (consistent hash determines primary), (b) writes-through to the underlying database, (c) emits an invalidation event to Kafka. Synchronous for local region; async fanout for peers.<br><br><b>Conflict resolution:</b> for simple values, last-writer-wins by timestamp. For counters (notification count), use <b>CRDTs</b> — each region tracks its own delta; the global value is the sum. No coordination needed; eventually consistent.</div>
+      <div class="tech">primary.SET(key, val) · db.UPDATE() · kafka.produce(invalidation_topic, {key, ts, origin_region})</div>
+      <div class="nums">
+        <span class="kv">budget · <b>50 ms primary write</b></span>
+        <span class="kv">fleet · <b>15 coordinator nodes</b></span>
+        <span class="kv">write RPS · <b>1 M peak</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Invalidation bus (Kafka) propagates across regions</div>
+      <div class="desc">The invalidation event lands in Kafka. <b>Critically: we send only the key + tombstone, not the value.</b> A 2 KB value × 1M writes/s × 4 destination regions = 8 GB/s cross-region traffic. A 64 B invalidation × 1M writes/s × 4 regions = 256 MB/s. <b>30× cheaper, simpler conflict semantics, and we trust regions to re-fetch from their local DB.</b><br><br>Kafka MirrorMaker2 replicates the invalidation topic to peer regions within ~200 ms. Each region has a subscriber consuming the global invalidation stream.</div>
+      <div class="tech">kafka.invalidations · partitioned by hash(key) · MM2 cross-region · 24h retention · 64B per message</div>
+      <div class="nums">
+        <span class="kv">propagation · <b>~200 ms cross-region</b></span>
+        <span class="kv">topic size · <b>64 B per invalidation</b></span>
+        <span class="kv">brokers · <b>9 · 3× repl</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Regional subscribers apply DEL to local caches</div>
+      <div class="desc">In each peer region (dub, iad, sin, bom), an invalidation subscriber consumes from Kafka and issues <code>DEL key</code> to the local cache shard that owns the key (via consistent hash lookup — same ring as reads).<br><br>The next read for that key in that region will MISS, hit the local DB replica, fetch the fresh value, and re-populate the cache. <b>This is what makes "1 second global write propagation" achievable</b> — we invalidate (fast, small) and let local reads naturally refresh from local DB (still fast, since DB is also regional).<br><br>Total propagation: write at origin → Kafka → MM2 to peer region → subscriber → DEL → next read sees fresh value. Typical p99: <b>~500-800 ms</b>, well under 1 s.</div>
+      <div class="tech">subscriber.consume() → ring.lookup(key) → shard.DEL(key) · next GET in this region → MISS → DB</div>
+      <div class="nums">
+        <span class="kv">budget · <b>500 ms invalidation apply</b></span>
+        <span class="kv">subscribers per region · <b>3 (HA)</b></span>
+        <span class="kv">SLO-B · <b>p99 &lt; 1 s ✓</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div class="num"></div>
+    <div class="body">
+      <div class="title">Observability watches everything</div>
+      <div class="desc">All five SLIs are monitored continuously: read p99 latency, write propagation p99, availability, hit ratio, data integrity (synthetic test compares cache values to DB ground truth every 30 s).<br><br>Crucial dashboards: <b>hit ratio per key pattern</b> (catches a service that just added a new uncached query type), <b>memory utilization per shard</b> (catches a single user with abnormally large data), <b>cross-region invalidation lag</b> (catches Kafka issues that would break SLO-B).<br><br>Chaos drills inject failures continuously: kill random shards, partition networks, induce master-replica lag, simulate cold-start storms. The cache is "tested in production every Tuesday."<br><br><b>Total wall-clock time for the hot read path:</b> ~3 ms p99. <b>For the cross-region write path:</b> ~700 ms p99 from write to global visibility. Both inside SLO.</div>
+      <div class="tech">prometheus scrape every 15s · synthetic GETs every 30s · chaos schedule weekly</div>
+      <div class="nums">
+        <span class="kv">read p99 · <b>~3 ms (SLO 5 ms)</b></span>
+        <span class="kv">global write p99 · <b>~700 ms (SLO 1 s)</b></span>
+        <span class="kv">hit ratio · <b>96% sustained (SLO 95%)</b></span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="note tip">
+  <span class="lbl">The key design insight</span>
+  Notice how the architecture exploits <b>asymmetric requirements</b>: reads are 10× more frequent than writes, and the latency budget for reads is 200× tighter than for writes. So we optimize ruthlessly for reads (in-region, in-memory, pipelined) and accept higher complexity on writes (cross-region fanout, conflict resolution, eventual consistency). <b>The asymmetry IS the design.</b>
+</div>
+
+<!-- 3.3 CONSISTENT HASHING -->
+<h3 id="hashring">3.3 — Consistent hashing close-up</h3>
+
+<p>Consistent hashing is what lets us add/remove shards without rehashing the whole world. Here's the ring with 4 shards (in production, 24 per region, 256 vnodes each).</p>
+
+<div class="diagram">
+<svg viewBox="0 0 980 380" xmlns="http://www.w3.org/2000/svg">
+  <defs></defs>
+
+  <!-- Hash ring circle -->
+  <circle cx="290" cy="190" r="140" fill="none" stroke="#d0d7de" stroke-width="2"/>
+  <text x="290" y="50" text-anchor="middle" class="lbl-meta">0</text>
+  <text x="445" y="195" class="lbl-meta">2³² · ¼</text>
+  <text x="290" y="345" text-anchor="middle" class="lbl-meta">2³² · ½</text>
+  <text x="130" y="195" class="lbl-meta" text-anchor="end">2³² · ¾</text>
+
+  <!-- 4 shards positioned around ring -->
+  <circle cx="290" cy="50" r="18" fill="#ddf4ff" stroke="#54aeff" stroke-width="2"/>
+  <text x="290" y="55" text-anchor="middle" class="lbl-title">S1</text>
+
+  <circle cx="430" cy="190" r="18" fill="#dafbe1" stroke="#4ac26b" stroke-width="2"/>
+  <text x="430" y="195" text-anchor="middle" class="lbl-title">S2</text>
+
+  <circle cx="290" cy="330" r="18" fill="#fff1e5" stroke="#fd8c73" stroke-width="2"/>
+  <text x="290" y="335" text-anchor="middle" class="lbl-title">S3</text>
+
+  <circle cx="150" cy="190" r="18" fill="#fbefff" stroke="#c297ff" stroke-width="2"/>
+  <text x="150" y="195" text-anchor="middle" class="lbl-title">S4</text>
+
+  <!-- Sample keys positioned around -->
+  <circle cx="355" cy="100" r="6" fill="#1f2328"/>
+  <text x="365" y="105" class="lbl-sub">user_42 → S2</text>
+  <circle cx="400" cy="250" r="6" fill="#1f2328"/>
+  <text x="410" y="255" class="lbl-sub">user_99 → S3</text>
+  <circle cx="200" cy="260" r="6" fill="#1f2328"/>
+  <text x="180" y="280" class="lbl-sub">user_5 → S4</text>
+  <circle cx="220" cy="100" r="6" fill="#1f2328"/>
+  <text x="160" y="100" class="lbl-sub">user_77 → S1</text>
+
+  <!-- Right side: explanation -->
+  <text x="540" y="50" class="lbl-title" style="font-size:13px">How a key finds its shard</text>
+  <text x="540" y="75" class="lbl-sub">1. hash = CRC32(key) mod 2³²</text>
+  <text x="540" y="92" class="lbl-sub">2. Walk clockwise from hash to next shard</text>
+  <text x="540" y="109" class="lbl-sub">3. That shard owns this key</text>
+
+  <text x="540" y="145" class="lbl-title" style="font-size:13px">What happens when we add S5?</text>
+  <text x="540" y="170" class="lbl-sub">- S5 is placed at a random position on ring</text>
+  <text x="540" y="187" class="lbl-sub">- Keys in S5's slice migrate from neighbor</text>
+  <text x="540" y="204" class="lbl-sub">- ONLY ~1/N of keys move (not all)</text>
+  <text x="540" y="221" class="lbl-sub">- Other 3 shards untouched</text>
+
+  <text x="540" y="255" class="lbl-title" style="font-size:13px">Virtual nodes (vnodes)</text>
+  <text x="540" y="280" class="lbl-sub">In practice, each shard occupies 256 positions</text>
+  <text x="540" y="297" class="lbl-sub">on the ring (vnodes). This smooths the</text>
+  <text x="540" y="314" class="lbl-sub">distribution — without vnodes, removing a shard</text>
+  <text x="540" y="331" class="lbl-sub">would dump all its keys on ONE neighbor.</text>
+  <text x="540" y="348" class="lbl-sub">With vnodes, load spreads across all peers.</text>
+</svg>
+<div class="diagram-cap">Fig 2 · Consistent hash ring with 4 shards (simplified). Keys hash to a ring position; walk clockwise to find the owning shard. Adding/removing a shard only remaps 1/N of keys, not all.</div>
+</div>
+
+<!-- 3.4 WRITE PROPAGATION -->
+<h3 id="writeprop">3.4 — Cross-region write propagation close-up</h3>
+
+<p>The trick that makes "global writes in &lt; 1 s" feasible is sending invalidations, not values. Trace a write through the system:</p>
+
+<table>
+  <thead><tr><th>Step</th><th>What happens</th><th>Time at this point</th><th>Where</th></tr></thead>
+  <tbody>
+    <tr><td class="num">T+0 ms</td><td>InMail send completes; client calls cache.SET(notif_count, 5)</td><td class="num">0 ms</td><td>app pod, pdx</td></tr>
+    <tr><td class="num">T+15 ms</td><td>Write coordinator writes primary region cache + DB</td><td class="num">15 ms</td><td>pdx cache + DB</td></tr>
+    <tr><td class="num">T+20 ms</td><td>Coordinator emits invalidation to Kafka (pdx)</td><td class="num">20 ms</td><td>pdx Kafka</td></tr>
+    <tr><td class="num">T+220 ms</td><td>MirrorMaker2 replicates message to dub, iad, sin, bom</td><td class="num">220 ms</td><td>peer regions Kafka</td></tr>
+    <tr><td class="num">T+250 ms</td><td>Regional subscribers consume the invalidation</td><td class="num">250 ms</td><td>each peer region</td></tr>
+    <tr><td class="num">T+260 ms</td><td>Regional subscribers DEL the key in local cache shards</td><td class="num">260 ms</td><td>each peer region cache</td></tr>
+    <tr><td class="num">T+~500 ms</td><td>Next read in dub for this key MISSES → reads local DB replica → gets new value 5 → repopulates dub cache</td><td class="num">~500 ms</td><td>dub (whenever next read happens)</td></tr>
+    <tr style="background:var(--green-bg);font-weight:600"><td class="num">T+&lt; 1 s</td><td>All regions consistent · SLO-B met</td><td class="num">&lt; 1 s ✓</td><td>global</td></tr>
+  </tbody>
+</table>
+
+<div class="note">
+  <span class="lbl">Why DB replicas don't break this</span>
+  When the dub subscriber DELs the key and the next dub read MISSES, it reads from dub's local DB read replica — NOT cross-region. The DB has its own replication (Spanner global, or per-region Postgres replicas with logical replication). DB replication has its own SLO; we assume it's strong enough to keep up. If a DB region is lagging, that's a DB-tier alarm, not a cache problem.
+</div>
+
+</section>
+
+<!-- ===== 4. GAUNTLET ===== -->
+<section>
+<h2 id="gauntlet">4 · Failure gauntlet</h2>
+
+<div class="cols-2">
+  <div class="comp">
+    <div class="name">A · Shard master crash <span class="tech">SLI: A, C</span></div>
+    <div class="desc">A Redis master node hard-crashes; 1/24th of keys in that region affected.</div>
+    <div class="row"><span class="lab">trigger</span><span>master health check fail &gt; 5 s</span></div>
+    <div class="row"><span class="lab">absorb</span><span>Redis Sentinel promotes a replica in 10 s</span></div>
+    <div class="row"><span class="lab">cap</span><span>proxy circuit-breaks failing shard, fallback to DB</span></div>
+    <div class="row"><span class="lab">verdict</span><span>10 s degradation, no data loss</span></div>
+  </div>
+  <div class="comp">
+    <div class="name">B · Cache-DB stampede <span class="tech">SLI: A, F</span></div>
+    <div class="desc">A code deploy in app tier shifts read pattern; 50% miss rate suddenly.</div>
+    <div class="row"><span class="lab">trigger</span><span>miss rate &gt; 20% over 1 min</span></div>
+    <div class="row"><span class="lab">absorb</span><span>single-flight coalescing limits DB load</span></div>
+    <div class="row"><span class="lab">protect</span><span>DB circuit breaker fails fast</span></div>
+    <div class="row"><span class="lab">verdict</span><span>elevated latency · DB survives</span></div>
+  </div>
+  <div class="comp">
+    <div class="name">C · Hot key <span class="tech">SLI: A</span></div>
+    <div class="desc">A viral profile gets 100k reads/s — single shard saturates.</div>
+    <div class="row"><span class="lab">trigger</span><span>per-shard QPS &gt; 200k</span></div>
+    <div class="row"><span class="lab">absorb</span><span>proxy detects, replicates to L1 in-proxy cache (1s TTL)</span></div>
+    <div class="row"><span class="lab">cap</span><span>request coalescing at proxy layer</span></div>
+    <div class="row"><span class="lab">verdict</span><span>hot key served from proxy RAM</span></div>
+  </div>
+  <div class="comp">
+    <div class="name">D · Region outage <span class="tech">SLI: B, C</span></div>
+    <div class="desc">us-west-2 power event takes the region offline 45 min.</div>
+    <div class="row"><span class="lab">trigger</span><span>region health probe fail</span></div>
+    <div class="row"><span class="lab">absorb</span><span>GSLB redirects clients to next-nearest region</span></div>
+    <div class="row"><span class="lab">degraded</span><span>+50 ms cross-region latency · acceptable temporary</span></div>
+    <div class="row"><span class="lab">verdict</span><span>users see slight latency bump, no data loss</span></div>
+  </div>
+  <div class="comp">
+    <div class="name">E · Invalidation lag <span class="tech">SLI: B, E</span></div>
+    <div class="desc">MirrorMaker2 stuck; invalidations not reaching peer regions.</div>
+    <div class="row"><span class="lab">trigger</span><span>MM2 lag &gt; 30 s</span></div>
+    <div class="row"><span class="lab">absorb</span><span>shorter TTL on critical keys (5min instead of 1h)</span></div>
+    <div class="row"><span class="lab">degraded</span><span>SLO-B (1s prop) breached but data converges in 5 min</span></div>
+    <div class="row"><span class="lab">verdict</span><span>page SRE; manual MM2 restart</span></div>
+  </div>
+  <div class="comp">
+    <div class="name">F · Concurrent writes (conflict) <span class="tech">SLI: E</span></div>
+    <div class="desc">User decrements notification count in pdx; concurrently iad processes another read mark.</div>
+    <div class="row"><span class="lab">trigger</span><span>two writes within network propagation delay</span></div>
+    <div class="row"><span class="lab">absorb (simple)</span><span>last-writer-wins by ts (acceptable for counters)</span></div>
+    <div class="row"><span class="lab">absorb (counters)</span><span>CRDT: per-region delta · global sum</span></div>
+    <div class="row"><span class="lab">verdict</span><span>eventual consistency · no permanent skew</span></div>
+  </div>
+</div>
+
+<div class="note danger">
+  <span class="lbl">Cannot defend against</span>
+  Loss of underlying DB (the fallback source). If cache miss happens AND DB is also down, requests fail. Mitigation: DB has its own multi-region replication + 4-nines SLO. If both cache and DB are down for the same key, that's a tier-0 incident requiring manual intervention. Out of scope here.
+</div>
+</section>
+
+<!-- ===== 5. PLAYBOOK ===== -->
+<section>
+<h2 id="playbook">5 · Operational playbook</h2>
+
+<h3>5.1 — Deployment</h3>
+<table>
+  <thead><tr><th>Stage</th><th>% traffic</th><th>Soak</th><th>Auto-promote</th></tr></thead>
+  <tbody>
+    <tr><td>Shadow</td><td class="num">mirror, 0% serve</td><td class="num">24 h</td><td>diff vs prod &lt; 0.01%</td></tr>
+    <tr><td>Canary</td><td class="num">1%, 1 region</td><td class="num">24 h</td><td>p99 latency Δ &lt; 5%</td></tr>
+    <tr><td>Regional</td><td class="num">10% (1 region)</td><td class="num">12 h</td><td>SLO burn &lt; 1×</td></tr>
+    <tr><td>Half</td><td class="num">50%</td><td class="num">6 h</td><td>auto if no SEV-2+</td></tr>
+    <tr><td>Global</td><td class="num">100%</td><td class="num">—</td><td>manual sign-off</td></tr>
+  </tbody>
+</table>
+
+<h3>5.2 — Chaos drills (quarterly)</h3>
+<ul>
+  <li><b>Random shard kill</b> — terminate 1 random shard per region; verify failover &lt; 15 s.</li>
+  <li><b>Network partition</b> — partition a region from peers; verify reads continue, writes queue.</li>
+  <li><b>Master-replica lag injection</b> — add 1s replication lag; verify replica reads stay correct.</li>
+  <li><b>Cold-start storm</b> — flush an entire region's cache; verify warming + miss handler hold up.</li>
+  <li><b>Hot-key injection</b> — synthesize 500k QPS to one key; verify in-proxy L1 caching kicks in.</li>
+  <li><b>DB outage</b> — kill DB read replicas in a region; verify circuit breaker + degraded mode.</li>
+</ul>
+
+<h3>5.3 — Runbook excerpt</h3>
+<pre><code># Symptom: read p99 > 5 ms (SLI-A burning)
+
+# Likely causes (ranked)
+1. Shard saturation              → check per-shard QPS dashboard
+2. Hot key                       → check hot-key detector output
+3. Network latency               → check intra-region p99 ping
+4. GC pause in Redis             → check shard memory utilization
+5. Proxy connection pool         → check pool exhaustion metric
+
+# First response (in order):
+- Confirm: dashboard 'cache-slo-a' shows > 5 ms p99 over 1 min
+- Identify hot shard: per-shard QPS sorted desc
+- If shard QPS > 200k: enable proxy L1 cache for affected key pattern
+- If memory > 90%: trigger eviction policy review
+- Communicate: post in #incident-cache
+- Escalate: if not resolving in 15 min, page tier-2 oncall</code></pre>
+</section>
+
+<!-- ===== 6. COMPONENTS ===== -->
+<section>
+<h2 id="components">6 · Component reference</h2>
+
+<table>
+  <thead><tr><th>Component</th><th>Tech</th><th>Scale</th><th>Failure mitigation</th><th>SLO</th></tr></thead>
+  <tbody>
+    <tr><td><b>Regional proxy</b></td><td class="num">Envoy + Go</td><td>HPA 40→120</td><td>circuit breaker · connection pool</td><td>A,C</td></tr>
+    <tr><td><b>Cache nodes</b></td><td class="num">Redis Cluster</td><td>24 shards × 3 nodes</td><td>Sentinel failover · 2 replicas/shard</td><td>A,C,D</td></tr>
+    <tr><td><b>Hash ring config</b></td><td class="num">Spanner</td><td>2 nodes region-replicated</td><td>gossip propagation</td><td>C</td></tr>
+    <tr><td><b>Cache miss handler</b></td><td class="num">Go service</td><td>colocated with proxy</td><td>single-flight + circuit breaker</td><td>A,D</td></tr>
+    <tr><td><b>DB fallback</b></td><td class="num">Postgres read replicas</td><td>25 replicas</td><td>connection pool · bulkhead</td><td>—</td></tr>
+    <tr><td><b>Warming service</b></td><td class="num">Go + ML pipeline</td><td>12 nodes</td><td>best-effort · alerts on low hit rate</td><td>D</td></tr>
+    <tr><td><b>Write coordinator</b></td><td class="num">Go service</td><td>15 nodes stateless</td><td>retry · conflict resolution</td><td>B,E</td></tr>
+    <tr><td><b>Invalidation bus</b></td><td class="num">Kafka + MM2</td><td>9 brokers</td><td>3× repl · cross-region async</td><td>B</td></tr>
+    <tr><td><b>Regional subscriber</b></td><td class="num">Go service</td><td>3 per region</td><td>consumer group failover</td><td>B</td></tr>
+    <tr><td><b>Observability</b></td><td class="num">Prometheus + synthetic</td><td>region-local</td><td>synthetic tests every 30 s</td><td>all</td></tr>
+  </tbody>
+</table>
+</section>
+
+<!-- ===== 7. TRADE-OFFS ===== -->
+<section>
+<h2 id="tradeoffs">7 · Trade-offs & open questions</h2>
+
+<div class="cols-2">
+  <div>
+    <h4>Chose</h4>
+    <ul>
+      <li><b>Invalidation propagation</b> (not value replication) · 30× cheaper cross-region traffic; trade: brief miss after invalidation in peer regions.</li>
+      <li><b>Eventually consistent across regions</b> · enables 1 s SLO globally; trade: brief stale reads on conflicting writes.</li>
+      <li><b>Consistent hashing with 256 vnodes</b> · smooth distribution; trade: 256× more ring metadata to gossip.</li>
+      <li><b>Single-flight on cache miss</b> · prevents stampedes; trade: 99 of 100 simultaneous misses wait for one DB read (acceptable).</li>
+      <li><b>2× replicas per shard</b> · tolerates one node loss with no service interruption; trade: 3× memory cost.</li>
+      <li><b>Multi-master with last-writer-wins</b> · simpler than consensus; trade: not safe for monetary values (use Spanner for those).</li>
+      <li><b>In-proxy L1 cache for hot keys</b> · saves the underlying shard; trade: 1s TTL means slightly stale data on hot keys (acceptable for profiles).</li>
+    </ul>
+  </div>
+  <div>
+    <h4>Rejected</h4>
+    <ul>
+      <li><b>Synchronous cross-region writes</b> · would add 100+ ms to every write — kills write path SLO.</li>
+      <li><b>Full value replication</b> · 30× cross-region traffic cost · breaks SLO-F.</li>
+      <li><b>Strongly consistent (Spanner-style)</b> for everything · slow and expensive; only use for monetary/auth data.</li>
+      <li><b>Memcached over Redis</b> · simpler but no replication, no cluster mode; doesn't meet C SLO alone.</li>
+      <li><b>Client-side hashing</b> · would couple clients to ring changes — operational nightmare.</li>
+      <li><b>One big region (us-east) for all writes</b> · simpler but SLO-B (1 s global) impossible for users in Asia.</li>
+    </ul>
+  </div>
+</div>
+
+<h3>Open questions</h3>
+<ol>
+  <li>Should we support <b>per-key consistency levels</b>? Profile cache can be eventually consistent; session tokens must be strongly consistent (or invalidated atomically with the DB).</li>
+  <li>Is 256 vnodes the right number? Too few → uneven distribution; too many → ring becomes large. Need to measure.</li>
+  <li>Should we offer <b>tiered TTLs</b> per key class? Hot profiles: 1 h. Cold profiles: 24 h. Sessions: 15 min. Currently uniform.</li>
+  <li>Is the warming service actually paying for itself? Measure: if we turned it off, would miss rate stay under 5%? If yes, simplify by removing it.</li>
+  <li>Should we move to <b>Memcached-compatible protocol</b> for some workloads? Cheaper, simpler, but less feature-rich.</li>
+</ol>
+</section>
+
+<footer>
+  <div>linkedin/cache · design-doc · global-distributed-cache.md</div>
+  <div>nalsd · review status: <span style="color:var(--yellow)">⬤</span> in-review</div>
+</footer>
+
+</main>
+</div>
+</body>
+</html>

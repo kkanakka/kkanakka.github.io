@@ -91,6 +91,21 @@
   .card-canary:hover { border-color: var(--accent2); }
   .card-canary .cta { color: var(--accent2); }
 
+  .card-anomaly .icon { background: rgba(130,80,223,0.15); color: var(--accent3); }
+  .card-anomaly h2 { color: var(--accent3); }
+  .card-anomaly:hover { border-color: var(--accent3); }
+  .card-anomaly .cta { color: var(--accent3); }
+
+  .card-cache .icon { background: rgba(217,115,13,0.1); color: var(--accent4); }
+  .card-cache h2 { color: var(--accent4); }
+  .card-cache:hover { border-color: var(--accent4); }
+  .card-cache .cta { color: var(--accent4); }
+
+  .card-incident .icon { background: rgba(207,34,46,0.1); color: var(--accent5); }
+  .card-incident h2 { color: var(--accent5); }
+  .card-incident:hover { border-color: var(--accent5); }
+  .card-incident .cta { color: var(--accent5); }
+
   .footer { background: var(--surface); border-top: 1px solid var(--border); padding: 32px 0; text-align: center; color: var(--text-muted); font-size: 0.9em; }
 </style>
 </head>
@@ -180,6 +195,51 @@
         <span class="tag">Rollback</span>
         <span class="tag">Traffic Shifting</span>
         <span class="tag">Metrics</span>
+      </div>
+      <div class="cta">Read the design &rarr;</div>
+    </a>
+
+    <a href="nalsd-anomaly-detection.html" class="card card-anomaly">
+      <div class="icon">&#129504;</div>
+      <h2>AI Anomaly Detection Platform</h2>
+      <div class="subtitle">NALSD &middot; LinkedIn ML-powered observability</div>
+      <p>Design an AI-driven anomaly detection platform. Statistical and ML models, real-time streaming analysis, adaptive thresholds, and automated root cause correlation.</p>
+      <div class="tag-row">
+        <span class="tag">ML Models</span>
+        <span class="tag">Streaming</span>
+        <span class="tag">Adaptive Thresholds</span>
+        <span class="tag">Root Cause</span>
+        <span class="tag">Real-Time</span>
+      </div>
+      <div class="cta">Read the design &rarr;</div>
+    </a>
+
+    <a href="nalsd-distributed-cache.html" class="card card-cache">
+      <div class="icon">&#9889;</div>
+      <h2>Global Distributed Cache</h2>
+      <div class="subtitle">NALSD &middot; LinkedIn caching infrastructure</div>
+      <p>Design a global distributed cache for LinkedIn-scale reads. Consistent hashing, replication strategies, cache invalidation, hot-key mitigation, and multi-datacenter topology.</p>
+      <div class="tag-row">
+        <span class="tag">Consistent Hashing</span>
+        <span class="tag">Invalidation</span>
+        <span class="tag">Hot Keys</span>
+        <span class="tag">Multi-DC</span>
+        <span class="tag">Replication</span>
+      </div>
+      <div class="cta">Read the design &rarr;</div>
+    </a>
+
+    <a href="nalsd-incident-response.html" class="card card-incident">
+      <div class="icon">&#128680;</div>
+      <h2>Global Incident Response System</h2>
+      <div class="subtitle">NALSD &middot; LinkedIn incident management</div>
+      <p>Design a global incident response system. Detection, escalation, war-room coordination, communication, post-mortem automation, and cross-datacenter failover orchestration.</p>
+      <div class="tag-row">
+        <span class="tag">Detection</span>
+        <span class="tag">Escalation</span>
+        <span class="tag">War Room</span>
+        <span class="tag">Post-Mortem</span>
+        <span class="tag">Failover</span>
       </div>
       <div class="cta">Read the design &rarr;</div>
     </a>
