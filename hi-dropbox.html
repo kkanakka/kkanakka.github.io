@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dropbox · System Design · Hello Interview</title>
+<style>
+  :root{
+    --fg:#1f2328;--fg-muted:#59636e;--fg-subtle:#6e7781;
+    --bg:#ffffff;--bg-subtle:#f6f8fa;--bg-muted:#eaeef2;
+    --border:#d1d9e0;--border-muted:#d8dee4;
+    --accent:#0969da;--accent-bg:#ddf4ff;
+    --success:#1a7f37;--success-bg:#dafbe1;
+    --attention:#9a6700;--attention-bg:#fff8c5;
+    --danger:#d1242f;--danger-bg:#ffebe9;
+    --done:#8250df;--done-bg:#fbefff;
+    --orange:#bc4c00;--orange-bg:#fff1e5;
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans",Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+
+  .topbar{border-bottom:1px solid var(--border);background:var(--bg);position:sticky;top:0;z-index:50;height:44px;display:flex;align-items:center}
+  .topbar .inner{max-width:1280px;margin:0 auto;padding:0 24px;width:100%;display:flex;align-items:center;justify-content:space-between;font-size:13px}
+  .topbar .crumbs{color:var(--fg-muted);display:flex;align-items:center;gap:8px}
+  .topbar .crumbs strong{color:var(--fg);font-weight:600}
+  .topbar .crumbs .sep{color:var(--border)}
+  .topbar .actions{display:flex;gap:14px;color:var(--fg-muted);font-size:12px}
+
+  .layout{max-width:1280px;margin:0 auto;padding:0 24px;display:grid;grid-template-columns:220px minmax(0,1fr) 200px;gap:40px}
+  @media(max-width:1024px){.layout{grid-template-columns:220px minmax(0,1fr);gap:32px}aside.toc-right{display:none}}
+  @media(max-width:760px){.layout{grid-template-columns:1fr;gap:0;padding:0 16px}aside.toc-left{display:none}}
+
+  aside.toc-left{border-right:1px solid var(--border);padding:24px 16px 24px 0;font-size:13px;position:sticky;top:44px;max-height:calc(100vh - 44px);overflow-y:auto}
+  aside.toc-left .group{margin-bottom:18px}
+  aside.toc-left .group-title{font-weight:600;color:var(--fg);padding:4px 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+  aside.toc-left a{display:block;padding:4px 10px;color:var(--fg-muted);text-decoration:none;border-radius:6px;line-height:1.4;border-left:2px solid transparent;margin-left:-2px}
+  aside.toc-left a:hover{background:var(--bg-subtle);color:var(--fg)}
+  aside.toc-left a.active{color:var(--accent);background:var(--accent-bg);border-left-color:var(--accent);font-weight:500}
+
+  main{padding:24px 0 80px;min-width:0}
+  h1{font-size:28px;font-weight:600;line-height:1.25;padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid var(--border);letter-spacing:-.01em}
+  .subtitle{color:var(--fg-muted);font-size:15px;margin-bottom:20px;max-width:720px}
+  h2{font-size:20px;font-weight:600;line-height:1.3;margin-top:28px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border-muted);scroll-margin-top:60px}
+  h3{font-size:16px;font-weight:600;line-height:1.35;margin-top:18px;margin-bottom:6px;scroll-margin-top:60px}
+  h4{font-size:13px;font-weight:600;line-height:1.35;margin-top:14px;margin-bottom:4px;color:var(--fg)}
+  p{margin-bottom:10px;max-width:760px;font-size:13.5px}
+  a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+  p code,li code,td code{font-family:var(--mono);background:var(--bg-subtle);padding:.15em .4em;border-radius:6px;font-size:.88em;color:var(--fg);border:1px solid var(--border-muted)}
+  strong{font-weight:600;color:var(--fg)}
+  em{font-style:italic}
+  ul,ol{margin:6px 0 12px;padding-left:22px;max-width:760px;font-size:13.5px}
+  li{margin-bottom:3px;line-height:1.5}
+  pre{background:var(--bg-subtle);border:1px solid var(--border-muted);padding:10px 12px;border-radius:6px;overflow-x:auto;margin:6px 0 12px;font-family:var(--mono);font-size:12px;line-height:1.55;max-width:880px}
+
+  .alert{margin:10px 0 14px;padding:8px 14px;border-left:4px solid;border-radius:6px;background:var(--bg-subtle);max-width:860px;font-size:13px}
+  .alert .alert-title{font-weight:600;font-size:12px;margin-bottom:3px;display:flex;align-items:center;gap:6px}
+  .alert.note{border-color:var(--accent);background:#f0f7ff}.alert.note .alert-title{color:var(--accent)}
+  .alert.warning{border-color:var(--attention);background:#fff8e6}.alert.warning .alert-title{color:var(--attention)}
+  .alert.danger{border-color:var(--danger);background:#fff5f5}.alert.danger .alert-title{color:var(--danger)}
+  .alert.tip{border-color:var(--success);background:#f0fdf4}.alert.tip .alert-title{color:var(--success)}
+  .alert p{margin-bottom:3px;font-size:13px}.alert p:last-child{margin-bottom:0}
+
+  .diagram{margin:10px 0 14px;border:1px solid var(--border);background:var(--bg);border-radius:6px;overflow:hidden;max-width:980px}
+  .diagram-head{display:flex;justify-content:space-between;align-items:center;padding:5px 10px;background:var(--bg-subtle);border-bottom:1px solid var(--border-muted);font-family:var(--mono);font-size:11px;color:var(--fg-muted)}
+  .diagram-head .id{color:var(--accent);font-weight:500}
+  .diagram-body{padding:12px 10px;overflow-x:auto;background:var(--bg)}
+  .diagram-body svg{display:block;margin:0 auto;max-width:100%;height:auto}
+  .diagram-cap{padding:6px 10px;background:var(--bg-subtle);border-top:1px solid var(--border-muted);font-size:12px;color:var(--fg-muted)}
+
+  table{width:100%;max-width:880px;margin:6px 0 12px;border-collapse:collapse;font-size:12.5px;border:1px solid var(--border);border-radius:6px;overflow:hidden}
+  th{text-align:left;padding:6px 10px;background:var(--bg-subtle);color:var(--fg);font-weight:600;border-bottom:1px solid var(--border);font-size:12px}
+  td{padding:5px 10px;border-bottom:1px solid var(--border-muted);vertical-align:top}
+  tr:last-child td{border-bottom:none}tr:nth-child(even) td{background:var(--bg-subtle)}
+
+  .badges{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px}
+  .badge{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:12px;background:var(--bg-subtle);border:1px solid var(--border-muted);font-size:11px;color:var(--fg-muted);font-family:var(--mono)}
+  .badge .dot{width:6px;height:6px;border-radius:50%}
+
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0 14px;max-width:880px}
+  .col{padding:10px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg-subtle);font-size:13px}
+  .col h5{margin:0 0 4px;font-size:12px;font-weight:600}.col.pros h5{color:var(--success)}.col.cons h5{color:var(--danger)}
+  .col ul{margin:2px 0;padding-left:16px}.col li{margin:2px 0;font-size:12.5px}
+
+  .gloss-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:6px;margin:8px 0 14px}
+  .gloss-card{padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg-subtle);font-size:12.5px}
+  .gloss-card .term{font-family:var(--mono);font-weight:600;color:var(--accent);font-size:11px;margin-bottom:2px}
+  .gloss-card .def{color:var(--fg-muted);font-size:12px;line-height:1.45}
+
+  aside.toc-right{padding:24px 0;font-size:12px;position:sticky;top:44px;max-height:calc(100vh - 44px);overflow-y:auto}
+  aside.toc-right .label{text-transform:uppercase;letter-spacing:.04em;color:var(--fg-muted);font-weight:600;font-size:11px;margin-bottom:8px}
+  aside.toc-right ul{list-style:none;padding:0;margin:0}
+  aside.toc-right li{margin-bottom:3px}
+  aside.toc-right a{color:var(--fg-muted);text-decoration:none;display:block;padding:2px 0;line-height:1.4;border-left:2px solid transparent;padding-left:8px;margin-left:-10px}
+  aside.toc-right a:hover{color:var(--fg)}
+  aside.toc-right a.active{color:var(--accent);border-left-color:var(--accent);font-weight:500}
+
+  svg text{font-family:var(--mono);fill:var(--fg)}
+  ::selection{background:var(--accent-bg);color:var(--fg)}
+  .sb{fill:var(--bg-subtle);stroke:var(--border);stroke-width:1}
+  .sb-b{fill:#ddf4ff;stroke:var(--accent);stroke-width:1}
+  .sb-g{fill:#dafbe1;stroke:var(--success);stroke-width:1}
+  .sb-r{fill:#ffebe9;stroke:var(--danger);stroke-width:1}
+  .sb-y{fill:#fff8e6;stroke:var(--attention);stroke-width:1}
+  .sb-p{fill:#fbefff;stroke:var(--done);stroke-width:1}
+  .sb-o{fill:#fff1e5;stroke:var(--orange);stroke-width:1}
+  .sl{font-family:var(--sans);font-size:12px;font-weight:600;fill:var(--fg)}
+  .ss{font-family:var(--mono);font-size:10px;fill:var(--fg-muted)}
+  .sn{font-family:var(--mono);font-weight:700;font-size:11px;fill:var(--accent)}
+  .sa{stroke:var(--fg-muted);stroke-width:1.2;fill:none}
+  .sa-b{stroke:var(--accent);stroke-width:1.5;fill:none}
+  .sa-g{stroke:var(--success);stroke-width:1.5;fill:none}
+  .sa-r{stroke:var(--danger);stroke-width:1.5;fill:none}
+  .sa-p{stroke:var(--done);stroke-width:1.5;fill:none}
+</style>
+</head>
+<body>
+
+<div class="topbar"><div class="inner">
+  <div class="crumbs">
+    <a href="/" style="color:var(--fg-muted);text-decoration:none">home</a><span class="sep">/</span>
+    <a href="hi-index.html" style="color:var(--fg-muted);text-decoration:none">hello interview</a><span class="sep">/</span>
+    <strong>Dropbox</strong>
+  </div>
+  <div class="actions"><span>hellointerview</span><span>&middot;</span><span>2026-05</span></div>
+</div></div>
+
+<div class="layout">
+
+<aside class="toc-left">
+  <div class="group">
+    <div class="group-title">Design</div>
+    <a href="#req">01 Requirements</a>
+    <a href="#entities">02 Entities &amp; API</a>
+    <a href="#upload">03 Upload flow</a>
+    <a href="#download">04 Download flow</a>
+    <a href="#share">05 Sharing</a>
+    <a href="#sync">06 Sync</a>
+  </div>
+  <div class="group">
+    <div class="group-title">Deep Dives</div>
+    <a href="#highlevel">07 Architecture</a>
+    <a href="#large">08 Large uploads</a>
+    <a href="#chunking">09 Chunking</a>
+    <a href="#speed">10 Speed</a>
+    <a href="#cdc">11 Delta sync</a>
+    <a href="#security">12 Security</a>
+    <a href="#full">13 Complete flow</a>
+    <a href="#glossary">14 Glossary</a>
+  </div>
+</aside>
+
+<main>
+
+<h1>Dropbox &mdash; System Design</h1>
+<div class="badges">
+  <span class="badge"><span class="dot" style="background:var(--accent)"></span>Cloud Storage</span>
+  <span class="badge"><span class="dot" style="background:var(--success)"></span>Blob + Metadata</span>
+  <span class="badge"><span class="dot" style="background:var(--done)"></span>Ambry + CDN</span>
+  <span class="badge"><span class="dot" style="background:var(--attention)"></span>Files up to 50GB</span>
+  <span class="badge"><span class="dot" style="background:var(--orange)"></span>Multipart Upload</span>
+  <span class="badge"><span class="dot" style="background:var(--danger)"></span>Delta Sync</span>
+</div>
+<p>Designing a cloud file storage service. Users upload, download, share, and auto-sync files across devices. The interesting parts are large-file uploads (chunking, resumability, deduplication) and efficient sync (delta sync with content-defined chunking).</p>
+
+<p><strong>LinkedIn mapping:</strong> Ambry (blob store) replaces S3, Espresso (NoSQL) replaces DynamoDB for metadata, LinkedIn CDN replaces CloudFront, and Kafka + Samza replace the notification push layer.</p>
+
+<!-- 01 -->
+<h2 id="req">01 &mdash; Requirements</h2>
+<div class="two-col">
+  <div class="col pros"><h5>In scope</h5><ul><li>Upload a file from any device</li><li>Download a file from any device</li><li>Share a file with other users</li><li>Auto-sync files across devices</li></ul></div>
+  <div class="col cons"><h5>Out of scope</h5><ul><li>Editing files in the cloud</li><li>Viewing files without downloading</li><li>Storage quotas, versioning</li><li>Virus / malware scanning</li></ul></div>
+</div>
+
+<div class="diagram">
+  <div class="diagram-head"><span class="id">Fig 1</span> Non-functional pillars</div>
+  <div class="diagram-body">
+    <svg viewBox="0 0 800 110" xmlns="http://www.w3.org/2000/svg">
+      <defs><marker id="a1" markerWidth="8" markerHeight="8" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#656d76"/></marker></defs>
+      <rect class="sb-b" x="20" y="10" width="170" height="85" rx="6"/>
+      <text class="sl" x="105" y="30" text-anchor="middle">Availability</text>
+      <text class="ss" x="105" y="48" text-anchor="middle">AP system</text>
+      <text class="ss" x="105" y="62" text-anchor="middle">eventual consistency</text>
+      <text class="ss" x="105" y="76" text-anchor="middle">across devices is OK</text>
+      <rect class="sb-y" x="210" y="10" width="170" height="85" rx="6"/>
+      <text class="sl" x="295" y="30" text-anchor="middle">Scale</text>
+      <text class="ss" x="295" y="48" text-anchor="middle">files up to 50GB</text>
+      <text class="ss" x="295" y="62" text-anchor="middle">millions of users</text>
+      <rect class="sb-g" x="400" y="10" width="170" height="85" rx="6"/>
+      <text class="sl" x="485" y="30" text-anchor="middle">Durability</text>
+      <text class="ss" x="485" y="48" text-anchor="middle">no data loss</text>
+      <text class="ss" x="485" y="62" text-anchor="middle">recoverable on</text>
+      <text class="ss" x="485" y="76" text-anchor="middle">corruption / failure</text>
+      <rect class="sb-p" x="590" y="10" width="170" height="85" rx="6"/>
+      <text class="sl" x="675" y="30" text-anchor="middle">Latency</text>
+      <text class="ss" x="675" y="48" text-anchor="middle">fast upload,</text>
+      <text class="ss" x="675" y="62" text-anchor="middle">download, and sync</text>
+      <text class="ss" x="675" y="76" text-anchor="middle">despite huge files</text>
+    </svg>
+  </div>
+</div>
+
+<div class="alert note"><div class="alert-title">CAP trade-off</div><p>Prioritize consistency only when every read must see the latest write (e.g. stock trading). Dropbox tolerates a few seconds of delay between devices, so we go for <strong>availability + eventual consistency</strong> (AP).</p></div>
+
+<!-- 02 -->
+<h2 id="entities">02 &mdash; Core entities &amp; API</h2>
+
+<div class="diagram">
+  <div class="diagram-head"><span class="id">Fig 2</span> Entities &mdash; bytes in Ambry, metadata in Espresso</div>
+  <div class="diagram-body">
+    <svg viewBox="0 0 720 160" xmlns="http://www.w3.org/2000/svg">
+      <rect class="sb" x="20" y="20" width="160" height="120" rx="6"/>
+      <text class="sl" x="100" y="42" text-anchor="middle">User</text>
+      <line x1="34" y1="50" x2="166" y2="50" stroke="var(--border-muted)"/>
+      <text class="ss" x="34" y="68">id: UUID</text>
+      <text class="ss" x="34" y="84">email: string</text>
+      <text class="ss" x="34" y="100">name: string</text>
+      <rect class="sb-b" x="240" y="20" width="200" height="120" rx="6"/>
+      <text class="sl" x="340" y="42" text-anchor="middle">FileMetadata</text>
+      <line x1="254" y1="50" x2="426" y2="50" stroke="var(--border-muted)"/>
+      <text class="ss" x="254" y="68">id: UUID</text>
+      <text class="ss" x="254" y="84">name, size, mimeType</text>
+      <text class="ss" x="254" y="100">uploadedBy: userId</text>
+      <text class="ss" x="254" y="116">fingerprint, chunks[]</text>
+      <rect class="sb-g" x="500" y="20" width="180" height="120" rx="6"/>
+      <text class="sl" x="590" y="42" text-anchor="middle">File (raw bytes)</text>
+      <line x1="514" y1="50" x2="666" y2="50" stroke="var(--border-muted)"/>
+      <text class="ss" x="514" y="68">stored in Ambry</text>
+      <text class="ss" x="514" y="84">(LinkedIn blob store)</text>
+      <text class="ss" x="514" y="104" fill="var(--attention)">separated from</text>
+      <text class="ss" x="514" y="118" fill="var(--attention)">metadata for a reason</text>
+      <path class="sa" d="M180,80 L238,80" marker-end="url(#a1)"/>
+      <text class="ss" x="209" y="74" text-anchor="middle">owns</text>
+      <path class="sa" d="M440,80 L498,80" marker-end="url(#a1)"/>
+      <text class="ss" x="469" y="74" text-anchor="middle">points to</text>
+    </svg>
+  </div>
+</div>
+
+<h4>API endpoints</h4>
+<pre>POST   /files                            <span style="color:var(--fg-muted)"># initiate upload</span>
+       { name, size, mimeType, fingerprint }
+GET    /files/:fileId                    <span style="color:var(--fg-muted)"># download (returns signed URL)</span>
+POST   /files/:fileId/share              <span style="color:var(--fg-muted)"># share with users</span>
+GET    /files/changes?since=:timestamp   <span style="color:var(--fg-muted)"># sync &mdash; pull changes (Kafka offset)</span></pre>
+
+<!-- 03 -->
+<h2 id="upload">03 &mdash; Upload flow</h2>
+<p>Three options &mdash; only presigned URLs win.</p>
+
+<div class="diagram">
+  <div class="diagram-head"><span class="id">Fig 3</span> Upload options &mdash; presigned URL is the winner</div>
+  <div class="diagram-body">
+    <svg viewBox="0 0 800 320" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="ar" markerWidth="8" markerHeight="8" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#cf222e"/></marker>
+        <marker id="ag" markerWidth="8" markerHeight="8" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#1a7f37"/></marker>
+      </defs>
+      <text class="sl" x="20" y="18" fill="var(--danger)">&#x2717; Option 1: Upload through the server</text>
+      <rect class="sb" x="20" y="28" width="100" height="40" rx="4"/><text class="ss" x="70" y="52" text-anchor="middle">Client 50GB</text>
+      <rect class="sb-r" x="150" y="28" width="110" height="40" rx="4"/><text class="ss" x="205" y="52" text-anchor="middle">App Server</text>
+      <rect class="sb-g" x="290" y="28" width="90" height="40" rx="4"/><text class="ss" x="335" y="52" text-anchor="middle">Ambry</text>
+      <path class="sa-r" d="M120,48 L148,48" marker-end="url(#ar)"/>
+      <path class="sa-r" d="M260,48 L288,48" marker-end="url(#ar)"/>
+      <text class="ss" x="420" y="42">Wastes bandwidth. Server is bottleneck.</text>
+      <text class="ss" x="420" y="56">File goes over the wire 2&times;.</text>
+
+      <line x1="20" y1="85" x2="780" y2="85" stroke="var(--border-muted)"/>
+      <text class="sl" x="20" y="105" fill="var(--danger)">&#x2717; Option 2: Direct upload (no auth)</text>
+      <rect class="sb" x="20" y="115" width="100" height="40" rx="4"/><text class="ss" x="70" y="139" text-anchor="middle">Client</text>
+      <rect class="sb-g" x="150" y="115" width="100" height="40" rx="4"/><text class="ss" x="200" y="139" text-anchor="middle">Ambry (public)</text>
+      <path class="sa-r" d="M120,135 L148,135" marker-end="url(#ar)"/>
+      <text class="ss" x="280" y="130">Fast but insecure. Anyone could upload anything.</text>
+
+      <line x1="20" y1="175" x2="780" y2="175" stroke="var(--border-muted)"/>
+      <text class="sl" x="20" y="195" fill="var(--success)">&#x2713; Option 3: Presigned URL (the winner)</text>
+      <rect class="sb" x="20" y="205" width="90" height="40" rx="4"/><text class="ss" x="65" y="229" text-anchor="middle">Client</text>
+      <rect class="sb-b" x="130" y="205" width="120" height="40" rx="4"/><text class="ss" x="190" y="222" text-anchor="middle">File Service</text><text class="ss" x="190" y="236" text-anchor="middle">(metadata only)</text>
+      <rect class="sb-y" x="270" y="205" width="120" height="40" rx="4"/><text class="ss" x="330" y="222" text-anchor="middle">presigned URL</text><text class="ss" x="330" y="236" text-anchor="middle">expires 15min</text>
+      <rect class="sb-g" x="410" y="205" width="90" height="40" rx="4"/><text class="ss" x="455" y="229" text-anchor="middle">Ambry</text>
+      <path class="sa-b" d="M110,225 L128,225" marker-end="url(#a1)"/><text class="sn" x="119" y="218">1</text>
+      <path class="sa-b" d="M250,225 L268,225" marker-end="url(#a1)"/><text class="sn" x="259" y="218">2</text>
+      <path class="sa-g" d="M65,245 L65,280 L455,280 L455,248" marker-end="url(#ag)"/>
+      <text class="sn" x="250" y="295">3 PUT directly to Ambry</text>
+      <text class="ss" x="540" y="218">1: ask for URL &middot; 2: receive signed URL</text>
+      <text class="ss" x="540" y="232">3: PUT bytes to blob store directly</text>
+    </svg>
+  </div>
+  <div class="diagram-cap">Server only handles small metadata calls. File bytes flow client &harr; Ambry directly. Scales infinitely.</div>
+</div>
+
+<div class="alert tip"><div class="alert-title">Why this wins</div><p>Server only handles small metadata. Bytes flow client &harr; Ambry directly. At LinkedIn, Ambry serves petabytes of media this way.</p></div>
+
+<!-- 04 -->
+<h2 id="download">04 &mdash; Download flow</h2>
+
+<div class="diagram">
+  <div class="diagram-head"><span class="id">Fig 4</span> Download via CDN with signed URL</div>
+  <div class="diagram-body">
+    <svg viewBox="0 0 800 200" xmlns="http://www.w3.org/2000/svg">
+      <defs><marker id="ab" markerWidth="8" markerHeight="8" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#0969da"/></marker></defs>
+      <rect class="sb" x="20" y="20" width="120" height="50" rx="6"/><text class="sl" x="80" y="42" text-anchor="middle">Client</text><text class="ss" x="80" y="56" text-anchor="middle">in Mumbai</text>
+      <rect class="sb-b" x="180" y="20" width="130" height="50" rx="6"/><text class="sl" x="245" y="42" text-anchor="middle">File Service</text><text class="ss" x="245" y="56" text-anchor="middle">check ACL</text>
+      <rect class="sb-y" x="350" y="20" width="140" height="50" rx="6"/><text class="sl" x="420" y="42" text-anchor="middle">CDN signed URL</text><text class="ss" x="420" y="56" text-anchor="middle">5min expiry</text>
+      <rect class="sb-p" x="530" y="20" width="180" height="50" rx="6"/><text class="sl" x="620" y="42" text-anchor="middle">CDN edge (Mumbai)</text><text class="ss" x="620" y="56" text-anchor="middle">LinkedIn CDN / Akamai</text>
+      <rect class="sb-g" x="350" y="120" width="360" height="50" rx="6"/><text class="sl" x="530" y="142" text-anchor="middle">Ambry origin</text><text class="ss" x="530" y="158" text-anchor="middle">CDN fetches once, caches at edge</text>
+      <path class="sa-b" d="M140,45 L178,45" marker-end="url(#ab)"/><text class="sn" x="159" y="38">1</text>
+      <path class="sa-b" d="M310,45 L348,45" marker-end="url(#ab)"/><text class="sn" x="329" y="38">2</text>
+      <path class="sa" d="M620,70 L560,118" marker-end="url(#a1)" stroke-dasharray="3,2"/>
+      <text class="ss" x="600" y="105">cache miss</text>
+      <text class="ss" x="20" y="160">1: request download &middot; 2: ACL check &rarr; signed CDN URL &middot; 3: fetch from edge &middot; 4: cache miss fills from Ambry</text>
+    </svg>
+  </div>
+</div>
+
+<!-- 05 -->
+<h2 id="share">05 &mdash; Sharing</h2>
+
+<div class="diagram">
+  <div class="diagram-head"><span class="id">Fig 5</span> SharedFiles ACL in Espresso</div>
+  <div class="diagram-body">
+    <svg viewBox="0 0 800 180" xmlns="http://www.w3.org/2000/svg">
+      <rect class="sb" x="20" y="15" width="110" height="40" rx="6"/><text class="sl" x="75" y="38" text-anchor="middle">Alice (owner)</text>
+      <rect class="sb-b" x="160" y="15" width="140" height="40" rx="6"/><text class="ss" x="230" y="32" text-anchor="middle">POST /share</text><text class="ss" x="230" y="46" text-anchor="middle">[bob@linkedin.com]</text>
+      <rect class="sb-y" x="330" y="15" width="140" height="40" rx="6"/><text class="sl" x="400" y="32" text-anchor="middle">File Service</text><text class="ss" x="400" y="46" text-anchor="middle">writes share record</text>
+      <rect class="sb-g" x="500" y="15" width="180" height="40" rx="6"/><text class="sl" x="590" y="32" text-anchor="middle">SharedFiles (Espresso)</text><text class="ss" x="590" y="46" text-anchor="middle">fileId &rarr; userId</text>
+      <path class="sa" d="M130,35 L158,35" marker-end="url(#a1)"/>
+      <path class="sa" d="M300,35 L328,35" marker-end="url(#a1)"/>
+      <path class="sa" d="M470,35 L498,35" marker-end="url(#a1)"/>
+
+      <rect class="sb" x="20" y="90" width="140" height="50" rx="6"/><text class="sl" x="90" y="112" text-anchor="middle">Bob downloads</text><text class="ss" x="90" y="128" text-anchor="middle">GET /files/:id</text>
+      <rect class="sb-y" x="190" y="90" width="160" height="50" rx="6"/><text class="sl" x="270" y="112" text-anchor="middle">Auth check</text><text class="ss" x="270" y="128" text-anchor="middle">SELECT FROM SharedFiles</text>
+      <rect class="sb-g" x="380" y="90" width="180" height="50" rx="6"/><text class="sl" x="470" y="112" text-anchor="middle">Bob &isin; ACL &rarr; signed URL</text><text class="ss" x="470" y="128" text-anchor="middle">access granted</text>
+      <path class="sa" d="M160,115 L188,115" marker-end="url(#a1)"/>
+      <path class="sa" d="M350,115 L378,115" marker-end="url(#a1)"/>
+    </svg>
+  </div>
+</div>
+
+<!-- 06 -->
+<h2 id="sync">06 &mdash; Sync across devices</h2>
+<p>Two directions: <strong>Local &rarr; Remote</strong> (client uploads changes) and <strong>Remote &rarr; Local</strong> (client receives changes).</p>
+
+<div class="diagram">
+  <div class="diagram-head"><span class="id">Fig 6</span> Local &rarr; Remote sync</div>
+  <div class="diagram-body">
+    <svg viewBox="0 0 800 140" xmlns="http://www.w3.org/2000/svg">
+      <rect class="sb-b" x="20" y="20" width="150" height="90" rx="6"/>
+      <text class="sl" x="95" y="40" text-anchor="middle">Sync Agent</text>
+      <text class="ss" x="95" y="56" text-anchor="middle">watches folder</text>
+      <text class="ss" x="95" y="70" text-anchor="middle">FSEvents / inotify</text>
+      <text class="ss" x="95" y="84" text-anchor="middle">FileSystemWatcher</text>
+      <rect class="sb-y" x="200" y="40" width="120" height="45" rx="6"/><text class="sl" x="260" y="58" text-anchor="middle">Local queue</text><text class="ss" x="260" y="72" text-anchor="middle">changed files</text>
+      <rect class="sb-g" x="350" y="40" width="120" height="45" rx="6"/><text class="sl" x="410" y="58" text-anchor="middle">Upload API</text><text class="ss" x="410" y="72" text-anchor="middle">presigned URL</text>
+      <rect class="sb-p" x="500" y="40" width="180" height="45" rx="6"/><text class="sl" x="590" y="58" text-anchor="middle">Ambry + Espresso</text><text class="ss" x="590" y="72" text-anchor="middle">source of truth</text>
+      <path class="sa" d="M170,65 L198,65" marker-end="url(#a1)"/>
+      <path class="sa" d="M320,65 L348,65" marker-end="url(#a1)"/>
+      <path class="sa" d="M470,65 L498,65" marker-end="url(#a1)"/>
+      <text class="ss" x="400" y="120" text-anchor="middle">Conflict resolution: last-write-wins.</text>
+    </svg>
+  </div>
+</div>
+
+<div class="diagram">
+  <div class="diagram-head"><span class="id">Fig 7</span> Remote &rarr; Local: push (Kafka) + poll (fallback)</div>
+  <div class="diagram-body">
+    <svg viewBox="0 0 800 220" xmlns="http://www.w3.org/2000/svg">
+      <defs><marker id="ap" markerWidth="8" markerHeight="8" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#8250df"/></marker>
+            <marker id="ay" markerWidth="8" markerHeight="8" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#9a6700"/></marker></defs>
+      <rect class="sb-p" x="20" y="20" width="170" height="60" rx="6"/>
+      <text class="sl" x="105" y="40" text-anchor="middle">Kafka + Samza</text>
+      <text class="ss" x="105" y="56" text-anchor="middle">WebSocket per device</text>
+      <text class="ss" x="105" y="70" text-anchor="middle">pushes ChangeEvent</text>
+      <rect class="sb-b" x="280" y="20" width="150" height="60" rx="6"/>
+      <text class="sl" x="355" y="40" text-anchor="middle">Local Client</text>
+      <text class="ss" x="355" y="56" text-anchor="middle">listens for events</text>
+      <text class="ss" x="355" y="70" text-anchor="middle">downloads changes</text>
+      <path d="M190,50 L278,50" stroke="var(--done)" stroke-width="1.5" marker-end="url(#ap)" fill="none"/>
+      <text class="sn" x="234" y="42" text-anchor="middle" fill="var(--done)">push (primary)</text>
+
+      <line x1="20" y1="105" x2="780" y2="105" stroke="var(--border-muted)" stroke-dasharray="3,2"/>
+
+      <rect class="sb-y" x="20" y="120" width="170" height="60" rx="6"/>
+      <text class="sl" x="105" y="140" text-anchor="middle">Sync Service</text>
+      <text class="ss" x="105" y="156" text-anchor="middle">GET /files/changes</text>
+      <text class="ss" x="105" y="170" text-anchor="middle">?since=&lt;kafka-offset&gt;</text>
+      <rect class="sb-b" x="280" y="120" width="150" height="60" rx="6"/>
+      <text class="sl" x="355" y="140" text-anchor="middle">Local Client</text>
+      <text class="ss" x="355" y="156" text-anchor="middle">polls every few min</text>
+      <text class="ss" x="355" y="170" text-anchor="middle">as safety net</text>
+      <path d="M278,150 L200,150" stroke="var(--attention)" stroke-width="1.5" marker-end="url(#ay)" fill="none"/>
+      <text class="sn" x="234" y="195" text-anchor="middle" fill="var(--attention)">poll (fallback)</text>
+
+      <text class="ss" x="460" y="155">WebSockets drop. The poll catches misses.</text>
+      <text class="ss" x="460" y="170">Guarantees eventual consistency.</text>
+    </svg>
+  </div>
+</div>
+
+<!-- 07 -->
+<h2 id="highlevel">07 &mdash; High-level architecture</h2>
+
+<div class="diagram">
+  <div class="diagram-head"><span class="id">Fig 8</span> Full architecture &mdash; LinkedIn stack</div>
+  <div class="diagram-body">
+    <svg viewBox="0 0 900 420" xmlns="http://www.w3.org/2000/svg">
+      <rect class="sb-b" x="20" y="20" width="140" height="50" rx="6"/><text class="sl" x="90" y="42" text-anchor="middle">Uploader</text><text class="ss" x="90" y="56" text-anchor="middle">web/mobile/desktop</text>
+      <rect class="sb-g" x="20" y="100" width="140" height="50" rx="6"/><text class="sl" x="90" y="122" text-anchor="middle">Downloader</text><text class="ss" x="90" y="136" text-anchor="middle">any device</text>
+
+      <rect class="sb-y" x="220" y="60" width="150" height="50" rx="6"/><text class="sl" x="295" y="82" text-anchor="middle">LB + API Gateway</text><text class="ss" x="295" y="96" text-anchor="middle">TLS, rate-limit, auth</text>
+
+      <rect class="sb-b" x="420" y="60" width="180" height="50" rx="6"/><text class="sl" x="510" y="82" text-anchor="middle">File Service</text><text class="ss" x="510" y="96" text-anchor="middle">metadata + signed URLs</text>
+
+      <rect class="sb-g" x="660" y="20" width="180" height="60" rx="6"/><text class="sl" x="750" y="42" text-anchor="middle">Espresso (metadata)</text><text class="ss" x="750" y="58" text-anchor="middle">FileMetadata + SharedFiles</text>
+
+      <rect class="sb-p" x="420" y="200" width="180" height="50" rx="6"/><text class="sl" x="510" y="222" text-anchor="middle">Ambry (blob store)</text><text class="ss" x="510" y="236" text-anchor="middle">raw file bytes</text>
+
+      <rect class="sb-o" x="220" y="200" width="150" height="50" rx="6"/><text class="sl" x="295" y="222" text-anchor="middle">LinkedIn CDN</text><text class="ss" x="295" y="236" text-anchor="middle">edge caches</text>
+
+      <rect class="sb-r" x="420" y="300" width="180" height="50" rx="6"/><text class="sl" x="510" y="322" text-anchor="middle">Kafka + Samza</text><text class="ss" x="510" y="336" text-anchor="middle">push ChangeEvents</text>
+
+      <path d="M160,45 L218,80" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#ab)" fill="none"/>
+      <path d="M160,125 L218,95" stroke="var(--success)" stroke-width="1.5" marker-end="url(#a1)" fill="none"/>
+      <path d="M370,85 L418,85" stroke="var(--fg-muted)" stroke-width="1.5" marker-end="url(#a1)" fill="none"/>
+      <path d="M600,80 L658,55" stroke="var(--fg-muted)" stroke-width="1.5" marker-end="url(#a1)" fill="none"/>
+
+      <path d="M90,70 L90,200 L418,222" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#ab)" fill="none"/>
+      <text class="ss" x="140" y="195" fill="var(--accent)">direct upload (presigned URL)</text>
+
+      <path d="M160,150 L240,198" stroke="var(--success)" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#a1)" fill="none"/>
+      <text class="ss" x="130" y="200" fill="var(--success)">via CDN</text>
+
+      <path d="M510,250 L370,225" stroke="var(--fg-muted)" stroke-width="1.5" stroke-dasharray="3,2" marker-end="url(#a1)" fill="none"/>
+      <text class="ss" x="440" y="243" text-anchor="middle">cache fill</text>
+
+      <path d="M510,350 L90,155" stroke="var(--danger)" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#a1)" fill="none"/>
+      <text class="ss" x="280" y="340" fill="var(--danger)">push change events</text>
+
+      <text class="ss" x="20" y="390" fill="var(--accent)">&mdash;&mdash; control plane (metadata + signed URLs)</text>
+      <text class="ss" x="350" y="390" fill="var(--accent)">&middot;&middot;&middot;&middot; data plane (bytes direct to Ambry)</text>
+      <text class="ss" x="650" y="390" fill="var(--danger)">&middot;&middot;&middot;&middot; push notifications (Kafka)</text>
+    </svg>
+  </div>
+  <div class="diagram-cap">Control plane (metadata) and data plane (bytes) are separate &mdash; the core Dropbox insight.</div>
+</div>
+
+<table>
+  <tr><th>Component</th><th>LinkedIn equivalent</th><th>Responsibility</th></tr>
+  <tr><td>File Service</td><td>Li REST service</td><td>Metadata CRUD, generates presigned URLs (never touches bytes)</td></tr>
+  <tr><td>FileMetadata DB</td><td><strong>Espresso</strong></td><td>name, size, mime, owner, fingerprint, chunks, status</td></tr>
+  <tr><td>SharedFiles table</td><td><strong>Espresso</strong></td><td>ACL: which user can access which file</td></tr>
+  <tr><td>Blob store</td><td><strong>Ambry</strong></td><td>Raw file bytes. Encrypted at rest. Replicated across DCs.</td></tr>
+  <tr><td>CDN</td><td><strong>LinkedIn CDN / Akamai</strong></td><td>Edge caches for download. Signed URLs.</td></tr>
+  <tr><td>Notifications</td><td><strong>Kafka + Samza</strong></td><td>Event stream. Samza consumer pushes ChangeEvents via WebSocket.</td></tr>
+</table>
+
+<!-- 08 -->
+<h2 id="large">08 &mdash; Large file uploads: the problem</h2>
+
+<div class="diagram">
+  <div class="diagram-head"><span class="id">Fig 9</span> Why a single POST fails for 50GB</div>
+  <div class="diagram-body">
+    <svg viewBox="0 0 800 190" xmlns="http://www.w3.org/2000/svg">
+      <rect class="sb-r" x="20" y="10" width="760" height="80" rx="6"/>
+      <text class="sl" x="40" y="30">Time math</text>
+      <text class="ss" x="40" y="48">50 GB &times; 8 bits/byte = 400 Gb</text>
+      <text class="ss" x="40" y="62">400 Gb &div; 100 Mbps = 4,000 seconds = 1.11 hours</text>
+      <text class="ss" x="40" y="78">No server keeps a connection open that long. No browser shows useful progress.</text>
+
+      <rect class="sb-y" x="20" y="110" width="170" height="50" rx="6"/><text class="sl" x="105" y="130" text-anchor="middle">Server timeouts</text><text class="ss" x="105" y="146" text-anchor="middle">5-30 min typical</text>
+      <rect class="sb-y" x="210" y="110" width="170" height="50" rx="6"/><text class="sl" x="295" y="130" text-anchor="middle">Payload limits</text><text class="ss" x="295" y="146" text-anchor="middle">Gateway: 10MB cap</text>
+      <rect class="sb-y" x="400" y="110" width="170" height="50" rx="6"/><text class="sl" x="485" y="130" text-anchor="middle">Network drops</text><text class="ss" x="485" y="146" text-anchor="middle">WiFi blip = restart</text>
+      <rect class="sb-y" x="590" y="110" width="170" height="50" rx="6"/><text class="sl" x="675" y="130" text-anchor="middle">No UX feedback</text><text class="ss" x="675" y="146" text-anchor="middle">spinner for an hour</text>
+    </svg>
+  </div>
+  <div class="diagram-cap">Fix: chunking. Break into 5&ndash;10MB pieces and upload each independently.</div>
+</div>
+
+<!-- 09 -->
+<h2 id="chunking">09 &mdash; Chunking &amp; resumability</h2>
+
+<div class="diagram">
+  <div class="diagram-head"><span class="id">Fig 10</span> Parallel chunk uploads</div>
+  <div class="diagram-body">
+    <svg viewBox="0 0 800 220" xmlns="http://www.w3.org/2000/svg">
+      <rect class="sb" x="20" y="10" width="180" height="50" rx="6"/><text class="sl" x="110" y="30" text-anchor="middle">50GB file (client)</text><text class="ss" x="110" y="46" text-anchor="middle">SHA-256 fingerprint</text>
+      <rect class="sb-p" x="240" y="10" width="180" height="50" rx="6"/><text class="sl" x="330" y="30" text-anchor="middle">Client chunks file</text><text class="ss" x="330" y="46" text-anchor="middle">5&ndash;10 MB, fingerprint each</text>
+      <rect class="sb-b" x="460" y="10" width="220" height="50" rx="6"/><text class="sl" x="570" y="30" text-anchor="middle">Initiate Multipart Upload</text><text class="ss" x="570" y="46" text-anchor="middle">Ambry returns uploadId + URLs</text>
+      <path class="sa" d="M200,35 L238,35" marker-end="url(#a1)"/>
+      <path class="sa" d="M420,35 L458,35" marker-end="url(#a1)"/>
+
+      <text class="sl" x="20" y="90">Parallel chunk uploads to Ambry:</text>
+      <rect class="sb-g" x="20" y="100" width="85" height="35" rx="4"/><text class="ss" x="62" y="116" text-anchor="middle">chunk 1 &check;</text>
+      <rect class="sb-g" x="115" y="100" width="85" height="35" rx="4"/><text class="ss" x="157" y="116" text-anchor="middle">chunk 2 &check;</text>
+      <rect class="sb-y" x="210" y="100" width="85" height="35" rx="4"/><text class="ss" x="252" y="116" text-anchor="middle">chunk 3...</text>
+      <rect class="sb" x="305" y="100" width="85" height="35" rx="4"/><text class="ss" x="347" y="116" text-anchor="middle">chunk 4</text>
+      <rect class="sb" x="400" y="100" width="85" height="35" rx="4"/><text class="ss" x="442" y="116" text-anchor="middle">chunk 5</text>
+      <text class="ss" x="510" y="122">...up to chunk N</text>
+
+      <rect class="sb-o" x="20" y="155" width="760" height="50" rx="6"/>
+      <text class="sl" x="40" y="174">After each chunk: PATCH /files/:id &rarr; backend updates chunks[] in Espresso</text>
+      <text class="ss" x="40" y="192">All done &rarr; CompleteMultipartUpload &rarr; Ambry assembles &rarr; status = &ldquo;uploaded&rdquo;</text>
+    </svg>
+  </div>
+</div>
+
+<div class="diagram">
+  <div class="diagram-head"><span class="id">Fig 11</span> Upload sequence diagram</div>
+  <div class="diagram-body">
+    <svg viewBox="0 0 800 320" xmlns="http://www.w3.org/2000/svg">
+      <line x1="80" y1="35" x2="80" y2="310" stroke="var(--border)" stroke-width="1"/>
+      <line x1="280" y1="35" x2="280" y2="310" stroke="var(--border)" stroke-width="1"/>
+      <line x1="480" y1="35" x2="480" y2="310" stroke="var(--border)" stroke-width="1"/>
+      <line x1="680" y1="35" x2="680" y2="310" stroke="var(--border)" stroke-width="1"/>
+      <rect class="sb" x="35" y="10" width="90" height="22" rx="3"/><text class="ss" x="80" y="24" text-anchor="middle">Client</text>
+      <rect class="sb-b" x="235" y="10" width="90" height="22" rx="3"/><text class="ss" x="280" y="24" text-anchor="middle">File Service</text>
+      <rect class="sb-y" x="435" y="10" width="90" height="22" rx="3"/><text class="ss" x="480" y="24" text-anchor="middle">Espresso</text>
+      <rect class="sb-g" x="635" y="10" width="90" height="22" rx="3"/><text class="ss" x="680" y="24" text-anchor="middle">Ambry</text>
+
+      <path d="M80,50 L280,50" stroke="var(--accent)" stroke-width="1.2" marker-end="url(#ab)"/>
+      <text class="ss" x="180" y="45" text-anchor="middle">1. Check fingerprint</text>
+      <path d="M280,68 L480,68" stroke="var(--fg-muted)" stroke-width="1.2" marker-end="url(#a1)"/>
+      <text class="ss" x="380" y="63" text-anchor="middle">2. SELECT WHERE fingerprint=...</text>
+      <path d="M480,82 L280,82" stroke="var(--fg-muted)" stroke-width="1.2" stroke-dasharray="3,2" marker-end="url(#ab)"/>
+      <text class="ss" x="380" y="96" text-anchor="middle">not found</text>
+
+      <path d="M280,115 L680,115" stroke="var(--accent)" stroke-width="1.2" marker-end="url(#ab)"/>
+      <text class="ss" x="480" y="110" text-anchor="middle">3. CreateMultipartUpload</text>
+      <path d="M680,130 L280,130" stroke="var(--fg-muted)" stroke-width="1.2" stroke-dasharray="3,2" marker-end="url(#ab)"/>
+      <text class="ss" x="480" y="144" text-anchor="middle">uploadId + presigned URLs</text>
+
+      <path d="M280,158 L480,158" stroke="var(--fg-muted)" stroke-width="1.2" marker-end="url(#a1)"/>
+      <text class="ss" x="380" y="153" text-anchor="middle">4. INSERT metadata (status=uploading)</text>
+
+      <path d="M280,185 L80,185" stroke="var(--accent)" stroke-width="1.2" stroke-dasharray="3,2" marker-end="url(#ab)"/>
+      <text class="ss" x="180" y="180" text-anchor="middle">5. uploadId + presigned URLs</text>
+
+      <path d="M80,215 L680,215" stroke="var(--success)" stroke-width="1.5" marker-end="url(#a1)"/>
+      <text class="ss" x="380" y="210" text-anchor="middle">6. PUT chunk N directly to Ambry (parallel)</text>
+
+      <path d="M80,245 L280,245" stroke="var(--accent)" stroke-width="1.2" marker-end="url(#ab)"/>
+      <text class="ss" x="180" y="240" text-anchor="middle">7. PATCH /files/:id (chunk N done, ETag)</text>
+
+      <path d="M280,275 L680,275" stroke="var(--accent)" stroke-width="1.2" marker-end="url(#ab)"/>
+      <text class="ss" x="480" y="270" text-anchor="middle">8. CompleteMultipartUpload</text>
+      <path d="M280,298 L480,298" stroke="var(--fg-muted)" stroke-width="1.2" marker-end="url(#a1)"/>
+      <text class="ss" x="380" y="293" text-anchor="middle">9. UPDATE status=uploaded</text>
+    </svg>
+  </div>
+</div>
+
+<h4>Fingerprinting</h4>
+<p>Client computes <code>SHA-256(file)</code> before uploading. Two wins: <strong>deduplication</strong> (same file = one copy in Ambry) and <strong>resumability</strong> (which chunks made it?).</p>
+
+<pre>{ "id": "uuid", "fingerprint": "sha256:...", "name": "presentation.key",
+  "size": 50000000000, "status": "uploading",
+  "chunks": [
+    { "id": "chunk1", "fingerprint": "...", "status": "uploaded" },
+    { "id": "chunk2", "fingerprint": "...", "status": "uploading" },
+    { "id": "chunk3", "fingerprint": "...", "status": "not-uploaded" }
+  ]}</pre>
+
+<!-- 10 -->
+<h2 id="speed">10 &mdash; Speeding things up</h2>
+
+<div class="diagram">
+  <div class="diagram-head"><span class="id">Fig 12</span> Four speed levers</div>
+  <div class="diagram-body">
+    <svg viewBox="0 0 800 140" xmlns="http://www.w3.org/2000/svg">
+      <rect class="sb-b" x="20" y="10" width="175" height="110" rx="6"/>
+      <text class="sl" x="107" y="30" text-anchor="middle">Parallel chunks</text>
+      <text class="ss" x="107" y="48" text-anchor="middle">upload 6+ in parallel</text>
+      <text class="ss" x="107" y="62" text-anchor="middle">saturate bandwidth</text>
+      <text class="ss" x="107" y="80" text-anchor="middle">adaptive sizes</text>
+      <rect class="sb-g" x="210" y="10" width="175" height="110" rx="6"/>
+      <text class="sl" x="297" y="30" text-anchor="middle">CDN for downloads</text>
+      <text class="ss" x="297" y="48" text-anchor="middle">edge cache near user</text>
+      <text class="ss" x="297" y="62" text-anchor="middle">first hit from Ambry</text>
+      <text class="ss" x="297" y="76" text-anchor="middle">rest from edge</text>
+      <rect class="sb-p" x="400" y="10" width="175" height="110" rx="6"/>
+      <text class="sl" x="487" y="30" text-anchor="middle">Compression</text>
+      <text class="ss" x="487" y="48" text-anchor="middle">client-side only</text>
+      <text class="ss" x="487" y="62" text-anchor="middle">Zstd for text</text>
+      <text class="ss" x="487" y="76" text-anchor="middle">skip media (already compressed)</text>
+      <rect class="sb-y" x="590" y="10" width="175" height="110" rx="6"/>
+      <text class="sl" x="677" y="30" text-anchor="middle">Delta sync</text>
+      <text class="ss" x="677" y="48" text-anchor="middle">re-upload only</text>
+      <text class="ss" x="677" y="62" text-anchor="middle">changed chunks</text>
+      <text class="ss" x="677" y="80" text-anchor="middle">needs CDC</text>
+    </svg>
+  </div>
+</div>
+
+<div class="alert note"><div class="alert-title">Compress before encrypting</div><p>Encryption introduces randomness; randomness compresses poorly. Compress first, then encrypt.</p></div>
+
+<!-- 11 -->
+<h2 id="cdc">11 &mdash; Delta sync &amp; Content-Defined Chunking</h2>
+
+<div class="diagram">
+  <div class="diagram-head"><span class="id">Fig 13</span> Fixed chunks vs CDC &mdash; why CDC wins</div>
+  <div class="diagram-body">
+    <svg viewBox="0 0 800 260" xmlns="http://www.w3.org/2000/svg">
+      <text class="sl" x="20" y="16" fill="var(--danger)">Na&iuml;ve: fixed-size 5MB chunks</text>
+      <rect class="sb" x="20" y="25" width="110" height="28" rx="4"/><text class="ss" x="75" y="43" text-anchor="middle">chunk 1</text>
+      <rect class="sb" x="140" y="25" width="110" height="28" rx="4"/><text class="ss" x="195" y="43" text-anchor="middle">chunk 2</text>
+      <rect class="sb" x="260" y="25" width="110" height="28" rx="4"/><text class="ss" x="315" y="43" text-anchor="middle">chunk 3</text>
+      <rect class="sb" x="380" y="25" width="110" height="28" rx="4"/><text class="ss" x="435" y="43" text-anchor="middle">chunk 4</text>
+      <rect class="sb" x="500" y="25" width="110" height="28" rx="4"/><text class="ss" x="555" y="43" text-anchor="middle">chunk 5</text>
+
+      <text class="ss" x="20" y="72">Insert 1 byte at position 0:</text>
+      <rect class="sb-r" x="20" y="80" width="110" height="28" rx="4"/><text class="ss" x="75" y="98" text-anchor="middle">chunk 1'</text>
+      <rect class="sb-r" x="140" y="80" width="110" height="28" rx="4"/><text class="ss" x="195" y="98" text-anchor="middle">chunk 2'</text>
+      <rect class="sb-r" x="260" y="80" width="110" height="28" rx="4"/><text class="ss" x="315" y="98" text-anchor="middle">chunk 3'</text>
+      <rect class="sb-r" x="380" y="80" width="110" height="28" rx="4"/><text class="ss" x="435" y="98" text-anchor="middle">chunk 4'</text>
+      <rect class="sb-r" x="500" y="80" width="110" height="28" rx="4"/><text class="ss" x="555" y="98" text-anchor="middle">chunk 5'</text>
+      <text class="ss" x="640" y="98" fill="var(--danger)">ALL differ!</text>
+
+      <line x1="20" y1="130" x2="780" y2="130" stroke="var(--border-muted)"/>
+
+      <text class="sl" x="20" y="150" fill="var(--success)">CDC: boundaries from content (rolling hash)</text>
+      <rect class="sb-g" x="20" y="160" width="75" height="28" rx="4"/><text class="ss" x="57" y="178" text-anchor="middle">chunk 1</text>
+      <rect class="sb-g" x="105" y="160" width="130" height="28" rx="4"/><text class="ss" x="170" y="178" text-anchor="middle">chunk 2</text>
+      <rect class="sb-g" x="245" y="160" width="90" height="28" rx="4"/><text class="ss" x="290" y="178" text-anchor="middle">chunk 3</text>
+      <rect class="sb-g" x="345" y="160" width="145" height="28" rx="4"/><text class="ss" x="417" y="178" text-anchor="middle">chunk 4</text>
+      <rect class="sb-g" x="500" y="160" width="110" height="28" rx="4"/><text class="ss" x="555" y="178" text-anchor="middle">chunk 5</text>
+
+      <text class="ss" x="20" y="212">After insert: only chunk 1' changes; chunks 2&ndash;5 stay identical.</text>
+      <text class="ss" x="20" y="228" fill="var(--success)">Sync only the changed chunk &mdash; even 50GB syncs in ms.</text>
+      <text class="ss" x="20" y="250">How: slide a window, compute rolling hash (Rabin fingerprint). Magic pattern = chunk boundary.</text>
+    </svg>
+  </div>
+</div>
+
+<!-- 12 -->
+<h2 id="security">12 &mdash; Security</h2>
+
+<div class="diagram">
+  <div class="diagram-head"><span class="id">Fig 14</span> Four security layers</div>
+  <div class="diagram-body">
+    <svg viewBox="0 0 800 120" xmlns="http://www.w3.org/2000/svg">
+      <rect class="sb-b" x="20" y="10" width="175" height="95" rx="6"/>
+      <text class="sl" x="107" y="30" text-anchor="middle">In transit</text>
+      <text class="ss" x="107" y="48" text-anchor="middle">HTTPS / TLS everywhere</text>
+      <text class="ss" x="107" y="62" text-anchor="middle">non-negotiable</text>
+      <rect class="sb-g" x="210" y="10" width="175" height="95" rx="6"/>
+      <text class="sl" x="297" y="30" text-anchor="middle">At rest</text>
+      <text class="ss" x="297" y="48" text-anchor="middle">Ambry server-side</text>
+      <text class="ss" x="297" y="62" text-anchor="middle">AES-256 encryption</text>
+      <rect class="sb-y" x="400" y="10" width="175" height="95" rx="6"/>
+      <text class="sl" x="487" y="30" text-anchor="middle">Access control</text>
+      <text class="ss" x="487" y="48" text-anchor="middle">SharedFiles ACL</text>
+      <text class="ss" x="487" y="62" text-anchor="middle">checked before URL gen</text>
+      <rect class="sb-r" x="590" y="10" width="175" height="95" rx="6"/>
+      <text class="sl" x="677" y="30" text-anchor="middle">Signed URLs</text>
+      <text class="ss" x="677" y="48" text-anchor="middle">short expiry (5min)</text>
+      <text class="ss" x="677" y="62" text-anchor="middle">limits leak blast radius</text>
+    </svg>
+  </div>
+</div>
+
+<div class="alert warning"><div class="alert-title">Signed URLs are bearer tokens</div><p>Anyone with a valid, unexpired signed URL can use it. The 5-min expiry limits exposure. For sensitive workloads, bind to requester&rsquo;s IP or cookie.</p></div>
+
+<!-- 13 -->
+<h2 id="full">13 &mdash; Complete end-to-end flow</h2>
+
+<div class="diagram">
+  <div class="diagram-head"><span class="id">Fig 15</span> End-to-end &mdash; LinkedIn stack</div>
+  <div class="diagram-body">
+    <svg viewBox="0 0 900 480" xmlns="http://www.w3.org/2000/svg">
+      <rect class="sb-b" x="20" y="20" width="150" height="60" rx="6"/><text class="sl" x="95" y="40" text-anchor="middle">Uploader (Device A)</text><text class="ss" x="95" y="56" text-anchor="middle">chunks + fingerprints</text>
+      <rect class="sb-g" x="720" y="20" width="160" height="60" rx="6"/><text class="sl" x="800" y="40" text-anchor="middle">Downloader (Device B)</text><text class="ss" x="800" y="56" text-anchor="middle">receives change events</text>
+
+      <rect class="sb-y" x="200" y="120" width="150" height="45" rx="6"/><text class="sl" x="275" y="140" text-anchor="middle">LB + API Gateway</text>
+      <rect class="sb-b" x="200" y="200" width="220" height="55" rx="6"/><text class="sl" x="310" y="220" text-anchor="middle">File Service (control plane)</text><text class="ss" x="310" y="236" text-anchor="middle">metadata + presigned URLs</text>
+
+      <rect class="sb-y" x="40" y="310" width="150" height="55" rx="6"/><text class="sl" x="115" y="330" text-anchor="middle">Espresso</text><text class="ss" x="115" y="346" text-anchor="middle">metadata + ACL</text>
+      <rect class="sb-p" x="480" y="290" width="170" height="55" rx="6"/><text class="sl" x="565" y="310" text-anchor="middle">Ambry</text><text class="ss" x="565" y="326" text-anchor="middle">multipart + CDC chunks</text>
+      <rect class="sb-o" x="720" y="290" width="160" height="55" rx="6"/><text class="sl" x="800" y="310" text-anchor="middle">LinkedIn CDN</text><text class="ss" x="800" y="326" text-anchor="middle">edge caches</text>
+      <rect class="sb-r" x="480" y="395" width="170" height="55" rx="6"/><text class="sl" x="565" y="415" text-anchor="middle">Kafka + Samza</text><text class="ss" x="565" y="432" text-anchor="middle">push ChangeEvents</text>
+
+      <path d="M170,60 L208,118" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#ab)" fill="none"/><text class="sn" x="175" y="100">1</text>
+      <path d="M275,165 L300,198" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#ab)" fill="none"/><text class="sn" x="275" y="188">2</text>
+      <path d="M250,255 Q150,280 130,308" stroke="var(--attention)" stroke-width="1.5" marker-end="url(#a1)" fill="none"/><text class="sn" x="155" y="290">3</text>
+      <path d="M420,225 Q480,260 560,288" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#ab)" fill="none"/><text class="sn" x="480" y="262">4</text>
+
+      <path d="M95,80 L95,315 L478,315" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#ab)" fill="none"/>
+      <text class="ss" x="180" y="310" fill="var(--accent)">direct chunk PUT</text>
+
+      <path d="M800,345 Q810,200 800,85" stroke="var(--success)" stroke-width="1.5" marker-end="url(#a1)" fill="none"/><text class="sn" x="825" y="180" fill="var(--success)">7</text>
+      <path d="M650,315 L718,315" stroke="var(--fg-muted)" stroke-width="1.5" stroke-dasharray="3,2" marker-end="url(#a1)" fill="none"/>
+
+      <path d="M565,450 Q500,460 350,260" stroke="var(--danger)" stroke-width="1.5" stroke-dasharray="3,2" marker-end="url(#a1)" fill="none"/><text class="sn" x="440" y="400" fill="var(--danger)">5</text>
+      <path d="M650,420 Q780,280 800,85" stroke="var(--danger)" stroke-width="1.5" stroke-dasharray="3,2" marker-end="url(#a1)" fill="none"/><text class="sn" x="770" y="250" fill="var(--danger)">6</text>
+
+      <text class="ss" x="20" y="470" fill="var(--accent)">&mdash;&mdash; control plane</text>
+      <text class="ss" x="200" y="470" fill="var(--accent)">&middot;&middot;&middot;&middot; data plane (Ambry)</text>
+      <text class="ss" x="450" y="470" fill="var(--danger)">&middot;&middot;&middot;&middot; push (Kafka)</text>
+    </svg>
+  </div>
+</div>
+
+<table>
+  <tr><th>#</th><th>Step</th><th>What happens</th></tr>
+  <tr><td>1</td><td>Initiate upload</td><td>Client computes fingerprints, hits API Gateway with JWT.</td></tr>
+  <tr><td>2</td><td>File Service</td><td>Creates Espresso row, calls Ambry CreateMultipartUpload.</td></tr>
+  <tr><td>3</td><td>Persist</td><td>Metadata saved in Espresso: status=uploading, chunk list.</td></tr>
+  <tr><td>4</td><td>Direct upload</td><td>Client PUTs each chunk directly to Ambry via presigned URL.</td></tr>
+  <tr><td>5</td><td>Notify</td><td>On complete, publish ChangeEvent to Kafka. Samza pushes via WebSocket.</td></tr>
+  <tr><td>6</td><td>Device B event</td><td>Receives push, triggers download.</td></tr>
+  <tr><td>7</td><td>Download via CDN</td><td>Device B fetches from nearest LinkedIn CDN edge (or just changed chunks).</td></tr>
+</table>
+
+<!-- 14 -->
+<h2 id="glossary">14 &mdash; Glossary</h2>
+<div class="gloss-grid">
+  <div class="gloss-card"><div class="term">Presigned URL</div><div class="def">URL cryptographically signed by the server, granting time-limited PUT/GET to a specific blob. Bytes flow client &harr; Ambry directly.</div></div>
+  <div class="gloss-card"><div class="term">Multipart Upload</div><div class="def">Ambry/S3 feature: upload one object in many parts (5MB&ndash;5GB each). Initiate &rarr; upload parts &rarr; complete.</div></div>
+  <div class="gloss-card"><div class="term">Chunk</div><div class="def">5&ndash;10MB piece of a file. Uploaded independently, in parallel, with progress tracking.</div></div>
+  <div class="gloss-card"><div class="term">Fingerprint</div><div class="def">SHA-256 hash of file content. Dedup key + resume key.</div></div>
+  <div class="gloss-card"><div class="term">Deduplication</div><div class="def">Same fingerprint = one copy in Ambry, even across users.</div></div>
+  <div class="gloss-card"><div class="term">CDC</div><div class="def">Content-Defined Chunking. Rolling hash sets boundaries from content, not fixed offsets. Edits don&rsquo;t shift later chunks.</div></div>
+  <div class="gloss-card"><div class="term">Delta Sync</div><div class="def">Sync only changed chunks, not the whole file. Requires CDC.</div></div>
+  <div class="gloss-card"><div class="term">Ambry</div><div class="def">LinkedIn&rsquo;s distributed blob store. Replicated across DCs. Equivalent to S3.</div></div>
+  <div class="gloss-card"><div class="term">Espresso</div><div class="def">LinkedIn&rsquo;s NoSQL document store (MySQL + Helix). Metadata + ACL live here.</div></div>
+  <div class="gloss-card"><div class="term">Kafka</div><div class="def">LinkedIn&rsquo;s event streaming platform. ChangeEvents published here.</div></div>
+  <div class="gloss-card"><div class="term">Samza</div><div class="def">LinkedIn&rsquo;s stream processor. Consumes Kafka events, pushes via WebSocket.</div></div>
+  <div class="gloss-card"><div class="term">CDN</div><div class="def">Content Delivery Network. LinkedIn uses Akamai + internal CDN for edge caching.</div></div>
+  <div class="gloss-card"><div class="term">Control / Data Plane</div><div class="def">Control = metadata + signed URLs (small). Data = bytes (huge). Separating them is the key insight.</div></div>
+  <div class="gloss-card"><div class="term">Rolling Hash</div><div class="def">Hash recomputed efficiently as window slides (Rabin fingerprint). Finds CDC boundaries.</div></div>
+  <div class="gloss-card"><div class="term">ETag</div><div class="def">Returned per uploaded part. Required to call CompleteMultipartUpload.</div></div>
+  <div class="gloss-card"><div class="term">Last-Write-Wins</div><div class="def">Conflict resolution: most recent edit wins. Simple; loses concurrent edits.</div></div>
+  <div class="gloss-card"><div class="term">WebSocket</div><div class="def">Persistent TCP connection for server push. ChangeEvents flow here.</div></div>
+  <div class="gloss-card"><div class="term">JWT</div><div class="def">Signed token carrying userId. In headers, not body.</div></div>
+  <div class="gloss-card"><div class="term">CAP Theorem</div><div class="def">Pick 2 of 3: Consistency, Availability, Partition tolerance. Dropbox is AP.</div></div>
+</div>
+
+</main>
+
+<aside class="toc-right">
+  <div class="label">On this page</div>
+  <ul>
+    <li><a href="#req">01 Requirements</a></li>
+    <li><a href="#entities">02 Entities</a></li>
+    <li><a href="#upload">03 Upload</a></li>
+    <li><a href="#download">04 Download</a></li>
+    <li><a href="#share">05 Sharing</a></li>
+    <li><a href="#sync">06 Sync</a></li>
+    <li><a href="#highlevel">07 Architecture</a></li>
+    <li><a href="#large">08 Large uploads</a></li>
+    <li><a href="#chunking">09 Chunking</a></li>
+    <li><a href="#speed">10 Speed</a></li>
+    <li><a href="#cdc">11 Delta sync</a></li>
+    <li><a href="#security">12 Security</a></li>
+    <li><a href="#full">13 Complete flow</a></li>
+    <li><a href="#glossary">14 Glossary</a></li>
+  </ul>
+</aside>
+
+</div>
+
+<script>
+(function(){
+  const tocLinks=document.querySelectorAll('aside.toc-left a,aside.toc-right a');
+  const sections=[];
+  tocLinks.forEach(a=>{const id=a.getAttribute('href');if(id&&id.startsWith('#')){const el=document.getElementById(id.slice(1));if(el)sections.push({el,links:document.querySelectorAll('a[href="'+id+'"]')})}});
+  function onScroll(){let cur=sections[0];for(const s of sections)if(s.el.getBoundingClientRect().top<=80)cur=s;tocLinks.forEach(a=>a.classList.remove('active'));if(cur)cur.links.forEach(a=>a.classList.add('active'))}
+  window.addEventListener('scroll',onScroll,{passive:true});onScroll();
+})();
+</script>
+
+</body>
+</html>

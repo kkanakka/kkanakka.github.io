@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<title>Hello Interview — System Design Problems</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #f7f6f3;
+    --border: #e3e2de;
+    --text: #37352f;
+    --text-muted: #787774;
+    --accent: #0969da;
+    --accent2: #1a7f37;
+    --accent3: #8250df;
+    --accent4: #d9730d;
+    --accent5: #cf222e;
+    --accent6: #9a6700;
+    --card: #ffffff;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    font-size: 15px;
+  }
+  .container { max-width: 960px; margin: 0 auto; padding: 0 24px; }
+  .hero {
+    background: linear-gradient(180deg, #fafafa 0%, #ffffff 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 64px 0 48px;
+    text-align: center;
+  }
+  .hero h1 { font-size: 2.6em; font-weight: 700; margin-bottom: 16px; color: var(--accent); }
+  .hero p { font-size: 1.1em; color: var(--text-muted); max-width: 680px; margin: 0 auto 24px; }
+  .breadcrumb { font-size: 0.9em; color: var(--text-muted); margin-top: 16px; }
+  .breadcrumb a { color: var(--accent); text-decoration: none; }
+  .breadcrumb a:hover { text-decoration: underline; }
+
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 24px;
+    padding: 48px 0 64px;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px 24px;
+    text-decoration: none;
+    color: var(--text);
+    transition: all 0.25s ease;
+    display: flex;
+    flex-direction: column;
+  }
+  .card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
+  .card .icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5em; margin-bottom: 16px; }
+  .card h2 { font-size: 1.25em; font-weight: 700; margin-bottom: 6px; }
+  .card .subtitle { font-size: 0.82em; font-weight: 600; margin-bottom: 10px; color: var(--text-muted); }
+  .card p { font-size: 0.9em; color: var(--text-muted); margin-bottom: 16px; flex: 1; }
+  .card .tag-row { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 14px; }
+  .card .tag { background: var(--surface); border: 1px solid var(--border); padding: 2px 8px; border-radius: 6px; font-size: 0.72em; color: var(--text-muted); }
+  .card .cta { font-size: 0.88em; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
+
+  .card-dropbox .icon { background: rgba(9,105,218,0.1); color: var(--accent); }
+  .card-dropbox h2 { color: var(--accent); }
+  .card-dropbox:hover { border-color: var(--accent); }
+  .card-dropbox .cta { color: var(--accent); }
+
+  .card-placeholder .icon { background: rgba(0,0,0,0.04); color: var(--text-muted); }
+  .card-placeholder { opacity: 0.5; cursor: default; }
+  .card-placeholder h2 { color: var(--text-muted); }
+
+  .footer { background: var(--surface); border-top: 1px solid var(--border); padding: 32px 0; text-align: center; color: var(--text-muted); font-size: 0.9em; }
+</style>
+</head>
+<body>
+
+<section class="hero">
+  <div class="container">
+    <h1>Hello Interview</h1>
+    <p>System design problems with all 15 diagrams, LinkedIn technology mappings (Ambry, Espresso, Kafka, Samza), and compact visual walkthroughs.</p>
+    <div class="breadcrumb">
+      <a href="/">&larr; Back to Kiran's Tech Hub</a>
+    </div>
+  </div>
+</section>
+
+<section class="container">
+  <div class="cards">
+
+    <a href="hi-dropbox.html" class="card card-dropbox">
+      <div class="icon">&#9729;</div>
+      <h2>Dropbox</h2>
+      <div class="subtitle">Cloud storage &middot; 15 diagrams &middot; LinkedIn stack</div>
+      <p>Upload, download, share, and sync files across devices. Chunking, resumability, delta sync with CDC, presigned URLs, and the control/data plane separation.</p>
+      <div class="tag-row">
+        <span class="tag">Ambry</span>
+        <span class="tag">Espresso</span>
+        <span class="tag">Kafka</span>
+        <span class="tag">Presigned URLs</span>
+        <span class="tag">CDC</span>
+        <span class="tag">Delta Sync</span>
+      </div>
+      <div class="cta">Read the design &rarr;</div>
+    </a>
+
+    <div class="card card-placeholder">
+      <div class="icon">&#128274;</div>
+      <h2>More coming soon</h2>
+      <div class="subtitle">Twitter, WhatsApp, URL shortener, etc.</div>
+      <p>Additional system design problems will be added here with the same visual format and LinkedIn mappings.</p>
+      <div class="tag-row">
+        <span class="tag">Coming soon</span>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="container">
+    <p>Part of <a href="/" style="color: var(--accent); text-decoration: none;">Kiran's Tech Hub</a> &mdash; system design, Linux internals, and coding guides</p>
+  </div>
+</footer>
+
+</body>
+</html>
