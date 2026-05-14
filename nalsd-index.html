@@ -121,6 +121,11 @@
   .card-dns:hover { border-color: var(--accent); }
   .card-dns .cta { color: var(--accent); }
 
+  .card-baremetal .icon { background: rgba(217,115,13,0.1); color: var(--accent4); }
+  .card-baremetal h2 { color: var(--accent4); }
+  .card-baremetal:hover { border-color: var(--accent4); }
+  .card-baremetal .cta { color: var(--accent4); }
+
   .footer { background: var(--surface); border-top: 1px solid var(--border); padding: 32px 0; text-align: center; color: var(--text-muted); font-size: 0.9em; }
 </style>
 </head>
@@ -301,6 +306,22 @@
         <span class="tag">Multi-Tenant</span>
         <span class="tag">DDoS</span>
         <span class="tag">Raft</span>
+      </div>
+      <div class="cta">Read the design &rarr;</div>
+    </a>
+
+    <a href="nalsd-bare-metal-lifecycle.html" class="card card-baremetal">
+      <div class="icon">&#128421;</div>
+      <h2>Autonomous Bare Metal Lifecycle</h2>
+      <div class="subtitle">NALSD &middot; Hardware fleet management</div>
+      <p>Design an autonomous bare metal lifecycle system for global data centers. Discovery, PXE provisioning, SKU verification, GPU enumeration, self-healing remediation, immutable infrastructure, and split-brain prevention across sites.</p>
+      <div class="tag-row">
+        <span class="tag">BMC / Redfish</span>
+        <span class="tag">PXE</span>
+        <span class="tag">HRS</span>
+        <span class="tag">Self-Healing</span>
+        <span class="tag">IPMI</span>
+        <span class="tag">GPU</span>
       </div>
       <div class="cta">Read the design &rarr;</div>
     </a>
