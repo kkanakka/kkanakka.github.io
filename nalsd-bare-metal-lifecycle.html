@@ -101,25 +101,19 @@
   pre:not(.light){background:#211f1b;color:#e8e6df;border-radius:10px;padding:1rem 1.1rem;
     font-size:.8rem;line-height:1.5;overflow-x:auto;
     font-family:"SF Mono",Menlo,Consolas,monospace;margin:.8rem 0;}
-  .breadcrumb{font-size:.82rem; color:var(--ink2); margin-bottom:1rem;}
-  .breadcrumb a{color:var(--accent); text-decoration:none;}
-  .breadcrumb a:hover{text-decoration:underline;}
 </style>
 </head>
 <body>
 <div class="wrap">
-
-<div class="breadcrumb">
-  <a href="/">Home</a> &rsaquo; <a href="nalsd-index.html">NALSD</a> &rsaquo; Autonomous Bare Metal Lifecycle
-</div>
-
 <header class="top">
-  <h1>Autonomous Bare Metal Lifecycle Management at Scale</h1>
+  <h1>🖥️ Module 1 — Autonomous Bare Metal Lifecycle Management at Scale</h1>
   <p>Complete visual guide — the full interview module: end-to-end lifecycle, the five layers, discovery orchestration, PXE &amp; imaging, validation, GPU discovery, metrics, SKU management, remediation, self-healing, immutable infra, firmware, config, supply chain, compliance, split-brain, catastrophic recovery, and cloud/hybrid. 7 diagrams.</p>
 </header>
 <div class="toc">
   <strong style="font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;">Contents</strong>
   <ul style="list-style:none;padding-left:0;margin-top:.5rem;columns:2;column-gap:2rem;">
+    <li><a href="#answermap"><strong>★ Advanced Prompts — Answer Map</strong></a></li>
+    <li><a href="#answermap" style="padding-left:.8rem;">↳ Edge Case Follow-ups</a></li>
     <li><a href="#scenario">0 · Scenario &amp; the One Job</a></li>
     <li><a href="#overview">1 · Overview &amp; Flow Walkthrough</a></li>
     <li><a href="#flow">2 · Full Lifecycle — PO to Production</a></li>
@@ -145,8 +139,103 @@
     <li><a href="#splitbrain">22 · Split-Brain Between Sites</a></li>
     <li><a href="#catastrophe">23 · Catastrophic Recovery</a></li>
     <li><a href="#cloud">24 · Cloud / Hybrid Integration</a></li>
+    <li><a href="#hetero">25 · Architectural Heterogeneity</a></li>
   </ul>
 </div>
+
+<h2 id="answermap">★ Advanced Prompts — Answer Map</h2>
+<p>The interview module is built around a fixed set of advanced prompts. The 26 sections below are the raw material; <strong>this map groups them by the question they answer</strong>, so each prompt has a clear reading path. Every prompt is covered — most by several sections working together.</p>
+
+<div class="box qa">
+  <div class="label">How to use this</div>
+  <p>For each prompt: read the <strong>primary</strong> section first (it carries the core answer), then the <strong>supporting</strong> sections for depth and the details an interviewer will probe. The one-line answer under each is the 15-second version to lead with.</p>
+</div>
+
+<div class="grid">
+  <div class="card">
+    <h5>Q1 · Self-healing — automatic detection &amp; remediation of hardware faults</h5>
+    <p class="muted" style="font-size:.82rem;">Primary: <a href="#selfheal">16 · Self-Healing Architecture</a> · <a href="#remediation">15 · Remediation &amp; Reintegration</a></p>
+    <p class="muted" style="font-size:.82rem;">Supporting: <a href="#metrics">12 · Metrics Catalog</a> (detection signals) · <a href="#postboot">10 · Post-Boot Validation</a> (the re-check) · <a href="#states">3 · State Machine</a> (the repair loop)</p>
+    <div class="oneliner" style="margin:.5rem 0 0;font-size:.82rem;">Closed loop: detect → decide → act → validate, with bounded blast radius — concurrency caps, cooldowns, kill switch, escalation. Nothing is fire-and-forget.</div>
+  </div>
+  <div class="card">
+    <h5>Q2 · Immutable infrastructure &amp; re-provisioning at scale</h5>
+    <p class="muted" style="font-size:.82rem;">Primary: <a href="#immutable">17 · Immutable Infrastructure</a></p>
+    <p class="muted" style="font-size:.82rem;">Supporting: <a href="#image">9 · Image Build &amp; Distribution</a> · <a href="#pxe">8 · PXE Boot</a> · <a href="#config">19 · Configuration Consistency</a> (drift agents enforce declared state)</p>
+    <div class="oneliner" style="margin:.5rem 0 0;font-size:.82rem;">The disk is disposable — we reimage, never <code>apt upgrade</code> in place. Re-provisioning is safe any time; cohorted rollouts (1%→5%→25%→100%) gated on SLO telemetry.</div>
+  </div>
+  <div class="card">
+    <h5>Q3 · Secure, auditable firmware/BIOS updates &amp; hardware decommissioning</h5>
+    <p class="muted" style="font-size:.82rem;">Primary: <a href="#firmware">18 · Firmware Updates &amp; Decommissioning</a></p>
+    <p class="muted" style="font-size:.82rem;">Supporting: <a href="#supply">20 · Supply Chain Risk</a> (attestation) · <a href="#compliance">21 · Compliance &amp; Audit</a> (the audit trail) · <a href="#image">9 · Image Build</a> (signed-artifact trust chain)</p>
+    <div class="oneliner" style="margin:.5rem 0 0;font-size:.82rem;">Firmware is the highest-risk op — cohort policy + TPM attestation gate every flash. Decommission = NIST 800-88 crypto-erase, BMC reset, signed audit entry, certificate of destruction.</div>
+  </div>
+  <div class="card">
+    <h5>Q4 · Consistency of configuration &amp; state across thousands of servers and multiple sites</h5>
+    <p class="muted" style="font-size:.82rem;">Primary: <a href="#config">19 · Configuration Consistency</a> · <a href="#splitbrain">22 · Split-Brain Between Sites</a></p>
+    <p class="muted" style="font-size:.82rem;">Supporting: <a href="#assetdb">7 · Asset DB</a> (the source of truth) · <a href="#profiles">14 · Node Profiles</a> (SKU+role resolution) · <a href="#catastrophe">23 · Catastrophic Recovery</a></p>
+    <div class="oneliner" style="margin:.5rem 0 0;font-size:.82rem;">Declared state is the truth, observed state is the lie. Git → compiled per node → pull-based agents → drift detection. Cross-site state: leased ownership + quorum, CRDTs for tolerant fields.</div>
+  </div>
+  <div class="card">
+    <h5>Q5 · Hardware supply chain risk — counterfeit components, firmware tampering</h5>
+    <p class="muted" style="font-size:.82rem;">Primary: <a href="#supply">20 · Supply Chain Risk</a></p>
+    <p class="muted" style="font-size:.82rem;">Supporting: <a href="#sku">13 · SKU Management</a> (component verification table) · <a href="#firmware">18 · Firmware</a> (TPM/PCR, Secure Boot) · <a href="#flow">2 · Lifecycle</a> Phase 2 (receiving gate)</p>
+    <div class="oneliner" style="margin:.5rem 0 0;font-size:.82rem;">Every component's serial + firmware hash checked against a signed vendor manifest at receiving — mismatch = quarantine. Continuous TPM attestation catches tampering post-deploy.</div>
+  </div>
+  <div class="card">
+    <h5>Q6 · Designing for regulatory compliance, data sovereignty &amp; audit</h5>
+    <p class="muted" style="font-size:.82rem;">Primary: <a href="#compliance">21 · Regulatory Compliance &amp; Audit</a></p>
+    <p class="muted" style="font-size:.82rem;">Supporting: <a href="#assetdb">7 · Asset DB</a> (region tags) · <a href="#splitbrain">22 · Split-Brain</a> (per-region storage) · <a href="#firmware">18 · Firmware</a> (right-to-erasure)</p>
+    <div class="oneliner" style="margin:.5rem 0 0;font-size:.82rem;">Hard region/jurisdiction tags + scheduler-enforced locality. Append-only hash-chained audit log, per-region, 7-year retention. Continuous compliance scans; break-glass access only.</div>
+  </div>
+  <div class="card">
+    <h5>Q7 · Handling heterogeneous hardware</h5>
+    <p class="muted" style="font-size:.82rem;">Primary: <a href="#sku">13 · SKU Management</a> · <a href="#profiles">14 · Node Profiles</a> · <a href="#hetero">25 · Architectural Heterogeneity</a></p>
+    <p class="muted" style="font-size:.82rem;">Supporting: <a href="#discovery">5 · Discovery</a> + <a href="#orchestration">6 · Discovery Controller</a> (detect what the hardware is) · <a href="#gpu">11 · GPU Discovery</a></p>
+    <div class="oneliner" style="margin:.5rem 0 0;font-size:.82rem;">Two axes: <em>config</em> heterogeneity (SKUs, per-SKU tuning profiles) and <em>architectural</em> heterogeneity (x86/ARM, mixed GPU vendors, iDRAC/iLO/OpenBMC) — abstracted behind per-arch images and a uniform Redfish layer.</div>
+  </div>
+  <div class="card">
+    <h5>Q8 · Dynamic scaling — adding/removing racks, sites, entire regions</h5>
+    <p class="muted" style="font-size:.82rem;">Primary: <a href="#sku">13 · Spare Pool</a> · <a href="#splitbrain">22 · Split-Brain Between Sites</a></p>
+    <p class="muted" style="font-size:.82rem;">Supporting: <a href="#layers">4 · The Five Layers</a> · <a href="#cloud">24 · Cloud / Hybrid</a> · <a href="#discovery">5 · Discovery</a> (new racks self-enroll)</p>
+    <div class="oneliner" style="margin:.5rem 0 0;font-size:.82rem;">New racks self-enroll via discovery; new sites stand up an autonomous control plane and join quorum; the warm spare pool absorbs demand. Cloud is "just another site" in the asset DB.</div>
+  </div>
+</div>
+
+<div class="box tip">
+  <div class="label">Coverage summary</div>
+  <p>All eight advanced prompts are fully covered. Q1–Q6 map onto dedicated sections written for exactly that question. Q7 originally had a soft spot — config heterogeneity was strong, but <em>architectural</em> heterogeneity (ISA, BMC vendor, accelerator vendor) was thin — so <strong><a href="#hetero">§25</a></strong> was added to close it. Q8 is answered by composition rather than one section: spare pool + split-brain + discovery + cloud together.</p>
+</div>
+
+<h3>Edge Case Follow-ups</h3>
+<p>Beyond the main prompts, interviewers probe three edge cases — the failure modes that separate a design that works on the happy path from one that survives a bad day. Each already has a dedicated section; this is the reading path.</p>
+
+<div class="grid">
+  <div class="card">
+    <h5>E1 · How does the system handle "split-brain" between sites?</h5>
+    <p class="muted" style="font-size:.82rem;">Primary: <a href="#splitbrain">22 · Split-Brain Between Sites</a></p>
+    <p class="muted" style="font-size:.82rem;">Supporting: <a href="#assetdb">7 · Asset DB</a> (CRDT / last-writer-wins fields) · <a href="#catastrophe">23 · Catastrophic Recovery</a> (network-partition recovery)</p>
+    <div class="oneliner" style="margin:.5rem 0 0;font-size:.82rem;">Every server has exactly one owner via a TTL-leased lock in a quorum store. Cross-site changes need a majority vote (3 regions + 1 witness). A partitioned minority simply can't out-vote the others — so two sites never claim the same server.</div>
+  </div>
+  <div class="card">
+    <h5>E2 · How do you recover from a catastrophic provisioning-system failure? (DB corruption, network partition)</h5>
+    <p class="muted" style="font-size:.82rem;">Primary: <a href="#catastrophe">23 · Catastrophic Recovery</a></p>
+    <p class="muted" style="font-size:.82rem;">Supporting: <a href="#assetdb">7 · Asset DB</a> (backups) · <a href="#image">9 · Image Build</a> (multi-region registry + per-rack cache) · <a href="#discovery">5 · Discovery</a> (state reconstruction by re-discovery)</p>
+    <div class="oneliner" style="margin:.5rem 0 0;font-size:.82rem;">Layered fallback: 15-min cross-region asset-DB backups, multi-region image registry with per-rack caches, 2+ PXE servers per rack, out-of-band BMC break-glass, and full Layer 1 re-discovery if the DB is gone entirely. Recovery is sequenced; the control plane must never depend on what it provisions.</div>
+  </div>
+  <div class="card">
+    <h5>E3 · How do you integrate with cloud or hybrid environments?</h5>
+    <p class="muted" style="font-size:.82rem;">Primary: <a href="#cloud">24 · Cloud / Hybrid Integration</a></p>
+    <p class="muted" style="font-size:.82rem;">Supporting: <a href="#assetdb">7 · Asset DB</a> (unified schema, <code>provider</code> field) · <a href="#config">19 · Config Consistency</a> (same agent both tiers) · <a href="#hetero">25 · Architectural Heterogeneity</a> (uniform Provision API)</p>
+    <div class="oneliner" style="margin:.5rem 0 0;font-size:.82rem;">Cloud is just another "site" in the asset DB — same schema, <code>provider=aws|gcp|azure|baremetal</code>, same labels. Cloud-init replaces PXE behind a uniform Provision API; the same config agent runs on both. Drift detection, audit, and scheduling then work identically across tiers.</div>
+  </div>
+</div>
+
+<div class="box trap">
+  <div class="label">Why these three get asked</div>
+  <p>They each attack a different assumption. <strong>E1</strong> attacks "the control plane is consistent" — what if the network splits it? <strong>E2</strong> attacks "the source of truth exists" — what if the database is gone? <strong>E3</strong> attacks "all hardware is bare metal we own" — what if half the fleet is rented? A complete design has an answer for each; this guide's §22–§25 are those answers.</p>
+</div>
+
 <h2 id="scenario">0 · Scenario &amp; the One Job</h2>
 <div class="box key">
   <div class="label">The interview scenario</div>
@@ -452,8 +541,41 @@
   <div class="label">The unifying idea</div>
   <p>Cloud is just another "site" in the asset DB. Once that's true, everything else — drift detection, compliance scans, audit, scheduling — falls out for free.</p>
 </div>
+
+<h2 id="hetero">25 · Architectural Heterogeneity</h2>
+<p>The scenario demands the system "handle heterogeneous hardware." Earlier sections cover <strong>configuration</strong> heterogeneity well — <a href="#sku">SKUs</a>, <a href="#profiles">per-SKU tuning profiles</a>, role-based config. This section closes the harder gap: <strong>architectural</strong> heterogeneity, where the differences are deep enough to need different images, different drivers, or different management code paths.</p>
+
+<h3>Three axes of architectural difference</h3>
+<table>
+  <thead><tr><th>Axis</th><th>The variation</th><th>Where it bites</th></tr></thead>
+  <tbody>
+    <tr><td><strong>CPU ISA</strong></td><td>x86-64 (Intel/AMD) vs ARM64 (Ampere, Graviton-class, NVIDIA Grace)</td><td>Golden image is ISA-specific — a single image cannot boot both. Kernel, bootloader, every binary differs.</td></tr>
+    <tr><td><strong>Accelerator vendor</strong></td><td>NVIDIA vs AMD (Instinct) vs Intel (Gaudi) — different drivers, different diagnostics, different telemetry</td><td><code>nvidia-smi</code>/DCGM only speak NVIDIA. AMD needs <code>rocm-smi</code>; Intel needs <code>hl-smi</code>. Validation and monitoring must branch.</td></tr>
+    <tr><td><strong>BMC implementation</strong></td><td>Dell iDRAC vs HPE iLO vs OpenBMC vs Lenovo XCC — same concepts, different quirks and partial Redfish coverage</td><td>Discovery and firmware flows hit vendor-specific Redfish gaps; some still need IPMI fallback.</td></tr>
+  </tbody>
+</table>
+
+<h3>How the system absorbs each one</h3>
+<ul>
+  <li><strong>ISA — branch at PXE, not in the image.</strong> The <a href="#orchestration">Discovery Controller</a> reads CPU architecture from the SMBIOS/DMI probe <em>before</em> provisioning. The provisioning job selects the matching per-arch golden image (<code>golden-x86_64</code> / <code>golden-arm64</code>) from the artifact registry. Images are built per-arch by the same CI pipeline, signed with the same key, share the same SBOM structure — the trust chain is identical, only the binaries differ. The asset DB carries an <code>arch</code> field; Kubernetes node labels (<code>kubernetes.io/arch</code>) let the scheduler place arch-specific workloads correctly.</li>
+  <li><strong>Accelerator vendor — a pluggable validation/telemetry interface.</strong> <a href="#postboot">Post-boot validation</a> and <a href="#metrics">Layer 4 monitoring</a> call a vendor-abstracted "GPU check" interface, not <code>dcgmi</code> directly. Each vendor has an adapter (NVIDIA → DCGM, AMD → ROCm SMI, Intel → Habana tools) that emits the same normalized metrics (<code>gpu_temp_c</code>, <code>gpu_ecc_errors_total</code>, <code>gpu_xid_errors_total</code> or its equivalent). The asset DB records <code>accelerator_vendor</code> + <code>accelerator_model</code>; the right adapter is chosen by SKU.</li>
+  <li><strong>BMC — Redfish first, capability-detected, IPMI as fallback.</strong> All <a href="#discovery">discovery</a> and <a href="#firmware">firmware</a> code targets the Redfish standard. On first contact the controller probes which Redfish endpoints the BMC actually implements and records a capability profile per BMC model. Vendor quirks live in thin per-vendor shims, not scattered through the codebase. Where a BMC's Redfish coverage is incomplete, the shim falls back to <code>ipmitool</code> for that specific operation — the caller never sees the difference.</li>
+</ul>
+
+<div class="oneliner">One principle holds it together: <strong>detect the difference early, normalize it behind an interface, and keep the heterogeneity out of the control plane's core logic.</strong> The asset DB carries <code>arch</code>, <code>accelerator_vendor</code>, and a <code>bmc_capability_profile</code> — and every downstream layer keys off those fields instead of hard-coding one vendor's tools.</div>
+
+<div class="box qa">
+  <div class="label">Interview answer</div>
+  <p>"Heterogeneity splits into two kinds. <em>Configuration</em> heterogeneity — RAM size, disk layout, NIC model — is handled by SKUs and per-SKU tuning profiles resolved from Git. <em>Architectural</em> heterogeneity — ISA, GPU vendor, BMC implementation — is deeper: it needs per-arch golden images selected at PXE time, a pluggable GPU validation interface so monitoring isn't NVIDIA-only, and a Redfish-first BMC layer with capability detection and IPMI fallback. The unifying move is the same in all three cases: discover the difference during Layer 1, write it to the asset DB, and have every later layer branch on a data field — never hard-code a single vendor's assumptions into the control plane."</p>
+</div>
+
+<div class="box trap">
+  <div class="label">Common trap</div>
+  <p>Claiming "one universal golden image for everything." You cannot — an x86 image will not boot an ARM host. The honest, stronger answer is <em>one universal <strong>pipeline</strong></em> producing a small, fixed set of per-arch images, all sharing the same build process, signing key, and validation suite.</p>
+</div>
+
 <hr>
-<p style="font-size:.82rem;color:var(--ink2);">Module 1 complete visual guide — the full Autonomous Bare Metal Lifecycle module: 24 sections covering the end-to-end lifecycle, the five layers, discovery orchestration, PXE &amp; imaging, validation, GPU discovery, metrics, SKU management, remediation, self-healing, immutable infra, firmware, config consistency, supply chain, compliance, split-brain, catastrophic recovery, and cloud/hybrid — with 7 clarity diagrams. Companion to the Module 2 (Global DNS) visual study guide.</p>
+<p style="font-size:.82rem;color:var(--ink2);">Module 1 complete visual guide — the full Autonomous Bare Metal Lifecycle module: an Advanced Prompts answer map plus 25 sections covering the end-to-end lifecycle, the five layers, discovery orchestration, PXE &amp; imaging, validation, GPU discovery, metrics, SKU management, remediation, self-healing, immutable infra, firmware, config consistency, supply chain, compliance, split-brain, catastrophic recovery, cloud/hybrid, and architectural heterogeneity — with 7 clarity diagrams. Companion to the Module 2 (Global DNS) visual study guide.</p>
 </div>
 </body>
 </html>
