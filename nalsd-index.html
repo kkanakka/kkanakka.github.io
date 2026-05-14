@@ -116,6 +116,11 @@
   .card-dht:hover { border-color: var(--accent2); }
   .card-dht .cta { color: var(--accent2); }
 
+  .card-dns .icon { background: rgba(9,105,218,0.1); color: var(--accent); }
+  .card-dns h2 { color: var(--accent); }
+  .card-dns:hover { border-color: var(--accent); }
+  .card-dns .cta { color: var(--accent); }
+
   .footer { background: var(--surface); border-top: 1px solid var(--border); padding: 32px 0; text-align: center; color: var(--text-muted); font-size: 0.9em; }
 </style>
 </head>
@@ -280,6 +285,22 @@
         <span class="tag">Replication</span>
         <span class="tag">Gossip Protocol</span>
         <span class="tag">Failure Recovery</span>
+      </div>
+      <div class="cta">Read the design &rarr;</div>
+    </a>
+
+    <a href="nalsd-global-multi-tenant-dns.html" class="card card-dns">
+      <div class="icon">&#127760;</div>
+      <h2>Global Multi-Tenant DNS</h2>
+      <div class="subtitle">NALSD &middot; LinkedIn DNS infrastructure</div>
+      <p>Design a global, multi-tenant DNS service. Anycast edge, authoritative tiers, AXFR/IXFR replication, tenant isolation, DNSSEC, DDoS defense, and 10 failure scenarios with recovery playbooks.</p>
+      <div class="tag-row">
+        <span class="tag">Anycast</span>
+        <span class="tag">BGP</span>
+        <span class="tag">DNSSEC</span>
+        <span class="tag">Multi-Tenant</span>
+        <span class="tag">DDoS</span>
+        <span class="tag">Raft</span>
       </div>
       <div class="cta">Read the design &rarr;</div>
     </a>

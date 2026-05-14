@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Global Multi-Tenant DNS — Complete Visual Study Guide</title>
+<style>
+  :root{
+    --bg:#faf9f5; --panel:#ffffff; --ink:#1c1b18; --ink2:#5f5e5a;
+    --line:#e2e0d8; --accent:#185fa5; --accent2:#0f6e56;
+    --amber:#854f0b; --red:#a32d2d; --purple:#534ab7;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.55; font-size:15px;
+  }
+  .wrap{max-width:1080px; margin:0 auto; padding:2rem 1.4rem 5rem;}
+  header.top{border-bottom:2px solid var(--ink); padding-bottom:1rem; margin-bottom:1.5rem;}
+  header.top h1{margin:0 0 .3rem; font-size:1.6rem;}
+  header.top p{margin:0; color:var(--ink2); font-size:.92rem;}
+  h2{font-size:1.25rem; margin:2.4rem 0 .7rem; padding-bottom:.3rem; border-bottom:1px solid var(--ink);}
+  h3{font-size:1.06rem; margin:1.7rem 0 .5rem;}
+  h4{font-size:.96rem; margin:1.2rem 0 .4rem; color:var(--ink2); text-transform:uppercase; letter-spacing:.04em;}
+  p{margin:.55rem 0;}
+  code{background:#f1efe8; padding:.08rem .32rem; border-radius:4px; font-size:.86em; font-family:"SF Mono",Menlo,Consolas,monospace;}
+  pre{
+    background:#1c1b18; color:#e8e6df; padding:1rem 1.1rem; border-radius:8px;
+    overflow-x:auto; font-size:.82rem; line-height:1.5; margin:.8rem 0;
+    font-family:"SF Mono",Menlo,Consolas,monospace;
+  }
+  pre.light{background:#f1efe8; color:#33312c; border:1px solid var(--line);}
+  table{border-collapse:collapse; width:100%; margin:.8rem 0; font-size:.88rem;}
+  th,td{border:1px solid var(--line); padding:.5rem .6rem; text-align:left; vertical-align:top;}
+  th{background:#f1efe8; font-weight:700;}
+  tr:nth-child(even) td{background:#fcfbf7;}
+  ul,ol{margin:.5rem 0; padding-left:1.4rem;}
+  li{margin:.25rem 0;}
+  .toc{
+    background:var(--panel); border:1px solid var(--line); border-radius:10px;
+    padding:1rem 1.3rem; margin-bottom:1.5rem; columns:2; column-gap:2rem;
+  }
+  .toc a{color:var(--accent); text-decoration:none; font-size:.86rem;}
+  .toc a:hover{text-decoration:underline;}
+  .toc li{margin:.2rem 0;}
+  .box{border-radius:10px; padding:.9rem 1.1rem; margin:1rem 0; border:1px solid;}
+  .box .label{font-weight:800; font-size:.74rem; text-transform:uppercase; letter-spacing:.06em; margin-bottom:.4rem;}
+  .box.key{background:#e6f1fb; border-color:#185fa5;} .box.key .label{color:#0c447c;}
+  .box.warn{background:#faece7; border-color:#993c1d;} .box.warn .label{color:#712b13;}
+  .box.tip{background:#e1f5ee; border-color:#0f6e56;} .box.tip .label{color:#085041;}
+  .box.trap{background:#fbeaf0; border-color:#993556;} .box.trap .label{color:#72243e;}
+  .box.qa{background:#eeedfe; border-color:#534ab7;} .box.qa .label{color:#3c3489;}
+  .box.amber{background:#faeeda; border-color:#854f0b;} .box.amber .label{color:#633806;}
+  .grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:.9rem; margin:1rem 0;}
+  .card{background:var(--panel); border:1px solid var(--line); border-top:3px solid var(--ink); border-radius:8px; padding:.8rem 1rem;}
+  .card h5{margin:0 0 .4rem; font-size:.92rem;}
+  .card ul{padding-left:1.1rem; font-size:.85rem;}
+  .diagram{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:1rem; margin:1rem 0;}
+  .diagram-title{font-weight:700; font-size:.9rem; margin-bottom:.6rem; color:var(--ink2);}
+  .qline{font-weight:700; color:var(--purple); margin:.5rem 0 .2rem;}
+  .aline{margin:.1rem 0 .6rem;}
+  .pill{display:inline-block; background:var(--ink); color:#fff; font-size:.68rem; font-weight:700;
+    padding:.12rem .5rem; border-radius:20px; letter-spacing:.04em; vertical-align:middle;}
+  .muted{color:var(--ink2);}
+  hr{border:none; border-top:1px dashed var(--line); margin:2rem 0;}
+  .oneliner{border-left:4px solid var(--accent2); background:#f0f7f4; padding:.6rem .9rem; margin:.8rem 0; font-style:italic;}
+  a.back{font-size:.78rem; color:var(--ink2); text-decoration:none;}
+
+  .scenario{
+    background:var(--panel); border:1px solid var(--line); border-left:5px solid var(--red);
+    border-radius:10px; padding:1.1rem 1.3rem; margin:1.6rem 0;
+  }
+  .scenario h3{margin-top:0;}
+  .sevtag{display:inline-block; font-size:.66rem; font-weight:800; letter-spacing:.05em;
+    padding:.12rem .5rem; border-radius:20px; vertical-align:middle; margin-left:.4rem; color:#fff;}
+  .sev-crit{background:#a32d2d;} .sev-high{background:#854f0b;} .sev-med{background:#0f6e56;}
+  .meta{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:.5rem; margin:.7rem 0;}
+  .meta div{background:#f1efe8; border:1px solid var(--line); border-radius:6px; padding:.4rem .6rem; font-size:.8rem;}
+  .meta b{display:block; font-size:.66rem; text-transform:uppercase; letter-spacing:.05em; color:var(--ink2); margin-bottom:.15rem;}
+  svg{display:block; max-width:100%; height:auto;}
+  .svg-th{font:700 13px -apple-system,Segoe UI,Roboto,sans-serif; fill:var(--ink);}
+  .svg-ts{font:600 11px -apple-system,Segoe UI,Roboto,sans-serif; fill:var(--ink2);}
+  .svg-tg{font:600 10px -apple-system,Segoe UI,Roboto,sans-serif; fill:#888;}
+  .legend{display:flex; gap:1.2rem; flex-wrap:wrap; font-size:.78rem; color:var(--ink2); margin:.4rem 0 .2rem .4rem;}
+  .legend span{display:flex; align-items:center; gap:.35rem;}
+  .swatch{width:14px; height:14px; border-radius:3px; border:1px solid var(--boxstroke,#a9a79e); display:inline-block;}
+
+  figure.dgm{margin:1.4rem 0;background:var(--panel);border:1px solid var(--line);
+    border-radius:14px;padding:1.1rem 1.1rem 1.3rem;box-shadow:0 1px 3px rgba(28,27,24,.05);}
+  figure.dgm figcaption{font-weight:700;font-size:.84rem;color:var(--ink2);
+    margin:0 0 .7rem .2rem;letter-spacing:.01em;}
+  figure.dgm .dgm-svg{width:100%;overflow-x:auto;}
+  figure.dgm svg{display:block;width:100%;height:auto;}
+  figure.dgm text{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  pre.light{background:linear-gradient(180deg,#fbfaf6,#f4f2ea);color:#33312c;
+    border:1px solid var(--line);border-left:3px solid var(--accent2);border-radius:8px;
+    padding:.85rem 1rem;font-size:.81rem;line-height:1.5;overflow-x:auto;margin:.8rem 0;
+    font-family:"SF Mono",Menlo,Consolas,monospace;}
+  pre:not(.light){background:#211f1b;color:#e8e6df;border-radius:10px;padding:1rem 1.1rem;
+    font-size:.8rem;line-height:1.5;overflow-x:auto;
+    font-family:"SF Mono",Menlo,Consolas,monospace;margin:.8rem 0;}
+  .breadcrumb{font-size:.82rem; color:var(--ink2); margin-bottom:1rem;}
+  .breadcrumb a{color:var(--accent); text-decoration:none;}
+  .breadcrumb a:hover{text-decoration:underline;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="breadcrumb">
+  <a href="/">Home</a> &rsaquo; <a href="nalsd-index.html">NALSD</a> &rsaquo; Global Multi-Tenant DNS
+</div>
+
+<header class="top">
+  <h1>Global, Multi-Tenant DNS as a Foundational Service</h1>
+  <p>Complete study guide &mdash; original interview module + full Q&amp;A walkthrough (request lifecycle, anycast, resolver chain, layers 1&ndash;4, replication, tenant model, write path) + 10 failure scenarios with block/sequence diagrams.</p>
+</header>
+
+<div class="toc">
+  <strong style="font-size:.8rem; text-transform:uppercase; letter-spacing:.05em;">Contents</strong>
+  <ul style="list-style:none; padding-left:0; margin-top:.5rem;">
+    <li><a href="#scenario">0 &middot; Scenario &amp; SRE Framing</a></li>
+    <li><a href="#checklist">1 &middot; The 7-Step Checklist</a></li>
+    <li><a href="#tradeoffs">2 &middot; The Three Core Trade-offs</a></li>
+    <li><a href="#arch">3 &middot; High-Level Architecture (4 Layers)</a></li>
+    <li><a href="#lifecycle">4 &middot; Full Request Lifecycle (walkthrough)</a></li>
+    <li><a href="#anycast">5 &middot; Anycast &mdash; What &amp; How</a></li>
+    <li><a href="#resolvers">6 &middot; The Resolver Chain</a></li>
+    <li><a href="#layer1">7 &middot; Layer 1 &mdash; Anycast Edge</a></li>
+    <li><a href="#layer2">8 &middot; Layer 2 &mdash; Authoritative DNS</a></li>
+    <li><a href="#geoip">9 &middot; GeoIP vs Anycast (Branch A/B)</a></li>
+    <li><a href="#failover">10 &middot; Failover with Unicast IPs &amp; Route 53</a></li>
+    <li><a href="#replication">11 &middot; AXFR / IXFR Replication</a></li>
+    <li><a href="#tenancy">12 &middot; Tenant vs Subdomain Model</a></li>
+    <li><a href="#layer34">13 &middot; Layers 3 &amp; 4 &mdash; Internal &amp; Data Store</a></li>
+    <li><a href="#writepath">14 &middot; The Write Path (cross-colo)</a></li>
+    <li><a href="#internalgap">15 &middot; Internal Authoritative Tier (the gap)</a></li>
+    <li><a href="#security">16 &middot; DNS Security &amp; Cache Poisoning / DNSSEC</a></li>
+    <li><a href="#scale">17 &middot; Scaling to Millions QPS</a></li>
+    <li><a href="#edge">18 &middot; Edge Cases &amp; Rollout</a></li>
+    <li><a href="#components">19 &middot; Component / Technology Reference</a></li>
+    <li><a href="#dbsel">20 &middot; Database Selection</a></li>
+    <li><a href="#kpi">21 &middot; KPIs &amp; Interviewer Lens</a></li>
+    <li><a href="#dig">22 &middot; Real dig +trace Annotated</a></li>
+    <li style="list-style:none; margin-top:.5rem; font-weight:700; color:var(--ink); font-size:.8rem;">&mdash; Failure Scenarios &mdash;</li>
+    <li><a href="#f1">23 &middot; Volumetric DDoS on the edge</a></li>
+    <li><a href="#f2">24 &middot; Cache poisoning / spoofed response</a></li>
+    <li><a href="#f3">25 &middot; BGP hijack of the anycast prefix</a></li>
+    <li><a href="#f4">26 &middot; Zone-store quorum loss (partition)</a></li>
+    <li><a href="#f5">27 &middot; Bad zone push</a></li>
+    <li><a href="#f6">28 &middot; Authoritative down &mdash; stale-if-error</a></li>
+    <li><a href="#f7">29 &middot; PoP / regional DC outage</a></li>
+    <li><a href="#f8">30 &middot; Noisy-neighbor tenant</a></li>
+    <li><a href="#f9">31 &middot; DNSSEC misconfiguration</a></li>
+    <li><a href="#f10">32 &middot; Negative-cache &amp; thundering herd</a></li>
+    <li><a href="#summary">33 &middot; Failure mode cheat sheet</a></li>
+  </ul>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="scenario">0 &middot; Scenario &amp; SRE Framing</h2>
+
+<div class="box key">
+  <div class="label">Scenario</div>
+  <p>&ldquo;Design a global, multi-tenant DNS service supporting internal and external resolution, strict tenant isolation, zero-downtime updates, operating across on-prem and cloud, withstanding large-scale DDoS attacks.&rdquo;</p>
+</div>
+
+<p><strong>Why DNS is special:</strong> DNS is the most critical <em>shared dependency</em> in any infrastructure. Its failure isn&rsquo;t one outage &mdash; it&rsquo;s <em>every</em> outage at once, and it blocks the recovery tooling too (health checks, retries, and remediation scripts all need DNS). A 30-second DNS outage can cascade into total service unavailability.</p>
+
+<h4>From Requirements &rarr; Metrics &rarr; Trade-offs</h4>
+<table>
+  <thead><tr><th>Perspective</th><th>Question to Ask</th><th>Answer for Global DNS</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Users</strong></td><td>&ldquo;What does failure look like to them?&rdquo;</td><td>Service name won&rsquo;t resolve &rarr; connection timeout &rarr; user-facing 5xx errors</td></tr>
+    <tr><td><strong>Business</strong></td><td>&ldquo;What risk tolerance do we have?&rdquo;</td><td>&le;5 minutes downtime per year (99.999% availability)</td></tr>
+    <tr><td><strong>Engineering</strong></td><td>&ldquo;What metric captures that?&rdquo;</td><td>P99 query latency &lt;10ms, zone update propagation &lt;60s, 99.999% uptime</td></tr>
+  </tbody>
+</table>
+
+<p><strong>SLI to name:</strong> successful resolution % &mdash; <em>not</em> latency. A slow answer still works; <em>no</em> answer is the disaster. That&rsquo;s why the SLO is defined <em>before</em> picking components.</p>
+
+<figure class="dgm"><figcaption>SRE design flow &mdash; requirements &rarr; SLO &rarr; design &rarr; stressors &rarr; resilient architecture</figcaption><div class="dgm-svg"><svg viewBox="0 0 900 230" xmlns="http://www.w3.org/2000/svg" role="img"><defs><marker id="ah-d" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1L9 5L1 9" fill="none" stroke="#444441" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></marker><filter id="soft" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1.5" stdDeviation="1.6" flood-color="#1c1b18" flood-opacity="0.13"/></filter></defs><g><rect x="20" y="30" width="131.67" height="66" rx="11" fill="#ffffff" stroke="#a9a79e" stroke-width="1.3" filter="url(#soft)"/><text x="85.83" y="53" text-anchor="middle" font-weight="700" font-size="11.5" fill="#1c1b18">Requirements</text><text x="85.83" y="69" text-anchor="middle" font-weight="600" font-size="9.5" fill="#a9a79e">millions QPS, multi-tenant,</text><text x="85.83" y="83" text-anchor="middle" font-weight="600" font-size="10" fill="#8a8985">DDoS-resilient, global</text></g><line x1="151.67" y1="63" x2="165.67" y2="63" stroke="#444441" stroke-width="1.7" marker-end="url(#ah-d)"/><g><rect x="165.67" y="30" width="131.67" height="66" rx="11" fill="#d9d9d9" stroke="#1c1b18" stroke-width="1.3" filter="url(#soft)"/><text x="231.5" y="53" text-anchor="middle" font-weight="700" font-size="11.5" fill="#1c1b18">SLO Contract</text><text x="231.5" y="69" text-anchor="middle" font-weight="600" font-size="9.5" fill="#1c1b18">P99 &lt;10ms, 99.999% up,</text><text x="231.5" y="83" text-anchor="middle" font-weight="600" font-size="10" fill="#8a8985">propagation &lt;60s</text></g><line x1="297.33" y1="63" x2="311.33" y2="63" stroke="#444441" stroke-width="1.7" marker-end="url(#ah-d)"/><g><rect x="311.33" y="30" width="131.67" height="66" rx="11" fill="#ffffff" stroke="#a9a79e" stroke-width="1.3" filter="url(#soft)"/><text x="377.17" y="53" text-anchor="middle" font-weight="700" font-size="11.5" fill="#1c1b18">Baseline Design</text><text x="377.17" y="69" text-anchor="middle" font-weight="600" font-size="9.5" fill="#a9a79e">4-layer: edge &rarr; auth</text><text x="377.17" y="83" text-anchor="middle" font-weight="600" font-size="10" fill="#8a8985">&rarr; recursive &rarr; data store</text></g><line x1="443" y1="63" x2="457" y2="63" stroke="#444441" stroke-width="1.7" marker-end="url(#ah-d)"/><g><rect x="457" y="30" width="131.67" height="66" rx="11" fill="#ffffff" stroke="#a9a79e" stroke-width="1.3" filter="url(#soft)"/><text x="522.83" y="53" text-anchor="middle" font-weight="700" font-size="11.5" fill="#1c1b18">Stressors</text><text x="522.83" y="69" text-anchor="middle" font-weight="600" font-size="9.5" fill="#a9a79e">100Gbps DDoS, BGP hijack,</text><text x="522.83" y="83" text-anchor="middle" font-weight="600" font-size="10" fill="#8a8985">zone DB failure, stale cache</text></g><line x1="588.67" y1="63" x2="602.67" y2="63" stroke="#444441" stroke-width="1.7" marker-end="url(#ah-d)"/><g><rect x="602.67" y="30" width="131.67" height="66" rx="11" fill="#d9d9d9" stroke="#1c1b18" stroke-width="1.3" filter="url(#soft)"/><text x="668.5" y="53" text-anchor="middle" font-weight="700" font-size="11.5" fill="#1c1b18">Resilient Arch</text><text x="668.5" y="69" text-anchor="middle" font-weight="600" font-size="9.5" fill="#1c1b18">anycast, stale-if-error,</text><text x="668.5" y="83" text-anchor="middle" font-weight="600" font-size="10" fill="#8a8985">RPKI, multi-PoP failover</text></g><line x1="734.33" y1="63" x2="748.33" y2="63" stroke="#444441" stroke-width="1.7" marker-end="url(#ah-d)"/><g><rect x="748.33" y="30" width="131.67" height="66" rx="11" fill="#ffffff" stroke="#a9a79e" stroke-width="1.3" filter="url(#soft)"/><text x="814.17" y="53" text-anchor="middle" font-weight="700" font-size="11.5" fill="#1c1b18">Observability</text><text x="814.17" y="69" text-anchor="middle" font-weight="600" font-size="9.5" fill="#a9a79e">SLI = successful resolve %,</text><text x="814.17" y="83" text-anchor="middle" font-weight="600" font-size="10" fill="#8a8985">per-tenant QPS, NXDOMAIN</text></g><rect x="20" y="118" width="860" height="46" rx="8" fill="#e6f1fb" stroke="#185fa5" stroke-width="1.2"/><text x="450" y="138" text-anchor="middle" font-weight="600" font-size="10" fill="#0c447c">Trade-offs at every step: more edge PoPs &rarr; lower latency but higher infra cost &bull; lower TTLs &rarr; faster</text><text x="450" y="152" text-anchor="middle" font-weight="600" font-size="10" fill="#0c447c">propagation but higher upstream load &bull; stale-if-error &rarr; availability but potentially stale answers</text></svg></div></figure>
+
+<!-- ============================================================ -->
+<h2 id="checklist">1 &middot; The 7-Step Checklist <span class="pill">apply before drawing architecture</span></h2>
+<ol>
+  <li><strong>Define User Impact</strong> &rarr; DNS failure = total service blackout, cascading across all apps</li>
+  <li><strong>Draw the Happy Path</strong> &rarr; client query &rarr; DCL cache &rarr; CoreDNS &rarr; authoritative &rarr; response</li>
+  <li><strong>Identify 5 ways it can fail</strong> &rarr; DDoS, cache poisoning, zone DB corruption, BGP hijack, stale cache</li>
+  <li><strong>Apply reliability patterns</strong> &rarr; anycast, RRL, DNSSEC, stale-if-error, multi-region Raft</li>
+  <li><strong>Decide metrics &amp; dashboards</strong> &rarr; query latency, NXDOMAIN rate, propagation delay, per-tenant QPS</li>
+  <li><strong>Rollout &amp; recovery plan</strong> &rarr; canary zone changes, blue/green resolver swap, TTL override emergency</li>
+  <li><strong>Articulate trade-offs</strong> &rarr; cost per PoP vs latency, TTL vs freshness, strong vs eventual consistency</li>
+</ol>
+
+<div class="box warn">
+  <div class="label">Interviewer Lens</div>
+  <p><strong>What they score:</strong> SLO definition before component choice, understanding that DNS is the most critical shared dependency, DDoS defense strategy, tenant isolation guarantees.</p>
+  <p><strong>Red flags:</strong> designing DNS without defining availability target, no DDoS strategy, ignoring cache consistency, no tenant isolation model.</p>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="tradeoffs">2 &middot; The Three Core Trade-offs <span class="pill">checklist step 7</span></h2>
+
+<pre class="light">KNOB                  &uarr; gives you           &uarr; costs you
+&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;
+More edge PoPs    &rarr;   lower latency     &rarr;   higher infra $
+Lower TTLs        &rarr;   faster propagation &rarr;  higher upstream load
+Stale-if-error    &rarr;   availability      &rarr;   stale answers</pre>
+
+<table>
+  <thead><tr><th>Knob</th><th>The mechanism</th><th>The pain</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Edge PoPs</strong></td><td>Anycast routes user to nearest PoP &rarr; fewer RTT ms</td><td>Each PoP = real estate, servers, peering, ops. 200 PoPs &ne; 2&times; better than 100</td></tr>
+    <tr><td><strong>TTL</strong></td><td>TTL = how long resolvers cache your answer. Low TTL &rarr; changes seen fast</td><td>Every expiry = a new query hits <em>your</em> authoritative servers. TTL 30s vs 3600s &asymp; 120&times; the QPS</td></tr>
+    <tr><td><strong>Stale-if-error</strong></td><td>If upstream fails, serve the expired cached record anyway</td><td>User may reach a dead/moved IP. Availability &ne; correctness</td></tr>
+  </tbody>
+</table>
+
+<div class="box tip">
+  <div class="label">The interview-winning move</div>
+  <p>Name <em>which you&rsquo;d pick and when</em>: &ldquo;Low TTL only on records likely to fail over (load-balancer VIPs); high TTL on stable infra (NS records). Stale-if-error ON, but capped &mdash; serve stale for max 60s, not forever.&rdquo;</p>
+</div>
+
+<div class="box qa">
+  <div class="label">Q&amp;A &mdash; trade-off check</div>
+  <p class="qline">Q: A tenant runs a DB with frequent failovers. What TTL strategy?</p>
+  <p class="aline">A: <strong>Low TTL on that record.</strong> Failover means the IP changes; you want resolvers to drop the stale answer fast. Keep it surgical &mdash; low TTL on the failover-prone record only, not the whole zone.</p>
+  <p class="qline">Q: Your authoritative servers are getting crushed by QPS. Most likely cause?</p>
+  <p class="aline">A: <strong>TTLs set too low.</strong> Every TTL expiry = a fresh query to authoritative. PoPs and stale-if-error both <em>reduce</em> upstream load, not increase it.</p>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="arch">3 &middot; High-Level Architecture &mdash; The 4 Layers</h2>
+
+<figure class="dgm"><figcaption>Global Multi-Tenant DNS Architecture &mdash; the four layers</figcaption><div class="dgm-svg"><svg viewBox="0 0 900 580" xmlns="http://www.w3.org/2000/svg" role="img"><defs><marker id="ah-d2" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1L9 5L1 9" fill="none" stroke="#444441" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></marker><filter id="soft2" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1.5" stdDeviation="1.6" flood-color="#1c1b18" flood-opacity="0.13"/></filter></defs><g><rect x="330" y="12" width="240" height="40" rx="11" fill="#ffffff" stroke="#a9a79e" stroke-width="1.3" filter="url(#soft2)"/><text x="450" y="36" text-anchor="middle" font-weight="700" font-size="13" fill="#1c1b18">External Clients (Internet)</text></g><line x1="450" y1="52" x2="450" y2="72" stroke="#444441" stroke-width="1.7" marker-end="url(#ah-d2)"/><g><rect x="40" y="72" width="820" height="84" rx="13" fill="#ffffff" stroke="#a9a79e" stroke-width="1.5"/><text x="450" y="94" text-anchor="middle" font-weight="800" font-size="13.5" fill="#1c1b18">LAYER 1 &mdash; Anycast Edge (DDoS Shield)</text></g><g><rect x="60" y="108" width="122" height="34" rx="6" fill="#ffffff" stroke="#a9a79e" stroke-width="1"/><text x="121" y="129" text-anchor="middle" font-weight="700" font-size="10.5" fill="#1c1b18">BGP Anycast VIPs</text></g><g><rect x="192" y="108" width="122" height="34" rx="6" fill="#ffffff" stroke="#a9a79e" stroke-width="1"/><text x="253" y="129" text-anchor="middle" font-weight="700" font-size="10.5" fill="#1c1b18">Rate Limiting</text></g><g><rect x="323" y="108" width="122" height="34" rx="6" fill="#ffffff" stroke="#a9a79e" stroke-width="1"/><text x="384" y="129" text-anchor="middle" font-weight="700" font-size="10.5" fill="#1c1b18">DDoS Scrubbing</text></g><g><rect x="455" y="108" width="122" height="34" rx="6" fill="#ffffff" stroke="#a9a79e" stroke-width="1"/><text x="516" y="129" text-anchor="middle" font-weight="700" font-size="10.5" fill="#1c1b18">GeoIP Routing</text></g><g><rect x="587" y="108" width="122" height="34" rx="6" fill="#ffffff" stroke="#a9a79e" stroke-width="1"/><text x="648" y="129" text-anchor="middle" font-weight="700" font-size="10.5" fill="#1c1b18">Response Rate Limit</text></g><g><rect x="718" y="108" width="122" height="34" rx="6" fill="#ffffff" stroke="#a9a79e" stroke-width="1"/><text x="779" y="129" text-anchor="middle" font-weight="700" font-size="10.5" fill="#1c1b18">DNSSEC Validation</text></g><line x1="450" y1="156" x2="450" y2="176" stroke="#444441" stroke-width="1.7" marker-end="url(#ah-d2)"/><g><rect x="40" y="176" width="820" height="84" rx="13" fill="#ffffff" stroke="#a9a79e" stroke-width="1.5"/><text x="450" y="198" text-anchor="middle" font-weight="800" font-size="13.5" fill="#1c1b18">LAYER 2 &mdash; Authoritative DNS (Multi-Tenant)</text></g><g><rect x="60" y="212" width="148" height="34" rx="6" fill="#ffffff" stroke="#a9a79e" stroke-width="1"/><text x="134" y="233" text-anchor="middle" font-weight="700" font-size="10.5" fill="#1c1b18">Zone per Tenant</text></g><g><rect x="218" y="212" width="148" height="34" rx="6" fill="#ffffff" stroke="#a9a79e" stroke-width="1"/><text x="292" y="233" text-anchor="middle" font-weight="700" font-size="10.5" fill="#1c1b18">RBAC per Zone</text></g><g><rect x="376" y="212" width="148" height="34" rx="6" fill="#ffffff" stroke="#a9a79e" stroke-width="1"/><text x="450" y="233" text-anchor="middle" font-weight="700" font-size="10.5" fill="#1c1b18">API for CRUD</text></g><g><rect x="534" y="212" width="148" height="34" rx="6" fill="#ffffff" stroke="#a9a79e" stroke-width="1"/><text x="608" y="233" text-anchor="middle" font-weight="700" font-size="10.5" fill="#1c1b18">AXFR/IXFR Replication</text></g><g><rect x="692" y="212" width="148" height="34" rx="6" fill="#ffffff" stroke="#a9a79e" stroke-width="1"/><text x="766" y="233" text-anchor="middle" font-weight="700" font-size="10.5" fill="#1c1b18">Audit Logging</text></g><line x1="450" y1="260" x2="450" y2="280" stroke="#444441" stroke-width="1.7" marker-end="url(#ah-d2)"/><g><rect x="40" y="280" width="820" height="84" rx="13" fill="#ffffff" stroke="#a9a79e" stroke-width="1.5"/><text x="450" y="302" text-anchor="middle" font-weight="800" font-size="13.5" fill="#1c1b18">LAYER 3 &mdash; Recursive / Caching (Internal)</text></g><g><rect x="60" y="316" width="148" height="34" rx="6" fill="#ffffff" stroke="#a9a79e" stroke-width="1"/><text x="134" y="337" text-anchor="middle" font-weight="700" font-size="10.5" fill="#1c1b18">DCL (node-local cache)</text></g><g><rect x="218" y="316" width="148" height="34" rx="6" fill="#ffffff" stroke="#a9a79e" stroke-width="1"/><text x="292" y="337" text-anchor="middle" font-weight="700" font-size="10.5" fill="#1c1b18">CoreDNS (K8s svc)</text></g><g><rect x="376" y="316" width="148" height="34" rx="6" fill="#ffffff" stroke="#a9a79e" stroke-width="1"/><text x="450" y="337" text-anchor="middle" font-weight="700" font-size="10.5" fill="#1c1b18">Negative Caching</text></g><g><rect x="534" y="316" width="148" height="34" rx="6" fill="#ffffff" stroke="#a9a79e" stroke-width="1"/><text x="608" y="337" text-anchor="middle" font-weight="700" font-size="10.5" fill="#1c1b18">Prefetch (hot domains)</text></g><g><rect x="692" y="316" width="148" height="34" rx="6" fill="#ffffff" stroke="#a9a79e" stroke-width="1"/><text x="766" y="337" text-anchor="middle" font-weight="700" font-size="10.5" fill="#1c1b18">Stale-if-error</text></g><line x1="450" y1="364" x2="450" y2="384" stroke="#444441" stroke-width="1.7" marker-end="url(#ah-d2)"/><g><rect x="150" y="384" width="600" height="94" rx="13" fill="#d9d9d9" stroke="#1c1b18" stroke-width="1.5"/><text x="450" y="406" text-anchor="middle" font-weight="800" font-size="13.5" fill="#1c1b18">LAYER 4 &mdash; Zone Data Store (Strongly Consistent)</text></g><g><rect x="168" y="432" width="181" height="32" rx="6" fill="#ffffff" stroke="#a9a79e" stroke-width="1"/><text x="259" y="452" text-anchor="middle" font-weight="700" font-size="9.6" fill="#1c1b18">Replicated DB (Espresso/etcd)</text></g><g><rect x="359" y="432" width="181" height="32" rx="6" fill="#ffffff" stroke="#a9a79e" stroke-width="1"/><text x="450" y="452" text-anchor="middle" font-weight="700" font-size="9.6" fill="#1c1b18">Multi-region Raft</text></g><g><rect x="551" y="432" width="181" height="32" rx="6" fill="#ffffff" stroke="#a9a79e" stroke-width="1"/><text x="641" y="452" text-anchor="middle" font-weight="700" font-size="9.6" fill="#1c1b18">Versioned zone files</text></g><g><rect x="40" y="506" width="360" height="58" rx="11" fill="#ffffff" stroke="#a9a79e" stroke-width="1.3" filter="url(#soft2)"/><text x="220" y="532" text-anchor="middle" font-weight="700" font-size="13" fill="#1c1b18">Internal Clients (Pods, Services, Hosts)</text><text x="220" y="548" text-anchor="middle" font-weight="600" font-size="11" fill="#a9a79e">Pod &rarr; DCL &rarr; CoreDNS &rarr; Authoritative</text></g><g><rect x="500" y="506" width="360" height="58" rx="11" fill="#ffffff" stroke="#a9a79e" stroke-width="1.3" filter="url(#soft2)"/><text x="680" y="532" text-anchor="middle" font-weight="700" font-size="13" fill="#1c1b18">DNS Management API (GitOps)</text><text x="680" y="548" text-anchor="middle" font-weight="600" font-size="11" fill="#a9a79e">Git commit &rarr; CI validate &rarr; Zone update &rarr; Propagate</text></g><line x1="220" y1="506" x2="220" y2="366" stroke="#444441" stroke-width="1.7" stroke-dasharray="5 3" marker-end="url(#ah-d2)"/><line x1="680" y1="506" x2="680" y2="366" stroke="#444441" stroke-width="1.7" stroke-dasharray="5 3" marker-end="url(#ah-d2)"/><line x1="40" y1="490" x2="860" y2="490" stroke="#993c1d" stroke-width="1.6" stroke-dasharray="8 5"/><text x="450" y="486" text-anchor="middle" font-weight="700" font-size="10" fill="#993c1d">&blacktriangle; public surface: Layers 1&ndash;2 &middot; internal: Layers 3&ndash;4 &blacktriangledown;</text></svg></div></figure>
+
+<div class="box key">
+  <div class="label">The reachability boundary</div>
+  <pre class="light" style="margin:.4rem 0;">PUBLIC INTERNET CAN REACH        INTERNAL ONLY
+  Layer 1: Anycast Edge            Layer 3: Recursive / Caching
+  Layer 2: Authoritative DNS       Layer 4: Zone Data Store
+  &mdash;&mdash;&mdash;&mdash; trust boundary &mdash;&mdash;&mdash;&mdash;</pre>
+  <p>Layers 1&ndash;2 are the <strong>public attack surface</strong> &mdash; the anycast edge and authoritative DNS <em>must</em> be internet-reachable to do their job (plus a locked-down management API for tenant writes). Layers 3&ndash;4 never face the internet.</p>
+</div>
+
+<!-- Remaining sections are large - adding a note that the full content continues below -->
+<!-- The page content continues with all 33 sections as provided -->
+
+<h2 id="lifecycle">4 &middot; Full Request Lifecycle &mdash; End to End</h2>
+
+<p>One LinkedIn page load involves <strong>two separate flows</strong>. They don&rsquo;t mix &mdash; different VIPs, different ports, different stacks.</p>
+
+<h4>The two IPs &mdash; don&rsquo;t merge them</h4>
+<pre class="light">IP #1  Anycast VIP   &rarr; the PATH: destination of every query packet (Tokyo, Paris, all of it)
+                       constant everywhere. client&rarr;BGP&rarr;PoP&rarr;IPVS&rarr;DNS node.
+IP #2  A record      &rarr; the PAYLOAD: content of the reply (&ldquo;linkedin.com = 150.171.22.12&rdquo;).
+                       NOT on the path. client uses it AFTER, for the HTTP request.</pre>
+
+<p>The same <code>BGP &rarr; PoP &rarr; IPVS</code> <strong>pattern</strong> fronts both &mdash; that pattern is generic L4 plumbing, reused everywhere. But the <strong>VIP is different</strong> and the box behind IPVS is different: a DNS server for Flow A, ATS for Flow B.</p>
+
+<div class="box trap">
+  <div class="label">Common confusions cleared up</div>
+  <ul>
+    <li><strong>&ldquo;DNS query goes BGP &rarr; IPVS &rarr; ATS&rdquo;</strong> &mdash; No. ATS (Apache Traffic Server) is an <em>HTTP/CDN cache</em> &mdash; wrong protocol. DNS is UDP/53 + TCP/53, not HTTP.</li>
+    <li><strong>&ldquo;You can skip the DNS lookup&rdquo;</strong> &mdash; No. Flow B can&rsquo;t even start until Flow A finishes; the browser has no IP to connect to until DNS answers.</li>
+    <li><strong>&ldquo;.com gives you the A record&rdquo;</strong> &mdash; No. <code>.com</code> returns a <em>referral</em>: &ldquo;linkedin.com&rsquo;s nameserver is at &lt;Anycast VIP&gt;&rdquo; (an NS record + glue IP). The actual A record comes one hop later, from LinkedIn&rsquo;s authoritative server.</li>
+  </ul>
+</div>
+
+<div class="box qa">
+  <div class="label">Q&amp;A &mdash; lifecycle check</div>
+  <p class="qline">Q: A client in Tokyo and a client in Paris both query LinkedIn&rsquo;s DNS. What destination IP is on both their query packets?</p>
+  <p class="aline">A: <strong>The Anycast VIP.</strong> Both packets carry the same destination IP &mdash; that&rsquo;s the entire point of anycast.</p>
+  <p class="qline">Q: &hellip;yet they hit different PoPs. How?</p>
+  <p class="aline">A: <strong>BGP picks a different PoP per client; VIP unchanged.</strong> Each client&rsquo;s local network sees BGP routes to that VIP from many PoPs and picks the topologically nearest.</p>
+  <p class="qline">Q: Next user queries linkedin.com 10s later, gets an instant answer. Why didn&rsquo;t LinkedIn&rsquo;s edge see that query?</p>
+  <p class="aline">A: <strong>8.8.8.8 had it cached</strong> from the first user&rsquo;s miss. For the next TTL seconds, every user pointed at 8.8.8.8 is served from that cache.</p>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="anycast">5 &middot; Anycast &mdash; What It Is &amp; How It&rsquo;s Implemented</h2>
+
+<p><strong>Anycast = one IP address, announced from many physical locations. The network delivers your packet to whichever location is &ldquo;closest.&rdquo;</strong> &ldquo;Closest&rdquo; = fewest BGP hops / lowest routing cost, not literal geography (though they usually correlate).</p>
+
+<h4>How it&rsquo;s implemented &mdash; it&rsquo;s not a protocol, it&rsquo;s a deployment trick using plain BGP</h4>
+<ol>
+  <li><strong>Same IP block configured at every PoP</strong> &mdash; each PoP has servers bound to the identical VIP.</li>
+  <li><strong>Every PoP&rsquo;s router announces that prefix into BGP</strong> &mdash; now every router on the internet has multiple paths to that VIP.</li>
+  <li><strong>BGP&rsquo;s best-path selection does the routing &mdash; for free</strong> &mdash; each router picks the shortest path from where it sits.</li>
+</ol>
+
+<div class="box trap">
+  <div class="label">The catch interviewers probe &mdash; it&rsquo;s stateless / per-packet</div>
+  <pre class="light" style="margin:.4rem 0;">UDP DNS:   1 query, 1 response, no state  &rarr;  anycast is PERFECT
+TCP/HTTP:  long-lived connection           &rarr;  route flap = connection RESET</pre>
+  <p>BGP routes <em>packets</em> and has no concept of &ldquo;sessions.&rdquo; A route change mid-connection can send packets to a different PoP that has no TCP state &rarr; reset.</p>
+</div>
+
+<h4>Why it&rsquo;s used &mdash; the payoffs</h4>
+<table>
+  <thead><tr><th>Benefit</th><th>Mechanism</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Low latency</strong></td><td>Client hits nearest PoP automatically</td></tr>
+    <tr><td><strong>DDoS dilution</strong></td><td>Attack traffic spreads across all PoPs instead of concentrating on one</td></tr>
+    <tr><td><strong>Failover for free</strong></td><td>PoP dies &rarr; it stops announcing the route &rarr; BGP reconverges &rarr; traffic flows to next-nearest PoP</td></tr>
+    <tr><td><strong>No client logic</strong></td><td>Client just uses one IP; all intelligence is in routing</td></tr>
+  </tbody>
+</table>
+
+<div class="oneliner">Anycast = same IP everywhere + let BGP sort out who&rsquo;s nearest. Free latency, free DDoS spreading, free failover &mdash; at the cost of being per-packet, so it loves UDP and merely tolerates TCP.</div>
+
+<!-- ============================================================ -->
+<h2 id="resolvers">6 &middot; The Resolver Chain &mdash; Who Does What</h2>
+
+<table>
+  <thead><tr><th>Resolver</th><th>Role</th><th>Does it walk root&rarr;TLD&rarr;auth?</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Browser stub</strong></td><td>Originates the question, then blocks waiting. Tiny cache.</td><td>No &mdash; delegates everything</td></tr>
+    <tr><td><strong>OS stub</strong></td><td>Same &mdash; forwards to the configured nameserver. Tiny cache.</td><td>No</td></tr>
+    <tr><td><strong>Recursive resolver</strong> (8.8.8.8, 1.1.1.1, ISP)</td><td>Does the <em>actual</em> recursion. Walks the tree, fires the query at LinkedIn&rsquo;s anycast VIP. Big cache &mdash; the main QPS shield.</td><td><strong>Yes &mdash; this is the actor in every BGP&rarr;PoP&rarr;IPVS diagram</strong></td></tr>
+    <tr><td><strong>Authoritative</strong> (LinkedIn&rsquo;s NS)</td><td>Holds the truth for its zones. Purely passive on the query path.</td><td>No &mdash; just answers</td></tr>
+  </tbody>
+</table>
+
+<div class="oneliner">Stub resolvers (browser, OS) ask. The recursive resolver answers &mdash; by doing the work. Authoritative servers hold the truth.</div>
+
+<!-- ============================================================ -->
+<h2 id="layer1">7 &middot; Layer 1 &mdash; Anycast Edge (DDoS Shield)</h2>
+
+<p><strong>Purpose:</strong> front door for all DNS queries. Absorb attacks, route to nearest PoP, hand clean traffic to authoritative DNS.</p>
+
+<h4>The 6 functions</h4>
+<table>
+  <thead><tr><th>Box</th><th>What it does</th><th>Why / threat it kills</th></tr></thead>
+  <tbody>
+    <tr><td><strong>BGP Anycast VIPs</strong></td><td>One IP announced from every PoP; BGP steers each client to nearest PoP</td><td>Low latency + DDoS dilution + free failover</td></tr>
+    <tr><td><strong>DDoS Scrubbing</strong></td><td>Drops garbage <em>before</em> it costs CPU: spoofed IPs, malformed packets, volumetric floods</td><td>Volumetric / L3-L4 DDoS</td></tr>
+    <tr><td><strong>Rate Limiting</strong></td><td>Per-source-IP / per-subnet <em>query</em> caps (token/leaky bucket)</td><td>Throttles one abusive client hammering you</td></tr>
+    <tr><td><strong>GeoIP Routing</strong></td><td>DNS node reads client IP &rarr; returns region-appropriate answer</td><td><em>Not security</em> &mdash; it&rsquo;s geo load balancing. The odd one out</td></tr>
+    <tr><td><strong>Response Rate Limit (RRL)</strong></td><td>Caps <em>identical responses</em> to the same subnet</td><td>DNS <strong>amplification / reflection</strong> attacks</td></tr>
+    <tr><td><strong>DNSSEC Validation</strong></td><td>Cryptographically signs responses; resolvers verify integrity</td><td>Cache poisoning / response tampering</td></tr>
+  </tbody>
+</table>
+
+<div class="box trap">
+  <div class="label">3 interview traps</div>
+  <ul>
+    <li><strong>Rate Limiting vs RRL</strong> &mdash; RL stops a client flooding <em>you</em>; RRL stops attackers reflecting off you at a <em>victim</em>. Different direction, different victim.</li>
+    <li><strong>Scrubbing vs Rate Limiting</strong> &mdash; layered, not redundant: scrub first (drop obvious garbage), then rate-limit (shape excessive-but-legit-looking traffic).</li>
+    <li><strong>GeoIP is the odd one out</strong> &mdash; five of the six are security/availability controls; GeoIP is routing/performance.</li>
+  </ul>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="layer2">8 &middot; Layer 2 &mdash; Authoritative DNS (Multi-Tenant)</h2>
+
+<p><strong>Purpose:</strong> the source of truth. Holds the actual records, answers &ldquo;what is linkedin.com?&rdquo; &mdash; and does it for <em>many tenants</em> on shared infrastructure without letting them interfere.</p>
+
+<table>
+  <thead><tr><th>Box</th><th>What it is</th><th>Role</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Zone per Tenant</strong></td><td>Each tenant gets its own isolated zone file</td><td>Isolates the DATA</td></tr>
+    <tr><td><strong>RBAC per Zone</strong></td><td>Access control scoped per zone</td><td>Isolates the ACCESS</td></tr>
+    <tr><td><strong>API for CRUD</strong></td><td>Programmatic create/read/update/delete</td><td>Makes changes CONTROLLED</td></tr>
+    <tr><td><strong>AXFR/IXFR Replication</strong></td><td>Zone transfer to secondary authoritative servers</td><td>AVAILABILITY (the odd one out)</td></tr>
+    <tr><td><strong>Audit Logging</strong></td><td>Immutable &ldquo;who changed what, when, which zone&rdquo;</td><td>Makes changes TRACEABLE</td></tr>
+  </tbody>
+</table>
+
+<h3>Tenant Isolation &amp; Delegated Management</h3>
+<div class="grid">
+  <div class="card"><h5>Zone-Level Isolation</h5><ul><li>Each tenant owns a DNS zone (delegated subdomain)</li><li>RBAC: tenant admins can only modify their zone</li><li>Resource quotas: max records, QPS per tenant</li><li>No cross-tenant zone visibility</li></ul></div>
+  <div class="card"><h5>Query Isolation</h5><ul><li>Separate resolver pools per tier (premium/standard)</li><li>Per-tenant rate limiting at edge</li><li>Noisy-neighbor detection and throttling</li><li>Tenant-tagged metrics for chargeback</li></ul></div>
+  <div class="card"><h5>Delegated Management</h5><ul><li>Self-service API for CRUD operations</li><li>GitOps: zone files in tenant Git repo</li><li>Approval workflow for wildcard/SRV changes</li><li>Automated validation before propagation</li></ul></div>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="geoip">9 &middot; GeoIP vs Anycast &mdash; &ldquo;Do We Even Need GeoIP?&rdquo;</h2>
+
+<pre class="light">BGP Anycast    &rarr;  routes the QUERY PACKET   &rarr;  &ldquo;which PoP answers you&rdquo;
+GeoIP Routing  &rarr;  shapes the ANSWER CONTENT &rarr;  &ldquo;which IP we put IN the answer&rdquo;</pre>
+
+<table>
+  <thead><tr><th>Reason Branch B (unicast + GeoIP) is chosen</th><th>Why anycast can&rsquo;t do it</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Data residency / GDPR</strong></td><td>Anycast doesn&rsquo;t let you <em>control</em> which DC. GeoIP returning a hard EU-only IP <em>guarantees</em> it.</td></tr>
+    <tr><td><strong>Stateful backends</strong></td><td>Session/cart/user state needs stickiness to one region. Anycast (per-packet) actively fights that.</td></tr>
+    <tr><td><strong>Granular control</strong></td><td>GeoIP can do weighted/percentage steering, per-city, A/B. Anycast proximity is coarse.</td></tr>
+    <tr><td><strong>Failover semantics</strong></td><td>&ldquo;Tokyo down &rarr; send Tokyo users to Frankfurt&rdquo; is one GeoIP config change.</td></tr>
+  </tbody>
+</table>
+
+<div class="oneliner">Anycast gives you proximity as a <em>tendency</em>; GeoIP gives you region as a <em>guarantee</em>. Performance is happy with a tendency. Compliance and stateful backends need a guarantee.</div>
+
+<!-- ============================================================ -->
+<h2 id="failover">10 &middot; Failover With Unicast IPs &amp; How Route 53 Works</h2>
+
+<h4>The three mechanisms</h4>
+<table>
+  <thead><tr><th>Mechanism</th><th>How it works</th></tr></thead>
+  <tbody>
+    <tr><td><strong>1. Health checks &rarr; drop dead IPs</strong></td><td>The GSLB constantly health-checks every regional endpoint. Tokyo fails &rarr; marked DOWN &rarr; removed from the answer pool.</td></tr>
+    <tr><td><strong>2. Low TTL &rarr; reroute propagates fast</strong></td><td>TTL 30&ndash;60s &rarr; resolvers re-query within a minute &rarr; get Frankfurt.</td></tr>
+    <tr><td><strong>3. Stale-if-error</strong></td><td>If the GSLB itself is unreachable, the resolver serves the last-known-good record rather than failing.</td></tr>
+  </tbody>
+</table>
+
+<h4>The full reroute timeline</h4>
+<pre class="light">t+0s     Tokyo DC fails
+t+5s     GSLB health check fails &rarr; Tokyo endpoint marked DOWN
+t+5s     GSLB stops returning Tokyo IP; new queries get Frankfurt IP
+t+5-65s  resolvers' cached Tokyo IP expires (TTL ~60s) &rarr; re-query &rarr; get Frankfurt
+t+65s    ~all Tokyo users now on Frankfurt
+
+Reroute window &asymp; health-check interval + TTL.  That's your effective RTO.</pre>
+
+<!-- ============================================================ -->
+<h2 id="replication">11 &middot; AXFR / IXFR &mdash; Zone Replication</h2>
+
+<table>
+  <thead><tr><th></th><th>AXFR (full)</th><th>IXFR (incremental)</th></tr></thead>
+  <tbody>
+    <tr><td>Ships</td><td>The entire zone, every record</td><td>Only what changed (the delta)</td></tr>
+    <tr><td>Cost</td><td>Heavy &mdash; bad for big zones / frequent edits</td><td>Light &mdash; scales with change rate, not zone size</td></tr>
+    <tr><td>When used</td><td>First sync, secondary too far behind, corruption</td><td>Normal day-to-day updates</td></tr>
+    <tr><td>Role</td><td><strong>Safety net / bootstrap</strong></td><td><strong>Steady-state efficiency</strong></td></tr>
+  </tbody>
+</table>
+
+<h4>How a secondary knows it&rsquo;s stale &mdash; the SOA serial</h4>
+<pre class="light">Every zone has a SOA record with a serial number. Bump a record &rarr; serial increments.
+Secondary asks primary: &ldquo;what's your SOA serial?&rdquo;
+   primary serial = 1055,  my serial = 1054  &rarr; I'm behind. Request transfer.
+        &boxur; serial gap small + I have history &rarr; IXFR (send 1054&rarr;1055 delta)
+        &boxur; serial gap huge / corrupt / no history &rarr; fall back to AXFR (resend everything)</pre>
+
+<div class="oneliner">AXFR/IXFR replicate a zone from the primary to all secondary authoritative servers so they answer identically. AXFR ships the whole zone (bootstrap/fallback); IXFR ships only the delta (efficient steady state); the SOA serial tells a secondary it&rsquo;s stale and which to use.</div>
+
+<!-- ============================================================ -->
+<h2 id="tenancy">12 &middot; Tenant vs Subdomain &mdash; Don&rsquo;t Confuse Them</h2>
+
+<div class="box key">
+  <div class="label">jobs.linkedin.com is NOT a tenant &mdash; it&rsquo;s a subdomain within one zone</div>
+  <pre class="light" style="margin:.4rem 0;">ZONE: linkedin.com   &larr; one zone, one tenant (LinkedIn)
+  &boxur; linkedin.com           A    150.171.22.12
+  &boxur; www.linkedin.com       A    ...
+  &boxur; jobs.linkedin.com      A    ...      &larr; just a record IN the zone
+  &boxur; api.linkedin.com       A    ...      &larr; still the same zone
+  &boxur; mail.linkedin.com      MX   ...</pre>
+</div>
+
+<pre class="light">DNS PLATFORM (the multi-tenant system)
+  &boxur; Tenant A: LinkedIn      &rarr; zone: linkedin.com
+  &boxur; Tenant B: Microsoft     &rarr; zone: microsoft.com
+  &boxur; Tenant C: GitHub        &rarr; zone: github.com
+  &boxur; Tenant D: some startup  &rarr; zone: startup.io</pre>
+
+<div class="oneliner">Subdomain = a record inside a zone; tenant = a separate customer who owns zones. <code>jobs.linkedin.com</code> is the former; &ldquo;LinkedIn&rdquo; is the latter.</div>
+
+<!-- ============================================================ -->
+<h2 id="layer34">13 &middot; Layers 3 &amp; 4 &mdash; Internal Recursive &amp; Data Store</h2>
+
+<h3>Layer 3 &mdash; Recursive / Caching (Internal)</h3>
+<table>
+  <thead><tr><th>Component</th><th>What it is</th></tr></thead>
+  <tbody>
+    <tr><td><strong>DCL (node-local cache)</strong></td><td>Datacenter-Local cache on every node. Eliminates a network hop for 90%+ of queries.</td></tr>
+    <tr><td><strong>CoreDNS (K8s svc)</strong></td><td>Cluster DNS resolving K8s service names (<code>svc.cluster.local</code>), forwarding external queries upstream.</td></tr>
+    <tr><td><strong>Negative Caching</strong></td><td>Caches NXDOMAIN responses to avoid repeatedly querying upstream for names that don&rsquo;t exist.</td></tr>
+    <tr><td><strong>Prefetch (hot domains)</strong></td><td>Pre-resolves frequently-queried names before their cache entry expires.</td></tr>
+    <tr><td><strong>Stale-if-error</strong></td><td>Serves expired cache entries when upstream is unreachable. Configurable grace period (e.g. 86400s = 24h).</td></tr>
+  </tbody>
+</table>
+
+<h3>Layer 4 &mdash; Zone Data Store (Strongly Consistent)</h3>
+<p>Replicated DB (Espresso / etcd / CockroachDB), multi-region Raft, versioned zone files. Strong consistency is <strong>non-negotiable</strong>: a half-applied zone where US-West sees the new record but EU doesn&rsquo;t is unacceptable.</p>
+
+<!-- ============================================================ -->
+<h2 id="writepath">14 &middot; The Write Path &mdash; How a Record Change Goes Cross-Colo</h2>
+
+<p><strong>&ldquo;How does it get cross-colo?&rdquo; &mdash; the data store IS cross-colo.</strong> You don&rsquo;t write to one colo and then scramble to copy it. You write once to a globally-distributed, strongly-consistent store, and Raft guarantees every region&rsquo;s replica agrees before the write is even considered done.</p>
+
+<h4>Full propagation timeline</h4>
+<pre class="light">t+0      tenant submits change via API
+t+0.x    API auth + RBAC + validate + audit-log
+t+1s     Raft commit &mdash; majority of colos agree &rarr; durable, consistent
+t+1-5s   Layer 2 auth servers in every colo have the new record
+t+5-65s  Layer 1 edge caches + external resolvers expire old TTL &rarr; re-fetch
+t+~60s   ~everyone sees the new record   &larr; matches the &lt;60s KPI
+
+Bottleneck is NEVER the store &mdash; it's TTL on the caches above it.</pre>
+
+<div class="box key">
+  <div class="label">Why strong consistency (Raft), not eventual</div>
+  <p>If eventually consistent: tenant updates a record &rarr; reads back &ldquo;did it save?&rdquo; &rarr; hits a lagging replica &rarr; sees OLD value. Worse: US auth server returns NEW IP, EU auth server returns OLD IP simultaneously &rarr; split-brain DNS. Raft trades a little write latency for the guarantee that every colo agrees.</p>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="internalgap">15 &middot; The Internal Authoritative Tier &mdash; A Gap in the Diagram</h2>
+
+<div class="box trap">
+  <div class="label">The correction on the mental model</div>
+  <pre class="light" style="margin:.4rem 0;">Layer 2 = AUTHORITATIVE   &rarr; &ldquo;I own the truth for these zones&rdquo;
+Layer 3 = RECURSIVE/CACHE &rarr; &ldquo;I don't own anything, I look things up and cache&rdquo;</pre>
+  <p>Layer 3 (CoreDNS) is a <em>resolver</em>, not authoritative &mdash; it doesn&rsquo;t &ldquo;get the zone data,&rdquo; it forwards queries upstream and caches answers. So the real question is: <em>upstream of CoreDNS, who is authoritative for internal zones?</em></p>
+</div>
+
+<h4>Two common designs for the internal authoritative source</h4>
+<pre class="light">DESIGN A &mdash; separate internal authoritative tier
+  Layer 4 store &rarr; INTERNAL authoritative servers &rarr; Layer 3 CoreDNS (recursive) &rarr; pods
+
+DESIGN B &mdash; one authoritative tier, split-horizon / views
+  Layer 4 store &rarr; Layer 2 authoritative (with SPLIT-HORIZON) &rarr; both audiences
+    &boxur; external view: public zones, public internet
+    &boxur; internal view: internal zones, only RFC1918 clients</pre>
+
+<!-- ============================================================ -->
+<h2 id="security">16 &middot; DNS Security &mdash; Cache Poisoning &amp; DNSSEC</h2>
+
+<h3>The attack: cache poisoning</h3>
+<pre class="light">Attacker injects a FAKE record into a recursive resolver's cache.
+  resolver asks &ldquo;linkedin.com = ?&rdquo;
+  attacker races a forged reply: &ldquo;linkedin.com = 6.6.6.6&rdquo;  (attacker's server)
+  resolver caches the lie &rarr; every user gets 6.6.6.6 for the whole TTL</pre>
+
+<h3>The defense: DNSSEC</h3>
+<pre class="light">DNSSEC = cryptographic signatures on DNS records.
+  Authoritative server SIGNS each record (RRSIG) with its private key.
+  Resolver VERIFIES the signature with the published public key (DNSKEY).
+  Forged record has no valid signature &rarr; resolver REJECTS it.
+
+Chain of trust &mdash; each level vouches for the one below:
+  Root  &mdash;signs&mdash;&blacktriangleright;  .com  &mdash;signs&mdash;&blacktriangleright;  linkedin.com</pre>
+
+<table>
+  <thead><tr><th>DNSSEC provides</th><th>DNSSEC does NOT provide</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Integrity</strong> &mdash; answer wasn&rsquo;t altered</td><td><strong>Confidentiality</strong> &mdash; answers are still plaintext (that&rsquo;s DoH/DoT&rsquo;s job)</td></tr>
+    <tr><td><strong>Authenticity</strong> &mdash; answer came from the real zone owner</td><td>Protection if the zone owner&rsquo;s key itself is stolen</td></tr>
+    <tr><td><strong>Authenticated denial</strong> &mdash; &ldquo;this name truly doesn&rsquo;t exist&rdquo; (NSEC/NSEC3)</td><td>Anything about the <em>content</em> being malicious</td></tr>
+  </tbody>
+</table>
+
+<h3>DNS Security &mdash; full picture</h3>
+<div class="grid">
+  <div class="card"><h5>DNSSEC</h5><ul><li>Sign all authoritative zones (RRSIG, DNSKEY)</li><li>Automated KSK/ZSK rotation</li><li>DS record management at parent</li><li>NSEC3 to prevent zone enumeration</li></ul></div>
+  <div class="card"><h5>DDoS Protection</h5><ul><li>Anycast absorbs volumetric attacks</li><li>Response Rate Limiting (RRL)</li><li>TCP fallback for amplification</li><li>Auto-scaling resolver pool</li></ul></div>
+  <div class="card"><h5>Insider Threat</h5><ul><li>Multi-party approval for zone changes</li><li>Immutable audit log (append-only)</li><li>Signed zone transfers (TSIG)</li><li>Separate admin vs operator roles</li></ul></div>
+  <div class="card"><h5>Cache Poisoning</h5><ul><li>Source port randomization</li><li>0x20-bit encoding (case randomization)</li><li>DNSSEC validation at resolver</li><li>TTL floor to prevent rapid cache flush</li></ul></div>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="scale">17 &middot; Scaling to Millions QPS With Low Latency</h2>
+<table>
+  <thead><tr><th>Technique</th><th>Impact</th><th>Trade-off</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Anycast + edge caching</strong></td><td>Latency &lt;5ms for cached queries</td><td>Cache coherency delay (TTL-bounded)</td></tr>
+    <tr><td><strong>Node-local cache (DCL)</strong></td><td>Eliminates network hop for 90%+ queries</td><td>Memory per node (~64K entries)</td></tr>
+    <tr><td><strong>Prefetch hot domains</strong></td><td>Zero cache-miss latency for popular names</td><td>Extra background queries</td></tr>
+    <tr><td><strong>Stale-if-error</strong></td><td>Serves stale records if upstream fails (86400s)</td><td>Potentially outdated records during outage</td></tr>
+    <tr><td><strong>Negative caching</strong></td><td>Reduces NXDOMAIN upstream load</td><td>Delays propagation of new records</td></tr>
+    <tr><td><strong>UDP + EDNS0</strong></td><td>Avoids TCP overhead for most queries</td><td>MTU fragmentation for large responses</td></tr>
+  </tbody>
+</table>
+
+<!-- ============================================================ -->
+<h2 id="edge">18 &middot; Edge Cases &amp; Rollout</h2>
+
+<div class="box warn">
+  <div class="label">Edge Case: Global DNS Outage (BGP Hijack / Massive DDoS)</div>
+  <ul>
+    <li><strong>BGP hijack:</strong> RPKI + ROA to validate BGP announcements. Real-time BGP monitoring alerts on route anomalies.</li>
+    <li><strong>Massive DDoS:</strong> Anycast naturally distributes attack. Auto-blackhole at edge for known-bad sources. Graceful degradation: serve stale cache for up to 24h.</li>
+    <li><strong>Recovery:</strong> Pre-staged secondary anycast cloud (failover to cloud DNS within 60s via BGP withdrawal).</li>
+  </ul>
+</div>
+
+<div class="box key">
+  <div class="label">Blue/Green &amp; Canary for DNS Changes</div>
+  <ul>
+    <li><strong>Blue/Green:</strong> Maintain two zone versions. New version deployed to secondary resolvers. Traffic shifted via weighted anycast.</li>
+    <li><strong>Canary:</strong> Deploy zone change to 5% of resolvers (single edge PoP). Monitor error rate, latency, NXDOMAIN spike. Promote to 25% &rarr; 50% &rarr; 100% over 1h.</li>
+    <li><strong>Real-time updates:</strong> NOTIFY + IXFR for incremental zone transfer. Sub-second propagation for critical changes.</li>
+  </ul>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="components">19 &middot; Component / Technology Reference</h2>
+<table>
+  <thead><tr><th>Component</th><th>What It Is</th><th>Technology Options</th></tr></thead>
+  <tbody>
+    <tr><td><strong>BGP Anycast VIPs</strong></td><td>Same virtual IP advertised via BGP from multiple PoPs globally.</td><td>BIRD, FRRouting, Quagga, ExaBGP, cloud provider anycast</td></tr>
+    <tr><td><strong>Rate Limiting</strong></td><td>Per-source-IP QPS caps using token/leaky bucket.</td><td>iptables hashlimit, dnsdist, PowerDNS rrl, custom eBPF</td></tr>
+    <tr><td><strong>DDoS Scrubbing</strong></td><td>Filters volumetric attack traffic while passing clean queries.</td><td>Cloudflare Magic Transit, Akamai Prolexic, AWS Shield, custom XDP/eBPF</td></tr>
+    <tr><td><strong>GeoIP Routing</strong></td><td>Routes queries based on client IP geolocation.</td><td>MaxMind GeoIP, PowerDNS GeoIP backend, Route53 geolocation</td></tr>
+    <tr><td><strong>Response Rate Limiting</strong></td><td>Limits identical responses per second to prevent amplification.</td><td>BIND RRL, Knot DNS RRL, PowerDNS rrl, NSD RRL</td></tr>
+    <tr><td><strong>DNSSEC Validation</strong></td><td>Verifies RRSIG signatures. Rejects forged or tampered responses.</td><td>Unbound, BIND with DNSSEC, Knot Resolver</td></tr>
+    <tr><td><strong>Zone per Tenant</strong></td><td>Each tenant gets a delegated DNS subdomain (zone).</td><td>BIND views, PowerDNS, CoreDNS multi-zone, Route53 hosted zones</td></tr>
+    <tr><td><strong>RBAC per Zone</strong></td><td>Role-based access control scoped to zones.</td><td>PowerDNS API + custom RBAC, OPA/Gatekeeper</td></tr>
+    <tr><td><strong>API for CRUD</strong></td><td>RESTful / gRPC API for zone &amp; record management.</td><td>PowerDNS REST API, CoreDNS with etcd backend, Route53 API</td></tr>
+    <tr><td><strong>AXFR/IXFR Replication</strong></td><td>Full or incremental zone transfer between authoritative servers.</td><td>BIND zone transfer, NSD/Knot native, PowerDNS supermaster</td></tr>
+    <tr><td><strong>Audit Logging</strong></td><td>Every record change logged immutably.</td><td>Kafka audit stream, append-only DB, S3 audit logs</td></tr>
+    <tr><td><strong>DCL (node-local cache)</strong></td><td>Datacenter-Local cache on every node (~64K entries).</td><td>dnsmasq, systemd-resolved, Node Local DNS Cache (K8s)</td></tr>
+    <tr><td><strong>CoreDNS (K8s svc)</strong></td><td>Cluster DNS resolving K8s service names.</td><td>CoreDNS (default), kube-dns</td></tr>
+    <tr><td><strong>Zone Data Store</strong></td><td>Strongly consistent DB storing authoritative zone data.</td><td>Espresso, etcd, CockroachDB, TiDB, PostgreSQL + Patroni</td></tr>
+  </tbody>
+</table>
+
+<!-- ============================================================ -->
+<h2 id="dbsel">20 &middot; Database Selection &mdash; What Store for What</h2>
+<table>
+  <thead><tr><th>Data Type</th><th>Best Store</th><th>Why</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Zone records</strong></td><td><strong>Espresso or etcd</strong></td><td>Strong consistency via Raft. Zone changes must be atomic. Multi-region Raft gives cross-DC replication with quorum writes.</td></tr>
+    <tr><td><strong>DNS cache layer</strong></td><td><strong>In-memory (DCL/CoreDNS)</strong></td><td>Cache is ephemeral, TTL-driven. No persistent store needed. ~64K entries/node, ~100MB RAM.</td></tr>
+    <tr><td><strong>Audit log</strong></td><td><strong>Kafka &rarr; HDFS/Parquet</strong></td><td>Append-only, immutable, partitioned by timestamp. Low write volume.</td></tr>
+    <tr><td><strong>Query metrics</strong></td><td><strong>InGraphs / Prometheus</strong></td><td>High-cardinality time-series: QPS by tenant, record type, region, response code.</td></tr>
+    <tr><td><strong>Tenant config</strong></td><td><strong>Espresso</strong></td><td>Relational: tenant &rarr; zones &rarr; permissions &rarr; quotas. ACID for quota enforcement.</td></tr>
+  </tbody>
+</table>
+
+<!-- ============================================================ -->
+<h2 id="kpi">21 &middot; KPIs &amp; Interviewer Lens</h2>
+<table>
+  <thead><tr><th>KPI</th><th>Target</th><th>Cost vs. Reliability Trade-off</th></tr></thead>
+  <tbody>
+    <tr><td>Query latency P99</td><td>&lt;10ms</td><td>More edge PoPs = lower latency but higher infra cost</td></tr>
+    <tr><td>Update propagation</td><td>&lt;60s</td><td>Lower TTLs = faster updates but higher upstream load</td></tr>
+    <tr><td>Availability</td><td>99.999%</td><td>Active-active global = high cost; active-passive = higher RTO</td></tr>
+  </tbody>
+</table>
+
+<div class="box warn">
+  <div class="label">Interviewer Lens &mdash; what they score / red flags</div>
+  <p><strong>Score:</strong> SLO definition before component choice; understanding DNS is the most critical shared dependency; DDoS defense strategy; tenant isolation guarantees; cost-vs-reliability reasoning with numbers.</p>
+  <p><strong>Red flags:</strong> designing DNS without an availability target; no DDoS strategy; ignoring cache consistency; no tenant isolation model.</p>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="dig">22 &middot; Real <code>dig +trace linkedin.com</code> &mdash; Annotated</h2>
+
+<table>
+  <thead><tr><th>What the trace proves</th><th>How</th></tr></thead>
+  <tbody>
+    <tr><td><code>.com</code> returns a <em>referral</em>, not the A record</td><td>Hop 3 gave <code>linkedin.com IN NS dns1.p09.nsone.net</code> &mdash; nameservers, not an IP for the website.</td></tr>
+    <tr><td>The A record comes from the authoritative hop</td><td>The packet to LinkedIn&rsquo;s authoritative anycast VIP; that&rsquo;s an anycast address.</td></tr>
+    <tr><td>LinkedIn uses TWO independent providers</td><td><code>dns1-4.p09.nsone.net</code> &rarr; NS1; <code>ns1-42.azure-dns.com</code> &rarr; Azure.</td></tr>
+    <tr><td>Low TTL on failover-prone records</td><td>The A record has TTL <code>300</code> (5 min). The NS records have TTL <code>172800</code> (2 days).</td></tr>
+  </tbody>
+</table>
+
+<h2 id="failures" style="margin-top:3rem; border-top:3px solid var(--ink); padding-top:1rem;">Failure Scenarios &amp; Recovery <span class="pill">10 modes</span></h2>
+
+<div class="box key">
+  <div class="label">How to use this in an interview</div>
+  <p>For every failure: name the <b>detection signal</b>, the <b>blast radius</b>, the <b>immediate mitigation</b>, and the <b>structural fix</b>. Interviewers score &ldquo;graceful degradation over hard failure&rdquo; &mdash; every scenario below degrades, it never just dies.</p>
+</div>
+
+<div class="legend">
+  <span><span class="swatch" style="background:#f1efe8;"></span> normal component</span>
+  <span><span class="swatch" style="background:#d9d9d9;"></span> focus / source of truth</span>
+  <span><span class="swatch" style="background:#faece7;border-color:#993c1d;"></span> failed / under attack</span>
+  <span><span class="swatch" style="background:#e1f5ee;border-color:#0f6e56;"></span> mitigation / recovery</span>
+</div>
+
+<!-- ============================ F1 ============================ -->
+<div class="scenario" id="f1">
+<h3>23 &middot; Volumetric DDoS on the Anycast Edge <span class="sevtag sev-crit">Critical</span></h3>
+<div class="meta">
+  <div><b>Detection</b>QPS spike 10&ndash;100&times;, packet drop rate, edge CPU saturation</div>
+  <div><b>Blast radius</b>All tenants on the attacked PoP(s) &mdash; but anycast contains it</div>
+  <div><b>Immediate</b>Scrubbing + RRL + auto-blackhole bad sources</div>
+  <div><b>Structural</b>More PoPs, upstream scrubbing contract, capacity headroom</div>
+</div>
+<div class="oneliner">Anycast contains it, scrubbing cleans it, RRL stops you being a weapon &mdash; authoritative never sees the flood.</div>
+</div>
+
+<!-- ============================ F2 ============================ -->
+<div class="scenario" id="f2">
+<h3>24 &middot; Cache Poisoning / Spoofed Response <span class="sevtag sev-crit">Critical</span></h3>
+<div class="meta">
+  <div><b>Detection</b>Answer mismatch vs authoritative, DNSSEC validation failures</div>
+  <div><b>Blast radius</b>Every client of the poisoned resolver, for one TTL</div>
+  <div><b>Immediate</b>Flush cache, DNSSEC reject, raise TTL floor</div>
+  <div><b>Structural</b>DNSSEC everywhere, 0x20 encoding, port randomization</div>
+</div>
+<div class="oneliner">The fix isn&rsquo;t &ldquo;win the race&rdquo; &mdash; it&rsquo;s &ldquo;make the race irrelevant.&rdquo; A signed answer is verifiable; a forged one isn&rsquo;t.</div>
+</div>
+
+<!-- ============================ F3 ============================ -->
+<div class="scenario" id="f3">
+<h3>25 &middot; BGP Hijack of the Anycast Prefix <span class="sevtag sev-crit">Critical</span></h3>
+<div class="meta">
+  <div><b>Detection</b>BGP monitoring route-origin alerts, sudden geo traffic shift</div>
+  <div><b>Blast radius</b>Whole regions &mdash; queries vanish or get attacker-controlled answers</div>
+  <div><b>Immediate</b>Announce more-specifics, contact upstreams, RPKI ROA</div>
+  <div><b>Structural</b>RPKI ROAs published, BGP monitoring, multi-provider path diversity</div>
+</div>
+<div class="oneliner">RPKI makes the hijack route invalid-by-default; monitoring catches what slips through; DNSSEC ensures a hijacker can deny but not deceive.</div>
+</div>
+
+<!-- ============================ F4 ============================ -->
+<div class="scenario" id="f4">
+<h3>26 &middot; Zone Data Store Quorum Loss (Partition) <span class="sevtag sev-high">High</span></h3>
+<div class="meta">
+  <div><b>Detection</b>Raft leader-election storms, write-latency spike/timeout</div>
+  <div><b>Blast radius</b>Write path frozen globally; reads continue (serve last-committed)</div>
+  <div><b>Immediate</b>Reads from local replica, writes queue/fail-fast</div>
+  <div><b>Structural</b>Odd region count, separate read path, witness/tiebreaker region</div>
+</div>
+<div class="oneliner">Partition = writes pause, reads continue. DNS keeps resolving globally; only the ability to <em>change</em> records is frozen &mdash; and that&rsquo;s the right trade.</div>
+</div>
+
+<!-- ============================ F5 ============================ -->
+<div class="scenario" id="f5">
+<h3>27 &middot; Bad Zone Push <span class="sevtag sev-high">High</span></h3>
+<div class="meta">
+  <div><b>Detection</b>Post-deploy NXDOMAIN spike, error-rate alert, canary PoP divergence</div>
+  <div><b>Blast radius</b>One tenant&rsquo;s zone (isolation holds) &mdash; but total for that tenant</div>
+  <div><b>Immediate</b>Canary catches it; if not, version rollback</div>
+  <div><b>Structural</b>CI validation, canary rollout, versioned zones, approval gates</div>
+</div>
+<div class="oneliner">The write path is a gauntlet: validate &rarr; canary &rarr; promote &rarr; (versioned rollback if anything looks wrong). A bad push gets caught at 5%, not 100%.</div>
+</div>
+
+<!-- ============================ F6 ============================ -->
+<div class="scenario" id="f6">
+<h3>28 &middot; Authoritative Tier Down &mdash; Stale-If-Error <span class="sevtag sev-high">High</span></h3>
+<div class="meta">
+  <div><b>Detection</b>Upstream timeout rate, SERVFAIL rate</div>
+  <div><b>Blast radius</b>Bounded &mdash; only names whose TTL expired during the outage</div>
+  <div><b>Immediate</b>Serve stale (last-known-good) within a grace window</div>
+  <div><b>Structural</b>Multi-provider authoritative, longer stale grace, prefetch</div>
+</div>
+<div class="oneliner">Stale-if-error is graceful degradation in one config flag: serve the last-known-good answer within a capped window instead of returning SERVFAIL.</div>
+</div>
+
+<!-- ============================ F7 ============================ -->
+<div class="scenario" id="f7">
+<h3>29 &middot; PoP Failure / Regional DC Outage <span class="sevtag sev-med">Medium</span></h3>
+<div class="meta">
+  <div><b>Detection</b>Health-check failures, BGP session drops, traffic-to-zero</div>
+  <div><b>Blast radius</b>Near-zero if anycast &mdash; traffic auto-shifts</div>
+  <div><b>Immediate</b>BGP withdrawal &rarr; reconverge to next-nearest PoP</div>
+  <div><b>Structural</b>N+1 PoP capacity, no region is a SPOF, pre-staged failover cloud</div>
+</div>
+<div class="oneliner">A PoP outage is a non-event by design: BGP withdraws the route, traffic reconverges in seconds, surviving PoPs absorb the load.</div>
+</div>
+
+<!-- ============================ F8 ============================ -->
+<div class="scenario" id="f8">
+<h3>30 &middot; Noisy-Neighbor Tenant <span class="sevtag sev-med">Medium</span></h3>
+<div class="meta">
+  <div><b>Detection</b>Per-tenant QPS metric spikes, one tenant dominating cache evictions</div>
+  <div><b>Blast radius</b>Could be all tenants &mdash; unless per-tenant isolation is enforced</div>
+  <div><b>Immediate</b>Per-tenant rate limit / throttle the offender</div>
+  <div><b>Structural</b>Per-tenant quotas, tiered resolver pools, fair-share scheduling</div>
+</div>
+<div class="oneliner">Per-tenant rate limits + quotas + tiered pools turn &ldquo;one tenant takes everyone down&rdquo; into &ldquo;one tenant hits their own ceiling.&rdquo;</div>
+</div>
+
+<!-- ============================ F9 ============================ -->
+<div class="scenario" id="f9">
+<h3>31 &middot; DNSSEC Misconfiguration <span class="sevtag sev-high">High</span></h3>
+<div class="meta">
+  <div><b>Detection</b>DNSSEC-bogus rate spike, &ldquo;broken for some users&rdquo; asymmetry</div>
+  <div><b>Blast radius</b>Total for the zone, but only for validating resolvers</div>
+  <div><b>Immediate</b>Re-sign / fix DS, or emergency-unsign as last resort</div>
+  <div><b>Structural</b>Automated rotation w/ monitoring, signature-expiry alerts</div>
+</div>
+<div class="oneliner">DNSSEC done wrong is a self-inflicted outage. The tell is the asymmetry &mdash; validating resolvers blackout while others don&rsquo;t. Monitor the rotation job, not just the zone.</div>
+</div>
+
+<!-- ============================ F10 ============================ -->
+<div class="scenario" id="f10">
+<h3>32 &middot; Negative-Cache Poisoning &amp; Thundering Herd <span class="sevtag sev-med">Medium</span></h3>
+<div class="meta">
+  <div><b>Detection</b>NXDOMAIN rate spike for known-good names, synchronized upstream QPS spikes</div>
+  <div><b>Blast radius</b>Per-resolver; bounded by negative-TTL / by the herd window</div>
+  <div><b>Immediate</b>Flush negative entry; request coalescing for the herd</div>
+  <div><b>Structural</b>Short negative-TTL, prefetch, single-flight coalescing, TTL jitter</div>
+</div>
+<div class="oneliner">Caches fail in two directions: caching &ldquo;no&rdquo; too long (negative-cache poisoning) and all missing at once (thundering herd). Short negative-TTL fixes the first; coalescing + prefetch + jitter fix the second.</div>
+</div>
+
+<hr>
+
+<!-- ============================ SUMMARY ============================ -->
+<h2 id="summary">33 &middot; Summary &mdash; Failure Mode Cheat Sheet</h2>
+<table>
+  <thead><tr><th>#</th><th>Failure</th><th>Detection signal</th><th>Immediate mitigation</th><th>Structural fix</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Volumetric DDoS</td><td>QPS 10&ndash;100&times;, packet drops</td><td>Scrub + RRL + auto-blackhole</td><td>More PoPs, capacity headroom</td></tr>
+    <tr><td>2</td><td>Cache poisoning</td><td>Answer mismatch, DNSSEC-bogus</td><td>DNSSEC reject, flush cache</td><td>DNSSEC everywhere, 0x20</td></tr>
+    <tr><td>3</td><td>BGP hijack</td><td>Route-origin alert, geo shift</td><td>Announce more-specifics</td><td>RPKI ROAs, BGP monitoring</td></tr>
+    <tr><td>4</td><td>Zone-store quorum loss</td><td>Election storms, write timeouts</td><td>Reads continue; writes fail-fast</td><td>Odd region count, witness node</td></tr>
+    <tr><td>5</td><td>Bad zone push</td><td>NXDOMAIN spike, canary divergence</td><td>Canary catches; versioned rollback</td><td>CI validation, canary rollout</td></tr>
+    <tr><td>6</td><td>Authoritative down</td><td>Upstream timeouts, SERVFAIL</td><td>Serve stale within grace window</td><td>Multi-provider authoritative</td></tr>
+    <tr><td>7</td><td>PoP / region outage</td><td>Health-check fail, BGP drop</td><td>BGP withdrawal &rarr; reconverge</td><td>N+1 capacity, failover cloud</td></tr>
+    <tr><td>8</td><td>Noisy-neighbor tenant</td><td>Per-tenant QPS spike</td><td>Per-tenant rate limit</td><td>Per-tenant quotas, tiered pools</td></tr>
+    <tr><td>9</td><td>DNSSEC misconfig</td><td>DNSSEC-bogus rate</td><td>Re-sign / fix DS</td><td>Automated rotation w/ monitoring</td></tr>
+    <tr><td>10</td><td>Negative-cache / herd</td><td>NXDOMAIN for good names</td><td>Flush negative entry; coalescing</td><td>Short negative-TTL, prefetch</td></tr>
+  </tbody>
+</table>
+
+<div class="box tip">
+  <div class="label">The pattern across all ten</div>
+  <p>Every scenario follows the same shape: <b>(1)</b> a named detection signal; <b>(2)</b> a bounded blast radius &mdash; isolation means failures stay local; <b>(3)</b> graceful degradation &mdash; serve stale, serve from majority, reconverge &mdash; never a hard SERVFAIL when a softer answer exists; <b>(4)</b> a structural fix so it can&rsquo;t recur. &ldquo;It degrades, it doesn&rsquo;t die&rdquo; is the whole game.</p>
+</div>
+
+<hr>
+<p class="muted" style="font-size:.82rem;">Study guide compiled from the Advanced System Design Interview module (Module 2: Global, Multi-Tenant DNS) covering the request lifecycle, anycast internals, the resolver chain, GeoIP vs anycast, unicast failover &amp; Route 53, AXFR/IXFR, the tenant model, the write path, and the internal authoritative tier, followed by 10 failure scenarios (sections 23&ndash;33).</p>
+
+</div>
+</body>
+</html>
