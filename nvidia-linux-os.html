@@ -1,0 +1,2390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Linux OS Deep Dive - Interview Prep</title>
+    <style>
+:root {
+    --bg: #fff;
+    --bg-alt: #f5f5f5;
+    --border: #ccc;
+    --border-light: #ddd;
+    --text: #111;
+    --text-dim: #444;
+    --text-muted: #777;
+    --font: 'Arial','Helvetica Neue','Helvetica',sans-serif;
+}
+
+*{margin:0;padding:0;box-sizing:border-box;}
+
+body{
+    font-family:var(--font);
+    background:#f0efe9;
+    color:var(--text);
+    line-height:1.55;
+    font-size:13.5px;
+}
+
+a{color:var(--text);text-decoration:underline;}
+a:hover{color:#000;}
+
+/* ── Paper container ── */
+.navbar,.hero,.container,.container-wide{
+    max-width:1100px;
+    margin-left:auto;margin-right:auto;
+}
+
+/* ── Nav ── */
+.navbar{
+    position:sticky;top:0;z-index:100;
+    background:#fff;
+    border-bottom:2px solid #000;
+    padding:0 1.5rem;
+}
+.navbar-inner{
+    display:flex;align-items:center;justify-content:space-between;
+    height:30px;max-width:1100px;margin:0 auto;
+}
+.navbar .logo{font-size:0.82rem;font-weight:700;display:flex;align-items:center;gap:4px;}
+.navbar .logo .icon{font-size:0.9rem;}
+.nav-links{display:flex;gap:0;list-style:none;}
+.nav-links a{
+    font-size:0.78rem;padding:0.2rem 0.4rem;
+    text-decoration:none;color:var(--text-dim);
+}
+.nav-links a:hover{background:#eee;}
+.nav-links a.active{font-weight:700;color:#000;background:#eee;}
+
+/* ── Hero ── */
+.hero{
+    background:#fff;
+    padding:1rem 1.5rem 0.8rem;
+    border-bottom:1px solid var(--border);
+}
+.hero h1{font-size:1.3rem;font-weight:700;margin-bottom:0.2rem;text-transform:uppercase;letter-spacing:0.02em;}
+.hero .subtitle{font-size:0.78rem;color:var(--text-dim);margin:0 auto 0.5rem;max-width:900px;}
+.hero-stats{display:flex;justify-content:center;gap:1.5rem;margin-top:0.4rem;flex-wrap:wrap;}
+.hero-stat{text-align:center;}
+.hero-stat .number{font-size:1.2rem;font-weight:700;}
+.hero-stat .label{font-size:0.6rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.03em;}
+
+/* ── Paper page ── */
+.container,.container-wide{
+    background:#fff;
+    padding:1rem 2rem;
+    border:1px solid var(--border);
+    border-top:none;
+    margin-bottom:0;
+}
+
+/* ── Section ── */
+.section{padding:0.8rem 0;}
+.section-header{text-align:center;margin-bottom:0.5rem;}
+.section-header h2{font-size:1rem;font-weight:700;margin-bottom:0.1rem;}
+.section-header p{color:var(--text-dim);font-size:0.75rem;}
+.section-badge{
+    display:inline-block;font-size:0.7rem;font-weight:700;
+    text-transform:uppercase;letter-spacing:0.06em;
+    padding:0;margin-bottom:0.3rem;
+}
+
+/* ── Cards (newspaper column) ── */
+.card-grid{
+    column-count:2;column-gap:1rem;
+}
+.card{
+    break-inside:avoid;
+    border:none;border-bottom:1px solid var(--border);
+    padding:0.5rem 0;margin-bottom:0.5rem;
+    background:transparent;
+}
+.card:hover{box-shadow:none;}
+.card-icon{font-size:0.9rem;margin-bottom:0.15rem;display:inline-block;}
+.card h3{font-size:0.88rem;font-weight:700;margin-bottom:0.1rem;}
+.card p{color:var(--text-dim);font-size:0.82rem;line-height:1.4;}
+.card .tag{
+    display:inline-block;font-size:0.7rem;font-weight:700;
+    padding:0;
+    margin-top:0.3rem;margin-right:0.3rem;
+}
+.tag-blue,.tag-green,.tag-orange,.tag-red,.tag-purple,.tag-cyan{background:#fff;color:var(--text);}
+
+/* ── Page content ── */
+.page-header{
+    padding:0.6rem 0 0.4rem;
+    border-bottom:2px solid #000;
+    margin-bottom:0.6rem;
+}
+.page-header h1{font-size:1.15rem;font-weight:700;margin-bottom:0.1rem;text-transform:uppercase;}
+.page-header .breadcrumb{color:var(--text-muted);font-size:0.65rem;margin-bottom:0.15rem;}
+.page-header .breadcrumb a{color:var(--text-dim);}
+
+/* ── Content (newspaper columns) ── */
+.content h2{
+    font-size:1.15rem;font-weight:700;
+    margin:1.2rem 0 0.3rem;padding-bottom:0.2rem;
+    border-bottom:1px solid #000;
+    text-transform:uppercase;
+}
+.content h3{font-size:1.05rem;font-weight:700;margin:1rem 0 0.3rem;}
+.content h4{font-size:0.95rem;font-weight:700;margin:0.7rem 0 0.2rem;}
+.content p{margin-bottom:0.35rem;line-height:1.55;}
+.content ul,.content ol{margin:0.3rem 0 0.5rem 1.2rem;}
+.content li{margin-bottom:0.15rem;line-height:1.5;}
+
+/* ── Content blocks (no boxes, just indented content) ── */
+.prompt-box,.key-point,.example-box,.warning-box{
+    background:transparent;
+    border:none;
+    padding:0.2rem 0 0.2rem 0.8rem;
+    margin:0.3rem 0;
+}
+.prompt-box .label,.key-point .label,.example-box .label,.warning-box .label{
+    font-size:0.78rem;font-weight:700;
+    text-transform:uppercase;letter-spacing:0.03em;
+    color:var(--text);margin-bottom:0.1rem;
+    display:block;
+}
+.prompt-box p{margin:0;font-style:italic;font-size:0.85rem;}
+.key-point p,.example-box p,.warning-box p{margin:0.1rem 0;}
+.warning-box ul{color:var(--text);}
+
+/* ── Tables ── */
+.table-wrapper{overflow-x:auto;margin:0.5rem 0;}
+table{width:100%;border-collapse:collapse;font-size:0.85rem;}
+thead{background:var(--bg-alt);}
+th{text-align:left;padding:0.35rem 0.5rem;font-weight:700;border-bottom:2px solid #000;font-size:0.85rem;white-space:nowrap;}
+td{padding:0.3rem 0.5rem;border-bottom:1px solid var(--border-light);line-height:1.45;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:#f5f5f5;}
+td.warn,td.crit,td.ok{font-weight:700;}
+
+/* ── Diagrams ── */
+.diagram{
+    background:#fff;
+    border:none;
+    padding:0.5rem 0;margin:0.5rem 0;
+    overflow-x:auto;
+    max-width:100%;
+}
+.diagram-title{
+    font-size:0.88rem;font-weight:700;
+    text-align:center;margin-bottom:0.4rem;
+    text-transform:uppercase;letter-spacing:0.02em;
+}
+.diagram svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+.diagram-caption{text-align:center;font-size:0.65rem;color:var(--text-muted);margin-top:0.25rem;}
+
+/* ── Flow boxes ── */
+.flow-row{display:flex;align-items:center;justify-content:center;gap:0;flex-wrap:wrap;margin:0.3rem 0;}
+.flow-box{
+    background:transparent;border:none;
+    padding:0.2rem 0.5rem;text-align:center;
+    font-size:0.78rem;font-weight:700;min-width:80px;
+}
+.flow-box.blue,.flow-box.green,.flow-box.orange,
+.flow-box.red,.flow-box.purple,.flow-box.cyan{
+    background:transparent;color:#000;border:none;
+}
+.flow-box small{display:block;font-weight:400;font-size:0.7rem;color:var(--text-dim);}
+.flow-arrow{font-size:0.9rem;color:#999;padding:0 0.15rem;}
+.flow-arrow-down{text-align:center;font-size:0.9rem;color:#999;margin:0.08rem 0;}
+
+/* ── Arch grid ── */
+.arch-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:0.5rem;margin:0.5rem 0;}
+.arch-box{background:transparent;border:none;padding:0.3rem 0;text-align:left;}
+.arch-box h5{font-size:0.82rem;font-weight:700;margin-bottom:0.15rem;}
+.arch-box ul{list-style:disc;margin:0 0 0 1rem;padding:0;font-size:0.78rem;color:var(--text-dim);text-align:left;}
+.arch-box ul li{margin-bottom:0.05rem;}
+
+/* ── Score ── */
+.score-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0.5rem;margin:0.5rem 0;}
+.score-card{background:transparent;border:none;padding:0.4rem 0;text-align:center;}
+.score-card .pts{font-size:1.1rem;font-weight:700;margin-bottom:0.05rem;}
+.score-card .pts-label{font-size:0.6rem;color:var(--text-muted);}
+.score-card h4{margin:0.1rem 0;font-size:0.7rem;}
+
+/* ── Timeline ── */
+.timeline{position:relative;padding-left:1.2rem;margin:0.4rem 0;}
+.timeline::before{content:'';position:absolute;left:4px;top:0;bottom:0;width:1px;background:#000;}
+.timeline-item{position:relative;margin-bottom:0.4rem;}
+.timeline-item::before{content:'';position:absolute;left:-1.2rem;top:3px;width:6px;height:6px;border-radius:50%;border:1px solid #000;background:#fff;}
+.timeline-item h4{margin:0 0 0.05rem;font-size:0.75rem;}
+.timeline-item p{margin:0;font-size:0.68rem;color:var(--text-dim);}
+
+/* ── TOC Sidebar ── */
+.page-layout{display:grid;grid-template-columns:160px 1fr;gap:0.8rem;align-items:start;}
+.toc-sidebar{
+    position:sticky;top:36px;
+    max-height:calc(100vh - 42px);overflow-y:auto;
+    padding-right:0.3rem;border-right:1px solid var(--border);
+}
+.toc-sidebar h4{font-size:0.58rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:0.15rem;}
+.toc-sidebar ul{list-style:none;margin:0;padding:0;}
+.toc-sidebar ul li{margin-bottom:0;}
+.toc-sidebar ul li a{display:block;padding:0.08rem 0.3rem;font-size:0.65rem;color:var(--text-dim);text-decoration:none;}
+.toc-sidebar ul li a:hover{background:#eee;text-decoration:none;}
+.toc-sidebar ul li.indent a{padding-left:0.8rem;font-size:0.62rem;}
+
+/* ── Approach cards ── */
+.approach-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:0.5rem;margin:0.5rem 0;}
+.approach-card{background:transparent;border:none;padding:0.3rem 0;}
+.approach-card h5{font-size:0.82rem;margin-bottom:0.15rem;color:var(--text) !important;font-weight:700;}
+.approach-card ul{font-size:0.78rem;}
+
+/* ── Code blocks ── */
+pre{
+    background:#f5f5f5;
+    border-left:3px solid #000;
+    padding:0.6rem 1rem;
+    margin:0.4rem 0 0.6rem;
+    overflow-x:auto;
+    font-size:0.78rem;
+    line-height:1.5;
+}
+pre code{
+    font-family:'SF Mono','Menlo','Consolas','DejaVu Sans Mono',monospace;
+    font-size:0.78rem;
+    color:#111;
+    background:none;
+    padding:0;
+}
+code{
+    font-family:'SF Mono','Menlo','Consolas','DejaVu Sans Mono',monospace;
+    font-size:0.82rem;
+    background:#f0f0f0;
+    padding:0.05rem 0.25rem;
+    border-radius:2px;
+}
+
+/* ── Footer ── */
+.footer{
+    max-width:1100px;margin:0 auto;
+    background:#fff;border:1px solid var(--border);border-top:2px solid #000;
+    padding:0.5rem;text-align:center;
+    color:var(--text-muted);font-size:0.65rem;
+}
+
+/* ── Responsive ── */
+@media(max-width:1100px){
+    .page-layout{grid-template-columns:1fr;}
+    .toc-sidebar{display:none;}
+    .hero h1{font-size:1rem;}
+    .card-grid{column-count:1;}
+}
+
+</style>
+    <style>
+        .sec-header { padding:0.5rem 0; margin:1.5rem 0 0.8rem; border-bottom:1px solid #000; }
+        .s1,.s2,.s3 { background:transparent; border:none; }
+        .s1 h2,.s2 h2,.s3 h2 { color:#000; margin:0; border:none; padding:0; font-size:1.1rem; }
+        
+    </style>
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="navbar-inner">
+        <div class="logo"><span class="icon">&#9096;</span> K8s Interview Prep</div>
+        <ul class="nav-links">
+            <li><a href="#">Home</a></li>
+            <li><a href="#">Architecture</a></li>
+            <li><a href="#">Dual-Stack</a></li>
+            <li><a href="#">Sys Design</a></li>
+            <li><a href="linux-os.html" class="active">Linux OS</a></li>
+            <li><a href="#">Appendix</a></li>
+        </ul>
+    </div>
+</nav>
+
+<div class="container">
+    <div class="page-header">
+        <div class="breadcrumb"><a href="#">Home</a> / Linux OS Deep Dive</div>
+        <h1>&#128039; Linux OS Internals &mdash; Principal SRE Interview</h1>
+        <p style="color:var(--text-secondary);">60 minutes &bull; Kernel Internals, Advanced Networking, Memory, Storage, Troubleshooting, System Design</p>
+    </div>
+
+    <div class="page-layout">
+        <aside class="toc-sidebar">
+            <h4>On This Page</h4>
+            <ul>
+                <li><a href="#s1">Sec 1: Knowledge Check</a></li>
+                <li class="indent"><a href="#kernel">Kernel Preemption</a></li>
+                <li class="indent"><a href="#kernel">Kernel Architecture Diagram</a></li>
+                <li class="indent"><a href="#sched-layers">Scheduling: Three Layers</a></li>
+                <li class="indent"><a href="#cgroups">cgroups &amp; Namespaces</a></li>
+                <li class="indent"><a href="#cgv1v2">cgroups v1 vs v2</a></li>
+                <li class="indent"><a href="#container-tree">Container Process Tree</a></li>
+                <li class="indent"><a href="#kernel-enforce">Kernel Limit Enforcement</a></li>
+                <li class="indent"><a href="#ns-internals">Namespace Internals</a></li>
+                <li class="indent"><a href="#cpu-pin-numa">CPU Pinning &amp; NUMA</a></li>
+                <li class="indent"><a href="#tlb-cache">TLB &amp; Cache Effects</a></li>
+                <li class="indent"><a href="#tcp">TCP Stack &amp; Congestion</a></li>
+                <li class="indent"><a href="#lowlat">Low-Latency Tuning</a></li>
+                <li class="indent"><a href="#numa">NUMA &amp; Memory</a></li>
+                <li class="indent"><a href="#thp">Huge Pages</a></li>
+                <li class="indent"><a href="#fs">Filesystems</a></li>
+                <li class="indent"><a href="#iosched">I/O Schedulers</a></li>
+                <li><a href="#s2">Sec 2: Problem Solving</a></li>
+                <li class="indent"><a href="#freeze">System Freeze</a></li>
+                <li class="indent"><a href="#disklatency">Disk Latency</a></li>
+                <li class="indent"><a href="#memfrag">Memory Fragmentation</a></li>
+                <li class="indent"><a href="#pktdrop">Packet Drops</a></li>
+                <li><a href="#s3">Sec 3: Design</a></li>
+                <li class="indent"><a href="#patchmgmt">Patch Management</a></li>
+                <li class="indent"><a href="#realtime">Real-Time Processing</a></li>
+                <li class="indent"><a href="#ceph">Scaling Ceph</a></li>
+                <li class="indent"><a href="#k8sresource">K8s Resources</a></li>
+            </ul>
+        </aside>
+
+        <main class="content">
+
+<!-- ================================================================ -->
+<!-- SECTION 1: KNOWLEDGE CHECK -->
+<!-- ================================================================ -->
+<div class="sec-header s1">
+    <h2 id="s1">Section 1: Advanced Knowledge Check (10 min)</h2>
+    <p style="color:var(--text-secondary);margin:0.3rem 0 0;">Kernel internals, networking, memory, storage</p>
+</div>
+
+<!-- KERNEL INTERNALS -->
+<h3 id="kernel">1.1 Kernel Preemption &amp; Real-Time Workloads</h3>
+
+<div class="prompt-box">
+    <div class="label">Question</div>
+    <p>Explain the role of kernel preemption and its impact on real-time workloads.</p>
+</div>
+
+<div class="diagram">
+    <div class="diagram-title">Linux Kernel Preemption Models</div>
+    <svg viewBox="0 0 900 260" xmlns="http://www.w3.org/2000/svg" style="width:100%;">
+        <!-- Model 1 -->
+        <rect x="20" y="10" width="270" height="110" rx="10" fill="#f5f5f5" stroke="#222"/>
+        <text x="155" y="32" text-anchor="middle" fill="#222" font-size="13" font-weight="700">PREEMPT_NONE</text>
+        <text x="155" y="50" text-anchor="middle" fill="#54595d" font-size="11">(Server / Throughput)</text>
+        <text x="155" y="70" text-anchor="middle" fill="#54595d" font-size="11">Kernel code runs to completion</text>
+        <text x="155" y="84" text-anchor="middle" fill="#54595d" font-size="11">Only preempts at syscall return</text>
+        <text x="155" y="98" text-anchor="middle" fill="#54595d" font-size="11">Max throughput, worst latency</text>
+        <text x="155" y="112" text-anchor="middle" fill="#202122" font-size="11" font-weight="600">Latency: ~10ms worst case</text>
+        <!-- Model 2 -->
+        <rect x="315" y="10" width="270" height="110" rx="10" fill="#f8f9fa" stroke="#202122"/>
+        <text x="450" y="32" text-anchor="middle" fill="#202122" font-size="13" font-weight="700">PREEMPT_VOLUNTARY</text>
+        <text x="450" y="50" text-anchor="middle" fill="#54595d" font-size="11">(Desktop / General)</text>
+        <text x="450" y="70" text-anchor="middle" fill="#54595d" font-size="11">Adds explicit preemption points</text>
+        <text x="450" y="84" text-anchor="middle" fill="#54595d" font-size="11">might_sleep() calls in long paths</text>
+        <text x="450" y="98" text-anchor="middle" fill="#54595d" font-size="11">Balance of throughput &amp; latency</text>
+        <text x="450" y="112" text-anchor="middle" fill="#202122" font-size="11" font-weight="600">Latency: ~1-5ms typical</text>
+        <!-- Model 3 -->
+        <rect x="610" y="10" width="270" height="110" rx="10" fill="#f8f9fa" stroke="#222"/>
+        <text x="745" y="32" text-anchor="middle" fill="#222" font-size="13" font-weight="700">PREEMPT_RT</text>
+        <text x="745" y="50" text-anchor="middle" fill="#54595d" font-size="11">(Real-Time / Low-Latency)</text>
+        <text x="745" y="70" text-anchor="middle" fill="#54595d" font-size="11">Nearly all kernel code preemptible</text>
+        <text x="745" y="84" text-anchor="middle" fill="#54595d" font-size="11">Spinlocks &rarr; rt_mutexes (sleeping)</text>
+        <text x="745" y="98" text-anchor="middle" fill="#54595d" font-size="11">IRQ handlers &rarr; kernel threads</text>
+        <text x="745" y="112" text-anchor="middle" fill="#222" font-size="11" font-weight="600">Latency: &lt;100&mu;s guaranteed</text>
+        <!-- Timeline -->
+        <rect x="20" y="140" width="860" height="50" rx="8" fill="#f0f0f0" stroke="var(--border)"/>
+        <text x="450" y="160" text-anchor="middle" fill="#202122" font-size="13" font-weight="700">Preemption Timeline: What Happens When High-Priority Task Arrives</text>
+        <!-- NONE -->
+        <rect x="40" y="200" width="250" height="40" rx="6" fill="#f8f9fa" stroke="#202122"/>
+        <text x="165" y="215" text-anchor="middle" fill="#202122" font-size="11">NONE: waits for syscall boundary</text>
+        <text x="165" y="230" text-anchor="middle" fill="#54595d" font-size="11">&#9473;&#9473;&#9473;&#9473;&#9473;&#9473;&#9473;&#9473;&#9473;&#9473;&#x2503; preempt here</text>
+        <!-- VOL -->
+        <rect x="320" y="200" width="250" height="40" rx="6" fill="#f8f9fa" stroke="#202122"/>
+        <text x="445" y="215" text-anchor="middle" fill="#202122" font-size="11">VOLUNTARY: preempts at check point</text>
+        <text x="445" y="230" text-anchor="middle" fill="#54595d" font-size="11">&#9473;&#9473;&#9473;&#x2503; might_sleep() &rarr; preempt</text>
+        <!-- RT -->
+        <rect x="600" y="200" width="250" height="40" rx="6" fill="#f8f9fa" stroke="#222"/>
+        <text x="725" y="215" text-anchor="middle" fill="#222" font-size="11">RT: preempts almost immediately</text>
+        <text x="725" y="230" text-anchor="middle" fill="#54595d" font-size="11">&#x2503; &lt;100&mu;s &rarr; preempt</text>
+    </svg>
+</div>
+
+<ul>
+    <li><strong>Preemption</strong> = ability for the scheduler to interrupt running kernel code to run a higher-priority task</li>
+    <li><strong>Impact on real-time:</strong> Without preemption, a high-priority task can be blocked for milliseconds waiting for kernel code to finish. With PREEMPT_RT, worst-case latency drops to &lt;100&mu;s</li>
+    <li><strong>Trade-off:</strong> More preemption = better latency but reduced throughput (more context switches, cache thrashing)</li>
+    <li><strong>K8s relevance:</strong> etcd benefits from low-latency I/O. API server latency spikes often trace back to kernel scheduling. Production servers typically use PREEMPT_VOLUNTARY.</li>
+</ul>
+
+<h4>How the Linux Kernel Works — Architecture Deep Dive</h4>
+
+<p>Before understanding preemption, you need to understand the kernel's layered architecture. Everything a container does — every CPU cycle, memory allocation, network packet, disk write — goes through the kernel via <strong>system calls</strong>.</p>
+
+<div class="diagram">
+<div class="diagram-title">Linux Kernel Architecture: User Space &harr; Kernel Space</div>
+<svg viewBox="0 0 1000 620" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:1000px;">
+  <defs>
+    <marker id="ahk" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#000"/></marker>
+  </defs>
+
+  <!-- User Space -->
+  <rect x="20" y="10" width="960" height="150" rx="10" fill="#f5f5f5" stroke="#000" stroke-width="2"/>
+  <text x="500" y="32" font-size="14" font-weight="bold" text-anchor="middle">USER SPACE (Ring 3 — unprivileged)</text>
+
+  <rect x="40" y="45" width="140" height="50" rx="6" fill="#fff" stroke="#000" stroke-width="1.5"/>
+  <text x="110" y="65" font-size="11" font-weight="bold" text-anchor="middle">Application</text>
+  <text x="110" y="82" font-size="10" text-anchor="middle" fill="#555">kubelet, etcd, app</text>
+
+  <rect x="200" y="45" width="140" height="50" rx="6" fill="#fff" stroke="#000" stroke-width="1.5"/>
+  <text x="270" y="65" font-size="11" font-weight="bold" text-anchor="middle">glibc / musl</text>
+  <text x="270" y="82" font-size="10" text-anchor="middle" fill="#555">C library wrappers</text>
+
+  <rect x="360" y="45" width="140" height="50" rx="6" fill="#fff" stroke="#000" stroke-width="1.5"/>
+  <text x="430" y="65" font-size="11" font-weight="bold" text-anchor="middle">Container Runtime</text>
+  <text x="430" y="82" font-size="10" text-anchor="middle" fill="#555">containerd, runc</text>
+
+  <rect x="520" y="45" width="140" height="50" rx="6" fill="#fff" stroke="#000" stroke-width="1.5"/>
+  <text x="590" y="65" font-size="11" font-weight="bold" text-anchor="middle">Shell / Tools</text>
+  <text x="590" y="82" font-size="10" text-anchor="middle" fill="#555">bash, ps, top, perf</text>
+
+  <rect x="680" y="45" width="280" height="50" rx="6" fill="#fff" stroke="#000" stroke-width="1.5"/>
+  <text x="820" y="65" font-size="11" font-weight="bold" text-anchor="middle">User Process Memory Layout</text>
+  <text x="820" y="82" font-size="10" text-anchor="middle" fill="#555">text | data | heap → ← stack</text>
+
+  <!-- Process memory detail -->
+  <text x="50" y="125" font-size="10" fill="#555">Every process has: text (code), data (globals), heap (malloc), stack (local vars), memory-mapped regions.</text>
+  <text x="50" y="140" font-size="10" fill="#555">Virtual address space (typically 128 TB on x86-64). Each process thinks it owns all memory — the kernel maps virtual → physical via page tables.</text>
+
+  <!-- Syscall boundary -->
+  <rect x="20" y="165" width="960" height="35" rx="0" fill="#d9d9d9" stroke="#000" stroke-width="2"/>
+  <text x="500" y="187" font-size="13" font-weight="bold" text-anchor="middle">SYSTEM CALL INTERFACE (syscall / int 0x80 — mode switch Ring 3 → Ring 0)</text>
+
+  <!-- Kernel Space -->
+  <rect x="20" y="205" width="960" height="400" rx="10" fill="#e8e8e8" stroke="#000" stroke-width="2"/>
+  <text x="500" y="227" font-size="14" font-weight="bold" text-anchor="middle">KERNEL SPACE (Ring 0 — privileged, full hardware access)</text>
+
+  <!-- Row 1: Core subsystems -->
+  <rect x="40" y="240" width="180" height="70" rx="6" fill="#fff" stroke="#000" stroke-width="1.5"/>
+  <text x="130" y="260" font-size="12" font-weight="bold" text-anchor="middle">Process Scheduler</text>
+  <text x="130" y="278" font-size="10" text-anchor="middle" fill="#555">CFS (fair share)</text>
+  <text x="130" y="292" font-size="10" text-anchor="middle" fill="#555">RT scheduler (FIFO/RR)</text>
+  <text x="130" y="306" font-size="10" text-anchor="middle" fill="#555">cgroup bandwidth ctrl</text>
+
+  <rect x="240" y="240" width="180" height="70" rx="6" fill="#fff" stroke="#000" stroke-width="1.5"/>
+  <text x="330" y="260" font-size="12" font-weight="bold" text-anchor="middle">Memory Manager</text>
+  <text x="330" y="278" font-size="10" text-anchor="middle" fill="#555">Page allocator (buddy)</text>
+  <text x="330" y="292" font-size="10" text-anchor="middle" fill="#555">Slab allocator (kmalloc)</text>
+  <text x="330" y="306" font-size="10" text-anchor="middle" fill="#555">OOM killer, swap, THP</text>
+
+  <rect x="440" y="240" width="160" height="70" rx="6" fill="#fff" stroke="#000" stroke-width="1.5"/>
+  <text x="520" y="260" font-size="12" font-weight="bold" text-anchor="middle">VFS Layer</text>
+  <text x="520" y="278" font-size="10" text-anchor="middle" fill="#555">Unified file interface</text>
+  <text x="520" y="292" font-size="10" text-anchor="middle" fill="#555">inode, dentry, superblock</text>
+  <text x="520" y="306" font-size="10" text-anchor="middle" fill="#555">ext4, XFS, overlayfs</text>
+
+  <rect x="620" y="240" width="170" height="70" rx="6" fill="#fff" stroke="#000" stroke-width="1.5"/>
+  <text x="705" y="260" font-size="12" font-weight="bold" text-anchor="middle">Network Stack</text>
+  <text x="705" y="278" font-size="10" text-anchor="middle" fill="#555">Socket → TCP/UDP → IP</text>
+  <text x="705" y="292" font-size="10" text-anchor="middle" fill="#555">netfilter (iptables)</text>
+  <text x="705" y="306" font-size="10" text-anchor="middle" fill="#555">conntrack, NAPI</text>
+
+  <rect x="810" y="240" width="160" height="70" rx="6" fill="#fff" stroke="#000" stroke-width="1.5"/>
+  <text x="890" y="260" font-size="12" font-weight="bold" text-anchor="middle">IPC Subsystem</text>
+  <text x="890" y="278" font-size="10" text-anchor="middle" fill="#555">Pipes, signals, sockets</text>
+  <text x="890" y="292" font-size="10" text-anchor="middle" fill="#555">Shared memory, futex</text>
+  <text x="890" y="306" font-size="10" text-anchor="middle" fill="#555">eventfd, epoll</text>
+
+  <!-- Row 2: cgroups + namespaces -->
+  <rect x="40" y="325" width="450" height="55" rx="6" fill="#fff" stroke="#000" stroke-width="1.5"/>
+  <text x="265" y="345" font-size="12" font-weight="bold" text-anchor="middle">cgroups v2 (Resource Control)</text>
+  <text x="265" y="365" font-size="10" text-anchor="middle" fill="#555">cpu.max (CFS bandwidth) | memory.max (OOM) | io.max (block I/O) | pids.max (fork bomb) | cpuset.cpus</text>
+
+  <rect x="510" y="325" width="460" height="55" rx="6" fill="#fff" stroke="#000" stroke-width="1.5"/>
+  <text x="740" y="345" font-size="12" font-weight="bold" text-anchor="middle">Namespaces (Visibility Isolation)</text>
+  <text x="740" y="365" font-size="10" text-anchor="middle" fill="#555">pid | net | mnt | uts | ipc | user | cgroup | time — each container gets independent view</text>
+
+  <!-- Row 3: Device drivers + HW abstraction -->
+  <rect x="40" y="395" width="930" height="50" rx="6" fill="#fff" stroke="#000" stroke-width="1.5"/>
+  <text x="500" y="415" font-size="12" font-weight="bold" text-anchor="middle">Device Drivers &amp; Hardware Abstraction</text>
+  <text x="500" y="435" font-size="10" text-anchor="middle" fill="#555">Block drivers (NVMe, SCSI) | Network drivers (e1000e, mlx5) | GPU (nvidia) | Character devices (/dev/*) | DMA engine</text>
+
+  <!-- Row 4: Hardware -->
+  <rect x="40" y="460" width="930" height="55" rx="6" fill="#fff" stroke="#000" stroke-width="1.5"/>
+  <text x="500" y="480" font-size="12" font-weight="bold" text-anchor="middle">Arch-Specific Layer (x86-64)</text>
+  <text x="500" y="500" font-size="10" text-anchor="middle" fill="#555">Page tables (4-level) | Interrupt descriptor table (IDT) | GDT (segmentation) | TSS (task state) | APIC (interrupts) | MSR registers</text>
+
+  <!-- Hardware -->
+  <rect x="20" y="530" width="960" height="50" rx="6" fill="#f0f0f0" stroke="#000" stroke-width="2"/>
+  <text x="500" y="560" font-size="13" font-weight="bold" text-anchor="middle">HARDWARE: CPU cores | RAM (NUMA nodes) | NVMe/SSD | NIC | GPU | BMC</text>
+
+  <!-- Arrows showing syscall path -->
+  <text x="40" y="590" font-size="10" fill="#555">Path: app calls read() → glibc wrapper → syscall instruction → kernel VFS → filesystem → block driver → DMA → disk → data back up</text>
+  <text x="40" y="605" font-size="10" fill="#555">Mode switch cost: ~100ns (syscall) vs ~1μs (interrupt). Every container operation crosses this boundary.</text>
+
+</svg>
+</div>
+
+<h4>Why Preemption Matters — What Happens During a Context Switch</h4>
+
+<p>When the kernel preempts a running task to schedule a higher-priority one, here's what happens at the hardware level:</p>
+
+<ol>
+  <li><strong>Timer interrupt fires</strong> (every 1-4ms, configured by <code>CONFIG_HZ</code> = 250 or 1000). The CPU jumps to the interrupt handler.</li>
+  <li><strong>Scheduler checks</strong>: is there a higher-priority task waiting? If PREEMPT_NONE, the answer is always "wait until syscall return." If PREEMPT_RT, the answer is "preempt now."</li>
+  <li><strong>Save CPU state</strong>: all registers (general purpose, FPU/SSE/AVX, segment registers) are saved to the current task's <code>thread_struct</code> in the kernel's <code>task_struct</code>.</li>
+  <li><strong>Switch page tables</strong>: load the new task's <code>mm_struct</code> → write to <code>CR3</code> register → TLB flush (partial, thanks to PCID/ASID).</li>
+  <li><strong>Restore CPU state</strong>: load new task's registers from its <code>thread_struct</code>.</li>
+  <li><strong>Return to new task</strong>: CPU resumes execution in the new process's context.</li>
+</ol>
+
+<p><strong>Cost:</strong> ~2-5μs per context switch (dominated by TLB flush + cache pollution). With PREEMPT_RT, this happens more often → more overhead, but guaranteed low latency.</p>
+
+<p><strong>Key kernel data structures (from <em>The Linux Programming Interface</em>):</strong></p>
+
+<table>
+<thead><tr><th>Structure</th><th>What It Holds</th><th>Where</th></tr></thead>
+<tbody>
+<tr><td><code>task_struct</code></td><td>Everything about a process/thread: PID, state (RUNNING/SLEEPING/ZOMBIE), priority, scheduling class, cgroup pointers, namespace pointers, memory descriptor, file descriptor table, signal handlers, credentials. ~6 KB per task.</td><td>Kernel slab cache</td></tr>
+<tr><td><code>mm_struct</code></td><td>Process address space: page table root (pgd), VMA list (text, data, heap, stack, mmap regions), RSS counters, OOM score. Shared between threads of same process.</td><td>Pointed to by task_struct</td></tr>
+<tr><td><code>thread_struct</code></td><td>CPU register state saved during context switch: general regs, FPU/SSE/AVX state, segment registers, debug registers. Architecture-specific.</td><td>Inside task_struct</td></tr>
+<tr><td><code>cgroup</code></td><td>Resource controller state: CPU bandwidth (quota/period), memory limit, I/O limits, PID limit. Hierarchical — child cgroups inherit parent limits.</td><td><code>/sys/fs/cgroup/</code></td></tr>
+<tr><td><code>nsproxy</code></td><td>Namespace references for a task: pointers to pid_namespace, net_namespace, mnt_namespace, uts_namespace, ipc_namespace, user_namespace, cgroup_namespace.</td><td>Inside task_struct</td></tr>
+</tbody>
+</table>
+
+<p><strong>Commands to check and change preemption:</strong></p>
+
+<pre><code># Check current kernel preemption model
+uname -v                                    # shows PREEMPT in version string if enabled
+cat /boot/config-$(uname -r) | grep PREEMPT # exact config
+# CONFIG_PREEMPT_NONE=y      → server (throughput)
+# CONFIG_PREEMPT_VOLUNTARY=y → desktop (balanced)  ← most production K8s
+# CONFIG_PREEMPT=y           → low-latency desktop
+# CONFIG_PREEMPT_RT=y        → real-time (PREEMPT_RT patch)
+
+# Check scheduler stats for a process
+cat /proc/&lt;pid&gt;/sched                       # nr_switches, wait_sum, exec_runtime
+cat /proc/&lt;pid&gt;/status | grep voluntary     # voluntary vs involuntary context switches
+# voluntary_ctxt_switches: process yielded (I/O wait, sleep)
+# nonvoluntary_ctxt_switches: kernel preempted the process (timeslice expired)
+
+# Check scheduling policy of a process
+chrt -p &lt;pid&gt;                               # shows policy (SCHED_OTHER, SCHED_FIFO, SCHED_RR)
+chrt -f -p 50 &lt;pid&gt;                         # set FIFO priority 50 (needs CAP_SYS_NICE)
+
+# Check CFS scheduler parameters
+cat /proc/sys/kernel/sched_latency_ns        # target latency for CFS (default 6ms)
+cat /proc/sys/kernel/sched_min_granularity_ns # min timeslice (default 0.75ms)
+cat /proc/sys/kernel/sched_nr_migrate        # max tasks to migrate per balance (default 32)</code></pre>
+
+<!-- ================================================================ -->
+<!-- SCHEDULING THREE LAYERS — comprehensive reference -->
+<!-- ================================================================ -->
+<h3 id="sched-layers">1.1b Linux Scheduling: The Three Layers</h3>
+
+<div class="prompt-box">
+    <div class="label">Core Concept</div>
+    <p>When a process becomes runnable, three independent layers cooperate to decide if and when it gets the CPU. Most explanations collapse these into a single confused blob.</p>
+</div>
+
+<ul>
+    <li><strong>Layer 1 &mdash; PREEMPT model.</strong> Set once when the kernel is built. Controls how fast the kernel can be interrupted while running its own code.</li>
+    <li><strong>Layer 2 &mdash; Scheduling class.</strong> Set per process. Picks the algorithm that runs the task (real-time vs normal).</li>
+    <li><strong>Layer 3 &mdash; Priority / nice.</strong> Set per process. Ranks peers within the same class.</li>
+</ul>
+
+<div class="key-point">
+    <div class="label">Analogy</div>
+    <p>PREEMPT model is the kernel's rulebook. Scheduling class is the league you play in. Priority is your rank inside that league.</p>
+</div>
+
+<!-- Three-Layer Overview Diagram -->
+<div class="diagram">
+    <div class="diagram-title">Three-Layer Overview</div>
+    <svg viewBox="0 0 760 460" xmlns="http://www.w3.org/2000/svg" style="width:100%;">
+      <defs>
+        <marker id="sla" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M2 1L8 5L2 9" fill="none" stroke="#1f2328" stroke-width="1.5" stroke-linecap="round"/>
+        </marker>
+      </defs>
+      <rect x="20" y="20" width="720" height="120" fill="#ffffff" stroke="#1f2328" stroke-width="1.5"/>
+      <text x="40" y="46" font-family="ui-monospace,monospace" font-size="11" font-weight="700" fill="#1f2328">LAYER 1 — KERNEL BUILD CONFIG (compile time, system-wide)</text>
+      <line x1="40" y1="56" x2="720" y2="56" stroke="#d1d9e0"/>
+      <text x="40" y="84" font-family="Arial,sans-serif" font-size="18" font-weight="600" fill="#1f2328">PREEMPT_NONE  ·  PREEMPT_VOLUNTARY  ·  PREEMPT_RT</text>
+      <text x="40" y="108" font-family="Arial,sans-serif" font-size="13" fill="#59636e">Q: How fast can the kernel be interrupted while running its own code?</text>
+      <text x="40" y="128" font-family="ui-monospace,monospace" font-size="10" fill="#818b98">changed by installing a different kernel package or via preempt= boot param</text>
+      <line x1="380" y1="145" x2="380" y2="170" stroke="#1f2328" stroke-width="1.5" marker-end="url(#sla)"/>
+      <rect x="20" y="175" width="720" height="120" fill="#ffffff" stroke="#1f2328" stroke-width="1.5"/>
+      <text x="40" y="201" font-family="ui-monospace,monospace" font-size="11" font-weight="700" fill="#1f2328">LAYER 2 — SCHEDULING CLASS (runtime, per process)</text>
+      <line x1="40" y1="211" x2="720" y2="211" stroke="#d1d9e0"/>
+      <text x="40" y="239" font-family="Arial,sans-serif" font-size="16" font-weight="600" fill="#1f2328">SCHED_DEADLINE · SCHED_FIFO · SCHED_RR · SCHED_OTHER · BATCH · IDLE</text>
+      <text x="40" y="263" font-family="Arial,sans-serif" font-size="13" fill="#59636e">Q: Which scheduling algorithm should run me?</text>
+      <text x="40" y="283" font-family="ui-monospace,monospace" font-size="10" fill="#818b98">set with chrt(1) or sched_setscheduler(2)</text>
+      <line x1="380" y1="300" x2="380" y2="325" stroke="#1f2328" stroke-width="1.5" marker-end="url(#sla)"/>
+      <rect x="20" y="330" width="720" height="120" fill="#ffffff" stroke="#1f2328" stroke-width="1.5"/>
+      <text x="40" y="356" font-family="ui-monospace,monospace" font-size="11" font-weight="700" fill="#1f2328">LAYER 3 — PRIORITY / NICE (runtime, per process)</text>
+      <line x1="40" y1="366" x2="720" y2="366" stroke="#d1d9e0"/>
+      <text x="40" y="394" font-family="Arial,sans-serif" font-size="16" font-weight="600" fill="#1f2328">RT priority 1–99  ·  Nice value −20 to +19</text>
+      <text x="40" y="418" font-family="Arial,sans-serif" font-size="13" fill="#59636e">Q: Where do I rank among others using the same algorithm?</text>
+      <text x="40" y="438" font-family="ui-monospace,monospace" font-size="10" fill="#818b98">set with chrt (RT) or nice/renice (CFS)</text>
+    </svg>
+</div>
+
+<!-- Layer 1 Deep Dive -->
+<h4>Layer 1 &mdash; PREEMPT Model (Deep Dive)</h4>
+
+<p>Set once when the kernel is compiled. Controls how quickly the kernel can be interrupted while running its own code on behalf of a syscall. When your application calls <code>read()</code> or <code>write()</code>, control jumps into the kernel &mdash; the preemption model decides whether that kernel code can be paused mid-flight if a higher-priority task suddenly needs the CPU.</p>
+
+<!-- Preempt Timeline Diagram -->
+<div class="diagram">
+    <div class="diagram-title">Preemption Models Reacting to High-Priority Task Arrival</div>
+    <svg viewBox="0 0 760 360" xmlns="http://www.w3.org/2000/svg" style="width:100%;">
+      <text x="20" y="32" font-family="ui-monospace,monospace" font-size="11" font-weight="700" fill="#1f2328">SCENARIO: high-priority task arrives at marker ● while kernel is mid-syscall</text>
+      <text x="20" y="78" font-family="Arial,sans-serif" font-size="14" font-weight="600" fill="#1f2328">PREEMPT_NONE</text>
+      <text x="160" y="78" font-family="Arial,sans-serif" font-size="12" fill="#59636e">server / max throughput</text>
+      <line x1="20" y1="100" x2="700" y2="100" stroke="#1f2328" stroke-width="3"/>
+      <circle cx="140" cy="100" r="6" fill="#1f2328"/>
+      <text x="140" y="125" text-anchor="middle" font-family="ui-monospace,monospace" font-size="10" fill="#1f2328">arrival</text>
+      <line x1="630" y1="86" x2="630" y2="114" stroke="#1f2328" stroke-width="2"/>
+      <text x="630" y="78" text-anchor="middle" font-family="ui-monospace,monospace" font-size="10" font-weight="700" fill="#1f2328">SWITCH</text>
+      <text x="385" y="148" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" fill="#59636e">~10 ms — must wait until the syscall returns</text>
+      <text x="20" y="190" font-family="Arial,sans-serif" font-size="14" font-weight="600" fill="#1f2328">PREEMPT_VOLUNTARY</text>
+      <text x="200" y="190" font-family="Arial,sans-serif" font-size="12" fill="#59636e">desktop / production default</text>
+      <line x1="20" y1="212" x2="700" y2="212" stroke="#1f2328" stroke-width="3"/>
+      <line x1="80" y1="206" x2="80" y2="218" stroke="#59636e" stroke-width="1"/>
+      <line x1="160" y1="206" x2="160" y2="218" stroke="#59636e" stroke-width="1"/>
+      <line x1="240" y1="206" x2="240" y2="218" stroke="#59636e" stroke-width="1"/>
+      <line x1="320" y1="206" x2="320" y2="218" stroke="#59636e" stroke-width="1"/>
+      <line x1="400" y1="206" x2="400" y2="218" stroke="#59636e" stroke-width="1"/>
+      <line x1="480" y1="206" x2="480" y2="218" stroke="#59636e" stroke-width="1"/>
+      <line x1="560" y1="206" x2="560" y2="218" stroke="#59636e" stroke-width="1"/>
+      <line x1="640" y1="206" x2="640" y2="218" stroke="#59636e" stroke-width="1"/>
+      <circle cx="140" cy="212" r="6" fill="#1f2328"/>
+      <line x1="240" y1="198" x2="240" y2="226" stroke="#1f2328" stroke-width="2"/>
+      <text x="240" y="190" text-anchor="middle" font-family="ui-monospace,monospace" font-size="10" font-weight="700" fill="#1f2328">SWITCH</text>
+      <text x="100" y="250" font-family="ui-monospace,monospace" font-size="10" fill="#59636e">| = cond_resched() checkpoints</text>
+      <text x="500" y="250" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" fill="#59636e">~1–5 ms — wait for next checkpoint</text>
+      <text x="20" y="294" font-family="Arial,sans-serif" font-size="14" font-weight="600" fill="#1f2328">PREEMPT_RT</text>
+      <text x="140" y="294" font-family="Arial,sans-serif" font-size="12" fill="#59636e">real-time / audio / robotics</text>
+      <line x1="20" y1="316" x2="700" y2="316" stroke="#1f2328" stroke-width="3"/>
+      <circle cx="140" cy="316" r="6" fill="#1f2328"/>
+      <line x1="153" y1="302" x2="153" y2="330" stroke="#1f2328" stroke-width="2"/>
+      <text x="153" y="294" text-anchor="middle" font-family="ui-monospace,monospace" font-size="10" font-weight="700" fill="#1f2328">SWITCH</text>
+      <text x="385" y="352" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" fill="#59636e">&lt;100 μs — kernel preempts almost anywhere</text>
+    </svg>
+</div>
+
+<div class="table-wrapper">
+<table>
+    <thead><tr><th>Model</th><th>Worst-case latency</th><th>Trade-off</th><th>Typical user</th></tr></thead>
+    <tbody>
+        <tr><td><code>PREEMPT_NONE</code></td><td>~10 ms</td><td>Best throughput, worst latency</td><td>Batch / HPC servers</td></tr>
+        <tr><td><code>PREEMPT_VOLUNTARY</code></td><td>~1&ndash;5 ms</td><td>Balanced</td><td>Most production servers, K8s</td></tr>
+        <tr><td><code>PREEMPT</code> (full)</td><td>&lt; 1 ms</td><td>Lower latency, modest throughput cost</td><td>Low-latency desktop</td></tr>
+        <tr><td><code>PREEMPT_RT</code></td><td>&lt; 100 &mu;s</td><td>Strong guarantees, ~5&ndash;15% throughput cost</td><td>Audio, trading, industrial control</td></tr>
+    </tbody>
+</table>
+</div>
+
+<div class="key-point">
+    <div class="label">PREEMPT_DYNAMIC (5.12+)</div>
+    <p>Linux 5.12+ ships with <code>PREEMPT_DYNAMIC</code>, which lets you switch models at boot via <code>preempt=none|voluntary|full</code> on the kernel command line &mdash; no recompile needed. <code>PREEMPT_RT</code> was merged into mainline in Linux 6.12.</p>
+</div>
+
+<h4>About <code>cond_resched()</code></h4>
+<p>Kernel developers sprinkle calls to <code>cond_resched()</code> and <code>might_sleep()</code> inside long kernel paths (filesystem walks, large memory operations). Under <code>PREEMPT_VOLUNTARY</code>, these become &ldquo;if a higher-priority task is waiting, yield now.&rdquo; This is <strong>kernel-side code, not application code</strong> &mdash; you only encounter these calls if you write a kernel module or driver.</p>
+
+<!-- Layer 2 Deep Dive -->
+<h4>Layer 2 &mdash; Scheduling Class</h4>
+
+<p>Each process belongs to exactly one scheduling class. The class determines the algorithm. Classes are organized into two strictly-ordered realms:</p>
+
+<!-- Scheduling Classes Diagram -->
+<div class="diagram">
+    <div class="diagram-title">Scheduling Classes: Two Realms</div>
+    <svg viewBox="0 0 760 460" xmlns="http://www.w3.org/2000/svg" style="width:100%;">
+      <defs>
+        <marker id="slb" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M2 1L8 5L2 9" fill="none" stroke="#1f2328" stroke-width="1.5" stroke-linecap="round"/>
+        </marker>
+        <pattern id="diagp" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
+          <line x1="0" y1="0" x2="0" y2="6" stroke="#1f2328" stroke-width="0.6"/>
+        </pattern>
+      </defs>
+      <rect x="20" y="20" width="720" height="170" fill="url(#diagp)" opacity="0.08"/>
+      <rect x="20" y="20" width="720" height="170" fill="none" stroke="#1f2328" stroke-width="2"/>
+      <text x="40" y="46" font-family="ui-monospace,monospace" font-size="11" font-weight="700" fill="#1f2328">REAL-TIME REALM — checked first</text>
+      <text x="40" y="72" font-family="Arial,sans-serif" font-size="14" fill="#1f2328">Tasks here run before anything in the realm below.</text>
+      <rect x="40" y="90" width="220" height="80" fill="#ffffff" stroke="#1f2328" stroke-width="1"/>
+      <text x="150" y="116" text-anchor="middle" font-family="ui-monospace,monospace" font-size="12" font-weight="700" fill="#1f2328">SCHED_DEADLINE</text>
+      <text x="150" y="138" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" fill="#59636e">earliest deadline first</text>
+      <text x="150" y="158" text-anchor="middle" font-family="ui-monospace,monospace" font-size="10" fill="#818b98">runtime / period budget</text>
+      <rect x="270" y="90" width="220" height="80" fill="#ffffff" stroke="#1f2328" stroke-width="1"/>
+      <text x="380" y="116" text-anchor="middle" font-family="ui-monospace,monospace" font-size="12" font-weight="700" fill="#1f2328">SCHED_FIFO</text>
+      <text x="380" y="138" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" fill="#59636e">run until block or yield</text>
+      <text x="380" y="158" text-anchor="middle" font-family="ui-monospace,monospace" font-size="10" fill="#818b98">priority 1–99</text>
+      <rect x="500" y="90" width="220" height="80" fill="#ffffff" stroke="#1f2328" stroke-width="1"/>
+      <text x="610" y="116" text-anchor="middle" font-family="ui-monospace,monospace" font-size="12" font-weight="700" fill="#1f2328">SCHED_RR</text>
+      <text x="610" y="138" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" fill="#59636e">round-robin timeslice</text>
+      <text x="610" y="158" text-anchor="middle" font-family="ui-monospace,monospace" font-size="10" fill="#818b98">priority 1–99</text>
+      <line x1="380" y1="200" x2="380" y2="240" stroke="#1f2328" stroke-width="1.5" marker-end="url(#slb)"/>
+      <text x="395" y="225" font-family="Arial,sans-serif" font-size="11" fill="#59636e">checked only if RT realm is empty</text>
+      <rect x="20" y="250" width="720" height="170" fill="none" stroke="#1f2328" stroke-width="1" stroke-dasharray="4 4"/>
+      <text x="40" y="276" font-family="ui-monospace,monospace" font-size="11" font-weight="700" fill="#1f2328">NORMAL REALM — runs only when RT realm is idle</text>
+      <text x="40" y="302" font-family="Arial,sans-serif" font-size="14" fill="#1f2328">CFS shares CPU fairly here, weighted by nice value.</text>
+      <rect x="40" y="320" width="220" height="80" fill="#ffffff" stroke="#1f2328" stroke-width="1"/>
+      <text x="150" y="346" text-anchor="middle" font-family="ui-monospace,monospace" font-size="12" font-weight="700" fill="#1f2328">SCHED_OTHER</text>
+      <text x="150" y="368" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" fill="#59636e">CFS — default for everyone</text>
+      <text x="150" y="388" text-anchor="middle" font-family="ui-monospace,monospace" font-size="10" fill="#818b98">nice −20 to +19</text>
+      <rect x="270" y="320" width="220" height="80" fill="#ffffff" stroke="#1f2328" stroke-width="1"/>
+      <text x="380" y="346" text-anchor="middle" font-family="ui-monospace,monospace" font-size="12" font-weight="700" fill="#1f2328">SCHED_BATCH</text>
+      <text x="380" y="368" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" fill="#59636e">long CPU-bound work</text>
+      <text x="380" y="388" text-anchor="middle" font-family="ui-monospace,monospace" font-size="10" fill="#818b98">nice −20 to +19</text>
+      <rect x="500" y="320" width="220" height="80" fill="#ffffff" stroke="#1f2328" stroke-width="1"/>
+      <text x="610" y="346" text-anchor="middle" font-family="ui-monospace,monospace" font-size="12" font-weight="700" fill="#1f2328">SCHED_IDLE</text>
+      <text x="610" y="368" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" fill="#59636e">runs only when system is idle</text>
+      <text x="610" y="388" text-anchor="middle" font-family="ui-monospace,monospace" font-size="10" fill="#818b98">lowest of all</text>
+      <text x="380" y="445" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" font-style="italic" fill="#1f2328">Iron rule: any RT task beats every normal task — even RT priority 1 beats nice −20.</text>
+    </svg>
+</div>
+
+<div class="table-wrapper">
+<table>
+    <thead><tr><th>Class</th><th>Behavior</th><th>Used for</th></tr></thead>
+    <tbody>
+        <tr><td><code>SCHED_DEADLINE</code></td><td>Explicit timing budget (runtime within period). Admission-controlled.</td><td>Industrial control, robotics</td></tr>
+        <tr><td><code>SCHED_FIFO</code></td><td>Runs until it voluntarily blocks or yields. No timeslice.</td><td>Audio engines, IRQ threads</td></tr>
+        <tr><td><code>SCHED_RR</code></td><td>Like FIFO but with timeslice (default 100 ms).</td><td>Several RT tasks needing fair sharing</td></tr>
+        <tr><td><code>SCHED_OTHER</code></td><td>Default. Handled by CFS. Nice value is the knob.</td><td>Everything you've ever launched</td></tr>
+        <tr><td><code>SCHED_BATCH</code></td><td>Like OTHER but treated as CPU-bound &mdash; no wake-up boost.</td><td>Long compute jobs</td></tr>
+        <tr><td><code>SCHED_IDLE</code></td><td>Only runs when system has nothing else to do.</td><td>Lowest-priority background work</td></tr>
+    </tbody>
+</table>
+</div>
+
+<div class="warning-box">
+    <div class="label">Warning: SCHED_FIFO is a loaded weapon</div>
+    <p>A buggy <code>SCHED_FIFO</code> task in an infinite loop can pin a CPU core and make the system unresponsive. The kernel reserves ~5% of CPU per period (<code>/proc/sys/kernel/sched_rt_runtime_us</code>) as a safety net, but treat <code>chrt -f</code> with extreme care.</p>
+</div>
+
+<!-- Layer 3 Deep Dive -->
+<h4>Layer 3 &mdash; Priority &amp; Nice</h4>
+
+<p>Once a class is picked, the priority number ranks the task among other members of that same class. The two realms use different scales &mdash; <strong>and they go in opposite directions</strong>.</p>
+
+<!-- Priority Scales Diagram -->
+<div class="diagram">
+    <div class="diagram-title">Priority Scales: Opposite Numbering, Same Concept</div>
+    <svg viewBox="0 0 760 280" xmlns="http://www.w3.org/2000/svg" style="width:100%;">
+      <text x="380" y="32" text-anchor="middle" font-family="ui-monospace,monospace" font-size="11" font-weight="700" fill="#1f2328">MORE URGENT  ←—————————————————————————————→  LESS URGENT</text>
+      <text x="20" y="88" font-family="Arial,sans-serif" font-size="13" font-weight="600" fill="#1f2328">RT priority</text>
+      <text x="20" y="106" font-family="ui-monospace,monospace" font-size="10" fill="#59636e">via chrt(1)</text>
+      <line x1="200" y1="96" x2="700" y2="96" stroke="#1f2328" stroke-width="2"/>
+      <circle cx="200" cy="96" r="6" fill="#1f2328"/>
+      <circle cx="700" cy="96" r="6" fill="#ffffff" stroke="#1f2328" stroke-width="2"/>
+      <text x="200" y="124" text-anchor="middle" font-family="ui-monospace,monospace" font-size="12" font-weight="700" fill="#1f2328">99</text>
+      <text x="450" y="124" text-anchor="middle" font-family="ui-monospace,monospace" font-size="12" fill="#59636e">50</text>
+      <text x="700" y="124" text-anchor="middle" font-family="ui-monospace,monospace" font-size="12" fill="#59636e">1</text>
+      <line x1="20" y1="160" x2="740" y2="160" stroke="#d1d9e0" stroke-dasharray="4 4"/>
+      <text x="20" y="198" font-family="Arial,sans-serif" font-size="13" font-weight="600" fill="#1f2328">Nice value</text>
+      <text x="20" y="216" font-family="ui-monospace,monospace" font-size="10" fill="#59636e">via nice / renice</text>
+      <line x1="200" y1="206" x2="700" y2="206" stroke="#1f2328" stroke-width="2"/>
+      <circle cx="200" cy="206" r="6" fill="#1f2328"/>
+      <circle cx="700" cy="206" r="6" fill="#ffffff" stroke="#1f2328" stroke-width="2"/>
+      <text x="200" y="234" text-anchor="middle" font-family="ui-monospace,monospace" font-size="12" font-weight="700" fill="#1f2328">−20</text>
+      <text x="450" y="234" text-anchor="middle" font-family="ui-monospace,monospace" font-size="12" fill="#59636e">0</text>
+      <text x="700" y="234" text-anchor="middle" font-family="ui-monospace,monospace" font-size="12" fill="#59636e">+19</text>
+      <text x="380" y="266" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" font-style="italic" fill="#59636e">Both put "more urgent" on the LEFT — only the numbers run in opposite directions.</text>
+    </svg>
+</div>
+
+<div class="table-wrapper">
+<table>
+    <thead><tr><th>Scale</th><th>Range</th><th>Direction</th><th>Mnemonic</th></tr></thead>
+    <tbody>
+        <tr><td>RT priority &mdash; <code>chrt</code></td><td>1 to 99</td><td>Higher = more urgent</td><td>Military rank &mdash; bigger number, bigger boss</td></tr>
+        <tr><td>Nice &mdash; <code>nice</code> / <code>renice</code></td><td>&minus;20 to +19</td><td>Lower = more urgent</td><td>&ldquo;Less nice = more selfish&rdquo;</td></tr>
+    </tbody>
+</table>
+</div>
+
+<h4>Nice is NOT a quieter version of RT</h4>
+
+<p>Common misconception: assuming <code>nice -20</code> makes other processes wait. <strong>It doesn&rsquo;t.</strong> CFS guarantees fairness &mdash; every runnable task gets time, just weighted by nice. A <code>nice -20</code> task gets ~88% of the CPU when competing against <code>nice 0</code>; the <code>nice 0</code> task still gets the remaining 12%. Nobody starves.</p>
+
+<p><code>SCHED_FIFO</code> by contrast can take 100% and starve everything else. That&rsquo;s the actual difference, and the actual reason RT exists.</p>
+
+<div class="table-wrapper">
+<table>
+    <thead><tr><th>Behavior</th><th>nice &minus;20 (SCHED_OTHER)</th><th>SCHED_FIFO 50</th></tr></thead>
+    <tbody>
+        <tr><td>Will I get CPU?</td><td>Yes, eventually</td><td>Yes, immediately</td></tr>
+        <tr><td>How much?</td><td>Big share, never all</td><td>Up to 100%</td></tr>
+        <tr><td>Do others run too?</td><td>Yes &mdash; smaller slices</td><td>No, until I block</td></tr>
+        <tr><td>Worst-case wait</td><td>Could be ms (no bound)</td><td>Microseconds (bounded)</td></tr>
+        <tr><td>Predictable?</td><td>No</td><td>Yes</td></tr>
+    </tbody>
+</table>
+</div>
+
+<!-- How They Work Together -->
+<h4>How the Three Layers Work Together</h4>
+
+<p>When the kernel needs to pick the next task to run, it walks through the layers in this order:</p>
+
+<!-- Decision Flow Diagram -->
+<div class="diagram">
+    <div class="diagram-title">Scheduler Decision Flow</div>
+    <svg viewBox="0 0 760 580" xmlns="http://www.w3.org/2000/svg" style="width:100%;">
+      <defs>
+        <marker id="slc" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M2 1L8 5L2 9" fill="none" stroke="#1f2328" stroke-width="1.5" stroke-linecap="round"/>
+        </marker>
+      </defs>
+      <rect x="280" y="20" width="200" height="45" fill="#1f2328"/>
+      <text x="380" y="40" text-anchor="middle" font-family="ui-monospace,monospace" font-size="10" font-weight="700" fill="#ffffff">SCHEDULER WAKE-UP</text>
+      <text x="380" y="56" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" font-style="italic" fill="#ffffff">"Who runs next?"</text>
+      <line x1="380" y1="70" x2="380" y2="95" stroke="#1f2328" stroke-width="1.5" marker-end="url(#slc)"/>
+      <rect x="100" y="100" width="560" height="90" fill="#ffffff" stroke="#1f2328" stroke-width="1.5"/>
+      <text x="120" y="125" font-family="ui-monospace,monospace" font-size="10" font-weight="700" fill="#1f2328">STEP 1 · LAYER 2 — pick the class</text>
+      <line x1="120" y1="135" x2="640" y2="135" stroke="#d1d9e0"/>
+      <text x="120" y="158" font-family="Arial,sans-serif" font-size="13" font-weight="600" fill="#1f2328">Walk classes in strict order. Find the highest-tier class with a runnable task.</text>
+      <text x="120" y="180" font-family="ui-monospace,monospace" font-size="10" fill="#1f2328">DEADLINE → FIFO → RR → OTHER (CFS) → BATCH → IDLE</text>
+      <line x1="380" y1="195" x2="380" y2="220" stroke="#1f2328" stroke-width="1.5" marker-end="url(#slc)"/>
+      <rect x="100" y="225" width="560" height="110" fill="#ffffff" stroke="#1f2328" stroke-width="1.5"/>
+      <text x="120" y="250" font-family="ui-monospace,monospace" font-size="10" font-weight="700" fill="#1f2328">STEP 2 · LAYER 3 — rank within the class</text>
+      <line x1="120" y1="260" x2="640" y2="260" stroke="#d1d9e0"/>
+      <text x="120" y="283" font-family="Arial,sans-serif" font-size="13" font-weight="600" fill="#1f2328">Use the priority number to pick the specific task.</text>
+      <text x="120" y="305" font-family="ui-monospace,monospace" font-size="10" fill="#1f2328">RT classes  →  highest RT priority (1–99, bigger = wins)</text>
+      <text x="120" y="323" font-family="ui-monospace,monospace" font-size="10" fill="#1f2328">CFS         →  lowest virtual runtime, weighted by nice</text>
+      <line x1="380" y1="340" x2="380" y2="365" stroke="#1f2328" stroke-width="1.5" marker-end="url(#slc)"/>
+      <rect x="100" y="370" width="560" height="100" fill="#ffffff" stroke="#1f2328" stroke-width="1.5"/>
+      <text x="120" y="395" font-family="ui-monospace,monospace" font-size="10" font-weight="700" fill="#1f2328">STEP 3 · LAYER 1 — how fast can we switch?</text>
+      <line x1="120" y1="405" x2="640" y2="405" stroke="#d1d9e0"/>
+      <text x="120" y="428" font-family="Arial,sans-serif" font-size="13" font-weight="600" fill="#1f2328">Preemption model decides when the running kernel code can be interrupted.</text>
+      <text x="120" y="450" font-family="ui-monospace,monospace" font-size="10" fill="#1f2328">PREEMPT_NONE       → wait until syscall return  (~10 ms)</text>
+      <text x="120" y="463" font-family="ui-monospace,monospace" font-size="10" fill="#1f2328">PREEMPT_VOLUNTARY  → wait until cond_resched()  (~1 ms)</text>
+      <line x1="380" y1="475" x2="380" y2="500" stroke="#1f2328" stroke-width="1.5" marker-end="url(#slc)"/>
+      <rect x="250" y="505" width="260" height="45" fill="#1f2328"/>
+      <text x="380" y="525" text-anchor="middle" font-family="ui-monospace,monospace" font-size="10" font-weight="700" fill="#ffffff">CONTEXT SWITCH HAPPENS</text>
+      <text x="380" y="541" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" font-style="italic" fill="#ffffff">selected task is now on CPU</text>
+    </svg>
+</div>
+
+<div class="key-point">
+    <div class="label">Summary</div>
+    <p>Layer 2 decides who should run. Layer 3 ranks peers within a class. Layer 1 controls how fast the kernel can act on the decision.</p>
+</div>
+
+<!-- Commands -->
+<h4>Scheduling Commands Reference</h4>
+
+<p><strong>Layer 1 &mdash; Preemption model:</strong></p>
+<pre><code># What model is the kernel built with?
+uname -v
+grep PREEMPT /boot/config-$(uname -r)
+
+# Modern kernels: switch model at boot via GRUB
+# add to GRUB_CMDLINE_LINUX in /etc/default/grub:
+preempt=none|voluntary|full
+
+# Install a low-latency or RT kernel
+sudo apt install linux-image-lowlatency
+sudo apt install linux-image-rt-amd64</code></pre>
+
+<p><strong>Layer 2 &mdash; Scheduling class:</strong></p>
+<pre><code># Inspect class &amp; priority of PID 1234
+chrt -p 1234
+
+# Set a real-time class
+sudo chrt -f 50 ./app           # SCHED_FIFO,  priority 50
+sudo chrt -r 50 ./app           # SCHED_RR,    priority 50
+sudo chrt -d --sched-runtime 5000000 \
+              --sched-deadline 20000000 \
+              --sched-period   20000000 0 ./app   # DEADLINE
+
+# Back to normal
+sudo chrt -o -p 0 1234          # SCHED_OTHER
+
+# Show valid priority ranges per policy
+chrt -m</code></pre>
+
+<p><strong>Layer 3 &mdash; Nice (CFS only):</strong></p>
+<pre><code># Launch with a nice value
+nice -n -10 ./game              # needs sudo for negatives
+nice -n  19 ./backup
+
+# Change a running process
+renice -n  10 -p 1234
+sudo renice -n -5  -p 1234
+
+# See class + priority + nice for everything
+ps -eo pid,cls,pri,ni,cmd --sort=-pri | head -20
+# CLS: TS=OTHER, FF=FIFO, RR=RoundRobin, B=BATCH, IDL=IDLE</code></pre>
+
+<p><strong>systemd unit file:</strong></p>
+<pre><code>[Service]
+ExecStart=/usr/bin/my-app
+Nice=-5
+CPUSchedulingPolicy=fifo        # other, batch, idle, fifo, rr
+CPUSchedulingPriority=50
+IOSchedulingClass=best-effort
+IOSchedulingPriority=2
+CPUAffinity=2 3</code></pre>
+
+<!-- Common Scenarios -->
+<h4>Common Scheduling Scenarios</h4>
+
+<p><strong>Trading bot vs nightly backup on the same host:</strong></p>
+<pre><code>sudo chrt -f 80 ./trading-bot          # RT, beats everything normal
+nice  -n  19 ionice -c 3 ./backup.sh   # maximally polite</code></pre>
+<p>The kernel walks classes in order, finds the bot in <code>SCHED_FIFO</code>, runs it. The backup only progresses when the bot is blocked. With <code>PREEMPT_VOLUNTARY</code> you get ~1 ms reaction; with <code>PREEMPT_RT</code> you get sub-100 &mu;s.</p>
+
+<p><strong>Audio engine that must never glitch:</strong></p>
+<pre><code>sudo chrt -f 80 ./audio-engine         # RT FIFO, top priority
+sudo chrt -f 60 ./plugin-thread        # RT FIFO, lower
+nice  -n -5 ./gui-thread               # normal but aggressive</code></pre>
+
+<p><strong>Production K8s node &mdash; the boring answer:</strong></p>
+<pre><code># Most K8s nodes: PREEMPT_VOLUNTARY kernel, no chrt anywhere.
+# Use nice values for sensitive components like etcd:
+[Service]
+Nice=-10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=2</code></pre>
+
+<div class="warning-box">
+    <div class="label">Avoid SCHED_FIFO on shared K8s nodes</div>
+    <p>A buggy <code>SCHED_FIFO</code> task can starve <code>kubelet</code>, <code>containerd</code>, and kube-proxy. The whole node falls over and gets marked <code>NotReady</code>. Use nice values for sensitive workloads instead.</p>
+</div>
+
+<p><strong>Long-running batch compute:</strong></p>
+<pre><code>sudo chrt -b 0 ./big-build             # SCHED_BATCH
+nice  -n  10 ./big-build               # or just be polite</code></pre>
+<p><code>BATCH</code> tells CFS &ldquo;I&rsquo;m CPU-bound, don&rsquo;t bother giving me wake-up boosts.&rdquo; Better cache behavior for compute-heavy work.</p>
+
+<!-- Restaurant Analogy -->
+<h4>The Restaurant Analogy</h4>
+
+<p>Imagine a busy restaurant. One head waiter, many tables. This is your CPU.</p>
+
+<div class="diagram">
+    <div class="diagram-title">The Restaurant = Your CPU</div>
+    <svg viewBox="0 0 760 520" xmlns="http://www.w3.org/2000/svg" style="width:100%;">
+      <!-- Restaurant outline -->
+      <rect x="20" y="15" width="720" height="490" rx="12" fill="#ffffff" stroke="#1f2328" stroke-width="2"/>
+      <text x="380" y="42" text-anchor="middle" font-family="Arial,sans-serif" font-size="16" font-weight="700" fill="#1f2328">THE RESTAURANT (= CPU)</text>
+      <text x="380" y="62" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" fill="#59636e">One waiter, many hungry guests</text>
+
+      <!-- VIP Room -->
+      <rect x="40" y="80" width="330" height="170" rx="8" fill="#f5f5f5" stroke="#1f2328" stroke-width="2"/>
+      <text x="205" y="102" text-anchor="middle" font-family="ui-monospace,monospace" font-size="11" font-weight="700" fill="#1f2328">VIP ROOM (= RT realm)</text>
+      <text x="205" y="120" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" fill="#59636e">Waiter serves here FIRST. Always.</text>
+      <rect x="60" y="135" width="130" height="45" rx="6" fill="#fff" stroke="#1f2328"/>
+      <text x="125" y="155" text-anchor="middle" font-family="ui-monospace,monospace" font-size="10" font-weight="700">SCHED_FIFO</text>
+      <text x="125" y="172" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" fill="#59636e">run until they leave</text>
+      <rect x="210" y="135" width="130" height="45" rx="6" fill="#fff" stroke="#1f2328"/>
+      <text x="275" y="155" text-anchor="middle" font-family="ui-monospace,monospace" font-size="10" font-weight="700">SCHED_RR</text>
+      <text x="275" y="172" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" fill="#59636e">timesliced turns</text>
+      <text x="205" y="210" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" fill="#1f2328">Rank = RT priority (1&ndash;99)</text>
+      <text x="205" y="228" text-anchor="middle" font-family="Arial,sans-serif" font-size="10" font-style="italic" fill="#59636e">Nice has zero effect here.</text>
+      <text x="205" y="244" text-anchor="middle" font-family="Arial,sans-serif" font-size="10" font-style="italic" fill="#59636e">VIP guests don&rsquo;t wave arms &mdash; they have rank.</text>
+
+      <!-- Main Hall -->
+      <rect x="390" y="80" width="330" height="170" rx="8" fill="#ffffff" stroke="#1f2328" stroke-width="1" stroke-dasharray="4 4"/>
+      <text x="555" y="102" text-anchor="middle" font-family="ui-monospace,monospace" font-size="11" font-weight="700" fill="#1f2328">MAIN HALL (= CFS / SCHED_OTHER)</text>
+      <text x="555" y="120" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" fill="#59636e">Everyone shares the waiter fairly.</text>
+      <!-- Loud guy -->
+      <rect x="405" y="135" width="90" height="55" rx="6" fill="#f8f8f8" stroke="#1f2328"/>
+      <text x="450" y="152" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" font-weight="700">nice &minus;20</text>
+      <text x="450" y="165" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" fill="#59636e">loud guy</text>
+      <text x="450" y="178" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" fill="#59636e">waving arm</text>
+      <!-- Normal -->
+      <rect x="505" y="135" width="90" height="55" rx="6" fill="#fff" stroke="#1f2328"/>
+      <text x="550" y="152" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" font-weight="700">nice 0</text>
+      <text x="550" y="165" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" fill="#59636e">polite</text>
+      <text x="550" y="178" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" fill="#59636e">diner</text>
+      <!-- Quiet lady -->
+      <rect x="605" y="135" width="90" height="55" rx="6" fill="#fff" stroke="#1f2328"/>
+      <text x="650" y="152" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" font-weight="700">nice +19</text>
+      <text x="650" y="165" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" fill="#59636e">quiet old</text>
+      <text x="650" y="178" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" fill="#59636e">lady</text>
+      <text x="555" y="215" text-anchor="middle" font-family="Arial,sans-serif" font-size="10" fill="#1f2328">Even the loudest guest doesn&rsquo;t starve the quiet lady.</text>
+      <text x="555" y="232" text-anchor="middle" font-family="Arial,sans-serif" font-size="10" font-style="italic" fill="#59636e">CFS guarantees everyone eats.</text>
+
+      <!-- Kitchen -->
+      <rect x="40" y="275" width="680" height="105" rx="8" fill="#f0f0f0" stroke="#1f2328" stroke-width="1.5"/>
+      <text x="380" y="297" text-anchor="middle" font-family="ui-monospace,monospace" font-size="11" font-weight="700" fill="#1f2328">THE KITCHEN (= kernel running syscall code)</text>
+      <text x="380" y="315" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" fill="#59636e">Waiter is mid-souffl&eacute;. A VIP just snapped their fingers. How fast does he react?</text>
+      <rect x="60" y="330" width="195" height="38" rx="5" fill="#fff" stroke="#1f2328"/>
+      <text x="157" y="347" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9" font-weight="700">PREEMPT_NONE</text>
+      <text x="157" y="362" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" fill="#59636e">finish plating, then go (~10 ms)</text>
+      <rect x="275" y="330" width="195" height="38" rx="5" fill="#fff" stroke="#1f2328"/>
+      <text x="372" y="347" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9" font-weight="700">PREEMPT_VOLUNTARY</text>
+      <text x="372" y="362" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" fill="#59636e">glance between courses (~1 ms)</text>
+      <rect x="490" y="330" width="195" height="38" rx="5" fill="#fff" stroke="#1f2328"/>
+      <text x="587" y="347" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9" font-weight="700">PREEMPT_RT</text>
+      <text x="587" y="362" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" fill="#59636e">drop the spoon mid-stir (&lt;100 &mu;s)</text>
+
+      <!-- Decision flow -->
+      <text x="380" y="408" text-anchor="middle" font-family="ui-monospace,monospace" font-size="11" font-weight="700" fill="#1f2328">THE DECISION FLOW</text>
+      <text x="380" y="434" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" fill="#1f2328">Customer arrives &rarr; host picks ROOM &larr; <tspan font-weight="700">SCHED</tspan></text>
+      <text x="380" y="454" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" fill="#1f2328">In main hall? &rarr; push politely or loudly &larr; <tspan font-weight="700">NICE</tspan></text>
+      <text x="380" y="474" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" fill="#1f2328">In VIP room? &rarr; ranked by reservation tier &larr; <tspan font-weight="700">RT priority</tspan></text>
+      <text x="380" y="494" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" fill="#1f2328">Waiter busy in kitchen? &rarr; how fast he abandons &larr; <tspan font-weight="700">PREEMPT</tspan></text>
+    </svg>
+</div>
+
+<h4>The Friday Night Story</h4>
+
+<p>Three guests arrive Friday night:</p>
+<ul>
+    <li><strong>Alice</strong> (<code>SCHED_FIFO 80</code>, VIP) walks in. Host puts her in the VIP room.</li>
+    <li><strong>Bob</strong> (<code>nice -10</code>, main hall) is loud and waves often.</li>
+    <li><strong>Carol</strong> (<code>nice +10</code>, main hall) reads quietly.</li>
+</ul>
+
+<p>The waiter is currently in the kitchen, deep in a souffl&eacute; (= kernel syscall). Alice snaps her fingers. What happens?</p>
+
+<div class="table-wrapper">
+<table>
+    <thead><tr><th>Kitchen Rule</th><th>What Happens</th><th>Alice waits&hellip;</th></tr></thead>
+    <tbody>
+        <tr><td><code>PREEMPT_NONE</code></td><td>Waiter finishes the souffl&eacute; first. Alice fumes, but she&rsquo;s still next &mdash; ahead of Bob and Carol.</td><td>~10 minutes</td></tr>
+        <tr><td><code>PREEMPT_VOLUNTARY</code></td><td>Waiter checks between steps, abandons souffl&eacute; in ~1 minute, serves Alice.</td><td>~1 minute</td></tr>
+        <tr><td><code>PREEMPT_RT</code></td><td>Waiter drops the whisk. Alice is served in seconds.</td><td>Seconds</td></tr>
+    </tbody>
+</table>
+</div>
+
+<p>In <strong>all three cases</strong>, Alice is served before Bob and Carol &mdash; that&rsquo;s <strong>SCHED</strong>.<br>
+Bob and Carol&rsquo;s order amongst themselves is decided by their loudness &mdash; that&rsquo;s <strong>nice</strong>.<br>
+How fast Alice gets her drink &mdash; that&rsquo;s <strong>PREEMPT</strong>.</p>
+
+<h4>Where You&rsquo;d Use Each in Production</h4>
+
+<div class="table-wrapper">
+<table>
+    <thead><tr><th>Problem</th><th>Which Knob</th><th>Command</th></tr></thead>
+    <tbody>
+        <tr>
+            <td>My batch job is hogging the server</td>
+            <td><strong>NICE</strong> &mdash; politely yield to other normal tasks</td>
+            <td><code>nice -n 19 ./backup.sh</code></td>
+        </tr>
+        <tr>
+            <td>My audio software glitches occasionally</td>
+            <td><strong>SCHED</strong> &mdash; move into VIP room, beat all normal tasks</td>
+            <td><code>sudo chrt -f 80 ./audio</code></td>
+        </tr>
+        <tr>
+            <td>My audio still glitches under heavy disk I/O</td>
+            <td><strong>PREEMPT</strong> &mdash; make the waiter drop the spoon faster</td>
+            <td><code>sudo apt install linux-image-rt-amd64</code></td>
+        </tr>
+        <tr>
+            <td>My web server should respond consistently fast</td>
+            <td><strong>NICE only</strong> &mdash; don&rsquo;t go RT, risk of starving the system</td>
+            <td><code>Nice=-5</code> in systemd unit</td>
+        </tr>
+        <tr>
+            <td>My robot arm controller MUST hit a 1 ms deadline</td>
+            <td><strong>ALL THREE</strong> &mdash; RT kernel + DEADLINE policy + budget</td>
+            <td>PREEMPT_RT kernel + <code>chrt -d</code> with runtime/period</td>
+        </tr>
+    </tbody>
+</table>
+</div>
+
+<div class="key-point">
+    <div class="label">The One-Line Memory Hook</div>
+    <p><strong>SCHED puts you in a room. NICE makes you louder in your room. PREEMPT decides how fast the waiter abandons the kitchen for you.</strong></p>
+</div>
+
+<!-- Key Takeaways -->
+<h4>Key Takeaways</h4>
+<ol>
+    <li><strong>Three layers, three questions.</strong> PREEMPT model = how fast can the kernel be interrupted. Scheduling class = which algorithm. Priority = rank inside the algorithm.</li>
+    <li><strong>RT realm always beats normal realm.</strong> Even <code>SCHED_FIFO</code> priority 1 outranks nice &minus;20. The realms stack; they don&rsquo;t compete on a shared scale.</li>
+    <li><strong>Nice and RT priority go in opposite directions.</strong> RT: bigger number wins. Nice: smaller number wins.</li>
+    <li><strong>Nice cannot starve.</strong> CFS guarantees every runnable task gets time. If you need run-to-completion semantics, you need RT.</li>
+    <li><strong>RT can starve.</strong> A buggy <code>SCHED_FIFO</code> task can pin a CPU. Use <code>chrt -f</code> deliberately.</li>
+    <li><strong><code>cond_resched()</code> is kernel code, not application code.</strong> As an app developer you only set policy and priority.</li>
+    <li><strong>Most production servers run <code>PREEMPT_VOLUNTARY</code> + <code>SCHED_OTHER</code>.</strong> Reach for RT only when latency is genuinely unbounded otherwise.</li>
+    <li><strong>Cgroups v2 is one tree, all controllers.</strong> v1 had separate hierarchies per controller. K8s 1.25+ defaults to v2 with the systemd cgroup driver.</li>
+    <li><strong>CPU limits throttle, memory limits kill.</strong> CPU is compressible (you can get less). Memory is incompressible (once allocated, you must release it). That asymmetry shapes container behavior.</li>
+    <li><strong>Containers are processes, not objects.</strong> The kernel has no &ldquo;container&rdquo; concept. A container is a process with custom namespaces + cgroup + capabilities + seccomp + pivoted root.</li>
+    <li><strong>Namespaces virtualize lookups, not enforce boundaries.</strong> Container&rsquo;s <code>ps</code> doesn&rsquo;t fail to see host PIDs &mdash; it never sees them because <code>/proc</code> is filtered by PID namespace.</li>
+    <li><strong>The shim is host-side; the container is guest-side.</strong> <code>containerd-shim-runc-v2</code> runs in host namespaces. The container process is its child, in isolated namespaces.</li>
+    <li><strong>CPU Manager static + Topology Manager align to one NUMA node.</strong> Required for ML, telco, and HFT &mdash; cross-NUMA access doubles memory latency.</li>
+    <li><strong>Pinning isn&rsquo;t just about CPU sharing &mdash; it&rsquo;s about cache and TLB warmth.</strong> A migrated process pays for cold L1/L2/L3 and TLB misses. Combine pinning with huge pages for stable p99.</li>
+</ol>
+
+<h3 id="cgroups">1.2 cgroups &amp; Namespaces for Container Isolation</h3>
+
+<div class="diagram">
+    <div class="diagram-title">Container Isolation: cgroups + Namespaces</div>
+    <svg viewBox="0 0 900 350" xmlns="http://www.w3.org/2000/svg" style="width:100%;">
+        <!-- Container -->
+        <rect x="250" y="10" width="400" height="40" rx="8" fill="#f5f5f5" stroke="#222" stroke-width="2"/>
+        <text x="450" y="35" text-anchor="middle" fill="#222" font-size="15" font-weight="700">Container = cgroups + Namespaces + Root FS</text>
+        <!-- cgroups side -->
+        <rect x="20" y="70" width="420" height="270" rx="10" fill="#f8f9fa" stroke="#222"/>
+        <text x="230" y="95" text-anchor="middle" fill="#222" font-size="14" font-weight="700">cgroups v2 (Resource Limits)</text>
+        <text x="230" y="112" text-anchor="middle" fill="#54595d" font-size="11">/sys/fs/cgroup/&lt;slice&gt;/&lt;scope&gt;</text>
+        <!-- cgroup controllers -->
+        <rect x="40" y="125" width="185" height="40" rx="6" fill="#f8f9fa" stroke="#a2a9b1"/>
+        <text x="132" y="142" text-anchor="middle" fill="#222" font-size="11" font-weight="600">cpu.max</text>
+        <text x="132" y="156" text-anchor="middle" fill="#54595d" font-size="11">quota / period (e.g., 200000/100000)</text>
+        <rect x="235" y="125" width="185" height="40" rx="6" fill="#f8f9fa" stroke="#a2a9b1"/>
+        <text x="327" y="142" text-anchor="middle" fill="#222" font-size="11" font-weight="600">memory.max</text>
+        <text x="327" y="156" text-anchor="middle" fill="#54595d" font-size="11">hard limit (OOMKill if exceeded)</text>
+        <rect x="40" y="175" width="185" height="40" rx="6" fill="#f8f9fa" stroke="#a2a9b1"/>
+        <text x="132" y="192" text-anchor="middle" fill="#222" font-size="11" font-weight="600">io.max</text>
+        <text x="132" y="206" text-anchor="middle" fill="#54595d" font-size="11">rbps / wbps / riops / wiops</text>
+        <rect x="235" y="175" width="185" height="40" rx="6" fill="#f8f9fa" stroke="#a2a9b1"/>
+        <text x="327" y="192" text-anchor="middle" fill="#222" font-size="11" font-weight="600">pids.max</text>
+        <text x="327" y="206" text-anchor="middle" fill="#54595d" font-size="11">max processes (fork bomb protection)</text>
+        <rect x="40" y="225" width="185" height="40" rx="6" fill="#f8f9fa" stroke="#a2a9b1"/>
+        <text x="132" y="242" text-anchor="middle" fill="#222" font-size="11" font-weight="600">cpuset.cpus</text>
+        <text x="132" y="256" text-anchor="middle" fill="#54595d" font-size="11">pin to specific CPUs</text>
+        <rect x="235" y="225" width="185" height="40" rx="6" fill="#f8f9fa" stroke="#a2a9b1"/>
+        <text x="327" y="242" text-anchor="middle" fill="#222" font-size="11" font-weight="600">hugetlb</text>
+        <text x="327" y="256" text-anchor="middle" fill="#54595d" font-size="11">huge page allocation limits</text>
+        <!-- K8s mapping -->
+        <rect x="40" y="280" width="380" height="45" rx="6" fill="#f5f5f5" stroke="#222"/>
+        <text x="230" y="298" text-anchor="middle" fill="#222" font-size="11" font-weight="700">K8s Mapping</text>
+        <text x="230" y="315" text-anchor="middle" fill="#54595d" font-size="11">requests &rarr; cpu.weight/memory.min | limits &rarr; cpu.max/memory.max</text>
+
+        <!-- Namespaces side -->
+        <rect x="460" y="70" width="420" height="270" rx="10" fill="#f5f5f5" stroke="#222"/>
+        <text x="670" y="95" text-anchor="middle" fill="#222" font-size="14" font-weight="700">Namespaces (Visibility Isolation)</text>
+        <text x="670" y="112" text-anchor="middle" fill="#54595d" font-size="11">Each namespace = independent view of system resource</text>
+        <rect x="480" y="125" width="185" height="35" rx="6" fill="#f5f5f5" stroke="#a2a9b1"/>
+        <text x="572" y="140" text-anchor="middle" fill="#222" font-size="11" font-weight="600">pid ns</text>
+        <text x="572" y="152" text-anchor="middle" fill="#54595d" font-size="11">PID 1 inside container</text>
+        <rect x="675" y="125" width="185" height="35" rx="6" fill="#f5f5f5" stroke="#a2a9b1"/>
+        <text x="767" y="140" text-anchor="middle" fill="#222" font-size="11" font-weight="600">net ns</text>
+        <text x="767" y="152" text-anchor="middle" fill="#54595d" font-size="11">own NIC, IP, routes, iptables</text>
+        <rect x="480" y="170" width="185" height="35" rx="6" fill="#f5f5f5" stroke="#a2a9b1"/>
+        <text x="572" y="185" text-anchor="middle" fill="#222" font-size="11" font-weight="600">mnt ns</text>
+        <text x="572" y="197" text-anchor="middle" fill="#54595d" font-size="11">own filesystem view (overlayfs)</text>
+        <rect x="675" y="170" width="185" height="35" rx="6" fill="#f5f5f5" stroke="#a2a9b1"/>
+        <text x="767" y="185" text-anchor="middle" fill="#222" font-size="11" font-weight="600">uts ns</text>
+        <text x="767" y="197" text-anchor="middle" fill="#54595d" font-size="11">own hostname</text>
+        <rect x="480" y="215" width="185" height="35" rx="6" fill="#f5f5f5" stroke="#a2a9b1"/>
+        <text x="572" y="230" text-anchor="middle" fill="#222" font-size="11" font-weight="600">ipc ns</text>
+        <text x="572" y="242" text-anchor="middle" fill="#54595d" font-size="11">SysV IPC, POSIX msg queues</text>
+        <rect x="675" y="215" width="185" height="35" rx="6" fill="#f5f5f5" stroke="#a2a9b1"/>
+        <text x="767" y="230" text-anchor="middle" fill="#222" font-size="11" font-weight="600">user ns</text>
+        <text x="767" y="242" text-anchor="middle" fill="#54595d" font-size="11">UID/GID mapping (rootless)</text>
+        <rect x="480" y="260" width="185" height="35" rx="6" fill="#f5f5f5" stroke="#a2a9b1"/>
+        <text x="572" y="275" text-anchor="middle" fill="#222" font-size="11" font-weight="600">cgroup ns</text>
+        <text x="572" y="287" text-anchor="middle" fill="#54595d" font-size="11">own cgroup root view</text>
+        <rect x="675" y="260" width="185" height="35" rx="6" fill="#f5f5f5" stroke="#a2a9b1"/>
+        <text x="767" y="275" text-anchor="middle" fill="#222" font-size="11" font-weight="600">time ns</text>
+        <text x="767" y="287" text-anchor="middle" fill="#54595d" font-size="11">virtualized clocks (5.6+)</text>
+    </svg>
+</div>
+
+<h4>How the Kernel Enforces cgroups — The Full Chain</h4>
+
+<p>An interviewer will ask: "When kubelet sets <code>cpu.max</code> to <code>200000 100000</code>, what actually enforces that limit inside the kernel?" Here's the complete chain:</p>
+
+<div class="diagram">
+<div class="diagram-title">K8s Pod → kubelet → cgroups → Kernel Enforcement</div>
+<svg viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:1000px;">
+  <defs>
+    <marker id="ahcg" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#000"/></marker>
+  </defs>
+
+  <!-- Row 1: K8s layer -->
+  <rect x="20" y="10" width="960" height="55" rx="8" fill="#f5f5f5" stroke="#000" stroke-width="1.5"/>
+  <text x="500" y="30" font-size="13" font-weight="bold" text-anchor="middle">K8s API (Pod Spec)</text>
+  <text x="500" y="50" font-size="11" text-anchor="middle" fill="#555">resources: { requests: { cpu: 500m, memory: 1Gi }, limits: { cpu: 2, memory: 4Gi } }</text>
+
+  <line x1="500" y1="65" x2="500" y2="85" stroke="#000" stroke-width="1.5" marker-end="url(#ahcg)"/>
+
+  <!-- Row 2: kubelet -->
+  <rect x="200" y="85" width="600" height="50" rx="8" fill="#e8e8e8" stroke="#000" stroke-width="2"/>
+  <text x="500" y="105" font-size="12" font-weight="bold" text-anchor="middle">kubelet (translates K8s spec → cgroup writes)</text>
+  <text x="500" y="122" font-size="10" text-anchor="middle" fill="#555">Calls containerd → runc → writes to /sys/fs/cgroup/kubepods.slice/kubepods-pod&lt;uid&gt;.slice/</text>
+
+  <line x1="500" y1="135" x2="500" y2="155" stroke="#000" stroke-width="1.5" marker-end="url(#ahcg)"/>
+
+  <!-- Row 3: cgroup filesystem (4 columns) -->
+  <rect x="20" y="155" width="960" height="90" rx="8" fill="#f0f0f0" stroke="#000" stroke-width="1.5"/>
+  <text x="500" y="175" font-size="12" font-weight="bold" text-anchor="middle">cgroup v2 files written by kubelet/runc</text>
+
+  <rect x="40" y="185" width="210" height="50" rx="6" fill="#fff" stroke="#000" stroke-width="1"/>
+  <text x="145" y="203" font-size="11" font-weight="bold" text-anchor="middle">cpu.max = 200000 100000</text>
+  <text x="145" y="220" font-size="10" text-anchor="middle" fill="#555">200ms quota per 100ms period</text>
+  <text x="145" y="232" font-size="10" text-anchor="middle" fill="#555">= 2 CPU cores max</text>
+
+  <rect x="270" y="185" width="210" height="50" rx="6" fill="#fff" stroke="#000" stroke-width="1"/>
+  <text x="375" y="203" font-size="11" font-weight="bold" text-anchor="middle">cpu.weight = 19</text>
+  <text x="375" y="220" font-size="10" text-anchor="middle" fill="#555">proportional share (from 500m)</text>
+  <text x="375" y="232" font-size="10" text-anchor="middle" fill="#555">relative to other pods</text>
+
+  <rect x="500" y="185" width="230" height="50" rx="6" fill="#fff" stroke="#000" stroke-width="1"/>
+  <text x="615" y="203" font-size="11" font-weight="bold" text-anchor="middle">memory.max = 4294967296</text>
+  <text x="615" y="220" font-size="10" text-anchor="middle" fill="#555">4 GiB hard limit in bytes</text>
+  <text x="615" y="232" font-size="10" text-anchor="middle" fill="#555">exceed → OOM kill</text>
+
+  <rect x="750" y="185" width="210" height="50" rx="6" fill="#fff" stroke="#000" stroke-width="1"/>
+  <text x="855" y="203" font-size="11" font-weight="bold" text-anchor="middle">memory.min = 1073741824</text>
+  <text x="855" y="220" font-size="10" text-anchor="middle" fill="#555">1 GiB reservation (from requests)</text>
+  <text x="855" y="232" font-size="10" text-anchor="middle" fill="#555">guaranteed, not reclaimable</text>
+
+  <!-- Arrows down -->
+  <line x1="145" y1="245" x2="145" y2="275" stroke="#000" stroke-width="1.5" marker-end="url(#ahcg)"/>
+  <line x1="615" y1="245" x2="615" y2="275" stroke="#000" stroke-width="1.5" marker-end="url(#ahcg)"/>
+
+  <!-- Row 4: Kernel enforcement -->
+  <rect x="20" y="275" width="460" height="100" rx="8" fill="#fff" stroke="#000" stroke-width="2"/>
+  <text x="250" y="295" font-size="12" font-weight="bold" text-anchor="middle">CFS Bandwidth Throttling (CPU enforcement)</text>
+  <text x="250" y="315" font-size="10" text-anchor="middle" fill="#555">Every 100ms (period), kernel tracks how much CPU time this cgroup used.</text>
+  <text x="250" y="330" font-size="10" text-anchor="middle" fill="#555">If cgroup used 200ms of CPU time → THROTTLED. All tasks in this cgroup</text>
+  <text x="250" y="345" font-size="10" text-anchor="middle" fill="#555">are paused until next period starts. Check: cpu.stat → nr_throttled</text>
+  <text x="250" y="365" font-size="10" text-anchor="middle" fill="#555">cpu.weight: CFS assigns proportional vruntime. Lower weight = slower vruntime growth = less CPU.</text>
+
+  <rect x="520" y="275" width="460" height="100" rx="8" fill="#fff" stroke="#000" stroke-width="2"/>
+  <text x="750" y="295" font-size="12" font-weight="bold" text-anchor="middle">OOM Killer (Memory enforcement)</text>
+  <text x="750" y="315" font-size="10" text-anchor="middle" fill="#555">When a process in the cgroup tries to allocate memory beyond memory.max:</text>
+  <text x="750" y="330" font-size="10" text-anchor="middle" fill="#555">1. Kernel tries to reclaim pages (page cache, inactive anon pages)</text>
+  <text x="750" y="345" font-size="10" text-anchor="middle" fill="#555">2. If reclaim fails → OOM killer selects victim (highest oom_score_adj)</text>
+  <text x="750" y="365" font-size="10" text-anchor="middle" fill="#555">3. Sends SIGKILL → container restarts. Check: memory.events → oom_kill</text>
+
+  <!-- Row 5: QoS mapping -->
+  <rect x="20" y="395" width="960" height="90" rx="8" fill="#f5f5f5" stroke="#000" stroke-width="1.5"/>
+  <text x="500" y="415" font-size="12" font-weight="bold" text-anchor="middle">K8s QoS Classes → Kernel Behavior</text>
+
+  <rect x="40" y="425" width="290" height="50" rx="6" fill="#fff" stroke="#000" stroke-width="1"/>
+  <text x="185" y="442" font-size="11" font-weight="bold" text-anchor="middle">Guaranteed (requests == limits)</text>
+  <text x="185" y="458" font-size="10" text-anchor="middle" fill="#555">oom_score_adj = -997</text>
+  <text x="185" y="470" font-size="10" text-anchor="middle" fill="#555">Last to be killed. Fixed CPU/mem.</text>
+
+  <rect x="350" y="425" width="290" height="50" rx="6" fill="#fff" stroke="#000" stroke-width="1"/>
+  <text x="495" y="442" font-size="11" font-weight="bold" text-anchor="middle">Burstable (requests &lt; limits)</text>
+  <text x="495" y="458" font-size="10" text-anchor="middle" fill="#555">oom_score_adj = 2-999</text>
+  <text x="495" y="470" font-size="10" text-anchor="middle" fill="#555">Can burst above requests. OOM after BestEffort.</text>
+
+  <rect x="660" y="425" width="300" height="50" rx="6" fill="#fff" stroke="#000" stroke-width="1"/>
+  <text x="810" y="442" font-size="11" font-weight="bold" text-anchor="middle">BestEffort (no requests/limits)</text>
+  <text x="810" y="458" font-size="10" text-anchor="middle" fill="#555">oom_score_adj = 1000</text>
+  <text x="810" y="470" font-size="10" text-anchor="middle" fill="#555">First to be killed. No guarantees.</text>
+
+</svg>
+</div>
+
+<p><strong>Commands to inspect cgroup enforcement:</strong></p>
+
+<pre><code># Find a container's cgroup
+crictl inspect &lt;container-id&gt; | grep cgroupsPath
+# → kubepods.slice/kubepods-burstable.slice/kubepods-burstable-pod&lt;uid&gt;.slice/cri-containerd-&lt;id&gt;.scope
+
+# Check CPU throttling
+cat /sys/fs/cgroup/kubepods.slice/.../cpu.stat
+# usage_usec 123456789     ← total CPU time used
+# nr_periods 50000         ← number of 100ms periods
+# nr_throttled 1200        ← times cgroup was throttled (hit cpu.max)
+# throttled_usec 600000000 ← total time spent throttled
+
+# Check memory usage and OOM events
+cat /sys/fs/cgroup/kubepods.slice/.../memory.current   # current usage in bytes
+cat /sys/fs/cgroup/kubepods.slice/.../memory.max       # limit
+cat /sys/fs/cgroup/kubepods.slice/.../memory.events
+# low 0    high 0    max 45    oom 3    oom_kill 3    oom_group_kill 0
+
+# See which cgroup a process belongs to
+cat /proc/&lt;pid&gt;/cgroup    # shows cgroup path
+# 0::/kubepods.slice/kubepods-burstable.slice/kubepods-burstable-pod&lt;uid&gt;.slice/...</code></pre>
+
+<h4>Namespaces Deep Dive: User Space vs Kernel Namespaces</h4>
+
+<p><strong>"User namespace" ≠ "user space."</strong> This is a common interview confusion. Let me clarify:</p>
+
+<table>
+<thead><tr><th>Concept</th><th>What It Is</th><th>Example</th></tr></thead>
+<tbody>
+<tr><td><strong>User space</strong></td><td>CPU Ring 3. Where all applications run. Cannot access hardware directly. Must use syscalls to ask the kernel for anything. Opposite of "kernel space" (Ring 0).</td><td><code>nginx</code>, <code>kubelet</code>, <code>bash</code> — all run in user space</td></tr>
+<tr><td><strong>Kernel space</strong></td><td>CPU Ring 0. Where the kernel runs. Full hardware access. Manages memory, scheduling, devices, networking. Code here can crash the entire machine.</td><td>Page fault handler, TCP stack, NVMe driver</td></tr>
+<tr><td><strong>Kernel namespace</strong></td><td>A kernel feature (since Linux 2.6.24+) that gives a process an <em>isolated view</em> of a system resource. Each namespace type isolates one resource. 8 types exist.</td><td><code>pid ns</code> makes PID 1 inside container; <code>net ns</code> gives container its own IP</td></tr>
+<tr><td><strong>User namespace</strong></td><td>One specific type of kernel namespace. Maps UID/GID inside container to different UID/GID on host. Enables <strong>rootless containers</strong>: root (UID 0) inside container = unprivileged user (UID 100000) on host.</td><td><code>unshare -U</code> creates a new user namespace</td></tr>
+</tbody>
+</table>
+
+<p><strong>Commands to inspect and create namespaces:</strong></p>
+
+<pre><code># See all namespaces for a process
+ls -la /proc/&lt;pid&gt;/ns/
+# cgroup → cgroup:[4026531835]
+# ipc    → ipc:[4026532589]
+# mnt    → mnt:[4026532587]
+# net    → net:[4026532592]
+# pid    → pid:[4026532590]
+# user   → user:[4026531837]
+# uts    → uts:[4026532588]
+
+# Compare namespaces: same inode = same namespace
+readlink /proc/1/ns/net       # host network namespace
+readlink /proc/&lt;pid&gt;/ns/net   # container's network namespace (different inode)
+
+# Enter a container's network namespace
+nsenter -t &lt;pid&gt; -n ip addr   # see container's network interfaces
+
+# Create a new namespace manually
+unshare --pid --mount --fork bash   # new PID + mount namespace
+unshare -U -r id                    # new user namespace (UID 0 inside, unprivileged outside)
+
+# How runc creates a container (simplified)
+# 1. clone(CLONE_NEWPID | CLONE_NEWNET | CLONE_NEWNS | CLONE_NEWUTS | CLONE_NEWIPC)
+# 2. Set cgroup limits (write to /sys/fs/cgroup/...)
+# 3. pivot_root to container's rootfs (overlayfs)
+# 4. Drop capabilities, apply seccomp filter
+# 5. exec() the container entrypoint</code></pre>
+
+<!-- ================================================================ -->
+<!-- CGROUPS V1 VS V2 -->
+<!-- ================================================================ -->
+<h3 id="cgv1v2">1.2b Cgroups v1 vs v2</h3>
+
+<div class="prompt-box">
+    <div class="label">Core Concept</div>
+    <p>Cgroups are the kernel's resource accounting and limiting mechanism. Namespaces hide things; cgroups limit consumption. Two generations exist: v1 (legacy, multi-hierarchy) and v2 (unified, default since K8s 1.25+).</p>
+</div>
+
+<h4>v1: separate hierarchy per controller</h4>
+<pre><code>/sys/fs/cgroup/
+├── cpu/                          # one tree per controller
+│   ├── tasks
+│   ├── cpu.cfs_quota_us
+│   ├── cpu.cfs_period_us
+│   └── cpu.shares
+├── memory/                       # completely separate tree
+│   ├── memory.limit_in_bytes
+│   └── memory.usage_in_bytes
+├── cpuset/
+├── blkio/
+└── pids/                         # 12+ separate hierarchies</code></pre>
+
+<h4>v2: unified hierarchy</h4>
+<pre><code>/sys/fs/cgroup/
+├── cgroup.controllers            # available controllers
+├── cgroup.subtree_control        # enabled for children
+├── cgroup.procs                  # PIDs in root
+└── kubepods.slice/
+    ├── kubepods-guaranteed.slice/
+    │   └── kubepods-pod_abc.slice/
+    │       ├── cgroup.procs      # container PIDs
+    │       ├── cpu.max           # "200000 100000" = 2 cores
+    │       ├── cpu.weight        # CFS share weight
+    │       ├── cpu.stat          # usage, throttling stats
+    │       ├── memory.max        # hard limit
+    │       ├── memory.current    # current RSS
+    │       ├── memory.events     # OOM events counter
+    │       ├── io.max            # I/O bandwidth limit
+    │       ├── pids.max          # max processes
+    │       └── cpuset.cpus       # pinned CPU cores
+    ├── kubepods-burstable.slice/
+    └── kubepods-besteffort.slice/</code></pre>
+
+<h4>File mapping between v1 and v2</h4>
+<div class="table-wrapper">
+<table>
+    <thead><tr><th>Purpose</th><th>cgroup v1</th><th>cgroup v2</th></tr></thead>
+    <tbody>
+        <tr><td>CPU hard limit</td><td><code>cpu.cfs_quota_us</code> + <code>cpu.cfs_period_us</code></td><td><code>cpu.max</code> (combined)</td></tr>
+        <tr><td>CPU share/weight</td><td><code>cpu.shares</code> (2&ndash;262144)</td><td><code>cpu.weight</code> (1&ndash;10000)</td></tr>
+        <tr><td>CPU usage stats</td><td><code>cpuacct.usage</code></td><td><code>cpu.stat</code></td></tr>
+        <tr><td>Memory limit</td><td><code>memory.limit_in_bytes</code></td><td><code>memory.max</code></td></tr>
+        <tr><td>Memory usage</td><td><code>memory.usage_in_bytes</code></td><td><code>memory.current</code></td></tr>
+        <tr><td>OOM events</td><td><code>memory.oom_control</code></td><td><code>memory.events</code></td></tr>
+        <tr><td>Process list</td><td><code>tasks</code> or <code>cgroup.procs</code></td><td><code>cgroup.procs</code> only</td></tr>
+        <tr><td>I/O limit</td><td><code>blkio.throttle.*</code></td><td><code>io.max</code></td></tr>
+    </tbody>
+</table>
+</div>
+
+<div class="key-point">
+    <div class="label">Detect which version</div>
+    <p>Run <code>mount | grep cgroup</code>. If you see <code>cgroup2 on /sys/fs/cgroup type cgroup2</code> you're on v2. If you see multiple <code>cgroup on /sys/fs/cgroup/&lt;controller&gt;</code> entries, you're on v1.</p>
+</div>
+
+<h4>Why v2 &mdash; production-blocking gaps in v1</h4>
+<div class="table-wrapper">
+<table>
+    <thead><tr><th>Problem</th><th>v1 behavior</th><th>v2 fix</th></tr></thead>
+    <tbody>
+        <tr><td><strong>Atomic OOM at container boundary</strong></td><td>Kernel picks one process by <code>oom_score</code> and kills it. Container left half-broken &mdash; workers gone, parent alive, kubelet doesn&rsquo;t restart.</td><td><code>memory.oom.group=1</code> kills every process in the cgroup atomically. Container exits cleanly.</td></tr>
+        <tr><td><strong>Soft memory limits (Memory QoS)</strong></td><td>Only hard limit. Either you fit or you OOM.</td><td><code>memory.high</code> applies reclaim pressure before <code>memory.max</code>. K8s Memory QoS uses this.</td></tr>
+        <tr><td><strong>PSI for noisy-neighbor detection</strong></td><td>No way to measure stall time waiting for CPU/memory/I/O.</td><td><code>cpu.pressure</code>, <code>memory.pressure</code>, <code>io.pressure</code> per cgroup. Drives node pressure eviction.</td></tr>
+        <tr><td><strong>I/O accounting</strong></td><td>Page-cache writeback runs in <code>kworker</code> &mdash; charges to wrong cgroup.</td><td>Pages tagged with dirtying cgroup; writeback charges correctly.</td></tr>
+        <tr><td><strong>memory.stat lock contention</strong></td><td><code>smaps_rollup</code> walks VMAs under lock. Multi-GB JVM heaps cause latency spikes.</td><td><code>memory.stat</code> per cgroup, no per-process VMA traversal.</td></tr>
+        <tr><td><strong>systemd device permissions</strong></td><td>Reloads corrupt device permissions in v1&rsquo;s separate hierarchy. Pods lose device access.</td><td>Unified hierarchy eliminates the conflict.</td></tr>
+        <tr><td><strong>Inconsistent membership</strong></td><td>Process in <code>cpu/group-A</code> but <code>memory/group-B</code> &mdash; different cgroups per controller.</td><td>One tree, one membership. All controllers at the process&rsquo;s single cgroup.</td></tr>
+        <tr><td><strong>Thread-level confusion</strong></td><td>Threads of one process in different cgroups, breaking memory accounting.</td><td>Process granularity by default. Threaded subtrees require explicit opt-in.</td></tr>
+    </tbody>
+</table>
+</div>
+
+<h4>memory.oom.group &mdash; the killer feature</h4>
+
+<p>On v1, when a container hits its memory limit, the OOM killer picks <strong>one process</strong> (highest <code>oom_score</code>) and SIGKILLs it. Other processes keep running. Container looks &ldquo;alive&rdquo; to kubelet (PID 1 still up) &mdash; silent partial failure.</p>
+
+<pre><code># v1 OOM behavior
+container hits memory.max
+  → OOM killer picks ONE process (e.g., a worker thread)
+  → that process dies, parent + siblings keep running
+  → container looks "alive" to kubelet (PID 1 still up)
+  → silent partial failure: half-broken state
+
+# v2 with memory.oom.group=1
+container hits memory.max
+  → kernel kills EVERY process in the cgroup atomically
+  → container fully terminates with clean exit
+  → kubelet restarts the pod cleanly</code></pre>
+
+<p>For databases (TiDB, Postgres), query engines (Trino, Spark executors), or any multi-process container, the v1 behavior produces operational nightmares &mdash; pods stuck in degraded state that monitoring can&rsquo;t detect.</p>
+
+<h4>Memory QoS &mdash; graceful pressure instead of cliff-edge OOM</h4>
+
+<div class="table-wrapper">
+<table>
+    <thead><tr><th>File</th><th>Behavior</th></tr></thead>
+    <tbody>
+        <tr><td><code>memory.low</code></td><td>Best-effort protection &mdash; kernel avoids reclaiming from this cgroup if pressure is low elsewhere.</td></tr>
+        <tr><td><code>memory.high</code></td><td>Soft limit &mdash; kernel applies reclaim pressure (slowing the cgroup) but does NOT kill.</td></tr>
+        <tr><td><code>memory.max</code></td><td>Hard limit &mdash; OOM kill if exceeded.</td></tr>
+    </tbody>
+</table>
+</div>
+
+<p>K8s Memory QoS (KEP-2570, beta 1.27+) sets <code>memory.high</code> at the pod&rsquo;s memory request and <code>memory.max</code> at its limit. Usage between request and limit &rarr; reclaim pressure &rarr; pod slows naturally. Crosses limit &rarr; OOM kill with atomic <code>memory.oom.group</code>. None of this is possible on v1.</p>
+
+<!-- ================================================================ -->
+<!-- CONTAINER PROCESS TREE -->
+<!-- ================================================================ -->
+<h3 id="container-tree">1.2c Container Process Tree</h3>
+
+<p>What does the process tree look like for a K8s pod? Tracing a Guaranteed nginx pod with <code>cpu: 2, memory: 2Gi</code>:</p>
+
+<div class="diagram">
+    <div class="diagram-title">Host Process Tree vs Container View</div>
+    <svg viewBox="0 0 760 440" xmlns="http://www.w3.org/2000/svg" style="width:100%;">
+      <text x="20" y="28" font-family="ui-monospace,monospace" font-size="10" font-weight="700" fill="#1f2328">HOST VIEW — what /proc on the node shows</text>
+      <rect x="20" y="40" width="320" height="28" fill="#fff" stroke="#1f2328" stroke-width="1"/>
+      <text x="30" y="59" font-family="ui-monospace,monospace" font-size="11" fill="#1f2328">PID 1: systemd</text>
+      <line x1="45" y1="68" x2="45" y2="82" stroke="#1f2328"/><line x1="45" y1="82" x2="70" y2="82" stroke="#1f2328"/>
+      <rect x="70" y="72" width="320" height="28" fill="#fff" stroke="#1f2328" stroke-width="1"/>
+      <text x="80" y="91" font-family="ui-monospace,monospace" font-size="11" fill="#1f2328">PID 8231: containerd</text>
+      <text x="260" y="91" font-family="Arial,sans-serif" font-size="9" font-style="italic" fill="#59636e">host namespaces</text>
+      <line x1="95" y1="100" x2="95" y2="114" stroke="#1f2328"/><line x1="95" y1="114" x2="120" y2="114" stroke="#1f2328"/>
+      <rect x="120" y="104" width="360" height="28" fill="#fff" stroke="#1f2328" stroke-width="1"/>
+      <text x="130" y="123" font-family="ui-monospace,monospace" font-size="11" fill="#1f2328">PID 9402: containerd-shim-runc-v2</text>
+      <text x="370" y="123" font-family="Arial,sans-serif" font-size="9" font-style="italic" fill="#59636e">host ns</text>
+      <line x1="145" y1="132" x2="145" y2="146" stroke="#1f2328"/><line x1="145" y1="146" x2="170" y2="146" stroke="#1f2328"/>
+      <rect x="170" y="136" width="320" height="28" fill="#fffaf0" stroke="#a04000" stroke-width="1.5"/>
+      <text x="180" y="155" font-family="ui-monospace,monospace" font-size="11" font-weight="700" fill="#a04000">PID 9420: nginx (master)</text>
+      <text x="380" y="155" font-family="Arial,sans-serif" font-size="9" font-style="italic" fill="#a04000">container ns!</text>
+      <line x1="195" y1="164" x2="195" y2="178" stroke="#a04000"/><line x1="195" y1="178" x2="220" y2="178" stroke="#a04000"/>
+      <rect x="220" y="168" width="240" height="28" fill="#fffaf0" stroke="#a04000" stroke-width="1.5"/>
+      <text x="230" y="187" font-family="ui-monospace,monospace" font-size="11" fill="#a04000">PID 9421: nginx worker</text>
+      <line x1="195" y1="196" x2="195" y2="210" stroke="#a04000"/><line x1="195" y1="210" x2="220" y2="210" stroke="#a04000"/>
+      <rect x="220" y="200" width="240" height="28" fill="#fffaf0" stroke="#a04000" stroke-width="1.5"/>
+      <text x="230" y="219" font-family="ui-monospace,monospace" font-size="11" fill="#a04000">PID 9422: nginx worker</text>
+      <line x1="20" y1="248" x2="740" y2="248" stroke="#d1d9e0"/>
+      <text x="20" y="272" font-family="ui-monospace,monospace" font-size="10" font-weight="700" fill="#1f2328">CONTAINER VIEW — same processes, renumbered PIDs</text>
+      <rect x="20" y="284" width="260" height="28" fill="#fffaf0" stroke="#a04000" stroke-width="1"/>
+      <text x="30" y="303" font-family="ui-monospace,monospace" font-size="11" font-weight="700" fill="#a04000">PID 1: nginx (was 9420)</text>
+      <line x1="45" y1="312" x2="45" y2="326" stroke="#a04000"/><line x1="45" y1="326" x2="70" y2="326" stroke="#a04000"/>
+      <rect x="70" y="316" width="260" height="28" fill="#fffaf0" stroke="#a04000" stroke-width="1"/>
+      <text x="80" y="335" font-family="ui-monospace,monospace" font-size="11" fill="#a04000">PID 8: nginx worker (was 9421)</text>
+      <line x1="45" y1="344" x2="45" y2="358" stroke="#a04000"/><line x1="45" y1="358" x2="70" y2="358" stroke="#a04000"/>
+      <rect x="70" y="348" width="260" height="28" fill="#fffaf0" stroke="#a04000" stroke-width="1"/>
+      <text x="80" y="367" font-family="ui-monospace,monospace" font-size="11" fill="#a04000">PID 9: nginx worker (was 9422)</text>
+      <text x="20" y="408" font-family="Arial,sans-serif" font-size="11" font-style="italic" fill="#59636e">Same processes, different PID namespaces. Kernel translates via task_struct&rarr;nsproxy&rarr;pid_ns.</text>
+    </svg>
+</div>
+
+<p><strong>The role of the shim:</strong> <code>containerd-shim-runc-v2</code> bridges containerd and the container process. It stays alive even if containerd restarts, owns the container&rsquo;s stdio/TTY, reaps zombie children, and reports exit codes. The shim runs in <strong>host namespaces</strong>; the container runs in <strong>its own set</strong>.</p>
+
+<!-- ================================================================ -->
+<!-- KERNEL ENFORCEMENT -->
+<!-- ================================================================ -->
+<h3 id="kernel-enforce">1.2d How the Kernel Enforces Limits</h3>
+
+<p>Two completely different mechanisms enforce CPU vs memory limits. Understanding them explains why CPU limits cause throttling but memory limits cause kills.</p>
+
+<h4>CPU limits: throttling via CFS bandwidth</h4>
+
+<p>The kernel tracks a &ldquo;runtime budget&rdquo; per cgroup that refills every period. When budget runs out, all tasks are marked unrunnable until the next period.</p>
+
+<pre><code># Simplified kernel logic (kernel/sched/fair.c):
+# On every scheduler tick (~1 ms with HZ=1000):
+update_curr()                  # update vruntime
+account_cfs_rq_runtime(rq, delta_exec)
+                               # subtract from cfs_b->runtime
+if (cfs_b->runtime <= 0)
+    throttle_cfs_rq(cfs_rq)    # freeze all tasks in this cgroup
+
+# At end of period, hrtimer fires:
+distribute_cfs_runtime()       # refill quota
+unthrottle_cfs_rq()            # tasks runnable again</code></pre>
+
+<pre><code>$ cat /sys/fs/cgroup/.../pod-abc/cpu.stat
+usage_usec        1234567890
+nr_periods        4321
+nr_throttled      42        # times the cgroup ran out of quota
+throttled_usec    1500000   # total time throttled (1.5 sec)</code></pre>
+
+<p>If <code>nr_throttled</code> climbs steadily, your CPU limit is too tight. <strong>Nothing is killed.</strong></p>
+
+<h4>Memory limits: charging and OOM</h4>
+
+<p>Every page allocation runs through the memory cgroup charging path:</p>
+
+<pre><code># Simplified kernel logic (mm/memcontrol.c):
+mem_cgroup_charge(page, mm, gfp_mask)
+  → try_charge(memcg, gfp_mask, nr_pages)
+  → Walk up the cgroup tree, increment counters at each level
+    for each level:
+      if (page_counter_try_charge(&amp;mc->memory, nr_pages, &amp;counter))
+          continue;
+      # Hit memory.max — try to reclaim
+      reclaimed = try_to_free_mem_cgroup_pages(mc, nr_pages);
+      if (!reclaimed) → OOM kill (mem_cgroup_out_of_memory)</code></pre>
+
+<pre><code>$ cat /sys/fs/cgroup/.../pod-abc/memory.current
+1879048192                      # 1.75 GiB currently used
+
+$ cat /sys/fs/cgroup/.../pod-abc/memory.max
+2147483648                      # 2 GiB hard limit
+
+$ cat /sys/fs/cgroup/.../pod-abc/memory.events
+low      0
+high     0
+max      5                      # hit limit 5 times
+oom      1                      # OOM triggered once
+oom_kill 1                      # killed 1 process</code></pre>
+
+<div class="warning-box">
+    <div class="label">Throttling vs killing &mdash; the asymmetry</div>
+    <p>CPU is <em>compressible</em> &mdash; you can use less without breaking. So the kernel pauses you. Memory is <em>incompressible</em> &mdash; once allocated, you can&rsquo;t use less without releasing it. So the kernel kills you. This is why apps under CPU pressure look slow but apps under memory pressure die.</p>
+</div>
+
+<!-- ================================================================ -->
+<!-- NAMESPACE INTERNALS -->
+<!-- ================================================================ -->
+<h3 id="ns-internals">1.2e Namespace Internals</h3>
+
+<p>How does a process inside a PID namespace fail to see processes outside it? There&rsquo;s no &ldquo;boundary check.&rdquo; The kernel virtualizes lookups based on the caller&rsquo;s <code>nsproxy</code>.</p>
+
+<h4>The task_struct &rarr; nsproxy chain</h4>
+
+<pre><code># Every process has a namespace bundle (include/linux/sched.h):
+struct task_struct {
+    pid_t           pid;
+    struct nsproxy *nsproxy;       # pointer to namespace bundle
+    struct mm_struct *mm;
+    struct cgroup_subsys_state *cgroups[...];
+};
+
+# The bundle (include/linux/nsproxy.h):
+struct nsproxy {
+    struct uts_namespace    *uts_ns;
+    struct ipc_namespace    *ipc_ns;
+    struct mnt_namespace    *mnt_ns;
+    struct pid_namespace    *pid_ns_for_children;
+    struct net              *net_ns;
+    struct time_namespace   *time_ns;
+    struct cgroup_namespace *cgroup_ns;
+};</code></pre>
+
+<h4>How /proc is virtualized</h4>
+
+<p><code>/proc</code> is a virtual filesystem. When a container reads <code>/proc</code>, the kernel filters by the reader&rsquo;s PID namespace:</p>
+
+<pre><code># fs/proc/base.c — proc_pid_readdir() filters PIDs
+for_each_process(task) {
+    pid_t pid = pid_nr_ns(task_pid(task), reader_pid_ns);
+    if (pid == 0) continue;        # not visible in this ns
+    emit_dirent(pid, task);
+}</code></pre>
+
+<p>Container&rsquo;s <code>ps</code> only sees PIDs that exist in <em>its</em> PID namespace. Host PIDs aren&rsquo;t hidden behind a check &mdash; the data just isn&rsquo;t there to read.</p>
+
+<h4>Inspecting namespaces from the host</h4>
+
+<pre><code># What namespaces does PID 9420 belong to?
+$ ls -la /proc/9420/ns/
+lrwxrwxrwx ... cgroup -> 'cgroup:[4026531835]'
+lrwxrwxrwx ... ipc    -> 'ipc:[4026532197]'
+lrwxrwxrwx ... mnt    -> 'mnt:[4026532195]'
+lrwxrwxrwx ... net    -> 'net:[4026532199]'
+lrwxrwxrwx ... pid    -> 'pid:[4026532198]'
+lrwxrwxrwx ... uts    -> 'uts:[4026532196]'
+
+# Same inode = same namespace. Different inode = isolated.
+$ ls -la /proc/1/ns/net    # host init's net
+... net -> 'net:[4026531992]'    # different inode!
+
+# Enter a container's namespace from the host:
+$ sudo nsenter -t 9420 -n -p -m ip a
+# now you see the container's network interfaces</code></pre>
+
+<!-- ================================================================ -->
+<!-- CPU PINNING & NUMA -->
+<!-- ================================================================ -->
+<h3 id="cpu-pin-numa">1.2f CPU Pinning &amp; NUMA</h3>
+
+<p>Modern servers have multiple NUMA nodes &mdash; clusters of CPU cores with their own attached memory. Cross-NUMA access is ~1.75&times; slower. CPU Manager static policy in K8s pins Guaranteed pods to specific cores to keep memory access local.</p>
+
+<div class="diagram">
+    <div class="diagram-title">NUMA Topology: Dual-Socket Server, CPU Manager Static</div>
+    <svg viewBox="0 0 760 400" xmlns="http://www.w3.org/2000/svg" style="width:100%;">
+      <text x="20" y="26" font-family="ui-monospace,monospace" font-size="10" font-weight="700" fill="#1f2328">DUAL-SOCKET SERVER — 2 NUMA nodes, 8 cores each</text>
+      <!-- NUMA 0 -->
+      <rect x="20" y="40" width="350" height="200" fill="none" stroke="#1f2328" stroke-width="2"/>
+      <text x="35" y="60" font-family="Arial,sans-serif" font-size="13" font-weight="600" fill="#1f2328">NUMA Node 0</text>
+      <text x="200" y="60" font-family="ui-monospace,monospace" font-size="9" fill="#59636e">cpuset.mems: 0</text>
+      <rect x="35" y="72" width="70" height="30" fill="#f0f0f0" stroke="#1f2328" stroke-width="1"/>
+      <text x="70" y="91" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9" font-weight="700" fill="#1f2328">core 0</text>
+      <rect x="110" y="72" width="70" height="30" fill="#f0f0f0" stroke="#1f2328" stroke-width="1"/>
+      <text x="145" y="91" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9" font-weight="700" fill="#1f2328">core 1</text>
+      <text x="230" y="91" font-family="ui-monospace,monospace" font-size="8" fill="#59636e">reserved (system)</text>
+      <rect x="35" y="110" width="70" height="30" fill="#fff5e8" stroke="#a04000" stroke-width="1.5"/>
+      <text x="70" y="129" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9" font-weight="700" fill="#a04000">core 4</text>
+      <rect x="110" y="110" width="70" height="30" fill="#fff5e8" stroke="#a04000" stroke-width="1.5"/>
+      <text x="145" y="129" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9" font-weight="700" fill="#a04000">core 5</text>
+      <rect x="185" y="110" width="70" height="30" fill="#fff5e8" stroke="#a04000" stroke-width="1.5"/>
+      <text x="220" y="129" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9" font-weight="700" fill="#a04000">core 6</text>
+      <rect x="260" y="110" width="70" height="30" fill="#fff5e8" stroke="#a04000" stroke-width="1.5"/>
+      <text x="295" y="129" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9" font-weight="700" fill="#a04000">core 7</text>
+      <text x="35" y="158" font-family="Arial,sans-serif" font-size="10" fill="#a04000">Pod-A (Guaranteed, 4 CPU) &mdash; cpuset.cpus: 4-7</text>
+      <rect x="35" y="170" width="300" height="25" fill="#f0f0f0" stroke="#1f2328"/>
+      <text x="185" y="187" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9" fill="#1f2328">L3 cache 32 MB (shared cores 0-7)</text>
+      <rect x="35" y="200" width="300" height="25" fill="#e8f0e8" stroke="#1f2328"/>
+      <text x="185" y="217" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9" fill="#1f2328">Local RAM 64 GB — ~80 ns latency</text>
+      <!-- NUMA 1 -->
+      <rect x="390" y="40" width="350" height="200" fill="none" stroke="#1f2328" stroke-width="2"/>
+      <text x="405" y="60" font-family="Arial,sans-serif" font-size="13" font-weight="600" fill="#1f2328">NUMA Node 1</text>
+      <text x="570" y="60" font-family="ui-monospace,monospace" font-size="9" fill="#59636e">cpuset.mems: 1</text>
+      <rect x="405" y="110" width="70" height="30" fill="#e8f0ff" stroke="#0044aa" stroke-width="1.5"/>
+      <text x="440" y="129" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9" font-weight="700" fill="#0044aa">core 12</text>
+      <rect x="480" y="110" width="70" height="30" fill="#e8f0ff" stroke="#0044aa" stroke-width="1.5"/>
+      <text x="515" y="129" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9" font-weight="700" fill="#0044aa">core 13</text>
+      <text x="405" y="158" font-family="Arial,sans-serif" font-size="10" fill="#0044aa">Pod-B (Guaranteed, 2 CPU) &mdash; cpuset.cpus: 12-13</text>
+      <rect x="405" y="170" width="300" height="25" fill="#f0f0f0" stroke="#1f2328"/>
+      <text x="555" y="187" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9" fill="#1f2328">L3 cache 32 MB (shared cores 8-15)</text>
+      <rect x="405" y="200" width="300" height="25" fill="#e8f0e8" stroke="#1f2328"/>
+      <text x="555" y="217" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9" fill="#1f2328">Local RAM 64 GB — ~80 ns latency</text>
+      <!-- UPI link -->
+      <line x1="370" y1="212" x2="390" y2="212" stroke="#1f2328" stroke-width="2"/>
+      <text x="380" y="205" text-anchor="middle" font-family="ui-monospace,monospace" font-size="8" fill="#1f2328">UPI</text>
+      <text x="380" y="230" text-anchor="middle" font-family="ui-monospace,monospace" font-size="8" fill="#59636e">~140 ns cross-NUMA</text>
+      <!-- Config -->
+      <text x="20" y="275" font-family="Arial,sans-serif" font-size="11" font-weight="600" fill="#1f2328">How CPU Manager Static Works:</text>
+      <text x="20" y="295" font-family="Arial,sans-serif" font-size="11" fill="#1f2328">1. Kubelet asks topology manager for cores satisfying request</text>
+      <text x="20" y="312" font-family="Arial,sans-serif" font-size="11" fill="#1f2328">2. Topology manager picks N cores from a single NUMA node</text>
+      <text x="20" y="329" font-family="Arial,sans-serif" font-size="11" fill="#1f2328">3. Kubelet writes cores to pod&rsquo;s cpuset.cpus file</text>
+      <text x="20" y="346" font-family="Arial,sans-serif" font-size="11" fill="#1f2328">4. Those cores removed from shared pool</text>
+      <text x="20" y="363" font-family="Arial,sans-serif" font-size="11" fill="#1f2328">5. All other pods restricted to remaining shared cores</text>
+      <text x="20" y="392" font-family="ui-monospace,monospace" font-size="10" fill="#1f2328">cpuManagerPolicy: static  |  reservedSystemCPUs: "0,1"  |  topologyManagerPolicy: single-numa-node</text>
+    </svg>
+</div>
+
+<pre><code># Inspect what got pinned
+$ cat /sys/fs/cgroup/.../guaranteed-pod-A/cpuset.cpus
+4-7
+
+$ cat /sys/fs/cgroup/.../guaranteed-pod-A/cpuset.mems
+0                              # NUMA node 0 only
+
+$ cat /sys/fs/cgroup/.../burstable-pod-X/cpuset.cpus
+2-3,8-15                       # shared pool — what's left</code></pre>
+
+<!-- ================================================================ -->
+<!-- TLB & CACHE EFFECTS -->
+<!-- ================================================================ -->
+<h3 id="tlb-cache">1.2g TLB &amp; Cache Effects</h3>
+
+<p>Why does pinning matter so much? Because every time a process moves between cores or NUMA nodes, it loses cached state and pays for re-fetching it.</p>
+
+<div class="table-wrapper">
+<table>
+    <thead><tr><th>Tier</th><th>Latency</th><th>Size</th><th>Scope</th><th>Lost on&hellip;</th></tr></thead>
+    <tbody>
+        <tr><td>L1 cache</td><td>~1 ns</td><td>32 KB</td><td>Per core</td><td>Core migration</td></tr>
+        <tr><td>L2 cache</td><td>~3 ns</td><td>256 KB &ndash; 1 MB</td><td>Per core</td><td>Core migration</td></tr>
+        <tr><td>L3 cache</td><td>~10 ns</td><td>32&ndash;64 MB</td><td>Per NUMA node</td><td>NUMA migration</td></tr>
+        <tr><td>Local RAM</td><td>~80 ns</td><td>32&ndash;256 GB</td><td>Same NUMA node</td><td>&mdash;</td></tr>
+        <tr><td>Remote RAM</td><td>~140 ns</td><td>another node</td><td>Cross-NUMA via UPI</td><td><strong>1.75&times; penalty</strong></td></tr>
+    </tbody>
+</table>
+</div>
+
+<h4>The TLB problem</h4>
+
+<p>Modern x86-64 uses 4-level page tables. Translating a virtual address takes up to 4 memory accesses if not cached. The <strong>TLB</strong> caches recent translations &mdash; but it&rsquo;s small (~64 L1 dTLB entries = ~256 KB coverage with 4 KB pages).</p>
+
+<div class="table-wrapper">
+<table>
+    <thead><tr><th>Scenario</th><th>Translation cost</th><th>Why</th></tr></thead>
+    <tbody>
+        <tr><td><strong>Warm TLB</strong> (pinned process)</td><td>~1 ns</td><td>TLB hit &rarr; instant lookup</td></tr>
+        <tr><td><strong>Cold TLB</strong> (just migrated)</td><td>~80 ns</td><td>TLB miss &rarr; 4 page-table walks &times; ~20 ns each</td></tr>
+    </tbody>
+</table>
+</div>
+
+<p>A 1 GB working set with 4 KB pages needs 262144 TLB entries &mdash; far more than fit. After migration, every memory access pays ~80 ns translation overhead until the TLB warms up. That&rsquo;s <strong>80&times; slower</strong>.</p>
+
+<h4>What pinning + huge pages buy you</h4>
+
+<ul>
+    <li>Process stays on same cores &rarr; L1/L2 cache stays warm</li>
+    <li>Process stays on same NUMA &rarr; L3 stays warm, RAM access stays local (~80 ns, not ~140 ns)</li>
+    <li>2 MB pages mean 1 GB working set fits in <strong>512 TLB entries</strong> instead of 262144 &rarr; TLB hit rate stays high</li>
+    <li>p99 latency drops dramatically &mdash; same workload, less time stalled on memory translation</li>
+</ul>
+
+<pre><code># Enable huge pages on the node
+echo 1024 > /sys/kernel/mm/hugepages/hugepages-2048kB/nr_hugepages
+
+# Pod requests them
+resources:
+  limits:
+    hugepages-2Mi: "2Gi"       # 1024 × 2 MB pages</code></pre>
+
+<h4>Cache pollution from neighbors</h4>
+
+<p>Even with CPU pinning, L3 is shared across the NUMA node. A noisy neighbor on another core can evict your hot data. Mitigations:</p>
+
+<ul>
+    <li><strong>Intel CAT</strong> &mdash; partition L3 between cgroups via <code>resctrl</code> filesystem (Linux 4.10+)</li>
+    <li><strong>Isolated cores</strong> &mdash; boot with <code>isolcpus=4-7</code> so scheduler never places tasks there by default</li>
+    <li><strong>nohz_full</strong> &mdash; disable scheduler tick on isolated cores, no periodic interrupts to pollute caches</li>
+</ul>
+
+<pre><code># Boot parameters for low-latency nodes
+isolcpus=4-15
+nohz_full=4-15
+rcu_nocbs=4-15
+intel_pstate=disable
+processor.max_cstate=1</code></pre>
+
+<p>This combination &mdash; PREEMPT_RT kernel + isolcpus + CPU Manager static + huge pages + IRQ pinning &mdash; is what telco operators and HFT firms use to hit microsecond-scale p99 SLOs.</p>
+
+<!-- TCP STACK -->
+<h3 id="tcp">1.3 TCP Congestion Control</h3>
+
+<div class="prompt-box">
+    <div class="label">Question</div>
+    <p>How does the Linux TCP stack handle congestion control?</p>
+</div>
+
+<div class="diagram">
+    <div class="diagram-title">TCP Congestion Control: Phases &amp; Algorithms</div>
+    <svg viewBox="0 0 900 200" xmlns="http://www.w3.org/2000/svg" style="width:100%;">
+        <!-- Phases -->
+        <rect x="20" y="20" width="200" height="80" rx="8" fill="#f8f9fa" stroke="#222"/>
+        <text x="120" y="42" text-anchor="middle" fill="#222" font-size="12" font-weight="700">Slow Start</text>
+        <text x="120" y="60" text-anchor="middle" fill="#54595d" font-size="11">cwnd doubles each RTT</text>
+        <text x="120" y="74" text-anchor="middle" fill="#54595d" font-size="11">Exponential growth</text>
+        <text x="120" y="88" text-anchor="middle" fill="#54595d" font-size="11">Until ssthresh or loss</text>
+        <text x="240" y="60" fill="#72777d" font-size="14">&#10140;</text>
+        <rect x="255" y="20" width="200" height="80" rx="8" fill="#f5f5f5" stroke="#222"/>
+        <text x="355" y="42" text-anchor="middle" fill="#222" font-size="12" font-weight="700">Congestion Avoidance</text>
+        <text x="355" y="60" text-anchor="middle" fill="#54595d" font-size="11">cwnd += 1/cwnd per ACK</text>
+        <text x="355" y="74" text-anchor="middle" fill="#54595d" font-size="11">Linear growth (additive)</text>
+        <text x="355" y="88" text-anchor="middle" fill="#54595d" font-size="11">AIMD principle</text>
+        <text x="475" y="60" fill="#72777d" font-size="14">&#10140;</text>
+        <rect x="490" y="20" width="200" height="80" rx="8" fill="#f8f9fa" stroke="#202122"/>
+        <text x="590" y="42" text-anchor="middle" fill="#202122" font-size="12" font-weight="700">Loss Detection</text>
+        <text x="590" y="60" text-anchor="middle" fill="#54595d" font-size="11">3 dup ACKs: fast retransmit</text>
+        <text x="590" y="74" text-anchor="middle" fill="#54595d" font-size="11">Timeout: back to slow start</text>
+        <text x="590" y="88" text-anchor="middle" fill="#54595d" font-size="11">cwnd = cwnd/2 (multiplicative)</text>
+        <text x="710" y="60" fill="#72777d" font-size="14">&#10140;</text>
+        <rect x="725" y="20" width="160" height="80" rx="8" fill="#f8f9fa" stroke="#202122"/>
+        <text x="805" y="42" text-anchor="middle" fill="#202122" font-size="12" font-weight="700">Fast Recovery</text>
+        <text x="805" y="60" text-anchor="middle" fill="#54595d" font-size="11">Inflate cwnd for in-flight</text>
+        <text x="805" y="74" text-anchor="middle" fill="#54595d" font-size="11">Resume congestion avoid</text>
+        <text x="805" y="88" text-anchor="middle" fill="#54595d" font-size="11">on new ACK</text>
+        <!-- Algorithms -->
+        <rect x="20" y="120" width="860" height="65" rx="8" fill="#f0f0f0" stroke="var(--border)"/>
+        <text x="450" y="142" text-anchor="middle" fill="#202122" font-size="13" font-weight="700">Congestion Control Algorithms</text>
+        <text x="120" y="168" text-anchor="middle" fill="#222" font-size="11" font-weight="600">Cubic (default)</text>
+        <text x="300" y="168" text-anchor="middle" fill="#222" font-size="11" font-weight="600">BBR (Google)</text>
+        <text x="480" y="168" text-anchor="middle" fill="#202122" font-size="11" font-weight="600">DCTCP (datacenter)</text>
+        <text x="660" y="168" text-anchor="middle" fill="#222" font-size="11" font-weight="600">Vegas (delay-based)</text>
+        <text x="820" y="168" text-anchor="middle" fill="#202122" font-size="11" font-weight="600">Reno (classic)</text>
+    </svg>
+</div>
+
+<div class="table-wrapper">
+    <table>
+        <thead><tr><th>Algorithm</th><th>Type</th><th>Best For</th><th>Key Mechanism</th></tr></thead>
+        <tbody>
+            <tr><td><strong>Cubic</strong></td><td>Loss-based</td><td>General internet (default)</td><td>Cubic function for cwnd growth; aggressive after loss recovery</td></tr>
+            <tr><td><strong>BBR</strong></td><td>Model-based</td><td>High-BDP links, lossy networks</td><td>Estimates bottleneck bandwidth &amp; RTT; doesn't react to loss</td></tr>
+            <tr><td><strong>DCTCP</strong></td><td>ECN-based</td><td>Datacenter (low-latency)</td><td>Uses ECN marks proportionally; maintains shallow queues</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<pre><code># Check current algorithm:   sysctl net.ipv4.tcp_congestion_control
+# Change to BBR:             sysctl -w net.ipv4.tcp_congestion_control=bbr
+# List available:            sysctl net.ipv4.tcp_available_congestion_control</code></pre>
+
+<!-- LOW LATENCY -->
+<h3 id="lowlat">1.4 Low-Latency Network Tuning</h3>
+
+<div class="diagram">
+    <div class="diagram-title">OS-Level Low-Latency Network Optimizations</div>
+    <svg viewBox="0 0 900 200" xmlns="http://www.w3.org/2000/svg" style="width:100%;">
+        <rect x="20" y="10" width="170" height="80" rx="8" fill="#f5f5f5" stroke="#222"/>
+        <text x="105" y="30" text-anchor="middle" fill="#222" font-size="11" font-weight="700">NIC Tuning</text>
+        <text x="105" y="48" text-anchor="middle" fill="#54595d" font-size="11">&#8226; Increase RX/TX ring buffers</text>
+        <text x="105" y="60" text-anchor="middle" fill="#54595d" font-size="11">&#8226; Enable RSS (multi-queue)</text>
+        <text x="105" y="72" text-anchor="middle" fill="#54595d" font-size="11">&#8226; IRQ affinity to CPU cores</text>
+        <text x="105" y="84" text-anchor="middle" fill="#54595d" font-size="11">&#8226; Disable interrupt coalescing</text>
+        <rect x="205" y="10" width="170" height="80" rx="8" fill="#f8f9fa" stroke="#222"/>
+        <text x="290" y="30" text-anchor="middle" fill="#222" font-size="11" font-weight="700">Kernel Bypass</text>
+        <text x="290" y="48" text-anchor="middle" fill="#54595d" font-size="11">&#8226; DPDK (poll-mode drivers)</text>
+        <text x="290" y="60" text-anchor="middle" fill="#54595d" font-size="11">&#8226; XDP/eBPF (in-kernel fast)</text>
+        <text x="290" y="72" text-anchor="middle" fill="#54595d" font-size="11">&#8226; AF_XDP sockets</text>
+        <text x="290" y="84" text-anchor="middle" fill="#54595d" font-size="11">&#8226; io_uring for async I/O</text>
+        <rect x="390" y="10" width="170" height="80" rx="8" fill="#f8f9fa" stroke="#202122"/>
+        <text x="475" y="30" text-anchor="middle" fill="#202122" font-size="11" font-weight="700">TCP Tuning</text>
+        <text x="475" y="48" text-anchor="middle" fill="#54595d" font-size="11">&#8226; tcp_low_latency=1</text>
+        <text x="475" y="60" text-anchor="middle" fill="#54595d" font-size="11">&#8226; tcp_nodelay (disable Nagle)</text>
+        <text x="475" y="72" text-anchor="middle" fill="#54595d" font-size="11">&#8226; SO_BUSY_POLL</text>
+        <text x="475" y="84" text-anchor="middle" fill="#54595d" font-size="11">&#8226; BBR congestion control</text>
+        <rect x="575" y="10" width="170" height="80" rx="8" fill="#f5f5f5" stroke="#222"/>
+        <text x="660" y="30" text-anchor="middle" fill="#222" font-size="11" font-weight="700">CPU Pinning</text>
+        <text x="660" y="48" text-anchor="middle" fill="#54595d" font-size="11">&#8226; isolcpus for app cores</text>
+        <text x="660" y="60" text-anchor="middle" fill="#54595d" font-size="11">&#8226; taskset / cset</text>
+        <text x="660" y="72" text-anchor="middle" fill="#54595d" font-size="11">&#8226; NUMA-local memory</text>
+        <text x="660" y="84" text-anchor="middle" fill="#54595d" font-size="11">&#8226; Disable C-states</text>
+        <rect x="760" y="10" width="120" height="80" rx="8" fill="#f8f9fa" stroke="#202122"/>
+        <text x="820" y="30" text-anchor="middle" fill="#202122" font-size="11" font-weight="700">Memory</text>
+        <text x="820" y="48" text-anchor="middle" fill="#54595d" font-size="11">&#8226; Huge pages (2MB)</text>
+        <text x="820" y="60" text-anchor="middle" fill="#54595d" font-size="11">&#8226; mlock() for buffers</text>
+        <text x="820" y="72" text-anchor="middle" fill="#54595d" font-size="11">&#8226; Disable NUMA balancing</text>
+        <text x="820" y="84" text-anchor="middle" fill="#54595d" font-size="11">&#8226; Disable swap</text>
+        <!-- Packet path -->
+        <rect x="20" y="110" width="860" height="75" rx="8" fill="#f5f5f5" stroke="#222"/>
+        <text x="450" y="130" text-anchor="middle" fill="#222" font-size="13" font-weight="700">Packet Path: NIC &rarr; Kernel &rarr; Application</text>
+        <text x="100" y="155" text-anchor="middle" fill="#222" font-size="11">NIC DMA</text>
+        <text x="165" y="155" text-anchor="middle" fill="#72777d" font-size="12">&#10140;</text>
+        <text x="230" y="155" text-anchor="middle" fill="#222" font-size="11">Ring Buffer</text>
+        <text x="300" y="155" text-anchor="middle" fill="#72777d" font-size="12">&#10140;</text>
+        <text x="370" y="155" text-anchor="middle" fill="#222" font-size="11">IRQ/NAPI</text>
+        <text x="430" y="155" text-anchor="middle" fill="#72777d" font-size="12">&#10140;</text>
+        <text x="500" y="155" text-anchor="middle" fill="#222" font-size="11">netfilter</text>
+        <text x="560" y="155" text-anchor="middle" fill="#72777d" font-size="12">&#10140;</text>
+        <text x="630" y="155" text-anchor="middle" fill="#222" font-size="11">TCP stack</text>
+        <text x="700" y="155" text-anchor="middle" fill="#72777d" font-size="12">&#10140;</text>
+        <text x="780" y="155" text-anchor="middle" fill="#222" font-size="11">Socket buffer</text>
+        <text x="850" y="155" text-anchor="middle" fill="#72777d" font-size="12">&#10140;</text>
+        <text x="880" y="155" text-anchor="middle" fill="#222" font-size="11">App</text>
+        <text x="450" y="175" text-anchor="middle" fill="#54595d" font-size="11">Each stage adds latency. Kernel bypass (DPDK/XDP) skips IRQ &rarr; netfilter &rarr; TCP stages.</text>
+    </svg>
+</div>
+
+<!-- NUMA -->
+<h3 id="numa">1.5 NUMA Architecture &amp; Memory</h3>
+
+<div class="diagram">
+    <div class="diagram-title">NUMA (Non-Uniform Memory Access) Architecture</div>
+    <svg viewBox="0 0 800 220" xmlns="http://www.w3.org/2000/svg" style="max-width:800px;width:100%;">
+        <!-- Node 0 -->
+        <rect x="20" y="20" width="350" height="180" rx="10" fill="#f5f5f5" stroke="#222" stroke-dasharray="6"/>
+        <text x="195" y="42" text-anchor="middle" fill="#222" font-size="14" font-weight="700">NUMA Node 0</text>
+        <rect x="40" y="55" width="150" height="50" rx="6" fill="#f5f5f5" stroke="#a2a9b1"/>
+        <text x="115" y="75" text-anchor="middle" fill="#222" font-size="12" font-weight="600">CPU 0-15</text>
+        <text x="115" y="92" text-anchor="middle" fill="#54595d" font-size="11">L1/L2/L3 cache</text>
+        <rect x="200" y="55" width="150" height="50" rx="6" fill="#f8f9fa" stroke="#222"/>
+        <text x="275" y="75" text-anchor="middle" fill="#222" font-size="12" font-weight="600">Local Memory</text>
+        <text x="275" y="92" text-anchor="middle" fill="#54595d" font-size="11">64 GB DDR5</text>
+        <text x="195" y="130" text-anchor="middle" fill="#222" font-size="11" font-weight="600">Local access: ~80ns</text>
+        <rect x="40" y="145" width="310" height="40" rx="6" fill="#f5f5f5" stroke="#222"/>
+        <text x="195" y="170" text-anchor="middle" fill="#222" font-size="11">PCIe: NIC, NVMe (NUMA-local I/O)</text>
+        <!-- Node 1 -->
+        <rect x="430" y="20" width="350" height="180" rx="10" fill="#f8f9fa" stroke="#202122" stroke-dasharray="6"/>
+        <text x="605" y="42" text-anchor="middle" fill="#202122" font-size="14" font-weight="700">NUMA Node 1</text>
+        <rect x="450" y="55" width="150" height="50" rx="6" fill="#f8f9fa" stroke="#a2a9b1"/>
+        <text x="525" y="75" text-anchor="middle" fill="#202122" font-size="12" font-weight="600">CPU 16-31</text>
+        <text x="525" y="92" text-anchor="middle" fill="#54595d" font-size="11">L1/L2/L3 cache</text>
+        <rect x="610" y="55" width="150" height="50" rx="6" fill="#f8f9fa" stroke="#222"/>
+        <text x="685" y="75" text-anchor="middle" fill="#222" font-size="12" font-weight="600">Local Memory</text>
+        <text x="685" y="92" text-anchor="middle" fill="#54595d" font-size="11">64 GB DDR5</text>
+        <text x="605" y="130" text-anchor="middle" fill="#222" font-size="11" font-weight="600">Local access: ~80ns</text>
+        <rect x="450" y="145" width="310" height="40" rx="6" fill="#f5f5f5" stroke="#222"/>
+        <text x="605" y="170" text-anchor="middle" fill="#222" font-size="11">PCIe: GPU, SAS controller</text>
+        <!-- Interconnect -->
+        <line x1="370" y1="100" x2="430" y2="100" stroke="#202122" stroke-width="2" stroke-dasharray="6"/>
+        <text x="400" y="92" text-anchor="middle" fill="#202122" font-size="11" font-weight="700">QPI/UPI</text>
+        <text x="400" y="118" text-anchor="middle" fill="#202122" font-size="11">~150ns (remote)</text>
+    </svg>
+    <div class="diagram-caption">Remote memory access is ~2x slower. Process on CPU 0 accessing Node 1 memory pays the QPI/UPI penalty.</div>
+</div>
+
+<pre><code># Show NUMA topology:    numactl --hardware
+# Run process on node:   numactl --cpunodebind=0 --membind=0 ./app
+# Check NUMA stats:      numastat -p &lt;pid&gt;
+# K8s: Topology Manager  kubelet --topology-manager-policy=single-numa-node</code></pre>
+
+<!-- HUGE PAGES -->
+<h3 id="thp">1.6 Transparent Huge Pages (THP) vs Explicit Huge Pages</h3>
+
+<div class="table-wrapper">
+    <table>
+        <thead><tr><th>Aspect</th><th>Regular Pages (4 KB)</th><th>THP (2 MB auto)</th><th>Explicit Huge Pages (2 MB/1 GB)</th></tr></thead>
+        <tbody>
+            <tr><td><strong>TLB entries needed</strong></td><td class="crit">1M entries for 4 GB</td><td class="ok">2K entries for 4 GB</td><td class="ok">2K entries for 4 GB</td></tr>
+            <tr><td><strong>Allocation</strong></td><td>On demand</td><td>Kernel merges automatically</td><td>Reserved at boot</td></tr>
+            <tr><td><strong>Fragmentation risk</strong></td><td>Low</td><td class="warn">khugepaged compaction stalls</td><td class="ok">Pre-allocated, no stalls</td></tr>
+            <tr><td><strong>Best for</strong></td><td>General workloads</td><td>Large heap apps (JVM)</td><td>DPDK, databases, VMs</td></tr>
+            <tr><td><strong>Disable when</strong></td><td>&mdash;</td><td class="warn">Redis, MongoDB, latency-sensitive</td><td>&mdash;</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<div class="warning-box">
+    <div class="label">Why Disable THP for Redis/MongoDB?</div>
+    <p>THP causes <strong>khugepaged</strong> compaction stalls (10-100ms latency spikes) and <strong>memory bloat</strong> (copy-on-write copies entire 2MB page instead of 4KB). For latency-sensitive workloads, explicit huge pages or regular pages are better.</p>
+</div>
+
+<pre><code># Disable THP:  echo never > /sys/kernel/mm/transparent_hugepage/enabled
+# Check status:  cat /sys/kernel/mm/transparent_hugepage/enabled
+# Reserve explicit:  echo 1024 > /proc/sys/vm/nr_hugepages  (1024 x 2MB = 2GB)</code></pre>
+
+<!-- FILESYSTEMS -->
+<h3 id="fs">1.7 XFS vs ext4 for Write-Heavy Workloads</h3>
+
+<div class="table-wrapper">
+    <table>
+        <thead><tr><th>Feature</th><th>XFS</th><th>ext4</th></tr></thead>
+        <tbody>
+            <tr><td><strong>Max file size</strong></td><td class="ok">8 EB</td><td>16 TB</td></tr>
+            <tr><td><strong>Max volume</strong></td><td class="ok">8 EB</td><td>1 EB</td></tr>
+            <tr><td><strong>Allocation</strong></td><td class="ok">Extent-based, B+ tree</td><td>Extent-based, HTree</td></tr>
+            <tr><td><strong>Parallel writes</strong></td><td class="ok">Allocation groups (AG) = per-AG locking</td><td class="warn">Single inode lock for writes</td></tr>
+            <tr><td><strong>Write-heavy perf</strong></td><td class="ok">Better for large files, parallel I/O</td><td>Better for small files, metadata-heavy</td></tr>
+            <tr><td><strong>Online grow</strong></td><td class="ok">Yes</td><td class="ok">Yes</td></tr>
+            <tr><td><strong>Online shrink</strong></td><td class="crit">No</td><td class="ok">Yes</td></tr>
+            <tr><td><strong>Best for</strong></td><td>etcd data, databases, large files</td><td>General purpose, /var, containers</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- I/O SCHEDULERS -->
+<h3 id="iosched">1.8 I/O Schedulers</h3>
+
+<div class="diagram">
+    <div class="diagram-title">Linux I/O Scheduler Comparison</div>
+    <svg viewBox="0 0 900 140" xmlns="http://www.w3.org/2000/svg" style="width:100%;">
+        <rect x="20" y="10" width="270" height="110" rx="10" fill="#f5f5f5" stroke="#222"/>
+        <text x="155" y="32" text-anchor="middle" fill="#222" font-size="13" font-weight="700">none / noop</text>
+        <text x="155" y="52" text-anchor="middle" fill="#54595d" font-size="11">Simple FIFO queue</text>
+        <text x="155" y="68" text-anchor="middle" fill="#54595d" font-size="11">No reordering or merging</text>
+        <text x="155" y="84" text-anchor="middle" fill="#54595d" font-size="11">Best for: NVMe, SSD, VMs</text>
+        <text x="155" y="104" text-anchor="middle" fill="#222" font-size="11" font-weight="600">Device does its own scheduling</text>
+        <rect x="315" y="10" width="270" height="110" rx="10" fill="#f8f9fa" stroke="#222"/>
+        <text x="450" y="32" text-anchor="middle" fill="#222" font-size="13" font-weight="700">mq-deadline</text>
+        <text x="450" y="52" text-anchor="middle" fill="#54595d" font-size="11">Deadline per request (read: 500ms, write: 5s)</text>
+        <text x="450" y="68" text-anchor="middle" fill="#54595d" font-size="11">Prevents starvation</text>
+        <text x="450" y="84" text-anchor="middle" fill="#54595d" font-size="11">Best for: databases, latency-sensitive</text>
+        <text x="450" y="104" text-anchor="middle" fill="#222" font-size="11" font-weight="600">Reads prioritized over writes</text>
+        <rect x="610" y="10" width="270" height="110" rx="10" fill="#f8f9fa" stroke="#202122"/>
+        <text x="745" y="32" text-anchor="middle" fill="#202122" font-size="13" font-weight="700">BFQ (Budget Fair Queueing)</text>
+        <text x="745" y="52" text-anchor="middle" fill="#54595d" font-size="11">Fair bandwidth allocation per process</text>
+        <text x="745" y="68" text-anchor="middle" fill="#54595d" font-size="11">Prevents I/O hogging</text>
+        <text x="745" y="84" text-anchor="middle" fill="#54595d" font-size="11">Best for: desktops, multi-tenant</text>
+        <text x="745" y="104" text-anchor="middle" fill="#202122" font-size="11" font-weight="600">Higher CPU overhead</text>
+    </svg>
+</div>
+
+<pre><code># Check current:     cat /sys/block/sda/queue/scheduler
+# Change to none:    echo none > /sys/block/nvme0n1/queue/scheduler
+# For NVMe SSD:      none (always). Device has internal FTL scheduler.</code></pre>
+
+<!-- ================================================================ -->
+<!-- SECTION 2: PROBLEM SOLVING -->
+<!-- ================================================================ -->
+<div class="sec-header s2">
+    <h2 id="s2">Section 2: Practical Problem Solving (25 min)</h2>
+    <p style="color:var(--text-secondary);margin:0.3rem 0 0;">Deep troubleshooting with Linux tools</p>
+</div>
+
+<h3 id="freeze">2.1 System Freeze Debugging</h3>
+
+<div class="prompt-box">
+    <div class="label">Problem</div>
+    <p>A critical production server has frozen but is not generating any logs. How would you investigate?</p>
+</div>
+
+<div class="diagram">
+    <div class="diagram-title">System Freeze Investigation Flow</div>
+    <svg viewBox="0 0 900 300" xmlns="http://www.w3.org/2000/svg" style="width:100%;">
+        <!-- Step 1 -->
+        <rect x="20" y="20" width="250" height="70" rx="8" fill="#f8f9fa" stroke="#202122"/>
+        <text x="145" y="40" text-anchor="middle" fill="#202122" font-size="12" font-weight="700">1. Is it truly frozen?</text>
+        <text x="145" y="58" text-anchor="middle" fill="#54595d" font-size="11">Try SysRq keys: Alt+SysRq+W (tasks)</text>
+        <text x="145" y="70" text-anchor="middle" fill="#54595d" font-size="11">Check if NMI watchdog triggered</text>
+        <text x="145" y="82" text-anchor="middle" fill="#54595d" font-size="11">Remote IPMI/BMC console access</text>
+        <text x="295" y="55" fill="#72777d" font-size="14">&#10140;</text>
+        <!-- Step 2 -->
+        <rect x="310" y="20" width="250" height="70" rx="8" fill="#f8f9fa" stroke="#202122"/>
+        <text x="435" y="40" text-anchor="middle" fill="#202122" font-size="12" font-weight="700">2. Capture state (if possible)</text>
+        <text x="435" y="58" text-anchor="middle" fill="#54595d" font-size="11">SysRq+T: dump all task states</text>
+        <text x="435" y="70" text-anchor="middle" fill="#54595d" font-size="11">SysRq+M: memory info</text>
+        <text x="435" y="82" text-anchor="middle" fill="#54595d" font-size="11">SysRq+L: backtrace all CPUs</text>
+        <text x="585" y="55" fill="#72777d" font-size="14">&#10140;</text>
+        <!-- Step 3 -->
+        <rect x="600" y="20" width="280" height="70" rx="8" fill="#f5f5f5" stroke="#222"/>
+        <text x="740" y="40" text-anchor="middle" fill="#222" font-size="12" font-weight="700">3. Crash dump (kdump)</text>
+        <text x="740" y="58" text-anchor="middle" fill="#54595d" font-size="11">SysRq+C: trigger crash dump</text>
+        <text x="740" y="70" text-anchor="middle" fill="#54595d" font-size="11">kdump captures vmcore to /var/crash</text>
+        <text x="740" y="82" text-anchor="middle" fill="#54595d" font-size="11">Analyze with crash tool post-reboot</text>
+        <!-- Post-mortem -->
+        <rect x="20" y="120" width="860" height="80" rx="10" fill="#f8f9fa" stroke="#222"/>
+        <text x="450" y="142" text-anchor="middle" fill="#222" font-size="13" font-weight="700">4. Post-Mortem Analysis</text>
+        <rect x="40" y="150" width="160" height="35" rx="4" fill="#f8f9fa" stroke="#a2a9b1"/>
+        <text x="120" y="172" text-anchor="middle" fill="#54595d" font-size="11">crash vmcore vmlinux</text>
+        <rect x="215" y="150" width="160" height="35" rx="4" fill="#f8f9fa" stroke="#a2a9b1"/>
+        <text x="295" y="172" text-anchor="middle" fill="#54595d" font-size="11">dmesg from serial console</text>
+        <rect x="390" y="150" width="160" height="35" rx="4" fill="#f8f9fa" stroke="#a2a9b1"/>
+        <text x="470" y="172" text-anchor="middle" fill="#54595d" font-size="11">/var/log/mcelog (HW errors)</text>
+        <rect x="565" y="150" width="160" height="35" rx="4" fill="#f8f9fa" stroke="#a2a9b1"/>
+        <text x="645" y="172" text-anchor="middle" fill="#54595d" font-size="11">perf record --call-graph</text>
+        <rect x="740" y="150" width="120" height="35" rx="4" fill="#f8f9fa" stroke="#a2a9b1"/>
+        <text x="800" y="172" text-anchor="middle" fill="#54595d" font-size="11">eBPF tracing</text>
+        <!-- Common causes -->
+        <rect x="20" y="220" width="860" height="65" rx="8" fill="#f0f0f0" stroke="var(--border)"/>
+        <text x="450" y="242" text-anchor="middle" fill="#202122" font-size="13" font-weight="700">Common Root Causes</text>
+        <text x="120" y="268" text-anchor="middle" fill="#202122" font-size="11">Kernel panic (null deref)</text>
+        <text x="300" y="268" text-anchor="middle" fill="#202122" font-size="11">Deadlock (spinlock)</text>
+        <text x="450" y="268" text-anchor="middle" fill="#222" font-size="11">OOM + no swap</text>
+        <text x="600" y="268" text-anchor="middle" fill="#222" font-size="11">NMI watchdog (CPU stuck)</text>
+        <text x="780" y="268" text-anchor="middle" fill="#222" font-size="11">Hardware (ECC/NMI)</text>
+    </svg>
+</div>
+
+<pre><code># Enable SysRq:      echo 1 > /proc/sys/kernel/sysrq
+# Enable kdump:      systemctl enable kdump
+# Crash analysis:    crash /var/crash/vmcore /usr/lib/debug/vmlinux
+# crash> bt          (backtrace of panicking task)
+# crash> log         (kernel log buffer)
+# crash> ps          (process list at time of crash)</code></pre>
+
+<h3 id="disklatency">2.2 High Disk Latency Investigation</h3>
+
+<div class="prompt-box">
+    <div class="label">Problem</div>
+    <p>A distributed storage cluster shows high disk latency during peak usage. Identify bottlenecks and resolve.</p>
+</div>
+
+<div class="diagram">
+    <div class="diagram-title">Disk Latency Investigation Workflow</div>
+    <div class="flow-row">
+        <div class="flow-box red">iostat -xz 1<small>await, %util, avgqu-sz</small></div>
+        <span class="flow-arrow">&#10140;</span>
+        <div class="flow-box orange">blktrace + blkparse<small>per-request latency</small></div>
+        <span class="flow-arrow">&#10140;</span>
+        <div class="flow-box blue">bcc/biolatency<small>latency histogram</small></div>
+        <span class="flow-arrow">&#10140;</span>
+        <div class="flow-box green">Identify layer<small>app / FS / block / HW</small></div>
+        <span class="flow-arrow">&#10140;</span>
+        <div class="flow-box purple">Tune &amp; fix<small>scheduler / cache / HW</small></div>
+    </div>
+</div>
+
+<pre><code># Step 1: Overall I/O stats
+iostat -xz 1
+# Key columns: await (ms), r_await, w_await, %util, avgqu-sz
+
+# Step 2: Per-request tracing
+blktrace -d /dev/nvme0n1 -o - | blkparse -i -
+# Shows: Q (queue) → G (get request) → D (dispatch) → C (complete)
+
+# Step 3: eBPF latency histogram
+biolatency -D   # per-disk latency distribution
+biosnoop         # every I/O with latency
+
+# Step 4: Check I/O scheduler, queue depth
+cat /sys/block/nvme0n1/queue/scheduler
+cat /sys/block/nvme0n1/queue/nr_requests
+
+# Fixes:
+# - Increase nr_requests for high IOPS
+# - Switch scheduler to none for NVMe
+# - vm.dirty_ratio / vm.dirty_background_ratio tuning
+# - Enable write-back cache (if battery-backed)</code></pre>
+
+<h3 id="memfrag">2.3 Memory Fragmentation</h3>
+
+<div class="prompt-box">
+    <div class="label">Problem</div>
+    <p>An application is failing to allocate large contiguous blocks of memory. Identify and fix.</p>
+</div>
+
+<div class="diagram">
+    <div class="diagram-title">Linux Buddy Allocator &amp; Fragmentation</div>
+    <svg viewBox="0 0 800 180" xmlns="http://www.w3.org/2000/svg" style="max-width:800px;width:100%;">
+        <text x="400" y="18" text-anchor="middle" fill="#202122" font-size="13" font-weight="700">/proc/buddyinfo: Free pages at each order (2^order * 4KB)</text>
+        <!-- Orders -->
+        <rect x="20" y="30" width="70" height="120" rx="4" fill="#f8f9fa" stroke="#222"/>
+        <text x="55" y="48" text-anchor="middle" fill="#222" font-size="11" font-weight="700">Order 0</text>
+        <text x="55" y="65" text-anchor="middle" fill="#54595d" font-size="11">4 KB</text>
+        <rect x="30" y="75" width="50" height="65" rx="2" fill="#222" opacity="0.3"/>
+        <text x="55" y="118" text-anchor="middle" fill="#202122" font-size="11">5240</text>
+        <rect x="100" y="30" width="70" height="120" rx="4" fill="#f8f9fa" stroke="#222"/>
+        <text x="135" y="48" text-anchor="middle" fill="#222" font-size="11" font-weight="700">Order 1</text>
+        <text x="135" y="65" text-anchor="middle" fill="#54595d" font-size="11">8 KB</text>
+        <rect x="110" y="85" width="50" height="55" rx="2" fill="#222" opacity="0.3"/>
+        <text x="135" y="118" text-anchor="middle" fill="#202122" font-size="11">3120</text>
+        <!-- ... higher orders shrink -->
+        <rect x="180" y="30" width="70" height="120" rx="4" fill="#f8f9fa" stroke="#202122"/>
+        <text x="215" y="48" text-anchor="middle" fill="#202122" font-size="11" font-weight="700">Order 4</text>
+        <text x="215" y="65" text-anchor="middle" fill="#54595d" font-size="11">64 KB</text>
+        <rect x="190" y="105" width="50" height="35" rx="2" fill="#202122" opacity="0.3"/>
+        <text x="215" y="118" text-anchor="middle" fill="#202122" font-size="11">412</text>
+        <rect x="260" y="30" width="70" height="120" rx="4" fill="#f8f9fa" stroke="#202122"/>
+        <text x="295" y="48" text-anchor="middle" fill="#202122" font-size="11" font-weight="700">Order 7</text>
+        <text x="295" y="65" text-anchor="middle" fill="#54595d" font-size="11">512 KB</text>
+        <rect x="270" y="115" width="50" height="25" rx="2" fill="#202122" opacity="0.3"/>
+        <text x="295" y="128" text-anchor="middle" fill="#202122" font-size="11">28</text>
+        <rect x="340" y="30" width="70" height="120" rx="4" fill="#f8f9fa" stroke="#202122"/>
+        <text x="375" y="48" text-anchor="middle" fill="#202122" font-size="11" font-weight="700">Order 9</text>
+        <text x="375" y="65" text-anchor="middle" fill="#54595d" font-size="11">2 MB</text>
+        <rect x="350" y="130" width="50" height="10" rx="2" fill="#202122" opacity="0.3"/>
+        <text x="375" y="140" text-anchor="middle" fill="#202122" font-size="11">2</text>
+        <rect x="420" y="30" width="70" height="120" rx="4" fill="#f8f9fa" stroke="#202122"/>
+        <text x="455" y="48" text-anchor="middle" fill="#202122" font-size="11" font-weight="700">Order 10</text>
+        <text x="455" y="65" text-anchor="middle" fill="#54595d" font-size="11">4 MB</text>
+        <rect x="430" y="138" width="50" height="2" rx="1" fill="#202122" opacity="0.3"/>
+        <text x="455" y="140" text-anchor="middle" fill="#202122" font-size="11">0</text>
+        <!-- Arrow showing problem -->
+        <rect x="520" y="30" width="260" height="120" rx="8" fill="#f8f9fa" stroke="#202122"/>
+        <text x="650" y="52" text-anchor="middle" fill="#202122" font-size="12" font-weight="700">Fragmentation Problem</text>
+        <text x="650" y="72" text-anchor="middle" fill="#54595d" font-size="11">Lots of free 4KB pages</text>
+        <text x="650" y="86" text-anchor="middle" fill="#54595d" font-size="11">but NO free 2MB/4MB blocks</text>
+        <text x="650" y="100" text-anchor="middle" fill="#54595d" font-size="11">Huge page allocation FAILS</text>
+        <text x="650" y="120" text-anchor="middle" fill="#202122" font-size="11" font-weight="600">Fix: compact or reserve at boot</text>
+    </svg>
+</div>
+
+<pre><code># Diagnosis:
+cat /proc/buddyinfo        # free pages per order
+cat /proc/pagetypeinfo     # movable vs unmovable
+vmstat -s | grep compact   # compaction stats
+
+# Fixes:
+echo 1 > /proc/sys/vm/compact_memory   # trigger compaction now
+sysctl vm.compaction_proactiveness=20   # proactive compaction
+# Reserve huge pages early:
+echo 'vm.nr_hugepages=1024' >> /etc/sysctl.conf  # at boot</code></pre>
+
+<h3 id="pktdrop">2.4 Network Packet Drops Investigation</h3>
+
+<div class="prompt-box">
+    <div class="label">Problem</div>
+    <p>High-throughput application experiencing packet drops on the network interface.</p>
+</div>
+
+<div class="diagram">
+    <div class="diagram-title">Packet Drop Investigation: Where Drops Happen</div>
+    <svg viewBox="0 0 900 180" xmlns="http://www.w3.org/2000/svg" style="width:100%;">
+        <rect x="20" y="20" width="130" height="70" rx="6" fill="#f8f9fa" stroke="#202122"/>
+        <text x="85" y="40" text-anchor="middle" fill="#202122" font-size="11" font-weight="700">NIC HW Ring</text>
+        <text x="85" y="56" text-anchor="middle" fill="#54595d" font-size="11">RX ring full?</text>
+        <text x="85" y="68" text-anchor="middle" fill="#54595d" font-size="11">ethtool -S: rx_missed</text>
+        <text x="85" y="80" text-anchor="middle" fill="#54595d" font-size="11">Fix: ethtool -G rx 4096</text>
+        <text x="170" y="55" fill="#72777d" font-size="14">&#10140;</text>
+        <rect x="185" y="20" width="130" height="70" rx="6" fill="#f8f9fa" stroke="#202122"/>
+        <text x="250" y="40" text-anchor="middle" fill="#202122" font-size="11" font-weight="700">Driver/IRQ</text>
+        <text x="250" y="56" text-anchor="middle" fill="#54595d" font-size="11">IRQ not balanced?</text>
+        <text x="250" y="68" text-anchor="middle" fill="#54595d" font-size="11">cat /proc/interrupts</text>
+        <text x="250" y="80" text-anchor="middle" fill="#54595d" font-size="11">Fix: irqbalance / smp_affinity</text>
+        <text x="335" y="55" fill="#72777d" font-size="14">&#10140;</text>
+        <rect x="350" y="20" width="130" height="70" rx="6" fill="#f5f5f5" stroke="#222"/>
+        <text x="415" y="40" text-anchor="middle" fill="#222" font-size="11" font-weight="700">Kernel Backlog</text>
+        <text x="415" y="56" text-anchor="middle" fill="#54595d" font-size="11">netdev_budget exhausted?</text>
+        <text x="415" y="68" text-anchor="middle" fill="#54595d" font-size="11">nstat: TcpExtListenDrops</text>
+        <text x="415" y="80" text-anchor="middle" fill="#54595d" font-size="11">Fix: netdev_budget=600</text>
+        <text x="500" y="55" fill="#72777d" font-size="14">&#10140;</text>
+        <rect x="515" y="20" width="130" height="70" rx="6" fill="#f8f9fa" stroke="#222"/>
+        <text x="580" y="40" text-anchor="middle" fill="#222" font-size="11" font-weight="700">Socket Buffer</text>
+        <text x="580" y="56" text-anchor="middle" fill="#54595d" font-size="11">rmem/wmem too small?</text>
+        <text x="580" y="68" text-anchor="middle" fill="#54595d" font-size="11">ss -nmpti</text>
+        <text x="580" y="80" text-anchor="middle" fill="#54595d" font-size="11">Fix: rmem_max=16MB</text>
+        <text x="665" y="55" fill="#72777d" font-size="14">&#10140;</text>
+        <rect x="680" y="20" width="130" height="70" rx="6" fill="#f5f5f5" stroke="#222"/>
+        <text x="745" y="40" text-anchor="middle" fill="#222" font-size="11" font-weight="700">Conntrack</text>
+        <text x="745" y="56" text-anchor="middle" fill="#54595d" font-size="11">Table full?</text>
+        <text x="745" y="68" text-anchor="middle" fill="#54595d" font-size="11">dmesg: nf_conntrack full</text>
+        <text x="745" y="80" text-anchor="middle" fill="#54595d" font-size="11">Fix: nf_conntrack_max</text>
+        <!-- Summary command bar -->
+        <rect x="20" y="110" width="860" height="55" rx="8" fill="#f0f0f0" stroke="var(--border)"/>
+        <text x="450" y="130" text-anchor="middle" fill="#202122" font-size="12" font-weight="700">Quick Diagnosis Commands</text>
+        <text x="130" y="152" text-anchor="middle" fill="#222" font-size="11">ethtool -S eth0 | grep drop</text>
+        <text x="350" y="152" text-anchor="middle" fill="#222" font-size="11">nstat -az TcpExtListenDrops</text>
+        <text x="560" y="152" text-anchor="middle" fill="#222" font-size="11">dropwatch -l kas</text>
+        <text x="750" y="152" text-anchor="middle" fill="#222" font-size="11">tc -s qdisc show</text>
+    </svg>
+</div>
+
+<!-- ================================================================ -->
+<!-- SECTION 3: DESIGN -->
+<!-- ================================================================ -->
+<div class="sec-header s3">
+    <h2 id="s3">Section 3: Scenario-Based Design (25 min)</h2>
+    <p style="color:var(--text-secondary);margin:0.3rem 0 0;">Complex design challenges in Linux-based systems</p>
+</div>
+
+<h3 id="patchmgmt">3.1 Distributed Kernel Patch Management (10,000 Nodes)</h3>
+
+<div class="prompt-box">
+    <div class="label">Scenario</div>
+    <p>Design a secure, fault-tolerant system to push kernel patches across 10,000 Linux nodes.</p>
+</div>
+
+<div class="diagram">
+    <div class="diagram-title">Kernel Patch Pipeline Architecture</div>
+    <div class="flow-row">
+        <div class="flow-box blue">Git Commit<small>patch + changelog</small></div>
+        <span class="flow-arrow">&#10140;</span>
+        <div class="flow-box green">CI Build<small>RPM/DEB, sign</small></div>
+        <span class="flow-arrow">&#10140;</span>
+        <div class="flow-box orange">Canary (1%)<small>50 nodes, 24h soak</small></div>
+        <span class="flow-arrow">&#10140;</span>
+        <div class="flow-box purple">Stage (10%)<small>1000 nodes, 48h</small></div>
+        <span class="flow-arrow">&#10140;</span>
+        <div class="flow-box cyan">Prod (100%)<small>rack-aware rolling</small></div>
+        <span class="flow-arrow">&#10140;</span>
+        <div class="flow-box green">Validate<small>OBHC all-green</small></div>
+    </div>
+    <div class="diagram-caption">Rollback: kexec to previous kernel (no reboot) or grub default-entry revert. Max 1% failure rate triggers auto-halt.</div>
+</div>
+
+<ul>
+    <li><strong>Idempotent:</strong> Re-running the patch tool on an already-patched node is a no-op</li>
+    <li><strong>Network partition safe:</strong> Agent pulls from local repo mirror. Central orchestrator tolerates agent disconnect for 24h before alerting</li>
+    <li><strong>Rollback:</strong> kexec (instant kernel switch) or reboot to previous grub entry. Pre-patch etcd/DB snapshots for stateful services</li>
+    <li><strong>Consistency:</strong> UCM + Puppet hieradata ensures desired state. Drift detection agent runs every 60s</li>
+</ul>
+
+<h3 id="realtime">3.2 Real-Time Data Processing System</h3>
+
+<div class="prompt-box">
+    <div class="label">Scenario</div>
+    <p>Design a Linux-based system to process streaming data in real-time with stringent latency requirements (&lt;1ms P99).</p>
+</div>
+
+<div class="diagram">
+    <div class="diagram-title">Real-Time Linux Tuning Stack</div>
+    <svg viewBox="0 0 900 200" xmlns="http://www.w3.org/2000/svg" style="width:100%;">
+        <rect x="20" y="10" width="170" height="80" rx="8" fill="#f8f9fa" stroke="#202122"/>
+        <text x="105" y="30" text-anchor="middle" fill="#202122" font-size="11" font-weight="700">Kernel Config</text>
+        <text x="105" y="48" text-anchor="middle" fill="#54595d" font-size="11">PREEMPT_RT patch</text>
+        <text x="105" y="60" text-anchor="middle" fill="#54595d" font-size="11">CONFIG_NO_HZ_FULL</text>
+        <text x="105" y="72" text-anchor="middle" fill="#54595d" font-size="11">CONFIG_IRQ_FORCED_THREADING</text>
+        <text x="105" y="84" text-anchor="middle" fill="#54595d" font-size="11">Disable kernel debug</text>
+        <rect x="205" y="10" width="170" height="80" rx="8" fill="#f5f5f5" stroke="#222"/>
+        <text x="290" y="30" text-anchor="middle" fill="#222" font-size="11" font-weight="700">CPU Isolation</text>
+        <text x="290" y="48" text-anchor="middle" fill="#54595d" font-size="11">isolcpus=2-7 (app cores)</text>
+        <text x="290" y="60" text-anchor="middle" fill="#54595d" font-size="11">nohz_full=2-7 (tickless)</text>
+        <text x="290" y="72" text-anchor="middle" fill="#54595d" font-size="11">rcu_nocbs=2-7</text>
+        <text x="290" y="84" text-anchor="middle" fill="#54595d" font-size="11">Disable C-states &amp; turbo</text>
+        <rect x="390" y="10" width="170" height="80" rx="8" fill="#f8f9fa" stroke="#222"/>
+        <text x="475" y="30" text-anchor="middle" fill="#222" font-size="11" font-weight="700">Network Bypass</text>
+        <text x="475" y="48" text-anchor="middle" fill="#54595d" font-size="11">DPDK poll-mode driver</text>
+        <text x="475" y="60" text-anchor="middle" fill="#54595d" font-size="11">Hugepage-backed mbufs</text>
+        <text x="475" y="72" text-anchor="middle" fill="#54595d" font-size="11">Userspace TCP (mTCP)</text>
+        <text x="475" y="84" text-anchor="middle" fill="#54595d" font-size="11">or XDP for in-kernel</text>
+        <rect x="575" y="10" width="170" height="80" rx="8" fill="#f8f9fa" stroke="#202122"/>
+        <text x="660" y="30" text-anchor="middle" fill="#202122" font-size="11" font-weight="700">Memory</text>
+        <text x="660" y="48" text-anchor="middle" fill="#54595d" font-size="11">1GB huge pages reserved</text>
+        <text x="660" y="60" text-anchor="middle" fill="#54595d" font-size="11">mlock() all app memory</text>
+        <text x="660" y="72" text-anchor="middle" fill="#54595d" font-size="11">NUMA-pinned allocation</text>
+        <text x="660" y="84" text-anchor="middle" fill="#54595d" font-size="11">Disable swap, THP, KSM</text>
+        <rect x="760" y="10" width="120" height="80" rx="8" fill="#f5f5f5" stroke="#222"/>
+        <text x="820" y="30" text-anchor="middle" fill="#222" font-size="11" font-weight="700">Storage</text>
+        <text x="820" y="48" text-anchor="middle" fill="#54595d" font-size="11">io_uring async I/O</text>
+        <text x="820" y="60" text-anchor="middle" fill="#54595d" font-size="11">O_DIRECT bypass cache</text>
+        <text x="820" y="72" text-anchor="middle" fill="#54595d" font-size="11">NVMe polling mode</text>
+        <text x="820" y="84" text-anchor="middle" fill="#54595d" font-size="11">Scheduler: none</text>
+        <!-- Result -->
+        <rect x="150" y="110" width="600" height="35" rx="8" fill="#f8f9fa" stroke="#222"/>
+        <text x="450" y="132" text-anchor="middle" fill="#222" font-size="13" font-weight="700">Result: &lt;100&mu;s P99 NIC-to-app, &lt;1ms end-to-end including processing</text>
+        <!-- DPDK vs XDP -->
+        <rect x="150" y="155" width="290" height="35" rx="6" fill="#f5f5f5" stroke="#222"/>
+        <text x="295" y="177" text-anchor="middle" fill="#222" font-size="11"><tspan font-weight="700">DPDK:</tspan> Best latency, dedicated cores, userspace stack</text>
+        <rect x="460" y="155" width="290" height="35" rx="6" fill="#f8f9fa" stroke="#222"/>
+        <text x="605" y="177" text-anchor="middle" fill="#222" font-size="11"><tspan font-weight="700">XDP:</tspan> In-kernel, less CPU cost, integrates with stack</text>
+    </svg>
+</div>
+
+<h3 id="ceph">3.3 Scaling a Distributed Ceph Cluster</h3>
+
+<div class="prompt-box">
+    <div class="label">Scenario</div>
+    <p>Scale a distributed Ceph cluster to handle double the current workload. Discuss Linux-level optimizations.</p>
+</div>
+
+<div class="arch-grid">
+    <div class="arch-box" style=""><h5>Disk I/O Tuning</h5><ul><li>Scheduler: none for NVMe, mq-deadline for HDD</li><li>readahead: 0 for random I/O (OSD), 2MB for sequential</li><li>nr_requests: increase for NVMe</li><li>Dedicated WAL/DB on NVMe, data on HDD</li></ul></div>
+    <div class="arch-box" style=""><h5>Network Tuning</h5><ul><li>Separate public &amp; cluster networks (bonded 25G)</li><li>Jumbo frames (MTU 9000)</li><li>TCP buffer: rmem_max/wmem_max = 16MB</li><li>BBR congestion control</li></ul></div>
+    <div class="arch-box" style="border-color:#202122;"><h5>Memory &amp; CPU</h5><ul><li>OSD memory target: 4GB per OSD</li><li>NUMA-local OSD placement</li><li>cgroup per OSD for resource isolation</li><li>Disable THP (random I/O pattern)</li></ul></div>
+    <div class="arch-box" style=""><h5>OSD Balancing</h5><ul><li>Automatic rebalancing with PG autoscaler</li><li>osd_max_backfills: limit concurrent rebalance</li><li>Recovery priority < client I/O priority</li><li>CRUSH map: failure domain = rack</li></ul></div>
+</div>
+
+<h3 id="k8sresource">3.4 Dynamic K8s Resource Allocation</h3>
+
+<div class="prompt-box">
+    <div class="label">Scenario</div>
+    <p>Design a mechanism to dynamically allocate CPU and memory for pods. Ensure optimal utilization without over-provisioning.</p>
+</div>
+
+<div class="diagram">
+    <div class="diagram-title">K8s Resource Allocation: Kernel &rarr; cgroups &rarr; Scheduler</div>
+    <svg viewBox="0 0 900 210" xmlns="http://www.w3.org/2000/svg" style="width:100%;">
+        <!-- K8s Layer -->
+        <rect x="20" y="10" width="860" height="55" rx="8" fill="#f5f5f5" stroke="#222"/>
+        <text x="450" y="30" text-anchor="middle" fill="#222" font-size="13" font-weight="700">K8s Pod Spec</text>
+        <text x="200" y="50" text-anchor="middle" fill="#54595d" font-size="11">requests.cpu: 500m &rarr; cpu.weight: 19</text>
+        <text x="500" y="50" text-anchor="middle" fill="#54595d" font-size="11">limits.cpu: 2000m &rarr; cpu.max: 200000/100000</text>
+        <text x="750" y="50" text-anchor="middle" fill="#54595d" font-size="11">limits.memory: 4Gi &rarr; memory.max: 4294967296</text>
+        <!-- cgroups layer -->
+        <line x1="450" y1="65" x2="450" y2="85" stroke="#a2a9b1"/>
+        <rect x="20" y="85" width="860" height="55" rx="8" fill="#f8f9fa" stroke="#222"/>
+        <text x="450" y="105" text-anchor="middle" fill="#222" font-size="13" font-weight="700">cgroup v2 (kubepods.slice/&lt;pod-uid&gt;/&lt;container-id&gt;)</text>
+        <text x="200" y="125" text-anchor="middle" fill="#54595d" font-size="11">cpu.weight = shares (proportional)</text>
+        <text x="500" y="125" text-anchor="middle" fill="#54595d" font-size="11">cpu.max = quota/period (hard cap)</text>
+        <text x="750" y="125" text-anchor="middle" fill="#54595d" font-size="11">memory.max = OOMKill trigger</text>
+        <!-- Kernel layer -->
+        <line x1="450" y1="140" x2="450" y2="155" stroke="#a2a9b1"/>
+        <rect x="20" y="155" width="860" height="45" rx="8" fill="#f8f9fa" stroke="#202122"/>
+        <text x="450" y="175" text-anchor="middle" fill="#202122" font-size="13" font-weight="700">Linux Kernel CFS Scheduler + OOM Killer</text>
+        <text x="250" y="192" text-anchor="middle" fill="#54595d" font-size="11">CFS bandwidth throttling: nr_throttled++</text>
+        <text x="600" y="192" text-anchor="middle" fill="#54595d" font-size="11">OOM score: oom_score_adj = 1000 - QoS</text>
+    </svg>
+</div>
+
+<div class="key-point">
+    <div class="label">QoS Classes &amp; Kernel Behavior</div>
+    <ul style="margin-top:0.5rem;">
+        <li><strong>Guaranteed</strong> (requests == limits): cpu.max set, memory.max set, oom_score_adj = -997. Last to be OOM-killed.</li>
+        <li><strong>Burstable</strong> (requests &lt; limits): cpu.weight for sharing, cpu.max for cap. OOM-killed after BestEffort.</li>
+        <li><strong>BestEffort</strong> (no requests/limits): No cgroup limits. oom_score_adj = 1000. First to be OOM-killed.</li>
+        <li><strong>VPA (Vertical Pod Autoscaler):</strong> Watches actual usage, adjusts requests/limits. Requires pod restart for cgroup changes.</li>
+        <li><strong>In-place resize (K8s 1.27+):</strong> Update cgroup limits without pod restart. Modify cpu.max and memory.max live.</li>
+    </ul>
+</div>
+
+        </main>
+    </div>
+</div>
+
+<footer class="footer">
+    <p>K8s Interview Prep &bull; Linux OS Deep Dive &bull; 2026</p>
+</footer>
+
+</body>
+</html>
