@@ -1,0 +1,29 @@
+sequenceDiagram
+    autonumber
+    participant App as Application
+    participant Ca as Cache
+    participant DB as Database
+    rect rgb(240,247,255)
+        Note over App,DB: cache-aside read
+        App->>Ca: get(key)
+        alt hit
+            Ca-->>App: value
+        else miss
+            App->>DB: read
+            DB-->>App: row
+            App->>Ca: set with TTL
+        end
+    end
+    rect rgb(255,248,230)
+        Note over App,DB: write, and the invalidation that keeps it honest
+        App->>DB: write
+        App->>Ca: delete the key
+        Note over App,Ca: delete, not update — an update races with concurrent readers
+    end
+    rect rgb(255,235,238)
+        Note over App,DB: the two failure modes
+        App->>Ca: many misses on one hot key
+        Note over App,DB: stampede — one loader per key, others wait
+        App->>Ca: a whole cohort expires together
+        Note over App,DB: avalanche — spread TTLs with jitter
+    end

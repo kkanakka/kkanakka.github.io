@@ -1,0 +1,20 @@
+sequenceDiagram
+    autonumber
+    participant Svc as Service
+    participant GW as Write gateway
+    participant In as Ingester
+    participant WAL as Write-ahead log
+    participant Blk as Block store
+    participant Cmp as Compactor
+    participant Q as Querier
+    Svc->>GW: samples with labels
+    GW->>In: route by series hash
+    In->>WAL: append durably
+    In->>In: Gorilla-compress into the head block
+    Note over In: ~1.3 bytes per sample after compression
+    In->>Blk: flush sealed block
+    Cmp->>Blk: merge and downsample older blocks
+    Q->>In: query recent window
+    Q->>Blk: query historical window
+    Blk-->>Q: merged series
+    Q-->>Svc: result

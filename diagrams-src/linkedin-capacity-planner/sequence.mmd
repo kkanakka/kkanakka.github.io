@@ -1,0 +1,20 @@
+sequenceDiagram
+    autonumber
+    participant Hist as Historical usage
+    participant FE as Feature builder
+    participant Mdl as Forecast model
+    participant Pl as Planner
+    participant Own as Service owner
+    participant Proc as Procurement
+    Hist->>FE: utilisation, growth, seasonality
+    FE->>Mdl: features per service
+    Mdl->>Pl: demand forecast with a confidence band
+    Pl->>Pl: add headroom for failover and peak
+    Pl->>Own: proposed footprint and cost
+    alt owner accepts
+        Pl->>Proc: reserve capacity ahead of the lead time
+    else owner disputes the forecast
+        Own->>FE: supply a known upcoming event
+        FE->>Mdl: re-forecast with it included
+    end
+    Note over Pl: order early enough to cover hardware lead time

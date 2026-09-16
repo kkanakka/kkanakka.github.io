@@ -5,6 +5,14 @@ sidebar_position: 3
 sidebar_label: "SRE DS/Algo Drills"
 description: "SRE DS/Algo Drills"
 ---
+
+<!-- DIAGRAM:START -->
+
+## How it works
+
+<img src="/diagrams/sre-dsa/sequence.svg" alt="How it works — sre-dsa" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:END -->
 20 algorithmic problems with SRE reliability lens — invariants, bounded memory, tail latency, and Google infrastructure mappings. Not LeetCode — SRE-native.
 
 Google SRE • 20 Problems • 30 Pages • Python + Go

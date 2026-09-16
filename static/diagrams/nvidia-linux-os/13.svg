@@ -25,7 +25,7 @@
         <text x="805" y="74" text-anchor="middle" fill="#54595d" font-size="11">Resume congestion avoid</text>
         <text x="805" y="88" text-anchor="middle" fill="#54595d" font-size="11">on new ACK</text>
         <!-- Algorithms -->
-        <rect x="20" y="120" width="860" height="65" rx="8" fill="#f0f0f0" stroke="var(--border)"></rect>
+        <rect x="20" y="120" width="860" height="65" rx="8" fill="#f0f0f0" stroke="#ccc"></rect>
         <text x="450" y="142" text-anchor="middle" fill="#202122" font-size="13" font-weight="700">Congestion Control Algorithms</text>
         <text x="120" y="168" text-anchor="middle" fill="#222" font-size="11" font-weight="600">Cubic (default)</text>
         <text x="300" y="168" text-anchor="middle" fill="#222" font-size="11" font-weight="600">BBR (Google)</text>

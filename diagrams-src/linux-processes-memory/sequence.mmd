@@ -1,0 +1,19 @@
+sequenceDiagram
+    autonumber
+    participant Sh as Shell
+    participant K as Kernel
+    participant Ch as Child process
+    participant Bin as Program image
+    Sh->>K: fork()
+    K->>Ch: duplicate the address space, copy-on-write
+    K-->>Sh: child PID
+    K-->>Ch: returns 0
+    Note over K,Ch: one call, two returns — that is how the parent tells them apart
+    Ch->>K: execve(program)
+    K->>Bin: load the ELF, map text, data, heap, stack
+    K->>Ch: replace the image, keep the PID
+    Note over Ch: fork makes a process, exec makes it a different program
+    Ch->>K: exit(status)
+    K-->>Sh: SIGCHLD
+    Sh->>K: wait() collects the status
+    Note over K,Sh: a child nobody waits for stays a zombie in the table

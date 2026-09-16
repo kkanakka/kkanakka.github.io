@@ -1,0 +1,23 @@
+sequenceDiagram
+    autonumber
+    participant M as Metrics stream
+    participant FE as Feature builder
+    participant Det as Detector
+    participant Sc as Scorer
+    participant Ct as Suppression controller
+    participant P as Pager
+    M->>FE: raw series
+    FE->>FE: seasonality and trend features
+    FE->>Det: feature vector
+    Det->>Sc: anomaly score
+    alt score above threshold
+        Sc->>Ct: candidate anomaly
+        Ct->>Ct: is a deploy or a known event in flight?
+        alt correlated with a known change
+            Ct-->>Sc: suppress, annotate instead
+        else unexplained
+            Ct->>P: page with the contributing series
+        end
+    else normal
+        Sc-->>M: feed back as a training sample
+    end

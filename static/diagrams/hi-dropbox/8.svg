@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg viewBox="0 0 900 420" xmlns="http://www.w3.org/2000/svg"><style>.sb-b{fill:#ddf4ff;stroke:var(--accent);stroke-width:1}
-.sb-g{fill:#dafbe1;stroke:var(--success);stroke-width:1}
-.sb-r{fill:#ffebe9;stroke:var(--danger);stroke-width:1}
-.sb-y{fill:#fff8e6;stroke:var(--attention);stroke-width:1}
-.sb-p{fill:#fbefff;stroke:var(--done);stroke-width:1}
-.sb-o{fill:#fff1e5;stroke:var(--orange);stroke-width:1}
-.sl{font-family:var(--sans);font-size:12px;font-weight:600;fill:var(--fg)}
-.ss{font-family:var(--mono);font-size:10px;fill:var(--fg-muted)}</style>
+<svg viewBox="0 0 900 420" xmlns="http://www.w3.org/2000/svg"><style>.sb-b{fill:#ddf4ff;stroke:#0969da;stroke-width:1}
+.sb-g{fill:#dafbe1;stroke:#1a7f37;stroke-width:1}
+.sb-r{fill:#ffebe9;stroke:#d1242f;stroke-width:1}
+.sb-y{fill:#fff8e6;stroke:#9a6700;stroke-width:1}
+.sb-p{fill:#fbefff;stroke:#8250df;stroke-width:1}
+.sb-o{fill:#fff1e5;stroke:#bc4c00;stroke-width:1}
+.sl{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans",Helvetica,Arial,sans-serif;font-size:12px;font-weight:600;fill:#1f2328}
+.ss{font-family:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;font-size:10px;fill:#59636e}</style>
       <rect class="sb-b" x="20" y="20" width="140" height="50" rx="6"></rect><text class="sl" x="90" y="42" text-anchor="middle">Uploader</text><text class="ss" x="90" y="56" text-anchor="middle">web/mobile/desktop</text>
       <rect class="sb-g" x="20" y="100" width="140" height="50" rx="6"></rect><text class="sl" x="90" y="122" text-anchor="middle">Downloader</text><text class="ss" x="90" y="136" text-anchor="middle">any device</text>
 
@@ -22,24 +22,24 @@
 
       <rect class="sb-r" x="420" y="300" width="180" height="50" rx="6"></rect><text class="sl" x="510" y="322" text-anchor="middle">Kafka + Samza</text><text class="ss" x="510" y="336" text-anchor="middle">push ChangeEvents</text>
 
-      <path d="M160,45 L218,80" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#ab)" fill="none"></path>
-      <path d="M160,125 L218,95" stroke="var(--success)" stroke-width="1.5" marker-end="url(#a1)" fill="none"></path>
-      <path d="M370,85 L418,85" stroke="var(--fg-muted)" stroke-width="1.5" marker-end="url(#a1)" fill="none"></path>
-      <path d="M600,80 L658,55" stroke="var(--fg-muted)" stroke-width="1.5" marker-end="url(#a1)" fill="none"></path>
+      <path d="M160,45 L218,80" stroke="#0969da" stroke-width="1.5" marker-end="url(#ab)" fill="none"></path>
+      <path d="M160,125 L218,95" stroke="#1a7f37" stroke-width="1.5" marker-end="url(#a1)" fill="none"></path>
+      <path d="M370,85 L418,85" stroke="#59636e" stroke-width="1.5" marker-end="url(#a1)" fill="none"></path>
+      <path d="M600,80 L658,55" stroke="#59636e" stroke-width="1.5" marker-end="url(#a1)" fill="none"></path>
 
-      <path d="M90,70 L90,200 L418,222" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#ab)" fill="none"></path>
-      <text class="ss" x="140" y="195" fill="var(--accent)">direct upload (presigned URL)</text>
+      <path d="M90,70 L90,200 L418,222" stroke="#0969da" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#ab)" fill="none"></path>
+      <text class="ss" x="140" y="195" fill="#0969da">direct upload (presigned URL)</text>
 
-      <path d="M160,150 L240,198" stroke="var(--success)" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#a1)" fill="none"></path>
-      <text class="ss" x="130" y="200" fill="var(--success)">via CDN</text>
+      <path d="M160,150 L240,198" stroke="#1a7f37" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#a1)" fill="none"></path>
+      <text class="ss" x="130" y="200" fill="#1a7f37">via CDN</text>
 
-      <path d="M510,250 L370,225" stroke="var(--fg-muted)" stroke-width="1.5" stroke-dasharray="3,2" marker-end="url(#a1)" fill="none"></path>
+      <path d="M510,250 L370,225" stroke="#59636e" stroke-width="1.5" stroke-dasharray="3,2" marker-end="url(#a1)" fill="none"></path>
       <text class="ss" x="440" y="243" text-anchor="middle">cache fill</text>
 
-      <path d="M510,350 L90,155" stroke="var(--danger)" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#a1)" fill="none"></path>
-      <text class="ss" x="280" y="340" fill="var(--danger)">push change events</text>
+      <path d="M510,350 L90,155" stroke="#d1242f" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#a1)" fill="none"></path>
+      <text class="ss" x="280" y="340" fill="#d1242f">push change events</text>
 
-      <text class="ss" x="20" y="390" fill="var(--accent)">—— control plane (metadata + signed URLs)</text>
-      <text class="ss" x="350" y="390" fill="var(--accent)">···· data plane (bytes direct to Ambry)</text>
-      <text class="ss" x="650" y="390" fill="var(--danger)">···· push notifications (Kafka)</text>
+      <text class="ss" x="20" y="390" fill="#0969da">—— control plane (metadata + signed URLs)</text>
+      <text class="ss" x="350" y="390" fill="#0969da">···· data plane (bytes direct to Ambry)</text>
+      <text class="ss" x="650" y="390" fill="#d1242f">···· push notifications (Kafka)</text>
     </svg>

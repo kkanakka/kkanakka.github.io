@@ -1,0 +1,19 @@
+sequenceDiagram
+    autonumber
+    participant Req as Requirement
+    participant Acc as Access pattern
+    participant Con as Consistency need
+    participant Sc as Scale and shape
+    participant Ch as Choice
+    Req->>Acc: what are the reads and writes, really?
+    Acc-->>Req: point lookups, ranges, or full scans
+    Req->>Con: what breaks if a read is stale?
+    alt money or inventory
+        Con-->>Ch: strong consistency, pay the latency
+    else feed or metrics
+        Con-->>Ch: eventual is fine, buy the availability
+    end
+    Req->>Sc: how big, how fast, how bursty?
+    Sc-->>Ch: partitioning key and growth path
+    Ch->>Ch: pick the boring option that satisfies all three
+    Note over Ch: the interesting choice is the one you can operate at 3am

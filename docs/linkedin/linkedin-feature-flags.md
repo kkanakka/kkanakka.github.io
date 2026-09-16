@@ -5,6 +5,14 @@ sidebar_position: 1
 sidebar_label: "Feature Flag Service"
 description: "Feature Flag Service"
 ---
+
+<!-- DIAGRAM:START -->
+
+## How it works
+
+<img src="/diagrams/linkedin-feature-flags/sequence.svg" alt="How it works — linkedin-feature-flags" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:END -->
 Launch Control System — Production-Grade Design
 
 A reliability-first feature flag service designed for LinkedIn's scale: sub-2ms evaluation, 30-second global propagation, and zero single points of failure. Built with Kafka, Espresso, Memcache, and LinkedIn infrastructure patterns.

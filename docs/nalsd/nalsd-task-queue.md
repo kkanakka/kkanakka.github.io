@@ -5,6 +5,14 @@ sidebar_position: 4
 sidebar_label: "Distributed Task Queue"
 description: "Distributed Task Queue"
 ---
+
+<!-- DIAGRAM:START -->
+
+## How it works
+
+<img src="/diagrams/nalsd-task-queue/sequence.svg" alt="How it works — nalsd-task-queue" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:END -->
 in
 
 in/taskqueue

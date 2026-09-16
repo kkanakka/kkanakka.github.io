@@ -5,6 +5,14 @@ sidebar_position: 1
 sidebar_label: "Hello Interview Overview"
 description: "Hello Interview Overview"
 ---
+
+<!-- DIAGRAM:START -->
+
+## How it works
+
+<img src="/diagrams/hi-index/sequence.svg" alt="How it works — hi-index" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:END -->
 System design problems with all 15 diagrams, LinkedIn technology mappings (Ambry, Espresso, Kafka, Samza), and compact visual walkthroughs.
 
 [

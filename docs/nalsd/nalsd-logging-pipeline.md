@@ -5,6 +5,14 @@ sidebar_position: 3
 sidebar_label: "Distributed Logging Pipeline"
 description: "Distributed Logging Pipeline"
 ---
+
+<!-- DIAGRAM:START -->
+
+## How it works
+
+<img src="/diagrams/nalsd-logging-pipeline/sequence.svg" alt="How it works — nalsd-logging-pipeline" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:END -->
 in
 
 in/logging

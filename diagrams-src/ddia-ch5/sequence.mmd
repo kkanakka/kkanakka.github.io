@@ -1,0 +1,17 @@
+sequenceDiagram
+    autonumber
+    participant W as Writer
+    participant P as Primary
+    participant R as Replica
+    participant Rd as Reader
+    W->>P: write
+    P-->>W: acknowledged
+    P->>R: replicate asynchronously
+    Rd->>R: read immediately after
+    alt replication has caught up
+        R-->>Rd: the new value
+    else still lagging
+        R-->>Rd: the old value
+        Note over Rd,R: read-your-own-writes broken — route that user to the primary
+    end
+    Note over P,R: sync replication protects the data and costs latency — async does the reverse

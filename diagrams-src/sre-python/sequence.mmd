@@ -1,0 +1,17 @@
+sequenceDiagram
+    autonumber
+    participant Src as Data source
+    participant Rd as Streaming reader
+    participant Proc as Processing
+    participant Agg as Aggregation
+    participant Out as Output
+    Src->>Rd: a file or stream far larger than memory
+    loop line at a time
+        Rd->>Proc: one record
+        Proc->>Proc: parse, skip malformed rather than crash
+        Proc->>Agg: fold into a counter or heap
+    end
+    Note over Rd,Agg: never read it all in — the interview file is always bigger than the laptop
+    Agg->>Out: top-N, percentile, or merged ranges
+    Out-->>Src: exit code and a summary a human can read
+    Note over Proc: idempotent, dry-run capable, and it logs what it touched

@@ -5,6 +5,14 @@ sidebar_position: 1
 sidebar_label: "Coding Problems"
 description: "Coding Problems"
 ---
+
+<!-- DIAGRAM:START -->
+
+## How it works
+
+<img src="/diagrams/coding/sequence.svg" alt="How it works — coding" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:END -->
 A visual guide to solving coding interview problems with step-by-step traces, flowcharts, and complexity analysis.
 
 [Home](/) [Linux Internals](/docs/linux) [System Design Hub](/docs/foundations)

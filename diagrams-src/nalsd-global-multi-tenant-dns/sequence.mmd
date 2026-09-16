@@ -1,0 +1,22 @@
+sequenceDiagram
+    autonumber
+    participant Cl as Client
+    participant Rec as Recursive resolver
+    participant Any as Anycast edge
+    participant Auth as Authoritative server
+    participant CP as Control plane
+    participant Hc as Health checker
+    Cl->>Rec: resolve service.tenant.example
+    alt cached and within TTL
+        Rec-->>Cl: cached answer
+    else
+        Rec->>Any: query — anycast routes to the nearest site
+        Any->>Auth: look up the tenant zone
+        Auth->>Auth: apply the tenant's routing policy
+        Auth-->>Rec: answer with a short TTL
+        Rec-->>Cl: address
+    end
+    loop continuously
+        Hc->>Auth: mark unhealthy endpoints down
+        CP->>Auth: push zone updates to every site
+    end

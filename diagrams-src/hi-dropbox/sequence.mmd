@@ -1,0 +1,20 @@
+sequenceDiagram
+    autonumber
+    participant Cl as Client
+    participant Meta as Metadata service
+    participant Blob as Blob store
+    participant CDN as CDN
+    participant Peer as Other device
+    Cl->>Cl: chunk the file, hash each chunk
+    Cl->>Meta: which of these chunk hashes do you already have?
+    Meta-->>Cl: the missing ones only
+    Note over Cl,Meta: deduplication — an unchanged chunk is never re-uploaded
+    Meta-->>Cl: presigned upload URLs
+    Cl->>Blob: PUT chunks directly
+    Note over Cl,Blob: bytes bypass the application tier entirely
+    Cl->>Meta: commit the new file version
+    Meta->>Peer: notify of the change
+    Peer->>Meta: fetch the manifest
+    Meta-->>Peer: presigned download URLs
+    Peer->>CDN: GET chunks
+    CDN-->>Peer: cached at the edge

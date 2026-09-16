@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg viewBox="0 0 800 280" xmlns="http://www.w3.org/2000/svg"><style>.sb-b{fill:#ddf4ff;stroke:var(--accent);stroke-width:1}
-.sb-g{fill:#dafbe1;stroke:var(--success);stroke-width:1}
-.sb-r{fill:#ffebe9;stroke:var(--danger);stroke-width:1}
-.sl{font-family:var(--sans);font-size:12px;font-weight:600;fill:var(--fg)}
-.ss{font-family:var(--mono);font-size:10px;fill:var(--fg-muted)}</style>
+<svg viewBox="0 0 800 280" xmlns="http://www.w3.org/2000/svg"><style>.sb-b{fill:#ddf4ff;stroke:#0969da;stroke-width:1}
+.sb-g{fill:#dafbe1;stroke:#1a7f37;stroke-width:1}
+.sb-r{fill:#ffebe9;stroke:#d1242f;stroke-width:1}
+.sl{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans",Helvetica,Arial,sans-serif;font-size:12px;font-weight:600;fill:#1f2328}
+.ss{font-family:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;font-size:10px;fill:#59636e}</style>
       <text class="sl" x="20" y="18">Feed Service (stateless → horizontal scaling)</text>
       <rect class="sb-b" x="20" y="28" width="360" height="55" rx="6"></rect>
       <text class="ss" x="200" y="48" text-anchor="middle">Each instance handles 10K-100K concurrent connections</text>
@@ -14,14 +14,14 @@
       <text class="ss" x="585" y="62" text-anchor="middle">LinkedIn’s d2 framework detects load and adds instances</text>
       <text class="ss" x="585" y="76" text-anchor="middle">No AWS ALB needed — client-side LB built into d2</text>
 
-      <line x1="20" y1="100" x2="780" y2="100" stroke="var(--border-muted)"></line>
+      <line x1="20" y1="100" x2="780" y2="100" stroke="#d8dee4"></line>
 
       <text class="sl" x="20" y="118">Espresso (database — mostly bypassed)</text>
       <rect class="sb-g" x="20" y="128" width="750" height="40" rx="6"></rect>
       <text class="ss" x="395" y="148" text-anchor="middle">All feed reads hit cache (Couchbase). Espresso only handles writes + CDC. Cache absorbs the spike.</text>
       <text class="ss" x="395" y="162" text-anchor="middle">At LinkedIn, Espresso handles 4.8M reads/sec anyway — but we don’t need it for feed reads.</text>
 
-      <line x1="20" y1="185" x2="780" y2="185" stroke="var(--border-muted)"></line>
+      <line x1="20" y1="185" x2="780" y2="185" stroke="#d8dee4"></line>
 
       <text class="sl" x="20" y="203">Couchbase / Redis (cache — the hot path)</text>
       <rect class="sb-r" x="20" y="213" width="370" height="55" rx="6"></rect>

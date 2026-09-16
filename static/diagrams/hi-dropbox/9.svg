@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg viewBox="0 0 800 190" xmlns="http://www.w3.org/2000/svg"><style>.sb-r{fill:#ffebe9;stroke:var(--danger);stroke-width:1}
-.sb-y{fill:#fff8e6;stroke:var(--attention);stroke-width:1}
-.sl{font-family:var(--sans);font-size:12px;font-weight:600;fill:var(--fg)}
-.ss{font-family:var(--mono);font-size:10px;fill:var(--fg-muted)}</style>
+<svg viewBox="0 0 800 190" xmlns="http://www.w3.org/2000/svg"><style>.sb-r{fill:#ffebe9;stroke:#d1242f;stroke-width:1}
+.sb-y{fill:#fff8e6;stroke:#9a6700;stroke-width:1}
+.sl{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans",Helvetica,Arial,sans-serif;font-size:12px;font-weight:600;fill:#1f2328}
+.ss{font-family:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;font-size:10px;fill:#59636e}</style>
       <rect class="sb-r" x="20" y="10" width="760" height="80" rx="6"></rect>
       <text class="sl" x="40" y="30">Time math</text>
       <text class="ss" x="40" y="48">50 GB × 8 bits/byte = 400 Gb</text>

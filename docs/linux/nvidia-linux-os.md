@@ -5,6 +5,14 @@ sidebar_position: 8
 sidebar_label: "Linux OS Deep Dive"
 description: "Linux OS Deep Dive"
 ---
+
+<!-- DIAGRAM:START -->
+
+## How it works
+
+<img src="/diagrams/nvidia-linux-os/sequence.svg" alt="How it works — nvidia-linux-os" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:END -->
 [Home](#) / Linux OS Deep Dive
 
 60 minutes • Kernel Internals, Advanced Networking, Memory, Storage, Troubleshooting, System Design

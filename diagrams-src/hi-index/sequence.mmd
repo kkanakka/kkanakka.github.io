@@ -1,0 +1,14 @@
+sequenceDiagram
+    autonumber
+    participant I as Interviewer
+    participant C as Candidate
+    participant B as Board
+    I->>C: here is the product
+    C->>I: functional requirements — what must it do?
+    C->>I: non-functional — scale, latency, consistency
+    C->>B: the core entities and the API between them
+    C->>B: high-level design, data flow first
+    I->>C: now go deep on one piece
+    C->>B: partitioning, hot keys, and the read/write split
+    C->>B: what breaks at 10x, and the fix
+    Note over C,B: the deep dive is what the interview is actually scored on

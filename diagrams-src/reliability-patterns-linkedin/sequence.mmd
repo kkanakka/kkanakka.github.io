@@ -1,0 +1,29 @@
+sequenceDiagram
+    autonumber
+    participant C as Caller
+    participant CB as Circuit breaker
+    participant Rt as Retry with backoff
+    participant Svc as Downstream service
+    participant Fb as Fallback
+    C->>CB: request
+    alt circuit closed
+        CB->>Rt: allow
+        Rt->>Svc: attempt 1
+        alt succeeds
+            Svc-->>C: response
+        else fails and is retryable
+            Rt->>Rt: wait with jitter
+            Note over Rt: jitter stops every client retrying in lockstep
+            Rt->>Svc: attempt 2
+            alt still failing
+                Rt->>CB: record failure
+                CB->>CB: threshold crossed — open the circuit
+                CB->>Fb: serve degraded
+                Fb-->>C: cached or default response
+            end
+        end
+    else circuit open
+        CB->>Fb: shed immediately, do not pile on
+        Fb-->>C: degraded response
+        Note over CB: after a cooldown a probe decides whether to close
+    end

@@ -5,6 +5,14 @@ sidebar_position: 6
 sidebar_label: "Distributed Hash Table"
 description: "Distributed Hash Table"
 ---
+
+<!-- DIAGRAM:START -->
+
+## How it works
+
+<img src="/diagrams/nalsd-dht/sequence.svg" alt="How it works — nalsd-dht" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:END -->
 in
 
 in/dht

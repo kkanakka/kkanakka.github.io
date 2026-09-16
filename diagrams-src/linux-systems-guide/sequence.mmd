@@ -1,0 +1,22 @@
+sequenceDiagram
+    autonumber
+    participant App as Application
+    participant Lib as libc
+    participant Sys as Syscall boundary
+    participant K as Kernel
+    participant Drv as Driver
+    participant HW as Hardware
+    App->>Lib: read(), write(), open()
+    Lib->>Sys: trap into the kernel
+    Sys->>K: VFS, scheduler, memory manager
+    K->>K: is the data already cached?
+    alt in the page cache
+        K-->>App: served without touching the device
+    else must go to the device
+        K->>Drv: queue the request
+        Drv->>HW: DMA
+        HW-->>Drv: completion interrupt
+        Drv-->>K: wake the blocked task
+        K-->>App: data
+    end
+    Note over App,HW: every performance question is "which of these layers is the one that is waiting?"

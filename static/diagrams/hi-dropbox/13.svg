@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg viewBox="0 0 800 260" xmlns="http://www.w3.org/2000/svg"><style>.sb{fill:var(--bg-subtle);stroke:var(--border);stroke-width:1}
-.sb-b{fill:#ddf4ff;stroke:var(--accent);stroke-width:1}
-.sb-g{fill:#dafbe1;stroke:var(--success);stroke-width:1}
-.sb-r{fill:#ffebe9;stroke:var(--danger);stroke-width:1}
-.sb-y{fill:#fff8e6;stroke:var(--attention);stroke-width:1}
-.sb-p{fill:#fbefff;stroke:var(--done);stroke-width:1}
-.sb-o{fill:#fff1e5;stroke:var(--orange);stroke-width:1}
-.sl{font-family:var(--sans);font-size:12px;font-weight:600;fill:var(--fg)}
-.ss{font-family:var(--mono);font-size:10px;fill:var(--fg-muted)}</style>
-      <text class="sl" x="20" y="16" fill="var(--danger)">Naïve: fixed-size 5MB chunks</text>
+<svg viewBox="0 0 800 260" xmlns="http://www.w3.org/2000/svg"><style>.sb{fill:#f6f8fa;stroke:#d1d9e0;stroke-width:1}
+.sb-b{fill:#ddf4ff;stroke:#0969da;stroke-width:1}
+.sb-g{fill:#dafbe1;stroke:#1a7f37;stroke-width:1}
+.sb-r{fill:#ffebe9;stroke:#d1242f;stroke-width:1}
+.sb-y{fill:#fff8e6;stroke:#9a6700;stroke-width:1}
+.sb-p{fill:#fbefff;stroke:#8250df;stroke-width:1}
+.sb-o{fill:#fff1e5;stroke:#bc4c00;stroke-width:1}
+.sl{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans",Helvetica,Arial,sans-serif;font-size:12px;font-weight:600;fill:#1f2328}
+.ss{font-family:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;font-size:10px;fill:#59636e}</style>
+      <text class="sl" x="20" y="16" fill="#d1242f">Naïve: fixed-size 5MB chunks</text>
       <rect class="sb" x="20" y="25" width="110" height="28" rx="4"></rect><text class="ss" x="75" y="43" text-anchor="middle">chunk 1</text>
       <rect class="sb" x="140" y="25" width="110" height="28" rx="4"></rect><text class="ss" x="195" y="43" text-anchor="middle">chunk 2</text>
       <rect class="sb" x="260" y="25" width="110" height="28" rx="4"></rect><text class="ss" x="315" y="43" text-anchor="middle">chunk 3</text>
@@ -21,11 +21,11 @@
       <rect class="sb-r" x="260" y="80" width="110" height="28" rx="4"></rect><text class="ss" x="315" y="98" text-anchor="middle">chunk 3'</text>
       <rect class="sb-r" x="380" y="80" width="110" height="28" rx="4"></rect><text class="ss" x="435" y="98" text-anchor="middle">chunk 4'</text>
       <rect class="sb-r" x="500" y="80" width="110" height="28" rx="4"></rect><text class="ss" x="555" y="98" text-anchor="middle">chunk 5'</text>
-      <text class="ss" x="640" y="98" fill="var(--danger)">ALL differ!</text>
+      <text class="ss" x="640" y="98" fill="#d1242f">ALL differ!</text>
 
-      <line x1="20" y1="130" x2="780" y2="130" stroke="var(--border-muted)"></line>
+      <line x1="20" y1="130" x2="780" y2="130" stroke="#d8dee4"></line>
 
-      <text class="sl" x="20" y="150" fill="var(--success)">CDC: boundaries from content (rolling hash)</text>
+      <text class="sl" x="20" y="150" fill="#1a7f37">CDC: boundaries from content (rolling hash)</text>
       <rect class="sb-g" x="20" y="160" width="75" height="28" rx="4"></rect><text class="ss" x="57" y="178" text-anchor="middle">chunk 1</text>
       <rect class="sb-g" x="105" y="160" width="130" height="28" rx="4"></rect><text class="ss" x="170" y="178" text-anchor="middle">chunk 2</text>
       <rect class="sb-g" x="245" y="160" width="90" height="28" rx="4"></rect><text class="ss" x="290" y="178" text-anchor="middle">chunk 3</text>
@@ -33,6 +33,6 @@
       <rect class="sb-g" x="500" y="160" width="110" height="28" rx="4"></rect><text class="ss" x="555" y="178" text-anchor="middle">chunk 5</text>
 
       <text class="ss" x="20" y="212">After insert: only chunk 1' changes; chunks 2–5 stay identical.</text>
-      <text class="ss" x="20" y="228" fill="var(--success)">Sync only the changed chunk — even 50GB syncs in ms.</text>
+      <text class="ss" x="20" y="228" fill="#1a7f37">Sync only the changed chunk — even 50GB syncs in ms.</text>
       <text class="ss" x="20" y="250">How: slide a window, compute rolling hash (Rabin fingerprint). Magic pattern = chunk boundary.</text>
     </svg>

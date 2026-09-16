@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 520" role="img" aria-labelledby="fig8a-title"><style>.topbar .crumbs .sep{color:var(--border)}
-.subtitle{color: var(--fg-muted); font-size: 16px; margin-bottom: 28px; max-width: 720px}
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 520" role="img" aria-labelledby="fig8a-title"><style>.topbar .crumbs .sep{color:#d1d9e0}
+.subtitle{color: #59636e; font-size: 16px; margin-bottom: 28px; max-width: 720px}
 pre .str{color:#0a3069}</style>
       <title id="fig8a-title">eight kernel primitives that compose a container</title>
       <defs>

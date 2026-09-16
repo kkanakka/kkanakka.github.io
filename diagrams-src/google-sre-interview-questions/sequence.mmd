@@ -1,0 +1,16 @@
+sequenceDiagram
+    autonumber
+    participant I as Interviewer
+    participant C as Candidate
+    participant Mental as Mental model
+    I->>C: what happens when you run this command?
+    C->>Mental: which layer does this touch — syscall, kernel, hardware?
+    Mental-->>C: the path from user space down
+    C->>I: walk it down one layer at a time
+    I->>C: and if it hangs?
+    C->>Mental: which state is the process in, and what is it waiting on?
+    Mental-->>C: runnable, sleeping, or uninterruptible
+    C->>I: name the tool that would show it
+    Note over C,Mental: a good answer names the mechanism and the instrument that proves it
+    I->>C: why is it built that way?
+    C->>I: the trade-off the kernel chose, and what it costs

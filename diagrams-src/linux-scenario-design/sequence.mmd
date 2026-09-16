@@ -1,0 +1,17 @@
+sequenceDiagram
+    autonumber
+    participant Sym as Symptom
+    participant Eng as Engineer
+    participant Sys as System
+    Sym->>Eng: the host is slow
+    Eng->>Sys: is it CPU, memory, disk, or network?
+    Sys-->>Eng: load average and run queue
+    alt run queue long, CPU busy
+        Eng->>Sys: which process, user or system time?
+    else run queue long, CPU idle
+        Eng->>Sys: uninterruptible sleep — it is waiting on I/O
+    end
+    Eng->>Sys: confirm with the instrument, not the guess
+    Sys-->>Eng: the saturated resource
+    Eng->>Eng: is this the cause, or another symptom of it?
+    Note over Eng,Sys: work down the stack — every layer can fake the symptoms of the one below

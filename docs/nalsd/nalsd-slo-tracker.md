@@ -5,6 +5,14 @@ sidebar_position: 8
 sidebar_label: "SLO Error Budget Tracker"
 description: "SLO Error Budget Tracker"
 ---
+
+<!-- DIAGRAM:START -->
+
+## How it works
+
+<img src="/diagrams/nalsd-slo-tracker/sequence.svg" alt="How it works — nalsd-slo-tracker" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:END -->
 in
 
 in/slo-tracker

@@ -1,0 +1,23 @@
+sequenceDiagram
+    autonumber
+    participant Cl as Client
+    participant DNS as DNS
+    participant LB as L7 load balancer
+    participant Svc as Service
+    participant Ca as Cache
+    participant DB as Database
+    Cl->>DNS: resolve the hostname
+    DNS-->>Cl: address
+    Cl->>LB: TCP, then TLS handshake
+    LB->>LB: pick a backend — health and load
+    LB->>Svc: forward the request
+    Svc->>Ca: read-through lookup
+    alt cache hit
+        Ca-->>Svc: value
+    else miss
+        Svc->>DB: query
+        DB-->>Svc: row
+        Svc->>Ca: populate with a TTL
+    end
+    Svc-->>Cl: response
+    Note over Cl,Svc: timeouts, bounded retries with jitter, and a breaker sit on every hop

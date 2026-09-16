@@ -1,0 +1,20 @@
+sequenceDiagram
+    autonumber
+    participant App as Application
+    participant Lib as CUDA runtime
+    participant Drv as Kernel driver
+    participant IOMMU as IOMMU
+    participant GPU as GPU
+    App->>Lib: allocate device memory
+    Lib->>Drv: ioctl
+    Drv->>IOMMU: map pages for device access
+    IOMMU-->>Drv: device addresses
+    App->>Lib: copy host to device
+    Lib->>GPU: DMA transfer over PCIe
+    Note over Lib,GPU: pinned host memory avoids a bounce buffer and roughly doubles effective bandwidth
+    App->>Lib: launch kernel
+    Lib->>GPU: enqueue on a stream
+    GPU-->>Lib: asynchronous — the CPU does not wait
+    App->>Lib: synchronise
+    Lib-->>App: results copied back
+    Note over App,GPU: the bottleneck is almost always memory bandwidth, not compute

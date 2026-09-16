@@ -1,0 +1,22 @@
+sequenceDiagram
+    autonumber
+    participant App as Application
+    participant Ag as Node agent
+    participant GW as Ingest gateway
+    participant K as Kafka
+    participant IX as Indexer
+    participant Hot as Hot tier
+    participant Cold as Cold object store
+    participant U as Engineer
+    App->>Ag: write to stdout
+    Ag->>Ag: tail, parse, add pod and node labels
+    Ag->>GW: compressed batch
+    GW->>K: produce, partitioned by tenant
+    K->>IX: consume
+    IX->>Hot: build inverted index
+    Note over IX,Hot: searchable within the 60s SLO
+    IX->>Cold: roll sealed segments off
+    U->>Hot: query last 24h
+    Hot-->>U: results
+    U->>Cold: query older range
+    Cold-->>U: rehydrated results, slower

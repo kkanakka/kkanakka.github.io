@@ -5,6 +5,14 @@ sidebar_position: 2
 sidebar_label: "SRE Python: 38 Production Problems"
 description: "SRE Python: 38 Production Problems"
 ---
+
+<!-- DIAGRAM:START -->
+
+## How it works
+
+<img src="/diagrams/sre-python/sequence.svg" alt="How it works — sre-python" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:END -->
 38 production-flavored Python problems — from log dedupers to circuit breakers. Baseline → Improved → Production-grade, with Google SRE context for each.
 
 Google SRE • Python Workbook • 38 Problems • 153 Pages

@@ -1,0 +1,21 @@
+sequenceDiagram
+    autonumber
+    participant Sch as Rotation scheduler
+    participant Ct as Rotation controller
+    participant V as Secret store
+    participant DB as Backing system
+    participant Ag as Node agent
+    participant App as Application
+    Sch->>Ct: secret is due for rotation
+    Ct->>DB: create the new credential
+    Note over Ct,DB: both old and new are valid during the overlap
+    Ct->>V: write new version, keep the old one
+    V->>Ag: notify subscribers
+    Ag->>App: deliver new version
+    App->>App: reload without restarting
+    Ct->>Ct: wait for every consumer to report the new version
+    alt all consumers moved
+        Ct->>DB: revoke the old credential
+    else someone is still on the old one
+        Ct->>Sch: hold the overlap open, alert the owner
+    end

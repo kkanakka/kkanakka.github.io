@@ -1,0 +1,25 @@
+sequenceDiagram
+    autonumber
+    participant CI as CI job
+    participant Cl as Build client
+    participant Reg as Regional cache
+    participant Obj as Object store
+    participant Peer as Peer region
+    CI->>Cl: build target
+    Cl->>Cl: hash inputs — sources, deps, toolchain
+    Cl->>Reg: GET by content hash
+    alt hit
+        Reg-->>CI: artifact, build skipped
+    else miss
+        Reg->>Peer: ask the nearest region
+        alt peer has it
+            Peer-->>Reg: artifact
+            Reg-->>CI: artifact
+        else genuinely absent
+            Reg-->>Cl: miss
+            Cl->>CI: build locally
+            CI->>Reg: upload keyed by the same hash
+            Reg->>Obj: persist and replicate
+        end
+    end
+    Note over Cl: identical inputs must produce the same key, or the cache is worse than useless

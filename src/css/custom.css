@@ -54,3 +54,11 @@
 /* The source pages nest headings deeply; keep them readable in the TOC. */
 .markdown h2 { margin-top: 2.25rem; }
 .markdown h3 { margin-top: 1.75rem; }
+
+/* Sequence diagrams are rendered from the Mermaid sources in diagrams-src/.
+   They are wider and airier than the extracted page diagrams, so they get
+   more room and no hard max-width. */
+.doc-diagram-seq {
+  padding: 1rem 0.75rem;
+  background: #ffffff;
+}

@@ -1,0 +1,29 @@
+sequenceDiagram
+    autonumber
+    participant Cl as Client
+    participant Edge as CDN
+    participant App as Application
+    participant Loc as Local cache
+    participant Dist as Distributed cache
+    participant DB as Database
+    Cl->>Edge: request a static asset
+    alt edge hit
+        Edge-->>Cl: served near the user
+    else
+        Edge->>App: origin fetch
+    end
+    App->>Loc: in-process lookup
+    alt local hit
+        Loc-->>App: value, nanoseconds
+    else
+        App->>Dist: shared lookup
+        alt hit
+            Dist-->>App: value, a network hop
+        else
+            App->>DB: read
+            DB-->>App: row
+            App->>Dist: populate
+            App->>Loc: populate with a shorter TTL
+        end
+    end
+    Note over Loc,Dist: each layer trades freshness for latency — decide where staleness is acceptable

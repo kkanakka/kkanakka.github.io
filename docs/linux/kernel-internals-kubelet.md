@@ -5,6 +5,14 @@ sidebar_position: 6
 sidebar_label: "Kernel Internals & the Kubelet"
 description: "Kernel Internals & the Kubelet"
 ---
+
+<!-- DIAGRAM:START -->
+
+## How it works
+
+<img src="/diagrams/kernel-internals-kubelet/sequence.svg" alt="How it works — kernel-internals-kubelet" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:END -->
 [home](/)/ [linux guide](/docs/linux/linux-systems-guide)/ **kernel internals**
 
 v6.x · Updated 2026-05

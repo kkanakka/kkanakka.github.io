@@ -5,6 +5,14 @@ sidebar_position: 9
 sidebar_label: "Canary Deployment Controller"
 description: "Canary Deployment Controller"
 ---
+
+<!-- DIAGRAM:START -->
+
+## How it works
+
+<img src="/diagrams/nalsd-canary-controller/sequence.svg" alt="How it works — nalsd-canary-controller" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:END -->
 in
 
 in/canary

@@ -1,0 +1,22 @@
+sequenceDiagram
+    autonumber
+    participant Mon as Monitoring
+    participant GW as Incident gateway
+    participant Dedup as Deduplicator
+    participant Sched as On-call schedule
+    participant N as Notifier
+    participant IC as Incident commander
+    Mon->>GW: alert fires
+    GW->>Dedup: group by service and cause
+    alt already an open incident
+        Dedup-->>GW: attach to it, no second page
+    else new
+        Dedup->>Sched: who is on call for this service
+        Sched-->>N: target
+        N->>IC: page
+        alt not acknowledged in time
+            N->>IC: escalate to secondary
+        end
+        IC->>GW: acknowledge, open a channel
+    end
+    IC->>GW: resolve, write the timeline

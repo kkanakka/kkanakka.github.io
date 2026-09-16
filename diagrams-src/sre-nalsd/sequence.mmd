@@ -1,0 +1,19 @@
+sequenceDiagram
+    autonumber
+    participant Pg as Page
+    participant IC as Incident commander
+    participant Ops as Operations
+    participant Comms as Comms
+    participant Sys as System
+    Pg->>IC: SLO burning, symptom attached
+    IC->>IC: declare severity, take command
+    IC->>Ops: one owner per workstream
+    Ops->>Sys: gather evidence — what changed, what saturated
+    Sys-->>Ops: signals
+    Ops->>IC: hypothesis with the evidence behind it
+    IC->>Ops: mitigate — roll back, shift traffic, or shed
+    Ops->>Sys: apply
+    Sys-->>IC: symptom receding
+    IC->>Comms: status out on a fixed cadence
+    IC->>IC: stand down, schedule the postmortem
+    Note over IC: the commander coordinates and does not type — that is the rule that shortens incidents

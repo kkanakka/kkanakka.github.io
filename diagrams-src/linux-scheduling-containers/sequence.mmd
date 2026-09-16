@@ -1,0 +1,19 @@
+sequenceDiagram
+    autonumber
+    participant T as Task
+    participant Sch as Scheduler
+    participant RQ as Run queue
+    participant CG as cgroup limits
+    participant CPU as CPU
+    T->>RQ: becomes runnable
+    Sch->>RQ: pick_next_task across classes in strict order
+    Note over Sch: deadline, then real-time, then CFS — a lower class only runs when the ones above are empty
+    Sch->>CG: does this task's group have budget left?
+    alt quota remaining
+        CG-->>Sch: allowed
+        Sch->>CPU: context switch in
+        CPU-->>T: runs until its slice ends or it blocks
+    else quota exhausted
+        CG->>T: throttled until the period refills
+        Note over CG,T: throttling looks exactly like a slow dependency from inside the container
+    end

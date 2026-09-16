@@ -1,0 +1,20 @@
+sequenceDiagram
+    autonumber
+    participant App as Java application
+    participant JVM as JVM heap
+    participant GC as Garbage collector
+    participant OS as Linux virtual memory
+    participant Phys as Physical RAM
+    App->>JVM: allocate an object
+    JVM->>JVM: bump the pointer in eden
+    alt eden full
+        JVM->>GC: minor collection
+        GC->>JVM: copy survivors, free the rest
+    end
+    JVM->>OS: the heap is just mapped virtual memory
+    OS->>Phys: back a page on first touch
+    Note over OS,Phys: reserved is not committed, and committed is not resident
+    alt the cgroup limit is reached
+        OS->>App: OOM kill
+        Note over App,OS: the JVM sees a healthy heap while the kernel kills the process
+    end

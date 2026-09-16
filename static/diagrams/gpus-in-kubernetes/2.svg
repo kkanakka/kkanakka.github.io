@@ -1,21 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg viewBox="0 0 800 540" xmlns="http://www.w3.org/2000/svg"><style>.d-box{fill: var(--bg-subtle); stroke: var(--border); stroke-width: 1;}
-.d-box-accent{fill: #ddf4ff; stroke: var(--accent); stroke-width: 1;}
+<svg viewBox="0 0 800 540" xmlns="http://www.w3.org/2000/svg"><style>.d-box{fill: #f6f8fa; stroke: #d1d9e0; stroke-width: 1;}
+.d-box-accent{fill: #ddf4ff; stroke: #0969da; stroke-width: 1;}
 .d-box-cool{fill: #f0f7ff; stroke: #0969da; stroke-width: 1;}
-.d-box-warn{fill: #fff8e6; stroke: var(--attention); stroke-width: 1;}
-.d-box-success{fill: #dafbe1; stroke: var(--success); stroke-width: 1;}
-.d-text{font-family: var(--sans); font-size: 13px; font-weight: 600; fill: var(--fg);}
-.d-text-sm{font-family: var(--sans); font-size: 11px; fill: var(--fg-muted);}
-.d-text-accent{font-family: var(--mono); font-size: 11px; fill: var(--accent); letter-spacing: 0.06em; font-weight: 600;}
-.d-arrow{stroke: var(--fg-muted); stroke-width: 1.2; fill: none;}
-.d-arrow-accent{stroke: var(--accent); stroke-width: 1.2; fill: none;}</style>
+.d-box-warn{fill: #fff8e6; stroke: #9a6700; stroke-width: 1;}
+.d-box-success{fill: #dafbe1; stroke: #1a7f37; stroke-width: 1;}
+.d-text{font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif; font-size: 13px; font-weight: 600; fill: #1f2328;}
+.d-text-sm{font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif; font-size: 11px; fill: #59636e;}
+.d-text-accent{font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; font-size: 11px; fill: #0969da; letter-spacing: 0.06em; font-weight: 600;}
+.d-arrow{stroke: #59636e; stroke-width: 1.2; fill: none;}
+.d-arrow-accent{stroke: #0969da; stroke-width: 1.2; fill: none;}</style>
       <defs>
         <marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
           <path d="M2 1L9 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
         </marker>
       </defs>
       <text class="d-text-accent" x="200" y="25" text-anchor="middle">STANDARD CNI</text>
-      <text class="d-text-accent" x="600" y="25" text-anchor="middle" style="fill: var(--success);">GPU-AWARE CNI</text>
+      <text class="d-text-accent" x="600" y="25" text-anchor="middle" style="fill: #1a7f37;">GPU-AWARE CNI</text>
       <rect x="60" y="50" width="280" height="50" rx="6" class="d-box"></rect>
       <text class="d-text" x="200" y="72" text-anchor="middle">Pod — eth0 only</text>
       <text class="d-text-sm" x="200" y="90" text-anchor="middle">Default CNI (Calico/Cilium/Flannel)</text>
@@ -32,7 +32,7 @@
       <text class="d-text" x="200" y="312" text-anchor="middle">NIC — standard Ethernet</text>
       <text class="d-text-sm" x="200" y="330" text-anchor="middle">Sockets API · per-packet copies</text>
       <rect x="60" y="370" width="280" height="70" rx="6" class="d-box-warn"></rect>
-      <text class="d-text-accent" x="200" y="392" text-anchor="middle" style="fill: var(--attention);">COST</text>
+      <text class="d-text-accent" x="200" y="392" text-anchor="middle" style="fill: #9a6700;">COST</text>
       <text class="d-text-sm" x="200" y="410" text-anchor="middle">Multiple memory copies</text>
       <text class="d-text-sm" x="200" y="426" text-anchor="middle">Millisecond latency · CPU bound</text>
       <rect x="460" y="50" width="280" height="50" rx="6" class="d-box"></rect>
@@ -51,7 +51,7 @@
       <text class="d-text" x="600" y="312" text-anchor="middle">RoCE NIC — ConnectX</text>
       <text class="d-text-sm" x="600" y="330" text-anchor="middle">Verbs API · kernel bypass</text>
       <rect x="460" y="370" width="280" height="70" rx="6" class="d-box-success"></rect>
-      <text class="d-text-accent" x="600" y="392" text-anchor="middle" style="fill: var(--success);">PAYOFF</text>
+      <text class="d-text-accent" x="600" y="392" text-anchor="middle" style="fill: #1a7f37;">PAYOFF</text>
       <text class="d-text-sm" x="600" y="410" text-anchor="middle">Zero-copy GPU-to-GPU</text>
       <text class="d-text-sm" x="600" y="426" text-anchor="middle">Microsecond latency · CPU free</text>
       <rect x="60" y="465" width="680" height="60" rx="6" class="d-box-accent"></rect>

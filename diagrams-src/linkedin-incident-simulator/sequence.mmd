@@ -1,0 +1,19 @@
+sequenceDiagram
+    autonumber
+    participant Lib as Incident library
+    participant Sim as Simulator
+    participant Eng as Engineer on call
+    participant Env as Practice environment
+    participant Sc as Scoring
+    Eng->>Sim: start a drill
+    Sim->>Lib: pick a past incident
+    Sim->>Env: replay the telemetry from that day
+    Env-->>Eng: dashboards and alerts as they actually looked
+    loop until resolved or time runs out
+        Eng->>Env: run a diagnostic
+        Env-->>Eng: the response recorded at that step
+        Eng->>Sim: state a hypothesis
+    end
+    Sim->>Sc: compare against the real timeline
+    Sc-->>Eng: where the path diverged, and what the responders did
+    Note over Sc: the score is time-to-correct-hypothesis, not time-to-fix

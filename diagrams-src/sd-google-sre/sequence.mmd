@@ -1,0 +1,16 @@
+sequenceDiagram
+    autonumber
+    participant I as Interviewer
+    participant C as Candidate
+    participant N as The numbers
+    I->>C: design it, and make it non-abstract
+    C->>N: requests per second at peak
+    C->>N: bytes per request, and per day
+    N-->>C: storage and network footprint
+    C->>N: work per request divided by what one machine does
+    N-->>C: machine count, before replication
+    C->>C: add failover headroom and a growth margin
+    C->>I: here is the fleet, and here is the arithmetic
+    I->>C: one rack fails
+    C->>N: recompute with the survivors
+    Note over C,N: NALSD means every box on the board has a number attached to it

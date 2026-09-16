@@ -1,0 +1,24 @@
+sequenceDiagram
+    autonumber
+    participant Op as Operator
+    participant Ct as Lifecycle controller
+    participant Inv as Inventory
+    participant BMC as BMC
+    participant PXE as PXE and image service
+    participant Ag as Host agent
+    participant Sch as Cluster scheduler
+    Op->>Ct: rack arrives, claim these machines
+    Ct->>Inv: register serials and topology
+    Ct->>BMC: power on, set one-time network boot
+    BMC->>PXE: request boot image
+    PXE-->>BMC: kernel and initramfs
+    BMC->>Ag: host boots into provisioning
+    Ag->>Ct: report CPU, memory, disks, NICs
+    Ct->>Ct: does it match the expected profile?
+    alt matches
+        Ct->>PXE: install the production image
+        Ag->>Sch: join as schedulable
+    else mismatch or burn-in failure
+        Ct->>Inv: quarantine for repair
+        Ct->>Op: raise a hardware ticket
+    end

@@ -1,0 +1,15 @@
+sequenceDiagram
+    autonumber
+    participant I as Interviewer
+    participant C as Candidate
+    I->>C: design a system under a reliability constraint
+    C->>I: who uses it, at what rate, and what may not break?
+    C->>C: write the SLIs and SLO targets down first
+    C->>C: estimate QPS, storage, and bandwidth
+    C->>I: sketch the data flow before the boxes
+    I->>C: now it is 10x the traffic
+    C->>C: where does it break first — CPU, storage, or a lock?
+    C->>C: partition, cache, or shed — pick and justify
+    I->>C: a region just went away
+    C->>C: blast radius, failover path, and what data is lost
+    Note over C: every answer ends with what you would measure and what would page you

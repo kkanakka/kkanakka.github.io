@@ -1,0 +1,16 @@
+sequenceDiagram
+    autonumber
+    participant P as Problem
+    participant C as Candidate
+    participant T as Test cases
+    P->>C: statement and constraints
+    C->>P: clarify input size, ranges, and edge cases
+    C->>C: brute force first — state it, cost it
+    C->>C: what is repeated work, and what can be remembered?
+    Note over C: hash map, two pointers, prefix sum — each removes a nested loop
+    C->>C: state the improved approach and its complexity
+    C->>T: walk one small example by hand
+    T-->>C: trace matches the expectation
+    C->>C: write it, then check the empty and single-element cases
+    C->>T: run
+    Note over C,T: complexity stated before code is written, not after it runs

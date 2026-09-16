@@ -1,0 +1,21 @@
+sequenceDiagram
+    autonumber
+    participant C as Caller
+    participant To as Timeout
+    participant Rt as Retry with jitter
+    participant Bh as Bulkhead
+    participant CB as Circuit breaker
+    participant S as Service
+    C->>To: request with a deadline
+    To->>Bh: within its own resource pool
+    Note over Bh: one slow dependency cannot consume every thread
+    Bh->>CB: is this dependency healthy?
+    alt closed
+        CB->>Rt: allow
+        Rt->>S: attempt, bounded and jittered
+        S-->>C: response
+    else open
+        CB-->>C: shed immediately
+        Note over CB: failing fast is kinder than queuing forever
+    end
+    Note over To,S: a deadline that is not propagated downstream is not a deadline

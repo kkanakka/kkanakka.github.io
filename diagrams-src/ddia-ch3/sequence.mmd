@@ -1,0 +1,20 @@
+sequenceDiagram
+    autonumber
+    participant App as Application
+    participant Mem as Memtable
+    participant WAL as Write-ahead log
+    participant SST as SSTables on disk
+    participant Cmp as Compaction
+    App->>WAL: append the write durably
+    App->>Mem: insert into the sorted in-memory table
+    Note over Mem: the write is now complete — sequential only
+    Mem->>SST: flush when full, immutable from here
+    App->>SST: read key
+    alt found in the memtable
+        Mem-->>App: value
+    else
+        SST->>SST: check the bloom filter per level
+        SST-->>App: value from the newest segment that has it
+    end
+    Cmp->>SST: merge levels, drop shadowed and deleted keys
+    Note over Cmp: B-trees write in place — LSM trees write sequentially and pay at compaction

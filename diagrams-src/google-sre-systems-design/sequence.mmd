@@ -1,0 +1,22 @@
+sequenceDiagram
+    autonumber
+    participant U as User
+    participant Edge as Edge and load balancing
+    participant Svc as Service tier
+    participant Ca as Cache
+    participant Str as Storage
+    participant Obs as Observability
+    U->>Edge: request
+    Edge->>Edge: terminate TLS, route to the closest healthy region
+    Edge->>Svc: forward with a deadline
+    Svc->>Ca: read path first
+    alt hit
+        Ca-->>Svc: value
+    else miss
+        Svc->>Str: read from the partition that owns this key
+        Str-->>Svc: row
+        Svc->>Ca: populate
+    end
+    Svc-->>U: response
+    Svc->>Obs: latency, errors, saturation per dependency
+    Note over Obs: the SLO is measured where the user is, not where the server is

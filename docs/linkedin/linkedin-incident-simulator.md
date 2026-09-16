@@ -5,6 +5,14 @@ sidebar_position: 9
 sidebar_label: "Incident Replay Simulator"
 description: "Incident Replay Simulator"
 ---
+
+<!-- DIAGRAM:START -->
+
+## How it works
+
+<img src="/diagrams/linkedin-incident-simulator/sequence.svg" alt="How it works — linkedin-incident-simulator" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:END -->
 Reliability Learning Platform — Chaos Engineering & Training at Scale
 
 A sophisticated incident simulation system that transforms past outages into realistic training scenarios: 95% replay fidelity, 10-minute setup, isolated sandbox environments, and automated scoring engine for LinkedIn's reliability learning culture with thousands of archived incidents.

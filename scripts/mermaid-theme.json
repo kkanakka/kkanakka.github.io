@@ -1,0 +1,29 @@
+{
+  "theme": "base",
+  "themeVariables": {
+    "fontFamily": "Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif",
+    "fontSize": "14px",
+    "primaryColor": "#ddf4ff",
+    "primaryTextColor": "#1f2328",
+    "primaryBorderColor": "#0969da",
+    "lineColor": "#57606a",
+    "secondaryColor": "#dafbe1",
+    "tertiaryColor": "#fff8e6",
+    "noteBkgColor": "#fff8e6",
+    "noteTextColor": "#4d2d00",
+    "noteBorderColor": "#d4a72c",
+    "actorBkg": "#ddf4ff",
+    "actorBorder": "#0969da",
+    "actorTextColor": "#1f2328",
+    "actorLineColor": "#8c959f",
+    "signalColor": "#1f2328",
+    "signalTextColor": "#1f2328",
+    "labelBoxBkgColor": "#dafbe1",
+    "labelBoxBorderColor": "#1a7f37",
+    "labelTextColor": "#1f2328",
+    "loopTextColor": "#1f2328",
+    "activationBkgColor": "#dafbe1",
+    "activationBorderColor": "#1a7f37",
+    "sequenceNumberColor": "#ffffff"
+  }
+}

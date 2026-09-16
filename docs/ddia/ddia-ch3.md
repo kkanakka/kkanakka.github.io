@@ -5,6 +5,14 @@ sidebar_position: 3
 sidebar_label: "Ch 3: Storage & Retrieval"
 description: "Ch 3: Storage & Retrieval"
 ---
+
+<!-- DIAGRAM:START -->
+
+## How it works
+
+<img src="/diagrams/ddia-ch3/sequence.svg" alt="How it works — ddia-ch3" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:END -->
 How databases store data and find it again. B-Trees vs LSM-Trees, hash indexes, SSTables, column storage, OLTP vs OLAP — mapped to Espresso (InnoDB), Venice (RocksDB), and Pinot.
 
 Data Intensive Systems • Chapter 3 • Interview Guide

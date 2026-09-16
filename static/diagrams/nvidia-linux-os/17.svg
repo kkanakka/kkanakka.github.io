@@ -34,7 +34,7 @@
         <rect x="740" y="150" width="120" height="35" rx="4" fill="#f8f9fa" stroke="#a2a9b1"></rect>
         <text x="800" y="172" text-anchor="middle" fill="#54595d" font-size="11">eBPF tracing</text>
         <!-- Common causes -->
-        <rect x="20" y="220" width="860" height="65" rx="8" fill="#f0f0f0" stroke="var(--border)"></rect>
+        <rect x="20" y="220" width="860" height="65" rx="8" fill="#f0f0f0" stroke="#ccc"></rect>
         <text x="450" y="242" text-anchor="middle" fill="#202122" font-size="13" font-weight="700">Common Root Causes</text>
         <text x="120" y="268" text-anchor="middle" fill="#202122" font-size="11">Kernel panic (null deref)</text>
         <text x="300" y="268" text-anchor="middle" fill="#202122" font-size="11">Deadlock (spinlock)</text>

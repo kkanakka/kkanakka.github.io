@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg viewBox="0 0 900 500" xmlns="http://www.w3.org/2000/svg"><style>.sb-b{fill:#ddf4ff;stroke:var(--accent);stroke-width:1}
-.sb-g{fill:#dafbe1;stroke:var(--success);stroke-width:1}
-.sb-r{fill:#ffebe9;stroke:var(--danger);stroke-width:1}
-.sb-y{fill:#fff8e6;stroke:var(--attention);stroke-width:1}
-.sb-p{fill:#fbefff;stroke:var(--done);stroke-width:1}
-.sb-o{fill:#fff1e5;stroke:var(--orange);stroke-width:1}
-.sl{font-family:var(--sans);font-size:12px;font-weight:600;fill:var(--fg)}
-.ss{font-family:var(--mono);font-size:10px;fill:var(--fg-muted)}</style>
+<svg viewBox="0 0 900 500" xmlns="http://www.w3.org/2000/svg"><style>.sb-b{fill:#ddf4ff;stroke:#0969da;stroke-width:1}
+.sb-g{fill:#dafbe1;stroke:#1a7f37;stroke-width:1}
+.sb-r{fill:#ffebe9;stroke:#d1242f;stroke-width:1}
+.sb-y{fill:#fff8e6;stroke:#9a6700;stroke-width:1}
+.sb-p{fill:#fbefff;stroke:#8250df;stroke-width:1}
+.sb-o{fill:#fff1e5;stroke:#bc4c00;stroke-width:1}
+.sl{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans",Helvetica,Arial,sans-serif;font-size:12px;font-weight:600;fill:#1f2328}
+.ss{font-family:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;font-size:10px;fill:#59636e}</style>
       <defs>
         <marker id="aFb" markerWidth="8" markerHeight="8" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#0969da"></path></marker>
         <marker id="aFg" markerWidth="8" markerHeight="8" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#1a7f37"></path></marker>
@@ -63,32 +63,32 @@
       <text class="ss" x="585" y="396" text-anchor="middle">SSE fan-out, indexing</text>
 
       <!-- Arrows -->
-      <path d="M160,50 L183,50" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#aFb)" fill="none"></path>
-      <path d="M160,60 L338,50" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#aFb)" fill="none"></path>
-      <path d="M160,30 L770,28 L770,78" stroke="var(--success)" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#aFg)" fill="none"></path>
-      <text class="ss" x="450" y="22" fill="var(--success)">SSE</text>
+      <path d="M160,50 L183,50" stroke="#0969da" stroke-width="1.5" marker-end="url(#aFb)" fill="none"></path>
+      <path d="M160,60 L338,50" stroke="#0969da" stroke-width="1.5" marker-end="url(#aFb)" fill="none"></path>
+      <path d="M160,30 L770,28 L770,78" stroke="#1a7f37" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#aFg)" fill="none"></path>
+      <text class="ss" x="450" y="22" fill="#1a7f37">SSE</text>
 
-      <path d="M415,80 L100,118" stroke="var(--fg-muted)" stroke-width="1.2" marker-end="url(#a1)" fill="none"></path>
-      <path d="M415,80 L290,118" stroke="var(--fg-muted)" stroke-width="1.2" marker-end="url(#a1)" fill="none"></path>
-      <path d="M415,80 L480,118" stroke="var(--fg-muted)" stroke-width="1.2" marker-end="url(#a1)" fill="none"></path>
+      <path d="M415,80 L100,118" stroke="#59636e" stroke-width="1.2" marker-end="url(#a1)" fill="none"></path>
+      <path d="M415,80 L290,118" stroke="#59636e" stroke-width="1.2" marker-end="url(#a1)" fill="none"></path>
+      <path d="M415,80 L480,118" stroke="#59636e" stroke-width="1.2" marker-end="url(#a1)" fill="none"></path>
 
-      <path d="M560,150 L588,150" stroke="var(--done)" stroke-width="1.5" marker-end="url(#aFp)" fill="none"></path>
+      <path d="M560,150 L588,150" stroke="#8250df" stroke-width="1.5" marker-end="url(#aFp)" fill="none"></path>
 
-      <path d="M480,180 L155,228" stroke="var(--danger)" stroke-width="1.5" marker-end="url(#aFr)" fill="none"></path>
-      <text class="ss" x="310" y="200" fill="var(--danger)">locks</text>
-      <path d="M480,180 L770,228" stroke="var(--success)" stroke-width="1.5" marker-end="url(#aFg)" fill="none"></path>
-      <text class="ss" x="650" y="200" fill="var(--success)">write</text>
-      <path d="M290,180 L395,228" stroke="var(--attention)" stroke-width="1.5" marker-end="url(#a1)" fill="none"></path>
-      <text class="ss" x="340" y="200" fill="var(--attention)">search</text>
-      <path d="M100,180 L770,358" stroke="var(--accent)" stroke-width="1.2" stroke-dasharray="3,2" marker-end="url(#aFb)" fill="none"></path>
-      <text class="ss" x="450" y="270" fill="var(--accent)">read replicas</text>
+      <path d="M480,180 L155,228" stroke="#d1242f" stroke-width="1.5" marker-end="url(#aFr)" fill="none"></path>
+      <text class="ss" x="310" y="200" fill="#d1242f">locks</text>
+      <path d="M480,180 L770,228" stroke="#1a7f37" stroke-width="1.5" marker-end="url(#aFg)" fill="none"></path>
+      <text class="ss" x="650" y="200" fill="#1a7f37">write</text>
+      <path d="M290,180 L395,228" stroke="#9a6700" stroke-width="1.5" marker-end="url(#a1)" fill="none"></path>
+      <text class="ss" x="340" y="200" fill="#9a6700">search</text>
+      <path d="M100,180 L770,358" stroke="#0969da" stroke-width="1.2" stroke-dasharray="3,2" marker-end="url(#aFb)" fill="none"></path>
+      <text class="ss" x="450" y="270" fill="#0969da">read replicas</text>
 
-      <path d="M770,320 L770,358" stroke="var(--fg-muted)" stroke-width="1.2" stroke-dasharray="3,2" marker-end="url(#a1)" fill="none"></path>
+      <path d="M770,320 L770,358" stroke="#59636e" stroke-width="1.2" stroke-dasharray="3,2" marker-end="url(#a1)" fill="none"></path>
       <text class="ss" x="830" y="345">replication</text>
 
-      <path d="M770,290 L672,280" stroke="var(--done)" stroke-width="1.2" marker-end="url(#aFp)" fill="none"></path>
-      <text class="ss" x="730" y="310" fill="var(--done)">CDC</text>
-      <path d="M500,290 L482,290" stroke="var(--done)" stroke-width="1.2" marker-end="url(#aFp)" fill="none"></path>
+      <path d="M770,290 L672,280" stroke="#8250df" stroke-width="1.2" marker-end="url(#aFp)" fill="none"></path>
+      <text class="ss" x="730" y="310" fill="#8250df">CDC</text>
+      <path d="M500,290 L482,290" stroke="#8250df" stroke-width="1.2" marker-end="url(#aFp)" fill="none"></path>
 
-      <path d="M585,320 L585,358" stroke="var(--fg-muted)" stroke-width="1.2" marker-end="url(#a1)" fill="none"></path>
+      <path d="M585,320 L585,358" stroke="#59636e" stroke-width="1.2" marker-end="url(#a1)" fill="none"></path>
     </svg>

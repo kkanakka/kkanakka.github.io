@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg viewBox="0 0 800 150" xmlns="http://www.w3.org/2000/svg"><style>.sb-b{fill:#ddf4ff;stroke:var(--accent);stroke-width:1}
-.sb-g{fill:#dafbe1;stroke:var(--success);stroke-width:1}
-.sb-r{fill:#ffebe9;stroke:var(--danger);stroke-width:1}
-.sb-y{fill:#fff8e6;stroke:var(--attention);stroke-width:1}
-.sl{font-family:var(--sans);font-size:12px;font-weight:600;fill:var(--fg)}
-.ss{font-family:var(--mono);font-size:10px;fill:var(--fg-muted)}
-.sa-b{stroke:var(--accent);stroke-width:1.5;fill:none}
-.sa-g{stroke:var(--success);stroke-width:1.5;fill:none}</style>
+<svg viewBox="0 0 800 150" xmlns="http://www.w3.org/2000/svg"><style>.sb-b{fill:#ddf4ff;stroke:#0969da;stroke-width:1}
+.sb-g{fill:#dafbe1;stroke:#1a7f37;stroke-width:1}
+.sb-r{fill:#ffebe9;stroke:#d1242f;stroke-width:1}
+.sb-y{fill:#fff8e6;stroke:#9a6700;stroke-width:1}
+.sl{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans",Helvetica,Arial,sans-serif;font-size:12px;font-weight:600;fill:#1f2328}
+.ss{font-family:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;font-size:10px;fill:#59636e}
+.sa-b{stroke:#0969da;stroke-width:1.5;fill:none}
+.sa-g{stroke:#1a7f37;stroke-width:1.5;fill:none}</style>
       <rect class="sb-r" x="20" y="15" width="200" height="55" rx="6"></rect>
       <text class="sl" x="120" y="35" text-anchor="middle">Cache: feed:US</text>
       <text class="ss" x="120" y="50" text-anchor="middle">2000 articles, each has</text>

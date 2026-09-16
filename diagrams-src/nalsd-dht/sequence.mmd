@@ -1,0 +1,22 @@
+sequenceDiagram
+    autonumber
+    participant C as Client
+    participant Co as Coordinator
+    participant R1 as Replica 1
+    participant R2 as Replica 2
+    participant R3 as Replica 3
+    C->>Co: put(key, value)
+    Co->>Co: hash key onto the ring
+    par write to the replica set
+        Co->>R1: write
+        Co->>R2: write
+        Co->>R3: write
+    end
+    R1-->>Co: ack
+    R2-->>Co: ack
+    Note over Co: W acks reached, R3 may still be behind
+    Co-->>C: success
+    R3-->>Co: late ack
+    alt a replica stayed down
+        Co->>R3: hinted handoff on recovery
+    end

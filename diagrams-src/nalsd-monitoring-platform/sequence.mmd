@@ -1,0 +1,23 @@
+sequenceDiagram
+    autonumber
+    participant Tgt as Target service
+    participant Ag as Collector agent
+    participant GW as Ingest gateway
+    participant K as Kafka
+    participant SP as Stream processor
+    participant TS as Time-series store
+    participant AL as Alert evaluator
+    participant OC as On-call
+    Tgt->>Ag: expose /metrics
+    Ag->>Ag: scrape on interval
+    Ag->>GW: batched samples
+    GW->>GW: authenticate, validate labels
+    GW->>K: produce to sharded topic
+    K->>SP: consume partition
+    SP->>TS: write downsampled series
+    AL->>TS: evaluate rules on a schedule
+    alt threshold breached for the full for-duration
+        AL->>OC: page with runbook link
+    else recovers inside the window
+        AL-->>AL: reset, no page
+    end

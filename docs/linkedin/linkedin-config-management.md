@@ -5,6 +5,14 @@ sidebar_position: 5
 sidebar_label: "Config Management"
 description: "Config Management"
 ---
+
+<!-- DIAGRAM:START -->
+
+## How it works
+
+<img src="/diagrams/linkedin-config-management/sequence.svg" alt="How it works — linkedin-config-management" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:END -->
 Reliability-as-Configuration — Safe Propagation & Drift Detection
 
 A mission-critical configuration management system for LinkedIn's distributed platform: 60-second propagation, 30-second rollback, canary validation, and drift detection across tens of thousands of microservices with zero-corruption guarantee.

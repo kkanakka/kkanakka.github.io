@@ -5,6 +5,14 @@ sidebar_position: 2
 sidebar_label: "Ch 2: Data Models & Query Languages"
 description: "Ch 2: Data Models & Query Languages"
 ---
+
+<!-- DIAGRAM:START -->
+
+## How it works
+
+<img src="/diagrams/ddia-ch2/sequence.svg" alt="How it works — ddia-ch2" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:END -->
 How to model your data matters more than anything else. Relational, document, and graph models — mapped to LinkedIn's Espresso, Venice, Pinot, and Galene.
 
 Data Intensive Systems • Chapter 2 • Interview Guide

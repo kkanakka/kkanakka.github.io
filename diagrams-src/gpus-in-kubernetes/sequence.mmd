@@ -1,0 +1,20 @@
+sequenceDiagram
+    autonumber
+    participant U as User
+    participant API as Kubernetes API
+    participant Sch as Scheduler
+    participant Kb as Kubelet
+    participant DP as Device plugin
+    participant GPU as GPU
+    U->>API: pod requesting nvidia.com/gpu
+    API->>Sch: schedule it
+    Sch->>Sch: filter to nodes advertising a free GPU
+    Note over Sch: Kubernetes only counts GPUs — it does not understand them
+    Sch->>Kb: bind to the node
+    Kb->>DP: Allocate
+    DP-->>Kb: device files and driver mounts to inject
+    Kb->>GPU: container gets the device, whole
+    Note over DP,GPU: allocation is exclusive by default — sharing needs MPS, time-slicing, or MIG
+    alt the node has several GPUs
+        Note over Sch,GPU: topology matters — NVLink peers beat two GPUs on different PCIe roots
+    end

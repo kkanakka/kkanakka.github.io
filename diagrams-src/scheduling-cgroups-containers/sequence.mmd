@@ -1,0 +1,22 @@
+sequenceDiagram
+    autonumber
+    participant Op as Operator
+    participant K as Kernel
+    participant NS as Namespaces
+    participant CG as cgroup v2
+    participant P as Process
+    Op->>K: start a container
+    K->>NS: unshare PID, net, mount, UTS, IPC
+    NS-->>P: its own view of processes, interfaces, and filesystem
+    Note over NS,P: namespaces decide what it can see
+    K->>CG: place the process in a cgroup, write cpu.max and memory.max
+    Note over CG,P: cgroups decide how much it can use
+    P->>K: run
+    loop while running
+        CG->>K: account CPU, memory, and IO against the group
+        alt over the memory ceiling
+            K->>P: OOM kill within the group
+        else over the CPU quota
+            CG->>P: throttle until the next period
+        end
+    end

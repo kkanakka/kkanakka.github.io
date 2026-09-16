@@ -1,0 +1,21 @@
+sequenceDiagram
+    autonumber
+    participant Svc as Service
+    participant M as Metrics pipeline
+    participant Ev as Budget evaluator
+    participant St as Budget state
+    participant N as Notifier
+    participant Team as Service team
+    Svc->>M: good and total event counts
+    M->>Ev: SLI windows
+    Ev->>Ev: burn rate = error rate ÷ budget rate
+    Ev->>St: persist remaining budget
+    alt fast burn (1h and 5m windows agree)
+        Ev->>N: page — budget gone in hours
+        N->>Team: page on-call
+    else slow burn (6h and 30m agree)
+        Ev->>N: ticket, not a page
+        N->>Team: file ticket
+    else within budget
+        Ev-->>St: record, stay quiet
+    end

@@ -1,0 +1,22 @@
+sequenceDiagram
+    autonumber
+    participant U as User
+    participant GW as API gateway
+    participant Rt as Router
+    participant Srv as Inference server
+    participant KV as KV cache
+    participant GPU as GPU
+    U->>GW: prompt
+    GW->>Rt: authenticate, apply quota
+    Rt->>Srv: route to a replica with capacity
+    Srv->>Srv: tokenise, add to the running batch
+    Note over Srv: continuous batching — new requests join between steps, they do not wait for the batch to drain
+    Srv->>KV: allocate cache for this sequence
+    loop each generated token
+        Srv->>GPU: forward pass
+        GPU->>KV: read and append attention state
+        GPU-->>Srv: next token
+        Srv-->>U: stream it out
+    end
+    Srv->>KV: release the blocks
+    Note over KV,GPU: KV cache is the real capacity limit — it grows with sequence length times concurrency

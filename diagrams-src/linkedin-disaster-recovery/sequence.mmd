@@ -1,0 +1,22 @@
+sequenceDiagram
+    autonumber
+    participant Mon as Health monitor
+    participant Orc as DR orchestrator
+    participant Tr as Traffic control
+    participant RA as Region A (primary)
+    participant RB as Region B (standby)
+    participant Data as Replication
+    loop steady state
+        RA->>Data: stream writes
+        Data->>RB: apply, track lag
+    end
+    Mon->>Orc: region A failing health checks
+    Orc->>Data: what is the replication lag?
+    Data-->>Orc: lag = the data you are about to lose
+    alt lag within RPO
+        Orc->>RB: promote to primary
+        Orc->>Tr: shift traffic to region B
+        Tr-->>Orc: cutover complete, RTO clock stops
+    else lag beyond RPO
+        Orc->>Orc: hold, escalate — failing over would lose committed writes
+    end

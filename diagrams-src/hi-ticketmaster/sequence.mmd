@@ -1,0 +1,26 @@
+sequenceDiagram
+    autonumber
+    participant U as Buyer
+    participant Wait as Waiting room
+    participant Inv as Inventory service
+    participant Lock as Seat lock
+    participant Pay as Payment
+    U->>Wait: join the queue at on-sale
+    Wait-->>U: admitted with a token
+    Note over Wait: the queue is what stops the stampede reaching inventory
+    U->>Inv: show available seats
+    Inv-->>U: seat map
+    U->>Lock: reserve these seats
+    alt lock acquired
+        Lock-->>U: held for a short TTL
+        U->>Pay: pay
+        alt payment succeeds
+            Pay->>Inv: mark sold
+            Inv-->>U: tickets issued
+        else payment fails or the TTL expires
+            Lock->>Inv: release back to the pool
+            Inv-->>U: seats lost
+        end
+    else someone else holds them
+        Lock-->>U: pick different seats
+    end

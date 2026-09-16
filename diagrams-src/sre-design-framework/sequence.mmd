@@ -1,0 +1,17 @@
+sequenceDiagram
+    autonumber
+    participant I as Interviewer
+    participant C as Candidate
+    participant B as Whiteboard
+    I->>C: design this system
+    C->>I: clarify scope, users, and what "works" means
+    C->>B: functional and non-functional requirements
+    C->>B: SLIs and SLO targets — the contract
+    C->>I: confirm the numbers before drawing anything
+    C->>B: capacity estimates — QPS, storage, bandwidth
+    C->>B: high-level architecture, data flow first
+    I->>C: push on one component
+    C->>B: deep dive — data model, partitioning, hot paths
+    C->>B: failure modes and blast radius
+    C->>B: what you would monitor, and what pages a human
+    Note over C: requirements to SLOs to numbers to architecture — never start at the boxes

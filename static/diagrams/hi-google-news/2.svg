@@ -1,21 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg viewBox="0 0 800 150" xmlns="http://www.w3.org/2000/svg"><style>.sb{fill:var(--bg-subtle);stroke:var(--border);stroke-width:1}
-.sb-b{fill:#ddf4ff;stroke:var(--accent);stroke-width:1}
-.sb-g{fill:#dafbe1;stroke:var(--success);stroke-width:1}
-.sb-r{fill:#ffebe9;stroke:var(--danger);stroke-width:1}
-.sb-y{fill:#fff8e6;stroke:var(--attention);stroke-width:1}
-.sb-p{fill:#fbefff;stroke:var(--done);stroke-width:1}
-.sb-o{fill:#fff1e5;stroke:var(--orange);stroke-width:1}
-.sl{font-family:var(--sans);font-size:12px;font-weight:600;fill:var(--fg)}
-.ss{font-family:var(--mono);font-size:10px;fill:var(--fg-muted)}
-.sa{stroke:var(--fg-muted);stroke-width:1.2;fill:none}
-.sa-b{stroke:var(--accent);stroke-width:1.5;fill:none}
-.sa-g{stroke:var(--success);stroke-width:1.5;fill:none}
-.sa-r{stroke:var(--danger);stroke-width:1.5;fill:none}
-.sa-p{stroke:var(--done);stroke-width:1.5;fill:none}</style>
+<svg viewBox="0 0 800 150" xmlns="http://www.w3.org/2000/svg"><style>.sb{fill:#f6f8fa;stroke:#d1d9e0;stroke-width:1}
+.sb-b{fill:#ddf4ff;stroke:#0969da;stroke-width:1}
+.sb-g{fill:#dafbe1;stroke:#1a7f37;stroke-width:1}
+.sb-r{fill:#ffebe9;stroke:#d1242f;stroke-width:1}
+.sb-y{fill:#fff8e6;stroke:#9a6700;stroke-width:1}
+.sb-p{fill:#fbefff;stroke:#8250df;stroke-width:1}
+.sb-o{fill:#fff1e5;stroke:#bc4c00;stroke-width:1}
+.sl{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans",Helvetica,Arial,sans-serif;font-size:12px;font-weight:600;fill:#1f2328}
+.ss{font-family:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;font-size:10px;fill:#59636e}
+.sa{stroke:#59636e;stroke-width:1.2;fill:none}
+.sa-b{stroke:#0969da;stroke-width:1.5;fill:none}
+.sa-g{stroke:#1a7f37;stroke-width:1.5;fill:none}
+.sa-r{stroke:#d1242f;stroke-width:1.5;fill:none}
+.sa-p{stroke:#8250df;stroke-width:1.5;fill:none}</style>
       <rect class="sb-b" x="20" y="15" width="210" height="120" rx="6"></rect>
       <text class="sl" x="125" y="36" text-anchor="middle">Article</text>
-      <line x1="34" y1="44" x2="216" y2="44" stroke="var(--border-muted)"></line>
+      <line x1="34" y1="44" x2="216" y2="44" stroke="#d8dee4"></line>
       <text class="ss" x="34" y="60">id (ULID), title, summary</text>
       <text class="ss" x="34" y="74">thumbnail_url (Ambry)</text>
       <text class="ss" x="34" y="88">publish_date, publisher_id</text>
@@ -24,7 +24,7 @@
 
       <rect class="sb-g" x="280" y="15" width="200" height="120" rx="6"></rect>
       <text class="sl" x="380" y="36" text-anchor="middle">Publisher</text>
-      <line x1="294" y1="44" x2="466" y2="44" stroke="var(--border-muted)"></line>
+      <line x1="294" y1="44" x2="466" y2="44" stroke="#d8dee4"></line>
       <text class="ss" x="294" y="60">id, name, url</text>
       <text class="ss" x="294" y="74">feed_url (RSS endpoint)</text>
       <text class="ss" x="294" y="88">webhook_secret</text>
@@ -32,7 +32,7 @@
 
       <rect class="sb" x="530" y="15" width="200" height="120" rx="6"></rect>
       <text class="sl" x="630" y="36" text-anchor="middle">User</text>
-      <line x1="544" y1="44" x2="716" y2="44" stroke="var(--border-muted)"></line>
+      <line x1="544" y1="44" x2="716" y2="44" stroke="#d8dee4"></line>
       <text class="ss" x="544" y="60">id, region</text>
       <text class="ss" x="544" y="74">(inferred from IP</text>
       <text class="ss" x="544" y="88"> or explicit setting)</text>

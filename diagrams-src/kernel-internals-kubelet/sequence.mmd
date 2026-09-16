@@ -1,0 +1,23 @@
+sequenceDiagram
+    autonumber
+    participant API as Kubernetes API
+    participant Kb as Kubelet
+    participant CRI as Container runtime
+    participant K as Kernel
+    participant C as Container
+    API->>Kb: pod assigned to this node
+    Kb->>CRI: create the sandbox
+    CRI->>K: clone() with new namespaces
+    Note over K: PID, network, mount, UTS, IPC, user — isolation is per-namespace, not all-or-nothing
+    CRI->>K: create the cgroup, write the limits
+    K-->>CRI: cgroup ready
+    CRI->>K: pull and mount the image layers
+    CRI->>C: exec the entrypoint inside those namespaces
+    C-->>Kb: running
+    loop while it runs
+        K->>K: CFS enforces cpu.max, memory controller enforces the ceiling
+        Kb->>C: probes decide ready, live, or restart
+    end
+    alt memory ceiling hit
+        K->>C: OOM kill inside the cgroup, not system-wide
+    end

@@ -5,6 +5,14 @@ sidebar_position: 10
 sidebar_label: "Scheduling, cgroups & Container Isolation"
 description: "Scheduling, cgroups & Container Isolation"
 ---
+
+<!-- DIAGRAM:START -->
+
+## How it works
+
+<img src="/diagrams/scheduling-cgroups-containers/sequence.svg" alt="How it works — scheduling-cgroups-containers" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:END -->
 On this page
 
 -   [1.Overview](#overview)

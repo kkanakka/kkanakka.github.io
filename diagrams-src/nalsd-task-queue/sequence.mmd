@@ -1,0 +1,27 @@
+sequenceDiagram
+    autonumber
+    participant C as Client
+    participant GW as Enqueue gateway
+    participant S as State store
+    participant K as Kafka
+    participant W as Worker
+    participant DLQ as Dead-letter queue
+    C->>GW: submit task with idempotency key
+    GW->>S: claim key
+    alt key already seen
+        S-->>GW: existing task id
+        GW-->>C: same id, no duplicate work
+    else new
+        GW->>K: produce task
+        GW-->>C: task id
+    end
+    K->>W: lease task
+    W->>S: mark running, start heartbeat
+    alt succeeds
+        W->>S: mark done
+    else fails, attempts remain
+        W->>K: requeue with backoff
+    else attempts exhausted
+        W->>DLQ: park for inspection
+    end
+    Note over W,S: a lease that stops heartbeating is redelivered

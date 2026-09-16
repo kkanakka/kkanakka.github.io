@@ -1,61 +1,61 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg viewBox="0 0 800 440" xmlns="http://www.w3.org/2000/svg"><style>.sb{fill:var(--bg-subtle);stroke:var(--border);stroke-width:1}
-.sb-b{fill:#ddf4ff;stroke:var(--accent);stroke-width:1}
-.sb-g{fill:#dafbe1;stroke:var(--success);stroke-width:1}
-.sb-r{fill:#ffebe9;stroke:var(--danger);stroke-width:1}
-.sb-y{fill:#fff8e6;stroke:var(--attention);stroke-width:1}
-.sb-p{fill:#fbefff;stroke:var(--done);stroke-width:1}
-.sb-o{fill:#fff1e5;stroke:var(--orange);stroke-width:1}
-.ss{font-family:var(--mono);font-size:10px;fill:var(--fg-muted)}</style>
+<svg viewBox="0 0 800 440" xmlns="http://www.w3.org/2000/svg"><style>.sb{fill:#f6f8fa;stroke:#d1d9e0;stroke-width:1}
+.sb-b{fill:#ddf4ff;stroke:#0969da;stroke-width:1}
+.sb-g{fill:#dafbe1;stroke:#1a7f37;stroke-width:1}
+.sb-r{fill:#ffebe9;stroke:#d1242f;stroke-width:1}
+.sb-y{fill:#fff8e6;stroke:#9a6700;stroke-width:1}
+.sb-p{fill:#fbefff;stroke:#8250df;stroke-width:1}
+.sb-o{fill:#fff1e5;stroke:#bc4c00;stroke-width:1}
+.ss{font-family:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;font-size:10px;fill:#59636e}</style>
       <defs>
         <marker id="aLb" markerWidth="8" markerHeight="8" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#0969da"></path></marker>
         <marker id="aLg" markerWidth="8" markerHeight="8" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#1a7f37"></path></marker>
         <marker id="aLp" markerWidth="8" markerHeight="8" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#8250df"></path></marker>
       </defs>
 
-      <line x1="90" y1="40" x2="90" y2="420" stroke="var(--border-muted)"></line>
-      <line x1="310" y1="40" x2="310" y2="420" stroke="var(--border-muted)"></line>
-      <line x1="530" y1="40" x2="530" y2="420" stroke="var(--border-muted)"></line>
-      <line x1="720" y1="40" x2="720" y2="420" stroke="var(--border-muted)"></line>
+      <line x1="90" y1="40" x2="90" y2="420" stroke="#d8dee4"></line>
+      <line x1="310" y1="40" x2="310" y2="420" stroke="#d8dee4"></line>
+      <line x1="530" y1="40" x2="530" y2="420" stroke="#d8dee4"></line>
+      <line x1="720" y1="40" x2="720" y2="420" stroke="#d8dee4"></line>
 
       <rect class="sb" x="40" y="15" width="100" height="25" rx="3"></rect><text class="ss" x="90" y="31" text-anchor="middle">Client</text>
       <rect class="sb-b" x="260" y="15" width="100" height="25" rx="3"></rect><text class="ss" x="310" y="31" text-anchor="middle">Booking Svc</text>
       <rect class="sb-r" x="480" y="15" width="100" height="25" rx="3"></rect><text class="ss" x="530" y="31" text-anchor="middle">Couchbase</text>
       <rect class="sb-g" x="670" y="15" width="100" height="25" rx="3"></rect><text class="ss" x="720" y="31" text-anchor="middle">Espresso</text>
 
-      <path d="M90,60 L308,60" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#aLb)"></path>
+      <path d="M90,60 L308,60" stroke="#0969da" stroke-width="1.5" marker-end="url(#aLb)"></path>
       <text class="ss" x="200" y="54" text-anchor="middle">1. POST /reserve { ticketIds }</text>
 
-      <path d="M310,85 L528,85" stroke="var(--danger)" stroke-width="1.5" marker-end="url(#a1)"></path>
+      <path d="M310,85 L528,85" stroke="#d1242f" stroke-width="1.5" marker-end="url(#a1)"></path>
       <text class="ss" x="420" y="79" text-anchor="middle">2. INSERT ticket:42 user_X TTL=600s</text>
 
-      <path d="M530,110 L312,110" stroke="var(--danger)" stroke-width="1.5" stroke-dasharray="3,2" marker-end="url(#a1)"></path>
+      <path d="M530,110 L312,110" stroke="#d1242f" stroke-width="1.5" stroke-dasharray="3,2" marker-end="url(#a1)"></path>
       <text class="ss" x="420" y="104" text-anchor="middle">3. CAS OK (lock acquired)</text>
 
-      <path d="M310,140 L718,140" stroke="var(--success)" stroke-width="1.5" marker-end="url(#aLg)"></path>
+      <path d="M310,140 L718,140" stroke="#1a7f37" stroke-width="1.5" marker-end="url(#aLg)"></path>
       <text class="ss" x="510" y="134" text-anchor="middle">4. INSERT booking (status=’in-progress’)</text>
 
-      <path d="M308,170 L90,170" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="3,2" marker-end="url(#aLb)"></path>
+      <path d="M308,170 L90,170" stroke="#0969da" stroke-width="1.5" stroke-dasharray="3,2" marker-end="url(#aLb)"></path>
       <text class="ss" x="200" y="164" text-anchor="middle">5. { bookingId, expiresIn: 600s }</text>
 
       <rect class="sb-y" x="40" y="195" width="680" height="22" rx="3"></rect>
       <text class="ss" x="380" y="210" text-anchor="middle">User fills payment form (up to 10 min) · countdown timer shown</text>
 
-      <path d="M90,250 L308,250" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#aLb)"></path>
+      <path d="M90,250 L308,250" stroke="#0969da" stroke-width="1.5" marker-end="url(#aLb)"></path>
       <text class="ss" x="200" y="244" text-anchor="middle">7. POST /confirm { paymentToken }</text>
 
-      <path d="M310,280 L528,280" stroke="var(--done)" stroke-width="1.5" marker-end="url(#aLp)"></path>
+      <path d="M310,280 L528,280" stroke="#8250df" stroke-width="1.5" marker-end="url(#aLp)"></path>
       <text class="ss" x="420" y="274" text-anchor="middle">8. Stripe.charge() — async</text>
 
-      <path d="M310,310 L528,310" stroke="var(--danger)" stroke-width="1.5" marker-end="url(#a1)"></path>
+      <path d="M310,310 L528,310" stroke="#d1242f" stroke-width="1.5" marker-end="url(#a1)"></path>
       <text class="ss" x="420" y="304" text-anchor="middle">9. GET ticket:42 (still user_X?)</text>
 
-      <path d="M310,340 L718,340" stroke="var(--success)" stroke-width="1.5" marker-end="url(#aLg)"></path>
+      <path d="M310,340 L718,340" stroke="#1a7f37" stroke-width="1.5" marker-end="url(#aLg)"></path>
       <text class="ss" x="510" y="334" text-anchor="middle">10. UPDATE ticket SET status=’booked’ (OCC check)</text>
 
-      <path d="M310,370 L528,370" stroke="var(--danger)" stroke-width="1.5" marker-end="url(#a1)"></path>
+      <path d="M310,370 L528,370" stroke="#d1242f" stroke-width="1.5" marker-end="url(#a1)"></path>
       <text class="ss" x="420" y="364" text-anchor="middle">11. DEL ticket:42 (cleanup)</text>
 
-      <path d="M308,400 L90,400" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="3,2" marker-end="url(#aLb)"></path>
+      <path d="M308,400 L90,400" stroke="#0969da" stroke-width="1.5" stroke-dasharray="3,2" marker-end="url(#aLb)"></path>
       <text class="ss" x="200" y="394" text-anchor="middle">12. 200 OK booking confirmed</text>
     </svg>

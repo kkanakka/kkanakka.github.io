@@ -5,6 +5,14 @@ sidebar_position: 1
 sidebar_label: "System Design Basics"
 description: "System Design Basics"
 ---
+
+<!-- DIAGRAM:START -->
+
+## How it works
+
+<img src="/diagrams/system-design-basics/sequence.svg" alt="How it works — system-design-basics" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:END -->
 [Networking 101 (deep dive)](/docs/linux/linux-networking) [System Design Hub](/docs/foundations)
 
 Visual cheatsheet for interviews. Diagrams first, prose second. Each block ends with a "where to use" callout.

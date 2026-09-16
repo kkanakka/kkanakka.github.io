@@ -24,6 +24,7 @@ const config = {
   // instead of being read as JSX. Use .mdx when a page genuinely needs React.
   markdown: {
     format: 'detect',
+    mermaid: true,
     hooks: { onBrokenMarkdownLinks: 'warn', onBrokenMarkdownImages: 'throw' },
   },
 
@@ -45,6 +46,7 @@ const config = {
   ],
 
   themes: [
+    '@docusaurus/theme-mermaid',
     [
       require.resolve('@easyops-cn/docusaurus-search-local'),
       { hashed: true, indexBlog: false, docsRouteBasePath: '/docs', highlightSearchTermsOnTargetPage: true },
@@ -105,6 +107,13 @@ const config = {
         additionalLanguages: ['bash', 'python', 'sql', 'yaml', 'json', 'go', 'java', 'c'],
       },
       tableOfContents: { minHeadingLevel: 2, maxHeadingLevel: 4 },
+      mermaid: {
+        theme: { light: 'neutral', dark: 'dark' },
+        options: {
+          sequence: { showSequenceNumbers: true, actorMargin: 60, wrap: true, width: 160 },
+          flowchart: { curve: 'basis', nodeSpacing: 40, rankSpacing: 50 },
+        },
+      },
     }),
 };
 

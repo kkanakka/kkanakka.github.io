@@ -1,0 +1,22 @@
+sequenceDiagram
+    autonumber
+    participant Pub as Publisher
+    participant Cr as Crawler
+    participant Proc as Article processor
+    participant Clu as Clustering
+    participant Idx as Index
+    participant Rank as Ranking
+    participant U as Reader
+    Pub->>Cr: publish article, expose feed
+    Cr->>Proc: fetch and extract content
+    Proc->>Proc: dedupe near-identical wire copies
+    Proc->>Clu: embed and compare to open clusters
+    alt matches a running story
+        Clu->>Idx: attach to that cluster
+    else new story
+        Clu->>Idx: open a new cluster
+    end
+    U->>Rank: open the feed
+    Rank->>Idx: candidate clusters
+    Rank->>Rank: freshness, authority, personalisation
+    Rank-->>U: ranked stories, one card per cluster

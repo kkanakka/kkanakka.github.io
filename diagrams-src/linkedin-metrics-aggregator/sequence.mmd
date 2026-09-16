@@ -1,0 +1,17 @@
+sequenceDiagram
+    autonumber
+    participant Svc as Service instance
+    participant Ag as Local agent
+    participant GW as Ingest gateway
+    participant Sh as Aggregation shard
+    participant St as Metric store
+    participant Q as Dashboard
+    Svc->>Ag: counters and histograms
+    Ag->>Ag: pre-aggregate over the flush interval
+    Ag->>GW: compressed batch
+    GW->>Sh: route by metric and label set
+    Sh->>Sh: merge across instances into one series
+    Note over Sh: histograms merge by bucket, so percentiles stay correct
+    Sh->>St: write the rolled-up series
+    Q->>St: query a time range
+    St-->>Q: series, downsampled to the pixel width

@@ -1,0 +1,22 @@
+sequenceDiagram
+    autonumber
+    participant U as User
+    participant Svc as Service
+    participant Dep as Dependency
+    participant Mon as Monitoring
+    U->>Svc: request
+    Svc->>Dep: call
+    alt dependency healthy
+        Dep-->>Svc: response
+        Svc-->>U: success
+    else dependency slow
+        Svc->>Svc: timeout fires before the user gives up
+        Svc-->>U: degraded but bounded response
+        Note over Svc: reliability is tolerating faults, not avoiding them
+    else dependency down
+        Svc->>Svc: breaker open, shed load
+        Svc-->>U: fail fast with a clear error
+    end
+    Svc->>Mon: latency, errors, saturation
+    Mon-->>Svc: percentiles, not averages
+    Note over Mon: p99 is the experience your busiest users actually get

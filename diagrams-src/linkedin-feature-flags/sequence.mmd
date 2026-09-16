@@ -1,0 +1,20 @@
+sequenceDiagram
+    autonumber
+    participant Op as Release owner
+    participant UI as Flag console
+    participant CP as Flag control plane
+    participant K as Change stream
+    participant SDK as Service SDK
+    participant App as Request path
+    Op->>UI: set flag to 5% of members
+    UI->>CP: write rule with targeting
+    CP->>CP: validate and version the rule
+    CP->>K: publish change
+    K->>SDK: push to every instance
+    SDK->>SDK: refresh local cache
+    Note over SDK: evaluation is local — no network call per request
+    App->>SDK: isEnabled(flag, member)
+    SDK-->>App: decision from the cached rule
+    alt SDK cannot reach the control plane
+        SDK-->>App: last known rule, then the compiled default
+    end

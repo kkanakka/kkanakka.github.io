@@ -5,6 +5,14 @@ sidebar_position: 2
 sidebar_label: "Secrets Rotation"
 description: "Secrets Rotation"
 ---
+
+<!-- DIAGRAM:START -->
+
+## How it works
+
+<img src="/diagrams/linkedin-secrets-rotation/sequence.svg" alt="How it works — linkedin-secrets-rotation" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:END -->
 Production Security Design — Zero-Downtime Credential Management
 
 A security-first secrets rotation service for LinkedIn scale: 60-second propagation, 99.999% availability, dual-key handoff, and automated rollback. Built with Vault, Kafka, Espresso, and LinkedIn infrastructure patterns.

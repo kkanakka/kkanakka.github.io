@@ -5,6 +5,14 @@ sidebar_position: 5
 sidebar_label: "Linux Scenario Design"
 description: "Linux Scenario Design"
 ---
+
+<!-- DIAGRAM:START -->
+
+## How it works
+
+<img src="/diagrams/linux-scenario-design/sequence.svg" alt="How it works — linux-scenario-design" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:END -->
 On this page
 
 -   [0.Overview](#overview)

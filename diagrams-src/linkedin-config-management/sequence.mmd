@@ -1,0 +1,27 @@
+sequenceDiagram
+    autonumber
+    participant Eng as Engineer
+    participant Git as Config repo
+    participant Val as Validator
+    participant Reg as Config registry
+    participant Ag as Host agent
+    participant Svc as Service
+    participant Drift as Drift detector
+    Eng->>Git: propose a config change
+    Git->>Val: schema and policy checks
+    alt rejected
+        Val-->>Eng: fail the review — a config change is a deploy
+    else accepted
+        Val->>Reg: publish a new version
+        Reg->>Ag: roll out by cohort
+        Ag->>Svc: apply and reload
+        Svc-->>Ag: healthy
+        alt a cohort turns unhealthy
+            Reg->>Ag: halt and roll back to the previous version
+        end
+    end
+    loop continuously
+        Drift->>Svc: read the running config
+        Drift->>Reg: compare against the declared version
+        Drift-->>Eng: report anything that drifted
+    end

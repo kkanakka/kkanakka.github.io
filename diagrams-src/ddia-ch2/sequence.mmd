@@ -1,0 +1,15 @@
+sequenceDiagram
+    autonumber
+    participant App as Application
+    participant Rel as Relational
+    participant Doc as Document
+    participant Gr as Graph
+    App->>Rel: query with joins across normalised tables
+    Rel-->>App: one row set, written once, joined many times
+    App->>Doc: fetch one self-contained document
+    Doc-->>App: the whole tree in one read
+    Note over App,Doc: fast when the access pattern matches the nesting — painful when it stops matching
+    App->>Gr: traverse relationships several hops out
+    Gr-->>App: the path
+    Note over App,Gr: the same query in SQL is a pile of self-joins
+    Note over App,Rel: the data model is a bet on the access pattern — schema-on-read moves the cost, it does not remove it

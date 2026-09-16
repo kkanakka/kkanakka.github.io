@@ -1,0 +1,18 @@
+sequenceDiagram
+    autonumber
+    participant Use as Usage stream
+    participant Cost as Cost attribution
+    participant Bud as Budget tracker
+    participant Ev as Evaluator
+    participant Own as Service owner
+    Use->>Cost: resource consumption per service
+    Cost->>Bud: spend attributed to an owner
+    Bud->>Ev: burn rate against the monthly budget
+    Ev->>Ev: compare with the reliability budget too
+    alt spending fast and reliability is fine
+        Ev->>Own: ticket — over-provisioned, trim it
+    else spending fast because reliability is at risk
+        Ev-->>Bud: suppress — the spend is buying the SLO
+    else projected to blow the budget
+        Ev->>Own: page before the month ends, not after
+    end

@@ -1,0 +1,23 @@
+sequenceDiagram
+    autonumber
+    participant Mx as Metrics
+    participant AS as Autoscaler
+    participant SLO as SLO budget
+    participant API as Kubernetes API
+    participant Sch as Scheduler
+    participant Pods as Replicas
+    loop each control interval
+        AS->>Mx: current utilisation and latency
+        AS->>SLO: how much error budget is left?
+        AS->>AS: compute the desired replica count
+        alt needs more capacity
+            AS->>API: scale up
+            API->>Sch: place new pods
+            Sch->>Pods: bind to nodes
+            Note over AS: scale up fast — being slow here burns budget
+        else comfortably over-provisioned
+            AS->>AS: has it been stable through the cooldown?
+            AS->>API: scale down by one step
+            Note over AS: scale down slowly — flapping costs more than the nodes
+        end
+    end

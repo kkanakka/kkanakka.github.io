@@ -1,0 +1,22 @@
+sequenceDiagram
+    autonumber
+    participant Cl as Client
+    participant L as Leader
+    participant F1 as Follower 1
+    participant F2 as Follower 2
+    Cl->>L: write
+    L->>L: append to its log, uncommitted
+    par replicate
+        L->>F1: AppendEntries
+        L->>F2: AppendEntries
+    end
+    F1-->>L: ack
+    Note over L: a majority has it — now it is committed
+    L-->>Cl: success
+    F2-->>L: late ack
+    alt leader dies
+        F1->>F1: election timeout, become candidate
+        F1->>F2: RequestVote
+        F2-->>F1: vote
+        Note over F1: only a node with an up-to-date log can win, so committed writes survive
+    end

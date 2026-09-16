@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg viewBox="0 0 800 220" xmlns="http://www.w3.org/2000/svg"><style>.sb{fill:var(--bg-subtle);stroke:var(--border);stroke-width:1}
-.sb-b{fill:#ddf4ff;stroke:var(--accent);stroke-width:1}
-.sb-g{fill:#dafbe1;stroke:var(--success);stroke-width:1}
-.sb-r{fill:#ffebe9;stroke:var(--danger);stroke-width:1}
-.sb-y{fill:#fff8e6;stroke:var(--attention);stroke-width:1}
-.sb-p{fill:#fbefff;stroke:var(--done);stroke-width:1}
-.sb-o{fill:#fff1e5;stroke:var(--orange);stroke-width:1}
-.sl{font-family:var(--sans);font-size:12px;font-weight:600;fill:var(--fg)}
-.ss{font-family:var(--mono);font-size:10px;fill:var(--fg-muted)}
-.sa{stroke:var(--fg-muted);stroke-width:1.2;fill:none}
-.sa-b{stroke:var(--accent);stroke-width:1.5;fill:none}
-.sa-g{stroke:var(--success);stroke-width:1.5;fill:none}
-.sa-r{stroke:var(--danger);stroke-width:1.5;fill:none}
-.sa-p{stroke:var(--done);stroke-width:1.5;fill:none}</style>
+<svg viewBox="0 0 800 220" xmlns="http://www.w3.org/2000/svg"><style>.sb{fill:#f6f8fa;stroke:#d1d9e0;stroke-width:1}
+.sb-b{fill:#ddf4ff;stroke:#0969da;stroke-width:1}
+.sb-g{fill:#dafbe1;stroke:#1a7f37;stroke-width:1}
+.sb-r{fill:#ffebe9;stroke:#d1242f;stroke-width:1}
+.sb-y{fill:#fff8e6;stroke:#9a6700;stroke-width:1}
+.sb-p{fill:#fbefff;stroke:#8250df;stroke-width:1}
+.sb-o{fill:#fff1e5;stroke:#bc4c00;stroke-width:1}
+.sl{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans",Helvetica,Arial,sans-serif;font-size:12px;font-weight:600;fill:#1f2328}
+.ss{font-family:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;font-size:10px;fill:#59636e}
+.sa{stroke:#59636e;stroke-width:1.2;fill:none}
+.sa-b{stroke:#0969da;stroke-width:1.5;fill:none}
+.sa-g{stroke:#1a7f37;stroke-width:1.5;fill:none}
+.sa-r{stroke:#d1242f;stroke-width:1.5;fill:none}
+.sa-p{stroke:#8250df;stroke-width:1.5;fill:none}</style>
       <rect class="sb" x="20" y="10" width="180" height="50" rx="6"></rect><text class="sl" x="110" y="30" text-anchor="middle">50GB file (client)</text><text class="ss" x="110" y="46" text-anchor="middle">SHA-256 fingerprint</text>
       <rect class="sb-p" x="240" y="10" width="180" height="50" rx="6"></rect><text class="sl" x="330" y="30" text-anchor="middle">Client chunks file</text><text class="ss" x="330" y="46" text-anchor="middle">5–10 MB, fingerprint each</text>
       <rect class="sb-b" x="460" y="10" width="220" height="50" rx="6"></rect><text class="sl" x="570" y="30" text-anchor="middle">Initiate Multipart Upload</text><text class="ss" x="570" y="46" text-anchor="middle">Ambry returns uploadId + URLs</text>

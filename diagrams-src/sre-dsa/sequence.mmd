@@ -1,0 +1,14 @@
+sequenceDiagram
+    autonumber
+    participant Sym as Production symptom
+    participant DS as Data structure choice
+    participant Op as Operation cost
+    participant Fix as Implementation
+    Sym->>DS: "find the top talkers in this log"
+    DS-->>Op: heap of size k — O(n log k), bounded memory
+    Sym->>DS: "has this host been seen before?"
+    DS-->>Op: hash set — O(1) average, memory grows with cardinality
+    Sym->>DS: "what is the p99 of these samples?"
+    DS-->>Op: sort once, or a streaming sketch if it must be online
+    Op->>Fix: pick for the constraint that actually binds
+    Note over DS,Op: in an SRE interview the structure is chosen by memory ceiling as often as by time

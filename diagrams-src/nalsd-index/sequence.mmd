@@ -1,0 +1,17 @@
+sequenceDiagram
+    autonumber
+    participant Pr as Problem
+    participant Req as Requirements
+    participant Math as Capacity math
+    participant Arch as Architecture
+    participant Fail as Failure modes
+    Pr->>Req: who uses it, and what must not break?
+    Req->>Req: write the SLIs and SLO targets first
+    Req->>Math: peak QPS, bytes per request, retention
+    Math->>Math: work per request ÷ what one machine does
+    Math-->>Arch: machine count, before replication
+    Arch->>Arch: draw the data flow, attach a number to every box
+    Arch->>Fail: what happens when each box dies?
+    Fail-->>Arch: replication factor, headroom, blast radius
+    Fail->>Fail: what would page a human, and what would the runbook say?
+    Note over Math,Arch: non-abstract means every component on the board has arithmetic behind it

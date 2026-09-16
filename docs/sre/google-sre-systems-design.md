@@ -5,6 +5,14 @@ sidebar_position: 2
 sidebar_label: "Google SRE Systems Design Guide"
 description: "Google SRE Systems Design Guide"
 ---
+
+<!-- DIAGRAM:START -->
+
+## How it works
+
+<img src="/diagrams/google-sre-systems-design/sequence.svg" alt="How it works — google-sre-systems-design" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:END -->
 Complete preparation guide with 9 authentic problems from Google's Site Reliability Engineering interviews
 
 "Don't just fix the bug. Design the system where the bug can't exist."

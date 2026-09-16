@@ -1,0 +1,24 @@
+sequenceDiagram
+    autonumber
+    participant Dep as Deploy system
+    participant Ct as Canary controller
+    participant LB as Load balancer
+    participant Can as Canary pods
+    participant Base as Baseline pods
+    participant Mx as Metrics
+    Dep->>Ct: new revision
+    Ct->>Can: roll out a small slice
+    Ct->>LB: send a fraction of traffic to canary
+    loop each analysis interval
+        Ct->>Mx: canary vs baseline for the same window
+        Mx-->>Ct: latency, errors, saturation
+        Ct->>Ct: score against the adjusted threshold
+    end
+    alt score holds
+        Ct->>LB: step traffic up
+        Ct->>Base: replace with the new revision
+    else score drops
+        Ct->>LB: pull canary out of rotation
+        Ct->>Can: roll back
+        Note over Ct: error budget burn tightens the threshold for the next deploy
+    end

@@ -1,0 +1,24 @@
+sequenceDiagram
+    autonumber
+    participant Al as Alert
+    participant Eng as Responder
+    participant Dash as Dashboards
+    participant Host as Host and process
+    participant Dep as Dependencies
+    Al->>Eng: symptom, not cause
+    Eng->>Dash: is it one instance or all of them?
+    alt one instance
+        Eng->>Host: that host — CPU, memory, disk, network
+        Host-->>Eng: a saturated resource, or none
+    else everything at once
+        Eng->>Dep: what changed — deploy, config, traffic, a dependency?
+        Dep-->>Eng: the correlated change
+    end
+    Eng->>Eng: form one hypothesis that explains every symptom
+    Eng->>Host: run the cheapest test that could disprove it
+    alt disproved
+        Eng->>Eng: next hypothesis — do not fix what you have not proven
+    else confirmed
+        Eng->>Dep: mitigate first, root-cause after
+    end
+    Note over Eng: stop the bleeding, then understand it

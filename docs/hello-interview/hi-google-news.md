@@ -5,6 +5,14 @@ sidebar_position: 3
 sidebar_label: "Google News"
 description: "Google News"
 ---
+
+<!-- DIAGRAM:START -->
+
+## How it works
+
+<img src="/diagrams/hi-google-news/sequence.svg" alt="How it works — hi-google-news" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:END -->
 [home](/)/ [hello interview](/docs/hello-interview/hi-index)/ **Google News**
 
 hellointerview·2026-05

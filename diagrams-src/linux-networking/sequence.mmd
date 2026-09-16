@@ -1,0 +1,21 @@
+sequenceDiagram
+    autonumber
+    participant B as Browser
+    participant R as Resolver
+    participant K as Kernel network stack
+    participant LB as Load balancer
+    participant S as Server
+    B->>R: resolve the hostname
+    R-->>B: address
+    B->>K: connect()
+    K->>LB: SYN
+    LB-->>K: SYN-ACK
+    K->>LB: ACK
+    Note over K,LB: three-way handshake done, congestion window starts small
+    B->>LB: TLS ClientHello
+    LB-->>B: certificate, keys agreed
+    B->>LB: HTTP request
+    LB->>S: forward to a healthy backend
+    S-->>LB: response
+    LB-->>B: bytes back, window growing each round trip
+    Note over B: first paint waits on DNS, handshakes, and the first round trip — not on bandwidth

@@ -20,6 +20,7 @@
     "@docusaurus/core": "3.10.2",
     "@docusaurus/faster": "3.10.2",
     "@docusaurus/preset-classic": "3.10.2",
+    "@docusaurus/theme-mermaid": "^3.10.2",
     "@easyops-cn/docusaurus-search-local": "^0.55.3",
     "@mdx-js/react": "^3.0.0",
     "clsx": "^2.0.0",
@@ -30,6 +31,7 @@
   "devDependencies": {
     "@docusaurus/module-type-aliases": "3.10.2",
     "@docusaurus/types": "3.10.2",
+    "@mermaid-js/mermaid-cli": "^11.17.0",
     "jsdom": "^30.0.1",
     "turndown": "^7.2.4",
     "turndown-plugin-gfm": "^1.0.2"
@@ -49,5 +51,5 @@
   "engines": {
     "node": ">=20.0"
   },
-  "description": "Kiran's Tech Hub \u2014 coding, Linux internals, system design and SRE interview preparation."
+  "description": "Kiran's Tech Hub — coding, Linux internals, system design and SRE interview preparation."
 }

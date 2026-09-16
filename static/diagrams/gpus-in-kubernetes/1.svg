@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg viewBox="0 0 800 480" xmlns="http://www.w3.org/2000/svg"><style>.d-box{fill: var(--bg-subtle); stroke: var(--border); stroke-width: 1;}
-.d-box-accent{fill: #ddf4ff; stroke: var(--accent); stroke-width: 1;}
+<svg viewBox="0 0 800 480" xmlns="http://www.w3.org/2000/svg"><style>.d-box{fill: #f6f8fa; stroke: #d1d9e0; stroke-width: 1;}
+.d-box-accent{fill: #ddf4ff; stroke: #0969da; stroke-width: 1;}
 .d-box-cool{fill: #f0f7ff; stroke: #0969da; stroke-width: 1;}
-.d-box-warn{fill: #fff8e6; stroke: var(--attention); stroke-width: 1;}
-.d-box-success{fill: #dafbe1; stroke: var(--success); stroke-width: 1;}
-.d-text{font-family: var(--sans); font-size: 13px; font-weight: 600; fill: var(--fg);}
-.d-text-sm{font-family: var(--sans); font-size: 11px; fill: var(--fg-muted);}
-.d-text-accent{font-family: var(--mono); font-size: 11px; fill: var(--accent); letter-spacing: 0.06em; font-weight: 600;}
-.d-arrow{stroke: var(--fg-muted); stroke-width: 1.2; fill: none;}
-.d-arrow-accent{stroke: var(--accent); stroke-width: 1.2; fill: none;}
-.d-divider{stroke: var(--border); stroke-width: 0.5; stroke-dasharray: 3 4;}</style>
+.d-box-warn{fill: #fff8e6; stroke: #9a6700; stroke-width: 1;}
+.d-box-success{fill: #dafbe1; stroke: #1a7f37; stroke-width: 1;}
+.d-text{font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif; font-size: 13px; font-weight: 600; fill: #1f2328;}
+.d-text-sm{font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif; font-size: 11px; fill: #59636e;}
+.d-text-accent{font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; font-size: 11px; fill: #0969da; letter-spacing: 0.06em; font-weight: 600;}
+.d-arrow{stroke: #59636e; stroke-width: 1.2; fill: none;}
+.d-arrow-accent{stroke: #0969da; stroke-width: 1.2; fill: none;}
+.d-divider{stroke: #d1d9e0; stroke-width: 0.5; stroke-dasharray: 3 4;}</style>
       <defs>
         <marker id="arr1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
           <path d="M2 1L9 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
@@ -42,10 +42,10 @@
       <line x1="400" y1="284" x2="400" y2="328" class="d-arrow" marker-end="url(#arr1)"></line>
       <line x1="640" y1="284" x2="520" y2="328" class="d-arrow" marker-end="url(#arr1)"></line>
       <rect x="80" y="330" width="640" height="100" rx="8" class="d-box-warn"></rect>
-      <text class="d-text-accent" x="400" y="352" text-anchor="middle" style="fill: var(--attention);">VENDOR STACK — WHERE SLICING ACTUALLY HAPPENS</text>
+      <text class="d-text-accent" x="400" y="352" text-anchor="middle" style="fill: #9a6700;">VENDOR STACK — WHERE SLICING ACTUALLY HAPPENS</text>
       <text class="d-text-sm" x="400" y="372" text-anchor="middle">NVIDIA driver · Container Toolkit · CUDA runtime · MIG · MPS · time-slicing</text>
       <line x1="180" y1="395" x2="620" y2="395" class="d-divider"></line>
       <text class="d-text-sm" x="400" y="414" text-anchor="middle">This layer decides how the GPU is actually carved up or shared.</text>
       <line x1="400" y1="430" x2="400" y2="450" class="d-arrow" marker-end="url(#arr1)"></line>
-      <text class="d-text" x="400" y="472" text-anchor="middle" style="fill: var(--accent);">Physical GPU</text>
+      <text class="d-text" x="400" y="472" text-anchor="middle" style="fill: #0969da;">Physical GPU</text>
     </svg>

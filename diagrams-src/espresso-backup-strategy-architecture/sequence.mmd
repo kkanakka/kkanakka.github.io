@@ -1,0 +1,22 @@
+sequenceDiagram
+    autonumber
+    participant App as Application
+    participant Rt as Router
+    participant M as Master partition
+    participant S as Slave replica
+    participant Bin as Change log
+    participant Bk as Backup store
+    App->>Rt: write
+    Rt->>M: route by partition key
+    M->>Bin: append to the change log
+    M->>S: replicate
+    S-->>M: ack
+    M-->>App: committed
+    loop scheduled
+        Bk->>M: take a consistent snapshot
+        Bin->>Bk: ship the log segments since that snapshot
+    end
+    Note over Bk: restore point = snapshot + replayed log — the gap is the RPO
+    alt master fails
+        Rt->>S: promote and redirect writes
+    end

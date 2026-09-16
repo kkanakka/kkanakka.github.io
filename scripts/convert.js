@@ -413,6 +413,10 @@ Designing systems that train, serve, and scale machine learning — inference
 architecture, vector search, retrieval pipelines, GPU scheduling, and the
 reliability patterns that hold them together.
 
+## How it works
+
+<img src="/diagrams/overview/sequence.svg" alt="How it works — AI System Design" class="doc-diagram doc-diagram-seq" />
+
 ${aiPages.length
   ? `## Guides\n\n${aiPages.map((p) => `- [${p.title}](/docs/ai-system-design/${path.basename(p.file, '.html')})`).join('\n')}`
   : '## No guides yet\n\nDrop an `.html` file into `ai-system-design/` at the repo root, commit, and push — it becomes a page in this section automatically.'}

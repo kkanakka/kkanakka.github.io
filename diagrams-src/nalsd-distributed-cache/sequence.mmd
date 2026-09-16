@@ -1,0 +1,20 @@
+sequenceDiagram
+    autonumber
+    participant App as Application
+    participant Cl as Cache client
+    participant Sh as Cache shard
+    participant DB as Origin database
+    App->>Cl: get(key)
+    Cl->>Cl: consistent-hash to a shard
+    Cl->>Sh: get
+    alt hit
+        Sh-->>App: value
+    else miss
+        Sh-->>Cl: miss
+        Cl->>Cl: take per-key lock
+        Note over Cl: one loader per key, the rest wait — stops a stampede
+        Cl->>DB: read
+        DB-->>Cl: row
+        Cl->>Sh: set with TTL and jitter
+        Cl-->>App: value
+    end
