@@ -24,10 +24,12 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24        # npm 11, matching the lockfile's writer
           cache: npm
 
-      - run: npm ci
+      # npm ci is the strict path; fall back to install so a lockfile written
+      # by a different npm major can't take the site offline.
+      - run: npm ci --no-audit --no-fund || npm install --no-audit --no-fund
 
       # Turn anything dropped into ai-system-design/ into pages in the
       # AI System Design section. Never touches the other sections.
