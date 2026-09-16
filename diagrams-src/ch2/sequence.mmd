@@ -1,0 +1,18 @@
+sequenceDiagram
+    autonumber
+    participant K as Kernel launch
+    participant GS as Gigathread engine
+    participant SM as SM
+    participant Reg as Register file
+    participant L1 as L1 / shared memory
+    participant L2 as L2 cache
+    participant HBM as HBM
+    K->>GS: grid of thread blocks
+    GS->>SM: assign a block to an SM with free resources
+    SM->>Reg: allocate registers per thread
+    Note over Reg: register pressure caps how many warps fit — that is occupancy
+    SM->>L1: threads in a block share this
+    SM->>L2: miss goes here
+    L2->>HBM: miss goes here
+    Note over L1,HBM: each step down is roughly an order of magnitude slower
+    SM->>SM: tensor cores handle the matrix multiplies

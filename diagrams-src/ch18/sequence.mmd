@@ -1,0 +1,19 @@
+sequenceDiagram
+    autonumber
+    participant Res as Research
+    participant Tr as Training
+    participant Ev as Evaluation and safety
+    participant Inf as Inference platform
+    participant P as Product
+    Res->>Tr: architecture and data decisions
+    Tr->>Tr: pretrain, then fine-tune, then preference training
+    Tr->>Ev: candidate model
+    Ev->>Ev: capability and safety evaluations
+    alt passes
+        Ev->>Inf: release the weights to serving
+    else fails
+        Ev->>Tr: back for more work
+    end
+    Inf->>P: served behind the API and the apps
+    P-->>Res: real usage informs the next round
+    Note over Ev,Inf: the evaluation gate is the part that distinguishes this from a research demo

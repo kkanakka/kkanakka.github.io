@@ -1,0 +1,18 @@
+sequenceDiagram
+    autonumber
+    participant U as User
+    participant K as Kubernetes
+    participant Op as Framework operator
+    participant W as Worker pods
+    participant GPU as GPUs
+    U->>K: submit a training job custom resource
+    K->>Op: the operator reconciles it
+    Op->>W: create the ranks — one pod per worker
+    Op->>W: inject the rendezvous config so ranks find each other
+    W->>W: all ranks must start before any can proceed
+    Note over Op,W: gang semantics — the operator exists mostly to get this right
+    W->>GPU: train
+    alt a rank dies
+        Op->>W: restart the whole gang from the last checkpoint
+    end
+    Note over U,GPU: serving engines (vLLM, TensorRT-LLM) are the same pattern with a Deployment instead

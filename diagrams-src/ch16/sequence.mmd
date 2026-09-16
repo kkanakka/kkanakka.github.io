@@ -1,0 +1,22 @@
+sequenceDiagram
+    autonumber
+    participant U as User
+    participant Ag as Agent loop
+    participant M as Model
+    participant MCP as MCP server
+    participant Tool as External system
+    U->>Ag: a goal, not a single question
+    loop until done or budget spent
+        Ag->>M: context + the tools available
+        M-->>Ag: either an answer, or a tool call
+        alt tool call
+            Ag->>MCP: invoke with the model's arguments
+            MCP->>Tool: perform it
+            Tool-->>MCP: result
+            MCP-->>Ag: structured result
+            Ag->>Ag: append to context and loop
+        else answer
+            Ag-->>U: final response
+        end
+    end
+    Note over Ag,M: the model chooses, the loop executes — the model never touches the system directly

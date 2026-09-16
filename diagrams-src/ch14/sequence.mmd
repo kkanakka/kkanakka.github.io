@@ -1,0 +1,21 @@
+sequenceDiagram
+    autonumber
+    participant U as User
+    participant Svc as Chat service
+    participant St as Conversation store
+    participant Sum as Summariser
+    participant M as Model
+    U->>Svc: next message in a long thread
+    Svc->>St: load the thread
+    St-->>Svc: more turns than the context window holds
+    alt fits
+        Svc->>M: send the whole thread
+    else too long
+        Svc->>Sum: compress the older turns
+        Sum-->>Svc: a summary that preserves the premise
+        Svc->>St: store the summary, keep the raw turns
+        Svc->>M: summary + recent turns verbatim
+    end
+    M-->>Svc: reply
+    Svc->>St: append the new turn
+    Note over St,M: the model is stateless — every turn resends the context, and you pay for it each time

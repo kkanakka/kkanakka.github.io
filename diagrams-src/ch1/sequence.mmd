@@ -1,0 +1,18 @@
+sequenceDiagram
+    autonumber
+    participant H as Host CPU
+    participant D as GPU driver
+    participant HBM as GPU memory
+    participant SM as Streaming multiprocessors
+    H->>D: copy input data to the device
+    D->>HBM: DMA over PCIe
+    H->>D: launch a kernel — a grid of blocks
+    D->>SM: place each block on a free SM
+    SM->>SM: split the block into warps of 32 threads
+    loop every cycle
+        SM->>HBM: fetch operands
+        SM->>SM: all 32 threads run the same instruction
+    end
+    Note over SM,HBM: thousands of threads in flight hide memory latency — that is the whole trick
+    SM->>HBM: write results
+    H->>D: copy results back

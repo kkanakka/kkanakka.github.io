@@ -1,0 +1,12 @@
+sequenceDiagram
+    autonumber
+    participant T as A term
+    participant L as Which layer is it about?
+    participant A as What to say
+    T->>L: silicon, model, product, or ops?
+    L-->>A: silicon — SM, warp, HBM, NVLink
+    L-->>A: model — token, attention, KV cache, parameter
+    L-->>A: product — context window, streaming, tool call
+    L-->>A: ops — MIG, device plugin, NUMA alignment, XID
+    A->>A: define it, then say what it constrains
+    Note over T,A: most GPU confusion is one word being used at two layers at once

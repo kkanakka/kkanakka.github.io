@@ -1,0 +1,21 @@
+sequenceDiagram
+    autonumber
+    participant Al as Alert
+    participant Eng as Responder
+    participant K as Kubernetes
+    participant Node as GPU node
+    participant Run as Runbook
+    Al->>Eng: inference latency is up
+    Eng->>Run: open the matching runbook first
+    Eng->>K: is it one node or the fleet?
+    alt one node
+        Eng->>Node: dmesg, XID errors, clock throttling
+        Node-->>Eng: a failing GPU
+        Eng->>K: cordon and drain it
+    else the fleet
+        Eng->>K: what changed — image, config, or traffic?
+        K-->>Eng: a recent rollout
+        Eng->>K: roll back first, diagnose after
+    end
+    Eng->>Run: record what the runbook missed
+    Note over Eng,Run: the postmortem's real output is a better runbook, not a list of blame

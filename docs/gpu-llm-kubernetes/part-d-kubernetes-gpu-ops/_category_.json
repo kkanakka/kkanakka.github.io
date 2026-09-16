@@ -1,0 +1,8 @@
+{
+  "label": "Part D — Kubernetes GPU ops",
+  "position": 4,
+  "link": {
+    "type": "generated-index",
+    "slug": "/gpu-llm-kubernetes/part-d-kubernetes-gpu-ops"
+  }
+}

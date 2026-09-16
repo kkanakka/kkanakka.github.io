@@ -1,0 +1,20 @@
+sequenceDiagram
+    autonumber
+    participant Pod as Pod spec
+    participant Kb as Kubelet
+    participant CPU as CPU manager
+    participant Topo as Topology manager
+    participant Dev as Device manager
+    Pod->>Kb: requests == limits, integer CPUs
+    Kb->>Kb: that makes it Guaranteed QoS
+    Kb->>CPU: allocate exclusive cores
+    Kb->>Dev: allocate the GPU
+    Dev-->>Topo: which NUMA node is that GPU on?
+    CPU-->>Topo: which NUMA node are those cores on?
+    Topo->>Topo: can both come from one NUMA node?
+    alt aligned
+        Topo-->>Kb: admit — CPU, memory and GPU share a node
+    else cannot align
+        Topo-->>Kb: reject under single-numa policy
+        Note over Topo,Kb: better to fail admission than to run at half the memory bandwidth
+    end

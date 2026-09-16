@@ -1,0 +1,9 @@
+{
+  "label": "GPU, LLM & Kubernetes",
+  "position": 10,
+  "link": {
+    "type": "generated-index",
+    "slug": "/gpu-llm-kubernetes",
+    "description": "From silicon to the chat window: how a GPU works, how a language model runs on it, how a chat product is built around that, and how all of it is operated on Kubernetes."
+  }
+}

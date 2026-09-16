@@ -1,0 +1,18 @@
+sequenceDiagram
+    autonumber
+    participant Py as PyTorch
+    participant AT as ATen dispatcher
+    participant CU as CUDA runtime
+    participant Drv as Driver
+    participant GPU as GPU
+    Py->>AT: torch.matmul(a, b)
+    AT->>AT: pick the kernel for this dtype and device
+    AT->>CU: cudaLaunchKernel
+    CU->>Drv: ioctl with the launch descriptor
+    Drv->>GPU: push onto the stream's command queue
+    Note over CU,GPU: the call returns immediately — launches are asynchronous
+    Py->>Py: Python continues while the GPU works
+    Py->>CU: cudaStreamSynchronize or a .cpu() call
+    CU->>GPU: wait for completion
+    GPU-->>Py: results
+    Note over Py,GPU: that sync point is where a "fast" model suddenly shows its real cost

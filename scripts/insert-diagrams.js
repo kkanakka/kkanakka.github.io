@@ -20,14 +20,15 @@ const ROOT = path.resolve(__dirname, '..');
 const DOCS = path.join(ROOT, 'docs');
 const SRC = path.join(ROOT, 'diagrams-src');
 
+// walk the whole tree - some sections nest pages a further level down
 const pageFor = {};
-for (const section of fs.readdirSync(DOCS)) {
-  const dir = path.join(DOCS, section);
-  if (!fs.statSync(dir).isDirectory()) continue;
-  for (const f of fs.readdirSync(dir)) {
-    if (f.endsWith('.md')) pageFor[f.replace(/\.md$/, '')] = path.join(dir, f);
+(function walk(dir) {
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) walk(full);
+    else if (entry.name.endsWith('.md')) pageFor[entry.name.replace(/\.md$/, '')] = full;
   }
-}
+})(DOCS);
 
 const titleCase = (s) => s.replace(/[-_]/g, ' ').replace(/^./, (c) => c.toUpperCase());
 

@@ -1,0 +1,23 @@
+sequenceDiagram
+    autonumber
+    participant B as Browser
+    participant Edge as Edge / CDN
+    participant API as API service
+    participant Auth as Auth and quota
+    participant Rt as Model router
+    participant Inf as Inference server
+    participant GPU as GPU
+    B->>Edge: POST the message, expects a stream
+    Edge->>API: terminate TLS, forward
+    API->>Auth: who is this, and do they have budget?
+    Auth-->>API: allowed
+    API->>Rt: which model, which region?
+    Rt->>Inf: a replica with free KV cache
+    Inf->>GPU: prefill
+    GPU-->>Inf: first token
+    Inf-->>B: stream begins — TTFT stops here
+    loop remaining tokens
+        GPU-->>Inf: token
+        Inf-->>B: forward it down the open connection
+    end
+    Note over B,Edge: the response is a stream, so it cannot be cached like a normal GET

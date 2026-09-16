@@ -1,0 +1,22 @@
+sequenceDiagram
+    autonumber
+    participant U as User
+    participant UI as Chat interface
+    participant SSE as Event stream
+    participant API as Backend
+    U->>UI: press enter
+    UI->>UI: render the message optimistically
+    UI->>API: open a streaming connection
+    API-->>SSE: token events
+    loop as they arrive
+        SSE-->>UI: append to the message in place
+        UI->>UI: keep the scroll pinned unless the user scrolled up
+    end
+    alt user hits stop
+        UI->>API: abort
+        API->>API: cancel generation and stop billing
+    end
+    alt connection drops
+        UI->>API: reconnect, resume from the last stored offset
+        Note over UI,API: the partial turn was persisted, so nothing regenerates
+    end

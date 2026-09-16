@@ -1,0 +1,19 @@
+sequenceDiagram
+    autonumber
+    participant D as Training data
+    participant M as Model
+    participant L as Loss
+    participant Om as Optimizer
+    participant GPUs as GPU fleet
+    D->>M: batch of sequences
+    M->>M: forward pass, predict every next token
+    M->>L: compare against the actual next token
+    L->>M: backward pass — gradients for every weight
+    M->>GPUs: all-reduce gradients across ranks
+    Note over GPUs: this is why interconnect bandwidth decides training throughput
+    GPUs->>Om: averaged gradients
+    Om->>M: update the weights
+    loop many times
+        Note over D,Om: pretraining, then fine-tuning, then preference training
+    end
+    M->>M: checkpoint — a crash without one costs the whole run

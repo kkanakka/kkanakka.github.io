@@ -1,0 +1,21 @@
+sequenceDiagram
+    autonumber
+    participant Cl as Clients
+    participant LB as Router
+    participant S1 as Server replica
+    participant Batch as Running batch
+    participant GPU as GPUs
+    Cl->>LB: many concurrent requests
+    LB->>S1: route by free KV cache, not round-robin
+    S1->>Batch: admit if the cache budget allows
+    loop each decode step
+        Batch->>GPU: one forward pass for the whole batch
+        GPU-->>Batch: a token for every sequence
+        Batch-->>Cl: stream each one
+    end
+    Note over Batch: continuous batching — finished sequences leave, new ones join between steps
+    alt cache is full
+        S1-->>LB: reject or queue
+        LB->>S1: try another replica
+    end
+    Note over LB,GPU: a model too big for one GPU is sharded — tensor parallel within a node, pipeline across nodes

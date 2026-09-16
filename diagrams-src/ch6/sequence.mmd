@@ -1,0 +1,12 @@
+sequenceDiagram
+    autonumber
+    participant Q as A term you hit
+    participant L as Which layer?
+    participant A as Answer
+    Q->>L: is it silicon, software, or scheduling?
+    L-->>A: SM, warp, tensor core — silicon
+    L-->>A: kernel, stream, occupancy — the CUDA programming model
+    L-->>A: MIG, MPS, time-slicing — how one GPU is shared
+    L-->>A: HBM, NVLink, PCIe — how bytes move
+    A->>A: say what it is, then what it costs you
+    Note over Q,A: most confusion here is two layers being given one name

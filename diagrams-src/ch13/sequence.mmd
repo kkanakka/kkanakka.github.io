@@ -1,0 +1,16 @@
+sequenceDiagram
+    autonumber
+    participant App as Chat service
+    participant SQL as Relational store
+    participant Obj as Object storage
+    participant Vec as Vector store
+    participant Ca as Cache
+    App->>SQL: users, conversations, turn metadata
+    Note over SQL: small rows, transactional, queried by user — a relational job
+    App->>Obj: attachments and large artifacts
+    Note over Obj: never put a 30 MB file in the database
+    App->>Vec: embeddings for retrieval
+    Vec-->>App: nearest neighbours by cosine distance
+    App->>Ca: hot conversation context
+    Ca-->>App: avoids re-reading the whole thread per turn
+    Note over App,Ca: four stores because four access patterns — not because four is fashionable

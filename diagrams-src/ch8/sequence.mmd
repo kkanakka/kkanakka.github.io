@@ -1,0 +1,17 @@
+sequenceDiagram
+    autonumber
+    participant In as Token embeddings
+    participant Att as Self-attention
+    participant KV as KV cache
+    participant FF as Feed-forward
+    participant Out as Logits
+    In->>Att: vectors plus positions
+    Att->>Att: each token builds a query, key and value
+    Att->>KV: store this layer's keys and values
+    Att->>Att: attend — weight every previous token by relevance
+    Note over Att: this is the only place tokens see each other
+    Att->>FF: contextualised vectors
+    FF->>FF: expand, non-linearity, project back
+    Note over In,FF: repeat for every layer — dozens to a hundred
+    FF->>Out: probability over the whole vocabulary
+    Out-->>In: sample one token, append, and go again

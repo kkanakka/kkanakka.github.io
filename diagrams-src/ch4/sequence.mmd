@@ -1,0 +1,16 @@
+sequenceDiagram
+    autonumber
+    participant CPU as CPU
+    participant Pin as Pinned host memory
+    participant PCIe as PCIe
+    participant GPU as GPU
+    CPU->>Pin: stage the batch in page-locked memory
+    Note over Pin: pageable memory forces the driver to bounce through a staging buffer first
+    CPU->>PCIe: async copy on a stream
+    PCIe->>GPU: DMA, no CPU involvement
+    par overlap
+        CPU->>CPU: prepare the next batch
+        GPU->>GPU: compute the current one
+    end
+    GPU->>PCIe: results back
+    Note over CPU,GPU: keep both busy — a CPU waiting on the GPU is half your machine idle

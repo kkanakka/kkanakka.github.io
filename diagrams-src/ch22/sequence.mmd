@@ -1,0 +1,19 @@
+sequenceDiagram
+    autonumber
+    participant GPU as GPU
+    participant DCGM as DCGM exporter
+    participant Prom as Metrics store
+    participant Rule as Alert rules
+    participant OC as On-call
+    GPU->>DCGM: utilisation, memory, temperature, ECC errors
+    DCGM->>Prom: scraped as metrics
+    Note over DCGM,Prom: "GPU utilisation" means a kernel was resident — not that it was efficient
+    Prom->>Rule: evaluate
+    alt XID errors or falling clocks
+        Rule->>OC: page — the hardware is degrading
+    else utilisation high but throughput low
+        Rule->>OC: ticket — probably starved on data or interconnect
+    else memory climbing steadily
+        Rule->>OC: ticket — a leak will end in an OOM kill
+    end
+    Note over Rule,OC: alert on tokens per second and queue depth, not just on the GPU being busy

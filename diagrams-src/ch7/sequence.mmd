@@ -1,0 +1,16 @@
+sequenceDiagram
+    autonumber
+    participant U as Your text
+    participant Tok as Tokenizer
+    participant Vocab as Vocabulary
+    participant Emb as Embedding table
+    participant M as Model
+    U->>Tok: "unbelievable"
+    Tok->>Vocab: greedy merge of byte pairs
+    Vocab-->>Tok: ["un", "bel", "iev", "able"]
+    Note over Tok,Vocab: common words are one token, rare ones fragment — that is why cost varies by language
+    Tok->>Emb: token ids
+    Emb-->>M: a vector per token
+    M-->>Tok: predicted next token id
+    Tok-->>U: detokenised text
+    Note over U,M: the model never sees characters, only ids — hence the trouble counting letters

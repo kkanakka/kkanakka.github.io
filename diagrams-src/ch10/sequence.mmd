@@ -1,0 +1,18 @@
+sequenceDiagram
+    autonumber
+    participant R as Request
+    participant Pre as Prefill
+    participant KV as KV cache
+    participant Dec as Decode
+    participant U as User
+    R->>Pre: the whole prompt at once
+    Pre->>KV: fill the cache for every prompt token
+    Note over Pre: compute-bound, parallel across tokens — this sets time-to-first-token
+    Pre->>Dec: hand over
+    loop one token at a time
+        Dec->>KV: read all previous keys and values
+        Dec->>KV: append this token's
+        Dec-->>U: stream the token
+    end
+    Note over Dec,KV: memory-bandwidth-bound and strictly sequential — this sets inter-token latency
+    Note over KV: cache size = layers x heads x sequence length x batch. It is the real capacity limit

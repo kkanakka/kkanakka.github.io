@@ -1,0 +1,13 @@
+sequenceDiagram
+    autonumber
+    participant Q as The question
+    participant N as nvidia-smi
+    participant K as kubectl
+    participant D as dmesg / DCGM
+    Q->>N: is the GPU busy, and with whose process?
+    N-->>Q: utilisation, memory, and the PIDs holding it
+    Q->>K: did the pod even get a GPU?
+    K-->>Q: describe pod — allocation, events, admission failures
+    Q->>D: is the hardware healthy?
+    D-->>Q: XID errors, ECC counts, thermal throttling
+    Note over N,D: ask in that order — allocation problems look exactly like performance problems from above

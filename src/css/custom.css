@@ -1,3 +1,5 @@
+@import "./gpu-manual.css";
+
 /**
  * Any CSS included here will be global. The classic template
  * bundles Infima by default. Infima is a CSS framework designed to
@@ -177,3 +179,24 @@ html[data-theme="dark"] .markdown figure { background: #ffffff; }
   color: var(--ifm-color-emphasis-700);
   margin-bottom: 1rem;
 }
+
+/* The GPU manual's diagrams are a mix of inline svg and HTML/CSS flow charts,
+   all drawn with dark ink for a white page. Keep the plate white in dark mode
+   rather than inverting strokes that were never designed to invert. */
+.markdown figure:has(.gm-flow),
+.markdown figure:has(.gm-layer),
+.markdown figure:has(.gm-stack-d),
+.markdown figure:has(svg) {
+  background: #ffffff;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 8px;
+  padding: 0.85rem;
+  overflow-x: auto;
+}
+html[data-theme="dark"] .markdown figure:has(.gm-flow),
+html[data-theme="dark"] .markdown figure:has(.gm-layer),
+html[data-theme="dark"] .markdown figure:has(.gm-stack-d) { background: #ffffff; }
+
+/* keep the manual's ink dark inside those white plates in either theme */
+.markdown figure .gm-flow, .markdown figure .gm-layer,
+.markdown figure .gm-stack-d, .markdown figure .gm-grid2 { color: #1f2328; }

@@ -1,0 +1,20 @@
+sequenceDiagram
+    autonumber
+    participant U as Developer
+    participant CLI as CLI
+    participant FS as Local filesystem
+    participant M as Model
+    participant Sh as Shell
+    U->>CLI: a task in plain language
+    CLI->>FS: gather relevant context — files, tree, git state
+    CLI->>M: task + context + the tools it may use
+    M-->>CLI: proposed tool call — read, edit, or run
+    alt needs approval
+        CLI->>U: show the diff or the command
+        U-->>CLI: approve
+    end
+    CLI->>FS: apply the edit
+    CLI->>Sh: run the command
+    Sh-->>CLI: output, exit code
+    CLI->>M: feed the result back
+    Note over CLI,M: the loop is local — your files never leave except as the context you send

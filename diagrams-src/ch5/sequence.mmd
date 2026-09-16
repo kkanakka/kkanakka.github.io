@@ -1,0 +1,17 @@
+sequenceDiagram
+    autonumber
+    participant T as Thread
+    participant Reg as Registers
+    participant SMEM as Shared memory
+    participant L2 as L2
+    participant HBM as HBM
+    participant NV as NVLink peer
+    participant Host as Host RAM
+    T->>Reg: ~1 cycle
+    T->>SMEM: ~20 cycles
+    T->>L2: ~200 cycles
+    T->>HBM: ~400 cycles, but enormous bandwidth
+    T->>NV: another GPU's memory, hundreds of GB/s
+    T->>Host: over PCIe — an order of magnitude slower again
+    Note over T,Host: every level down is ~10x. Arithmetic is cheap, moving bytes is not
+    Note over NV,Host: NUMA matters — a GPU reading the wrong socket's RAM pays twice

@@ -1,0 +1,17 @@
+sequenceDiagram
+    autonumber
+    participant Pod as GPU pod
+    participant CNI as CNI
+    participant SRIOV as SR-IOV / Multus
+    participant NIC as RDMA NIC
+    participant Peer as Peer GPU
+    participant CSI as Storage
+    Pod->>CNI: default cluster network
+    Note over CNI: fine for control traffic, useless for collective traffic
+    Pod->>SRIOV: request a second interface
+    SRIOV->>NIC: attach a virtual function directly to the pod
+    Pod->>NIC: NCCL all-reduce
+    NIC->>Peer: RDMA — straight to GPU memory, no kernel, no copies
+    Note over NIC,Peer: GPUDirect removes the bounce through host RAM entirely
+    Pod->>CSI: mount the dataset
+    Note over CSI,Pod: a GPU starved by slow storage is the most expensive idle resource you own
