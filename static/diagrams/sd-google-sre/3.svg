@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 820 400" xmlns="http://www.w3.org/2000/svg" style="max-width:800px;">
+      <defs><filter id="shR" x="-3%" y="-3%" width="106%" height="110%"><fedropshadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.06"></fedropshadow></filter></defs>
+
+      <text x="410" y="22" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="15" fill="#1a73e8">The Google SRE Interview Rubric</text>
+
+      <!-- 1. SLOs -->
+      <rect x="10" y="40" width="395" height="75" rx="10" fill="#e3f2fd" stroke="#1565c0" stroke-width="2" filter="url(#shR)"></rect>
+      <text x="30" y="62" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#0d47a1">1. Requirements &amp; SLOs FIRST</text>
+      <text x="30" y="82" font-family="Inter,sans-serif" font-size="10" fill="#37352f">DON'T start drawing. Define SLOs first:</text>
+      <text x="30" y="98" font-family="Inter,sans-serif" font-size="10" fill="#37352f">"We need 99.95% availability, &lt;200ms p99 latency, &lt;0.1% error rate"</text>
+      <text x="30" y="110" font-family="Inter,sans-serif" font-weight="600" font-size="9" fill="#c62828">RED FLAG: Drawing boxes before defining SLOs</text>
+
+      <!-- 2. Golden Signals -->
+      <rect x="415" y="40" width="395" height="75" rx="10" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2" filter="url(#shR)"></rect>
+      <text x="435" y="62" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#2e7d32">2. The "Golden Signals"</text>
+      <text x="435" y="82" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Explicitly mention monitoring for:</text>
+      <text x="435" y="98" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#37352f">Latency | Traffic | Errors | Saturation</text>
+      <text x="435" y="110" font-family="Inter,sans-serif" font-weight="600" font-size="9" fill="#2e7d32">GREEN FLAG: "I'd alert on p99 latency &gt; 200ms and error rate &gt; 0.1%"</text>
+
+      <!-- 3. Failure Planning -->
+      <rect x="10" y="125" width="395" height="75" rx="10" fill="#fce4ec" stroke="#c62828" stroke-width="2" filter="url(#shR)"></rect>
+      <text x="30" y="147" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#c62828">3. Failure Planning (Proactive)</text>
+      <text x="30" y="167" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Talk about these BEFORE they ask:</text>
+      <text x="30" y="183" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#37352f">Circuit Breakers | Exponential Backoff | Load Shedding</text>
+      <text x="30" y="195" font-family="Inter,sans-serif" font-weight="600" font-size="9" fill="#c62828">RED FLAG: Only mentioning failures when the interviewer asks</text>
+
+      <!-- 4. No SPOF -->
+      <rect x="415" y="125" width="395" height="75" rx="10" fill="#fff3e0" stroke="#e65100" stroke-width="2" filter="url(#shR)"></rect>
+      <text x="435" y="147" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#e65100">4. No Single Point of Failure</text>
+      <text x="435" y="167" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Identify where the design would break:</text>
+      <text x="435" y="183" font-family="Inter,sans-serif" font-size="10" fill="#37352f">"The LB is a bottleneck — I'd use Anycast VIPs to distribute it"</text>
+      <text x="435" y="195" font-family="Inter,sans-serif" font-weight="600" font-size="9" fill="#e65100">GREEN FLAG: Self-identifying SPOFs before asked</text>
+
+      <!-- 5. Observability -->
+      <rect x="10" y="210" width="395" height="75" rx="10" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="2" filter="url(#shR)"></rect>
+      <text x="30" y="232" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#4a148c">5. Observability (Not Just "Logs")</text>
+      <text x="30" y="252" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Discuss: eBPF-powered tracing, structured logging,</text>
+      <text x="30" y="268" font-family="Inter,sans-serif" font-size="10" fill="#37352f">distributed trace IDs (OpenTelemetry), custom SLI dashboards</text>
+      <text x="30" y="280" font-family="Inter,sans-serif" font-weight="600" font-size="9" fill="#4a148c">GREEN FLAG: "I'd instrument with OpenTelemetry, alert on SLO burn rate"</text>
+
+      <!-- 6. Iterative -->
+      <rect x="415" y="210" width="395" height="75" rx="10" fill="#e3f2fd" stroke="#1565c0" stroke-width="2" filter="url(#shR)"></rect>
+      <text x="435" y="232" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#0d47a1">6. Iterative Design (NALSD)</text>
+      <text x="435" y="252" font-family="Inter,sans-serif" font-size="10" fill="#37352f">"Let me start with 1x and scale to 10x, then 100x."</text>
+      <text x="435" y="268" font-family="Inter,sans-serif" font-size="10" fill="#37352f">At each level, calculate machines/cost/bottleneck.</text>
+      <text x="435" y="280" font-family="Inter,sans-serif" font-weight="600" font-size="9" fill="#0d47a1">GREEN FLAG: "At 10x, the DB becomes the bottleneck — here's how I'd shard"</text>
+
+      <!-- PRO TIP -->
+      <rect x="10" y="300" width="800" height="90" rx="12" fill="#f7f6f3" stroke="#1a73e8" stroke-width="2"></rect>
+      <text x="30" y="325" font-family="Inter,sans-serif" font-weight="700" font-size="14" fill="#1a73e8">Pro-Tip for your Champion Call:</text>
+      <text x="30" y="348" font-family="Inter,sans-serif" font-size="11" fill="#37352f">Mention that you are familiar with the <tspan font-weight="700">NALSD framework</tspan>. It shows you've done homework on Google's engineering culture.</text>
+      <text x="30" y="368" font-family="Inter,sans-serif" font-size="11" fill="#37352f">They love <tspan font-weight="700">"Iterative Design"</tspan> — starting simple and scaling up. Never present the "final" architecture first.</text>
+      <text x="30" y="385" font-family="Inter,sans-serif" font-size="11" fill="#37352f">Say: <tspan font-weight="600" fill="#1a73e8">"Let me define SLOs first, then design for 1x, identify what breaks at 10x, and solve for 100x."</tspan></text>
+    </svg>

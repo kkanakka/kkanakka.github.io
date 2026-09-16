@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 800 150" xmlns="http://www.w3.org/2000/svg"><style>.sb-b{fill:#ddf4ff;stroke:var(--accent);stroke-width:1}
+.sb-g{fill:#dafbe1;stroke:var(--success);stroke-width:1}
+.sb-r{fill:#ffebe9;stroke:var(--danger);stroke-width:1}
+.sb-y{fill:#fff8e6;stroke:var(--attention);stroke-width:1}
+.sl{font-family:var(--sans);font-size:12px;font-weight:600;fill:var(--fg)}
+.ss{font-family:var(--mono);font-size:10px;fill:var(--fg-muted)}
+.sa-b{stroke:var(--accent);stroke-width:1.5;fill:none}
+.sa-g{stroke:var(--success);stroke-width:1.5;fill:none}</style>
+      <rect class="sb-r" x="20" y="15" width="200" height="55" rx="6"></rect>
+      <text class="sl" x="120" y="35" text-anchor="middle">Cache: feed:US</text>
+      <text class="ss" x="120" y="50" text-anchor="middle">2000 articles, each has</text>
+      <text class="ss" x="120" y="62" text-anchor="middle">id, title, category, url, ts</text>
+
+      <rect class="sb-b" x="270" y="15" width="180" height="55" rx="6"></rect>
+      <text class="sl" x="360" y="35" text-anchor="middle">Feed Service</text>
+      <text class="ss" x="360" y="50" text-anchor="middle">ZREVRANGE feed:US 0 999</text>
+      <text class="ss" x="360" y="62" text-anchor="middle">filter: category == “sports”</text>
+
+      <rect class="sb-g" x="500" y="15" width="160" height="55" rx="6"></rect>
+      <text class="sl" x="580" y="35" text-anchor="middle">Client</text>
+      <text class="ss" x="580" y="50" text-anchor="middle">20 sports articles</text>
+      <text class="ss" x="580" y="62" text-anchor="middle">&lt; 12ms total</text>
+
+      <path class="sa-b" d="M220,42 L268,42" marker-end="url(#ab)"></path>
+      <text class="ss" x="244" y="36" text-anchor="middle">&lt;10ms</text>
+      <path class="sa-g" d="M450,42 L498,42" marker-end="url(#ag)"></path>
+      <text class="ss" x="474" y="36" text-anchor="middle">&lt;2ms</text>
+
+      <rect class="sb-y" x="20" y="90" width="640" height="45" rx="6"></rect>
+      <text class="sl" x="340" y="108" text-anchor="middle">Why this works</text>
+      <text class="ss" x="340" y="124" text-anchor="middle">Reading 1000 articles from cache: &lt; 10ms. Filtering in-memory: &lt; 2ms. No separate category caches to maintain.</text>
+    </svg>

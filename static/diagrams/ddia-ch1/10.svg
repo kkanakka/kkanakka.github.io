@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 800 260" xmlns="http://www.w3.org/2000/svg" style="max-width:780px;">
+      <rect x="10" y="10" width="780" height="240" rx="14" fill="#f7f6f3" stroke="#283593" stroke-width="2"></rect>
+      <text x="400" y="40" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="16" fill="#283593">Chapter 1 Interview Cheatsheet</text>
+
+      <!-- Column 1: Reliability -->
+      <rect x="30" y="55" width="230" height="180" rx="10" fill="#e3f2fd" stroke="#1565c0" stroke-width="1"></rect>
+      <text x="145" y="78" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#0d47a1">Reliability</text>
+      <text x="45" y="100" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Fault ≠ Failure</text>
+      <text x="45" y="118" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• HW: RAID, dual PSU</text>
+      <text x="45" y="136" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• SW: Isolation, monitoring</text>
+      <text x="45" y="154" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Human: Sandbox, rollback</text>
+      <text x="45" y="172" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Chaos Monkey (Netflix)</text>
+      <text x="45" y="190" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Config errors = #1 outage</text>
+      <text x="45" y="212" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#0d47a1">Prefer tolerating &gt; preventing</text>
+
+      <!-- Column 2: Scalability -->
+      <rect x="280" y="55" width="230" height="180" rx="10" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1"></rect>
+      <text x="395" y="78" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#1b5e20">Scalability</text>
+      <text x="295" y="100" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Load params: req/s, fan-out</text>
+      <text x="295" y="118" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Twitter: 4.6K W, 300K R/s</text>
+      <text x="295" y="136" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Use percentiles, not avg</text>
+      <text x="295" y="154" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• p50, p95, p99, p999</text>
+      <text x="295" y="172" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Tail latency amplification</text>
+      <text x="295" y="190" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Scale up + out pragmatically</text>
+      <text x="295" y="212" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#1b5e20">100ms slower = 1% revenue loss</text>
+
+      <!-- Column 3: Maintainability -->
+      <rect x="530" y="55" width="240" height="180" rx="10" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="1"></rect>
+      <text x="650" y="78" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#4a148c">Maintainability</text>
+      <text x="545" y="100" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Operability: monitoring, docs</text>
+      <text x="545" y="118" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Simplicity: kill accidental</text>
+      <text x="545" y="133" font-family="Inter,sans-serif" font-size="10" fill="#37352f">  complexity with abstractions</text>
+      <text x="545" y="154" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Evolvability: TDD, refactor</text>
+      <text x="545" y="172" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Most cost = maintenance</text>
+      <text x="545" y="190" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Abstraction = best weapon</text>
+      <text x="545" y="212" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#4a148c">Design for the next 10x team</text>
+    </svg>

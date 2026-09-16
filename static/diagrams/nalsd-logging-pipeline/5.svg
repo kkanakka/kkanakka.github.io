@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 980 240" xmlns="http://www.w3.org/2000/svg"><style>.lbl-title{font-family:'Inter',sans-serif;font-weight:700;font-size:11.5px;fill:#1f2328}
+.lbl-sub{font-family:'JetBrains Mono',monospace;font-size:9.5px;fill:#59636e}
+.lbl-meta{font-family:'JetBrains Mono',monospace;font-size:9px;fill:#818b98}</style>
+  <defs>
+    <marker id="arr5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#59636e"></path>
+    </marker>
+  </defs>
+
+  <line x1="60" y1="50" x2="920" y2="50" stroke="#d0d7de" stroke-width="1.5"></line>
+  <text x="60" y="40" class="lbl-meta">day 0</text>
+  <text x="920" y="40" text-anchor="end" class="lbl-meta">day 365</text>
+
+  <rect x="60" y="60" width="172" height="50" fill="#fff1e5" stroke="#fd8c73"></rect>
+  <text x="146" y="82" text-anchor="middle" class="lbl-title">HOT</text>
+  <text x="146" y="98" text-anchor="middle" class="lbl-sub">SSD · search index</text>
+
+  <rect x="232" y="60" width="172" height="50" fill="#fff8c5" stroke="#d4a72c"></rect>
+  <text x="318" y="82" text-anchor="middle" class="lbl-title">WARM</text>
+  <text x="318" y="98" text-anchor="middle" class="lbl-sub">Parquet · S3 Standard</text>
+
+  <rect x="404" y="60" width="516" height="50" fill="#ddf4ff" stroke="#54aeff"></rect>
+  <text x="662" y="82" text-anchor="middle" class="lbl-title">COLD</text>
+  <text x="662" y="98" text-anchor="middle" class="lbl-sub">Glacier IR · sealed</text>
+
+  <!-- Demote markers -->
+  <line x1="232" y1="50" x2="232" y2="115" stroke="#bc4c00" stroke-dasharray="3,2"></line>
+  <text x="232" y="130" text-anchor="middle" class="lbl-meta" fill="#bc4c00">day 30</text>
+  <text x="232" y="145" text-anchor="middle" class="lbl-sub" fill="#bc4c00">demote: drop search index</text>
+
+  <line x1="404" y1="50" x2="404" y2="115" stroke="#9a6700" stroke-dasharray="3,2"></line>
+  <text x="404" y="130" text-anchor="middle" class="lbl-meta" fill="#9a6700">day 90</text>
+  <text x="404" y="145" text-anchor="middle" class="lbl-sub" fill="#9a6700">demote: archive to Glacier</text>
+
+  <line x1="920" y1="50" x2="920" y2="115" stroke="#cf222e" stroke-dasharray="3,2"></line>
+  <text x="920" y="130" text-anchor="end" class="lbl-meta" fill="#cf222e">day 365</text>
+  <text x="920" y="145" text-anchor="end" class="lbl-sub" fill="#cf222e">purge per policy</text>
+
+  <!-- Cost line -->
+  <text x="60" y="190" class="lbl-title">$/GB-month</text>
+  <text x="146" y="210" text-anchor="middle" class="lbl-title" fill="#bc4c00">$0.20</text>
+  <text x="318" y="210" text-anchor="middle" class="lbl-title" fill="#9a6700">$0.023</text>
+  <text x="662" y="210" text-anchor="middle" class="lbl-title" fill="#0a66c2">$0.004</text>
+
+  <text x="146" y="225" text-anchor="middle" class="lbl-sub">1×</text>
+  <text x="318" y="225" text-anchor="middle" class="lbl-sub">9× cheaper</text>
+  <text x="662" y="225" text-anchor="middle" class="lbl-sub">50× cheaper than hot</text>
+</svg>

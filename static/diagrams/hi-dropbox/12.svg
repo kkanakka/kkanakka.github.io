@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 800 140" xmlns="http://www.w3.org/2000/svg"><style>.sb-b{fill:#ddf4ff;stroke:var(--accent);stroke-width:1}
+.sb-g{fill:#dafbe1;stroke:var(--success);stroke-width:1}
+.sb-y{fill:#fff8e6;stroke:var(--attention);stroke-width:1}
+.sb-p{fill:#fbefff;stroke:var(--done);stroke-width:1}
+.sl{font-family:var(--sans);font-size:12px;font-weight:600;fill:var(--fg)}
+.ss{font-family:var(--mono);font-size:10px;fill:var(--fg-muted)}</style>
+      <rect class="sb-b" x="20" y="10" width="175" height="110" rx="6"></rect>
+      <text class="sl" x="107" y="30" text-anchor="middle">Parallel chunks</text>
+      <text class="ss" x="107" y="48" text-anchor="middle">upload 6+ in parallel</text>
+      <text class="ss" x="107" y="62" text-anchor="middle">saturate bandwidth</text>
+      <text class="ss" x="107" y="80" text-anchor="middle">adaptive sizes</text>
+      <rect class="sb-g" x="210" y="10" width="175" height="110" rx="6"></rect>
+      <text class="sl" x="297" y="30" text-anchor="middle">CDN for downloads</text>
+      <text class="ss" x="297" y="48" text-anchor="middle">edge cache near user</text>
+      <text class="ss" x="297" y="62" text-anchor="middle">first hit from Ambry</text>
+      <text class="ss" x="297" y="76" text-anchor="middle">rest from edge</text>
+      <rect class="sb-p" x="400" y="10" width="175" height="110" rx="6"></rect>
+      <text class="sl" x="487" y="30" text-anchor="middle">Compression</text>
+      <text class="ss" x="487" y="48" text-anchor="middle">client-side only</text>
+      <text class="ss" x="487" y="62" text-anchor="middle">Zstd for text</text>
+      <text class="ss" x="487" y="76" text-anchor="middle">skip media (already compressed)</text>
+      <rect class="sb-y" x="590" y="10" width="175" height="110" rx="6"></rect>
+      <text class="sl" x="677" y="30" text-anchor="middle">Delta sync</text>
+      <text class="ss" x="677" y="48" text-anchor="middle">re-upload only</text>
+      <text class="ss" x="677" y="62" text-anchor="middle">changed chunks</text>
+      <text class="ss" x="677" y="80" text-anchor="middle">needs CDC</text>
+    </svg>

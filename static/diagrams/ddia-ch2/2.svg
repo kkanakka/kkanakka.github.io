@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 820 380" xmlns="http://www.w3.org/2000/svg" style="max-width:800px;">
+      <defs>
+        <marker id="arr2" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#546e7a"></polygon>
+        </marker>
+      </defs>
+
+      <!-- Relational -->
+      <rect x="10" y="10" width="250" height="360" rx="12" fill="#e3f2fd" stroke="#1565c0" stroke-width="2"></rect>
+      <text x="135" y="40" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="15" fill="#0d47a1">Relational (SQL)</text>
+
+      <!-- Mini table: users -->
+      <rect x="30" y="55" width="210" height="80" rx="6" fill="#fff" stroke="#90caf9" stroke-width="1"></rect>
+      <text x="135" y="72" text-anchor="middle" font-family="JetBrains Mono,monospace" font-weight="600" font-size="10" fill="#1565c0">users</text>
+      <line x1="30" y1="78" x2="240" y2="78" stroke="#90caf9" stroke-width="1"></line>
+      <text x="45" y="93" font-family="JetBrains Mono,monospace" font-size="9" fill="#37352f">id | name    | region_id</text>
+      <text x="45" y="107" font-family="JetBrains Mono,monospace" font-size="9" fill="#787774">1  | Bill    | 91</text>
+      <text x="45" y="121" font-family="JetBrains Mono,monospace" font-size="9" fill="#787774">2  | Satya   | 42</text>
+
+      <!-- Mini table: positions -->
+      <rect x="30" y="145" width="210" height="70" rx="6" fill="#fff" stroke="#90caf9" stroke-width="1"></rect>
+      <text x="135" y="162" text-anchor="middle" font-family="JetBrains Mono,monospace" font-weight="600" font-size="10" fill="#1565c0">positions</text>
+      <line x1="30" y1="168" x2="240" y2="168" stroke="#90caf9" stroke-width="1"></line>
+      <text x="45" y="183" font-family="JetBrains Mono,monospace" font-size="9" fill="#37352f">user_id | title      | org</text>
+      <text x="45" y="197" font-family="JetBrains Mono,monospace" font-size="9" fill="#787774">1       | Co-chair   | BMGF</text>
+
+      <!-- FK arrow -->
+      <line x1="55" y1="135" x2="55" y2="145" stroke="#c62828" stroke-width="1.5" marker-end="url(#arr2)"></line>
+      <text x="70" y="143" font-family="Inter,sans-serif" font-size="8" fill="#c62828">FK</text>
+
+      <text x="30" y="240" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#1565c0">Strengths:</text>
+      <text x="30" y="258" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• JOINs across tables</text>
+      <text x="30" y="273" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Many-to-many natural</text>
+      <text x="30" y="288" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Schema-on-write</text>
+      <text x="30" y="303" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• ACID guarantees</text>
+      <rect x="30" y="318" width="210" height="35" rx="6" fill="#bbdefb"></rect>
+      <text x="135" y="340" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#0d47a1">MySQL, PostgreSQL, Espresso</text>
+
+      <!-- Document -->
+      <rect x="285" y="10" width="250" height="360" rx="12" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"></rect>
+      <text x="410" y="40" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="15" fill="#1b5e20">Document (NoSQL)</text>
+
+      <!-- JSON doc -->
+      <rect x="305" y="55" width="210" height="155" rx="6" fill="#fff" stroke="#a5d6a7" stroke-width="1"></rect>
+      <text x="315" y="72" font-family="JetBrains Mono,monospace" font-size="9" fill="#37352f">{</text>
+      <text x="325" y="86" font-family="JetBrains Mono,monospace" font-size="9" fill="#37352f">"user_id": 251,</text>
+      <text x="325" y="100" font-family="JetBrains Mono,monospace" font-size="9" fill="#37352f">"name": "Bill Gates",</text>
+      <text x="325" y="114" font-family="JetBrains Mono,monospace" font-size="9" fill="#37352f">"positions": [</text>
+      <text x="335" y="128" font-family="JetBrains Mono,monospace" font-size="9" fill="#787774">{"title": "Co-chair",</text>
+      <text x="340" y="142" font-family="JetBrains Mono,monospace" font-size="9" fill="#787774"> "org": "BMGF"}</text>
+      <text x="325" y="156" font-family="JetBrains Mono,monospace" font-size="9" fill="#37352f">],</text>
+      <text x="325" y="170" font-family="JetBrains Mono,monospace" font-size="9" fill="#37352f">"education": [...]</text>
+      <text x="315" y="184" font-family="JetBrains Mono,monospace" font-size="9" fill="#37352f">}</text>
+      <text x="410" y="200" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#2e7d32">Self-contained document = tree</text>
+
+      <text x="305" y="225" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#1b5e20">Strengths:</text>
+      <text x="305" y="243" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Data locality (one fetch)</text>
+      <text x="305" y="258" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Schema flexibility</text>
+      <text x="305" y="273" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• 1-to-many is natural</text>
+      <text x="305" y="288" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Less impedance mismatch</text>
+      <rect x="305" y="318" width="210" height="35" rx="6" fill="#c8e6c9"></rect>
+      <text x="410" y="340" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#1b5e20">MongoDB, Espresso, CouchDB</text>
+
+      <!-- Graph -->
+      <rect x="560" y="10" width="250" height="360" rx="12" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="2"></rect>
+      <text x="685" y="40" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="15" fill="#4a148c">Graph</text>
+
+      <!-- Graph nodes -->
+      <circle cx="620" cy="90" r="18" fill="#e1bee7" stroke="#6a1b9a" stroke-width="1.5"></circle>
+      <text x="620" y="94" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#4a148c">Lucy</text>
+      <circle cx="750" cy="90" r="18" fill="#e1bee7" stroke="#6a1b9a" stroke-width="1.5"></circle>
+      <text x="750" y="94" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#4a148c">Alain</text>
+      <circle cx="685" cy="150" r="18" fill="#ede7f6" stroke="#6a1b9a" stroke-width="1"></circle>
+      <text x="685" y="154" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" fill="#4a148c">London</text>
+      <circle cx="620" cy="190" r="16" fill="#ede7f6" stroke="#6a1b9a" stroke-width="1"></circle>
+      <text x="620" y="194" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" fill="#4a148c">Idaho</text>
+      <circle cx="750" cy="190" r="16" fill="#ede7f6" stroke="#6a1b9a" stroke-width="1"></circle>
+      <text x="750" y="194" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" fill="#4a148c">Beaune</text>
+
+      <!-- Edges -->
+      <line x1="638" y1="90" x2="732" y2="90" stroke="#6a1b9a" stroke-width="1.2"></line>
+      <text x="685" y="84" text-anchor="middle" font-family="Inter,sans-serif" font-size="7" fill="#6a1b9a">MARRIED_TO</text>
+      <line x1="625" y1="108" x2="680" y2="135" stroke="#6a1b9a" stroke-width="1"></line>
+      <text x="640" y="125" font-family="Inter,sans-serif" font-size="7" fill="#6a1b9a">LIVES_IN</text>
+      <line x1="745" y1="108" x2="690" y2="135" stroke="#6a1b9a" stroke-width="1"></line>
+      <line x1="620" y1="108" x2="620" y2="174" stroke="#9e9e9e" stroke-width="1" stroke-dasharray="3"></line>
+      <text x="607" y="155" font-family="Inter,sans-serif" font-size="7" fill="#9e9e9e">BORN_IN</text>
+      <line x1="750" y1="108" x2="750" y2="174" stroke="#9e9e9e" stroke-width="1" stroke-dasharray="3"></line>
+
+      <text x="580" y="225" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#4a148c">Strengths:</text>
+      <text x="580" y="243" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Many-to-many natural</text>
+      <text x="580" y="258" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Heterogeneous entities</text>
+      <text x="580" y="273" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Traversal queries fast</text>
+      <text x="580" y="288" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Highly evolvable schema</text>
+      <rect x="580" y="318" width="210" height="35" rx="6" fill="#e1bee7"></rect>
+      <text x="685" y="340" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#4a148c">Neo4j, Liquid, TAO (Meta)</text>
+    </svg>

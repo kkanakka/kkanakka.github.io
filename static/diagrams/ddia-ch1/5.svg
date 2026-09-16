@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 800 520" xmlns="http://www.w3.org/2000/svg" style="max-width:780px;">
+      <defs>
+        <marker id="arr3" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#546e7a"></polygon>
+        </marker>
+      </defs>
+
+      <!-- Approach 1 Header -->
+      <rect x="10" y="5" width="380" height="30" rx="6" fill="#c62828"></rect>
+      <text x="200" y="25" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#fff">Approach 1: Fan-Out on Read (Query-Time Join)</text>
+
+      <!-- Approach 1 -->
+      <rect x="10" y="40" width="380" height="220" rx="12" fill="#fff" stroke="#e3e2de" stroke-width="1"></rect>
+
+      <!-- User icon -->
+      <circle cx="60" cy="80" r="15" fill="#e3f2fd" stroke="#1565c0" stroke-width="1.5"></circle>
+      <text x="60" y="84" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#0d47a1">User</text>
+
+      <line x1="75" y1="80" x2="120" y2="80" stroke="#546e7a" stroke-width="1.2" marker-end="url(#arr3)"></line>
+      <text x="97" y="73" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" fill="#787774">GET timeline</text>
+
+      <!-- API box -->
+      <rect x="120" y="60" width="80" height="40" rx="8" fill="#e8eaf6" stroke="#283593" stroke-width="1"></rect>
+      <text x="160" y="84" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#283593">API</text>
+
+      <line x1="200" y1="80" x2="240" y2="80" stroke="#546e7a" stroke-width="1.2" marker-end="url(#arr3)"></line>
+
+      <!-- Query -->
+      <rect x="240" y="55" width="140" height="55" rx="8" fill="#fce4ec" stroke="#c62828" stroke-width="1"></rect>
+      <text x="310" y="75" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#c62828">SELECT tweets.*</text>
+      <text x="310" y="88" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#c62828">JOIN follows</text>
+      <text x="310" y="101" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#c62828">WHERE follower=me</text>
+
+      <!-- Pros/Cons under Approach 1 -->
+      <text x="30" y="140" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#2e7d32">Pros:</text>
+      <text x="30" y="157" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Simple write (insert into tweets)</text>
+      <text x="30" y="172" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• No duplication of data</text>
+      <text x="30" y="197" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#c62828">Cons:</text>
+      <text x="30" y="214" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Read requires JOINs at 300K/s</text>
+      <text x="30" y="229" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• DB crushed by timeline reads</text>
+      <text x="30" y="244" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Twitter v1 used this; couldn't keep up</text>
+
+      <!-- Approach 2 Header -->
+      <rect x="410" y="5" width="380" height="30" rx="6" fill="#2e7d32"></rect>
+      <text x="600" y="25" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#fff">Approach 2: Fan-Out on Write (Pre-computed)</text>
+
+      <!-- Approach 2 -->
+      <rect x="410" y="40" width="380" height="220" rx="12" fill="#fff" stroke="#e3e2de" stroke-width="1"></rect>
+
+      <!-- User posts -->
+      <circle cx="460" cy="80" r="15" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1.5"></circle>
+      <text x="460" y="84" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#1b5e20">Post</text>
+
+      <line x1="475" y1="80" x2="520" y2="80" stroke="#546e7a" stroke-width="1.2" marker-end="url(#arr3)"></line>
+
+      <!-- Fan-out box -->
+      <rect x="520" y="55" width="110" height="50" rx="8" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1"></rect>
+      <text x="575" y="76" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#1b5e20">Fan-out to</text>
+      <text x="575" y="92" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#1b5e20">all follower caches</text>
+
+      <!-- Follower caches -->
+      <line x1="630" y1="68" x2="670" y2="56" stroke="#546e7a" stroke-width="1" marker-end="url(#arr3)"></line>
+      <line x1="630" y1="80" x2="670" y2="80" stroke="#546e7a" stroke-width="1" marker-end="url(#arr3)"></line>
+      <line x1="630" y1="92" x2="670" y2="104" stroke="#546e7a" stroke-width="1" marker-end="url(#arr3)"></line>
+
+      <rect x="670" y="45" width="100" height="20" rx="4" fill="#e3f2fd" stroke="#90caf9" stroke-width="1"></rect>
+      <text x="720" y="59" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#1565c0">user_A cache</text>
+      <rect x="670" y="70" width="100" height="20" rx="4" fill="#e3f2fd" stroke="#90caf9" stroke-width="1"></rect>
+      <text x="720" y="84" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#1565c0">user_B cache</text>
+      <rect x="670" y="95" width="100" height="20" rx="4" fill="#e3f2fd" stroke="#90caf9" stroke-width="1"></rect>
+      <text x="720" y="109" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#1565c0">user_C cache</text>
+
+      <!-- Pros/Cons -->
+      <text x="430" y="140" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#2e7d32">Pros:</text>
+      <text x="430" y="157" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Timeline reads are O(1) cache lookup</text>
+      <text x="430" y="172" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Reads &gt;&gt; writes (300K vs 4.6K/s)</text>
+      <text x="430" y="197" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#c62828">Cons:</text>
+      <text x="430" y="214" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• 4.6K × 75 = 345K writes/s to caches</text>
+      <text x="430" y="229" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Celebrity tweet → 30M+ cache writes!</text>
+      <text x="430" y="244" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Needs 5s delivery SLA</text>
+
+      <!-- Approach 3: Hybrid -->
+      <rect x="120" y="290" width="560" height="30" rx="6" fill="#283593"></rect>
+      <text x="400" y="310" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#fff">Approach 3 (Current): Hybrid — Fan-Out on Write + Read for Celebrities</text>
+
+      <rect x="120" y="325" width="560" height="180" rx="12" fill="#fff" stroke="#283593" stroke-width="1.5"></rect>
+
+      <!-- Normal users -->
+      <rect x="140" y="345" width="230" height="65" rx="8" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1"></rect>
+      <text x="255" y="370" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#1b5e20">Normal Users (&lt; 10K followers)</text>
+      <text x="255" y="390" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Fan-out on write to follower caches</text>
+      <text x="255" y="403" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#37352f">(same as Approach 2)</text>
+
+      <!-- Celebrity users -->
+      <rect x="430" y="345" width="230" height="65" rx="8" fill="#fff3e0" stroke="#e65100" stroke-width="1"></rect>
+      <text x="545" y="370" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#e65100">Celebrities (&gt; 10K followers)</text>
+      <text x="545" y="390" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Fetched at read time and merged</text>
+      <text x="545" y="403" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#37352f">(same as Approach 1)</text>
+
+      <!-- Merge arrow -->
+      <line x1="255" y1="410" x2="350" y2="460" stroke="#283593" stroke-width="1.5" marker-end="url(#arr3)"></line>
+      <line x1="545" y1="410" x2="450" y2="460" stroke="#283593" stroke-width="1.5" marker-end="url(#arr3)"></line>
+
+      <!-- Merged timeline -->
+      <rect x="320" y="460" width="160" height="30" rx="8" fill="#e8eaf6" stroke="#283593" stroke-width="1.5"></rect>
+      <text x="400" y="480" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#283593">Merged Timeline</text>
+    </svg>

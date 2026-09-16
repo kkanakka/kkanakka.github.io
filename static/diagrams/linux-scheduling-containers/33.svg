@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 900 420" width="900" height="420" role="img" aria-labelledby="fig21-cg" xmlns="http://www.w3.org/2000/svg">
+    <title>Figure 21: cgroup v2 tree for Kubernetes QoS</title>
+    <rect x="0" y="0" width="900" height="420" fill="#fff"></rect>
+    <rect x="40" y="30" width="820" height="48" rx="8" fill="#f6f8fa" stroke="#59636e"></rect><text x="60" y="60" font-size="15" font-weight="700">/sys/fs/cgroup</text>
+    <rect x="80" y="95" width="740" height="44" rx="8" fill="#ddf4ff" stroke="#0969da"></rect><text x="100" y="123" font-size="14" font-weight="700">kubepods.slice</text>
+    <rect x="120" y="155" width="160" height="70" rx="8" fill="#dafbe1" stroke="#1a7f37"></rect><text x="135" y="185" font-size="13" font-weight="700">Guaranteed QoS</text><text x="135" y="205" font-size="11">cpu.max == request</text>
+    <rect x="300" y="155" width="160" height="70" rx="8" fill="#fff8c5" stroke="#9a6700"></rect><text x="318" y="185" font-size="13" font-weight="700">Burstable QoS</text><text x="318" y="205" font-size="11">limits &gt; requests</text>
+    <rect x="480" y="155" width="160" height="70" rx="8" fill="#eaeef2" stroke="#59636e"></rect><text x="500" y="185" font-size="13" font-weight="700">BestEffort</text><text x="505" y="205" font-size="11">no requests</text>
+    <rect x="300" y="240" width="220" height="80" rx="8" fill="#fff8c5" stroke="#9a6700"></rect><text x="318" y="265" font-size="12" font-weight="700">pod &lt;uid&gt;.slice</text>
+    <rect x="318" y="275" width="90" height="32" rx="5" fill="#f6f8fa" stroke="#8250df"></rect><text x="328" y="295" font-size="11">ctr init scope</text>
+    <rect x="418" y="275" width="90" height="32" rx="5" fill="#f6f8fa" stroke="#8250df"></rect><text x="428" y="295" font-size="11">ctr app scope</text>
+    <rect x="120" y="335" width="660" height="65" rx="8" fill="#ffebe9" stroke="#d1242f"></rect>
+    <text x="140" y="360" font-size="13" font-weight="700">PSI (Pressure Stall Information)</text>
+    <rect x="140" y="368" width="180" height="22" rx="4" fill="#fff"></rect><text x="150" y="383" font-size="11">cpu.pressure</text>
+    <rect x="340" y="368" width="180" height="22" rx="4" fill="#fff"></rect><text x="350" y="383" font-size="11">memory.pressure</text>
+    <rect x="540" y="368" width="200" height="22" rx="4" fill="#fff"></rect><text x="550" y="383" font-size="11">io.pressure</text>
+  </svg>

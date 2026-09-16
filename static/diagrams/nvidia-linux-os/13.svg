@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 900 200" xmlns="http://www.w3.org/2000/svg" style="width:100%;">
+        <!-- Phases -->
+        <rect x="20" y="20" width="200" height="80" rx="8" fill="#f8f9fa" stroke="#222"></rect>
+        <text x="120" y="42" text-anchor="middle" fill="#222" font-size="12" font-weight="700">Slow Start</text>
+        <text x="120" y="60" text-anchor="middle" fill="#54595d" font-size="11">cwnd doubles each RTT</text>
+        <text x="120" y="74" text-anchor="middle" fill="#54595d" font-size="11">Exponential growth</text>
+        <text x="120" y="88" text-anchor="middle" fill="#54595d" font-size="11">Until ssthresh or loss</text>
+        <text x="240" y="60" fill="#72777d" font-size="14">➜</text>
+        <rect x="255" y="20" width="200" height="80" rx="8" fill="#f5f5f5" stroke="#222"></rect>
+        <text x="355" y="42" text-anchor="middle" fill="#222" font-size="12" font-weight="700">Congestion Avoidance</text>
+        <text x="355" y="60" text-anchor="middle" fill="#54595d" font-size="11">cwnd += 1/cwnd per ACK</text>
+        <text x="355" y="74" text-anchor="middle" fill="#54595d" font-size="11">Linear growth (additive)</text>
+        <text x="355" y="88" text-anchor="middle" fill="#54595d" font-size="11">AIMD principle</text>
+        <text x="475" y="60" fill="#72777d" font-size="14">➜</text>
+        <rect x="490" y="20" width="200" height="80" rx="8" fill="#f8f9fa" stroke="#202122"></rect>
+        <text x="590" y="42" text-anchor="middle" fill="#202122" font-size="12" font-weight="700">Loss Detection</text>
+        <text x="590" y="60" text-anchor="middle" fill="#54595d" font-size="11">3 dup ACKs: fast retransmit</text>
+        <text x="590" y="74" text-anchor="middle" fill="#54595d" font-size="11">Timeout: back to slow start</text>
+        <text x="590" y="88" text-anchor="middle" fill="#54595d" font-size="11">cwnd = cwnd/2 (multiplicative)</text>
+        <text x="710" y="60" fill="#72777d" font-size="14">➜</text>
+        <rect x="725" y="20" width="160" height="80" rx="8" fill="#f8f9fa" stroke="#202122"></rect>
+        <text x="805" y="42" text-anchor="middle" fill="#202122" font-size="12" font-weight="700">Fast Recovery</text>
+        <text x="805" y="60" text-anchor="middle" fill="#54595d" font-size="11">Inflate cwnd for in-flight</text>
+        <text x="805" y="74" text-anchor="middle" fill="#54595d" font-size="11">Resume congestion avoid</text>
+        <text x="805" y="88" text-anchor="middle" fill="#54595d" font-size="11">on new ACK</text>
+        <!-- Algorithms -->
+        <rect x="20" y="120" width="860" height="65" rx="8" fill="#f0f0f0" stroke="var(--border)"></rect>
+        <text x="450" y="142" text-anchor="middle" fill="#202122" font-size="13" font-weight="700">Congestion Control Algorithms</text>
+        <text x="120" y="168" text-anchor="middle" fill="#222" font-size="11" font-weight="600">Cubic (default)</text>
+        <text x="300" y="168" text-anchor="middle" fill="#222" font-size="11" font-weight="600">BBR (Google)</text>
+        <text x="480" y="168" text-anchor="middle" fill="#202122" font-size="11" font-weight="600">DCTCP (datacenter)</text>
+        <text x="660" y="168" text-anchor="middle" fill="#222" font-size="11" font-weight="600">Vegas (delay-based)</text>
+        <text x="820" y="168" text-anchor="middle" fill="#202122" font-size="11" font-weight="600">Reno (classic)</text>
+    </svg>

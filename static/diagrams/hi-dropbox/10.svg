@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 800 220" xmlns="http://www.w3.org/2000/svg"><style>.sb{fill:var(--bg-subtle);stroke:var(--border);stroke-width:1}
+.sb-b{fill:#ddf4ff;stroke:var(--accent);stroke-width:1}
+.sb-g{fill:#dafbe1;stroke:var(--success);stroke-width:1}
+.sb-r{fill:#ffebe9;stroke:var(--danger);stroke-width:1}
+.sb-y{fill:#fff8e6;stroke:var(--attention);stroke-width:1}
+.sb-p{fill:#fbefff;stroke:var(--done);stroke-width:1}
+.sb-o{fill:#fff1e5;stroke:var(--orange);stroke-width:1}
+.sl{font-family:var(--sans);font-size:12px;font-weight:600;fill:var(--fg)}
+.ss{font-family:var(--mono);font-size:10px;fill:var(--fg-muted)}
+.sa{stroke:var(--fg-muted);stroke-width:1.2;fill:none}
+.sa-b{stroke:var(--accent);stroke-width:1.5;fill:none}
+.sa-g{stroke:var(--success);stroke-width:1.5;fill:none}
+.sa-r{stroke:var(--danger);stroke-width:1.5;fill:none}
+.sa-p{stroke:var(--done);stroke-width:1.5;fill:none}</style>
+      <rect class="sb" x="20" y="10" width="180" height="50" rx="6"></rect><text class="sl" x="110" y="30" text-anchor="middle">50GB file (client)</text><text class="ss" x="110" y="46" text-anchor="middle">SHA-256 fingerprint</text>
+      <rect class="sb-p" x="240" y="10" width="180" height="50" rx="6"></rect><text class="sl" x="330" y="30" text-anchor="middle">Client chunks file</text><text class="ss" x="330" y="46" text-anchor="middle">5–10 MB, fingerprint each</text>
+      <rect class="sb-b" x="460" y="10" width="220" height="50" rx="6"></rect><text class="sl" x="570" y="30" text-anchor="middle">Initiate Multipart Upload</text><text class="ss" x="570" y="46" text-anchor="middle">Ambry returns uploadId + URLs</text>
+      <path class="sa" d="M200,35 L238,35" marker-end="url(#a1)"></path>
+      <path class="sa" d="M420,35 L458,35" marker-end="url(#a1)"></path>
+
+      <text class="sl" x="20" y="90">Parallel chunk uploads to Ambry:</text>
+      <rect class="sb-g" x="20" y="100" width="85" height="35" rx="4"></rect><text class="ss" x="62" y="116" text-anchor="middle">chunk 1 ✓</text>
+      <rect class="sb-g" x="115" y="100" width="85" height="35" rx="4"></rect><text class="ss" x="157" y="116" text-anchor="middle">chunk 2 ✓</text>
+      <rect class="sb-y" x="210" y="100" width="85" height="35" rx="4"></rect><text class="ss" x="252" y="116" text-anchor="middle">chunk 3...</text>
+      <rect class="sb" x="305" y="100" width="85" height="35" rx="4"></rect><text class="ss" x="347" y="116" text-anchor="middle">chunk 4</text>
+      <rect class="sb" x="400" y="100" width="85" height="35" rx="4"></rect><text class="ss" x="442" y="116" text-anchor="middle">chunk 5</text>
+      <text class="ss" x="510" y="122">...up to chunk N</text>
+
+      <rect class="sb-o" x="20" y="155" width="760" height="50" rx="6"></rect>
+      <text class="sl" x="40" y="174">After each chunk: PATCH /files/:id → backend updates chunks[] in Espresso</text>
+      <text class="ss" x="40" y="192">All done → CompleteMultipartUpload → Ambry assembles → status = “uploaded”</text>
+    </svg>

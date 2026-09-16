@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 900 540" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ats29" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#8250df"></path>
+    </marker>
+    <marker id="atr29" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#d1242f"></path>
+    </marker>
+  </defs>
+
+  <text x="20" y="22" font-size="12" font-weight="600">view (nsproxy) and limit (css_set) are independent · forking copies the pointers, refcounts the targets</text>
+
+  <!-- task_struct -->
+  <rect x="30" y="50" width="220" height="430" fill="#fafbfc" stroke="#1f2328" stroke-width="1.5" rx="3"></rect>
+  <rect x="30" y="50" width="220" height="26" fill="#1f2328"></rect>
+  <text x="140" y="68" text-anchor="middle" font-family="ui-monospace,Menlo" font-size="11" fill="#ffffff" font-weight="600">struct task_struct</text>
+
+  <g font-family="ui-monospace,Menlo" font-size="10">
+    <text x="42" y="98" fill="#1f2328">pid_t pid;</text>
+    <text x="238" y="98" text-anchor="end" fill="#59636e">→ 42</text>
+    <line x1="42" y1="106" x2="240" y2="106" stroke="#eaeef2"></line>
+
+    <text x="42" y="122" fill="#1f2328">struct mm_struct *mm;</text>
+    <text x="238" y="122" text-anchor="end" fill="#59636e">→ memory</text>
+    <line x1="42" y1="130" x2="240" y2="130" stroke="#eaeef2"></line>
+
+    <text x="42" y="146" fill="#1f2328">struct files_struct *files;</text>
+    <line x1="42" y1="154" x2="240" y2="154" stroke="#eaeef2"></line>
+
+    <text x="42" y="170" fill="#1f2328">struct cred *cred;</text>
+    <text x="238" y="170" text-anchor="end" fill="#59636e">→ uid/caps</text>
+    <line x1="42" y1="178" x2="240" y2="178" stroke="#eaeef2"></line>
+
+    <text x="42" y="194" fill="#1f2328">struct sched_entity se;</text>
+    <text x="238" y="194" text-anchor="end" fill="#59636e">→ CFS state</text>
+    <line x1="42" y1="202" x2="240" y2="202" stroke="#eaeef2"></line>
+  </g>
+
+  <!-- nsproxy pointer (highlighted) -->
+  <rect x="38" y="208" width="204" height="32" fill="#fbefff" stroke="#8250df" stroke-width="1.5" rx="2"></rect>
+  <text x="48" y="228" font-family="ui-monospace,Menlo" font-size="10" font-weight="700" fill="#1f2328">struct nsproxy *nsproxy;</text>
+  <circle cx="232" cy="224" r="4" fill="#8250df"></circle>
+
+  <g font-family="ui-monospace,Menlo" font-size="10">
+    <text x="42" y="260" fill="#1f2328">struct fs_struct *fs;</text>
+    <line x1="42" y1="268" x2="240" y2="268" stroke="#eaeef2"></line>
+
+    <text x="42" y="284" fill="#1f2328">struct signal_struct *sig;</text>
+    <line x1="42" y1="292" x2="240" y2="292" stroke="#eaeef2"></line>
+  </g>
+
+  <!-- css_set pointer (highlighted) -->
+  <rect x="38" y="298" width="204" height="32" fill="#ffebe9" stroke="#d1242f" stroke-width="1.5" rx="2"></rect>
+  <text x="48" y="318" font-family="ui-monospace,Menlo" font-size="10" font-weight="700" fill="#1f2328">struct css_set *cgroups;</text>
+  <circle cx="232" cy="314" r="4" fill="#d1242f"></circle>
+
+  <g font-family="ui-monospace,Menlo" font-size="10">
+    <text x="42" y="350" fill="#1f2328">struct task_struct *parent;</text>
+    <line x1="42" y1="358" x2="240" y2="358" stroke="#eaeef2"></line>
+
+    <text x="42" y="374" fill="#1f2328">struct list_head children;</text>
+    <line x1="42" y1="382" x2="240" y2="382" stroke="#eaeef2"></line>
+
+    <text x="42" y="398" fill="#1f2328">unsigned long flags;</text>
+    <line x1="42" y1="406" x2="240" y2="406" stroke="#eaeef2"></line>
+
+    <text x="42" y="430" fill="#59636e" font-style="italic">/* ~250 more fields */</text>
+    <text x="140" y="452" text-anchor="middle" fill="#59636e" font-style="italic" font-size="9">~10 KB total per process</text>
+  </g>
+
+  <!-- nsproxy box -->
+  <rect x="320" y="60" width="260" height="220" fill="#faf5ff" stroke="#8250df" stroke-width="1.5" rx="3"></rect>
+  <rect x="320" y="60" width="260" height="22" fill="#8250df"></rect>
+  <text x="450" y="76" text-anchor="middle" font-family="ui-monospace,Menlo" font-size="11" fill="#ffffff" font-weight="600">struct nsproxy</text>
+
+  <g font-family="ui-monospace,Menlo" font-size="10">
+    <text x="332" y="102" fill="#1f2328">struct mnt_namespace *mnt_ns;</text>
+    <text x="332" y="124" fill="#1f2328">struct uts_namespace *uts_ns;</text>
+    <text x="332" y="146" fill="#1f2328">struct ipc_namespace *ipc_ns;</text>
+    <text x="332" y="168" fill="#1f2328">struct pid_namespace *pid_ns;</text>
+    <text x="332" y="190" fill="#1f2328">struct net *net_ns;</text>
+    <text x="332" y="212" fill="#1f2328">struct time_namespace *time_ns;</text>
+    <text x="332" y="234" fill="#1f2328">struct cgroup_namespace *cg_ns;</text>
+    <text x="332" y="262" fill="#59636e" font-style="italic">/* user_ns lives on cred */</text>
+  </g>
+
+  <text x="450" y="305" text-anchor="middle" font-size="11" fill="#8250df" font-weight="600">view — what the process sees</text>
+
+  <!-- css_set box -->
+  <rect x="320" y="320" width="260" height="160" fill="#fff5f5" stroke="#d1242f" stroke-width="1.5" rx="3"></rect>
+  <rect x="320" y="320" width="260" height="22" fill="#d1242f"></rect>
+  <text x="450" y="336" text-anchor="middle" font-family="ui-monospace,Menlo" font-size="11" fill="#ffffff" font-weight="600">struct css_set</text>
+
+  <g font-family="ui-monospace,Menlo" font-size="10">
+    <text x="332" y="362" fill="#1f2328">struct cgroup_subsys_state</text>
+    <text x="332" y="376" fill="#1f2328">  *subsys[CGROUP_SUBSYS_COUNT];</text>
+    <text x="332" y="400" fill="#1f2328">struct cgroup *dfl_cgrp;</text>
+    <circle cx="566" cy="396" r="3.5" fill="#d1242f"></circle>
+    <text x="332" y="424" fill="#1f2328">atomic_t refcount;</text>
+    <text x="332" y="448" fill="#59636e" font-style="italic">/* shared across threads */</text>
+  </g>
+
+  <text x="450" y="500" text-anchor="middle" font-size="11" fill="#d1242f" font-weight="600">limit — what budget charges hit</text>
+
+  <!-- cgroup target -->
+  <rect x="640" y="320" width="220" height="160" fill="#fff5f5" stroke="#d1242f" stroke-width="1.5" rx="3"></rect>
+  <rect x="640" y="320" width="220" height="22" fill="#d1242f"></rect>
+  <text x="750" y="336" text-anchor="middle" font-family="ui-monospace,Menlo" font-size="11" fill="#ffffff" font-weight="600">struct cgroup</text>
+
+  <g font-family="ui-monospace,Menlo" font-size="9">
+    <text x="650" y="362" fill="#1f2328">/kubepods.slice/</text>
+    <text x="650" y="376" fill="#1f2328">  kubepods-burstable.slice/</text>
+    <text x="650" y="390" fill="#1f2328">  pod-abc123.slice/</text>
+    <line x1="650" y1="398" x2="850" y2="398" stroke="#eaeef2"></line>
+    <text x="650" y="414" fill="#d1242f" font-weight="700">memory.max = 2G</text>
+    <text x="650" y="430" fill="#d1242f" font-weight="700">cpu.max = 200000 100000</text>
+    <text x="650" y="446" fill="#d1242f" font-weight="700">cpu.weight = 256</text>
+    <text x="650" y="462" fill="#d1242f" font-weight="700">pids.max = 1024</text>
+  </g>
+
+  <!-- arrows -->
+  <path d="M242,224 C285,224 285,170 318,170" fill="none" stroke="#8250df" stroke-width="2" marker-end="url(#ats29)"></path>
+  <path d="M242,314 C285,314 285,395 318,395" fill="none" stroke="#d1242f" stroke-width="2" marker-end="url(#atr29)"></path>
+  <path d="M582,395 L638,395" stroke="#d1242f" stroke-width="2" marker-end="url(#atr29)"></path>
+
+  <text x="280" y="195" font-size="10" fill="#8250df" font-style="italic">view</text>
+  <text x="280" y="378" font-size="10" fill="#d1242f" font-style="italic">limit</text>
+</svg>

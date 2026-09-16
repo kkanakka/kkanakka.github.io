@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 900 440" width="900" height="440" role="img" aria-labelledby="fig18-drops" xmlns="http://www.w3.org/2000/svg">
+    <title>Figure 18: Packet drop counter map along Linux receive path</title>
+    <rect x="0" y="0" width="900" height="440" fill="#fff"></rect>
+    <text x="30" y="28" fill="#59636e" font-size="13" font-weight="700">Receive path</text>
+    <text x="420" y="28" fill="#59636e" font-size="13" font-weight="700">Counters · cause · fix</text>
+    <rect x="25" y="40" width="360" height="36" rx="6" fill="#dafbe1" stroke="#1a7f37"></rect><text x="40" y="63" font-size="14">NIC RX ring / DMA</text>
+    <text x="410" y="63" font-size="12" fill="#1f2328">rx_missed_errors / rx_fifo_errors · ring too small · ↑ ring + RSS</text>
+    <rect x="25" y="85" width="360" height="36" rx="6" fill="#ddf4ff" stroke="#0969da"></rect><text x="40" y="108" font-size="14">NAPI / softirq budget</text>
+    <text x="410" y="108" font-size="12">NET_RX softirq stall · jiffies backlog · ↑ budget / offload / IRQ affinity</text>
+    <rect x="25" y="130" width="360" height="36" rx="6" fill="#ddf4ff" stroke="#0969da"></rect><text x="40" y="153" font-size="14">per-CPU netdev backlog</text>
+    <text x="410" y="153" font-size="12">softnet_stat column drops · backlog_len · sysctl netdev backlog tuning</text>
+    <rect x="25" y="175" width="360" height="42" rx="6" fill="#fff8c5" stroke="#9a6700"></rect><text x="40" y="198" font-size="14">Netfilter / conntrack table</text>
+    <text x="410" y="198" font-size="12">nf_* drop stats · nf_conntrack_full · ↑ table / offload / offload CT</text>
+    <rect x="25" y="225" width="360" height="36" rx="6" fill="#fff8c5" stroke="#9a6700"></rect><text x="40" y="248" font-size="14">IP / fragmentation / reassembly</text>
+    <text x="410" y="248" font-size="12">IpExt:ReasmFails · MTU / PMTUD / DF storms · reduce frag / fix path MTU</text>
+    <rect x="25" y="275" width="360" height="42" rx="6" fill="#ffebe9" stroke="#d1242f"></rect><text x="40" y="298" font-size="14">TCP / UDP receive queues</text>
+    <text x="410" y="298" font-size="12">TcpExt:ListenDrops / pruned / RcvQ drops · app drain / window / SO_RCVBUF</text>
+    <rect x="25" y="325" width="360" height="36" rx="6" fill="#f6f8fa" stroke="#8250df"></rect><text x="40" y="348" font-size="14">Application read path</text>
+    <text x="410" y="348" font-size="12">User epoll/backlog · batch reads · pacing producers</text>
+  </svg>

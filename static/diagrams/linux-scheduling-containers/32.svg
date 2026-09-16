@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 900 380" width="900" height="380" role="img" aria-labelledby="fig20-rt" xmlns="http://www.w3.org/2000/svg">
+    <title>Figure 20: Userspace real-time hot path vs out-of-band costs</title>
+    <defs>
+      <marker id="m-g" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#1a7f37"></path></marker>
+    </defs>
+    <rect x="20" y="40" width="860" height="110" rx="10" fill="#f6f8fa" stroke="#d1d9e0"></rect>
+    <rect x="40" y="65" width="110" height="60" rx="6" fill="#dafbe1" stroke="#1a7f37"></rect><text x="55" y="100" font-size="13">NIC RX</text>
+    <line x1="150" y1="95" x2="205" y2="95" stroke="#1a7f37" stroke-width="3" marker-end="url(#m-g)"></line>
+    <rect x="210" y="65" width="130" height="60" rx="6" fill="#dafbe1" stroke="#1a7f37"></rect><text x="220" y="92" font-size="12">DPDK RX ring</text>
+    <line x1="340" y1="95" x2="395" y2="95" stroke="#1a7f37" stroke-width="3" marker-end="url(#m-g)"></line>
+    <rect x="400" y="58" width="180" height="74" rx="6" fill="#ddf4ff" stroke="#0969da"></rect><text x="410" y="85" font-size="13" font-weight="700">Worker</text><text x="410" y="105" font-size="11">Pinned · SCHED_FIFO</text><text x="410" y="120" font-size="11">Busy-spin / poll</text>
+    <line x1="580" y1="95" x2="635" y2="95" stroke="#1a7f37" stroke-width="3" marker-end="url(#m-g)"></line>
+    <rect x="640" y="65" width="120" height="60" rx="6" fill="#fff8c5" stroke="#9a6700"></rect><text x="650" y="92" font-size="12">Lock-free SPSC</text>
+    <line x1="760" y1="95" x2="795" y2="95" stroke="#1a7f37" stroke-width="3" marker-end="url(#m-g)"></line>
+    <rect x="800" y="65" width="60" height="60" rx="6" fill="#dafbe1" stroke="#1a7f37"></rect><text x="808" y="100" font-size="13">TX</text>
+    <text x="40" y="185" fill="#d1242f" font-size="14" font-weight="700">Not on the hot path (9 examples)</text>
+    <g transform="translate(40,200)">
+      <text x="0" y="0" fill="#d1242f" font-size="20">✗</text><text x="22" y="0" fill="#59636e" font-size="13">kernel TCP stack</text>
+      <text x="0" y="24" fill="#d1242f" font-size="20">✗</text><text x="22" y="24" fill="#59636e" font-size="13">frequent syscalls on dataplane</text>
+      <text x="0" y="48" fill="#d1242f" font-size="20">✗</text><text x="22" y="48" fill="#59636e" font-size="13">page faults (major/minor)</text>
+      <text x="0" y="72" fill="#d1242f" font-size="20">✗</text><text x="22" y="72" fill="#59636e" font-size="13">GC / runtime stop-the-world pauses</text>
+      <text x="0" y="96" fill="#d1242f" font-size="20">✗</text><text x="22" y="96" fill="#59636e" font-size="13">context switches on critical thread</text>
+      <text x="420" y="0" fill="#d1242f" font-size="20">✗</text><text x="442" y="0" fill="#59636e" font-size="13">CPU frequency transitions / deep C-states</text>
+      <text x="420" y="24" fill="#d1242f" font-size="20">✗</text><text x="442" y="24" fill="#59636e" font-size="13">NUMA-remote DRAM access</text>
+      <text x="420" y="48" fill="#d1242f" font-size="20">✗</text><text x="442" y="48" fill="#59636e" font-size="13">TLB shootdowns / high TLB miss rate</text>
+      <text x="420" y="72" fill="#d1242f" font-size="20">✗</text><text x="442" y="72" fill="#59636e" font-size="13">false sharing on counters / rings</text>
+    </g>
+  </svg>

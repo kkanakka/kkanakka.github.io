@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 900 300" xmlns="http://www.w3.org/2000/svg">
+  <text x="20" y="22" font-size="12" font-weight="600">cyclictest worst-case latency · stressed system</text>
+
+  <line x1="200" y1="240" x2="860" y2="240" stroke="#d1d9e0"></line>
+  <g fill="#59636e" font-size="10">
+    <line x1="200" y1="236" x2="200" y2="244" stroke="#d1d9e0"></line>
+    <text x="200" y="258" text-anchor="middle">1 μs</text>
+    <line x1="332" y1="236" x2="332" y2="244" stroke="#d1d9e0"></line>
+    <text x="332" y="258" text-anchor="middle">10 μs</text>
+    <line x1="464" y1="236" x2="464" y2="244" stroke="#d1d9e0"></line>
+    <text x="464" y="258" text-anchor="middle">100 μs</text>
+    <line x1="596" y1="236" x2="596" y2="244" stroke="#d1d9e0"></line>
+    <text x="596" y="258" text-anchor="middle">1 ms</text>
+    <line x1="728" y1="236" x2="728" y2="244" stroke="#d1d9e0"></line>
+    <text x="728" y="258" text-anchor="middle">10 ms</text>
+    <line x1="860" y1="236" x2="860" y2="244" stroke="#d1d9e0"></line>
+    <text x="860" y="258" text-anchor="middle">100 ms</text>
+  </g>
+
+  <text x="190" y="68" text-anchor="end" font-size="12" font-weight="500">PREEMPT_NONE</text>
+  <rect x="200" y="55" width="610" height="18" fill="#ffebe9" stroke="#d1242f"></rect>
+  <text x="818" y="68" font-size="10" fill="#d1242f">~50 ms</text>
+
+  <text x="190" y="103" text-anchor="end" font-size="12" font-weight="500">PREEMPT_VOLUNTARY</text>
+  <rect x="200" y="90" width="465" height="18" fill="#fff8c5" stroke="#9a6700"></rect>
+  <text x="672" y="103" font-size="10" fill="#9a6700">~3 ms</text>
+
+  <text x="190" y="138" text-anchor="end" font-size="12" font-weight="500">PREEMPT (full)</text>
+  <rect x="200" y="125" width="350" height="18" fill="#ddf4ff" stroke="#0969da"></rect>
+  <text x="557" y="138" font-size="10" fill="#0969da">~500 μs</text>
+
+  <text x="190" y="173" text-anchor="end" font-size="12" font-weight="500">PREEMPT_RT</text>
+  <rect x="200" y="160" width="180" height="18" fill="#dafbe1" stroke="#1a7f37"></rect>
+  <text x="387" y="173" font-size="10" fill="#1a7f37">~30 μs (bounded)</text>
+
+  <line x1="380" y1="178" x2="380" y2="208" stroke="#1a7f37" stroke-dasharray="2,3"></line>
+  <text x="380" y="220" text-anchor="middle" font-size="10" fill="#1a7f37">deterministic ceiling</text>
+</svg>

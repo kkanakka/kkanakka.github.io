@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="700" height="160" viewBox="0 0 700 160" xmlns="http://www.w3.org/2000/svg">
+        <defs><marker id="a15" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#1565c0"></polygon></marker><marker id="a15r" markerWidth="7" markerHeight="5" refX="0" refY="2.5" orient="auto"><polygon points="7 0,0 2.5,7 5" fill="#c62828"></polygon></marker></defs>
+        <g font-family="Inter,sans-serif" font-size="12" fill="#37352f">
+          <rect x="10" y="30" width="80" height="40" rx="6" fill="#e3f2fd" stroke="#1565c0"></rect><text x="50" y="55" text-anchor="middle">API</text>
+          <line x1="90" y1="50" x2="130" y2="50" stroke="#1565c0" stroke-width="1.5" marker-end="url(#a15)"></line>
+          <rect x="135" y="30" width="100" height="40" rx="6" fill="#e3f2fd" stroke="#1565c0"></rect><text x="185" y="55" text-anchor="middle">Orchestrator</text>
+          <line x1="235" y1="50" x2="275" y2="50" stroke="#1565c0" stroke-width="1.5" marker-end="url(#a15)"></line>
+          <rect x="280" y="30" width="100" height="40" rx="6" fill="#fff3e0" stroke="#e65100"></rect><text x="330" y="46" text-anchor="middle">Kafka</text><text x="330" y="60" text-anchor="middle" font-size="10" fill="#e65100">lag growing</text>
+          <line x1="380" y1="50" x2="420" y2="50" stroke="#1565c0" stroke-width="1.5" marker-end="url(#a15)"></line>
+          <rect x="425" y="30" width="80" height="40" rx="6" fill="#fce4ec" stroke="#c62828" stroke-width="2"></rect><text x="465" y="46" text-anchor="middle" font-weight="600">Worker</text><text x="465" y="60" text-anchor="middle" font-size="10" fill="#c62828">OOM</text>
+          <line x1="505" y1="50" x2="545" y2="50" stroke="#1565c0" stroke-width="1.5" marker-end="url(#a15)"></line>
+          <rect x="550" y="30" width="80" height="40" rx="6" fill="#fce4ec" stroke="#c62828" stroke-width="2"></rect><text x="590" y="46" text-anchor="middle" font-weight="600">DB</text><text x="590" y="60" text-anchor="middle" font-size="10" fill="#c62828">hot partition</text>
+          <!-- Retry arrow back -->
+          <path d="M 130 80 Q 60 110 50 80" fill="none" stroke="#c62828" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#a15r)"></path>
+          <text x="75" y="115" text-anchor="middle" font-size="11" fill="#c62828">retries ×3 (no jitter)</text>
+          <text x="350" y="145" text-anchor="middle" font-size="11" fill="#787774">DB hot-spot → worker slowdown → queue backlog → synchronized retries → cascade</text>
+        </g>
+      </svg>

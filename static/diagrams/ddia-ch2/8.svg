@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 820 420" xmlns="http://www.w3.org/2000/svg" style="max-width:800px;">
+      <defs>
+        <marker id="arrI" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#546e7a"></polygon>
+        </marker>
+      </defs>
+
+      <!-- Left: Local Lucene -->
+      <rect x="10" y="10" width="390" height="400" rx="12" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"></rect>
+      <text x="205" y="38" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="14" fill="#1b5e20">Local Lucene Index (per partition)</text>
+
+      <text x="30" y="60" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Lives on: <tspan font-weight="600">same storage node as the partition</tspan></text>
+      <text x="30" y="76" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Scope: <tspan font-weight="600">ONE partition only</tspan></text>
+      <text x="30" y="92" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Requires: <tspan font-weight="600">partition key in the query</tspan></text>
+
+      <!-- Local query flow -->
+      <rect x="30" y="108" width="350" height="120" rx="8" fill="#fff" stroke="#a5d6a7" stroke-width="1"></rect>
+      <text x="45" y="128" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#2e7d32">Query: "Find member 12345's position at Microsoft"</text>
+      <text x="45" y="148" font-family="JetBrains Mono,monospace" font-size="9" fill="#37352f">GET /MemberDB/Positions/12345</text>
+      <text x="45" y="162" font-family="JetBrains Mono,monospace" font-size="9" fill="#37352f">  .setQuery("companyId=1035")</text>
+      <text x="45" y="182" font-family="Inter,sans-serif" font-size="9" fill="#37352f">1. Router: FNV(12345) → partition 42 → Node 6</text>
+      <text x="45" y="196" font-family="Inter,sans-serif" font-size="9" fill="#37352f">2. Node 6: query LOCAL Lucene for partition 42</text>
+      <text x="45" y="210" font-family="Inter,sans-serif" font-size="9" fill="#37352f">3. Lucene finds matching docs → return</text>
+      <text x="45" y="224" font-family="Inter,sans-serif" font-weight="600" font-size="9" fill="#2e7d32">Fast! Single node, 10-100ms</text>
+
+      <text x="30" y="250" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#2e7d32">How Lucene gets populated:</text>
+      <text x="30" y="268" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• On EVERY write to the partition</text>
+      <text x="30" y="284" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Storage node deserializes indexed fields from Avro</text>
+      <text x="30" y="300" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Updates Lucene index synchronously with MySQL write</text>
+      <text x="30" y="316" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Declarative: you declare which fields to index</text>
+
+      <text x="30" y="345" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#c62828">Limitation:</text>
+      <text x="30" y="363" font-family="Inter,sans-serif" font-size="10" fill="#37352f">If you DON'T know the partition key, local Lucene</text>
+      <text x="30" y="379" font-family="Inter,sans-serif" font-size="10" fill="#37352f">can't help. You'd need to scan ALL 256 partitions!</text>
+      <text x="30" y="395" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#c62828">→ That's when you need GSI</text>
+
+      <!-- Right: GSI -->
+      <rect x="420" y="10" width="390" height="400" rx="12" fill="#fce4ec" stroke="#c62828" stroke-width="2"></rect>
+      <text x="615" y="38" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="14" fill="#c62828">Global Secondary Index (GSI)</text>
+
+      <text x="440" y="60" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Lives on: <tspan font-weight="600">separate index service / search provider</tspan></text>
+      <text x="440" y="76" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Scope: <tspan font-weight="600">ALL partitions globally</tspan></text>
+      <text x="440" y="92" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Requires: <tspan font-weight="600">NO partition key needed!</tspan></text>
+
+      <!-- GSI query flow -->
+      <rect x="440" y="108" width="350" height="120" rx="8" fill="#fff" stroke="#ef9a9a" stroke-width="1"></rect>
+      <text x="455" y="128" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#c62828">Query: "Find ALL members at Microsoft"</text>
+      <text x="455" y="148" font-family="JetBrains Mono,monospace" font-size="9" fill="#37352f">GET /MemberDB/Positions</text>
+      <text x="455" y="162" font-family="JetBrains Mono,monospace" font-size="9" fill="#37352f">  .setGlobalIndexName("company_idx")</text>
+      <text x="455" y="176" font-family="JetBrains Mono,monospace" font-size="9" fill="#37352f">  .setQuery("companyId=1035")</text>
+      <text x="455" y="196" font-family="Inter,sans-serif" font-size="9" fill="#37352f">1. Router: no partition key → route to GSI provider</text>
+      <text x="455" y="210" font-family="Inter,sans-serif" font-size="9" fill="#37352f">2. GSI searches across ALL partitions globally</text>
+      <text x="455" y="224" font-family="Inter,sans-serif" font-weight="600" font-size="9" fill="#c62828">Slower (scatter-gather), but the ONLY option</text>
+
+      <text x="440" y="250" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#c62828">No automatic fallback!</text>
+      <text x="440" y="268" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Local index and GSI are SEPARATE query paths</text>
+      <text x="440" y="284" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Client code decides which to use at query time</text>
+      <text x="440" y="300" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• If data isn't in local Lucene AND you don't</text>
+      <text x="440" y="316" font-family="Inter,sans-serif" font-size="10" fill="#37352f">  have a GSI → you're stuck. No results.</text>
+
+      <text x="440" y="345" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#c62828">Can lack of GSI cause an outage?</text>
+      <text x="440" y="363" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Without GSI, devs do full table scans:</text>
+      <text x="450" y="379" font-family="JetBrains Mono,monospace" font-size="9" fill="#c62828">.setCount(Integer.MAX_VALUE) ← ANTI-PATTERN!</text>
+      <text x="440" y="395" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Scatter-gather ALL nodes → 429s, timeouts, outage</text>
+    </svg>

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 900 380" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="fig11-title">
+        <title id="fig11-title">Figure 11: Two-socket NUMA topology</title>
+        <rect x="40" y="50" width="360" height="260" rx="12" fill="#dafbe1" stroke="#1a7f37" stroke-width="2"></rect>
+        <text x="220" y="78" text-anchor="middle" font-size="18" font-weight="700" fill="#1a7f37">Node 0</text>
+        <rect x="70" y="100" width="130" height="70" rx="8" fill="#ffffff" stroke="#1a7f37"></rect>
+        <text x="135" y="128" text-anchor="middle" font-size="13" font-weight="600">CPUs 0–3</text>
+        <text x="135" y="146" text-anchor="middle" font-size="11" fill="#59636e">cores / threads</text>
+        <rect x="220" y="100" width="150" height="70" rx="8" fill="#ffffff" stroke="#1a7f37"></rect>
+        <text x="295" y="128" text-anchor="middle" font-size="13" font-weight="600">L3 / mc</text>
+        <text x="295" y="146" text-anchor="middle" font-size="11" fill="#59636e">last-level cache</text>
+        <rect x="70" y="190" width="300" height="95" rx="8" fill="#ffffff" stroke="#1a7f37"></rect>
+        <text x="220" y="220" text-anchor="middle" font-size="14" font-weight="600">Local DRAM</text>
+        <text x="220" y="242" text-anchor="middle" font-size="13" fill="#59636e">capacity: 128 GiB</text>
+        <text x="220" y="266" text-anchor="middle" font-size="11" fill="#59636e">baseline local latency</text>
+
+        <rect x="500" y="50" width="360" height="260" rx="12" fill="#fff8c5" stroke="#9a6700" stroke-width="2"></rect>
+        <text x="680" y="78" text-anchor="middle" font-size="18" font-weight="700" fill="#9a6700">Node 1</text>
+        <rect x="530" y="100" width="130" height="70" rx="8" fill="#ffffff" stroke="#9a6700"></rect>
+        <text x="595" y="128" text-anchor="middle" font-size="13" font-weight="600">CPUs 4–7</text>
+        <text x="595" y="146" text-anchor="middle" font-size="11" fill="#59636e">cores / threads</text>
+        <rect x="680" y="100" width="150" height="70" rx="8" fill="#ffffff" stroke="#9a6700"></rect>
+        <text x="755" y="128" text-anchor="middle" font-size="13" font-weight="600">L3 / mc</text>
+        <text x="755" y="146" text-anchor="middle" font-size="11" fill="#59636e">last-level cache</text>
+        <rect x="530" y="190" width="300" height="95" rx="8" fill="#ffffff" stroke="#9a6700"></rect>
+        <text x="680" y="220" text-anchor="middle" font-size="14" font-weight="600">Remote DRAM</text>
+        <text x="680" y="242" text-anchor="middle" font-size="13" fill="#59636e">accessed cross-link</text>
+        <text x="680" y="266" text-anchor="middle" font-size="11" fill="#59636e">higher latency / lower BW</text>
+
+        <!-- Link -->
+        <rect x="400" y="165" width="100" height="50" rx="8" fill="#f6f8fa" stroke="#8250df" stroke-width="2.5"></rect>
+        <text x="450" y="188" text-anchor="middle" font-size="12" font-weight="700" fill="#8250df">UPI / IF</text>
+        <text x="450" y="205" text-anchor="middle" font-size="11" fill="#59636e">~25 GB/s · +50 ns hop</text>
+
+        <!-- Local arrow Node0 internal -->
+        <path d="M 200 135 L 210 135" stroke="#1a7f37" stroke-width="4" marker-end="url(#locArrow)"></path>
+        <defs>
+          <marker id="locArrow" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+            <polygon points="0 0, 9 4.5, 0 9" fill="#1a7f37"></polygon>
+          </marker>
+          <marker id="remArrow" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+            <polygon points="0 0, 9 4.5, 0 9" fill="#d1242f"></polygon>
+          </marker>
+        </defs>
+        <text x="188" y="128" fill="#1a7f37" font-size="11" font-weight="600">local</text>
+
+        <!-- Remote dashed -->
+        <path d="M 340 230 Q 450 120 540 230" fill="none" stroke="#d1242f" stroke-width="3" stroke-dasharray="10 7" marker-end="url(#remArrow)"></path>
+        <text x="430" y="108" fill="#d1242f" font-size="12" font-weight="600">remote ×1.6 latency</text>
+        <text x="430" y="124" fill="#d1242f" font-size="11">×0.5 effective BW vs local</text>
+
+        <text x="450" y="340" text-anchor="middle" font-size="13" fill="#59636e">Illustrative multipliers; run <tspan font-family="ui-monospace,Menlo,monospace">numactl -H</tspan> for topology numbers.</text>
+      </svg>

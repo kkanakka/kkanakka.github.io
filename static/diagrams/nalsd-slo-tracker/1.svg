@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 980 820" xmlns="http://www.w3.org/2000/svg"><style>.box-fill-blue{fill:#ddf4ff;stroke:#54aeff}
+.box-fill-green{fill:#dafbe1;stroke:#4ac26b}
+.box-fill-purple{fill:#fbefff;stroke:#c297ff}
+.box-fill-red{fill:#ffebe9;stroke:#ff8182}
+.box-fill-yellow{fill:#fff8c5;stroke:#d4a72c}
+.box-fill-gray{fill:#f6f8fa;stroke:#d0d7de}
+.lbl-title{font-family:'Inter',sans-serif;font-weight:700;font-size:11.5px;fill:#1f2328}
+.lbl-sub{font-family:'JetBrains Mono',monospace;font-size:9.5px;fill:#59636e}
+.lbl-meta{font-family:'JetBrains Mono',monospace;font-size:9px;fill:#818b98}
+.arrow{stroke:#59636e;stroke-width:1.3;fill:none;marker-end:url(#arr)}
+.arrow-dashed{stroke:#cf222e;stroke-width:1.2;fill:none;stroke-dasharray:4,3;marker-end:url(#arr-red)}
+.arrow-green{stroke:#1a7f37;stroke-width:1.5;fill:none;marker-end:url(#arr-green)}</style>
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#59636e"></path>
+    </marker>
+    <marker id="arr-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#cf222e"></path>
+    </marker>
+    <marker id="arr-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1a7f37"></path>
+    </marker>
+  </defs>
+
+  <!-- Top ribbon -->
+  <text x="490" y="22" text-anchor="middle" class="lbl-title" style="font-size:13px">5,000 SLOs · 500 services · compute &lt; 60s · 99.99% accuracy · alert &lt; 5min</text>
+
+  <!-- ============ STEP NUMBER BADGES ============ -->
+  <circle cx="155" cy="60" r="11" fill="#0a66c2"></circle>
+  <text x="155" y="64" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">1</text>
+  <circle cx="490" cy="60" r="11" fill="#0a66c2"></circle>
+  <text x="490" y="64" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">2</text>
+  <circle cx="800" cy="60" r="11" fill="#0a66c2"></circle>
+  <text x="800" y="64" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">3</text>
+  <circle cx="490" cy="200" r="11" fill="#0a66c2"></circle>
+  <text x="490" y="204" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">4</text>
+  <circle cx="155" cy="345" r="11" fill="#0a66c2"></circle>
+  <text x="155" y="349" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">5</text>
+  <circle cx="490" cy="345" r="11" fill="#0a66c2"></circle>
+  <text x="490" y="349" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">6</text>
+  <circle cx="820" cy="345" r="11" fill="#0a66c2"></circle>
+  <text x="820" y="349" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">7</text>
+  <circle cx="155" cy="510" r="11" fill="#0a66c2"></circle>
+  <text x="155" y="514" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">8</text>
+  <circle cx="820" cy="510" r="11" fill="#0a66c2"></circle>
+  <text x="820" y="514" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">9</text>
+  <circle cx="490" cy="680" r="11" fill="#0a66c2"></circle>
+  <text x="490" y="684" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">10</text>
+
+  <!-- ============ ROW 1: SLI sources ============ -->
+  <g>
+    <rect x="20" y="85" width="280" height="80" rx="6" class="box-fill-gray"></rect>
+    <text x="160" y="108" text-anchor="middle" class="lbl-title">SLI data sources</text>
+    <text x="160" y="125" text-anchor="middle" class="lbl-sub">LB · API gw · app · DB · infra</text>
+    <text x="160" y="141" text-anchor="middle" class="lbl-sub">Prometheus · OpenTelemetry</text>
+    <text x="160" y="157" text-anchor="middle" class="lbl-meta">request counts · latencies · errors</text>
+  </g>
+
+  <g>
+    <rect x="340" y="85" width="300" height="80" rx="6" class="box-fill-blue"></rect>
+    <text x="490" y="108" text-anchor="middle" class="lbl-title">Ingestion + normalization</text>
+    <text x="490" y="125" text-anchor="middle" class="lbl-sub">scrape + push gateway · schema validate</text>
+    <text x="490" y="141" text-anchor="middle" class="lbl-sub">unit convert · timestamp normalize · classify</text>
+    <text x="490" y="157" text-anchor="middle" class="lbl-meta">12 nodes · 5k SLOs · 500 updates/s</text>
+  </g>
+
+  <g>
+    <rect x="680" y="85" width="280" height="80" rx="6" class="box-fill-yellow"></rect>
+    <text x="820" y="108" text-anchor="middle" class="lbl-title">SLO config store</text>
+    <text x="820" y="125" text-anchor="middle" class="lbl-sub">Spanner — versioned · audited</text>
+    <text x="820" y="141" text-anchor="middle" class="lbl-sub">target · window · alert rules</text>
+    <text x="820" y="157" text-anchor="middle" class="lbl-meta">GitOps · approval workflow · rollback</text>
+  </g>
+
+  <!-- ============ ROW 2: Kafka ============ -->
+  <g>
+    <rect x="20" y="225" width="940" height="70" rx="6" class="box-fill-green"></rect>
+    <text x="490" y="248" text-anchor="middle" class="lbl-title" style="font-size:13px">Kafka — normalized SLI stream (multi-region, replayable)</text>
+    <text x="490" y="266" text-anchor="middle" class="lbl-sub">topics: sli.events (request-bucketed) · sli.samples (time-sampled)</text>
+    <text x="490" y="284" text-anchor="middle" class="lbl-meta">9 brokers · 7-day retention · 3× replication · exactly-once producer</text>
+  </g>
+
+  <!-- ============ ROW 3: Dataflow (3 components inside one band) ============ -->
+  <rect x="20" y="370" width="940" height="110" rx="8" fill="#fafbfc" stroke="#eaeef2"></rect>
+  <text x="490" y="395" text-anchor="middle" class="lbl-title" style="font-size:13px">Real-time SLO computation engine — Apache Beam / Dataflow</text>
+
+  <g>
+    <rect x="40" y="410" width="280" height="60" rx="6" class="box-fill-purple"></rect>
+    <text x="180" y="430" text-anchor="middle" class="lbl-title">Sliding windows</text>
+    <text x="180" y="445" text-anchor="middle" class="lbl-sub">1m · 5m · 1h · 6h · 24h · 30d</text>
+    <text x="180" y="460" text-anchor="middle" class="lbl-meta">watermark · exactly-once · late data</text>
+  </g>
+
+  <g>
+    <rect x="340" y="410" width="300" height="60" rx="6" class="box-fill-purple"></rect>
+    <text x="490" y="430" text-anchor="middle" class="lbl-title">SLO rule evaluator</text>
+    <text x="490" y="445" text-anchor="middle" class="lbl-sub">SLI → SLO compliance % · per service</text>
+    <text x="490" y="460" text-anchor="middle" class="lbl-meta">config hot-reload · per-tenant rules</text>
+  </g>
+
+  <g>
+    <rect x="660" y="410" width="280" height="60" rx="6" class="box-fill-purple"></rect>
+    <text x="800" y="430" text-anchor="middle" class="lbl-title">Burn-rate calculator</text>
+    <text x="800" y="445" text-anchor="middle" class="lbl-sub">1h: 14.4× · 6h: 6× · 24h: 3×</text>
+    <text x="800" y="460" text-anchor="middle" class="lbl-meta">multi-window AND condition</text>
+  </g>
+
+  <!-- ============ ROW 4: State store + Alert engine + Audit ============ -->
+  <g>
+    <rect x="20" y="540" width="280" height="100" rx="6" class="box-fill-blue"></rect>
+    <text x="160" y="563" text-anchor="middle" class="lbl-title">SLO state store</text>
+    <text x="160" y="580" text-anchor="middle" class="lbl-sub">Bigtable · row-key:</text>
+    <text x="160" y="595" text-anchor="middle" class="lbl-sub">service#slo#window#ts</text>
+    <text x="160" y="614" text-anchor="middle" class="lbl-meta">good · total · target · remain · burn</text>
+    <text x="160" y="628" text-anchor="middle" class="lbl-meta">3 nodes · 62 GB · sharded by service</text>
+  </g>
+
+  <g>
+    <rect x="340" y="540" width="300" height="100" rx="6" class="box-fill-red"></rect>
+    <text x="490" y="563" text-anchor="middle" class="lbl-title">Alert generator</text>
+    <text x="490" y="580" text-anchor="middle" class="lbl-sub">fast burn (14.4× 1h+5m) → page</text>
+    <text x="490" y="595" text-anchor="middle" class="lbl-sub">medium burn (6× 6h+30m) → page</text>
+    <text x="490" y="612" text-anchor="middle" class="lbl-sub">slow burn (3× 24h+2h) → ticket</text>
+    <text x="490" y="628" text-anchor="middle" class="lbl-meta">9 nodes · dedupe · suppress on EB &gt; 90%</text>
+  </g>
+
+  <g>
+    <rect x="680" y="540" width="280" height="100" rx="6" class="box-fill-yellow"></rect>
+    <text x="820" y="563" text-anchor="middle" class="lbl-title">Audit Kafka</text>
+    <text x="820" y="580" text-anchor="middle" class="lbl-sub">event-sourced state log</text>
+    <text x="820" y="595" text-anchor="middle" class="lbl-sub">every transition recorded</text>
+    <text x="820" y="614" text-anchor="middle" class="lbl-meta">replayable · 1y retention</text>
+    <text x="820" y="628" text-anchor="middle" class="lbl-meta">forensics + accuracy verify</text>
+  </g>
+
+  <!-- ============ ROW 5: API + Dashboard + Notifier ============ -->
+  <g>
+    <rect x="40" y="705" width="280" height="80" rx="6" class="box-fill-green"></rect>
+    <text x="180" y="728" text-anchor="middle" class="lbl-title">Query API + cache</text>
+    <text x="180" y="745" text-anchor="middle" class="lbl-sub">GraphQL · REST · Redis cache</text>
+    <text x="180" y="761" text-anchor="middle" class="lbl-sub">filters · aggregations</text>
+    <text x="180" y="777" text-anchor="middle" class="lbl-meta">15 nodes · 70% cache hit</text>
+  </g>
+
+  <g>
+    <rect x="340" y="705" width="300" height="80" rx="6" class="box-fill-green"></rect>
+    <text x="490" y="728" text-anchor="middle" class="lbl-title">Dashboard service</text>
+    <text x="490" y="745" text-anchor="middle" class="lbl-sub">real-time SLO views · burn trends</text>
+    <text x="490" y="761" text-anchor="middle" class="lbl-sub">alert timeline · multi-service rollup</text>
+    <text x="490" y="777" text-anchor="middle" class="lbl-meta">React + WebSocket</text>
+  </g>
+
+  <g>
+    <rect x="660" y="705" width="280" height="80" rx="6" class="box-fill-purple"></rect>
+    <text x="800" y="728" text-anchor="middle" class="lbl-title">Notifier</text>
+    <text x="800" y="745" text-anchor="middle" class="lbl-sub">PagerDuty · Slack · Email</text>
+    <text x="800" y="761" text-anchor="middle" class="lbl-sub">priority lanes · team routing</text>
+    <text x="800" y="777" text-anchor="middle" class="lbl-meta">on-call rotation aware</text>
+  </g>
+
+  <!-- ============ ARROWS ============ -->
+  <path d="M300,125 L340,125" class="arrow"></path>
+  <path d="M640,125 L680,125" class="arrow" stroke-dasharray="3,2"></path>
+  <path d="M490,165 L490,225" class="arrow"></path>
+  <path d="M490,295 L490,370" class="arrow"></path>
+  <path d="M180,470 L160,540" class="arrow"></path>
+  <path d="M490,470 L490,540" class="arrow"></path>
+  <path d="M800,470 L820,540" class="arrow"></path>
+  <path d="M160,640 L180,705" class="arrow"></path>
+  <path d="M490,640 L490,705" class="arrow"></path>
+  <path d="M490,640 L800,705" class="arrow-dashed" stroke-opacity="0.6"></path>
+  <path d="M820,640 L820,705" class="arrow"></path>
+  <path d="M820,108 L820,225" class="arrow" stroke-dasharray="3,2"></path>
+  <text x="855" y="170" class="lbl-meta">config feeds rule engine</text>
+
+</svg>

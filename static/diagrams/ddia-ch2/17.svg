@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 820 220" xmlns="http://www.w3.org/2000/svg" style="max-width:800px;">
+      <rect x="10" y="10" width="800" height="200" rx="14" fill="#f7f6f3" stroke="#00695c" stroke-width="2"></rect>
+      <text x="410" y="40" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="16" fill="#00695c">Chapter 2 Interview Cheatsheet</text>
+
+      <rect x="30" y="55" width="245" height="140" rx="10" fill="#e3f2fd" stroke="#1565c0" stroke-width="1"></rect>
+      <text x="152" y="78" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#0d47a1">Data Models</text>
+      <text x="45" y="98" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Relational: tables + JOINs</text>
+      <text x="45" y="115" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Document: JSON trees</text>
+      <text x="45" y="132" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Graph: vertices + edges</text>
+      <text x="45" y="149" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• 1:N → Doc, N:M → Rel/Graph</text>
+      <text x="45" y="170" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#0d47a1">Pick model by relationship pattern</text>
+
+      <rect x="290" y="55" width="245" height="140" rx="10" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1"></rect>
+      <text x="412" y="78" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#1b5e20">LinkedIn Stores</text>
+      <text x="305" y="98" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Espresso: source of truth</text>
+      <text x="305" y="115" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Venice: derived / ML features</text>
+      <text x="305" y="132" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Pinot: real-time analytics</text>
+      <text x="305" y="149" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Galene: search index</text>
+      <text x="305" y="170" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Liquid: social graph</text>
+      <text x="305" y="185" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#1b5e20">Kafka connects everything</text>
+
+      <rect x="550" y="55" width="245" height="140" rx="10" fill="#fff3e0" stroke="#e65100" stroke-width="1"></rect>
+      <text x="672" y="78" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#bf360c">Query Languages</text>
+      <text x="565" y="98" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Declarative &gt; Imperative</text>
+      <text x="565" y="115" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• SQL: relational algebra</text>
+      <text x="565" y="132" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Cypher/SPARQL: graphs</text>
+      <text x="565" y="149" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• MapReduce: batch (low-level)</text>
+      <text x="565" y="170" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Schema-on-read vs write</text>
+      <text x="565" y="185" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#bf360c">Declarative wins long-term</text>
+    </svg>

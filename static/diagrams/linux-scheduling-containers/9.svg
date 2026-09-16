@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 880 360" xmlns="http://www.w3.org/2000/svg">
+  <rect x="360" y="20" width="160" height="36" fill="#dafbe1" stroke="#1a7f37" rx="4"></rect>
+  <text x="440" y="43" text-anchor="middle" font-size="13" font-weight="600">/ (root)</text>
+  <line x1="440" y1="56" x2="440" y2="78" stroke="#59636e"></line>
+  <line x1="180" y1="78" x2="680" y2="78" stroke="#59636e"></line>
+  <line x1="180" y1="78" x2="180" y2="100" stroke="#59636e"></line><line x1="440" y1="78" x2="440" y2="100" stroke="#59636e"></line><line x1="680" y1="78" x2="680" y2="100" stroke="#59636e"></line>
+  <rect x="100" y="100" width="160" height="30" fill="#ddf4ff" stroke="#0969da" rx="3"></rect><text x="180" y="120" text-anchor="middle" font-size="11" font-weight="600">system.slice</text>
+  <rect x="360" y="100" width="160" height="30" fill="#ddf4ff" stroke="#0969da" rx="3"></rect><text x="440" y="120" text-anchor="middle" font-size="11" font-weight="600">user.slice</text>
+  <rect x="600" y="100" width="160" height="30" fill="#ddf4ff" stroke="#0969da" rx="3"></rect><text x="680" y="120" text-anchor="middle" font-size="11" font-weight="600">machine.slice</text>
+  <line x1="180" y1="130" x2="180" y2="152" stroke="#d1d9e0"></line>
+  <rect x="40" y="152" width="130" height="26" fill="#fff8c5" stroke="#9a6700" rx="2"></rect><text x="105" y="169" text-anchor="middle" font-size="10">nginx.service</text>
+  <rect x="190" y="152" width="150" height="26" fill="#fff8c5" stroke="#9a6700" rx="2"></rect><text x="265" y="169" text-anchor="middle" font-size="10">postgres.service</text>
+  <circle cx="105" cy="210" r="14" fill="#ffebe9" stroke="#d1242f"></circle><text x="105" y="214" text-anchor="middle" font-size="8">P1</text>
+  <circle cx="265" cy="210" r="14" fill="#ffebe9" stroke="#d1242f"></circle><text x="265" y="214" text-anchor="middle" font-size="8">P2</text>
+  <line x1="105" y1="178" x2="105" y2="196" stroke="#59636e"></line><line x1="265" y1="178" x2="265" y2="196" stroke="#59636e"></line>
+  <line x1="680" y1="130" x2="680" y2="152" stroke="#d1d9e0"></line>
+  <rect x="540" y="152" width="180" height="26" fill="#dafbe1" stroke="#1a7f37" rx="2"></rect><text x="630" y="169" text-anchor="middle" font-size="10">docker-abc123.scope</text>
+  <rect x="540" y="186" width="180" height="26" fill="#dafbe1" stroke="#1a7f37" rx="2"></rect><text x="630" y="203" text-anchor="middle" font-size="10">docker-def456.scope</text>
+  <circle cx="580" cy="240" r="14" fill="#ddf4ff" stroke="#0969da"></circle><text x="580" y="244" text-anchor="middle" font-size="8">c1</text>
+  <circle cx="690" cy="240" r="14" fill="#ddf4ff" stroke="#0969da"></circle><text x="690" y="244" text-anchor="middle" font-size="8">c2</text>
+  <line x1="630" y1="178" x2="580" y2="226" stroke="#59636e"></line><line x1="630" y1="212" x2="690" y2="226" stroke="#59636e"></line>
+  <rect x="60" y="290" width="760" height="56" fill="#fafbfc" stroke="#d8dee4"></rect>
+  <text x="440" y="312" text-anchor="middle" font-size="11" fill="#59636e">Processes inherit cgroup membership from ancestor writes; systemd + runtime apply leaf scopes.</text>
+  <text x="440" y="332" text-anchor="middle" font-size="10" fill="#8250df">Limits compose along the path to root (inner wins for most knobs).</text>
+</svg>

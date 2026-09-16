@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 460" role="img" aria-labelledby="fig12-title" style="width:100%;max-width:900px;height:auto;display:block">
+<title id="fig12-title">Master reference — everything mapped</title>
+<defs>
+<marker id="ar12" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><polygon points="0,0 7,3.5 0,7" fill="#59636e"></polygon></marker>
+</defs>
+<!-- Six columns: TEXT | DATA | HEAP(young/old) | HEAP(meta/direct) | STACK | KERNEL -->
+<g font-family="system-ui,sans-serif" font-size="10" fill="#1f2328">
+<rect x="18" y="42" width="122" height="398" rx="8" fill="#ddf4ff" stroke="#d1d9e0"></rect>
+<text x="79" y="30" text-anchor="middle" font-size="11" font-weight="700" fill="#0969da">TEXT</text>
+<text x="28" y="74">libjvm.so</text>
+<text x="28" y="94">interpreter</text>
+<text x="28" y="114">JIT code cache</text>
+<text x="28" y="134">stubs / adapters</text>
+<rect x="152" y="42" width="122" height="398" rx="8" fill="#dafbe1" stroke="#d1d9e0"></rect>
+<text x="213" y="30" text-anchor="middle" font-size="11" font-weight="700" fill="#1a7f37">DATA</text>
+<text x="162" y="74">static finals</text>
+<text x="162" y="94">globals (.data)</text>
+<text x="162" y="114">intern tables</text>
+<rect x="286" y="42" width="122" height="398" rx="8" fill="#f5f0ff" stroke="#d1d9e0"></rect>
+<text x="347" y="30" text-anchor="middle" font-size="11" font-weight="700" fill="#8250df">HEAP</text>
+<text x="310" y="48" text-anchor="middle" font-size="9" fill="#59636e">generations</text>
+<rect x="297" y="58" width="100" height="92" rx="6" fill="#ffffff" stroke="#d1d9e0"></rect>
+<text x="347" y="92" text-anchor="middle" font-weight="600">Young</text>
+<text x="305" y="108" font-size="9" fill="#59636e">Eden · S0/S1</text>
+<rect x="297" y="158" width="100" height="92" rx="6" fill="#ffffff" stroke="#d1d9e0"></rect>
+<text x="347" y="192" text-anchor="middle" font-weight="600">Old Gen</text>
+<text x="302" y="208" font-size="9" fill="#59636e">long-lived objs</text>
+<rect x="420" y="42" width="122" height="398" rx="8" fill="#f5f0ff" stroke="#d1d9e0"></rect>
+<text x="481" y="30" text-anchor="middle" font-size="11" font-weight="700" fill="#8250df">HEAP</text>
+<text x="444" y="48" text-anchor="middle" font-size="9" fill="#59636e">metaspace · direct</text>
+<rect x="431" y="58" width="100" height="120" rx="6" fill="#ffffff" stroke="#d1d9e0"></rect>
+<text x="481" y="110" text-anchor="middle" font-weight="600">Metaspace</text>
+<text x="438" y="128" font-size="9" fill="#59636e">Klass metadata</text>
+<rect x="431" y="188" width="100" height="120" rx="6" fill="#ffebe9" stroke="#d1d9e0"></rect>
+<text x="481" y="240" text-anchor="middle" font-weight="600" fill="#d1242f">Direct</text>
+<text x="438" y="258" font-size="9" fill="#59636e">DBB · mmap JNI</text>
+<rect x="554" y="42" width="122" height="398" rx="8" fill="#fff8c5" stroke="#d1d9e0"></rect>
+<text x="615" y="30" text-anchor="middle" font-size="11" font-weight="700" fill="#9a6700">STACK</text>
+<text x="564" y="74">method frames</text>
+<text x="564" y="94">primitives</text>
+<text x="564" y="114">local refs → heap</text>
+<text x="564" y="134">JNI frames</text>
+<rect x="688" y="42" width="194" height="398" rx="8" fill="#f6f8fa" stroke="#d1d9e0"></rect>
+<text x="785" y="30" text-anchor="middle" font-size="11" font-weight="700" fill="#59636e">KERNEL</text>
+<text x="698" y="74">socket buffers (sk_buff)</text>
+<text x="698" y="94">page cache</text>
+<text x="698" y="114">fd table</text>
+<text x="698" y="134">block I/O / DMA</text>
+</g>
+<g stroke="#59636e" fill="none" stroke-width="1.2">
+<line x1="140" y1="120" x2="150" y2="120" marker-end="url(#ar12)"></line>
+<line x1="274" y1="140" x2="284" y2="140" marker-end="url(#ar12)"></line>
+<line x1="408" y1="200" x2="418" y2="200" marker-end="url(#ar12)"></line>
+<line x1="542" y1="160" x2="552" y2="160" marker-end="url(#ar12)"></line>
+<line x1="676" y1="180" x2="686" y2="180" marker-end="url(#ar12)"></line>
+</g>
+<path d="M 347 250 C 400 290 730 290 785 260" stroke="#8250df" fill="none" stroke-dasharray="5 4" marker-end="url(#ar12)"></path>
+<path d="M 785 200 C 700 170 481 170 481 178" stroke="#d1242f" fill="none" marker-end="url(#ar12)"></path>
+<text x="320" y="430" fill="#59636e" font-family="system-ui,sans-serif" font-size="10">Load / execute (TEXT→DATA→HEAP↔STACK); Direct &amp; I/O arcs reach KERNEL</text>
+</svg>

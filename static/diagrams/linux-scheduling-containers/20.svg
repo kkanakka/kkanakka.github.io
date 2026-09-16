@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 520" role="img" aria-label="Unified container stack showing namespaces, VFS, overlayfs, cgroups, and kernel security">
+      <defs>
+        <marker id="ak" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+          <path d="M0,0 L8,4 L0,8 Z" fill="#59636e"></path>
+        </marker>
+      </defs>
+      <text x="450" y="14" text-anchor="middle" fill="#59636e" font-size="11" font-weight="600">unified container stack · all primitives composed</text>
+
+      <g font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif" font-size="11">
+        <!-- TOP: CONTAINER PROCESS -->
+        <rect x="200" y="22" width="500" height="52" rx="10" ry="10" fill="#dafbe1" stroke="#1a7f37" stroke-width="2.5"></rect>
+        <text x="450" y="46" text-anchor="middle" fill="#1a7f37" font-size="13" font-weight="800">CONTAINER PROCESS</text>
+        <text x="450" y="64" text-anchor="middle" fill="#1a7f37" font-size="10.5">a normal Linux process (task_struct)</text>
+
+        <!-- Arrows down to three namespaces (from process underside to each column) -->
+        <line x1="283" y1="74" x2="165" y2="92" stroke="#59636e" stroke-width="1.2" marker-end="url(#ak)"></line>
+        <line x1="450" y1="74" x2="450" y2="92" stroke="#59636e" stroke-width="1.2" marker-end="url(#ak)"></line>
+        <line x1="617" y1="74" x2="735" y2="92" stroke="#59636e" stroke-width="1.2" marker-end="url(#ak)"></line>
+
+        <!-- MIDDLE ROW: three namespaces -->
+        <rect x="40" y="92" width="250" height="72" rx="8" ry="8" fill="#dafbe1" stroke="#1a7f37" stroke-width="1.3"></rect>
+        <text x="165" y="112" text-anchor="middle" fill="#1a7f37" font-weight="700">PID Namespace</text>
+        <text x="165" y="132" text-anchor="middle" fill="#59636e" font-size="10">PID translation · own pid=1</text>
+
+        <rect x="325" y="92" width="250" height="72" rx="8" ry="8" fill="#ddf4ff" stroke="#0969da" stroke-width="1.3"></rect>
+        <text x="450" y="112" text-anchor="middle" fill="#0969da" font-weight="700">Mount Namespace</text>
+        <text x="450" y="132" text-anchor="middle" fill="#59636e" font-size="10">filesystem view · overlayfs root</text>
+
+        <rect x="610" y="92" width="250" height="72" rx="8" ry="8" fill="#fff8c5" stroke="#9a6700" stroke-width="1.3"></rect>
+        <text x="735" y="112" text-anchor="middle" fill="#9a6700" font-weight="700">Net Namespace</text>
+        <text x="735" y="132" text-anchor="middle" fill="#59636e" font-size="10">virtual NICs · own iptables</text>
+
+        <!-- Converge to VFS (from mount ns center) -->
+        <line x1="450" y1="164" x2="450" y2="182" stroke="#59636e" stroke-width="1.2" marker-end="url(#ak)"></line>
+
+        <!-- VFS full width -->
+        <rect x="120" y="182" width="660" height="36" rx="6" ry="6" fill="#ddf4ff" stroke="#0969da" stroke-width="1.4"></rect>
+        <text x="450" y="205" text-anchor="middle" fill="#0969da" font-weight="700" font-size="12">VFS</text>
+
+        <line x1="450" y1="218" x2="450" y2="232" stroke="#59636e" stroke-width="1.2" marker-end="url(#ak)"></line>
+
+        <!-- overlayfs -->
+        <rect x="300" y="232" width="300" height="34" rx="6" ry="6" fill="#f5f0ff" stroke="#8250df" stroke-width="1.4"></rect>
+        <text x="450" y="254" text-anchor="middle" fill="#8250df" font-weight="700">overlayfs</text>
+
+        <!-- Fork to upper / lower -->
+        <line x1="380" y1="266" x2="250" y2="288" stroke="#59636e" stroke-width="1.2" marker-end="url(#ak)"></line>
+        <line x1="520" y1="266" x2="650" y2="288" stroke="#59636e" stroke-width="1.2" marker-end="url(#ak)"></line>
+
+        <rect x="130" y="288" width="240" height="36" rx="6" ry="6" fill="#dafbe1" stroke="#1a7f37" stroke-width="1.2"></rect>
+        <text x="250" y="310" text-anchor="middle" fill="#1a7f37" font-weight="600">upperdir (writable)</text>
+
+        <rect x="530" y="288" width="240" height="36" rx="6" ry="6" fill="#f6f8fa" stroke="#d1d9e0" stroke-width="1.2"></rect>
+        <text x="650" y="310" text-anchor="middle" fill="#59636e" font-weight="600">lowerdirs (image layers)</text>
+
+        <!-- Join down to ext4/xfs -->
+        <line x1="250" y1="324" x2="400" y2="348" stroke="#59636e" stroke-width="1.2" marker-end="url(#ak)"></line>
+        <line x1="650" y1="324" x2="500" y2="348" stroke="#59636e" stroke-width="1.2" marker-end="url(#ak)"></line>
+
+        <rect x="320" y="348" width="260" height="34" rx="6" ry="6" fill="#fff8c5" stroke="#9a6700" stroke-width="1.3"></rect>
+        <text x="450" y="370" text-anchor="middle" fill="#9a6700" font-weight="700">ext4 / xfs</text>
+
+        <!-- To cgroups row -->
+        <line x1="350" y1="382" x2="290" y2="400" stroke="#59636e" stroke-width="1.2" marker-end="url(#ak)"></line>
+        <line x1="450" y1="382" x2="450" y2="400" stroke="#59636e" stroke-width="1.2" marker-end="url(#ak)"></line>
+        <line x1="550" y1="382" x2="610" y2="400" stroke="#59636e" stroke-width="1.2" marker-end="url(#ak)"></line>
+
+        <!-- BOTTOM ROW cgroups -->
+        <rect x="40" y="400" width="250" height="56" rx="8" ry="8" fill="#ffebe9" stroke="#d1242f" stroke-width="1.3"></rect>
+        <text x="165" y="420" text-anchor="middle" fill="#d1242f" font-weight="700">memory cgroup</text>
+        <text x="165" y="438" text-anchor="middle" fill="#59636e" font-size="10">memory.max · scoped OOM</text>
+
+        <rect x="325" y="400" width="250" height="56" rx="8" ry="8" fill="#ddf4ff" stroke="#0969da" stroke-width="1.3"></rect>
+        <text x="450" y="420" text-anchor="middle" fill="#0969da" font-weight="700">cpu cgroup</text>
+        <text x="450" y="438" text-anchor="middle" fill="#59636e" font-size="10">cpu.max · cpu.weight · CFS</text>
+
+        <rect x="610" y="400" width="250" height="56" rx="8" ry="8" fill="#fff8c5" stroke="#9a6700" stroke-width="1.3"></rect>
+        <text x="735" y="420" text-anchor="middle" fill="#9a6700" font-weight="700">io cgroup</text>
+        <text x="735" y="438" text-anchor="middle" fill="#59636e" font-size="10">io.max · bandwidth caps</text>
+
+        <!-- Kernel bar -->
+        <line x1="165" y1="456" x2="165" y2="472" stroke="#59636e" stroke-width="1.2" marker-end="url(#ak)"></line>
+        <line x1="450" y1="456" x2="450" y2="472" stroke="#59636e" stroke-width="1.2" marker-end="url(#ak)"></line>
+        <line x1="735" y1="456" x2="735" y2="472" stroke="#59636e" stroke-width="1.2" marker-end="url(#ak)"></line>
+
+        <rect x="40" y="472" width="820" height="40" rx="6" ry="6" fill="#24292f" stroke="#24292f" stroke-width="1.2"></rect>
+        <text x="450" y="497" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">seccomp · capabilities · LSM · the actual security boundary</text>
+      </g>
+    </svg>

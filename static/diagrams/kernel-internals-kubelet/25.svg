@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 900 360" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ag25" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1a7f37"></path>
+    </marker>
+    <marker id="ab25" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0969da"></path>
+    </marker>
+    <marker id="ay25" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#9a6700"></path>
+    </marker>
+    <marker id="ar25" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#d1242f"></path>
+    </marker>
+  </defs>
+
+  <text x="20" y="22" font-size="12" font-weight="600">CPU does ① and ② · Device does ③ and ④ · the cores never see DMA bytes in flight</text>
+
+  <!-- Column 1: Memory access -->
+  <rect x="20" y="50" width="210" height="280" fill="#f6fdf9" stroke="#1a7f37" rx="3"></rect>
+  <text x="125" y="72" text-anchor="middle" font-size="11" font-weight="600" fill="#1a7f37">① Memory access</text>
+  <text x="125" y="88" text-anchor="middle" font-size="10" fill="#59636e">load / store · everyday</text>
+
+  <rect x="50" y="105" width="150" height="30" fill="#dafbe1" stroke="#1a7f37"></rect>
+  <text x="125" y="124" text-anchor="middle" font-size="11">Core</text>
+  <line x1="125" y1="135" x2="125" y2="146" stroke="#1a7f37" stroke-width="2" marker-end="url(#ag25)"></line>
+
+  <rect x="50" y="148" width="150" height="30" fill="#dafbe1" stroke="#1a7f37"></rect>
+  <text x="125" y="167" text-anchor="middle" font-size="11">L1 → L2 → L3</text>
+  <line x1="125" y1="178" x2="125" y2="189" stroke="#1a7f37" stroke-width="2" marker-end="url(#ag25)"></line>
+
+  <rect x="50" y="191" width="150" height="30" fill="#dafbe1" stroke="#1a7f37"></rect>
+  <text x="125" y="210" text-anchor="middle" font-size="11">IMC</text>
+  <line x1="125" y1="221" x2="125" y2="232" stroke="#1a7f37" stroke-width="2" marker-end="url(#ag25)"></line>
+
+  <rect x="50" y="234" width="150" height="30" fill="#dafbe1" stroke="#1a7f37"></rect>
+  <text x="125" y="253" text-anchor="middle" font-size="11">DRAM</text>
+
+  <text x="125" y="290" text-anchor="middle" font-size="10" fill="#59636e">Every C variable</text>
+  <text x="125" y="304" text-anchor="middle" font-size="10" fill="#59636e">access</text>
+  <text x="125" y="320" text-anchor="middle" font-size="10" fill="#1a7f37" font-weight="500">CPU initiated</text>
+
+  <!-- Column 2: MMIO -->
+  <rect x="240" y="50" width="210" height="280" fill="#f5faff" stroke="#0969da" rx="3"></rect>
+  <text x="345" y="72" text-anchor="middle" font-size="11" font-weight="600" fill="#0969da">② MMIO</text>
+  <text x="345" y="88" text-anchor="middle" font-size="10" fill="#59636e">control plane</text>
+
+  <rect x="270" y="105" width="150" height="30" fill="#ddf4ff" stroke="#0969da"></rect>
+  <text x="345" y="124" text-anchor="middle" font-size="11">Core</text>
+  <line x1="345" y1="135" x2="345" y2="146" stroke="#0969da" stroke-width="2" marker-end="url(#ab25)"></line>
+
+  <rect x="270" y="148" width="150" height="30" fill="#ddf4ff" stroke="#0969da"></rect>
+  <text x="345" y="164" text-anchor="middle" font-size="11">L3 (uncached)</text>
+  <text x="345" y="175" text-anchor="middle" font-size="8" fill="#59636e">writes pass through</text>
+  <line x1="345" y1="178" x2="345" y2="189" stroke="#0969da" stroke-width="2" marker-end="url(#ab25)"></line>
+
+  <rect x="270" y="191" width="150" height="30" fill="#ddf4ff" stroke="#0969da"></rect>
+  <text x="345" y="210" text-anchor="middle" font-size="11">PCIe Root Complex</text>
+  <line x1="345" y1="221" x2="345" y2="232" stroke="#0969da" stroke-width="2" marker-end="url(#ab25)"></line>
+
+  <rect x="270" y="234" width="150" height="30" fill="#ddf4ff" stroke="#0969da"></rect>
+  <text x="345" y="253" text-anchor="middle" font-size="11">Device register</text>
+
+  <text x="345" y="290" text-anchor="middle" font-size="10" fill="#59636e">"NIC, send 64 KB</text>
+  <text x="345" y="304" text-anchor="middle" font-size="10" fill="#59636e">from addr 0x..."</text>
+  <text x="345" y="320" text-anchor="middle" font-size="10" fill="#0969da" font-weight="500">CPU initiated</text>
+
+  <!-- Column 3: DMA -->
+  <rect x="460" y="50" width="210" height="280" fill="#fffbeb" stroke="#9a6700" stroke-width="2" rx="3"></rect>
+  <text x="565" y="72" text-anchor="middle" font-size="11" font-weight="600" fill="#9a6700">③ DMA — the magic</text>
+  <text x="565" y="88" text-anchor="middle" font-size="10" fill="#59636e">data plane</text>
+
+  <rect x="490" y="105" width="150" height="30" fill="#fff8e6" stroke="#9a6700"></rect>
+  <text x="565" y="124" text-anchor="middle" font-size="11">Device</text>
+  <line x1="565" y1="135" x2="565" y2="146" stroke="#9a6700" stroke-width="2.5" marker-end="url(#ay25)"></line>
+
+  <rect x="490" y="148" width="150" height="30" fill="#fff8e6" stroke="#9a6700"></rect>
+  <text x="565" y="167" text-anchor="middle" font-size="11">PCIe Root Complex</text>
+  <line x1="565" y1="178" x2="565" y2="189" stroke="#9a6700" stroke-width="2.5" marker-end="url(#ay25)"></line>
+
+  <rect x="490" y="191" width="150" height="30" fill="#fff8e6" stroke="#9a6700"></rect>
+  <text x="565" y="207" text-anchor="middle" font-size="11">IOMMU</text>
+  <text x="565" y="218" text-anchor="middle" font-size="8" fill="#59636e">IOVA → phys</text>
+  <line x1="565" y1="222" x2="565" y2="232" stroke="#9a6700" stroke-width="2.5" marker-end="url(#ay25)"></line>
+
+  <rect x="490" y="234" width="150" height="30" fill="#fff8e6" stroke="#9a6700"></rect>
+  <text x="565" y="253" text-anchor="middle" font-size="11">IMC → DRAM</text>
+
+  <text x="565" y="290" text-anchor="middle" font-size="10" fill="#d1242f" font-weight="600">Cores NOT involved</text>
+  <text x="565" y="304" text-anchor="middle" font-size="10" fill="#59636e">bytes flow direct</text>
+  <text x="565" y="320" text-anchor="middle" font-size="10" fill="#9a6700" font-weight="500">Device initiated</text>
+
+  <!-- Column 4: MSI-X interrupt -->
+  <rect x="680" y="50" width="210" height="280" fill="#fff5f5" stroke="#d1242f" rx="3"></rect>
+  <text x="785" y="72" text-anchor="middle" font-size="11" font-weight="600" fill="#d1242f">④ MSI-X interrupt</text>
+  <text x="785" y="88" text-anchor="middle" font-size="10" fill="#59636e">completion notice</text>
+
+  <rect x="710" y="105" width="150" height="30" fill="#ffebe9" stroke="#d1242f"></rect>
+  <text x="785" y="124" text-anchor="middle" font-size="11">Device</text>
+  <line x1="785" y1="135" x2="785" y2="146" stroke="#d1242f" stroke-width="2" marker-end="url(#ar25)"></line>
+
+  <rect x="710" y="148" width="150" height="30" fill="#ffebe9" stroke="#d1242f"></rect>
+  <text x="785" y="167" text-anchor="middle" font-size="11">PCIe Root Complex</text>
+  <line x1="785" y1="178" x2="785" y2="189" stroke="#d1242f" stroke-width="2" marker-end="url(#ar25)"></line>
+
+  <rect x="710" y="191" width="150" height="30" fill="#ffebe9" stroke="#d1242f"></rect>
+  <text x="785" y="210" text-anchor="middle" font-size="11">Local APIC on Core</text>
+  <line x1="785" y1="221" x2="785" y2="232" stroke="#d1242f" stroke-width="2" marker-end="url(#ar25)"></line>
+
+  <rect x="710" y="234" width="150" height="30" fill="#ffebe9" stroke="#d1242f"></rect>
+  <text x="785" y="250" text-anchor="middle" font-size="11">IRQ handler</text>
+  <text x="785" y="261" text-anchor="middle" font-size="8" fill="#59636e">→ softirq → app</text>
+
+  <text x="785" y="290" text-anchor="middle" font-size="10" fill="#59636e">"packet ready</text>
+  <text x="785" y="304" text-anchor="middle" font-size="10" fill="#59636e">at memory addr X"</text>
+  <text x="785" y="320" text-anchor="middle" font-size="10" fill="#d1242f" font-weight="500">Device initiated</text>
+</svg>

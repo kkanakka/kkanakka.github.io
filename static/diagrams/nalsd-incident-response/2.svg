@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 980 360" xmlns="http://www.w3.org/2000/svg"><style>.lbl-title{font-family:'Inter',sans-serif;font-weight:700;font-size:11.5px;fill:#1f2328}
+.lbl-sub{font-family:'JetBrains Mono',monospace;font-size:9.5px;fill:#59636e}
+.lbl-meta{font-family:'JetBrains Mono',monospace;font-size:9px;fill:#818b98}</style>
+  <defs>
+    <marker id="arr-c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#59636e"></path>
+    </marker>
+  </defs>
+
+  <!-- Root cause -->
+  <g>
+    <circle cx="490" cy="50" r="34" fill="#ffebe9" stroke="#cf222e" stroke-width="2"></circle>
+    <text x="490" y="48" text-anchor="middle" class="lbl-title" style="font-size:11px" fill="#cf222e">Profile DB</text>
+    <text x="490" y="62" text-anchor="middle" class="lbl-meta" fill="#cf222e">CPU high</text>
+    <text x="490" y="95" text-anchor="middle" class="lbl-sub" fill="#cf222e">T+0s · root cause</text>
+  </g>
+
+  <!-- Depth 1 -->
+  <g>
+    <circle cx="220" cy="180" r="32" fill="#fff1e5" stroke="#fd8c73"></circle>
+    <text x="220" y="178" text-anchor="middle" class="lbl-title" style="font-size:11px" fill="#bc4c00">Profile API</text>
+    <text x="220" y="192" text-anchor="middle" class="lbl-meta" fill="#bc4c00">latency p99</text>
+    <text x="220" y="225" text-anchor="middle" class="lbl-sub" fill="#bc4c00">T+8s · depth 1</text>
+  </g>
+  <g>
+    <circle cx="400" cy="180" r="32" fill="#fff1e5" stroke="#fd8c73"></circle>
+    <text x="400" y="178" text-anchor="middle" class="lbl-title" style="font-size:11px" fill="#bc4c00">Search idx</text>
+    <text x="400" y="192" text-anchor="middle" class="lbl-meta" fill="#bc4c00">errors</text>
+    <text x="400" y="225" text-anchor="middle" class="lbl-sub" fill="#bc4c00">T+12s · depth 1</text>
+  </g>
+  <g>
+    <circle cx="580" cy="180" r="32" fill="#fff1e5" stroke="#fd8c73"></circle>
+    <text x="580" y="178" text-anchor="middle" class="lbl-title" style="font-size:11px" fill="#bc4c00">Connect svc</text>
+    <text x="580" y="192" text-anchor="middle" class="lbl-meta" fill="#bc4c00">timeouts</text>
+    <text x="580" y="225" text-anchor="middle" class="lbl-sub" fill="#bc4c00">T+18s · depth 1</text>
+  </g>
+  <g>
+    <circle cx="760" cy="180" r="32" fill="#fff1e5" stroke="#fd8c73"></circle>
+    <text x="760" y="178" text-anchor="middle" class="lbl-title" style="font-size:11px" fill="#bc4c00">Notif svc</text>
+    <text x="760" y="192" text-anchor="middle" class="lbl-meta" fill="#bc4c00">lag</text>
+    <text x="760" y="225" text-anchor="middle" class="lbl-sub" fill="#bc4c00">T+25s · depth 1</text>
+  </g>
+
+  <!-- Depth 2 -->
+  <g>
+    <circle cx="120" cy="290" r="28" fill="#fff8c5" stroke="#d4a72c"></circle>
+    <text x="120" y="288" text-anchor="middle" class="lbl-title" style="font-size:10px" fill="#9a6700">Feed UI</text>
+    <text x="120" y="300" text-anchor="middle" class="lbl-meta" fill="#9a6700">5xx</text>
+  </g>
+  <g>
+    <circle cx="320" cy="290" r="28" fill="#fff8c5" stroke="#d4a72c"></circle>
+    <text x="320" y="288" text-anchor="middle" class="lbl-title" style="font-size:10px" fill="#9a6700">Feed rank</text>
+    <text x="320" y="300" text-anchor="middle" class="lbl-meta" fill="#9a6700">errors</text>
+  </g>
+  <g>
+    <circle cx="520" cy="290" r="28" fill="#fff8c5" stroke="#d4a72c"></circle>
+    <text x="520" y="288" text-anchor="middle" class="lbl-title" style="font-size:10px" fill="#9a6700">Jobs API</text>
+    <text x="520" y="300" text-anchor="middle" class="lbl-meta" fill="#9a6700">errors</text>
+  </g>
+  <g>
+    <circle cx="720" cy="290" r="28" fill="#fff8c5" stroke="#d4a72c"></circle>
+    <text x="720" y="288" text-anchor="middle" class="lbl-title" style="font-size:10px" fill="#9a6700">Email send</text>
+    <text x="720" y="300" text-anchor="middle" class="lbl-meta" fill="#9a6700">delay</text>
+  </g>
+  <g>
+    <circle cx="880" cy="290" r="28" fill="#fff8c5" stroke="#d4a72c"></circle>
+    <text x="880" y="288" text-anchor="middle" class="lbl-title" style="font-size:10px" fill="#9a6700">Push svc</text>
+    <text x="880" y="300" text-anchor="middle" class="lbl-meta" fill="#9a6700">queue</text>
+  </g>
+
+  <!-- Edges -->
+  <line x1="465" y1="78" x2="245" y2="155" stroke="#cf222e" stroke-width="1.5"></line>
+  <line x1="480" y1="84" x2="408" y2="150" stroke="#cf222e" stroke-width="1.5"></line>
+  <line x1="500" y1="84" x2="571" y2="150" stroke="#cf222e" stroke-width="1.5"></line>
+  <line x1="515" y1="78" x2="735" y2="155" stroke="#cf222e" stroke-width="1.5"></line>
+
+  <line x1="208" y1="208" x2="135" y2="265" stroke="#bc4c00" stroke-width="1"></line>
+  <line x1="232" y1="208" x2="308" y2="265" stroke="#bc4c00" stroke-width="1"></line>
+  <line x1="588" y1="208" x2="535" y2="265" stroke="#bc4c00" stroke-width="1"></line>
+  <line x1="568" y1="208" x2="332" y2="265" stroke="#bc4c00" stroke-width="1"></line>
+  <line x1="748" y1="208" x2="735" y2="265" stroke="#bc4c00" stroke-width="1"></line>
+  <line x1="775" y1="208" x2="868" y2="265" stroke="#bc4c00" stroke-width="1"></line>
+
+  <text x="20" y="345" class="lbl-sub">Causality window: 60 s post-root-cause · BFS depth 2 · alerts in red box correlated as caused by Profile DB CPU</text>
+</svg>

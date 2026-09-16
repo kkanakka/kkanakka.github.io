@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 980 860" xmlns="http://www.w3.org/2000/svg"><style>.box-fill-blue{fill:#ddf4ff;stroke:#54aeff}
+.box-fill-green{fill:#dafbe1;stroke:#4ac26b}
+.box-fill-purple{fill:#fbefff;stroke:#c297ff}
+.box-fill-orange{fill:#fff1e5;stroke:#fd8c73}
+.box-fill-yellow{fill:#fff8c5;stroke:#d4a72c}
+.box-fill-gray{fill:#f6f8fa;stroke:#d0d7de}
+.lbl-title{font-family:'Inter',sans-serif;font-weight:700;font-size:11.5px;fill:#1f2328}
+.lbl-sub{font-family:'JetBrains Mono',monospace;font-size:9.5px;fill:#59636e}
+.lbl-meta{font-family:'JetBrains Mono',monospace;font-size:9px;fill:#818b98}
+.arrow{stroke:#59636e;stroke-width:1.3;fill:none;marker-end:url(#arr)}
+.arrow-dashed{stroke:#cf222e;stroke-width:1.2;fill:none;stroke-dasharray:4,3;marker-end:url(#arr-red)}
+.arrow-green{stroke:#1a7f37;stroke-width:1.5;fill:none;marker-end:url(#arr-green)}</style>
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#59636e"></path>
+    </marker>
+    <marker id="arr-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#cf222e"></path>
+    </marker>
+    <marker id="arr-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1a7f37"></path>
+    </marker>
+  </defs>
+
+  <!-- Top SLO ribbon -->
+  <text x="490" y="22" text-anchor="middle" class="lbl-title" style="font-size:13px">100M samples/s · ~1.3 B/sample · recent p99 &lt; 500ms · per-tenant cardinality quotas · stateful ingest / stateless query</text>
+
+  <!-- Step badges -->
+  <circle cx="155" cy="58" r="11" fill="#0a66c2"></circle>
+  <text x="155" y="62" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">1</text>
+  <circle cx="490" cy="58" r="11" fill="#0a66c2"></circle>
+  <text x="490" y="62" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">2</text>
+  <circle cx="490" cy="195" r="11" fill="#0a66c2"></circle>
+  <text x="490" y="199" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">3</text>
+  <circle cx="155" cy="335" r="11" fill="#0a66c2"></circle>
+  <text x="155" y="339" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">4</text>
+  <circle cx="820" cy="335" r="11" fill="#0a66c2"></circle>
+  <text x="820" y="339" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">5</text>
+  <circle cx="155" cy="490" r="11" fill="#0a66c2"></circle>
+  <text x="155" y="494" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">6</text>
+  <circle cx="490" cy="490" r="11" fill="#0a66c2"></circle>
+  <text x="490" y="494" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">7</text>
+  <circle cx="820" cy="490" r="11" fill="#0a66c2"></circle>
+  <text x="820" y="494" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">8</text>
+  <circle cx="320" cy="640" r="11" fill="#0a66c2"></circle>
+  <text x="320" y="644" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">9</text>
+  <circle cx="660" cy="640" r="11" fill="#0a66c2"></circle>
+  <text x="660" y="644" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">10</text>
+  <circle cx="490" cy="790" r="11" fill="#0a66c2"></circle>
+  <text x="490" y="794" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">11</text>
+
+  <!-- ============ ROW 1: Producers + Distributor ============ -->
+  <g>
+    <rect x="20" y="80" width="270" height="80" rx="6" class="box-fill-gray"></rect>
+    <text x="155" y="103" text-anchor="middle" class="lbl-title">Producers</text>
+    <text x="155" y="121" text-anchor="middle" class="lbl-sub">monitoring agents · remote-write</text>
+    <text x="155" y="137" text-anchor="middle" class="lbl-sub">Prom + custom exporters · batched</text>
+    <text x="155" y="155" text-anchor="middle" class="lbl-meta">10M samples/s/region · 500/batch typical</text>
+  </g>
+
+  <g>
+    <rect x="320" y="80" width="640" height="80" rx="6" class="box-fill-blue"></rect>
+    <text x="640" y="103" text-anchor="middle" class="lbl-title">Distributor (stateless front door)</text>
+    <text x="640" y="121" text-anchor="middle" class="lbl-sub">authn/z · cardinality check (HLL) · circuit breaker · consistent hash → ring</text>
+    <text x="640" y="137" text-anchor="middle" class="lbl-sub">returns ACK only when M-of-N ingester replicas durable</text>
+    <text x="640" y="155" text-anchor="middle" class="lbl-meta">30 nodes · 60k batches/s · p99 5 ms before fan-out</text>
+  </g>
+
+  <!-- ============ ROW 2: Ingester ring ============ -->
+  <rect x="20" y="220" width="940" height="100" rx="8" fill="#fafbfc" stroke="#eaeef2"></rect>
+  <text x="490" y="245" text-anchor="middle" class="lbl-title" style="font-size:13px">Ingester ring · consistent hash · replication N=3, ACK on M=2 quorum</text>
+
+  <g>
+    <rect x="40" y="260" width="140" height="55" rx="4" class="box-fill-orange"></rect>
+    <text x="110" y="278" text-anchor="middle" class="lbl-title">Ingester A</text>
+    <text x="110" y="293" text-anchor="middle" class="lbl-sub">2h head · WAL · NVMe</text>
+    <text x="110" y="307" text-anchor="middle" class="lbl-meta">head→Gorilla chunk</text>
+  </g>
+  <g>
+    <rect x="200" y="260" width="140" height="55" rx="4" class="box-fill-orange"></rect>
+    <text x="270" y="278" text-anchor="middle" class="lbl-title">Ingester B</text>
+    <text x="270" y="293" text-anchor="middle" class="lbl-sub">2h head · WAL · NVMe</text>
+    <text x="270" y="307" text-anchor="middle" class="lbl-meta">9 GB RAM working</text>
+  </g>
+  <g>
+    <rect x="360" y="260" width="140" height="55" rx="4" class="box-fill-orange"></rect>
+    <text x="430" y="278" text-anchor="middle" class="lbl-title">Ingester C</text>
+    <text x="430" y="293" text-anchor="middle" class="lbl-sub">2h head · WAL · NVMe</text>
+    <text x="430" y="307" text-anchor="middle" class="lbl-meta">chunk seal at 120 samples</text>
+  </g>
+  <text x="540" y="293" text-anchor="middle" class="lbl-title" style="font-size:18px">···</text>
+  <g>
+    <rect x="580" y="260" width="140" height="55" rx="4" class="box-fill-orange"></rect>
+    <text x="650" y="278" text-anchor="middle" class="lbl-title">Ingester N-1</text>
+    <text x="650" y="293" text-anchor="middle" class="lbl-sub">2h head · WAL · NVMe</text>
+    <text x="650" y="307" text-anchor="middle" class="lbl-meta">drain/handoff capable</text>
+  </g>
+  <g>
+    <rect x="740" y="260" width="180" height="55" rx="4" class="box-fill-orange"></rect>
+    <text x="830" y="278" text-anchor="middle" class="lbl-title">Ingester N (40 total)</text>
+    <text x="830" y="293" text-anchor="middle" class="lbl-sub">8 per region · 5 regions</text>
+    <text x="830" y="307" text-anchor="middle" class="lbl-meta">OOO window 1h</text>
+  </g>
+
+  <!-- ============ ROW 3: Storage layers ============ -->
+  <g>
+    <rect x="20" y="360" width="270" height="100" rx="6" class="box-fill-purple"></rect>
+    <text x="155" y="383" text-anchor="middle" class="lbl-title">Inverted index</text>
+    <text x="155" y="400" text-anchor="middle" class="lbl-sub">label → posting bitmap</text>
+    <text x="155" y="416" text-anchor="middle" class="lbl-sub">Roaring bitmaps · sharded</text>
+    <text x="155" y="433" text-anchor="middle" class="lbl-meta">30 nodes · 15 TB/region</text>
+    <text x="155" y="447" text-anchor="middle" class="lbl-meta">drives matcher pruning</text>
+  </g>
+
+  <g>
+    <rect x="320" y="360" width="280" height="100" rx="6" class="box-fill-green"></rect>
+    <text x="460" y="383" text-anchor="middle" class="lbl-title">Hot SSD (1-7d)</text>
+    <text x="460" y="400" text-anchor="middle" class="lbl-sub">Gorilla chunks · NVMe</text>
+    <text x="460" y="416" text-anchor="middle" class="lbl-sub">time-partitioned blocks</text>
+    <text x="460" y="433" text-anchor="middle" class="lbl-meta">25 nodes · 23 TB/region</text>
+    <text x="460" y="447" text-anchor="middle" class="lbl-meta">95% of queries land here</text>
+  </g>
+
+  <g>
+    <rect x="630" y="360" width="330" height="100" rx="6" class="box-fill-blue"></rect>
+    <text x="795" y="383" text-anchor="middle" class="lbl-title">Warm + cold object store</text>
+    <text x="795" y="400" text-anchor="middle" class="lbl-sub">S3 · full-res 7-30d · downsampled 30d+</text>
+    <text x="795" y="416" text-anchor="middle" class="lbl-sub">1min · 5min · 1hr rollups (deterministic)</text>
+    <text x="795" y="433" text-anchor="middle" class="lbl-meta">~120 TB across all regions</text>
+    <text x="795" y="447" text-anchor="middle" class="lbl-meta">11 nines durability · cheap</text>
+  </g>
+
+  <!-- ============ ROW 4: Compactor + Downsampler + Query gateway ============ -->
+  <g>
+    <rect x="20" y="515" width="270" height="100" rx="6" class="box-fill-yellow"></rect>
+    <text x="155" y="538" text-anchor="middle" class="lbl-title">Compactor</text>
+    <text x="155" y="555" text-anchor="middle" class="lbl-sub">merge overlapping chunks</text>
+    <text x="155" y="571" text-anchor="middle" class="lbl-sub">dedup replicas · re-encode</text>
+    <text x="155" y="588" text-anchor="middle" class="lbl-meta">20 nodes · idempotent</text>
+    <text x="155" y="603" text-anchor="middle" class="lbl-meta">publishes immutable blocks → warm</text>
+  </g>
+
+  <g>
+    <rect x="320" y="515" width="280" height="100" rx="6" class="box-fill-yellow"></rect>
+    <text x="460" y="538" text-anchor="middle" class="lbl-title">Downsampler</text>
+    <text x="460" y="555" text-anchor="middle" class="lbl-sub">raw → 1min → 5min → 1hr</text>
+    <text x="460" y="571" text-anchor="middle" class="lbl-sub">deterministic · idempotent</text>
+    <text x="460" y="588" text-anchor="middle" class="lbl-meta">15 nodes · checkpoint-replayable</text>
+    <text x="460" y="603" text-anchor="middle" class="lbl-meta">≈6× reduction per hop</text>
+  </g>
+
+  <g>
+    <rect x="630" y="515" width="330" height="100" rx="6" class="box-fill-blue"></rect>
+    <text x="795" y="538" text-anchor="middle" class="lbl-title">Query gateway</text>
+    <text x="795" y="555" text-anchor="middle" class="lbl-sub">authn/z · per-tenant rate limit · cost est</text>
+    <text x="795" y="571" text-anchor="middle" class="lbl-sub">result cache (30s TTL) · query class priority</text>
+    <text x="795" y="588" text-anchor="middle" class="lbl-meta">20 nodes · alert &gt; dashboard &gt; batch</text>
+    <text x="795" y="603" text-anchor="middle" class="lbl-meta">PromQL AST entry point</text>
+  </g>
+
+  <!-- ============ ROW 5: Planner + Queriers ============ -->
+  <g>
+    <rect x="180" y="665" width="280" height="100" rx="6" class="box-fill-purple"></rect>
+    <text x="320" y="688" text-anchor="middle" class="lbl-title">Query planner</text>
+    <text x="320" y="705" text-anchor="middle" class="lbl-sub">PromQL AST rewrite</text>
+    <text x="320" y="721" text-anchor="middle" class="lbl-sub">tier selection · pushdown</text>
+    <text x="320" y="738" text-anchor="middle" class="lbl-meta">cardinality estimation</text>
+    <text x="320" y="753" text-anchor="middle" class="lbl-meta">fail-fast on absurd queries</text>
+  </g>
+
+  <g>
+    <rect x="520" y="665" width="280" height="100" rx="6" class="box-fill-orange"></rect>
+    <text x="660" y="688" text-anchor="middle" class="lbl-title">Querier pool (stateless)</text>
+    <text x="660" y="705" text-anchor="middle" class="lbl-sub">streaming evaluation</text>
+    <text x="660" y="721" text-anchor="middle" class="lbl-sub">per-tenant quotas · partial results</text>
+    <text x="660" y="738" text-anchor="middle" class="lbl-meta">60 nodes · pulls from all tiers</text>
+    <text x="660" y="753" text-anchor="middle" class="lbl-meta">retry-safe</text>
+  </g>
+
+  <!-- ============ ROW 6: Consumers ============ -->
+  <g>
+    <rect x="320" y="810" width="340" height="50" rx="6" class="box-fill-green"></rect>
+    <text x="490" y="828" text-anchor="middle" class="lbl-title">Consumers — dashboards · alert eval · BI</text>
+    <text x="490" y="844" text-anchor="middle" class="lbl-sub">Grafana · alert ruler · capacity planning</text>
+  </g>
+
+  <!-- ============ ARROWS ============ -->
+  <path d="M290,120 L320,120" class="arrow"></path>
+  <path d="M490,160 L490,220" class="arrow"></path>
+  <path d="M490,320 L155,360" class="arrow" stroke-dasharray="3,2"></path>
+  <text x="280" y="345" class="lbl-meta">index updates</text>
+  <path d="M490,320 L460,360" class="arrow"></path>
+  <path d="M490,320 L795,360" class="arrow" stroke-dasharray="3,2"></path>
+  <text x="700" y="345" class="lbl-meta">async compact → warm</text>
+  <path d="M460,460 L155,515" class="arrow"></path>
+  <path d="M460,460 L460,515" class="arrow"></path>
+  <path d="M460,460 L795,515" class="arrow"></path>
+  <path d="M795,615 L660,665" class="arrow"></path>
+  <path d="M795,615 L320,665" class="arrow"></path>
+  <path d="M460,765 L490,810" class="arrow"></path>
+  <path d="M660,765 L490,810" class="arrow"></path>
+
+  <!-- Query reads from tiers (dashed cyan-ish) -->
+  <path d="M660,665 L155,460" class="arrow" stroke-dasharray="3,2" stroke-opacity="0.5"></path>
+  <path d="M660,665 L460,460" class="arrow" stroke-dasharray="3,2" stroke-opacity="0.5"></path>
+  <path d="M660,665 L795,460" class="arrow" stroke-dasharray="3,2" stroke-opacity="0.5"></path>
+  <text x="600" y="565" class="lbl-meta">query reads</text>
+</svg>

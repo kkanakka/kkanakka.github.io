@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="100%" height="400" style="margin:12px 0;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400">
+    <!-- Background -->
+    <rect width="100%" height="100%" fill="#fafafa" stroke="#e0e0e0"></rect>
+    
+    <!-- Control Plane -->
+    <rect x="50" y="50" width="150" height="80" fill="#e3f2fd" stroke="#1976d2" stroke-width="2" rx="8"></rect>
+    <text x="125" y="75" text-anchor="middle" font-size="12" font-weight="bold" fill="#1976d2">Control Plane</text>
+    <text x="125" y="95" text-anchor="middle" font-size="10" fill="#1976d2">UI + API Server</text>
+    <text x="125" y="110" text-anchor="middle" font-size="10" fill="#1976d2">Flag CRUD + Rules</text>
+    
+    <!-- Metadata Store -->
+    <rect x="50" y="160" width="150" height="60" fill="#e8f5e9" stroke="#388e3c" stroke-width="2" rx="8"></rect>
+    <text x="125" y="180" text-anchor="middle" font-size="12" font-weight="bold" fill="#388e3c">Metadata Store</text>
+    <text x="125" y="200" text-anchor="middle" font-size="10" fill="#388e3c">Spanner/etcd</text>
+    
+    <!-- Distribution Layer -->
+    <rect x="250" y="50" width="150" height="170" fill="#fff3e0" stroke="#f57c00" stroke-width="2" rx="8"></rect>
+    <text x="325" y="75" text-anchor="middle" font-size="12" font-weight="bold" fill="#f57c00">Distribution Plane</text>
+    <text x="325" y="95" text-anchor="middle" font-size="10" fill="#f57c00">Pub/Sub Streaming</text>
+    <text x="325" y="115" text-anchor="middle" font-size="10" fill="#f57c00">Delta Updates Only</text>
+    <text x="325" y="135" text-anchor="middle" font-size="10" fill="#f57c00">Per-Region Fanout</text>
+    
+    <!-- Edge Evaluators -->
+    <rect x="450" y="30" width="120" height="60" fill="#f3e5f5" stroke="#7b1fa2" stroke-width="2" rx="8"></rect>
+    <text x="510" y="50" text-anchor="middle" font-size="11" font-weight="bold" fill="#7b1fa2">Edge Cache</text>
+    <text x="510" y="65" text-anchor="middle" font-size="9" fill="#7b1fa2">Service A</text>
+    <text x="510" y="78" text-anchor="middle" font-size="9" fill="#7b1fa2">≤2ms eval</text>
+    
+    <rect x="450" y="100" width="120" height="60" fill="#f3e5f5" stroke="#7b1fa2" stroke-width="2" rx="8"></rect>
+    <text x="510" y="120" text-anchor="middle" font-size="11" font-weight="bold" fill="#7b1fa2">Edge Cache</text>
+    <text x="510" y="135" text-anchor="middle" font-size="9" fill="#7b1fa2">Service B</text>
+    <text x="510" y="148" text-anchor="middle" font-size="9" fill="#7b1fa2">In-memory</text>
+    
+    <rect x="450" y="170" width="120" height="60" fill="#f3e5f5" stroke="#7b1fa2" stroke-width="2" rx="8"></rect>
+    <text x="510" y="190" text-anchor="middle" font-size="11" font-weight="bold" fill="#7b1fa2">Edge Cache</text>
+    <text x="510" y="205" text-anchor="middle" font-size="9" fill="#7b1fa2">Service C</text>
+    <text x="510" y="218" text-anchor="middle" font-size="9" fill="#7b1fa2">Hash-based</text>
+    
+    <!-- Audit Service -->
+    <rect x="50" y="250" width="150" height="60" fill="#fce4ec" stroke="#c2185b" stroke-width="2" rx="8"></rect>
+    <text x="125" y="270" text-anchor="middle" font-size="12" font-weight="bold" fill="#c2185b">Audit Service</text>
+    <text x="125" y="290" text-anchor="middle" font-size="10" fill="#c2185b">Immutable Log</text>
+    
+    <!-- Arrows -->
+    <defs>
+      <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+        <polygon points="0 0, 10 3.5, 0 7" fill="#666"></polygon>
+      </marker>
+    </defs>
+    
+    <!-- Control -> Store -->
+    <line x1="125" y1="130" x2="125" y2="160" stroke="#666" stroke-width="2" marker-end="url(#arrowhead)"></line>
+    
+    <!-- Control -> Distribution -->
+    <line x1="200" y1="90" x2="250" y2="90" stroke="#666" stroke-width="2" marker-end="url(#arrowhead)"></line>
+    
+    <!-- Distribution -> Edges -->
+    <line x1="400" y1="80" x2="450" y2="60" stroke="#666" stroke-width="2" marker-end="url(#arrowhead)"></line>
+    <line x1="400" y1="120" x2="450" y2="130" stroke="#666" stroke-width="2" marker-end="url(#arrowhead)"></line>
+    <line x1="400" y1="160" x2="450" y2="200" stroke="#666" stroke-width="2" marker-end="url(#arrowhead)"></line>
+    
+    <!-- Control -> Audit -->
+    <line x1="125" y1="130" x2="125" y2="250" stroke="#666" stroke-width="2" marker-end="url(#arrowhead)" stroke-dasharray="5,5"></line>
+    
+    <!-- Labels -->
+    <text x="225" y="85" font-size="9" fill="#666">updates</text>
+    <text x="425" y="75" font-size="9" fill="#666">stream</text>
+    <text x="135" y="145" font-size="9" fill="#666">persist</text>
+    <text x="135" y="240" font-size="9" fill="#666">audit</text>
+  </svg>

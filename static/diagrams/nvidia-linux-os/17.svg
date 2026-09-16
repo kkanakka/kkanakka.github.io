@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 900 300" xmlns="http://www.w3.org/2000/svg" style="width:100%;">
+        <!-- Step 1 -->
+        <rect x="20" y="20" width="250" height="70" rx="8" fill="#f8f9fa" stroke="#202122"></rect>
+        <text x="145" y="40" text-anchor="middle" fill="#202122" font-size="12" font-weight="700">1. Is it truly frozen?</text>
+        <text x="145" y="58" text-anchor="middle" fill="#54595d" font-size="11">Try SysRq keys: Alt+SysRq+W (tasks)</text>
+        <text x="145" y="70" text-anchor="middle" fill="#54595d" font-size="11">Check if NMI watchdog triggered</text>
+        <text x="145" y="82" text-anchor="middle" fill="#54595d" font-size="11">Remote IPMI/BMC console access</text>
+        <text x="295" y="55" fill="#72777d" font-size="14">➜</text>
+        <!-- Step 2 -->
+        <rect x="310" y="20" width="250" height="70" rx="8" fill="#f8f9fa" stroke="#202122"></rect>
+        <text x="435" y="40" text-anchor="middle" fill="#202122" font-size="12" font-weight="700">2. Capture state (if possible)</text>
+        <text x="435" y="58" text-anchor="middle" fill="#54595d" font-size="11">SysRq+T: dump all task states</text>
+        <text x="435" y="70" text-anchor="middle" fill="#54595d" font-size="11">SysRq+M: memory info</text>
+        <text x="435" y="82" text-anchor="middle" fill="#54595d" font-size="11">SysRq+L: backtrace all CPUs</text>
+        <text x="585" y="55" fill="#72777d" font-size="14">➜</text>
+        <!-- Step 3 -->
+        <rect x="600" y="20" width="280" height="70" rx="8" fill="#f5f5f5" stroke="#222"></rect>
+        <text x="740" y="40" text-anchor="middle" fill="#222" font-size="12" font-weight="700">3. Crash dump (kdump)</text>
+        <text x="740" y="58" text-anchor="middle" fill="#54595d" font-size="11">SysRq+C: trigger crash dump</text>
+        <text x="740" y="70" text-anchor="middle" fill="#54595d" font-size="11">kdump captures vmcore to /var/crash</text>
+        <text x="740" y="82" text-anchor="middle" fill="#54595d" font-size="11">Analyze with crash tool post-reboot</text>
+        <!-- Post-mortem -->
+        <rect x="20" y="120" width="860" height="80" rx="10" fill="#f8f9fa" stroke="#222"></rect>
+        <text x="450" y="142" text-anchor="middle" fill="#222" font-size="13" font-weight="700">4. Post-Mortem Analysis</text>
+        <rect x="40" y="150" width="160" height="35" rx="4" fill="#f8f9fa" stroke="#a2a9b1"></rect>
+        <text x="120" y="172" text-anchor="middle" fill="#54595d" font-size="11">crash vmcore vmlinux</text>
+        <rect x="215" y="150" width="160" height="35" rx="4" fill="#f8f9fa" stroke="#a2a9b1"></rect>
+        <text x="295" y="172" text-anchor="middle" fill="#54595d" font-size="11">dmesg from serial console</text>
+        <rect x="390" y="150" width="160" height="35" rx="4" fill="#f8f9fa" stroke="#a2a9b1"></rect>
+        <text x="470" y="172" text-anchor="middle" fill="#54595d" font-size="11">/var/log/mcelog (HW errors)</text>
+        <rect x="565" y="150" width="160" height="35" rx="4" fill="#f8f9fa" stroke="#a2a9b1"></rect>
+        <text x="645" y="172" text-anchor="middle" fill="#54595d" font-size="11">perf record --call-graph</text>
+        <rect x="740" y="150" width="120" height="35" rx="4" fill="#f8f9fa" stroke="#a2a9b1"></rect>
+        <text x="800" y="172" text-anchor="middle" fill="#54595d" font-size="11">eBPF tracing</text>
+        <!-- Common causes -->
+        <rect x="20" y="220" width="860" height="65" rx="8" fill="#f0f0f0" stroke="var(--border)"></rect>
+        <text x="450" y="242" text-anchor="middle" fill="#202122" font-size="13" font-weight="700">Common Root Causes</text>
+        <text x="120" y="268" text-anchor="middle" fill="#202122" font-size="11">Kernel panic (null deref)</text>
+        <text x="300" y="268" text-anchor="middle" fill="#202122" font-size="11">Deadlock (spinlock)</text>
+        <text x="450" y="268" text-anchor="middle" fill="#222" font-size="11">OOM + no swap</text>
+        <text x="600" y="268" text-anchor="middle" fill="#222" font-size="11">NMI watchdog (CPU stuck)</text>
+        <text x="780" y="268" text-anchor="middle" fill="#222" font-size="11">Hardware (ECC/NMI)</text>
+    </svg>

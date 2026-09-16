@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 820 480" xmlns="http://www.w3.org/2000/svg" style="max-width:800px;">
+      <defs><marker id="aW" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#546e7a"></polygon></marker>
+      <filter id="sh3" x="-3%" y="-3%" width="106%" height="110%"><fedropshadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.06"></fedropshadow></filter></defs>
+
+      <!-- Strategy 1: Write-Through -->
+      <rect x="10" y="10" width="260" height="460" rx="12" fill="#e3f2fd" stroke="#1565c0" stroke-width="2"></rect>
+      <text x="140" y="38" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#0d47a1">Write-Through</text>
+      <text x="140" y="55" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#787774">Write to cache AND DB synchronously</text>
+
+      <rect x="30" y="70" width="220" height="130" rx="8" fill="#fff" stroke="#90caf9" stroke-width="1"></rect>
+      <text x="45" y="88" font-family="Inter,sans-serif" font-size="9" fill="#37352f">1. App writes to Cache</text>
+      <text x="45" y="104" font-family="Inter,sans-serif" font-size="9" fill="#37352f">2. Cache writes to DB</text>
+      <text x="45" y="120" font-family="Inter,sans-serif" font-size="9" fill="#37352f">3. Both succeed → ACK client</text>
+      <text x="45" y="145" font-family="Inter,sans-serif" font-size="9" fill="#2e7d32">✓ Cache always consistent</text>
+      <text x="45" y="161" font-family="Inter,sans-serif" font-size="9" fill="#2e7d32">✓ No stale reads ever</text>
+      <text x="45" y="180" font-family="Inter,sans-serif" font-size="9" fill="#c62828">✗ Higher write latency (2 writes)</text>
+      <text x="45" y="196" font-family="Inter,sans-serif" font-size="9" fill="#c62828">✗ Cache stores data nobody reads</text>
+
+      <rect x="30" y="210" width="220" height="55" rx="6" fill="#bbdefb"></rect>
+      <text x="140" y="232" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#0d47a1">Used by:</text>
+      <text x="45" y="250" font-family="Inter,sans-serif" font-size="9" fill="#37352f">Facebook (memcache + MySQL)</text>
+      <text x="45" y="260" font-family="Inter,sans-serif" font-size="9" fill="#37352f">DynamoDB Accelerator (DAX)</text>
+
+      <!-- Strategy 2: Write-Behind (Write-Back) -->
+      <rect x="280" y="10" width="260" height="460" rx="12" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"></rect>
+      <text x="410" y="38" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#2e7d32">Write-Behind (Write-Back)</text>
+      <text x="410" y="55" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#787774">Write to cache, async flush to DB</text>
+
+      <rect x="300" y="70" width="220" height="130" rx="8" fill="#fff" stroke="#a5d6a7" stroke-width="1"></rect>
+      <text x="315" y="88" font-family="Inter,sans-serif" font-size="9" fill="#37352f">1. App writes to Cache only</text>
+      <text x="315" y="104" font-family="Inter,sans-serif" font-size="9" fill="#37352f">2. ACK client immediately</text>
+      <text x="315" y="120" font-family="Inter,sans-serif" font-size="9" fill="#37352f">3. Cache async flushes to DB</text>
+      <text x="315" y="136" font-family="Inter,sans-serif" font-size="9" fill="#37352f">   (batched, every N seconds)</text>
+      <text x="315" y="161" font-family="Inter,sans-serif" font-size="9" fill="#2e7d32">✓ Fastest writes (only cache)</text>
+      <text x="315" y="177" font-family="Inter,sans-serif" font-size="9" fill="#2e7d32">✓ Batch DB writes (efficient)</text>
+      <text x="315" y="196" font-family="Inter,sans-serif" font-size="9" fill="#c62828">✗ Data loss risk if cache crashes</text>
+      <text x="315" y="212" font-family="Inter,sans-serif" font-size="9" fill="#c62828">   before flush!</text>
+
+      <rect x="300" y="225" width="220" height="40" rx="6" fill="#c8e6c9"></rect>
+      <text x="410" y="247" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#2e7d32">Used by: CPU caches, Redis AOF</text>
+      <text x="410" y="260" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#37352f">Write-heavy analytics counters</text>
+
+      <!-- Strategy 3: Write-Around + Invalidate -->
+      <rect x="550" y="10" width="260" height="460" rx="12" fill="#fff3e0" stroke="#e65100" stroke-width="2"></rect>
+      <text x="680" y="38" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#e65100">Write-Around + Invalidate</text>
+      <text x="680" y="55" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#787774">Write to DB, DELETE from cache</text>
+
+      <rect x="570" y="70" width="220" height="145" rx="8" fill="#fff" stroke="#ffcc80" stroke-width="1"></rect>
+      <text x="585" y="88" font-family="Inter,sans-serif" font-size="9" fill="#37352f">1. App writes to DB directly</text>
+      <text x="585" y="104" font-family="Inter,sans-serif" font-size="9" fill="#37352f">2. App DELETEs key from cache</text>
+      <text x="585" y="120" font-family="Inter,sans-serif" font-size="9" fill="#37352f">3. Next read = cache miss →</text>
+      <text x="590" y="136" font-family="Inter,sans-serif" font-size="9" fill="#37352f">   fetches fresh data from DB</text>
+      <text x="585" y="161" font-family="Inter,sans-serif" font-size="9" fill="#2e7d32">✓ Cache only stores read data</text>
+      <text x="585" y="177" font-family="Inter,sans-serif" font-size="9" fill="#2e7d32">✓ Simple, hard to get wrong</text>
+      <text x="585" y="196" font-family="Inter,sans-serif" font-size="9" fill="#c62828">✗ First read after write = slow</text>
+      <text x="585" y="212" font-family="Inter,sans-serif" font-size="9" fill="#c62828">   (cache miss penalty)</text>
+
+      <rect x="570" y="225" width="220" height="55" rx="6" fill="#ffcc80"></rect>
+      <text x="680" y="247" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#e65100">Used by:</text>
+      <text x="585" y="265" font-family="Inter,sans-serif" font-size="9" fill="#37352f">LinkedIn Espresso (write → invalidate</text>
+      <text x="585" y="275" font-family="Inter,sans-serif" font-size="9" fill="#37352f">L1 OHC + L2 Couchbase)</text>
+
+      <!-- Bottom: Decision -->
+      <rect x="30" y="300" width="220" height="65" rx="8" fill="#f7f6f3" stroke="#e3e2de" stroke-width="1"></rect>
+      <text x="140" y="320" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#37352f">Best for: read-heavy data that</text>
+      <text x="140" y="335" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#37352f">MUST be consistent (sessions,</text>
+      <text x="140" y="350" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#37352f">user profiles)</text>
+
+      <rect x="300" y="300" width="220" height="65" rx="8" fill="#f7f6f3" stroke="#e3e2de" stroke-width="1"></rect>
+      <text x="410" y="320" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#37352f">Best for: write-heavy data where</text>
+      <text x="410" y="335" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#37352f">brief inconsistency is OK (analytics</text>
+      <text x="410" y="350" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#37352f">counters, leaderboards)</text>
+
+      <rect x="570" y="300" width="220" height="65" rx="8" fill="#f7f6f3" stroke="#e3e2de" stroke-width="1"></rect>
+      <text x="680" y="320" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#37352f">Best for: general purpose, simplest</text>
+      <text x="680" y="335" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#37352f">to reason about. Accept one slow</text>
+      <text x="680" y="350" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#37352f">read after each write.</text>
+    </svg>

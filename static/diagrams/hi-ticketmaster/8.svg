@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 800 260" xmlns="http://www.w3.org/2000/svg"><style>.sb-b{fill:#ddf4ff;stroke:var(--accent);stroke-width:1}
+.sb-g{fill:#dafbe1;stroke:var(--success);stroke-width:1}
+.sb-r{fill:#ffebe9;stroke:var(--danger);stroke-width:1}
+.sb-y{fill:#fff8e6;stroke:var(--attention);stroke-width:1}
+.sb-p{fill:#fbefff;stroke:var(--done);stroke-width:1}
+.sl{font-family:var(--sans);font-size:12px;font-weight:600;fill:var(--fg)}
+.ss{font-family:var(--mono);font-size:10px;fill:var(--fg-muted)}</style>
+      <rect class="sb-g" x="20" y="10" width="760" height="40" rx="6"></rect>
+      <text class="sl" x="34" y="28">L1 — Browser cache</text>
+      <text class="ss" x="34" y="42">images, JS, CSS, fonts. Cache-Control: max-age=86400. Zero requests to us.</text>
+
+      <rect class="sb-b" x="20" y="60" width="760" height="40" rx="6"></rect>
+      <text class="sl" x="34" y="78">L2 — LinkedIn CDN</text>
+      <text class="ss" x="34" y="92">event page HTML + venue seat_map. stale-while-revalidate. Absorbs 95% of read traffic.</text>
+
+      <rect class="sb-y" x="20" y="110" width="760" height="40" rx="6"></rect>
+      <text class="sl" x="34" y="128">L3 — Couchbase (origin-side cache)</text>
+      <text class="ss" x="34" y="142">event details, performer bios. Read-through. TTL: 5 min. Invalidated on update.</text>
+
+      <rect class="sb-p" x="20" y="160" width="760" height="40" rx="6"></rect>
+      <text class="sl" x="34" y="178">L4 — Espresso read replicas</text>
+      <text class="ss" x="34" y="192">Event Service reads from replicas. Lag &lt; 100ms acceptable. Writes go to primary.</text>
+
+      <rect class="sb-r" x="20" y="210" width="760" height="40" rx="6"></rect>
+      <text class="sl" x="34" y="228">L5 — Espresso primary</text>
+      <text class="ss" x="34" y="242">writes only (bookings) + cache miss fallthroughs. Should see &lt; 1% of total traffic.</text>
+    </svg>

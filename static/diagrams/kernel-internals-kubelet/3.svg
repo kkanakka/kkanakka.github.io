@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 900 340" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arrok" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1a7f37"></path>
+    </marker>
+  </defs>
+
+  <text x="20" y="22" font-size="12" font-weight="600">B wakes up · higher priority · same kernel · outcome depends on where A is</text>
+
+  <!-- LEFT CARD: user mode, gate open -->
+  <rect x="20" y="50" width="420" height="270" fill="#f6fdf9" stroke="#1a7f37" stroke-width="1.5" rx="4"></rect>
+  <text x="34" y="74" font-size="13" font-weight="600" fill="#1a7f37">A in user mode · gate OPEN</text>
+
+  <rect x="50" y="100" width="160" height="80" fill="#dafbe1" stroke="#1a7f37"></rect>
+  <text x="130" y="130" text-anchor="middle" font-size="12" font-weight="600">Task A</text>
+  <text x="130" y="150" text-anchor="middle" font-size="10" fill="#59636e">running user code</text>
+  <text x="130" y="167" text-anchor="middle" font-size="10" fill="#1a7f37">on CPU</text>
+
+  <rect x="260" y="100" width="160" height="80" fill="#fff" stroke="#1a7f37" stroke-dasharray="3,3"></rect>
+  <text x="340" y="130" text-anchor="middle" font-size="12" font-weight="600">Task B</text>
+  <text x="340" y="150" text-anchor="middle" font-size="10" fill="#59636e">wakes, higher prio</text>
+  <text x="340" y="167" text-anchor="middle" font-size="10" fill="#59636e">runnable</text>
+
+  <!-- B preempts A curved arrow -->
+  <path d="M 340 180 Q 340 230 130 230 Q 130 200 130 185" stroke="#1a7f37" stroke-width="2" fill="none" marker-end="url(#arrok)"></path>
+
+  <text x="230" y="265" text-anchor="middle" font-size="11" fill="#1a7f37" font-weight="500">B takes the CPU at the next tick / IRQ exit</text>
+  <text x="230" y="283" text-anchor="middle" font-size="10" fill="#59636e">latency: microseconds</text>
+  <text x="230" y="303" text-anchor="middle" font-size="10" fill="#59636e">priority wins · works as expected</text>
+
+  <!-- RIGHT CARD: kernel mode, gate closed -->
+  <rect x="460" y="50" width="420" height="270" fill="#fff5f5" stroke="#d1242f" stroke-width="1.5" rx="4"></rect>
+  <text x="474" y="74" font-size="13" font-weight="600" fill="#d1242f">A in kernel mode · PREEMPT_NONE · gate CLOSED</text>
+
+  <rect x="490" y="100" width="160" height="80" fill="#ffebe9" stroke="#d1242f"></rect>
+  <text x="570" y="130" text-anchor="middle" font-size="12" font-weight="600">Task A</text>
+  <text x="570" y="150" text-anchor="middle" font-size="10" fill="#59636e">inside a syscall</text>
+  <text x="570" y="167" text-anchor="middle" font-size="10" fill="#d1242f">on CPU · in kernel</text>
+
+  <rect x="700" y="100" width="160" height="80" fill="#fff" stroke="#d1242f" stroke-dasharray="3,3"></rect>
+  <text x="780" y="130" text-anchor="middle" font-size="12" font-weight="600">Task B</text>
+  <text x="780" y="150" text-anchor="middle" font-size="10" fill="#59636e">wakes, FIFO prio 99</text>
+  <text x="780" y="167" text-anchor="middle" font-size="10" fill="#d1242f">WAITS</text>
+
+  <!-- gate -->
+  <line x1="673" y1="195" x2="673" y2="240" stroke="#d1242f" stroke-width="4"></line>
+  <text x="685" y="222" font-size="10" fill="#d1242f" font-weight="600">GATE</text>
+
+  <!-- blocked arrow -->
+  <path d="M 780 180 Q 780 220 695 220" stroke="#d1242f" stroke-width="2" stroke-dasharray="5,3" fill="none"></path>
+  <circle cx="695" cy="220" r="3" fill="#d1242f"></circle>
+
+  <text x="670" y="265" text-anchor="middle" font-size="11" fill="#d1242f" font-weight="500">A finishes the syscall first · B cannot break in</text>
+  <text x="670" y="283" text-anchor="middle" font-size="10" fill="#59636e">latency: whole syscall — could be many ms</text>
+  <text x="670" y="303" text-anchor="middle" font-size="10" fill="#59636e">escape hatch: hardware IRQs still fire</text>
+</svg>

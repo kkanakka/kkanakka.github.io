@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 980 320" xmlns="http://www.w3.org/2000/svg"><style>.box-fill-blue{fill:#ddf4ff;stroke:#54aeff}
+.box-fill-green{fill:#dafbe1;stroke:#4ac26b}
+.box-fill-orange{fill:#fff1e5;stroke:#fd8c73}
+.box-fill-yellow{fill:#fff8c5;stroke:#d4a72c}
+.lbl-title{font-family:'Inter',sans-serif;font-weight:700;font-size:11.5px;fill:#1f2328}
+.lbl-sub{font-family:'JetBrains Mono',monospace;font-size:9.5px;fill:#59636e}
+.lbl-meta{font-family:'JetBrains Mono',monospace;font-size:9px;fill:#818b98}
+.arrow{stroke:#59636e;stroke-width:1.3;fill:none;marker-end:url(#arr)}
+.arrow-dashed{stroke:#cf222e;stroke-width:1.2;fill:none;stroke-dasharray:4,3;marker-end:url(#arr-red)}
+.arrow-green{stroke:#1a7f37;stroke-width:1.5;fill:none;marker-end:url(#arr-green)}</style>
+  <defs>
+    <marker id="arr3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#59636e"></path>
+    </marker>
+  </defs>
+
+  <!-- 7 stage pipeline -->
+  <g>
+    <rect x="20" y="120" width="120" height="100" rx="6" class="box-fill-yellow"></rect>
+    <text x="80" y="140" text-anchor="middle" class="lbl-title">1 · Edge</text>
+    <text x="80" y="154" text-anchor="middle" class="lbl-title">buffer</text>
+    <text x="80" y="172" text-anchor="middle" class="lbl-sub">5s window OR</text>
+    <text x="80" y="186" text-anchor="middle" class="lbl-sub">1k logs · gzip</text>
+    <text x="80" y="208" text-anchor="middle" class="lbl-meta">budget: 5 s</text>
+  </g>
+  <g>
+    <rect x="155" y="120" width="120" height="100" rx="6" class="box-fill-blue"></rect>
+    <text x="215" y="140" text-anchor="middle" class="lbl-title">2 · Ingest</text>
+    <text x="215" y="154" text-anchor="middle" class="lbl-title">gateway</text>
+    <text x="215" y="172" text-anchor="middle" class="lbl-sub">gunzip · schema</text>
+    <text x="215" y="186" text-anchor="middle" class="lbl-sub">tenant quota</text>
+    <text x="215" y="208" text-anchor="middle" class="lbl-meta">budget: 0.5 s</text>
+  </g>
+  <g>
+    <rect x="290" y="120" width="120" height="100" rx="6" class="box-fill-green"></rect>
+    <text x="350" y="140" text-anchor="middle" class="lbl-title">3 · Kafka</text>
+    <text x="350" y="154" text-anchor="middle" class="lbl-title">durable</text>
+    <text x="350" y="172" text-anchor="middle" class="lbl-sub">3× replicated</text>
+    <text x="350" y="186" text-anchor="middle" class="lbl-sub">producer ACK</text>
+    <text x="350" y="208" text-anchor="middle" class="lbl-meta">budget: 2 s</text>
+  </g>
+  <g>
+    <rect x="425" y="120" width="120" height="100" rx="6" class="box-fill-orange"></rect>
+    <text x="485" y="140" text-anchor="middle" class="lbl-title">4 · Indexer</text>
+    <text x="485" y="154" text-anchor="middle" class="lbl-title">parse</text>
+    <text x="485" y="172" text-anchor="middle" class="lbl-sub">simdjson</text>
+    <text x="485" y="186" text-anchor="middle" class="lbl-sub">tokenize fields</text>
+    <text x="485" y="208" text-anchor="middle" class="lbl-meta">budget: 1 s</text>
+  </g>
+  <g>
+    <rect x="560" y="120" width="120" height="100" rx="6" class="box-fill-orange"></rect>
+    <text x="620" y="140" text-anchor="middle" class="lbl-title">5 · Index</text>
+    <text x="620" y="154" text-anchor="middle" class="lbl-title">build</text>
+    <text x="620" y="172" text-anchor="middle" class="lbl-sub">inverted idx</text>
+    <text x="620" y="186" text-anchor="middle" class="lbl-sub">field stores</text>
+    <text x="620" y="208" text-anchor="middle" class="lbl-meta">budget: 2 s</text>
+  </g>
+  <g>
+    <rect x="695" y="120" width="120" height="100" rx="6" class="box-fill-blue"></rect>
+    <text x="755" y="140" text-anchor="middle" class="lbl-title">6 · Refresh</text>
+    <text x="755" y="154" text-anchor="middle" class="lbl-title">interval</text>
+    <text x="755" y="172" text-anchor="middle" class="lbl-sub">OpenSearch</text>
+    <text x="755" y="186" text-anchor="middle" class="lbl-sub">5 s default</text>
+    <text x="755" y="208" text-anchor="middle" class="lbl-meta">budget: 5 s</text>
+  </g>
+  <g>
+    <rect x="830" y="120" width="130" height="100" rx="6" class="box-fill-green"></rect>
+    <text x="895" y="140" text-anchor="middle" class="lbl-title">7 · Repl</text>
+    <text x="895" y="154" text-anchor="middle" class="lbl-title">commit</text>
+    <text x="895" y="172" text-anchor="middle" class="lbl-sub">3-way fanout</text>
+    <text x="895" y="186" text-anchor="middle" class="lbl-sub">queryable</text>
+    <text x="895" y="208" text-anchor="middle" class="lbl-meta">budget: 2 s</text>
+  </g>
+
+  <!-- arrows -->
+  <path d="M140,170 L155,170" class="arrow"></path>
+  <path d="M275,170 L290,170" class="arrow"></path>
+  <path d="M410,170 L425,170" class="arrow"></path>
+  <path d="M545,170 L560,170" class="arrow"></path>
+  <path d="M680,170 L695,170" class="arrow"></path>
+  <path d="M815,170 L830,170" class="arrow"></path>
+
+  <!-- Latency budget bar -->
+  <text x="20" y="50" class="lbl-title">End-to-end freshness budget (SLO-B: ≤ 60 s)</text>
+  <rect x="20" y="60" width="940" height="14" rx="3" fill="#f6f8fa" stroke="#d0d7de"></rect>
+  <rect x="22" y="62" width="78" height="10" fill="#fff8c5"></rect>
+  <rect x="100" y="62" width="8" height="10" fill="#ddf4ff"></rect>
+  <rect x="108" y="62" width="31" height="10" fill="#dafbe1"></rect>
+  <rect x="139" y="62" width="16" height="10" fill="#fff1e5"></rect>
+  <rect x="155" y="62" width="31" height="10" fill="#fff1e5"></rect>
+  <rect x="186" y="62" width="78" height="10" fill="#ddf4ff"></rect>
+  <rect x="264" y="62" width="31" height="10" fill="#dafbe1"></rect>
+  <rect x="295" y="62" width="663" height="10" fill="#fff8c5" opacity=".4"></rect>
+  <text x="958" y="70" text-anchor="end" class="lbl-meta">17.5 s typical · 35 s p99 · 25 s headroom</text>
+
+  <text x="20" y="250" class="lbl-meta">Sum of stage budgets: 17.5 s · ×2 for tail = 35 s p99 · margin under SLO: 42%</text>
+  <text x="20" y="270" class="lbl-sub">Observed p99 in load tests (April 2026): 38 s — within budget; closest to refresh-interval limit.</text>
+  <text x="20" y="290" class="lbl-meta">Largest movable lever: edge buffer (5s) + refresh interval (5s) account for 10s of the 17.5s budget. Reducing either halves them at 2× indexer load.</text>
+  <text x="20" y="308" class="lbl-meta">Critical-severity logs (error level) bypass edge buffer with 100ms cap — sacrificing batch efficiency for freshness on highest-priority logs only.</text>
+</svg>

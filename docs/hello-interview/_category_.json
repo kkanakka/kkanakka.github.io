@@ -1,0 +1,9 @@
+{
+  "label": "Hello Interview",
+  "position": 7,
+  "link": {
+    "type": "generated-index",
+    "slug": "/hello-interview",
+    "description": "hellointerview.com problems reworked with visual walkthroughs and LinkedIn stack mappings."
+  }
+}

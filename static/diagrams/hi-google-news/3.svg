@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 800 240" xmlns="http://www.w3.org/2000/svg"><style>.sb-b{fill:#ddf4ff;stroke:var(--accent);stroke-width:1}
+.sb-g{fill:#dafbe1;stroke:var(--success);stroke-width:1}
+.sb-y{fill:#fff8e6;stroke:var(--attention);stroke-width:1}
+.sb-p{fill:#fbefff;stroke:var(--done);stroke-width:1}
+.sb-o{fill:#fff1e5;stroke:var(--orange);stroke-width:1}
+.sl{font-family:var(--sans);font-size:12px;font-weight:600;fill:var(--fg)}
+.ss{font-family:var(--mono);font-size:10px;fill:var(--fg-muted)}
+.sn{font-family:var(--mono);font-weight:700;font-size:11px;fill:var(--accent)}
+.sa-b{stroke:var(--accent);stroke-width:1.5;fill:none}</style>
+      <defs><marker id="ab" markerWidth="8" markerHeight="8" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#0969da"></path></marker></defs>
+      <rect class="sb-o" x="20" y="20" width="140" height="70" rx="6"></rect>
+      <text class="sl" x="90" y="42" text-anchor="middle">Publishers</text>
+      <text class="ss" x="90" y="56" text-anchor="middle">thousands of sources</text>
+      <text class="ss" x="90" y="70" text-anchor="middle">RSS feeds / APIs</text>
+
+      <rect class="sb-b" x="210" y="20" width="180" height="70" rx="6"></rect>
+      <text class="sl" x="300" y="42" text-anchor="middle">Data Collection Svc</text>
+      <text class="ss" x="300" y="56" text-anchor="middle">polls RSS every 3-6h</text>
+      <text class="ss" x="300" y="70" text-anchor="middle">parses XML, extracts data</text>
+
+      <rect class="sb-g" x="440" y="20" width="150" height="70" rx="6"></rect>
+      <text class="sl" x="515" y="42" text-anchor="middle">Espresso</text>
+      <text class="ss" x="515" y="56" text-anchor="middle">articles + publishers</text>
+      <text class="ss" x="515" y="70" text-anchor="middle">metadata store</text>
+
+      <rect class="sb-p" x="640" y="20" width="140" height="70" rx="6"></rect>
+      <text class="sl" x="710" y="42" text-anchor="middle">Ambry</text>
+      <text class="ss" x="710" y="56" text-anchor="middle">thumbnails</text>
+      <text class="ss" x="710" y="70" text-anchor="middle">standardized sizes</text>
+
+      <path class="sa-b" d="M160,55 L208,55" marker-end="url(#ab)"></path>
+      <text class="sn" x="184" y="48">1</text>
+      <path class="sa-b" d="M390,45 L438,45" marker-end="url(#ab)"></path>
+      <text class="sn" x="414" y="38">2</text>
+      <path class="sa-b" d="M390,65 L638,55" marker-end="url(#ab)"></path>
+      <text class="sn" x="510" y="82">3</text>
+
+      <rect class="sb-y" x="210" y="120" width="570" height="95" rx="6"></rect>
+      <text class="sl" x="495" y="140" text-anchor="middle">Data Collection Workflow</text>
+      <text class="ss" x="230" y="160">1. Query Espresso for publisher list + RSS feed URLs</text>
+      <text class="ss" x="230" y="176">2. Poll each publisher’s RSS feed (HTTP GET → XML response)</text>
+      <text class="ss" x="230" y="192">3. Extract article metadata, download source image, resize to standard thumbnails</text>
+      <text class="ss" x="230" y="208">4. Store thumbnails in Ambry, save article row in Espresso with Ambry URL</text>
+    </svg>

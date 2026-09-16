@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 900 440" xmlns="http://www.w3.org/2000/svg">
+  <text x="20" y="22" font-size="12" font-weight="600">One tree · every controller · every process in exactly one cgroup.</text>
+
+  <rect x="340" y="50" width="220" height="42" fill="#ddf4ff" stroke="#0969da" rx="3"></rect>
+  <text x="450" y="68" text-anchor="middle" font-size="12" font-weight="600">/ · root cgroup</text>
+  <text x="450" y="84" text-anchor="middle" font-size="9" fill="#59636e">cpu.max · memory.max · io.max · pids.max</text>
+
+  <rect x="40" y="150" width="220" height="40" fill="#ddf4ff" stroke="#0969da" rx="3"></rect>
+  <text x="150" y="167" text-anchor="middle" font-size="11" font-weight="500" fill="#0969da">system.slice</text>
+  <text x="150" y="181" text-anchor="middle" font-size="9" fill="#59636e">memory.max = 16G</text>
+
+  <rect x="340" y="150" width="220" height="40" fill="#ddf4ff" stroke="#0969da" rx="3"></rect>
+  <text x="450" y="167" text-anchor="middle" font-size="11" font-weight="500" fill="#0969da">user.slice</text>
+  <text x="450" y="181" text-anchor="middle" font-size="9" fill="#59636e">cpu.weight = 100</text>
+
+  <rect x="640" y="150" width="220" height="40" fill="#ddf4ff" stroke="#0969da" rx="3"></rect>
+  <text x="750" y="167" text-anchor="middle" font-size="11" font-weight="500" fill="#0969da">machine.slice · containers</text>
+  <text x="750" y="181" text-anchor="middle" font-size="9" fill="#59636e">memory.max = 32G</text>
+
+  <line x1="450" y1="92" x2="150" y2="150" stroke="#0969da"></line>
+  <line x1="450" y1="92" x2="450" y2="150" stroke="#0969da"></line>
+  <line x1="450" y1="92" x2="750" y2="150" stroke="#0969da"></line>
+
+  <rect x="20" y="240" width="200" height="38" fill="#fff8c5" stroke="#9a6700" rx="3"></rect>
+  <text x="120" y="257" text-anchor="middle" font-size="11" fill="#9a6700">nginx.service</text>
+  <text x="120" y="271" text-anchor="middle" font-size="9" fill="#59636e">memory.max = 2G · cpu.max = 200000 100000</text>
+
+  <rect x="20" y="295" width="200" height="38" fill="#fff8c5" stroke="#9a6700" rx="3"></rect>
+  <text x="120" y="312" text-anchor="middle" font-size="11" fill="#9a6700">postgres.service</text>
+  <text x="120" y="326" text-anchor="middle" font-size="9" fill="#59636e">memory.max = 8G · io wbps=50M</text>
+
+  <line x1="150" y1="190" x2="120" y2="240" stroke="#0969da" stroke-dasharray="2,3"></line>
+  <line x1="150" y1="190" x2="120" y2="295" stroke="#0969da" stroke-dasharray="2,3"></line>
+
+  <rect x="350" y="240" width="200" height="38" fill="#fff8c5" stroke="#9a6700" rx="3"></rect>
+  <text x="450" y="257" text-anchor="middle" font-size="11" fill="#9a6700">user-1000.slice</text>
+  <text x="450" y="271" text-anchor="middle" font-size="9" fill="#59636e">cpu.weight = 100</text>
+  <line x1="450" y1="190" x2="450" y2="240" stroke="#0969da" stroke-dasharray="2,3"></line>
+
+  <rect x="640" y="240" width="220" height="38" fill="#fff8c5" stroke="#9a6700" rx="3"></rect>
+  <text x="750" y="257" text-anchor="middle" font-size="11" fill="#9a6700">docker-abc123.scope</text>
+  <text x="750" y="271" text-anchor="middle" font-size="9" fill="#59636e">memory.max=4G · cpu.max · pids.max=512</text>
+
+  <rect x="640" y="295" width="220" height="38" fill="#fff8c5" stroke="#9a6700" rx="3"></rect>
+  <text x="750" y="312" text-anchor="middle" font-size="11" fill="#9a6700">docker-def456.scope</text>
+  <text x="750" y="326" text-anchor="middle" font-size="9" fill="#59636e">memory.max=2G</text>
+
+  <line x1="750" y1="190" x2="750" y2="240" stroke="#0969da" stroke-dasharray="2,3"></line>
+  <line x1="750" y1="190" x2="750" y2="295" stroke="#0969da" stroke-dasharray="2,3"></line>
+
+  <circle cx="50" cy="370" r="8" fill="#fff8c5" stroke="#9a6700"></circle><text x="50" y="373" text-anchor="middle" font-size="8" fill="#9a6700">p</text>
+  <circle cx="80" cy="370" r="8" fill="#fff8c5" stroke="#9a6700"></circle><text x="80" y="373" text-anchor="middle" font-size="8" fill="#9a6700">p</text>
+  <circle cx="110" cy="370" r="8" fill="#fff8c5" stroke="#9a6700"></circle><text x="110" y="373" text-anchor="middle" font-size="8" fill="#9a6700">p</text>
+  <text x="180" y="373" font-size="10" fill="#59636e">cgroup.procs (3 pids)</text>
+
+  <circle cx="690" cy="370" r="8" fill="#fff8c5" stroke="#9a6700"></circle><text x="690" y="373" text-anchor="middle" font-size="8" fill="#9a6700">p</text>
+  <circle cx="720" cy="370" r="8" fill="#fff8c5" stroke="#9a6700"></circle><text x="720" y="373" text-anchor="middle" font-size="8" fill="#9a6700">p</text>
+  <text x="775" y="373" font-size="10" fill="#59636e">2 pids</text>
+
+  <line x1="120" y1="333" x2="80" y2="362" stroke="#9a6700" stroke-width="0.5" stroke-dasharray="1,2"></line>
+  <line x1="120" y1="333" x2="110" y2="362" stroke="#9a6700" stroke-width="0.5" stroke-dasharray="1,2"></line>
+  <line x1="750" y1="333" x2="710" y2="362" stroke="#9a6700" stroke-width="0.5" stroke-dasharray="1,2"></line>
+
+  <text x="450" y="420" text-anchor="middle" font-size="11" fill="#59636e">
+    Limits inherit downward — a leaf cannot exceed any ancestor's cap.
+  </text>
+</svg>

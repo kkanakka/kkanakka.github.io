@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 820 700" xmlns="http://www.w3.org/2000/svg" style="max-width:800px;">
+      <defs>
+        <marker id="arrD" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#546e7a"></polygon>
+        </marker>
+        <filter id="shD" x="-3%" y="-3%" width="106%" height="110%">
+          <fedropshadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.06"></fedropshadow>
+        </filter>
+      </defs>
+
+      <text x="410" y="25" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="16" fill="#00695c">"What should I use?" — The Decision Flowchart</text>
+
+      <!-- Start -->
+      <rect x="310" y="40" width="200" height="35" rx="8" fill="#283593"></rect>
+      <text x="410" y="63" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#fff">What's your access pattern?</text>
+
+      <!-- Branches -->
+      <line x1="260" y1="75" x2="110" y2="105" stroke="#546e7a" stroke-width="1.5" marker-end="url(#arrD)"></line>
+      <line x1="360" y1="75" x2="310" y2="105" stroke="#546e7a" stroke-width="1.5" marker-end="url(#arrD)"></line>
+      <line x1="460" y1="75" x2="510" y2="105" stroke="#546e7a" stroke-width="1.5" marker-end="url(#arrD)"></line>
+      <line x1="560" y1="75" x2="700" y2="105" stroke="#546e7a" stroke-width="1.5" marker-end="url(#arrD)"></line>
+
+      <!-- COLUMN 1: Key-Value / Document Lookup -->
+      <rect x="20" y="105" width="190" height="580" rx="12" fill="#e3f2fd" stroke="#1565c0" stroke-width="2"></rect>
+      <text x="115" y="130" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#0d47a1">Key-Value / Document</text>
+      <text x="115" y="148" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#787774">"I know the key, give me the data"</text>
+
+      <!-- Espresso -->
+      <rect x="35" y="160" width="160" height="110" rx="8" fill="#fff" stroke="#1565c0" stroke-width="1.5"></rect>
+      <text x="115" y="180" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#0d47a1">Espresso</text>
+      <text x="45" y="198" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• CRUD by primary key</text>
+      <text x="45" y="212" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• Source of truth</text>
+      <text x="45" y="226" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• Schema enforced (Avro)</text>
+      <text x="45" y="240" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• Secondary indexes</text>
+      <text x="45" y="254" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• CDC → Kafka</text>
+
+      <!-- Venice -->
+      <rect x="35" y="280" width="160" height="100" rx="8" fill="#fff" stroke="#2e7d32" stroke-width="1.5"></rect>
+      <text x="115" y="300" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#2e7d32">Venice</text>
+      <text x="45" y="318" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• Read-only derived data</text>
+      <text x="45" y="332" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• Pre-computed ML features</text>
+      <text x="45" y="346" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• Batch push or stream</text>
+      <text x="45" y="360" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• Materialized views</text>
+      <text x="45" y="374" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• NOT source of truth</text>
+
+      <!-- Couchbase -->
+      <rect x="35" y="390" width="160" height="90" rx="8" fill="#fff" stroke="#e65100" stroke-width="1.5"></rect>
+      <text x="115" y="410" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#e65100">Couchbase</text>
+      <text x="45" y="428" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• Cache layer for Espresso</text>
+      <text x="45" y="442" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• L2 shared cache (L1=OHC)</text>
+      <text x="45" y="456" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• TTL-based eviction</text>
+      <text x="45" y="470" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• Not standalone — always</text>
+      <text x="50" y="478" font-family="Inter,sans-serif" font-size="9" fill="#37352f">fronts another store</text>
+
+      <!-- MySQL -->
+      <rect x="35" y="490" width="160" height="90" rx="8" fill="#fff" stroke="#6a1b9a" stroke-width="1.5"></rect>
+      <text x="115" y="510" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#6a1b9a">MySQL (direct)</text>
+      <text x="45" y="528" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• Complex SQL JOINs</text>
+      <text x="45" y="542" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• Multi-table ACID txns</text>
+      <text x="45" y="556" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• Strict relational schema</text>
+      <text x="45" y="570" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• When Espresso can't</text>
+      <text x="50" y="578" font-family="Inter,sans-serif" font-size="9" fill="#37352f">do JOINs you need</text>
+
+      <text x="115" y="605" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="10" fill="#0d47a1">Use cases:</text>
+      <text x="35" y="622" font-family="Inter,sans-serif" font-size="9" fill="#37352f">Profiles, messages, feeds,</text>
+      <text x="35" y="636" font-family="Inter,sans-serif" font-size="9" fill="#37352f">PYMK scores, session data,</text>
+      <text x="35" y="650" font-family="Inter,sans-serif" font-size="9" fill="#37352f">config, feature flags</text>
+      <text x="35" y="670" font-family="Inter,sans-serif" font-weight="600" font-size="9" fill="#0d47a1">Latency: &lt;5ms (point lookup)</text>
+
+      <!-- COLUMN 2: Search -->
+      <rect x="220" y="105" width="190" height="580" rx="12" fill="#fce4ec" stroke="#c62828" stroke-width="2"></rect>
+      <text x="315" y="130" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#c62828">Search / Full-Text</text>
+      <text x="315" y="148" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#787774">"Find things matching X"</text>
+
+      <rect x="235" y="160" width="160" height="190" rx="8" fill="#fff" stroke="#c62828" stroke-width="1.5"></rect>
+      <text x="315" y="180" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#c62828">Galene / SEAS</text>
+      <text x="245" y="198" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• Full-text search</text>
+      <text x="245" y="212" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• Inverted index (Lucene)</text>
+      <text x="245" y="226" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• BM25 + custom ranking</text>
+      <text x="245" y="240" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• Faceted filtering</text>
+      <text x="245" y="254" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• Typeahead / autocomplete</text>
+      <text x="245" y="268" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• Geo-spatial queries</text>
+      <text x="245" y="282" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• Fed from Kafka CDC</text>
+      <text x="245" y="296" font-family="Inter,sans-serif" font-size="9" fill="#c62828">• NOT source of truth</text>
+      <text x="245" y="310" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• Rebuilt from Espresso</text>
+      <text x="245" y="330" font-family="Inter,sans-serif" font-size="9" fill="#787774">Open-source equiv:</text>
+      <text x="245" y="344" font-family="Inter,sans-serif" font-size="9" fill="#787774">Elasticsearch, Solr</text>
+
+      <text x="315" y="380" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="10" fill="#c62828">Use when:</text>
+      <text x="235" y="398" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• User types in a search box</text>
+      <text x="235" y="414" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• "AI engineers in Bay Area"</text>
+      <text x="235" y="430" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• Job search with filters</text>
+      <text x="235" y="446" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• Relevance ranking needed</text>
+      <text x="235" y="462" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• Autocomplete suggestions</text>
+
+      <text x="315" y="500" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="10" fill="#c62828">DON'T use when:</text>
+      <text x="235" y="518" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• You know the exact key</text>
+      <text x="235" y="534" font-family="Inter,sans-serif" font-size="9" fill="#37352f">  → use Espresso (faster)</text>
+      <text x="235" y="550" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• You need writes/updates</text>
+      <text x="235" y="566" font-family="Inter,sans-serif" font-size="9" fill="#37352f">  → Galene is read-only index</text>
+      <text x="235" y="582" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• You need ACID transactions</text>
+      <text x="235" y="598" font-family="Inter,sans-serif" font-size="9" fill="#37352f">  → Galene has eventual consistency</text>
+
+      <text x="235" y="670" font-family="Inter,sans-serif" font-weight="600" font-size="9" fill="#c62828">Latency: 10-50ms (search query)</text>
+
+      <!-- COLUMN 3: Analytics -->
+      <rect x="420" y="105" width="190" height="580" rx="12" fill="#fff3e0" stroke="#e65100" stroke-width="2"></rect>
+      <text x="515" y="130" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#e65100">Analytics / OLAP</text>
+      <text x="515" y="148" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#787774">"Aggregate across millions of rows"</text>
+
+      <rect x="435" y="160" width="160" height="170" rx="8" fill="#fff" stroke="#e65100" stroke-width="1.5"></rect>
+      <text x="515" y="180" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#e65100">Pinot</text>
+      <text x="445" y="198" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• Columnar storage</text>
+      <text x="445" y="212" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• SQL-like (PQL)</text>
+      <text x="445" y="226" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• Real-time + batch ingest</text>
+      <text x="445" y="240" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• Star-tree index</text>
+      <text x="445" y="254" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• GROUP BY, COUNT, SUM</text>
+      <text x="445" y="268" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• NOT for point lookups</text>
+      <text x="445" y="282" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• NOT for writes</text>
+      <text x="445" y="300" font-family="Inter,sans-serif" font-size="9" fill="#787774">Open-source equiv:</text>
+      <text x="445" y="314" font-family="Inter,sans-serif" font-size="9" fill="#787774">ClickHouse, Druid, BigQuery</text>
+
+      <text x="515" y="350" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="10" fill="#e65100">Use when:</text>
+      <text x="435" y="368" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• "How many people viewed</text>
+      <text x="440" y="382" font-family="Inter,sans-serif" font-size="9" fill="#37352f">my profile this week?"</text>
+      <text x="435" y="398" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• Ad impressions / clicks</text>
+      <text x="435" y="414" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• A/B test metric rollups</text>
+      <text x="435" y="430" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• Dashboard time-series</text>
+      <text x="435" y="446" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• Real-time leaderboards</text>
+
+      <text x="515" y="480" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="10" fill="#e65100">DON'T use when:</text>
+      <text x="435" y="498" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• You need single-record CRUD</text>
+      <text x="435" y="514" font-family="Inter,sans-serif" font-size="9" fill="#37352f">  → use Espresso</text>
+      <text x="435" y="530" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• You need JOINs</text>
+      <text x="435" y="546" font-family="Inter,sans-serif" font-size="9" fill="#37352f">  → Pinot has limited joins</text>
+      <text x="435" y="562" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• You need full-text search</text>
+      <text x="435" y="578" font-family="Inter,sans-serif" font-size="9" fill="#37352f">  → use Galene</text>
+
+      <text x="435" y="670" font-family="Inter,sans-serif" font-weight="600" font-size="9" fill="#e65100">Latency: 10-100ms (aggregation)</text>
+
+      <!-- COLUMN 4: Graph -->
+      <rect x="620" y="105" width="190" height="580" rx="12" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="2"></rect>
+      <text x="715" y="130" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#4a148c">Graph Traversal</text>
+      <text x="715" y="148" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#787774">"Who is connected to whom?"</text>
+
+      <rect x="635" y="160" width="160" height="170" rx="8" fill="#fff" stroke="#6a1b9a" stroke-width="1.5"></rect>
+      <text x="715" y="180" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#4a148c">Liquid</text>
+      <text x="645" y="198" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• In-memory graph</text>
+      <text x="645" y="212" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• Prologin (Datalog)</text>
+      <text x="645" y="226" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• Multi-hop traversals</text>
+      <text x="645" y="240" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• 10-100+ joins in &lt;100ms</text>
+      <text x="645" y="254" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• Fed from Kafka CDC</text>
+      <text x="645" y="268" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• NOT source of truth</text>
+      <text x="645" y="300" font-family="Inter,sans-serif" font-size="9" fill="#787774">Open-source equiv:</text>
+      <text x="645" y="314" font-family="Inter,sans-serif" font-size="9" fill="#787774">Neo4j, Dgraph, JanusGraph</text>
+
+      <text x="715" y="350" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="10" fill="#4a148c">Use when:</text>
+      <text x="635" y="368" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• Connection degree (1st/2nd)</text>
+      <text x="635" y="384" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• Mutual connections</text>
+      <text x="635" y="400" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• PYMK candidates</text>
+      <text x="635" y="416" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• Endorsement networks</text>
+      <text x="635" y="432" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• "People at company X who</text>
+      <text x="640" y="446" font-family="Inter,sans-serif" font-size="9" fill="#37352f">know people with skill Y"</text>
+
+      <text x="715" y="480" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="10" fill="#4a148c">DON'T use when:</text>
+      <text x="635" y="498" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• You need to UPDATE data</text>
+      <text x="635" y="514" font-family="Inter,sans-serif" font-size="9" fill="#37352f">  → write to Espresso first</text>
+      <text x="635" y="530" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• Data is tree-shaped</text>
+      <text x="635" y="546" font-family="Inter,sans-serif" font-size="9" fill="#37352f">  → document model is simpler</text>
+      <text x="635" y="562" font-family="Inter,sans-serif" font-size="9" fill="#37352f">• You need full-text search</text>
+      <text x="635" y="578" font-family="Inter,sans-serif" font-size="9" fill="#37352f">  → use Galene</text>
+
+      <text x="635" y="670" font-family="Inter,sans-serif" font-weight="600" font-size="9" fill="#4a148c">Latency: &lt;1ms (1st deg), &lt;100ms (multi)</text>
+    </svg>

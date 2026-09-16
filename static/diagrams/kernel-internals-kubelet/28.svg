@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 900 400" xmlns="http://www.w3.org/2000/svg">
+  <text x="20" y="22" font-size="12" font-weight="600">A well-configured node has three regions · each established by a different mechanism</text>
+
+  <!-- LCPU strip -->
+  <text x="20" y="56" font-size="11" font-weight="500" fill="#59636e">Logical CPUs (as the kernel sees them)</text>
+
+  <g>
+    <rect x="60" y="65" width="80" height="46" fill="#fff8e6" stroke="#9a6700"></rect>
+    <text x="100" y="86" text-anchor="middle" font-size="11" font-weight="600">LCPU 0</text>
+    <text x="100" y="100" text-anchor="middle" font-size="9" fill="#59636e">kernel</text>
+
+    <rect x="160" y="65" width="80" height="46" fill="#fff8e6" stroke="#9a6700"></rect>
+    <text x="200" y="86" text-anchor="middle" font-size="11" font-weight="600">LCPU 1</text>
+    <text x="200" y="100" text-anchor="middle" font-size="9" fill="#59636e">kernel</text>
+
+    <rect x="260" y="65" width="80" height="46" fill="#ddf4ff" stroke="#0969da"></rect>
+    <text x="300" y="86" text-anchor="middle" font-size="11" font-weight="600">LCPU 2</text>
+    <text x="300" y="100" text-anchor="middle" font-size="9" fill="#59636e">shared</text>
+
+    <rect x="360" y="65" width="80" height="46" fill="#ddf4ff" stroke="#0969da"></rect>
+    <text x="400" y="86" text-anchor="middle" font-size="11" font-weight="600">LCPU 3</text>
+    <text x="400" y="100" text-anchor="middle" font-size="9" fill="#59636e">shared</text>
+
+    <rect x="460" y="65" width="80" height="46" fill="#ddf4ff" stroke="#0969da"></rect>
+    <text x="500" y="86" text-anchor="middle" font-size="11" font-weight="600">LCPU 4</text>
+    <text x="500" y="100" text-anchor="middle" font-size="9" fill="#59636e">shared</text>
+
+    <rect x="560" y="65" width="80" height="46" fill="#ddf4ff" stroke="#0969da"></rect>
+    <text x="600" y="86" text-anchor="middle" font-size="11" font-weight="600">LCPU 5</text>
+    <text x="600" y="100" text-anchor="middle" font-size="9" fill="#59636e">shared</text>
+
+    <rect x="660" y="65" width="80" height="46" fill="#dafbe1" stroke="#1a7f37"></rect>
+    <text x="700" y="86" text-anchor="middle" font-size="11" font-weight="600">LCPU 6</text>
+    <text x="700" y="100" text-anchor="middle" font-size="9" fill="#59636e">pinned</text>
+
+    <rect x="760" y="65" width="80" height="46" fill="#dafbe1" stroke="#1a7f37"></rect>
+    <text x="800" y="86" text-anchor="middle" font-size="11" font-weight="600">LCPU 7</text>
+    <text x="800" y="100" text-anchor="middle" font-size="9" fill="#59636e">pinned</text>
+  </g>
+
+  <!-- Region bands -->
+  <rect x="60" y="135" width="180" height="40" fill="#fff8e6" stroke="#9a6700" rx="3"></rect>
+  <text x="150" y="151" text-anchor="middle" font-size="11" font-weight="600" fill="#9a6700">Reserved · system</text>
+  <text x="150" y="167" text-anchor="middle" font-size="9" fill="#59636e">kernel kthreads · IRQ handlers · irqbalance</text>
+
+  <rect x="260" y="135" width="380" height="40" fill="#ddf4ff" stroke="#0969da" rx="3"></rect>
+  <text x="450" y="151" text-anchor="middle" font-size="11" font-weight="600" fill="#0969da">Shared pool</text>
+  <text x="450" y="167" text-anchor="middle" font-size="9" fill="#59636e">Burstable + BestEffort pods · system services · CFS time-slices · migrations OK</text>
+
+  <rect x="660" y="135" width="180" height="40" fill="#dafbe1" stroke="#1a7f37" rx="3"></rect>
+  <text x="750" y="151" text-anchor="middle" font-size="11" font-weight="600" fill="#1a7f37">Exclusive · pinned</text>
+  <text x="750" y="167" text-anchor="middle" font-size="9" fill="#59636e">Guaranteed integer-CPU pod · cache stays warm</text>
+
+  <!-- How each region is established -->
+  <text x="20" y="210" font-size="11" font-weight="600">How each region is established:</text>
+
+  <g font-size="11">
+    <text x="40" y="237"><tspan font-weight="600" fill="#9a6700">[1] Reserved</tspan> <tspan fill="#59636e">— set</tspan> <tspan font-family="ui-monospace,Menlo" fill="#0969da">irqaffinity=0,1</tspan> <tspan fill="#59636e">in kernel cmdline · kubelet</tspan> <tspan font-family="ui-monospace,Menlo" fill="#0969da">reservedSystemCPUs: "0,1"</tspan></text>
+    <text x="40" y="262"><tspan font-weight="600" fill="#0969da">[2] Shared pool</tspan> <tspan fill="#59636e">— default · no special config · CFS scheduler places pods wherever there's capacity</tspan></text>
+    <text x="40" y="287"><tspan font-weight="600" fill="#1a7f37">[3] Exclusive</tspan> <tspan fill="#59636e">— kernel cmdline</tspan> <tspan font-family="ui-monospace,Menlo" fill="#0969da">isolcpus=6,7</tspan> <tspan fill="#59636e">+ kubelet</tspan> <tspan font-family="ui-monospace,Menlo" fill="#0969da">cpuManagerPolicy=static</tspan> <tspan fill="#59636e">+ Guaranteed integer pod</tspan></text>
+  </g>
+
+  <text x="20" y="325" font-size="11" font-weight="600">Strongest isolation = all four combined:</text>
+  <text x="40" y="345" font-family="ui-monospace,Menlo" font-size="10" fill="#0969da">isolcpus=6,7  irqaffinity=0-5  cpuManagerPolicy=static  +  Guaranteed pod with cpu: 2</text>
+  <text x="40" y="362" font-size="10" fill="#59636e">→ cores 6 and 7 are touched by exactly one pod · no CFS competition · no IRQ jitter · L1/L2 stay warm</text>
+</svg>

@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 820 850" xmlns="http://www.w3.org/2000/svg" style="max-width:800px;">
+      <defs>
+        <filter id="shR" x="-3%" y="-3%" width="106%" height="110%">
+          <fedropshadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.06"></fedropshadow>
+        </filter>
+      </defs>
+
+      <text x="410" y="25" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="16" fill="#4285f4">Facebook / Meta — Feature → Data Model → Store</text>
+
+      <!-- ROW 1: User Profiles -->
+      <rect x="10" y="40" width="800" height="95" rx="10" fill="#e3f2fd" stroke="#1565c0" stroke-width="1.5" filter="url(#shR)"></rect>
+      <text x="25" y="62" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#0d47a1">User Profiles</text>
+      <text x="25" y="80" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Model: <tspan font-weight="600">Document</tspan> — profile is a self-contained tree (name, bio, photos[], work[], education[])</text>
+      <text x="25" y="95" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Store: <tspan font-weight="600">TAO (MySQL shards + graph cache)</tspan> for entity; profile blob likely in a key-value store</text>
+      <text x="25" y="110" font-family="Inter,sans-serif" font-size="10" fill="#787774">Trade-off: 1-to-many (work history) embeds naturally. But profile → friends = many-to-many → needs graph layer (TAO edges).</text>
+      <text x="25" y="125" font-family="Inter,sans-serif" font-size="9" fill="#0d47a1">LinkedIn equiv: Espresso (document, Avro, sub-keys for 1-to-many)</text>
+
+      <!-- ROW 2: Friends List / Social Graph -->
+      <rect x="10" y="145" width="800" height="95" rx="10" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="1.5" filter="url(#shR)"></rect>
+      <text x="25" y="167" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#4a148c">Friends List / Social Graph</text>
+      <text x="25" y="185" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Model: <tspan font-weight="600">Graph</tspan> — vertices (users) + edges (friendships). Many-to-many is THE data.</text>
+      <text x="25" y="200" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Store: <tspan font-weight="600">TAO</tspan> — graph cache over MySQL shards. Objects (vertices) + Associations (edges) + Assoc counts.</text>
+      <text x="25" y="215" font-family="Inter,sans-serif" font-size="10" fill="#787774">Trade-off: TAO is simpler than Neo4j — no multi-hop queries. For friend-of-friend, Meta pre-computes and caches.</text>
+      <text x="25" y="230" font-family="Inter,sans-serif" font-size="9" fill="#4a148c">LinkedIn equiv: Liquid (in-memory graph, Prologin, supports real-time multi-hop traversals unlike TAO)</text>
+
+      <!-- ROW 3: Likes -->
+      <rect x="10" y="250" width="800" height="110" rx="10" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1.5" filter="url(#shR)"></rect>
+      <text x="25" y="272" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#1b5e20">Likes / Reactions</text>
+      <text x="25" y="290" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Model: <tspan font-weight="600">Graph edge</tspan> — (user)--[LIKES]--&gt;(post). Many-to-many: many users like many posts.</text>
+      <text x="25" y="305" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Store: <tspan font-weight="600">TAO association</tspan> + <tspan font-weight="600">counter cache</tspan>. The "3.2K likes" count is pre-aggregated (not computed on read).</text>
+      <text x="25" y="320" font-family="Inter,sans-serif" font-size="10" fill="#787774">Trade-off: Storing each like as a row = write-heavy (millions/sec). Counter cache = eventual consistency (you might see 3.2K</text>
+      <text x="25" y="335" font-family="Inter,sans-serif" font-size="10" fill="#787774">for a few seconds before it updates to 3.3K). Worth it: reads &gt;&gt; writes for counts.</text>
+      <text x="25" y="350" font-family="Inter,sans-serif" font-size="9" fill="#1b5e20">LinkedIn equiv: Espresso (junction table) + Pinot (real-time like counts aggregation)</text>
+
+      <!-- ROW 4: Comments -->
+      <rect x="10" y="370" width="800" height="110" rx="10" fill="#fff3e0" stroke="#e65100" stroke-width="1.5" filter="url(#shR)"></rect>
+      <text x="25" y="392" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#e65100">Comments (Threaded)</text>
+      <text x="25" y="410" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Model: <tspan font-weight="600">Document (tree)</tspan> — 1-to-many: post → comments. But replies create nesting → tree within tree.</text>
+      <text x="25" y="425" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Store: <tspan font-weight="600">TAO</tspan> for the comment entity + association (post → comments). Threaded: adjacency list or closure table.</text>
+      <text x="25" y="440" font-family="Inter,sans-serif" font-size="10" fill="#787774">Trade-off: Adjacency list (parentId) = easy writes, hard deep reads. Closure table = fast reads, expensive writes.</text>
+      <text x="25" y="455" font-family="Inter,sans-serif" font-size="10" fill="#787774">Recommendation mention creates many-to-many: comment → mentioned user. Mentions need graph edges.</text>
+      <text x="25" y="470" font-family="Inter,sans-serif" font-size="9" fill="#e65100">LinkedIn equiv: Espresso (sub-keys: _key=postId, _subKey1=commentId) + Galene (search comments)</text>
+
+      <!-- ROW 5: Messages -->
+      <rect x="10" y="490" width="800" height="110" rx="10" fill="#e3f2fd" stroke="#1565c0" stroke-width="1.5" filter="url(#shR)"></rect>
+      <text x="25" y="512" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#0d47a1">Messages / Chat (Messenger, WhatsApp)</text>
+      <text x="25" y="530" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Model: <tspan font-weight="600">Document (time-series)</tspan> — 1-to-many: conversation → messages, ordered by timestamp.</text>
+      <text x="25" y="545" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Store: <tspan font-weight="600">HBase / MyRocks</tspan> for message storage (append-heavy, time-ordered). <tspan font-weight="600">Memcache</tspan> for recent.</text>
+      <text x="25" y="560" font-family="Inter,sans-serif" font-size="10" fill="#787774">Trade-off: LSM-tree (HBase/MyRocks) is write-optimized (fast appends). But range scans for "load older messages"</text>
+      <text x="25" y="575" font-family="Inter,sans-serif" font-size="10" fill="#787774">need sorted storage. B-tree (MySQL) would be slower for writes but faster for random reads.</text>
+      <text x="25" y="590" font-family="Inter,sans-serif" font-size="9" fill="#0d47a1">LinkedIn equiv: Espresso (_key=memberId, _subKey1=convId). WhatsApp: custom Erlang + Mnesia.</text>
+
+      <!-- ROW 6: News Feed -->
+      <rect x="10" y="610" width="800" height="110" rx="10" fill="#fce4ec" stroke="#c62828" stroke-width="1.5" filter="url(#shR)"></rect>
+      <text x="25" y="632" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#c62828">News Feed / Timeline</text>
+      <text x="25" y="650" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Model: <tspan font-weight="600">Materialized view (pre-computed)</tspan> — fan-out on write: when user posts, push to followers' feed caches.</text>
+      <text x="25" y="665" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Store: <tspan font-weight="600">TAO</tspan> (feed edges) + <tspan font-weight="600">Memcache</tspan> (rendered feed) + <tspan font-weight="600">ML ranking service</tspan> (scores per item).</text>
+      <text x="25" y="680" font-family="Inter,sans-serif" font-size="10" fill="#787774">Trade-off: Fan-out on write = fast reads (timeline pre-built) but celebrity problem (100M followers = 100M writes).</text>
+      <text x="25" y="695" font-family="Inter,sans-serif" font-size="10" fill="#787774">Meta uses hybrid like Twitter: fan-out for normal users, pull-on-read for celebrities. Ranking applied at read time.</text>
+      <text x="25" y="710" font-family="Inter,sans-serif" font-size="9" fill="#c62828">LinkedIn equiv: Espresso (feed store) + Venice (pre-computed feed ranking scores) + Kafka (fan-out events)</text>
+
+      <!-- ROW 7: Subscribers/Followers -->
+      <rect x="10" y="730" width="390" height="110" rx="10" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="1.5" filter="url(#shR)"></rect>
+      <text x="25" y="752" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#4a148c">Followers / Subscribers</text>
+      <text x="25" y="770" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Model: <tspan font-weight="600">Graph edge (directed)</tspan></text>
+      <text x="25" y="785" font-family="Inter,sans-serif" font-size="10" fill="#37352f">(A)--[FOLLOWS]--&gt;(B)</text>
+      <text x="25" y="800" font-family="Inter,sans-serif" font-size="10" fill="#787774">Asymmetric: A follows B</text>
+      <text x="25" y="815" font-family="Inter,sans-serif" font-size="10" fill="#787774">≠ B follows A</text>
+      <text x="25" y="830" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Store: TAO assoc + count</text>
+
+      <!-- ROW 8: Video Metadata -->
+      <rect x="420" y="730" width="390" height="110" rx="10" fill="#fff3e0" stroke="#e65100" stroke-width="1.5" filter="url(#shR)"></rect>
+      <text x="435" y="752" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#e65100">Video Metadata (YouTube/Reels)</text>
+      <text x="435" y="770" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Model: <tspan font-weight="600">Document</tspan> (self-contained)</text>
+      <text x="435" y="785" font-family="Inter,sans-serif" font-size="10" fill="#37352f">{title, desc, tags[], thumbnails[],</text>
+      <text x="435" y="800" font-family="Inter,sans-serif" font-size="10" fill="#37352f"> duration, uploaderId, viewCount}</text>
+      <text x="435" y="815" font-family="Inter,sans-serif" font-size="10" fill="#787774">Store: Vitess (MySQL shards)</text>
+      <text x="435" y="830" font-family="Inter,sans-serif" font-size="10" fill="#787774">+ Bigtable (view counts)</text>
+    </svg>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 800 240" xmlns="http://www.w3.org/2000/svg">
+<defs><marker id="acb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#fb923c"></path></marker></defs>
+<circle cx="150" cy="120" r="60" fill="#14532d" opacity=".7" stroke="#4ade80" stroke-width="2"></circle>
+<text x="150" y="115" text-anchor="middle" font-family="Inter" font-size="14" font-weight="700" fill="#4ade80">CLOSED</text>
+<text x="150" y="135" text-anchor="middle" font-family="monospace" font-size="11" fill="#cbd5e1">requests pass</text>
+<circle cx="650" cy="120" r="60" fill="#7f1d1d" opacity=".7" stroke="#f87171" stroke-width="2"></circle>
+<text x="650" y="115" text-anchor="middle" font-family="Inter" font-size="14" font-weight="700" fill="#f87171">OPEN</text>
+<text x="650" y="135" text-anchor="middle" font-family="monospace" font-size="11" fill="#cbd5e1">fail fast</text>
+<circle cx="400" cy="120" r="60" fill="#713f12" opacity=".7" stroke="#facc15" stroke-width="2"></circle>
+<text x="400" y="115" text-anchor="middle" font-family="Inter" font-size="14" font-weight="700" fill="#facc15">HALF-OPEN</text>
+<text x="400" y="135" text-anchor="middle" font-family="monospace" font-size="10" fill="#cbd5e1">probe request</text>
+<path d="M210 100 Q300 50 590 100" fill="none" stroke="#fb923c" stroke-width="2" marker-end="url(#acb)"></path>
+<text x="400" y="65" text-anchor="middle" font-family="monospace" font-size="11" fill="#fb923c">N consecutive failures</text>
+<path d="M590 145 Q500 200 460 155" fill="none" stroke="#fb923c" stroke-width="2" marker-end="url(#acb)"></path>
+<text x="540" y="200" text-anchor="middle" font-family="monospace" font-size="11" fill="#fb923c">timeout elapses</text>
+<path d="M340 130 Q230 200 210 145" fill="none" stroke="#4ade80" stroke-width="2" marker-end="url(#acb)"></path>
+<text x="240" y="210" text-anchor="middle" font-family="monospace" font-size="11" fill="#4ade80">probe succeeds</text>
+<path d="M460 90 Q540 60 590 90" fill="none" stroke="#f87171" stroke-width="2" marker-end="url(#acb)"></path>
+<text x="525" y="50" text-anchor="middle" font-family="monospace" font-size="11" fill="#f87171">probe fails</text>
+</svg>

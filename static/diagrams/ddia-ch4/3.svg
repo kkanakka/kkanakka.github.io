@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 820 450" xmlns="http://www.w3.org/2000/svg" style="max-width:800px;">
+      <defs><filter id="shF2" x="-3%" y="-3%" width="106%" height="110%"><fedropshadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.06"></fedropshadow></filter></defs>
+
+      <!-- Scenario 1: Follower dies -->
+      <rect x="10" y="10" width="395" height="200" rx="12" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"></rect>
+      <text x="207" y="38" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#2e7d32">Scenario 1: ONE Follower Dies</text>
+      <text x="30" y="60" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Region has 3 replicas: Leader (A) + Follower (B) + Follower (C)</text>
+      <text x="30" y="80" font-family="Inter,sans-serif" font-size="10" fill="#c62828">Node C goes down.</text>
+      <text x="30" y="105" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#2e7d32">READS: ✓ Still work (Leader A serves reads)</text>
+      <text x="30" y="123" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#2e7d32">WRITES: ✓ Still work (majority = 2 of 3: A + B)</text>
+      <text x="30" y="148" font-family="Inter,sans-serif" font-size="10" fill="#37352f">After 30 min: PD marks Node C as "Down"</text>
+      <text x="30" y="166" font-family="Inter,sans-serif" font-size="10" fill="#37352f">PD schedules: AddReplica on Node D</text>
+      <text x="30" y="184" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Node D copies snapshot from Leader A → new Follower</text>
+      <text x="30" y="202" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#2e7d32">Result: Back to 3 replicas. Zero downtime.</text>
+
+      <!-- Scenario 2: Leader dies -->
+      <rect x="415" y="10" width="395" height="200" rx="12" fill="#fce4ec" stroke="#c62828" stroke-width="2"></rect>
+      <text x="612" y="38" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#c62828">Scenario 2: LEADER Dies</text>
+      <text x="435" y="60" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Region has 3 replicas: Leader (A) + Follower (B) + Follower (C)</text>
+      <text x="435" y="80" font-family="Inter,sans-serif" font-size="10" fill="#c62828">Node A (Leader) goes down.</text>
+      <text x="435" y="105" font-family="Inter,sans-serif" font-size="10" fill="#37352f">B and C stop receiving heartbeats from A.</text>
+      <text x="435" y="123" font-family="Inter,sans-serif" font-size="10" fill="#37352f">After election timeout (~300ms):</text>
+      <text x="435" y="141" font-family="Inter,sans-serif" font-size="10" fill="#37352f">B becomes Candidate → C votes for B → B is new Leader</text>
+      <text x="435" y="166" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#c62828">READS: ✗ Brief pause (~300ms) during election</text>
+      <text x="435" y="184" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#2e7d32">WRITES: ✓ Resume after B becomes Leader</text>
+      <text x="435" y="202" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#2e7d32">No data loss! B has all committed entries (majority rule)</text>
+
+      <!-- Scenario 3: Majority dies -->
+      <rect x="10" y="225" width="800" height="100" rx="12" fill="#fff3e0" stroke="#e65100" stroke-width="2"></rect>
+      <text x="410" y="253" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#e65100">Scenario 3: MAJORITY Dies (2 of 3)</text>
+      <text x="30" y="275" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Nodes A and B both go down. Only C remains.</text>
+      <text x="30" y="295" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#c62828">READS: ✗ C cannot become Leader (needs majority = 2, only has 1)</text>
+      <text x="30" y="313" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#c62828">WRITES: ✗ Completely unavailable for this Region</text>
+      <text x="500" y="275" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Other Regions on surviving nodes still work!</text>
+      <text x="500" y="295" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Recovery: restart any one of A or B → majority restored</text>
+
+      <!-- Summary -->
+      <rect x="10" y="340" width="800" height="100" rx="12" fill="#f7f6f3" stroke="#e3e2de" stroke-width="1"></rect>
+      <text x="410" y="365" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="14" fill="#37352f">Raft Failure Tolerance Summary</text>
+      <text x="30" y="390" font-family="Inter,sans-serif" font-size="11" fill="#37352f">• 3 replicas → tolerates <tspan font-weight="700">1 failure</tspan> (majority = 2). <tspan fill="#2e7d32">Most common production config.</tspan></text>
+      <text x="30" y="410" font-family="Inter,sans-serif" font-size="11" fill="#37352f">• 5 replicas → tolerates <tspan font-weight="700">2 failures</tspan> (majority = 3). <tspan fill="#787774">Cross-datacenter setups.</tspan></text>
+      <text x="30" y="430" font-family="Inter,sans-serif" font-size="11" fill="#37352f">• Formula: <tspan font-weight="700">2f + 1</tspan> replicas to tolerate <tspan font-weight="700">f</tspan> failures. Leader election in ~300ms. No data loss as long as majority survives.</text>
+    </svg>

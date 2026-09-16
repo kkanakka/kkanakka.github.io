@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 800 120" xmlns="http://www.w3.org/2000/svg"><style>.sb-b{fill:#ddf4ff;stroke:var(--accent);stroke-width:1}
+.sb-g{fill:#dafbe1;stroke:var(--success);stroke-width:1}
+.sb-r{fill:#ffebe9;stroke:var(--danger);stroke-width:1}
+.sb-y{fill:#fff8e6;stroke:var(--attention);stroke-width:1}
+.sl{font-family:var(--sans);font-size:12px;font-weight:600;fill:var(--fg)}
+.ss{font-family:var(--mono);font-size:10px;fill:var(--fg-muted)}</style>
+      <rect class="sb-b" x="20" y="10" width="175" height="95" rx="6"></rect>
+      <text class="sl" x="107" y="30" text-anchor="middle">In transit</text>
+      <text class="ss" x="107" y="48" text-anchor="middle">HTTPS / TLS everywhere</text>
+      <text class="ss" x="107" y="62" text-anchor="middle">non-negotiable</text>
+      <rect class="sb-g" x="210" y="10" width="175" height="95" rx="6"></rect>
+      <text class="sl" x="297" y="30" text-anchor="middle">At rest</text>
+      <text class="ss" x="297" y="48" text-anchor="middle">Ambry server-side</text>
+      <text class="ss" x="297" y="62" text-anchor="middle">AES-256 encryption</text>
+      <rect class="sb-y" x="400" y="10" width="175" height="95" rx="6"></rect>
+      <text class="sl" x="487" y="30" text-anchor="middle">Access control</text>
+      <text class="ss" x="487" y="48" text-anchor="middle">SharedFiles ACL</text>
+      <text class="ss" x="487" y="62" text-anchor="middle">checked before URL gen</text>
+      <rect class="sb-r" x="590" y="10" width="175" height="95" rx="6"></rect>
+      <text class="sl" x="677" y="30" text-anchor="middle">Signed URLs</text>
+      <text class="ss" x="677" y="48" text-anchor="middle">short expiry (5min)</text>
+      <text class="ss" x="677" y="62" text-anchor="middle">limits leak blast radius</text>
+    </svg>

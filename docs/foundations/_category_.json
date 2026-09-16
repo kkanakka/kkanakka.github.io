@@ -1,0 +1,9 @@
+{
+  "label": "System Design Foundations",
+  "position": 3,
+  "link": {
+    "type": "generated-index",
+    "slug": "/foundations",
+    "description": "The building blocks: networking primitives, caching, architecture selection, and a reusable design framework."
+  }
+}

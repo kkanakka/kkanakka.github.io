@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 300" role="img" aria-labelledby="fig11-title" style="width:100%;max-width:900px;height:auto;display:block">
+<title id="fig11-title">JVM memory investigation toolkit</title>
+<g font-family="system-ui,sans-serif" font-size="12" fill="#1f2328">
+<rect x="20" y="20" width="260" height="120" rx="8" fill="#ddf4ff" stroke="#d1d9e0"></rect>
+<text x="40" y="44" font-weight="700" fill="#0969da">Process Overview</text>
+<text x="40" y="68">ps · top · /proc/&lt;PID&gt;/status</text>
+<text x="40" y="92" fill="#59636e" font-size="11">Threads, VmRSS/VmPeak, limits</text>
+<rect x="320" y="20" width="260" height="120" rx="8" fill="#dafbe1" stroke="#d1d9e0"></rect>
+<text x="340" y="44" font-weight="700" fill="#1a7f37">Memory Map</text>
+<text x="340" y="68">/proc/&lt;PID&gt;/maps · smaps · pmap</text>
+<text x="340" y="92" fill="#59636e" font-size="11">VMA layout, anon file huge</text>
+<rect x="620" y="20" width="260" height="120" rx="8" fill="#f5f0ff" stroke="#d1d9e0"></rect>
+<text x="640" y="44" font-weight="700" fill="#8250df">Java Specific</text>
+<text x="640" y="68">jcmd VM.native_memory · jmap · jstat</text>
+<text x="640" y="92" fill="#59636e" font-size="11">Heap + native allocator buckets</text>
+<rect x="170" y="160" width="260" height="120" rx="8" fill="#fff8c5" stroke="#d1d9e0"></rect>
+<text x="190" y="184" font-weight="700" fill="#9a6700">cgroup</text>
+<text x="190" y="208">memory.stat · memory.current · events</text>
+<text x="190" y="232" fill="#59636e" font-size="11">Throttling vs host RSS</text>
+<rect x="470" y="160" width="260" height="120" rx="8" fill="#f6f8fa" stroke="#d1d9e0"></rect>
+<text x="490" y="184" font-weight="700" fill="#59636e">Kernel</text>
+<text x="490" y="208">/proc/meminfo · buddyinfo · vmstat</text>
+<text x="490" y="232" fill="#59636e" font-size="11">Reclaim pressure, fragmentation</text>
+</g>
+</svg>

@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 900 380" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="a8" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1f2328"></path>
+    </marker>
+    <marker id="a8r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#d1242f"></path>
+    </marker>
+  </defs>
+
+  <text x="20" y="22" font-size="12" font-weight="600">Wire → app · the normal path · plus shortcuts</text>
+
+  <!-- normal flow row -->
+  <rect x="20" y="80" width="90" height="46" fill="#fff8e6" stroke="#9a6700"></rect>
+  <text x="65" y="100" text-anchor="middle" font-size="11">NIC</text>
+  <text x="65" y="116" text-anchor="middle" font-size="9" fill="#59636e">RSS hash</text>
+
+  <rect x="130" y="80" width="90" height="46" fill="#fff8e6" stroke="#9a6700"></rect>
+  <text x="175" y="100" text-anchor="middle" font-size="11">RX ring</text>
+  <text x="175" y="116" text-anchor="middle" font-size="9" fill="#59636e">DMA</text>
+
+  <rect x="240" y="80" width="90" height="46" fill="#ddf4ff" stroke="#0969da"></rect>
+  <text x="285" y="100" text-anchor="middle" font-size="11">NAPI</text>
+  <text x="285" y="116" text-anchor="middle" font-size="9" fill="#59636e">softirq</text>
+
+  <rect x="350" y="80" width="90" height="46" fill="#dafbe1" stroke="#1a7f37"></rect>
+  <text x="395" y="100" text-anchor="middle" font-size="11" fill="#1a7f37">XDP</text>
+  <text x="395" y="116" text-anchor="middle" font-size="9" fill="#59636e">eBPF hook</text>
+
+  <rect x="460" y="80" width="90" height="46" fill="#ddf4ff" stroke="#0969da"></rect>
+  <text x="505" y="100" text-anchor="middle" font-size="11">GRO</text>
+  <text x="505" y="116" text-anchor="middle" font-size="9" fill="#59636e">merge segs</text>
+
+  <rect x="570" y="80" width="100" height="46" fill="#ddf4ff" stroke="#0969da"></rect>
+  <text x="620" y="100" text-anchor="middle" font-size="11">IP · netfilter</text>
+  <text x="620" y="116" text-anchor="middle" font-size="9" fill="#59636e">conntrack</text>
+
+  <rect x="690" y="80" width="80" height="46" fill="#ddf4ff" stroke="#0969da"></rect>
+  <text x="730" y="100" text-anchor="middle" font-size="11">TCP</text>
+  <text x="730" y="116" text-anchor="middle" font-size="9" fill="#59636e">cwnd, sack</text>
+
+  <rect x="790" y="80" width="90" height="46" fill="#fff8c5" stroke="#9a6700"></rect>
+  <text x="835" y="100" text-anchor="middle" font-size="11">socket</text>
+  <text x="835" y="116" text-anchor="middle" font-size="9" fill="#59636e">recv buf</text>
+
+  <!-- arrows -->
+  <line x1="110" y1="103" x2="130" y2="103" stroke="#1f2328" marker-end="url(#a8)"></line>
+  <line x1="220" y1="103" x2="240" y2="103" stroke="#1f2328" marker-end="url(#a8)"></line>
+  <line x1="330" y1="103" x2="350" y2="103" stroke="#1f2328" marker-end="url(#a8)"></line>
+  <line x1="440" y1="103" x2="460" y2="103" stroke="#1f2328" marker-end="url(#a8)"></line>
+  <line x1="550" y1="103" x2="570" y2="103" stroke="#1f2328" marker-end="url(#a8)"></line>
+  <line x1="670" y1="103" x2="690" y2="103" stroke="#1f2328" marker-end="url(#a8)"></line>
+  <line x1="770" y1="103" x2="790" y2="103" stroke="#1f2328" marker-end="url(#a8)"></line>
+
+  <!-- App -->
+  <rect x="790" y="170" width="90" height="40" fill="#dafbe1" stroke="#1a7f37"></rect>
+  <text x="835" y="195" text-anchor="middle" font-size="11">app</text>
+  <line x1="835" y1="126" x2="835" y2="170" stroke="#1f2328" marker-end="url(#a8)"></line>
+  <text x="755" y="155" font-size="9" fill="#59636e">recvmsg() · context switch</text>
+
+  <!-- Bypass paths -->
+  <text x="20" y="230" font-size="12" font-weight="600" fill="#1a7f37">Bypasses that cut latency</text>
+
+  <!-- XDP_REDIRECT to AF_XDP -->
+  <path d="M 395 126 Q 395 230 720 240 Q 800 245 835 210" stroke="#1a7f37" stroke-width="1.5" stroke-dasharray="4,3" fill="none" marker-end="url(#a8)"></path>
+  <text x="430" y="260" font-size="10" fill="#1a7f37">①  XDP → AF_XDP socket (skip stack)</text>
+
+  <!-- DPDK -->
+  <path d="M 175 126 Q 175 300 800 305 Q 830 305 835 210" stroke="#d1242f" stroke-width="1.5" stroke-dasharray="4,3" fill="none" marker-end="url(#a8r)"></path>
+  <text x="220" y="328" font-size="10" fill="#d1242f">②  DPDK · userspace driver bypasses kernel entirely</text>
+
+  <!-- SO_BUSY_POLL annotation -->
+  <text x="240" y="155" font-size="9" fill="#0969da">SO_BUSY_POLL: app spins here</text>
+  <line x1="285" y1="158" x2="285" y2="138" stroke="#0969da" stroke-width="0.8"></line>
+
+  <!-- Hook annotations -->
+  <g font-size="9" fill="#59636e">
+    <text x="65" y="155">ethtool -C · IRQ coalesce</text>
+    <text x="65" y="167">/proc/irq/*/smp_affinity</text>
+  </g>
+</svg>

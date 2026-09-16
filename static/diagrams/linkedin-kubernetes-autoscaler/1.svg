@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="100%" height="700" style="background:#fafafa;border:1px solid #ddd;border-radius:8px;margin:16px 0;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1125 700">
+    <!-- Service Pods -->
+    <rect x="50" y="50" width="150" height="80" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2" rx="8"></rect>
+    <text x="125" y="75" text-anchor="middle" font-size="12" font-weight="bold" fill="#1b5e20">Service Pods</text>
+    <text x="125" y="95" text-anchor="middle" font-size="10" fill="#1b5e20">Current: 24 replicas</text>
+    <text x="125" y="110" text-anchor="middle" font-size="10" fill="#1b5e20">p95 latency: 95ms</text>
+    <text x="125" y="125" text-anchor="middle" font-size="10" fill="#1b5e20">Queue depth: 3.2</text>
+    
+    <!-- SLO Signal Adapter -->
+    <rect x="250" y="50" width="180" height="80" fill="#e3f2fd" stroke="#1976d2" stroke-width="2" rx="8"></rect>
+    <text x="340" y="75" text-anchor="middle" font-size="12" font-weight="bold" fill="#0d47a1">SLO Signal Adapter</text>
+    <text x="340" y="95" text-anchor="middle" font-size="10" fill="#0d47a1">Latency → Desired Capacity</text>
+    <text x="340" y="110" text-anchor="middle" font-size="10" fill="#0d47a1">Queue Depth Analysis</text>
+    <text x="340" y="125" text-anchor="middle" font-size="10" fill="#0d47a1">SLO Burn Rate Calc</text>
+    
+    <!-- Metrics Collection -->
+    <rect x="480" y="50" width="150" height="80" fill="#fff3e0" stroke="#f57c00" stroke-width="2" rx="8"></rect>
+    <text x="555" y="75" text-anchor="middle" font-size="12" font-weight="bold" fill="#e65100">Metrics Pipeline</text>
+    <text x="555" y="95" text-anchor="middle" font-size="10" fill="#e65100">Prometheus scrapes</text>
+    <text x="555" y="110" text-anchor="middle" font-size="10" fill="#e65100">LinkedIn InGraphs</text>
+    <text x="555" y="125" text-anchor="middle" font-size="10" fill="#e65100">Real-time aggregation</text>
+    
+    <!-- Fast Control Loop (HPA) -->
+    <rect x="50" y="170" width="200" height="100" fill="#e3f2fd" stroke="#326ce5" stroke-width="3" rx="8"></rect>
+    <text x="150" y="195" text-anchor="middle" font-size="14" font-weight="bold" fill="#1565c0">Fast Loop (HPA)</text>
+    <text x="150" y="215" text-anchor="middle" font-size="11" fill="#1565c0">Every 10 seconds</text>
+    <text x="150" y="230" text-anchor="middle" font-size="10" fill="#1565c0">• Queue depth monitoring</text>
+    <text x="150" y="245" text-anchor="middle" font-size="10" fill="#1565c0">• P95 latency tracking</text>
+    <text x="150" y="260" text-anchor="middle" font-size="10" fill="#1565c0">• Burst buffer activation</text>
+    
+    <!-- Slow Control Loop (VPA) -->
+    <rect x="280" y="170" width="200" height="100" fill="#f3e5f5" stroke="#7b1fa2" stroke-width="3" rx="8"></rect>
+    <text x="380" y="195" text-anchor="middle" font-size="14" font-weight="bold" fill="#4a148c">Slow Loop (VPA)</text>
+    <text x="380" y="215" text-anchor="middle" font-size="11" fill="#4a148c">Every 15 minutes</text>
+    <text x="380" y="230" text-anchor="middle" font-size="10" fill="#4a148c">• Resource right-sizing</text>
+    <text x="380" y="245" text-anchor="middle" font-size="10" fill="#4a148c">• Memory/CPU tuning</text>
+    <text x="380" y="260" text-anchor="middle" font-size="10" fill="#4a148c">• OOM prevention</text>
+    
+    <!-- Cluster Autoscaler -->
+    <rect x="510" y="170" width="180" height="100" fill="#e0f2f1" stroke="#00695c" stroke-width="3" rx="8"></rect>
+    <text x="600" y="195" text-anchor="middle" font-size="14" font-weight="bold" fill="#004d40">Cluster Autoscaler</text>
+    <text x="600" y="215" text-anchor="middle" font-size="11" fill="#004d40">Node-level scaling</text>
+    <text x="600" y="230" text-anchor="middle" font-size="10" fill="#004d40">• Pending pod detection</text>
+    <text x="600" y="245" text-anchor="middle" font-size="10" fill="#004d40">• Node provisioning</text>
+    <text x="600" y="260" text-anchor="middle" font-size="10" fill="#004d40">• Topology awareness</text>
+    
+    <!-- Cooldown & Rate Limiting -->
+    <rect x="50" y="300" width="300" height="80" fill="#fff8e1" stroke="#fbc02d" stroke-width="2" rx="8"></rect>
+    <text x="200" y="325" text-anchor="middle" font-size="12" font-weight="bold" fill="#f57c00">Rate Limiter &amp; Cooldowns</text>
+    <text x="200" y="345" text-anchor="middle" font-size="10" fill="#f57c00">Scale-out: Immediate • Scale-in: 10m guard • Anti-flapping: Exponential backoff</text>
+    <text x="200" y="360" text-anchor="middle" font-size="10" fill="#f57c00">Derivative dampening • Stability analysis • Oscillation detection</text>
+    <text x="200" y="375" text-anchor="middle" font-size="10" fill="#f57c00">Control theory: PID controller with SLO-aware gains</text>
+    
+    <!-- Policy Webhook -->
+    <rect x="380" y="300" width="310" height="80" fill="#ffebee" stroke="#d32f2f" stroke-width="2" rx="8"></rect>
+    <text x="535" y="325" text-anchor="middle" font-size="12" font-weight="bold" fill="#c62828">Admission &amp; Policy Webhook</text>
+    <text x="535" y="345" text-anchor="middle" font-size="10" fill="#c62828">Per-service policies • Cost guardrails • Resource quotas</text>
+    <text x="535" y="360" text-anchor="middle" font-size="10" fill="#c62828">PDB enforcement • Graceful drains • Anti-affinity rules</text>
+    <text x="535" y="375" text-anchor="middle" font-size="10" fill="#c62828">Budget caps • Scaling velocity limits • Emergency brakes</text>
+    
+    <!-- Node Pools (Multi-AZ) -->
+    <rect x="50" y="420" width="140" height="70" fill="#e8eaf6" stroke="#3f51b5" stroke-width="2" rx="4"></rect>
+    <text x="120" y="440" text-anchor="middle" font-size="11" font-weight="bold" fill="#1a237e">LTX1-A Nodes</text>
+    <text x="120" y="455" text-anchor="middle" font-size="9" fill="#1a237e">Memory-optimized</text>
+    <text x="120" y="470" text-anchor="middle" font-size="9" fill="#1a237e">16 vCPU, 128GB</text>
+    <text x="120" y="485" text-anchor="middle" font-size="9" fill="#1a237e">78% utilization</text>
+    
+    <rect x="210" y="420" width="140" height="70" fill="#e8eaf6" stroke="#3f51b5" stroke-width="2" rx="4"></rect>
+    <text x="280" y="440" text-anchor="middle" font-size="11" font-weight="bold" fill="#1a237e">LTX1-B Nodes</text>
+    <text x="280" y="455" text-anchor="middle" font-size="9" fill="#1a237e">CPU-optimized</text>
+    <text x="280" y="470" text-anchor="middle" font-size="9" fill="#1a237e">32 vCPU, 64GB</text>
+    <text x="280" y="485" text-anchor="middle" font-size="9" fill="#1a237e">82% utilization</text>
+    
+    <rect x="370" y="420" width="140" height="70" fill="#e8eaf6" stroke="#3f51b5" stroke-width="2" rx="4"></rect>
+    <text x="440" y="440" text-anchor="middle" font-size="11" font-weight="bold" fill="#1a237e">LVA1-A Nodes</text>
+    <text x="440" y="455" text-anchor="middle" font-size="9" fill="#1a237e">General purpose</text>
+    <text x="440" y="470" text-anchor="middle" font-size="9" fill="#1a237e">8 vCPU, 32GB</text>
+    <text x="440" y="485" text-anchor="middle" font-size="9" fill="#1a237e">73% utilization</text>
+    
+    <rect x="530" y="420" width="140" height="70" fill="#e8eaf6" stroke="#3f51b5" stroke-width="2" stroke-dasharray="5,5" rx="4"></rect>
+    <text x="600" y="440" text-anchor="middle" font-size="11" font-weight="bold" fill="#1a237e">Buffer Nodes</text>
+    <text x="600" y="455" text-anchor="middle" font-size="9" fill="#1a237e">Pre-warmed</text>
+    <text x="600" y="470" text-anchor="middle" font-size="9" fill="#1a237e">Burst capacity</text>
+    <text x="600" y="485" text-anchor="middle" font-size="9" fill="#1a237e">15% overhead</text>
+    
+    <!-- Monitoring & Alerting -->
+    <rect x="50" y="520" width="200" height="60" fill="#e8f4f8" stroke="#0077b5" stroke-width="2" rx="4"></rect>
+    <text x="150" y="540" text-anchor="middle" font-size="12" font-weight="bold" fill="#01579b">SLO Monitoring</text>
+    <text x="150" y="560" text-anchor="middle" font-size="10" fill="#01579b">Latency burn rate • Scaling decisions</text>
+    <text x="150" y="575" text-anchor="middle" font-size="10" fill="#01579b">Cost efficiency • Utilization tracking</text>
+    
+    <rect x="270" y="520" width="200" height="60" fill="#e8f4f8" stroke="#0077b5" stroke-width="2" rx="4"></rect>
+    <text x="370" y="540" text-anchor="middle" font-size="12" font-weight="bold" fill="#01579b">Control Loop Health</text>
+    <text x="370" y="560" text-anchor="middle" font-size="10" fill="#01579b">Oscillation detection • Stability metrics</text>
+    <text x="370" y="575" text-anchor="middle" font-size="10" fill="#01579b">Thrash prevention • Loop performance</text>
+    
+    <rect x="490" y="520" width="200" height="60" fill="#e8f4f8" stroke="#0077b5" stroke-width="2" rx="4"></rect>
+    <text x="590" y="540" text-anchor="middle" font-size="12" font-weight="bold" fill="#01579b">Cost Analytics</text>
+    <text x="590" y="560" text-anchor="middle" font-size="10" fill="#01579b">$/request tracking • Efficiency trends</text>
+    <text x="590" y="575" text-anchor="middle" font-size="10" fill="#01579b">Budget burn • Resource waste</text>
+    
+    <!-- Predictive Components -->
+    <rect x="50" y="620" width="640" height="50" fill="#e1f5fe" stroke="#0288d1" stroke-width="2" rx="8"></rect>
+    <text x="370" y="640" text-anchor="middle" font-size="14" font-weight="bold" fill="#01579b">Predictive Burst Buffer System</text>
+    <text x="370" y="660" text-anchor="middle" font-size="10" fill="#01579b">EWMA Traffic Forecasting • Warm Pod Pre-allocation • Ramp Detection • LinkedIn Event Calendar Integration</text>
+    
+    <!-- Arrows -->
+    <defs>
+      <marker id="arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+        <polygon points="0 0, 10 3.5, 0 7" fill="#666"></polygon>
+      </marker>
+    </defs>
+    
+    <!-- Signal flow -->
+    <line x1="200" y1="90" x2="250" y2="90" stroke="#666" stroke-width="2" marker-end="url(#arrow)"></line>
+    <line x1="430" y1="90" x2="480" y2="90" stroke="#666" stroke-width="2" marker-end="url(#arrow)"></line>
+    
+    <!-- Control loops -->
+    <line x1="340" y1="130" x2="150" y2="170" stroke="#326ce5" stroke-width="3" marker-end="url(#arrow)"></line>
+    <line x1="340" y1="130" x2="380" y2="170" stroke="#7b1fa2" stroke-width="3" marker-end="url(#arrow)"></line>
+    <line x1="340" y1="130" x2="600" y2="170" stroke="#00695c" stroke-width="3" marker-end="url(#arrow)"></line>
+    
+    <!-- Rate limiting -->
+    <line x1="200" y1="270" x2="200" y2="300" stroke="#fbc02d" stroke-width="2" marker-end="url(#arrow)"></line>
+    
+    <!-- Node management -->
+    <line x1="600" y1="270" x2="600" y2="420" stroke="#3f51b5" stroke-width="2" marker-end="url(#arrow)"></line>
+    
+    <!-- Monitoring connections -->
+    <line x1="150" y1="270" x2="150" y2="520" stroke="#0077b5" stroke-width="2" stroke-dasharray="3,3"></line>
+    <line x1="380" y1="270" x2="370" y2="520" stroke="#0077b5" stroke-width="2" stroke-dasharray="3,3"></line>
+    
+    <!-- Predictive feedback -->
+    <line x1="370" y1="620" x2="150" y2="270" stroke="#0288d1" stroke-width="2" stroke-dasharray="5,5"></line>
+    
+    <!-- Labels -->
+    <text x="225" y="85" font-size="9" fill="#666">SLIs</text>
+    <text x="455" y="85" font-size="9" fill="#666">metrics</text>
+    <text x="245" y="150" font-size="9" fill="#326ce5">fast</text>
+    <text x="360" y="150" font-size="9" fill="#7b1fa2">slow</text>
+    <text x="470" y="150" font-size="9" fill="#00695c">nodes</text>
+    <text x="625" y="400" font-size="9" fill="#3f51b5">provision</text>
+    <text x="200" y="510" font-size="9" fill="#0077b5">monitor</text>
+    <text x="280" y="600" font-size="9" fill="#0288d1">predict</text>
+  </svg>

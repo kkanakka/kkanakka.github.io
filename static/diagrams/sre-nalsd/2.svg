@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="740" height="90" viewBox="0 0 740 90" xmlns="http://www.w3.org/2000/svg">
+        <defs><marker id="a1" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#1565c0"></polygon></marker></defs>
+        <g font-family="Inter,sans-serif" font-size="12" fill="#37352f">
+          <rect x="5" y="25" width="80" height="40" rx="6" fill="#e3f2fd" stroke="#1565c0"></rect><text x="45" y="49" text-anchor="middle">Client</text>
+          <line x1="85" y1="45" x2="105" y2="45" stroke="#1565c0" stroke-width="1.5" marker-end="url(#a1)"></line>
+          <rect x="110" y="25" width="80" height="40" rx="6" fill="#e3f2fd" stroke="#1565c0"></rect><text x="150" y="49" text-anchor="middle">DNS</text>
+          <line x1="190" y1="45" x2="210" y2="45" stroke="#1565c0" stroke-width="1.5" marker-end="url(#a1)"></line>
+          <rect x="215" y="25" width="100" height="40" rx="6" fill="#fff3e0" stroke="#e65100" stroke-width="2"></rect><text x="265" y="49" text-anchor="middle" font-weight="600">CDN Edge</text>
+          <line x1="315" y1="45" x2="335" y2="45" stroke="#1565c0" stroke-width="1.5" marker-end="url(#a1)"></line>
+          <rect x="340" y="25" width="80" height="40" rx="6" fill="#e3f2fd" stroke="#1565c0"></rect><text x="380" y="49" text-anchor="middle">LB / BGP</text>
+          <line x1="420" y1="45" x2="440" y2="45" stroke="#1565c0" stroke-width="1.5" marker-end="url(#a1)"></line>
+          <rect x="445" y="25" width="80" height="40" rx="6" fill="#e3f2fd" stroke="#1565c0"></rect><text x="485" y="49" text-anchor="middle">App</text>
+          <line x1="525" y1="45" x2="545" y2="45" stroke="#1565c0" stroke-width="1.5" marker-end="url(#a1)"></line>
+          <rect x="550" y="25" width="80" height="40" rx="6" fill="#e3f2fd" stroke="#1565c0"></rect><text x="590" y="49" text-anchor="middle">DB</text>
+        </g>
+        <text x="265" y="82" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#e65100" font-weight="600">↑ Likely culprit</text>
+      </svg>

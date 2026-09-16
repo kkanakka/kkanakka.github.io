@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 980 880" xmlns="http://www.w3.org/2000/svg"><style>.box-fill-blue{fill:#ddf4ff;stroke:#54aeff}
+.box-fill-green{fill:#dafbe1;stroke:#4ac26b}
+.box-fill-purple{fill:#fbefff;stroke:#c297ff}
+.box-fill-orange{fill:#fff1e5;stroke:#fd8c73}
+.box-fill-red{fill:#ffebe9;stroke:#ff8182}
+.box-fill-gray{fill:#f6f8fa;stroke:#d0d7de}
+.lbl-title{font-family:'Inter',sans-serif;font-weight:700;font-size:11.5px;fill:#1f2328}
+.lbl-sub{font-family:'JetBrains Mono',monospace;font-size:9.5px;fill:#59636e}
+.lbl-meta{font-family:'JetBrains Mono',monospace;font-size:9px;fill:#818b98}
+.arrow{stroke:#59636e;stroke-width:1.3;fill:none;marker-end:url(#arr)}
+.arrow-dashed{stroke:#cf222e;stroke-width:1.2;fill:none;stroke-dasharray:4,3;marker-end:url(#arr-red)}
+.arrow-green{stroke:#1a7f37;stroke-width:1.5;fill:none;marker-end:url(#arr-green)}</style>
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#59636e"></path>
+    </marker>
+    <marker id="arr-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#cf222e"></path>
+    </marker>
+    <marker id="arr-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1a7f37"></path>
+    </marker>
+  </defs>
+
+  <!-- SLO ribbon at top -->
+  <text x="490" y="22" text-anchor="middle" class="lbl-title" style="font-size:13px">10 M tasks/sec · p95 regional ≤ 2 s · p99 global ≤ 10 s · 99.999% delivery</text>
+
+  <!-- Row 1: Producers + Enqueue gateway -->
+  <g>
+    <rect x="20" y="50" width="200" height="90" rx="6" class="box-fill-gray"></rect>
+    <text x="120" y="74" text-anchor="middle" class="lbl-title">Producers</text>
+    <text x="120" y="92" text-anchor="middle" class="lbl-sub">Multi-tenant services</text>
+    <text x="120" y="108" text-anchor="middle" class="lbl-sub">Feed · InMail · Jobs · Profile</text>
+    <text x="120" y="126" text-anchor="middle" class="lbl-meta">~2 M producer pods</text>
+  </g>
+
+  <text x="260" y="100" class="lbl-meta">1</text>
+  <circle cx="240" cy="95" r="11" fill="#0a66c2"></circle>
+  <text x="240" y="99" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">1</text>
+
+  <g>
+    <rect x="280" y="50" width="500" height="90" rx="6" class="box-fill-blue"></rect>
+    <text x="530" y="74" text-anchor="middle" class="lbl-title">Enqueue gateway</text>
+    <text x="530" y="92" text-anchor="middle" class="lbl-sub">Auth · schema validate · per-tenant token bucket</text>
+    <text x="530" y="108" text-anchor="middle" class="lbl-sub">Idempotency key dedupe (Spanner CAS)</text>
+    <text x="530" y="126" text-anchor="middle" class="lbl-meta">80 gateways · 8k RPC/s each · p99 50 ms</text>
+  </g>
+
+  <!-- DLQ early reject -->
+  <g>
+    <rect x="820" y="50" width="140" height="90" rx="6" class="box-fill-red"></rect>
+    <text x="890" y="74" text-anchor="middle" class="lbl-title">DLQ-0 (early)</text>
+    <text x="890" y="92" text-anchor="middle" class="lbl-sub">malformed</text>
+    <text x="890" y="108" text-anchor="middle" class="lbl-sub">over-quota</text>
+    <text x="890" y="126" text-anchor="middle" class="lbl-meta">auth fail</text>
+  </g>
+
+  <!-- Row 2: Kafka -->
+  <g>
+    <circle cx="530" cy="170" r="11" fill="#0a66c2"></circle>
+    <text x="530" y="174" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">2</text>
+  </g>
+  <g>
+    <rect x="20" y="195" width="940" height="90" rx="6" class="box-fill-green"></rect>
+    <text x="490" y="218" text-anchor="middle" class="lbl-title" style="font-size:13px">Kafka — partitioned by (tenant, priority)</text>
+    <text x="490" y="236" text-anchor="middle" class="lbl-sub">Topics: tasks.p0 (critical) · tasks.p1 (standard) · tasks.p2 (batch)</text>
+    <text x="490" y="252" text-anchor="middle" class="lbl-sub">MirrorMaker2 cross-region · 7-day retention · 3× replication · 1,024 partitions</text>
+    <text x="490" y="272" text-anchor="middle" class="lbl-meta">80 brokers · 4 GB/s in · 7.3 PB total · replay enables incident recovery</text>
+  </g>
+
+  <!-- Row 3: Scheduler + dispatcher -->
+  <g>
+    <circle cx="490" cy="305" r="11" fill="#0a66c2"></circle>
+    <text x="490" y="309" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">3</text>
+  </g>
+  <g>
+    <rect x="100" y="330" width="780" height="80" rx="6" class="box-fill-purple"></rect>
+    <text x="490" y="354" text-anchor="middle" class="lbl-title" style="font-size:13px">Scheduler + dispatcher</text>
+    <text x="490" y="372" text-anchor="middle" class="lbl-sub">Delayed / cron · worker-pool routing · lease issuance</text>
+    <text x="490" y="392" text-anchor="middle" class="lbl-meta">40 instances · stateless · routes by task_type → worker pool</text>
+  </g>
+
+  <!-- Row 4: 4 worker pools -->
+  <g>
+    <circle cx="125" cy="430" r="11" fill="#0a66c2"></circle>
+    <text x="125" y="434" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">4</text>
+  </g>
+
+  <g>
+    <rect x="20" y="455" width="225" height="115" rx="6" class="box-fill-orange"></rect>
+    <text x="132" y="479" text-anchor="middle" class="lbl-title">CPU pool</text>
+    <text x="132" y="497" text-anchor="middle" class="lbl-sub">image · transcode</text>
+    <text x="132" y="513" text-anchor="middle" class="lbl-sub">HPA 1k–20k pods</text>
+    <text x="132" y="535" text-anchor="middle" class="lbl-meta">12,500 nodes peak</text>
+    <text x="132" y="551" text-anchor="middle" class="lbl-meta">200 ms p50 task</text>
+    <text x="132" y="565" text-anchor="middle" class="lbl-meta">5 M tasks/s (50%)</text>
+  </g>
+
+  <g>
+    <rect x="260" y="455" width="225" height="115" rx="6" class="box-fill-orange"></rect>
+    <text x="372" y="479" text-anchor="middle" class="lbl-title">I/O pool</text>
+    <text x="372" y="497" text-anchor="middle" class="lbl-sub">email · webhooks</text>
+    <text x="372" y="513" text-anchor="middle" class="lbl-sub">High network</text>
+    <text x="372" y="535" text-anchor="middle" class="lbl-meta">140 nodes</text>
+    <text x="372" y="551" text-anchor="middle" class="lbl-meta">800 ms p50 task</text>
+    <text x="372" y="565" text-anchor="middle" class="lbl-meta">3.5 M tasks/s (35%)</text>
+  </g>
+
+  <g>
+    <rect x="500" y="455" width="225" height="115" rx="6" class="box-fill-orange"></rect>
+    <text x="612" y="479" text-anchor="middle" class="lbl-title">GPU pool</text>
+    <text x="612" y="497" text-anchor="middle" class="lbl-sub">inference · ML</text>
+    <text x="612" y="513" text-anchor="middle" class="lbl-sub">Specialized nodes</text>
+    <text x="612" y="535" text-anchor="middle" class="lbl-meta">313 GPU nodes</text>
+    <text x="612" y="551" text-anchor="middle" class="lbl-meta">50 ms batched</text>
+    <text x="612" y="565" text-anchor="middle" class="lbl-meta">0.8 M tasks/s (8%)</text>
+  </g>
+
+  <g>
+    <rect x="740" y="455" width="220" height="115" rx="6" class="box-fill-orange"></rect>
+    <text x="850" y="479" text-anchor="middle" class="lbl-title">Memory pool</text>
+    <text x="850" y="497" text-anchor="middle" class="lbl-sub">data enrich</text>
+    <text x="850" y="513" text-anchor="middle" class="lbl-sub">High-RAM</text>
+    <text x="850" y="535" text-anchor="middle" class="lbl-meta">5,500 nodes</text>
+    <text x="850" y="551" text-anchor="middle" class="lbl-meta">500 ms p50 task</text>
+    <text x="850" y="565" text-anchor="middle" class="lbl-meta">0.7 M tasks/s (7%)</text>
+  </g>
+
+  <text x="490" y="595" text-anchor="middle" class="lbl-sub">Workers claim with visibility timeout · heartbeat renews lease · ack on completion</text>
+
+  <!-- Row 5: Success / Failure split -->
+  <g>
+    <circle cx="170" cy="625" r="11" fill="#1a7f37"></circle>
+    <text x="170" y="629" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">5</text>
+  </g>
+  <g>
+    <rect x="40" y="650" width="430" height="90" rx="6" class="box-fill-green"></rect>
+    <text x="255" y="673" text-anchor="middle" class="lbl-title">Success path</text>
+    <text x="255" y="691" text-anchor="middle" class="lbl-sub">Commit result · update status</text>
+    <text x="255" y="708" text-anchor="middle" class="lbl-sub">Idempotent CAS on dedupe table</text>
+    <text x="255" y="728" text-anchor="middle" class="lbl-meta">conditional write: status=DONE iff status=RUNNING AND lease valid</text>
+  </g>
+
+  <g>
+    <circle cx="640" cy="625" r="11" fill="#cf222e"></circle>
+    <text x="640" y="629" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">6</text>
+  </g>
+  <g>
+    <rect x="510" y="650" width="450" height="90" rx="6" class="box-fill-red"></rect>
+    <text x="735" y="673" text-anchor="middle" class="lbl-title">Failure path</text>
+    <text x="735" y="691" text-anchor="middle" class="lbl-sub">Retry with exponential backoff</text>
+    <text x="735" y="708" text-anchor="middle" class="lbl-sub">After N attempts → DLQ</text>
+    <text x="735" y="728" text-anchor="middle" class="lbl-meta">backoff: 1s · 2s · 4s · 8s · 16s · 32s</text>
+  </g>
+
+  <!-- Row 6: State store + DLQ -->
+  <g>
+    <circle cx="170" cy="770" r="11" fill="#0a66c2"></circle>
+    <text x="170" y="774" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">7</text>
+  </g>
+  <g>
+    <rect x="40" y="795" width="430" height="65" rx="6" class="box-fill-blue"></rect>
+    <text x="255" y="817" text-anchor="middle" class="lbl-title">State store (Spanner)</text>
+    <text x="255" y="833" text-anchor="middle" class="lbl-sub">PENDING · RUNNING · DONE · FAILED</text>
+    <text x="255" y="850" text-anchor="middle" class="lbl-meta">dedupe table · retry counters · 60M writes/s · 3 PB</text>
+  </g>
+
+  <g>
+    <rect x="510" y="795" width="450" height="65" rx="6" class="box-fill-red"></rect>
+    <text x="735" y="817" text-anchor="middle" class="lbl-title">Dead letter queue</text>
+    <text x="735" y="833" text-anchor="middle" class="lbl-sub">Terminal failures · manual replay</text>
+    <text x="735" y="850" text-anchor="middle" class="lbl-meta">alert on depth growth · per-tenant partition</text>
+  </g>
+
+  <!-- ARROWS -->
+  <!-- Row 1 flow -->
+  <path d="M220,95 L280,95" class="arrow"></path>
+  <path d="M780,80 L820,75" class="arrow-dashed"></path>
+
+  <!-- Gateway → Kafka -->
+  <path d="M530,140 L530,195" class="arrow"></path>
+
+  <!-- Kafka ↔ Scheduler -->
+  <path d="M490,285 L490,330" class="arrow"></path>
+  <path d="M520,330 L520,285" class="arrow-dashed"></path>
+  <text x="550" y="310" class="lbl-meta" fill="#cf222e">requeue</text>
+
+  <!-- Scheduler → 4 pools -->
+  <path d="M250,410 L132,455" class="arrow"></path>
+  <path d="M400,410 L372,455" class="arrow"></path>
+  <path d="M580,410 L612,455" class="arrow"></path>
+  <path d="M730,410 L850,455" class="arrow"></path>
+
+  <!-- Pools → Success + Failure -->
+  <path d="M132,570 L255,650" class="arrow-green"></path>
+  <path d="M372,570 L255,650" class="arrow-green"></path>
+  <path d="M612,570 L735,650" class="arrow-dashed"></path>
+  <path d="M850,570 L735,650" class="arrow-dashed"></path>
+
+  <!-- Success → State store -->
+  <path d="M255,740 L255,795" class="arrow"></path>
+  <!-- Failure → DLQ -->
+  <path d="M735,740 L735,795" class="arrow-dashed"></path>
+
+  <!-- Failure path back-arrow to scheduler (retry) -->
+  <path d="M510,695 L490,410" class="arrow-dashed" stroke-opacity="0.5"></path>
+
+  <!-- Legend -->
+  <g transform="translate(20,40)">
+    <line x1="0" y1="0" x2="20" y2="0" class="arrow"></line><text x="26" y="3" class="lbl-meta">happy path</text>
+    <line x1="110" y1="0" x2="130" y2="0" class="arrow-dashed"></line><text x="136" y="3" class="lbl-meta">failure / retry</text>
+    <line x1="240" y1="0" x2="260" y2="0" class="arrow-green"></line><text x="266" y="3" class="lbl-meta">success</text>
+  </g>
+</svg>

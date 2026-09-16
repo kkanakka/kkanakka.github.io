@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 800 110" xmlns="http://www.w3.org/2000/svg"><style>.sb-b{fill:#ddf4ff;stroke:var(--accent);stroke-width:1}
+.sb-g{fill:#dafbe1;stroke:var(--success);stroke-width:1}
+.sb-r{fill:#ffebe9;stroke:var(--danger);stroke-width:1}
+.sb-p{fill:#fbefff;stroke:var(--done);stroke-width:1}
+.sl{font-family:var(--sans);font-size:12px;font-weight:600;fill:var(--fg)}
+.ss{font-family:var(--mono);font-size:10px;fill:var(--fg-muted)}</style>
+      <defs><marker id="a1" markerWidth="8" markerHeight="8" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#656d76"></path></marker></defs>
+      <rect class="sb-r" x="20" y="10" width="175" height="85" rx="6"></rect>
+      <text class="sl" x="107" y="30" text-anchor="middle">Consistency</text>
+      <text class="ss" x="107" y="48" text-anchor="middle">strict for booking</text>
+      <text class="ss" x="107" y="62" text-anchor="middle">no double-booking</text>
+      <text class="ss" x="107" y="76" text-anchor="middle">CP for write path</text>
+      <text class="ss" x="107" y="90" text-anchor="middle">AP for read path</text>
+      <rect class="sb-b" x="210" y="10" width="175" height="85" rx="6"></rect>
+      <text class="sl" x="297" y="30" text-anchor="middle">Read Scale</text>
+      <text class="ss" x="297" y="48" text-anchor="middle">100:1 read:write ratio</text>
+      <text class="ss" x="297" y="62" text-anchor="middle">popular events =</text>
+      <text class="ss" x="297" y="76" text-anchor="middle">10M concurrent users</text>
+      <text class="ss" x="297" y="90" text-anchor="middle">page refreshes</text>
+      <rect class="sb-g" x="400" y="10" width="175" height="85" rx="6"></rect>
+      <text class="sl" x="487" y="30" text-anchor="middle">Search Latency</text>
+      <text class="ss" x="487" y="48" text-anchor="middle">&lt; 500ms p99</text>
+      <text class="ss" x="487" y="62" text-anchor="middle">full-text + filters</text>
+      <text class="ss" x="487" y="76" text-anchor="middle">no full table scans</text>
+      <text class="ss" x="487" y="90" text-anchor="middle">inverted index</text>
+      <rect class="sb-p" x="590" y="10" width="175" height="85" rx="6"></rect>
+      <text class="sl" x="677" y="30" text-anchor="middle">Availability</text>
+      <text class="ss" x="677" y="48" text-anchor="middle">view + search</text>
+      <text class="ss" x="677" y="62" text-anchor="middle">always available</text>
+      <text class="ss" x="677" y="76" text-anchor="middle">tolerate eventual</text>
+      <text class="ss" x="677" y="90" text-anchor="middle">consistency</text>
+    </svg>

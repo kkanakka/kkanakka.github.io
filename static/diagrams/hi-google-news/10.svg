@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 800 130" xmlns="http://www.w3.org/2000/svg"><style>.sb{fill:var(--bg-subtle);stroke:var(--border);stroke-width:1}
+.sb-b{fill:#ddf4ff;stroke:var(--accent);stroke-width:1}
+.sb-g{fill:#dafbe1;stroke:var(--success);stroke-width:1}
+.sb-r{fill:#ffebe9;stroke:var(--danger);stroke-width:1}
+.sb-y{fill:#fff8e6;stroke:var(--attention);stroke-width:1}
+.sb-p{fill:#fbefff;stroke:var(--done);stroke-width:1}
+.sb-o{fill:#fff1e5;stroke:var(--orange);stroke-width:1}
+.sl{font-family:var(--sans);font-size:12px;font-weight:600;fill:var(--fg)}
+.ss{font-family:var(--mono);font-size:10px;fill:var(--fg-muted)}
+.sa-b{stroke:var(--accent);stroke-width:1.5;fill:none}
+.sa-g{stroke:var(--success);stroke-width:1.5;fill:none}</style>
+      <rect class="sb-o" x="20" y="15" width="130" height="45" rx="6"></rect><text class="sl" x="85" y="35" text-anchor="middle">Publisher image</text><text class="ss" x="85" y="50" text-anchor="middle">variable size/quality</text>
+      <rect class="sb-b" x="180" y="15" width="150" height="45" rx="6"></rect><text class="sl" x="255" y="35" text-anchor="middle">Image Processor</text><text class="ss" x="255" y="50" text-anchor="middle">resize: 320px, 640px, 1x</text>
+      <rect class="sb-p" x="360" y="15" width="130" height="45" rx="6"></rect><text class="sl" x="425" y="35" text-anchor="middle">Ambry</text><text class="ss" x="425" y="50" text-anchor="middle">3 sizes per article</text>
+      <rect class="sb-g" x="520" y="15" width="140" height="45" rx="6"></rect><text class="sl" x="590" y="35" text-anchor="middle">LinkedIn CDN</text><text class="ss" x="590" y="50" text-anchor="middle">edge cached</text>
+      <rect class="sb" x="690" y="15" width="80" height="45" rx="6"></rect><text class="sl" x="730" y="35" text-anchor="middle">Client</text><text class="ss" x="730" y="50" text-anchor="middle">&lt; 50ms</text>
+
+      <path class="sa-b" d="M150,37 L178,37" marker-end="url(#ab)"></path>
+      <path class="sa-b" d="M330,37 L358,37" marker-end="url(#ab)"></path>
+      <path class="sa-b" d="M490,37 L518,37" marker-end="url(#ab)"></path>
+      <path class="sa-g" d="M660,37 L688,37" marker-end="url(#ag)"></path>
+
+      <rect class="sb-y" x="20" y="80" width="740" height="35" rx="6"></rect>
+      <text class="ss" x="390" y="100" text-anchor="middle">Responsive: mobile gets 320px, tablet 640px, desktop full. Content-Type negotiation for WebP/AVIF.</text>
+    </svg>

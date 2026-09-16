@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 900 720" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="apl34" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1f2328"></path>
+    </marker>
+    <marker id="apw34" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#8250df"></path>
+    </marker>
+    <marker id="api34" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0969da"></path>
+    </marker>
+    <marker id="akb34" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#d1242f"></path>
+    </marker>
+    <marker id="acr34" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1a7f37"></path>
+    </marker>
+  </defs>
+
+  <!-- swimlane headers -->
+  <text x="80" y="24" text-anchor="middle" font-size="10" font-weight="600" fill="#59636e">USER</text>
+  <text x="260" y="24" text-anchor="middle" font-size="10" font-weight="600" fill="#0969da">API SERVER</text>
+  <text x="440" y="24" text-anchor="middle" font-size="10" font-weight="600" fill="#8250df">SCHEDULER</text>
+  <text x="620" y="24" text-anchor="middle" font-size="10" font-weight="600" fill="#d1242f">KUBELET</text>
+  <text x="800" y="24" text-anchor="middle" font-size="10" font-weight="600" fill="#1a7f37">CONTAINERD + KERNEL</text>
+
+  <line x1="160" y1="32" x2="160" y2="700" stroke="#d1d9e0" stroke-dasharray="3,3"></line>
+  <line x1="340" y1="32" x2="340" y2="700" stroke="#d1d9e0" stroke-dasharray="3,3"></line>
+  <line x1="520" y1="32" x2="520" y2="700" stroke="#d1d9e0" stroke-dasharray="3,3"></line>
+  <line x1="700" y1="32" x2="700" y2="700" stroke="#d1d9e0" stroke-dasharray="3,3"></line>
+
+  <!-- 1 kubectl apply -->
+  <rect x="20" y="50" width="120" height="40" fill="#f6f8fa" stroke="#6e7781"></rect>
+  <text x="80" y="68" text-anchor="middle" font-size="10" font-weight="600">① kubectl apply</text>
+  <text x="80" y="82" text-anchor="middle" font-size="9" fill="#59636e">POST /pods</text>
+
+  <line x1="140" y1="70" x2="180" y2="70" stroke="#6e7781" stroke-width="1.2" marker-end="url(#apl34)"></line>
+
+  <!-- 2 validate -->
+  <rect x="180" y="50" width="160" height="40" fill="#ddf4ff" stroke="#0969da"></rect>
+  <text x="260" y="68" text-anchor="middle" font-size="10" font-weight="600" fill="#0969da">② validate &amp; store</text>
+  <text x="260" y="82" text-anchor="middle" font-size="9" fill="#59636e">etcd write</text>
+
+  <line x1="340" y1="70" x2="380" y2="70" stroke="#0969da" stroke-width="1.2" marker-end="url(#api34)"></line>
+
+  <!-- 3 pick node -->
+  <rect x="380" y="50" width="140" height="40" fill="#fbefff" stroke="#8250df"></rect>
+  <text x="450" y="68" text-anchor="middle" font-size="10" font-weight="600" fill="#8250df">③ pick node</text>
+  <text x="450" y="82" text-anchor="middle" font-size="9" fill="#59636e">node.alloc ≥ pod.req</text>
+
+  <line x1="450" y1="90" x2="265" y2="115" stroke="#8250df" stroke-width="1.2" marker-end="url(#apw34)"></line>
+
+  <!-- 4 binding -->
+  <rect x="180" y="115" width="160" height="40" fill="#ddf4ff" stroke="#0969da"></rect>
+  <text x="260" y="133" text-anchor="middle" font-size="10" font-weight="600" fill="#0969da">④ binding written</text>
+  <text x="260" y="147" text-anchor="middle" font-size="9" fill="#59636e">spec.nodeName = ...</text>
+
+  <line x1="340" y1="135" x2="600" y2="170" stroke="#0969da" stroke-width="1.2" stroke-dasharray="4,2" marker-end="url(#api34)"></line>
+  <text x="460" y="148" font-size="9" fill="#59636e" font-style="italic">watch event</text>
+
+  <!-- 5 SyncPod -->
+  <rect x="560" y="155" width="160" height="40" fill="#ffebe9" stroke="#d1242f"></rect>
+  <text x="640" y="173" text-anchor="middle" font-size="10" font-weight="600" fill="#d1242f">⑤ SyncPod</text>
+  <text x="640" y="187" text-anchor="middle" font-size="9" fill="#59636e">compute QoS class</text>
+
+  <line x1="640" y1="195" x2="640" y2="215" stroke="#d1242f" stroke-width="1.2" marker-end="url(#akb34)"></line>
+
+  <!-- 6 create cgroup -->
+  <rect x="560" y="218" width="160" height="46" fill="#ffebe9" stroke="#d1242f"></rect>
+  <text x="640" y="236" text-anchor="middle" font-size="10" font-weight="600" fill="#d1242f">⑥ create cgroup</text>
+  <text x="640" y="250" text-anchor="middle" font-size="9" fill="#59636e">mkdir + write</text>
+  <text x="640" y="262" text-anchor="middle" font-size="9" fill="#59636e">cpu.max, memory.max</text>
+
+  <line x1="640" y1="264" x2="640" y2="285" stroke="#d1242f" stroke-width="1.2" marker-end="url(#akb34)"></line>
+
+  <!-- 7 topology align -->
+  <rect x="560" y="288" width="160" height="46" fill="#ffebe9" stroke="#d1242f"></rect>
+  <text x="640" y="306" text-anchor="middle" font-size="10" font-weight="600" fill="#d1242f">⑦ topology align</text>
+  <text x="640" y="320" text-anchor="middle" font-size="9" fill="#59636e">if Guaranteed:</text>
+  <text x="640" y="332" text-anchor="middle" font-size="9" fill="#59636e">cpuset.cpus, cpuset.mems</text>
+
+  <line x1="720" y1="310" x2="740" y2="310" stroke="#d1242f" stroke-width="1.2" marker-end="url(#akb34)"></line>
+
+  <!-- 8 CRI create container -->
+  <rect x="740" y="288" width="150" height="46" fill="#dafbe1" stroke="#1a7f37"></rect>
+  <text x="815" y="306" text-anchor="middle" font-size="10" font-weight="600" fill="#1a7f37">⑧ CRI: create</text>
+  <text x="815" y="320" text-anchor="middle" font-size="9" fill="#59636e">containerd → runc</text>
+  <text x="815" y="332" text-anchor="middle" font-size="9" fill="#59636e">clone(CLONE_NEWNS|...)</text>
+
+  <line x1="815" y1="334" x2="815" y2="355" stroke="#1a7f37" stroke-width="1.2" marker-end="url(#acr34)"></line>
+
+  <!-- 9 set up namespaces -->
+  <rect x="740" y="358" width="150" height="46" fill="#dafbe1" stroke="#1a7f37"></rect>
+  <text x="815" y="376" text-anchor="middle" font-size="10" font-weight="600" fill="#1a7f37">⑨ namespaces</text>
+  <text x="815" y="390" text-anchor="middle" font-size="9" fill="#59636e">pivot_root, mount /proc</text>
+  <text x="815" y="402" text-anchor="middle" font-size="9" fill="#59636e">veth pair, IP, iptables</text>
+
+  <line x1="815" y1="404" x2="815" y2="425" stroke="#1a7f37" stroke-width="1.2" marker-end="url(#acr34)"></line>
+
+  <!-- 10 task → cgroup -->
+  <rect x="740" y="428" width="150" height="46" fill="#dafbe1" stroke="#1a7f37"></rect>
+  <text x="815" y="446" text-anchor="middle" font-size="10" font-weight="600" fill="#1a7f37">⑩ task → cgroup</text>
+  <text x="815" y="460" text-anchor="middle" font-size="9" fill="#59636e">echo $PID &gt; cgroup.procs</text>
+  <text x="815" y="472" text-anchor="middle" font-size="9" fill="#59636e">limits now in effect</text>
+
+  <line x1="815" y1="474" x2="815" y2="495" stroke="#1a7f37" stroke-width="1.2" marker-end="url(#acr34)"></line>
+
+  <!-- 11 execve -->
+  <rect x="740" y="498" width="150" height="46" fill="#1f2328"></rect>
+  <text x="815" y="516" text-anchor="middle" font-size="10" font-weight="600" fill="#ffffff">⑪ execve(/app)</text>
+  <text x="815" y="530" text-anchor="middle" font-size="9" fill="#d1d9e0">drop caps, seccomp</text>
+  <text x="815" y="542" text-anchor="middle" font-size="9" fill="#d1d9e0">first instruction runs</text>
+
+  <line x1="740" y1="520" x2="720" y2="520" stroke="#1f2328" stroke-width="1.2" marker-end="url(#apl34)"></line>
+
+  <!-- 12 status running -->
+  <rect x="560" y="498" width="160" height="46" fill="#ffebe9" stroke="#d1242f"></rect>
+  <text x="640" y="516" text-anchor="middle" font-size="10" font-weight="600" fill="#d1242f">⑫ status: Running</text>
+  <text x="640" y="530" text-anchor="middle" font-size="9" fill="#59636e">PLEG event</text>
+  <text x="640" y="542" text-anchor="middle" font-size="9" fill="#59636e">PATCH /pods/status</text>
+
+  <line x1="560" y1="520" x2="340" y2="555" stroke="#d1242f" stroke-width="1.2" stroke-dasharray="4,2" marker-end="url(#akb34)"></line>
+
+  <!-- 13 visible to kubectl -->
+  <rect x="180" y="540" width="160" height="40" fill="#ddf4ff" stroke="#0969da"></rect>
+  <text x="260" y="558" text-anchor="middle" font-size="10" font-weight="600" fill="#0969da">⑬ status updated</text>
+  <text x="260" y="572" text-anchor="middle" font-size="9" fill="#59636e">visible to kubectl get</text>
+
+  <!-- bottom summary -->
+  <rect x="20" y="620" width="860" height="80" fill="#f5faff" stroke="#0969da" rx="3"></rect>
+  <text x="40" y="642" font-size="11" font-weight="600" fill="#0969da">WHAT NOW LIVES IN MEMORY ON THE NODE</text>
+  <text x="40" y="660" font-size="10" fill="#1f2328">A task_struct for the container's pid 1 (nsproxy → 8 fresh namespaces; cgroups → new pod slice) · cgroup dir under /sys/fs/cgroup/kubepods.slice/...</text>
+  <text x="40" y="676" font-size="10" fill="#1f2328">overlayfs mount from image layers · veth pair to CNI bridge · NAT rules · cpuset.cpus for pinned pods · cpuset.mems for NUMA-aligned pods</text>
+  <text x="40" y="692" font-size="10" fill="#1f2328" font-style="italic">From here on: every syscall routes through namespaces; every page alloc charges the cgroup; every CPU tick decrements cpu.max; every IO is tagged.</text>
+</svg>

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 800 180" xmlns="http://www.w3.org/2000/svg"><style>.sb{fill:var(--bg-subtle);stroke:var(--border);stroke-width:1}
+.sb-b{fill:#ddf4ff;stroke:var(--accent);stroke-width:1}
+.sb-g{fill:#dafbe1;stroke:var(--success);stroke-width:1}
+.sb-r{fill:#ffebe9;stroke:var(--danger);stroke-width:1}
+.sb-y{fill:#fff8e6;stroke:var(--attention);stroke-width:1}
+.sb-p{fill:#fbefff;stroke:var(--done);stroke-width:1}
+.sb-o{fill:#fff1e5;stroke:var(--orange);stroke-width:1}
+.sl{font-family:var(--sans);font-size:12px;font-weight:600;fill:var(--fg)}
+.ss{font-family:var(--mono);font-size:10px;fill:var(--fg-muted)}
+.sa{stroke:var(--fg-muted);stroke-width:1.2;fill:none}
+.sa-b{stroke:var(--accent);stroke-width:1.5;fill:none}
+.sa-g{stroke:var(--success);stroke-width:1.5;fill:none}
+.sa-r{stroke:var(--danger);stroke-width:1.5;fill:none}
+.sa-p{stroke:var(--done);stroke-width:1.5;fill:none}</style>
+      <rect class="sb" x="20" y="15" width="110" height="40" rx="6"></rect><text class="sl" x="75" y="38" text-anchor="middle">Alice (owner)</text>
+      <rect class="sb-b" x="160" y="15" width="140" height="40" rx="6"></rect><text class="ss" x="230" y="32" text-anchor="middle">POST /share</text><text class="ss" x="230" y="46" text-anchor="middle">[bob@linkedin.com]</text>
+      <rect class="sb-y" x="330" y="15" width="140" height="40" rx="6"></rect><text class="sl" x="400" y="32" text-anchor="middle">File Service</text><text class="ss" x="400" y="46" text-anchor="middle">writes share record</text>
+      <rect class="sb-g" x="500" y="15" width="180" height="40" rx="6"></rect><text class="sl" x="590" y="32" text-anchor="middle">SharedFiles (Espresso)</text><text class="ss" x="590" y="46" text-anchor="middle">fileId → userId</text>
+      <path class="sa" d="M130,35 L158,35" marker-end="url(#a1)"></path>
+      <path class="sa" d="M300,35 L328,35" marker-end="url(#a1)"></path>
+      <path class="sa" d="M470,35 L498,35" marker-end="url(#a1)"></path>
+
+      <rect class="sb" x="20" y="90" width="140" height="50" rx="6"></rect><text class="sl" x="90" y="112" text-anchor="middle">Bob downloads</text><text class="ss" x="90" y="128" text-anchor="middle">GET /files/:id</text>
+      <rect class="sb-y" x="190" y="90" width="160" height="50" rx="6"></rect><text class="sl" x="270" y="112" text-anchor="middle">Auth check</text><text class="ss" x="270" y="128" text-anchor="middle">SELECT FROM SharedFiles</text>
+      <rect class="sb-g" x="380" y="90" width="180" height="50" rx="6"></rect><text class="sl" x="470" y="112" text-anchor="middle">Bob ∈ ACL → signed URL</text><text class="ss" x="470" y="128" text-anchor="middle">access granted</text>
+      <path class="sa" d="M160,115 L188,115" marker-end="url(#a1)"></path>
+      <path class="sa" d="M350,115 L378,115" marker-end="url(#a1)"></path>
+    </svg>

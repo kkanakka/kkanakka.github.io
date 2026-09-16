@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 900 400" width="900" height="400" role="img" aria-labelledby="fig15-cap" xmlns="http://www.w3.org/2000/svg">
+    <title>Figure 15: Diagnostic capability ladder during freeze incidents</title>
+    <defs>
+      <marker id="m-arrow-down-15" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="9" markerHeight="9" orient="auto">
+        <path d="M 0 0 L 5 10 L 10 0 z" fill="#59636e"></path>
+      </marker>
+    </defs>
+    <!-- Level 1 top (least impaired) -->
+    <rect x="40" y="28" width="820" height="72" rx="10" ry="10" fill="#dafbe1" stroke="#1a7f37" stroke-width="2"></rect>
+    <text x="60" y="54" fill="#1f2328" font-size="16" font-weight="700">Level 1</text>
+    <text x="150" y="54" fill="#1a7f37" font-size="16" font-weight="700">SSH responds</text>
+    <text x="60" y="82" fill="#59636e" font-size="14">Full live debugging — perf/BPF/tracepoints, sysfs, journalctl</text>
+    <line x1="450" y1="100" x2="450" y2="118" stroke="#59636e" stroke-width="2" marker-end="url(#m-arrow-down-15)"></line>
+    <!-- Level 2 -->
+    <rect x="40" y="118" width="820" height="72" rx="10" ry="10" fill="#fff8c5" stroke="#9a6700" stroke-width="2"></rect>
+    <text x="60" y="146" fill="#1f2328" font-size="16" font-weight="700">Level 2</text>
+    <text x="150" y="146" fill="#9a6700" font-size="16" font-weight="700">Only console / BMC</text>
+    <text x="60" y="172" fill="#59636e" font-size="14">Magic SysRq · serial/IPMI · REISUB-style recovery choreography</text>
+    <line x1="450" y1="190" x2="450" y2="204" stroke="#59636e" stroke-width="2" marker-end="url(#m-arrow-down-15)"></line>
+    <!-- Level 3 -->
+    <rect x="40" y="204" width="820" height="72" rx="10" ry="10" fill="#fff8c5" stroke="#9a6700" stroke-width="2"></rect>
+    <text x="60" y="232" fill="#1f2328" font-size="16" font-weight="700">Level 3</text>
+    <text x="150" y="232" fill="#9a6700" font-size="16" font-weight="700">Hard lockup · NMI watchdog fires</text>
+    <text x="60" y="258" fill="#59636e" font-size="14">Backtraces intermittent; SSH + many tools unreliable</text>
+    <line x1="450" y1="276" x2="450" y2="290" stroke="#59636e" stroke-width="2" marker-end="url(#m-arrow-down-15)"></line>
+    <!-- Level 4 bottom (worst case) -->
+    <rect x="40" y="290" width="820" height="78" rx="10" ry="10" fill="#ffebe9" stroke="#d1242f" stroke-width="2"></rect>
+    <text x="60" y="319" fill="#1f2328" font-size="16" font-weight="700">Level 4</text>
+    <text x="150" y="319" fill="#d1242f" font-size="17" font-weight="700">Totally unresponsive — kdump armed</text>
+    <text x="60" y="346" fill="#59636e" font-size="14">Post-mortem only · analyze vmcore via crash(8)</text>
+    <text x="40" y="388" fill="#59636e" font-size="13">No usable kdump path → expectation is power-cycle / platform reset unless BMC captures evidence.</text>
+  </svg>

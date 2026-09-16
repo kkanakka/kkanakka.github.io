@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 420" width="900" height="420" role="img" aria-label="OverlayFS stack">
+        <defs>
+          <marker id="m8i" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><polygon points="0 0,7 3.5,0 7" fill="#59636e"></polygon></marker>
+          <marker id="m8ir" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><polygon points="0 0,8 4,0 8" fill="#d1242f"></polygon></marker>
+        </defs>
+        <line x1="450" y1="8" x2="450" y2="400" stroke="#d8dee4" stroke-width="2" stroke-dasharray="5 4"></line>
+        <text x="225" y="22" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" fill="#59636e" font-weight="600">Layer stack</text>
+        <text x="675" y="22" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" fill="#59636e" font-weight="600">Read path · copy-up</text>
+        <!-- LEFT stack -->
+        <rect x="80" y="35" width="290" height="40" rx="6" fill="#ddf4ff" stroke="#0969da" stroke-width="2"></rect>
+        <text x="225" y="60" text-anchor="middle" font-family="system-ui,sans-serif" font-size="13" fill="#0969da" font-weight="700">CONTAINER VIEW (/)</text>
+        <line x1="225" y1="75" x2="225" y2="95" stroke="#59636e" stroke-width="2" marker-end="url(#m8i)"></line>
+        <rect x="100" y="99" width="250" height="44" rx="6" fill="#f5f0ff" stroke="#8250df" stroke-width="2.5"></rect>
+        <text x="225" y="126" text-anchor="middle" font-family="system-ui,sans-serif" font-size="14" fill="#8250df" font-weight="700">overlayfs</text>
+        <line x1="150" y1="143" x2="120" y2="188" stroke="#59636e" stroke-width="2" marker-end="url(#m8i)"></line>
+        <line x1="225" y1="143" x2="225" y2="188" stroke="#59636e" stroke-width="2" marker-end="url(#m8i)"></line>
+        <line x1="300" y1="143" x2="330" y2="188" stroke="#59636e" stroke-width="2" marker-end="url(#m8i)"></line>
+        <rect x="50" y="192" width="140" height="46" rx="5" fill="#dafbe1" stroke="#1a7f37" stroke-width="2"></rect>
+        <text x="120" y="214" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" fill="#1a7f37" font-weight="600">upperdir</text>
+        <text x="120" y="230" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#59636e">writable layer</text>
+        <rect x="155" y="248" width="140" height="46" rx="5" fill="#ddf4ff" stroke="#0969da" stroke-width="2"></rect>
+        <text x="225" y="270" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" fill="#0969da" font-weight="600">lowerdir1</text>
+        <text x="225" y="286" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#59636e">apt install nginx</text>
+        <rect x="260" y="302" width="140" height="46" rx="5" fill="#eaeef2" stroke="#59636e" stroke-width="1.5"></rect>
+        <text x="330" y="324" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" fill="#59636e" font-weight="600">lowerdir2</text>
+        <text x="330" y="340" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#59636e">ubuntu base image</text>
+        <!-- RIGHT: READ PATH -->
+        <rect x="470" y="38" width="400" height="22" rx="3" fill="#eaeef2"></rect>
+        <text x="670" y="54" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" fill="#8250df" font-weight="700">READ PATH</text>
+        <rect x="470" y="68" width="400" height="32" rx="4" fill="#f6f8fa" stroke="#d1d9e0"></rect>
+        <text x="485" y="88" font-family="ui-monospace,monospace" font-size="11" fill="#1f2328">open('/etc/nginx/nginx.conf')</text>
+        <line x1="670" y1="100" x2="670" y2="118" stroke="#59636e" stroke-width="2" marker-end="url(#m8i)"></line>
+        <rect x="470" y="122" width="400" height="32" rx="4" fill="#fff8c5" stroke="#9a6700"></rect>
+        <text x="670" y="142" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" fill="#9a6700">overlayfs checks upperdir</text>
+        <polygon points="670,168 695,198 645,198" fill="#fff8c5" stroke="#9a6700" stroke-width="2"></polygon>
+        <text x="670" y="194" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" fill="#9a6700" font-weight="600">exists?</text>
+        <rect x="480" y="208" width="150" height="36" rx="4" fill="#dafbe1" stroke="#1a7f37"></rect>
+        <text x="555" y="230" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" fill="#1a7f37">Yes: return inode</text>
+        <rect x="660" y="208" width="200" height="36" rx="4" fill="#ddf4ff" stroke="#0969da"></rect>
+        <text x="760" y="230" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" fill="#0969da">No: search lower layers</text>
+        <line x1="655" y1="198" x2="555" y2="216" stroke="#59636e"></line>
+        <line x1="685" y1="198" x2="760" y2="216" stroke="#59636e"></line>
+        <!-- COPY UP -->
+        <rect x="470" y="258" width="400" height="22" rx="3" fill="#ffebe9"></rect>
+        <text x="670" y="274" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" fill="#d1242f" font-weight="700">COPY-UP ON WRITE</text>
+        <rect x="470" y="286" width="400" height="28" rx="4" fill="#f6f8fa" stroke="#d1d9e0"></rect>
+        <text x="485" y="304" font-family="system-ui,sans-serif" font-size="10" fill="#1f2328">write to lower-layer file</text>
+        <text x="485" y="332" font-family="system-ui,sans-serif" font-size="10" fill="#d1242f" font-weight="600">Step 1:</text>
+        <text x="540" y="332" font-family="system-ui,sans-serif" font-size="10" fill="#1f2328">copy entire file to upperdir</text>
+        <line x1="670" y1="318" x2="670" y2="338" stroke="#d1242f" stroke-width="3" marker-end="url(#m8ir)"></line>
+        <text x="485" y="352" font-family="system-ui,sans-serif" font-size="10" fill="#1a7f37" font-weight="600">Step 2:</text>
+        <text x="540" y="352" font-family="system-ui,sans-serif" font-size="10" fill="#1f2328">modify upper copy</text>
+        <text x="670" y="378" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" fill="#59636e" font-style="italic">original image layer remains immutable</text>
+      </svg>

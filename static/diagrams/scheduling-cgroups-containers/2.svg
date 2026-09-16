@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 800 380" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arr2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M2 1L8 5L2 9" fill="none" stroke="#1f2328" stroke-width="1.5" stroke-linecap="round"></path>
+        </marker>
+      </defs>
+
+      <rect x="100" y="40" width="600" height="160" fill="#f6f8fa" stroke="#1f2328" stroke-width="1.5"></rect>
+      <text x="120" y="66" font-family="ui-monospace, monospace" font-size="14" font-weight="700" fill="#1f2328">CPU SCHEDULER — RUNQUEUE PER CORE</text>
+
+      <rect x="120" y="80" width="140" height="50" fill="#ffffff" stroke="#1f2328" rx="4"></rect>
+      <text x="140" y="100" font-family="-apple-system, sans-serif" font-size="12" font-weight="600" fill="#1f2328">DEADLINE</text>
+      <text x="140" y="116" font-family="ui-monospace, monospace" font-size="10" fill="#59636e">RT realtime (highest)</text>
+
+      <rect x="120" y="140" width="140" height="50" fill="#ffffff" stroke="#1f2328" rx="4"></rect>
+      <text x="140" y="160" font-family="-apple-system, sans-serif" font-size="12" font-weight="600" fill="#1f2328">FIFO / RR</text>
+      <text x="140" y="176" font-family="ui-monospace, monospace" font-size="10" fill="#59636e">RT priorities 1-99</text>
+
+      <rect x="320" y="80" width="180" height="110" fill="#ffffff" stroke="#1f2328" rx="4"></rect>
+      <text x="340" y="100" font-family="-apple-system, sans-serif" font-size="12" font-weight="600" fill="#1f2328">CFS - SCHED_OTHER</text>
+      <text x="340" y="116" font-family="ui-monospace, monospace" font-size="10" fill="#59636e">nice -20 (highest priority)</text>
+      <text x="340" y="130" font-family="ui-monospace, monospace" font-size="10" fill="#59636e">nice 0 (default)</text>
+      <text x="340" y="144" font-family="ui-monospace, monospace" font-size="10" fill="#59636e">nice +19 (lowest priority)</text>
+      <text x="340" y="162" font-family="-apple-system, sans-serif" font-size="12" font-weight="600" fill="#1f2328">BATCH</text>
+      <text x="340" y="176" font-family="ui-monospace, monospace" font-size="10" fill="#59636e">cpu-intensive tasks</text>
+
+      <rect x="520" y="80" width="140" height="50" fill="#ffffff" stroke="#1f2328" rx="4"></rect>
+      <text x="540" y="100" font-family="-apple-system, sans-serif" font-size="12" font-weight="600" fill="#1f2328">IDLE</text>
+      <text x="540" y="116" font-family="ui-monospace, monospace" font-size="10" fill="#59636e">only when nothing else</text>
+
+      <line x1="190" y1="240" x2="410" y2="240" stroke="#1f2328" stroke-width="1.5" marker-end="url(#arr2)"></line>
+      <text x="220" y="258" font-family="-apple-system, sans-serif" font-size="13" fill="#59636e">Scheduler picks next task from highest-priority non-empty queue</text>
+
+      <rect x="100" y="300" width="600" height="60" fill="#eaeef2" stroke="#1f2328" stroke-width="1.5"></rect>
+      <text x="120" y="326" font-family="ui-monospace, monospace" font-size="14" font-weight="700" fill="#1f2328">PREEMPTION CHECK</text>
+      <text x="120" y="346" font-family="-apple-system, sans-serif" font-size="12" fill="#59636e">Can current task be interrupted? Depends on PREEMPT_* model and current kernel state.</text>
+    </svg>

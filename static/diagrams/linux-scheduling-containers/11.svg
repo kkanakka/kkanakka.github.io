@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 440" role="img" aria-labelledby="fig8b-title">
+      <title id="fig8b-title">PID namespace lookup flow</title>
+      <defs>
+        <marker id="ag" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+          <polygon points="0 0, 10 3, 0 6" fill="#1a7f37"></polygon>
+        </marker>
+      </defs>
+      <!-- LEFT: pointer chain -->
+      <rect x="20" y="40" width="160" height="50" rx="4" fill="#fff8c5" stroke="#9a6700" stroke-width="2"></rect>
+      <text x="100" y="62" text-anchor="middle" font-size="12" font-weight="700" fill="#1f2328">task_struct</text>
+      <text x="100" y="80" text-anchor="middle" font-size="11" fill="#1f2328">thread_pid = ▸</text>
+
+      <line x1="100" y1="90" x2="100" y2="118" stroke="#1a7f37" stroke-width="2" marker-end="url(#ag)"></line>
+
+      <rect x="20" y="130" width="360" height="200" rx="4" fill="#ddf4ff" stroke="#0969da" stroke-width="2"></rect>
+      <text x="200" y="152" text-anchor="middle" font-size="13" font-weight="700" fill="#0969da">struct pid</text>
+      <text x="200" y="172" text-anchor="middle" font-size="12" fill="#1f2328">level = 2</text>
+
+      <rect x="40" y="188" width="320" height="44" rx="3" fill="#fff" stroke="#9a6700" stroke-width="2"></rect>
+      <text x="200" y="208" text-anchor="middle" font-size="11" fill="#1f2328">numbers[0] = { nr=<tspan font-weight="600">5234</tspan>, ns=host_ns }</text>
+      <rect x="40" y="240" width="320" height="44" rx="3" fill="#fff" stroke="#1a7f37" stroke-width="2"></rect>
+      <text x="200" y="260" text-anchor="middle" font-size="11" fill="#1f2328">numbers[1] = { nr=<tspan font-weight="600">1</tspan>, ns=container_ns }</text>
+      <rect x="40" y="292" width="320" height="30" rx="3" fill="#fff" stroke="#0969da" stroke-width="2"></rect>
+      <text x="200" y="312" text-anchor="middle" font-size="11" fill="#1f2328">numbers[2] = { nr=<tspan font-weight="600">27</tspan>, ns=nested_ns }</text>
+
+      <!-- RIGHT: getpid flow -->
+      <text x="660" y="28" text-anchor="middle" font-size="12" font-weight="600" fill="#59636e">getpid() lookup (success path)</text>
+
+      <rect x="460" y="40" width="420" height="36" rx="4" fill="#f6f8fa" stroke="#d1d9e0"></rect>
+      <text x="670" y="63" text-anchor="middle" font-size="12" font-weight="600">getpid() syscall</text>
+      <line x1="670" y1="76" x2="670" y2="98" stroke="#1a7f37" stroke-width="2" marker-end="url(#ag)"></line>
+
+      <rect x="460" y="100" width="420" height="44" rx="4" fill="#f6f8fa" stroke="#d1d9e0"></rect>
+      <text x="670" y="122" text-anchor="middle" font-size="11" fill="#1f2328">current→nsproxy→pid_ns_for_children</text>
+      <line x1="670" y1="144" x2="670" y2="166" stroke="#1a7f37" stroke-width="2" marker-end="url(#ag)"></line>
+
+      <rect x="460" y="168" width="420" height="44" rx="4" fill="#f6f8fa" stroke="#d1d9e0"></rect>
+      <text x="670" y="190" text-anchor="middle" font-size="11" fill="#1f2328">find matching level in pid.numbers[]</text>
+      <line x1="670" y1="212" x2="670" y2="234" stroke="#1a7f37" stroke-width="2" marker-end="url(#ag)"></line>
+
+      <rect x="460" y="236" width="420" height="36" rx="4" fill="#f6f8fa" stroke="#d1d9e0"></rect>
+      <text x="670" y="259" text-anchor="middle" font-size="11" fill="#1f2328">return nr for that level</text>
+      <line x1="670" y1="272" x2="670" y2="294" stroke="#1a7f37" stroke-width="2" marker-end="url(#ag)"></line>
+
+      <rect x="460" y="304" width="130" height="52" rx="4" fill="#fff8c5" stroke="#9a6700" stroke-width="1.5"></rect>
+      <text x="525" y="326" text-anchor="middle" font-size="10" fill="#1f2328">Host sees</text>
+      <text x="525" y="342" text-anchor="middle" font-size="11" font-weight="700">5234</text>
+
+      <rect x="605" y="304" width="130" height="52" rx="4" fill="#dafbe1" stroke="#1a7f37" stroke-width="1.5"></rect>
+      <text x="670" y="326" text-anchor="middle" font-size="10" fill="#1f2328">Container A sees</text>
+      <text x="670" y="342" text-anchor="middle" font-size="11" font-weight="700">1</text>
+
+      <rect x="750" y="304" width="130" height="52" rx="4" fill="#ddf4ff" stroke="#0969da" stroke-width="1.5"></rect>
+      <text x="815" y="326" text-anchor="middle" font-size="10" fill="#1f2328">Nested sees</text>
+      <text x="815" y="342" text-anchor="middle" font-size="11" font-weight="700">27</text>
+    </svg>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 800 200" xmlns="http://www.w3.org/2000/svg">
+<rect x="80" y="40" width="120" height="120" rx="10" fill="#581c87" opacity=".7" stroke="#c084fc"></rect>
+<text x="140" y="100" text-anchor="middle" font-family="Inter" font-size="14" font-weight="700" fill="#fde047">1 BIG box</text>
+<text x="140" y="125" text-anchor="middle" font-family="monospace" font-size="11" fill="#cbd5e1">128 cores</text>
+<text x="140" y="180" text-anchor="middle" font-family="Inter" font-size="11" fill="#94a3b8">Vertical</text>
+<text x="300" y="105" text-anchor="middle" font-family="Inter" font-size="20" fill="#94a3b8">vs</text>
+<g>
+<rect x="420" y="40" width="55" height="55" rx="6" fill="#14532d" opacity=".7" stroke="#4ade80"></rect>
+<rect x="490" y="40" width="55" height="55" rx="6" fill="#14532d" opacity=".7" stroke="#4ade80"></rect>
+<rect x="560" y="40" width="55" height="55" rx="6" fill="#14532d" opacity=".7" stroke="#4ade80"></rect>
+<rect x="630" y="40" width="55" height="55" rx="6" fill="#14532d" opacity=".7" stroke="#4ade80"></rect>
+<rect x="700" y="40" width="55" height="55" rx="6" fill="#14532d" opacity=".7" stroke="#4ade80"></rect>
+<rect x="420" y="105" width="55" height="55" rx="6" fill="#14532d" opacity=".7" stroke="#4ade80"></rect>
+<rect x="490" y="105" width="55" height="55" rx="6" fill="#14532d" opacity=".7" stroke="#4ade80"></rect>
+<rect x="560" y="105" width="55" height="55" rx="6" fill="#14532d" opacity=".7" stroke="#4ade80"></rect>
+<rect x="630" y="105" width="55" height="55" rx="6" fill="#14532d" opacity=".7" stroke="#4ade80"></rect>
+<rect x="700" y="105" width="55" height="55" rx="6" fill="#14532d" opacity=".7" stroke="#4ade80"></rect>
+</g>
+<text x="585" y="180" text-anchor="middle" font-family="Inter" font-size="11" fill="#94a3b8">Horizontal — 10 small boxes (and you need a load balancer)</text>
+</svg>

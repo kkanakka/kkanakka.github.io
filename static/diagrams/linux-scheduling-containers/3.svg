@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 920 340" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="f2arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8250df"></path></marker>
+  </defs>
+  <text x="20" y="24" fill="#59636e" font-size="12" font-weight="600">Strictness / preemption over lower classes →</text>
+  <rect x="20" y="40" width="200" height="28" fill="#ffebe9" stroke="#d1242f"></rect><text x="120" y="59" text-anchor="middle" font-size="11" font-weight="600">SCHED_DEADLINE</text>
+  <rect x="20" y="74" width="200" height="26" fill="#ffebe9" stroke="#d1242f"></rect><text x="120" y="92" text-anchor="middle" font-size="11">SCHED_FIFO · SCHED_RR</text>
+  <rect x="20" y="106" width="200" height="26" fill="#fff8c5" stroke="#9a6700"></rect><text x="120" y="124" text-anchor="middle" font-size="11">SCHED_NORMAL · SCHED_BATCH</text>
+  <rect x="20" y="138" width="200" height="22" fill="#dafbe1" stroke="#1a7f37"></rect><text x="120" y="153" text-anchor="middle" font-size="11">SCHED_IDLE</text>
+  <line x1="240" y1="100" x2="300" y2="100" stroke="#8250df" stroke-width="2" marker-end="url(#f2arr)"></line>
+  <text x="252" y="92" fill="#8250df" font-size="10" font-weight="600">nice zoom</text>
+  <rect x="310" y="30" width="590" height="280" fill="#fafbfc" stroke="#d8dee4" rx="4"></rect>
+  <text x="605" y="54" text-anchor="middle" font-size="12" font-weight="600" fill="#0969da">CFS weight vs nice</text>
+  <text x="605" y="70" text-anchor="middle" font-size="10" fill="#59636e">shorter bar = penalized vruntime growth (interactive bias)</text>
+  <text x="330" y="110" fill="#59636e" font-size="10">nice −20 · w=88761</text>
+  <rect x="480" y="98" width="360" height="18" fill="#ddf4ff" stroke="#0969da"></rect>
+  <text x="330" y="140" fill="#59636e" font-size="10">nice −10 · w=9548</text>
+  <rect x="480" y="128" width="120" height="18" fill="#ddf4ff" stroke="#0969da"></rect>
+  <text x="330" y="170" fill="#59636e" font-size="10">nice  &nbsp;&nbsp;0 · w=1024</text>
+  <rect x="480" y="158" width="54" height="18" fill="#fff8c5" stroke="#9a6700"></rect>
+  <text x="330" y="200" fill="#59636e" font-size="10">nice +10 · w=110</text>
+  <rect x="480" y="188" width="36" height="18" fill="#fff8c5" stroke="#9a6700"></rect>
+  <text x="330" y="230" fill="#59636e" font-size="10">nice +19 · w=15</text>
+  <rect x="480" y="218" width="24" height="18" fill="#ffebe9" stroke="#d1242f"></rect>
+  <line x1="468" y1="250" x2="848" y2="250" stroke="#d1d9e0"></line>
+  <text x="468" y="268" font-size="9" fill="#59636e">0</text>
+  <text x="820" y="268" font-size="9" fill="#59636e" text-anchor="end">max (−20)</text>
+</svg>

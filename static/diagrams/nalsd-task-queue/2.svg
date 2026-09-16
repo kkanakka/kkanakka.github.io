@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 980 320" xmlns="http://www.w3.org/2000/svg"><style>.lbl-title{font-family:'Inter',sans-serif;font-weight:700;font-size:11.5px;fill:#1f2328}
+.lbl-sub{font-family:'JetBrains Mono',monospace;font-size:9.5px;fill:#59636e}
+.lbl-meta{font-family:'JetBrains Mono',monospace;font-size:9px;fill:#818b98}</style>
+  <defs>
+    <marker id="arr-l" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#59636e"></path>
+    </marker>
+  </defs>
+
+  <!-- Time axis -->
+  <line x1="40" y1="60" x2="940" y2="60" stroke="#d0d7de" stroke-width="1.5"></line>
+  <text x="40" y="48" class="lbl-meta">t=0</text>
+  <text x="940" y="48" text-anchor="end" class="lbl-meta">t=45s</text>
+  <!-- Tick marks every 10s -->
+  <line x1="220" y1="55" x2="220" y2="65" stroke="#d0d7de"></line>
+  <text x="220" y="48" text-anchor="middle" class="lbl-meta">10s</text>
+  <line x1="400" y1="55" x2="400" y2="65" stroke="#d0d7de"></line>
+  <text x="400" y="48" text-anchor="middle" class="lbl-meta">20s</text>
+  <line x1="580" y1="55" x2="580" y2="65" stroke="#d0d7de"></line>
+  <text x="580" y="48" text-anchor="middle" class="lbl-meta">30s</text>
+  <line x1="760" y1="55" x2="760" y2="65" stroke="#d0d7de"></line>
+  <text x="760" y="48" text-anchor="middle" class="lbl-meta">40s</text>
+
+  <!-- Happy path -->
+  <text x="40" y="100" class="lbl-title">Happy path · Worker A</text>
+  <rect x="40" y="110" width="540" height="20" fill="#dafbe1" stroke="#1a7f37"></rect>
+  <text x="310" y="124" text-anchor="middle" class="lbl-sub">Worker A executes task · 30 s wall time</text>
+  <!-- Heartbeats -->
+  <line x1="220" y1="105" x2="220" y2="135" stroke="#1a7f37" stroke-width="2"></line>
+  <text x="220" y="148" text-anchor="middle" class="lbl-meta" fill="#1a7f37">heartbeat 1</text>
+  <line x1="400" y1="105" x2="400" y2="135" stroke="#1a7f37" stroke-width="2"></line>
+  <text x="400" y="148" text-anchor="middle" class="lbl-meta" fill="#1a7f37">heartbeat 2</text>
+  <!-- Complete -->
+  <circle cx="580" cy="120" r="8" fill="#1a7f37"></circle>
+  <text x="580" y="165" text-anchor="middle" class="lbl-sub" fill="#1a7f37">✓ CAS commit DONE</text>
+
+  <!-- Crash path -->
+  <text x="40" y="200" class="lbl-title">Crash path · Worker B dies at 15s</text>
+  <rect x="40" y="210" width="220" height="20" fill="#ffebe9" stroke="#cf222e"></rect>
+  <text x="150" y="224" text-anchor="middle" class="lbl-sub">Worker B running</text>
+  <!-- Crash -->
+  <line x1="310" y1="205" x2="310" y2="235" stroke="#cf222e" stroke-width="2"></line>
+  <text x="310" y="248" text-anchor="middle" class="lbl-meta" fill="#cf222e">💥 worker crashes</text>
+
+  <!-- Lease expiry zone -->
+  <rect x="310" y="210" width="180" height="20" fill="#fff8c5" stroke="#9a6700" stroke-dasharray="3,2"></rect>
+  <text x="400" y="224" text-anchor="middle" class="lbl-sub" fill="#9a6700">lease still valid (until t=30s)</text>
+
+  <!-- Worker C reclaim -->
+  <line x1="490" y1="205" x2="490" y2="235" stroke="#1a7f37" stroke-width="2"></line>
+  <text x="490" y="248" text-anchor="middle" class="lbl-meta" fill="#1a7f37">lease expires · sweeper marks PENDING</text>
+
+  <rect x="500" y="210" width="380" height="20" fill="#dafbe1" stroke="#1a7f37"></rect>
+  <text x="690" y="224" text-anchor="middle" class="lbl-sub">Worker C claims task · runs to completion</text>
+  <circle cx="880" cy="220" r="8" fill="#1a7f37"></circle>
+  <text x="880" y="265" text-anchor="middle" class="lbl-sub" fill="#1a7f37">✓ CAS commit DONE</text>
+
+  <text x="40" y="295" class="lbl-meta" fill="#1a7f37">Key property: even if Worker B briefly recovers and tries to commit, its CAS fails because status≠RUNNING anymore. No double-execution.</text>
+  <text x="40" y="312" class="lbl-meta">Cost: task may run twice (B partial + C full). Caller's idempotency key ensures the outcome is correct anyway.</text>
+</svg>

@@ -1,0 +1,9 @@
+{
+  "label": "Linux Internals",
+  "position": 2,
+  "link": {
+    "type": "generated-index",
+    "slug": "/linux",
+    "description": "Processes, memory, scheduling, cgroups, namespaces, and the kernel paths that containers ride on."
+  }
+}

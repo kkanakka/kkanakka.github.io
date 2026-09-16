@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 980 540" xmlns="http://www.w3.org/2000/svg"><style>/* SVG styling tokens used inside diagrams */
+.box-fill-blue{fill:#ddf4ff;stroke:#54aeff}
+.box-fill-green{fill:#dafbe1;stroke:#4ac26b}
+.box-fill-purple{fill:#fbefff;stroke:#c297ff}
+.box-fill-orange{fill:#fff1e5;stroke:#fd8c73}
+.box-fill-red{fill:#ffebe9;stroke:#ff8182}
+.box-fill-yellow{fill:#fff8c5;stroke:#d4a72c}
+.box-fill-gray{fill:#f6f8fa;stroke:#d0d7de}
+.lbl-title{font-family:'Inter',sans-serif;font-weight:700;font-size:11.5px;fill:#1f2328}
+.lbl-sub{font-family:'JetBrains Mono',monospace;font-size:9.5px;fill:#59636e}
+.lbl-meta{font-family:'JetBrains Mono',monospace;font-size:9px;fill:#818b98}
+.arrow{stroke:#59636e;stroke-width:1.3;fill:none;marker-end:url(#arr)}
+.arrow-dashed{stroke:#cf222e;stroke-width:1.2;fill:none;stroke-dasharray:4,3;marker-end:url(#arr-red)}
+.arrow-green{stroke:#1a7f37;stroke-width:1.5;fill:none;marker-end:url(#arr-green)}</style>
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#59636e"></path>
+    </marker>
+    <marker id="arr-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#cf222e"></path>
+    </marker>
+    <marker id="arr-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1a7f37"></path>
+    </marker>
+  </defs>
+
+  <!-- ============ STEP NUMBER BADGES ============ -->
+  <!-- Step 1: Producers -->
+  <circle cx="170" cy="42" r="11" fill="#0a66c2"></circle>
+  <text x="170" y="46" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">1</text>
+  <!-- Step 2: Edge agent -->
+  <circle cx="380" cy="42" r="11" fill="#0a66c2"></circle>
+  <text x="380" y="46" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">2</text>
+  <!-- Step 3: Gateway -->
+  <circle cx="590" cy="42" r="11" fill="#0a66c2"></circle>
+  <text x="590" y="46" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">3</text>
+  <!-- Step 4: Kafka -->
+  <circle cx="750" cy="182" r="11" fill="#0a66c2"></circle>
+  <text x="750" y="186" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">4</text>
+  <!-- Step 5: Stream processor -->
+  <circle cx="180" cy="312" r="11" fill="#0a66c2"></circle>
+  <text x="180" y="316" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">5</text>
+  <!-- Step 6: Alert engine -->
+  <circle cx="370" cy="312" r="11" fill="#0a66c2"></circle>
+  <text x="370" y="316" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">6</text>
+  <!-- Step 7: TSDB / Cold storage (storage fanout) -->
+  <circle cx="560" cy="312" r="11" fill="#0a66c2"></circle>
+  <text x="560" y="316" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">7</text>
+  <!-- Step 8: Notifier -->
+  <circle cx="310" cy="462" r="11" fill="#0a66c2"></circle>
+  <text x="310" y="466" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">8</text>
+
+  <!-- Producers (LinkedIn services) -->
+  <g>
+    <rect x="20" y="30" width="160" height="80" rx="6" class="box-fill-gray"></rect>
+    <text x="100" y="50" text-anchor="middle" class="lbl-title">Producers</text>
+    <text x="100" y="66" text-anchor="middle" class="lbl-sub">Feed · InMail · Profile</text>
+    <text x="100" y="80" text-anchor="middle" class="lbl-sub">Jobs · Search · Notif</text>
+    <text x="100" y="98" text-anchor="middle" class="lbl-meta">~2 M producer instances</text>
+  </g>
+
+  <!-- Edge agent -->
+  <g>
+    <rect x="220" y="30" width="170" height="80" rx="6" class="box-fill-yellow"></rect>
+    <text x="305" y="50" text-anchor="middle" class="lbl-title">Edge agent · liagent</text>
+    <text x="305" y="66" text-anchor="middle" class="lbl-sub">batch · compress · auth</text>
+    <text x="305" y="80" text-anchor="middle" class="lbl-sub">pre-aggregate (60s win)</text>
+    <text x="305" y="98" text-anchor="middle" class="lbl-meta">100M/s → 30M/s post-agg</text>
+  </g>
+
+  <!-- Gateway -->
+  <g>
+    <rect x="430" y="30" width="170" height="80" rx="6" class="box-fill-blue"></rect>
+    <text x="515" y="50" text-anchor="middle" class="lbl-title">Enqueue gateway</text>
+    <text x="515" y="66" text-anchor="middle" class="lbl-sub">Envoy + gRPC · token bkt</text>
+    <text x="515" y="80" text-anchor="middle" class="lbl-sub">schema · idempotency CAS</text>
+    <text x="515" y="98" text-anchor="middle" class="lbl-meta">102 nodes · p99 5 ms</text>
+  </g>
+
+  <!-- Schema reject -->
+  <g>
+    <rect x="640" y="30" width="155" height="50" rx="6" class="box-fill-red"></rect>
+    <text x="717" y="50" text-anchor="middle" class="lbl-title">Schema reject → DLQ-0</text>
+    <text x="717" y="64" text-anchor="middle" class="lbl-meta">malformed · over-quota</text>
+  </g>
+
+  <!-- Kafka -->
+  <g>
+    <rect x="220" y="170" width="540" height="80" rx="6" class="box-fill-green"></rect>
+    <text x="490" y="190" text-anchor="middle" class="lbl-title">Kafka · partitioned by (tenant, priority)</text>
+    <text x="490" y="206" text-anchor="middle" class="lbl-sub">signals.p0 (critical · paging) · signals.p1 (standard) · signals.p2 (batch · analytics)</text>
+    <text x="490" y="220" text-anchor="middle" class="lbl-sub">MirrorMaker2 cross-region · 7-day retention · 3× replication · 1,800 partitions</text>
+    <text x="490" y="238" text-anchor="middle" class="lbl-meta">90 brokers · 31 GB/s sustained · 1.6× peak headroom</text>
+  </g>
+
+  <!-- Stream processors -->
+  <g>
+    <rect x="20" y="300" width="170" height="100" rx="6" class="box-fill-orange"></rect>
+    <text x="105" y="320" text-anchor="middle" class="lbl-title">Stream processor</text>
+    <text x="105" y="336" text-anchor="middle" class="lbl-sub">parse · dedupe · window</text>
+    <text x="105" y="350" text-anchor="middle" class="lbl-sub">SLI compute · rule eval</text>
+    <text x="105" y="368" text-anchor="middle" class="lbl-meta">27 nodes · 540 cores</text>
+    <text x="105" y="384" text-anchor="middle" class="lbl-meta">checkpoint → Spanner / 5s</text>
+  </g>
+
+  <!-- Alert engine -->
+  <g>
+    <rect x="210" y="300" width="170" height="100" rx="6" class="box-fill-purple"></rect>
+    <text x="295" y="320" text-anchor="middle" class="lbl-title">Alert engine</text>
+    <text x="295" y="336" text-anchor="middle" class="lbl-sub">threshold + EB-burn</text>
+    <text x="295" y="350" text-anchor="middle" class="lbl-sub">dedupe · group · suppress</text>
+    <text x="295" y="368" text-anchor="middle" class="lbl-meta">36 nodes · stateless</text>
+    <text x="295" y="384" text-anchor="middle" class="lbl-meta">rules versioned in Git</text>
+  </g>
+
+  <!-- TSDB -->
+  <g>
+    <rect x="400" y="300" width="170" height="100" rx="6" class="box-fill-blue"></rect>
+    <text x="485" y="320" text-anchor="middle" class="lbl-title">Hot TSDB</text>
+    <text x="485" y="336" text-anchor="middle" class="lbl-sub">Gorilla compression 12×</text>
+    <text x="485" y="350" text-anchor="middle" class="lbl-sub">30-day · 3× repl · 3k shards</text>
+    <text x="485" y="368" text-anchor="middle" class="lbl-meta">375 NVMe nodes</text>
+    <text x="485" y="384" text-anchor="middle" class="lbl-meta">query p99 &lt; 800 ms</text>
+  </g>
+
+  <!-- Cold archive -->
+  <g>
+    <rect x="590" y="300" width="170" height="100" rx="6" class="box-fill-gray"></rect>
+    <text x="675" y="320" text-anchor="middle" class="lbl-title">Cold archive</text>
+    <text x="675" y="336" text-anchor="middle" class="lbl-sub">1-min rollups · S3 class</text>
+    <text x="675" y="350" text-anchor="middle" class="lbl-sub">3-year retention</text>
+    <text x="675" y="368" text-anchor="middle" class="lbl-meta">3.6 PB · $76 K/mo</text>
+    <text x="675" y="384" text-anchor="middle" class="lbl-meta">Iceberg over Parquet</text>
+  </g>
+
+  <!-- DLQ -->
+  <g>
+    <rect x="780" y="300" width="180" height="100" rx="6" class="box-fill-red"></rect>
+    <text x="870" y="320" text-anchor="middle" class="lbl-title">DLQ &amp; replay</text>
+    <text x="870" y="336" text-anchor="middle" class="lbl-sub">terminal failures</text>
+    <text x="870" y="350" text-anchor="middle" class="lbl-sub">depth-growth alert</text>
+    <text x="870" y="368" text-anchor="middle" class="lbl-meta">manual + auto-replay</text>
+    <text x="870" y="384" text-anchor="middle" class="lbl-meta">attempts &gt; 5 → DLQ</text>
+  </g>
+
+  <!-- Notifier -->
+  <g>
+    <rect x="120" y="450" width="200" height="70" rx="6" class="box-fill-purple"></rect>
+    <text x="220" y="470" text-anchor="middle" class="lbl-title">Notifier · priority queue</text>
+    <text x="220" y="486" text-anchor="middle" class="lbl-sub">PagerDuty · Slack · SMS · email</text>
+    <text x="220" y="504" text-anchor="middle" class="lbl-meta">multi-region failover · 2 regions hot</text>
+  </g>
+
+  <!-- Spanner state -->
+  <g>
+    <rect x="340" y="450" width="200" height="70" rx="6" class="box-fill-blue"></rect>
+    <text x="440" y="470" text-anchor="middle" class="lbl-title">State store · Spanner</text>
+    <text x="440" y="486" text-anchor="middle" class="lbl-sub">PENDING · FIRING · RESOLVED</text>
+    <text x="440" y="504" text-anchor="middle" class="lbl-meta">dedupe table · retry counters</text>
+  </g>
+
+  <!-- Visibility -->
+  <g>
+    <rect x="560" y="450" width="200" height="70" rx="6" class="box-fill-gray"></rect>
+    <text x="660" y="470" text-anchor="middle" class="lbl-title">Visibility API</text>
+    <text x="660" y="486" text-anchor="middle" class="lbl-sub">dashboards · SLO views · audit</text>
+    <text x="660" y="504" text-anchor="middle" class="lbl-meta">consumed by SRE + service owners</text>
+  </g>
+
+  <!-- Arrows -->
+  <path d="M180,70 L220,70" class="arrow"></path>
+  <path d="M390,70 L430,70" class="arrow"></path>
+  <path d="M600,70 L640,55" class="arrow-dashed"></path>
+  <path d="M515,110 L515,170" class="arrow"></path>
+
+  <path d="M290,250 L130,300" class="arrow"></path>
+  <path d="M420,250 L300,300" class="arrow"></path>
+  <path d="M550,250 L485,300" class="arrow"></path>
+  <path d="M650,250 L675,300" class="arrow"></path>
+
+  <path d="M105,400 L105,425 L200,425 L220,450" class="arrow-green"></path>
+  <path d="M295,400 L295,420 L240,440 L240,450" class="arrow"></path>
+  <path d="M295,400 L440,450" class="arrow"></path>
+  <path d="M485,400 L660,450" class="arrow"></path>
+
+  <!-- Failure dashed -->
+  <path d="M190,350 L780,350" class="arrow-dashed"></path>
+  <text x="500" y="345" text-anchor="middle" class="lbl-meta" fill="#cf222e">retry · exp backoff · attempts &gt; 5 → DLQ</text>
+
+  <!-- Legend -->
+  <g transform="translate(20,510)">
+    <line x1="0" y1="5" x2="22" y2="5" class="arrow"></line><text x="28" y="9" class="lbl-meta">happy path</text>
+    <line x1="130" y1="5" x2="152" y2="5" class="arrow-dashed"></line><text x="158" y="9" class="lbl-meta">failure / retry</text>
+    <line x1="270" y1="5" x2="292" y2="5" class="arrow-green"></line><text x="298" y="9" class="lbl-meta">page out</text>
+  </g>
+</svg>

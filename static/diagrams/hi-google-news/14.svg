@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 800 200" xmlns="http://www.w3.org/2000/svg"><style>.sb{fill:var(--bg-subtle);stroke:var(--border);stroke-width:1}
+.sb-b{fill:#ddf4ff;stroke:var(--accent);stroke-width:1}
+.sb-g{fill:#dafbe1;stroke:var(--success);stroke-width:1}
+.sb-r{fill:#ffebe9;stroke:var(--danger);stroke-width:1}
+.sb-y{fill:#fff8e6;stroke:var(--attention);stroke-width:1}
+.sb-p{fill:#fbefff;stroke:var(--done);stroke-width:1}
+.sb-o{fill:#fff1e5;stroke:var(--orange);stroke-width:1}
+.sl{font-family:var(--sans);font-size:12px;font-weight:600;fill:var(--fg)}
+.ss{font-family:var(--mono);font-size:10px;fill:var(--fg-muted)}
+.sa{stroke:var(--fg-muted);stroke-width:1.2;fill:none}
+.sa-b{stroke:var(--accent);stroke-width:1.5;fill:none}
+.sa-g{stroke:var(--success);stroke-width:1.5;fill:none}
+.sa-r{stroke:var(--danger);stroke-width:1.5;fill:none}
+.sa-p{stroke:var(--done);stroke-width:1.5;fill:none}</style>
+      <rect class="sb-r" x="20" y="20" width="130" height="40" rx="6"></rect><text class="ss" x="85" y="44" text-anchor="middle">feed:tech:US (60%)</text>
+      <rect class="sb-r" x="20" y="70" width="130" height="40" rx="6"></rect><text class="ss" x="85" y="94" text-anchor="middle">feed:biz:US (30%)</text>
+      <rect class="sb-r" x="20" y="120" width="130" height="40" rx="6"></rect><text class="ss" x="85" y="144" text-anchor="middle">feed:trend:US (10%)</text>
+
+      <rect class="sb-b" x="220" y="50" width="180" height="70" rx="6"></rect>
+      <text class="sl" x="310" y="72" text-anchor="middle">Feed Assembly</text>
+      <text class="ss" x="310" y="88" text-anchor="middle">mix by preference_vector</text>
+      <text class="ss" x="310" y="102" text-anchor="middle">rank by recency + relevance</text>
+
+      <rect class="sb" x="200" y="150" width="100" height="35" rx="6"></rect><text class="ss" x="250" y="171" text-anchor="middle">user prefs</text>
+      <text class="ss" x="250" y="185" text-anchor="middle">(Espresso)</text>
+
+      <rect class="sb-g" x="470" y="60" width="140" height="50" rx="6"></rect><text class="sl" x="540" y="82" text-anchor="middle">Personalized feed</text><text class="ss" x="540" y="96" text-anchor="middle">20 articles, mixed</text>
+
+      <rect class="sb" x="670" y="60" width="100" height="50" rx="6"></rect><text class="sl" x="720" y="82" text-anchor="middle">Client</text>
+
+      <path class="sa" d="M150,40 L218,70" marker-end="url(#a1)"></path>
+      <path class="sa" d="M150,90 L218,88" marker-end="url(#a1)"></path>
+      <path class="sa" d="M150,140 L218,105" marker-end="url(#a1)"></path>
+      <path class="sa" d="M250,150 L295,122" marker-end="url(#a1)"></path>
+      <path class="sa-g" d="M400,85 L468,85" marker-end="url(#ag)"></path>
+      <path class="sa" d="M610,85 L668,85" marker-end="url(#a1)"></path>
+    </svg>

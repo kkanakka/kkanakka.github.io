@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 800 240" xmlns="http://www.w3.org/2000/svg" style="max-width:750px;">
+      <defs>
+        <marker id="arr4" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#546e7a"></polygon>
+        </marker>
+      </defs>
+
+      <text x="400" y="20" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#00695c">A LinkedIn Profile is a TREE (1-to-many at every level)</text>
+
+      <!-- Root: User -->
+      <rect x="300" y="35" width="200" height="40" rx="10" fill="#e3f2fd" stroke="#1565c0" stroke-width="2"></rect>
+      <text x="400" y="60" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="12" fill="#0d47a1">user_id: 251 "Bill Gates"</text>
+
+      <!-- Level 2 -->
+      <rect x="30" y="110" width="140" height="35" rx="8" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1.5"></rect>
+      <text x="100" y="132" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#1b5e20">Positions [ ]</text>
+
+      <rect x="210" y="110" width="140" height="35" rx="8" fill="#fff3e0" stroke="#e65100" stroke-width="1.5"></rect>
+      <text x="280" y="132" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#bf360c">Education [ ]</text>
+
+      <rect x="390" y="110" width="140" height="35" rx="8" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="1.5"></rect>
+      <text x="460" y="132" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#4a148c">Contact Info</text>
+
+      <rect x="570" y="110" width="80" height="35" rx="8" fill="#fce4ec" stroke="#c62828" stroke-width="1.5"></rect>
+      <text x="610" y="132" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#c62828">region_id</text>
+
+      <rect x="670" y="110" width="100" height="35" rx="8" fill="#fce4ec" stroke="#c62828" stroke-width="1.5"></rect>
+      <text x="720" y="132" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#c62828">industry_id</text>
+
+      <!-- Arrows -->
+      <line x1="350" y1="75" x2="100" y2="110" stroke="#546e7a" stroke-width="1.2" marker-end="url(#arr4)"></line>
+      <line x1="380" y1="75" x2="280" y2="110" stroke="#546e7a" stroke-width="1.2" marker-end="url(#arr4)"></line>
+      <line x1="420" y1="75" x2="460" y2="110" stroke="#546e7a" stroke-width="1.2" marker-end="url(#arr4)"></line>
+      <line x1="450" y1="75" x2="610" y2="110" stroke="#c62828" stroke-width="1" stroke-dasharray="4" marker-end="url(#arr4)"></line>
+      <line x1="470" y1="75" x2="720" y2="110" stroke="#c62828" stroke-width="1" stroke-dasharray="4" marker-end="url(#arr4)"></line>
+
+      <!-- Level 3 leaves -->
+      <rect x="10" y="170" width="110" height="28" rx="5" fill="#c8e6c9"></rect>
+      <text x="65" y="189" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#1b5e20">Co-chair BMGF</text>
+      <rect x="130" y="170" width="110" height="28" rx="5" fill="#c8e6c9"></rect>
+      <text x="185" y="189" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#1b5e20">Co-founder MSFT</text>
+
+      <rect x="210" y="170" width="110" height="28" rx="5" fill="#ffcc80"></rect>
+      <text x="265" y="189" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#bf360c">Harvard 73-75</text>
+      <rect x="330" y="170" width="110" height="28" rx="5" fill="#ffcc80"></rect>
+      <text x="385" y="189" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#bf360c">Lakeside School</text>
+
+      <line x1="65" y1="145" x2="65" y2="170" stroke="#546e7a" stroke-width="1" marker-end="url(#arr4)"></line>
+      <line x1="135" y1="145" x2="185" y2="170" stroke="#546e7a" stroke-width="1" marker-end="url(#arr4)"></line>
+      <line x1="250" y1="145" x2="265" y2="170" stroke="#546e7a" stroke-width="1" marker-end="url(#arr4)"></line>
+      <line x1="310" y1="145" x2="385" y2="170" stroke="#546e7a" stroke-width="1" marker-end="url(#arr4)"></line>
+
+      <!-- Labels -->
+      <text x="610" y="165" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#c62828">many-to-one</text>
+      <text x="610" y="178" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#c62828">(reference to shared entity)</text>
+      <text x="100" y="215" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#2e7d32">1-to-many (embedded / sub-keys)</text>
+    </svg>

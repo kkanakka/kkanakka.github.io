@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 900 380" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ag2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1a7f37"></path>
+    </marker>
+    <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#d1242f"></path>
+    </marker>
+  </defs>
+
+  <!-- Node 0 -->
+  <rect x="40" y="60" width="360" height="240" fill="#f6fdf9" stroke="#1a7f37" stroke-width="1.5" rx="4"></rect>
+  <text x="220" y="82" text-anchor="middle" font-size="13" font-weight="600" fill="#1a7f37">NUMA node 0</text>
+
+  <!-- Cores -->
+  <g>
+    <rect x="60" y="100" width="60" height="38" fill="#dafbe1" stroke="#1a7f37"></rect>
+    <text x="90" y="124" text-anchor="middle" font-size="11">CPU 0</text>
+    <rect x="130" y="100" width="60" height="38" fill="#dafbe1" stroke="#1a7f37"></rect>
+    <text x="160" y="124" text-anchor="middle" font-size="11">CPU 1</text>
+    <rect x="200" y="100" width="60" height="38" fill="#dafbe1" stroke="#1a7f37"></rect>
+    <text x="230" y="124" text-anchor="middle" font-size="11">CPU 2</text>
+    <rect x="270" y="100" width="60" height="38" fill="#dafbe1" stroke="#1a7f37"></rect>
+    <text x="300" y="124" text-anchor="middle" font-size="11">CPU 3</text>
+  </g>
+
+  <!-- L3 / mc -->
+  <rect x="60" y="150" width="280" height="28" fill="#fff" stroke="#1a7f37"></rect>
+  <text x="200" y="168" text-anchor="middle" font-size="11">shared L3 · memory controller</text>
+
+  <!-- DIMMs -->
+  <rect x="60" y="200" width="280" height="80" fill="#fff" stroke="#1a7f37" stroke-dasharray="3,2"></rect>
+  <text x="200" y="220" text-anchor="middle" font-size="11" font-weight="500">RAM · 128 GiB</text>
+  <text x="200" y="240" text-anchor="middle" font-size="10" fill="#59636e">local latency ≈ 80 ns</text>
+  <text x="200" y="256" text-anchor="middle" font-size="10" fill="#59636e">local BW ≈ 100 GB/s</text>
+  <text x="200" y="272" text-anchor="middle" font-size="10" fill="#59636e">DIMMs 0-7</text>
+
+  <!-- Node 1 -->
+  <rect x="500" y="60" width="360" height="240" fill="#fff8e6" stroke="#9a6700" stroke-width="1.5" rx="4"></rect>
+  <text x="680" y="82" text-anchor="middle" font-size="13" font-weight="600" fill="#9a6700">NUMA node 1</text>
+
+  <g>
+    <rect x="520" y="100" width="60" height="38" fill="#fff8c5" stroke="#9a6700"></rect>
+    <text x="550" y="124" text-anchor="middle" font-size="11">CPU 4</text>
+    <rect x="590" y="100" width="60" height="38" fill="#fff8c5" stroke="#9a6700"></rect>
+    <text x="620" y="124" text-anchor="middle" font-size="11">CPU 5</text>
+    <rect x="660" y="100" width="60" height="38" fill="#fff8c5" stroke="#9a6700"></rect>
+    <text x="690" y="124" text-anchor="middle" font-size="11">CPU 6</text>
+    <rect x="730" y="100" width="60" height="38" fill="#fff8c5" stroke="#9a6700"></rect>
+    <text x="760" y="124" text-anchor="middle" font-size="11">CPU 7</text>
+  </g>
+
+  <rect x="520" y="150" width="280" height="28" fill="#fff" stroke="#9a6700"></rect>
+  <text x="660" y="168" text-anchor="middle" font-size="11">shared L3 · memory controller</text>
+
+  <rect x="520" y="200" width="280" height="80" fill="#fff" stroke="#9a6700" stroke-dasharray="3,2"></rect>
+  <text x="660" y="220" text-anchor="middle" font-size="11" font-weight="500">RAM · 128 GiB</text>
+  <text x="660" y="240" text-anchor="middle" font-size="10" fill="#59636e">local latency ≈ 80 ns</text>
+  <text x="660" y="256" text-anchor="middle" font-size="10" fill="#59636e">local BW ≈ 100 GB/s</text>
+  <text x="660" y="272" text-anchor="middle" font-size="10" fill="#59636e">DIMMs 8-15</text>
+
+  <!-- UPI -->
+  <line x1="400" y1="164" x2="500" y2="164" stroke="#8250df" stroke-width="3"></line>
+  <text x="450" y="155" text-anchor="middle" font-size="10" fill="#8250df" font-weight="500">UPI / Infinity Fabric</text>
+  <text x="450" y="180" text-anchor="middle" font-size="9" fill="#59636e">~25 GB/s · +50 ns</text>
+
+  <!-- local arrow -->
+  <path d="M 90 138 L 90 200" stroke="#1a7f37" stroke-width="2" marker-end="url(#ag2)"></path>
+  <text x="50" y="175" font-size="10" fill="#1a7f37">local</text>
+
+  <!-- remote arrow -->
+  <path d="M 90 138 Q 90 50 580 50 Q 660 50 660 200" stroke="#d1242f" stroke-width="1.8" stroke-dasharray="4,3" fill="none" marker-end="url(#ar2)"></path>
+  <text x="400" y="40" text-anchor="middle" font-size="10" fill="#d1242f">remote · latency ×1.6 · BW ×0.5</text>
+
+  <!-- summary text -->
+  <text x="450" y="330" text-anchor="middle" font-size="11" fill="#59636e">A process running on CPU 0 wants its memory on <tspan fill="#1a7f37" font-weight="600">node 0</tspan>, not on <tspan fill="#d1242f" font-weight="600">node 1</tspan>.</text>
+  <text x="450" y="350" text-anchor="middle" font-size="11" fill="#59636e">Default policy: <tspan font-family="ui-monospace,Menlo" fill="#0969da">first-touch</tspan> — whoever first writes a page, their node gets it.</text>
+</svg>

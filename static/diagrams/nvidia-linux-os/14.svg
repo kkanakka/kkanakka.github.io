@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 900 200" xmlns="http://www.w3.org/2000/svg" style="width:100%;">
+        <rect x="20" y="10" width="170" height="80" rx="8" fill="#f5f5f5" stroke="#222"></rect>
+        <text x="105" y="30" text-anchor="middle" fill="#222" font-size="11" font-weight="700">NIC Tuning</text>
+        <text x="105" y="48" text-anchor="middle" fill="#54595d" font-size="11">• Increase RX/TX ring buffers</text>
+        <text x="105" y="60" text-anchor="middle" fill="#54595d" font-size="11">• Enable RSS (multi-queue)</text>
+        <text x="105" y="72" text-anchor="middle" fill="#54595d" font-size="11">• IRQ affinity to CPU cores</text>
+        <text x="105" y="84" text-anchor="middle" fill="#54595d" font-size="11">• Disable interrupt coalescing</text>
+        <rect x="205" y="10" width="170" height="80" rx="8" fill="#f8f9fa" stroke="#222"></rect>
+        <text x="290" y="30" text-anchor="middle" fill="#222" font-size="11" font-weight="700">Kernel Bypass</text>
+        <text x="290" y="48" text-anchor="middle" fill="#54595d" font-size="11">• DPDK (poll-mode drivers)</text>
+        <text x="290" y="60" text-anchor="middle" fill="#54595d" font-size="11">• XDP/eBPF (in-kernel fast)</text>
+        <text x="290" y="72" text-anchor="middle" fill="#54595d" font-size="11">• AF_XDP sockets</text>
+        <text x="290" y="84" text-anchor="middle" fill="#54595d" font-size="11">• io_uring for async I/O</text>
+        <rect x="390" y="10" width="170" height="80" rx="8" fill="#f8f9fa" stroke="#202122"></rect>
+        <text x="475" y="30" text-anchor="middle" fill="#202122" font-size="11" font-weight="700">TCP Tuning</text>
+        <text x="475" y="48" text-anchor="middle" fill="#54595d" font-size="11">• tcp_low_latency=1</text>
+        <text x="475" y="60" text-anchor="middle" fill="#54595d" font-size="11">• tcp_nodelay (disable Nagle)</text>
+        <text x="475" y="72" text-anchor="middle" fill="#54595d" font-size="11">• SO_BUSY_POLL</text>
+        <text x="475" y="84" text-anchor="middle" fill="#54595d" font-size="11">• BBR congestion control</text>
+        <rect x="575" y="10" width="170" height="80" rx="8" fill="#f5f5f5" stroke="#222"></rect>
+        <text x="660" y="30" text-anchor="middle" fill="#222" font-size="11" font-weight="700">CPU Pinning</text>
+        <text x="660" y="48" text-anchor="middle" fill="#54595d" font-size="11">• isolcpus for app cores</text>
+        <text x="660" y="60" text-anchor="middle" fill="#54595d" font-size="11">• taskset / cset</text>
+        <text x="660" y="72" text-anchor="middle" fill="#54595d" font-size="11">• NUMA-local memory</text>
+        <text x="660" y="84" text-anchor="middle" fill="#54595d" font-size="11">• Disable C-states</text>
+        <rect x="760" y="10" width="120" height="80" rx="8" fill="#f8f9fa" stroke="#202122"></rect>
+        <text x="820" y="30" text-anchor="middle" fill="#202122" font-size="11" font-weight="700">Memory</text>
+        <text x="820" y="48" text-anchor="middle" fill="#54595d" font-size="11">• Huge pages (2MB)</text>
+        <text x="820" y="60" text-anchor="middle" fill="#54595d" font-size="11">• mlock() for buffers</text>
+        <text x="820" y="72" text-anchor="middle" fill="#54595d" font-size="11">• Disable NUMA balancing</text>
+        <text x="820" y="84" text-anchor="middle" fill="#54595d" font-size="11">• Disable swap</text>
+        <!-- Packet path -->
+        <rect x="20" y="110" width="860" height="75" rx="8" fill="#f5f5f5" stroke="#222"></rect>
+        <text x="450" y="130" text-anchor="middle" fill="#222" font-size="13" font-weight="700">Packet Path: NIC → Kernel → Application</text>
+        <text x="100" y="155" text-anchor="middle" fill="#222" font-size="11">NIC DMA</text>
+        <text x="165" y="155" text-anchor="middle" fill="#72777d" font-size="12">➜</text>
+        <text x="230" y="155" text-anchor="middle" fill="#222" font-size="11">Ring Buffer</text>
+        <text x="300" y="155" text-anchor="middle" fill="#72777d" font-size="12">➜</text>
+        <text x="370" y="155" text-anchor="middle" fill="#222" font-size="11">IRQ/NAPI</text>
+        <text x="430" y="155" text-anchor="middle" fill="#72777d" font-size="12">➜</text>
+        <text x="500" y="155" text-anchor="middle" fill="#222" font-size="11">netfilter</text>
+        <text x="560" y="155" text-anchor="middle" fill="#72777d" font-size="12">➜</text>
+        <text x="630" y="155" text-anchor="middle" fill="#222" font-size="11">TCP stack</text>
+        <text x="700" y="155" text-anchor="middle" fill="#72777d" font-size="12">➜</text>
+        <text x="780" y="155" text-anchor="middle" fill="#222" font-size="11">Socket buffer</text>
+        <text x="850" y="155" text-anchor="middle" fill="#72777d" font-size="12">➜</text>
+        <text x="880" y="155" text-anchor="middle" fill="#222" font-size="11">App</text>
+        <text x="450" y="175" text-anchor="middle" fill="#54595d" font-size="11">Each stage adds latency. Kernel bypass (DPDK/XDP) skips IRQ → netfilter → TCP stages.</text>
+    </svg>

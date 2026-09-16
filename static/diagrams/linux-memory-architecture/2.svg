@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 400" width="100%" height="auto" role="img" aria-label="Stack frames and heap objects with references"><style>.svg-label{font-family: Inter, sans-serif;
+  font-size: 11px;
+  fill: #1f2328;}
+.svg-muted{fill: #59636e;
+  font-size: 10px;
+  font-family: Inter, sans-serif;}
+.svg-mono{font-family: "JetBrains Mono", monospace;
+  font-size: 10px;
+  fill: #1f2328;}</style>
+      <defs>
+        <marker id="ar" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+          <polygon points="0 0, 7 3.5, 0 7" fill="#0969da"></polygon>
+        </marker>
+      </defs>
+      <text x="220" y="28" text-anchor="middle" class="svg-label" font-weight="700" fill="#9a6700">Stack (yellow region / -Xss)</text>
+      <text x="680" y="28" text-anchor="middle" class="svg-label" font-weight="700" fill="#8250df">Heap (purple / GC-managed)</text>
+
+      <!-- Stack column -->
+      <rect x="40" y="40" width="360" height="320" fill="#fff8c5" stroke="#9a6700" stroke-width="2"></rect>
+      <text x="70" y="62" class="svg-muted" font-size="10px">← Stack Pointer (grows downward)</text>
+      <line x1="360" y1="52" x2="400" y2="52" stroke="#0969da" marker-end="url(#ar)"></line>
+
+      <rect x="60" y="75" width="320" height="72" fill="#ffffff" stroke="#d1d9e0"></rect>
+      <text x="70" y="92" class="svg-label" font-weight="600" fill="#1f2328">serialize()</text>
+      <text x="70" y="110" class="svg-mono" font-size="10px">int offset = 0</text>
+      <text x="70" y="126" class="svg-mono" font-size="10px">ByteBuffer buf (ref → off-heap / direct)</text>
+
+      <rect x="60" y="155" width="320" height="78" fill="#ffffff" stroke="#d1d9e0"></rect>
+      <text x="70" y="172" class="svg-label" font-weight="600" fill="#1f2328">processRequest()</text>
+      <text x="70" y="190" class="svg-mono" font-size="10px">Request req (ref → heap)</text>
+      <text x="70" y="206" class="svg-mono" font-size="10px">int txnType = 1</text>
+
+      <rect x="60" y="241" width="320" height="78" fill="#ffffff" stroke="#d1d9e0"></rect>
+      <text x="70" y="258" class="svg-label" font-weight="600" fill="#1f2328">main()</text>
+      <text x="70" y="276" class="svg-mono" font-size="10px">String[] args (ref → heap)</text>
+      <text x="70" y="292" class="svg-mono" font-size="10px">int port = 2181</text>
+
+      <text x="220" y="355" text-anchor="middle" class="svg-muted" font-size="10px">Stack Bottom → higher addresses / caller chain</text>
+
+      <!-- Heap column -->
+      <rect x="430" y="40" width="430" height="320" fill="#f5f0ff" stroke="#8250df" stroke-width="2"></rect>
+      <rect x="450" y="58" width="185" height="130" fill="#ffffff" stroke="#8250df"></rect>
+      <text x="542" y="78" text-anchor="middle" class="svg-label" font-weight="600" fill="#8250df">Young Gen</text>
+      <rect x="465" y="88" width="55" height="36" fill="#dafbe1" stroke="#1a7f37"></rect>
+      <text x="492" y="110" text-anchor="middle" class="svg-mono" font-size="10px">Eden</text>
+      <rect x="528" y="88" width="48" height="36" fill="#ddf4ff" stroke="#0969da"></rect>
+      <text x="552" y="110" text-anchor="middle" class="svg-mono" font-size="9px">S0</text>
+      <rect x="584" y="88" width="48" height="36" fill="#ddf4ff" stroke="#0969da"></rect>
+      <text x="608" y="110" text-anchor="middle" class="svg-mono" font-size="9px">S1</text>
+      <text x="542" y="150" text-anchor="middle" class="svg-muted" font-size="9px">short-lived request DTOs</text>
+
+      <rect x="655" y="58" width="185" height="130" fill="#ffffff" stroke="#8250df"></rect>
+      <text x="747" y="78" text-anchor="middle" class="svg-label" font-weight="600" fill="#8250df">Old Gen</text>
+      <text x="660" y="100" class="svg-mono" font-size="9px">DataNode tree · ZK ensemble state</text>
+      <text x="660" y="118" class="svg-mono" font-size="9px">HashMap&lt;Long, Ledger&gt; cache</text>
+      <text x="660" y="136" class="svg-mono" font-size="9px">SessionTracker listeners</text>
+
+      <!-- Arrows from stack refs to heap -->
+      <path d="M380 118 C 410 118, 410 105, 440 105" fill="none" stroke="#0969da" stroke-width="1.5" marker-end="url(#ar)"></path>
+      <path d="M380 190 C 410 190, 410 115, 440 115" fill="none" stroke="#0969da" stroke-width="1.5" marker-end="url(#ar)"></path>
+      <path d="M380 276 C 400 276, 400 95, 440 95" fill="none" stroke="#0969da" stroke-width="1.5" marker-end="url(#ar)"></path>
+      <path d="M380 276 C 400 276, 420 115, 440 125" fill="none" stroke="#0969da" stroke-width="1.5" marker-end="url(#ar)"></path>
+
+      <text x="645" y="210" text-anchor="middle" class="svg-label" font-weight="600" fill="#1f2328">Objects live here, references live on stack</text>
+      <rect x="450" y="225" width="390" height="115" fill="#ffffff" stroke="#d1d9e0"></rect>
+      <text x="645" y="248" text-anchor="middle" class="svg-muted" font-size="10px">Off-heap buffers (direct) still have a small Java object on-heap pointing at native memory</text>
+      <text x="465" y="275" class="svg-mono" font-size="10px">GC roots include thread stacks + JNI + statics</text>
+      <text x="465" y="295" class="svg-mono" font-size="10px">Walking references finds path: stack slot → heap object → fields → …</text>
+    </svg>

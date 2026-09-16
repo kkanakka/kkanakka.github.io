@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 900 400" xmlns="http://www.w3.org/2000/svg">
+  <text x="20" y="22" font-size="12" font-weight="600">8-LCPU box · 4 physical cores · 2 SMT threads per core · /proc/cpuinfo shows CPU 0..7</text>
+
+  <!-- Socket outer -->
+  <rect x="40" y="50" width="820" height="290" fill="#fafbfc" stroke="#0969da" stroke-width="1.5" rx="4"></rect>
+  <text x="60" y="74" font-size="12" font-weight="600" fill="#0969da">SOCKET 0 · NUMA node 0</text>
+
+  <!-- Core 0 (detailed) -->
+  <rect x="70" y="92" width="380" height="130" fill="#ddf4ff" stroke="#0969da"></rect>
+  <text x="260" y="112" text-anchor="middle" font-size="11" font-weight="600">Physical Core 0</text>
+
+  <rect x="90" y="125" width="160" height="50" fill="#dafbe1" stroke="#1a7f37"></rect>
+  <text x="170" y="142" text-anchor="middle" font-size="11" font-weight="500">LCPU 0</text>
+  <text x="170" y="158" text-anchor="middle" font-size="9" fill="#59636e">SMT thread 0</text>
+  <text x="170" y="170" text-anchor="middle" font-size="9" fill="#59636e">L1d 32K + L1i 32K</text>
+
+  <rect x="270" y="125" width="160" height="50" fill="#dafbe1" stroke="#1a7f37"></rect>
+  <text x="350" y="142" text-anchor="middle" font-size="11" font-weight="500">LCPU 4</text>
+  <text x="350" y="158" text-anchor="middle" font-size="9" fill="#59636e">SMT thread 1</text>
+  <text x="350" y="170" text-anchor="middle" font-size="9" fill="#59636e">shares ALUs w/ LCPU 0</text>
+
+  <rect x="90" y="185" width="340" height="25" fill="#fff8c5" stroke="#9a6700"></rect>
+  <text x="260" y="201" text-anchor="middle" font-size="10">L2 cache · 1 MB · shared by both SMT threads of this core</text>
+
+  <!-- Core 1 (detailed) -->
+  <rect x="470" y="92" width="380" height="130" fill="#ddf4ff" stroke="#0969da"></rect>
+  <text x="660" y="112" text-anchor="middle" font-size="11" font-weight="600">Physical Core 1</text>
+
+  <rect x="490" y="125" width="160" height="50" fill="#dafbe1" stroke="#1a7f37"></rect>
+  <text x="570" y="142" text-anchor="middle" font-size="11" font-weight="500">LCPU 1</text>
+  <text x="570" y="158" text-anchor="middle" font-size="9" fill="#59636e">SMT thread 0</text>
+  <text x="570" y="170" text-anchor="middle" font-size="9" fill="#59636e">L1d 32K + L1i 32K</text>
+
+  <rect x="670" y="125" width="160" height="50" fill="#dafbe1" stroke="#1a7f37"></rect>
+  <text x="750" y="142" text-anchor="middle" font-size="11" font-weight="500">LCPU 5</text>
+  <text x="750" y="158" text-anchor="middle" font-size="9" fill="#59636e">SMT thread 1</text>
+  <text x="750" y="170" text-anchor="middle" font-size="9" fill="#59636e">shares ALUs w/ LCPU 1</text>
+
+  <rect x="490" y="185" width="340" height="25" fill="#fff8c5" stroke="#9a6700"></rect>
+  <text x="660" y="201" text-anchor="middle" font-size="10">L2 cache · 1 MB · per physical core</text>
+
+  <!-- Cores 2-3 note -->
+  <text x="450" y="240" text-anchor="middle" font-size="11" fill="#59636e">···physical cores 2 (LCPU 2 + LCPU 6) and 3 (LCPU 3 + LCPU 7) have the same layout···</text>
+
+  <!-- L3 -->
+  <rect x="70" y="262" width="780" height="35" fill="#fff8e6" stroke="#9a6700"></rect>
+  <text x="460" y="284" text-anchor="middle" font-size="11" font-weight="600">L3 cache · 32 MB · shared across all 4 cores in this socket</text>
+
+  <!-- Memory below -->
+  <text x="450" y="325" text-anchor="middle" font-size="11" fill="#59636e">256 GiB DRAM attached to this socket's memory controller (NUMA-local)</text>
+  <text x="450" y="365" text-anchor="middle" font-size="10" fill="#59636e">A second socket has its own cores + L3 + DRAM, linked via UPI / Infinity Fabric</text>
+  <text x="450" y="383" text-anchor="middle" font-size="10" fill="#59636e">Crossing that link to read remote memory is the NUMA penalty</text>
+</svg>

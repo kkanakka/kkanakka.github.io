@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 900 350" xmlns="http://www.w3.org/2000/svg" style="width:100%;">
+        <!-- Container -->
+        <rect x="250" y="10" width="400" height="40" rx="8" fill="#f5f5f5" stroke="#222" stroke-width="2"></rect>
+        <text x="450" y="35" text-anchor="middle" fill="#222" font-size="15" font-weight="700">Container = cgroups + Namespaces + Root FS</text>
+        <!-- cgroups side -->
+        <rect x="20" y="70" width="420" height="270" rx="10" fill="#f8f9fa" stroke="#222"></rect>
+        <text x="230" y="95" text-anchor="middle" fill="#222" font-size="14" font-weight="700">cgroups v2 (Resource Limits)</text>
+        <text x="230" y="112" text-anchor="middle" fill="#54595d" font-size="11">/sys/fs/cgroup/&lt;slice&gt;/&lt;scope&gt;</text>
+        <!-- cgroup controllers -->
+        <rect x="40" y="125" width="185" height="40" rx="6" fill="#f8f9fa" stroke="#a2a9b1"></rect>
+        <text x="132" y="142" text-anchor="middle" fill="#222" font-size="11" font-weight="600">cpu.max</text>
+        <text x="132" y="156" text-anchor="middle" fill="#54595d" font-size="11">quota / period (e.g., 200000/100000)</text>
+        <rect x="235" y="125" width="185" height="40" rx="6" fill="#f8f9fa" stroke="#a2a9b1"></rect>
+        <text x="327" y="142" text-anchor="middle" fill="#222" font-size="11" font-weight="600">memory.max</text>
+        <text x="327" y="156" text-anchor="middle" fill="#54595d" font-size="11">hard limit (OOMKill if exceeded)</text>
+        <rect x="40" y="175" width="185" height="40" rx="6" fill="#f8f9fa" stroke="#a2a9b1"></rect>
+        <text x="132" y="192" text-anchor="middle" fill="#222" font-size="11" font-weight="600">io.max</text>
+        <text x="132" y="206" text-anchor="middle" fill="#54595d" font-size="11">rbps / wbps / riops / wiops</text>
+        <rect x="235" y="175" width="185" height="40" rx="6" fill="#f8f9fa" stroke="#a2a9b1"></rect>
+        <text x="327" y="192" text-anchor="middle" fill="#222" font-size="11" font-weight="600">pids.max</text>
+        <text x="327" y="206" text-anchor="middle" fill="#54595d" font-size="11">max processes (fork bomb protection)</text>
+        <rect x="40" y="225" width="185" height="40" rx="6" fill="#f8f9fa" stroke="#a2a9b1"></rect>
+        <text x="132" y="242" text-anchor="middle" fill="#222" font-size="11" font-weight="600">cpuset.cpus</text>
+        <text x="132" y="256" text-anchor="middle" fill="#54595d" font-size="11">pin to specific CPUs</text>
+        <rect x="235" y="225" width="185" height="40" rx="6" fill="#f8f9fa" stroke="#a2a9b1"></rect>
+        <text x="327" y="242" text-anchor="middle" fill="#222" font-size="11" font-weight="600">hugetlb</text>
+        <text x="327" y="256" text-anchor="middle" fill="#54595d" font-size="11">huge page allocation limits</text>
+        <!-- K8s mapping -->
+        <rect x="40" y="280" width="380" height="45" rx="6" fill="#f5f5f5" stroke="#222"></rect>
+        <text x="230" y="298" text-anchor="middle" fill="#222" font-size="11" font-weight="700">K8s Mapping</text>
+        <text x="230" y="315" text-anchor="middle" fill="#54595d" font-size="11">requests → cpu.weight/memory.min | limits → cpu.max/memory.max</text>
+
+        <!-- Namespaces side -->
+        <rect x="460" y="70" width="420" height="270" rx="10" fill="#f5f5f5" stroke="#222"></rect>
+        <text x="670" y="95" text-anchor="middle" fill="#222" font-size="14" font-weight="700">Namespaces (Visibility Isolation)</text>
+        <text x="670" y="112" text-anchor="middle" fill="#54595d" font-size="11">Each namespace = independent view of system resource</text>
+        <rect x="480" y="125" width="185" height="35" rx="6" fill="#f5f5f5" stroke="#a2a9b1"></rect>
+        <text x="572" y="140" text-anchor="middle" fill="#222" font-size="11" font-weight="600">pid ns</text>
+        <text x="572" y="152" text-anchor="middle" fill="#54595d" font-size="11">PID 1 inside container</text>
+        <rect x="675" y="125" width="185" height="35" rx="6" fill="#f5f5f5" stroke="#a2a9b1"></rect>
+        <text x="767" y="140" text-anchor="middle" fill="#222" font-size="11" font-weight="600">net ns</text>
+        <text x="767" y="152" text-anchor="middle" fill="#54595d" font-size="11">own NIC, IP, routes, iptables</text>
+        <rect x="480" y="170" width="185" height="35" rx="6" fill="#f5f5f5" stroke="#a2a9b1"></rect>
+        <text x="572" y="185" text-anchor="middle" fill="#222" font-size="11" font-weight="600">mnt ns</text>
+        <text x="572" y="197" text-anchor="middle" fill="#54595d" font-size="11">own filesystem view (overlayfs)</text>
+        <rect x="675" y="170" width="185" height="35" rx="6" fill="#f5f5f5" stroke="#a2a9b1"></rect>
+        <text x="767" y="185" text-anchor="middle" fill="#222" font-size="11" font-weight="600">uts ns</text>
+        <text x="767" y="197" text-anchor="middle" fill="#54595d" font-size="11">own hostname</text>
+        <rect x="480" y="215" width="185" height="35" rx="6" fill="#f5f5f5" stroke="#a2a9b1"></rect>
+        <text x="572" y="230" text-anchor="middle" fill="#222" font-size="11" font-weight="600">ipc ns</text>
+        <text x="572" y="242" text-anchor="middle" fill="#54595d" font-size="11">SysV IPC, POSIX msg queues</text>
+        <rect x="675" y="215" width="185" height="35" rx="6" fill="#f5f5f5" stroke="#a2a9b1"></rect>
+        <text x="767" y="230" text-anchor="middle" fill="#222" font-size="11" font-weight="600">user ns</text>
+        <text x="767" y="242" text-anchor="middle" fill="#54595d" font-size="11">UID/GID mapping (rootless)</text>
+        <rect x="480" y="260" width="185" height="35" rx="6" fill="#f5f5f5" stroke="#a2a9b1"></rect>
+        <text x="572" y="275" text-anchor="middle" fill="#222" font-size="11" font-weight="600">cgroup ns</text>
+        <text x="572" y="287" text-anchor="middle" fill="#54595d" font-size="11">own cgroup root view</text>
+        <rect x="675" y="260" width="185" height="35" rx="6" fill="#f5f5f5" stroke="#a2a9b1"></rect>
+        <text x="767" y="275" text-anchor="middle" fill="#222" font-size="11" font-weight="600">time ns</text>
+        <text x="767" y="287" text-anchor="middle" fill="#54595d" font-size="11">virtualized clocks (5.6+)</text>
+    </svg>

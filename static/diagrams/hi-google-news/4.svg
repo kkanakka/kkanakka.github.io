@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 800 180" xmlns="http://www.w3.org/2000/svg"><style>.sb{fill:var(--bg-subtle);stroke:var(--border);stroke-width:1}
+.sb-b{fill:#ddf4ff;stroke:var(--accent);stroke-width:1}
+.sb-g{fill:#dafbe1;stroke:var(--success);stroke-width:1}
+.sb-r{fill:#ffebe9;stroke:var(--danger);stroke-width:1}
+.sb-y{fill:#fff8e6;stroke:var(--attention);stroke-width:1}
+.sb-p{fill:#fbefff;stroke:var(--done);stroke-width:1}
+.sb-o{fill:#fff1e5;stroke:var(--orange);stroke-width:1}
+.sl{font-family:var(--sans);font-size:12px;font-weight:600;fill:var(--fg)}
+.ss{font-family:var(--mono);font-size:10px;fill:var(--fg-muted)}
+.sn{font-family:var(--mono);font-weight:700;font-size:11px;fill:var(--accent)}
+.sa{stroke:var(--fg-muted);stroke-width:1.2;fill:none}
+.sa-b{stroke:var(--accent);stroke-width:1.5;fill:none}
+.sa-g{stroke:var(--success);stroke-width:1.5;fill:none}
+.sa-r{stroke:var(--danger);stroke-width:1.5;fill:none}
+.sa-p{stroke:var(--done);stroke-width:1.5;fill:none}</style>
+      <rect class="sb" x="20" y="20" width="120" height="50" rx="6"></rect>
+      <text class="sl" x="80" y="42" text-anchor="middle">Client</text>
+      <text class="ss" x="80" y="56" text-anchor="middle">web / mobile</text>
+
+      <rect class="sb-y" x="180" y="20" width="140" height="50" rx="6"></rect>
+      <text class="sl" x="250" y="42" text-anchor="middle">API Gateway</text>
+      <text class="ss" x="250" y="56" text-anchor="middle">auth, rate-limit, d2</text>
+
+      <rect class="sb-b" x="360" y="20" width="140" height="50" rx="6"></rect>
+      <text class="sl" x="430" y="42" text-anchor="middle">Feed Service</text>
+      <text class="ss" x="430" y="56" text-anchor="middle">query + format</text>
+
+      <rect class="sb-g" x="540" y="20" width="120" height="50" rx="6"></rect>
+      <text class="sl" x="600" y="42" text-anchor="middle">Espresso</text>
+      <text class="ss" x="600" y="56" text-anchor="middle">article metadata</text>
+
+      <rect class="sb-p" x="540" y="100" width="120" height="50" rx="6"></rect>
+      <text class="sl" x="600" y="122" text-anchor="middle">Ambry</text>
+      <text class="ss" x="600" y="136" text-anchor="middle">thumbnail URLs</text>
+
+      <path class="sa-b" d="M140,45 L178,45" marker-end="url(#ab)"></path><text class="sn" x="159" y="38">1</text>
+      <path class="sa-b" d="M320,45 L358,45" marker-end="url(#ab)"></path><text class="sn" x="339" y="38">2</text>
+      <path class="sa-b" d="M500,45 L538,45" marker-end="url(#ab)"></path><text class="sn" x="519" y="38">3</text>
+      <path class="sa" d="M600,70 L600,98" marker-end="url(#a1)"></path><text class="ss" x="615" y="88">refs</text>
+
+      <text class="ss" x="20" y="120">1: GET /feed?region=US&amp;limit=20</text>
+      <text class="ss" x="20" y="136">2: route to Feed Service (d2 load balancing)</text>
+      <text class="ss" x="20" y="152">3: query Espresso for recent articles in region, ordered by publish_date</text>
+      <text class="ss" x="20" y="168">4: return articles with thumbnail URLs pointing to Ambry via LinkedIn CDN</text>
+    </svg>

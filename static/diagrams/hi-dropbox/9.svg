@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 800 190" xmlns="http://www.w3.org/2000/svg"><style>.sb-r{fill:#ffebe9;stroke:var(--danger);stroke-width:1}
+.sb-y{fill:#fff8e6;stroke:var(--attention);stroke-width:1}
+.sl{font-family:var(--sans);font-size:12px;font-weight:600;fill:var(--fg)}
+.ss{font-family:var(--mono);font-size:10px;fill:var(--fg-muted)}</style>
+      <rect class="sb-r" x="20" y="10" width="760" height="80" rx="6"></rect>
+      <text class="sl" x="40" y="30">Time math</text>
+      <text class="ss" x="40" y="48">50 GB × 8 bits/byte = 400 Gb</text>
+      <text class="ss" x="40" y="62">400 Gb ÷ 100 Mbps = 4,000 seconds = 1.11 hours</text>
+      <text class="ss" x="40" y="78">No server keeps a connection open that long. No browser shows useful progress.</text>
+
+      <rect class="sb-y" x="20" y="110" width="170" height="50" rx="6"></rect><text class="sl" x="105" y="130" text-anchor="middle">Server timeouts</text><text class="ss" x="105" y="146" text-anchor="middle">5-30 min typical</text>
+      <rect class="sb-y" x="210" y="110" width="170" height="50" rx="6"></rect><text class="sl" x="295" y="130" text-anchor="middle">Payload limits</text><text class="ss" x="295" y="146" text-anchor="middle">Gateway: 10MB cap</text>
+      <rect class="sb-y" x="400" y="110" width="170" height="50" rx="6"></rect><text class="sl" x="485" y="130" text-anchor="middle">Network drops</text><text class="ss" x="485" y="146" text-anchor="middle">WiFi blip = restart</text>
+      <rect class="sb-y" x="590" y="110" width="170" height="50" rx="6"></rect><text class="sl" x="675" y="130" text-anchor="middle">No UX feedback</text><text class="ss" x="675" y="146" text-anchor="middle">spinner for an hour</text>
+    </svg>

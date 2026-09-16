@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 900 480" xmlns="http://www.w3.org/2000/svg"><style>.sb-b{fill:#ddf4ff;stroke:var(--accent);stroke-width:1}
+.sb-g{fill:#dafbe1;stroke:var(--success);stroke-width:1}
+.sb-r{fill:#ffebe9;stroke:var(--danger);stroke-width:1}
+.sb-y{fill:#fff8e6;stroke:var(--attention);stroke-width:1}
+.sb-p{fill:#fbefff;stroke:var(--done);stroke-width:1}
+.sb-o{fill:#fff1e5;stroke:var(--orange);stroke-width:1}
+.sl{font-family:var(--sans);font-size:12px;font-weight:600;fill:var(--fg)}
+.ss{font-family:var(--mono);font-size:10px;fill:var(--fg-muted)}
+.sn{font-family:var(--mono);font-weight:700;font-size:11px;fill:var(--accent)}</style>
+      <rect class="sb-b" x="20" y="20" width="150" height="60" rx="6"></rect><text class="sl" x="95" y="40" text-anchor="middle">Uploader (Device A)</text><text class="ss" x="95" y="56" text-anchor="middle">chunks + fingerprints</text>
+      <rect class="sb-g" x="720" y="20" width="160" height="60" rx="6"></rect><text class="sl" x="800" y="40" text-anchor="middle">Downloader (Device B)</text><text class="ss" x="800" y="56" text-anchor="middle">receives change events</text>
+
+      <rect class="sb-y" x="200" y="120" width="150" height="45" rx="6"></rect><text class="sl" x="275" y="140" text-anchor="middle">LB + API Gateway</text>
+      <rect class="sb-b" x="200" y="200" width="220" height="55" rx="6"></rect><text class="sl" x="310" y="220" text-anchor="middle">File Service (control plane)</text><text class="ss" x="310" y="236" text-anchor="middle">metadata + presigned URLs</text>
+
+      <rect class="sb-y" x="40" y="310" width="150" height="55" rx="6"></rect><text class="sl" x="115" y="330" text-anchor="middle">Espresso</text><text class="ss" x="115" y="346" text-anchor="middle">metadata + ACL</text>
+      <rect class="sb-p" x="480" y="290" width="170" height="55" rx="6"></rect><text class="sl" x="565" y="310" text-anchor="middle">Ambry</text><text class="ss" x="565" y="326" text-anchor="middle">multipart + CDC chunks</text>
+      <rect class="sb-o" x="720" y="290" width="160" height="55" rx="6"></rect><text class="sl" x="800" y="310" text-anchor="middle">LinkedIn CDN</text><text class="ss" x="800" y="326" text-anchor="middle">edge caches</text>
+      <rect class="sb-r" x="480" y="395" width="170" height="55" rx="6"></rect><text class="sl" x="565" y="415" text-anchor="middle">Kafka + Samza</text><text class="ss" x="565" y="432" text-anchor="middle">push ChangeEvents</text>
+
+      <path d="M170,60 L208,118" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#ab)" fill="none"></path><text class="sn" x="175" y="100">1</text>
+      <path d="M275,165 L300,198" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#ab)" fill="none"></path><text class="sn" x="275" y="188">2</text>
+      <path d="M250,255 Q150,280 130,308" stroke="var(--attention)" stroke-width="1.5" marker-end="url(#a1)" fill="none"></path><text class="sn" x="155" y="290">3</text>
+      <path d="M420,225 Q480,260 560,288" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#ab)" fill="none"></path><text class="sn" x="480" y="262">4</text>
+
+      <path d="M95,80 L95,315 L478,315" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#ab)" fill="none"></path>
+      <text class="ss" x="180" y="310" fill="var(--accent)">direct chunk PUT</text>
+
+      <path d="M800,345 Q810,200 800,85" stroke="var(--success)" stroke-width="1.5" marker-end="url(#a1)" fill="none"></path><text class="sn" x="825" y="180" fill="var(--success)">7</text>
+      <path d="M650,315 L718,315" stroke="var(--fg-muted)" stroke-width="1.5" stroke-dasharray="3,2" marker-end="url(#a1)" fill="none"></path>
+
+      <path d="M565,450 Q500,460 350,260" stroke="var(--danger)" stroke-width="1.5" stroke-dasharray="3,2" marker-end="url(#a1)" fill="none"></path><text class="sn" x="440" y="400" fill="var(--danger)">5</text>
+      <path d="M650,420 Q780,280 800,85" stroke="var(--danger)" stroke-width="1.5" stroke-dasharray="3,2" marker-end="url(#a1)" fill="none"></path><text class="sn" x="770" y="250" fill="var(--danger)">6</text>
+
+      <text class="ss" x="20" y="470" fill="var(--accent)">—— control plane</text>
+      <text class="ss" x="200" y="470" fill="var(--accent)">···· data plane (Ambry)</text>
+      <text class="ss" x="450" y="470" fill="var(--danger)">···· push (Kafka)</text>
+    </svg>

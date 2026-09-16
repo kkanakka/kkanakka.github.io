@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 900 540" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="atm33" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#8250df"></path>
+    </marker>
+    <marker id="aok33" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1a7f37"></path>
+    </marker>
+  </defs>
+
+  <text x="20" y="22" font-size="12" font-weight="600">Pod request: 4 exclusive CPUs · 16 GB memory · 1 GPU · node has 2 NUMA nodes · GPU only on NUMA 0</text>
+
+  <!-- Pod arrives -->
+  <rect x="30" y="50" width="200" height="90" fill="#ddf4ff" stroke="#0969da"></rect>
+  <text x="130" y="72" text-anchor="middle" font-size="11" font-weight="600" fill="#0969da">Pod arrives</text>
+  <text x="130" y="92" text-anchor="middle" font-size="10" fill="#59636e">Static CPUManager: 4 cores</text>
+  <text x="130" y="107" text-anchor="middle" font-size="10" fill="#59636e">DeviceManager: 1 GPU</text>
+  <text x="130" y="122" text-anchor="middle" font-size="10" fill="#59636e">MemoryManager: 16 Gi</text>
+  <text x="130" y="136" text-anchor="middle" font-size="9" font-style="italic" fill="#0969da">QoS = Guaranteed</text>
+
+  <line x1="230" y1="95" x2="270" y2="95" stroke="#0969da" stroke-width="1.5" marker-end="url(#aok33)"></line>
+
+  <!-- Components return hints -->
+  <rect x="270" y="40" width="340" height="200" fill="#fbefff" stroke="#8250df" stroke-width="1.5"></rect>
+  <text x="440" y="62" text-anchor="middle" font-size="11" font-weight="600" fill="#8250df">Each component returns "hints"</text>
+
+  <g font-family="ui-monospace,Menlo" font-size="9">
+    <text x="282" y="88" font-weight="700" fill="#1f2328">CPUManager:</text>
+    <text x="282" y="102" fill="#59636e">  {NUMANodeAffinity: [0], preferred: true}</text>
+    <text x="282" y="116" fill="#59636e">  {NUMANodeAffinity: [1], preferred: true}</text>
+    <text x="282" y="130" fill="#59636e">  {NUMANodeAffinity: [0,1], preferred: false}</text>
+
+    <text x="282" y="156" font-weight="700" fill="#1f2328">DeviceManager (GPU):</text>
+    <text x="282" y="170" fill="#59636e">  {NUMANodeAffinity: [0], preferred: true}</text>
+
+    <text x="282" y="196" font-weight="700" fill="#1f2328">MemoryManager:</text>
+    <text x="282" y="210" fill="#59636e">  {NUMANodeAffinity: [0], preferred: true}</text>
+    <text x="282" y="224" fill="#59636e">  {NUMANodeAffinity: [1], preferred: true}</text>
+  </g>
+
+  <line x1="610" y1="140" x2="650" y2="140" stroke="#8250df" stroke-width="1.5" marker-end="url(#atm33)"></line>
+
+  <!-- TopologyManager merges -->
+  <rect x="650" y="40" width="220" height="200" fill="#ffebe9" stroke="#d1242f" stroke-width="1.5"></rect>
+  <text x="760" y="62" text-anchor="middle" font-size="11" font-weight="600" fill="#d1242f">TopologyManager merges</text>
+  <text x="760" y="78" text-anchor="middle" font-size="9" fill="#59636e">bitwise-AND all hints</text>
+
+  <g font-family="ui-monospace,Menlo" font-size="9">
+    <text x="660" y="108" fill="#1f2328">CPU ∩ GPU ∩ Memory:</text>
+    <text x="660" y="128" font-weight="700" fill="#1a7f37">{NUMA: [0], preferred: true} ✓</text>
+    <text x="660" y="146" fill="#6e7781">{NUMA: [1]} ✗ no GPU</text>
+    <text x="660" y="160" fill="#6e7781">{NUMA: [0,1], preferred: false}</text>
+  </g>
+
+  <text x="660" y="188" font-size="10" font-weight="600" fill="#d1242f">Best hint: NUMA 0, preferred</text>
+  <text x="660" y="206" font-size="9" fill="#59636e">single-numa-node ⇒ admit ✓</text>
+  <text x="660" y="220" font-size="9" fill="#59636e">restricted ⇒ admit ✓</text>
+
+  <line x1="760" y1="240" x2="760" y2="282" stroke="#d1242f" stroke-width="1.5" marker-end="url(#atm33)"></line>
+
+  <!-- Commit -->
+  <rect x="30" y="285" width="840" height="220" fill="#dafbe1" stroke="#1a7f37" stroke-width="1.5"></rect>
+  <text x="450" y="310" text-anchor="middle" font-size="12" font-weight="600" fill="#1a7f37">Components commit to NUMA node 0</text>
+
+  <text x="50" y="340" font-family="ui-monospace,Menlo" font-size="11" font-weight="700" fill="#1a7f37">CPUManager writes:</text>
+  <text x="50" y="358" font-family="ui-monospace,Menlo" font-size="10" fill="#1a7f37">  /sys/fs/cgroup/.../cpuset.cpus = "0-3"           (exclusive cores from node 0)</text>
+  <text x="50" y="372" font-family="ui-monospace,Menlo" font-size="10" fill="#1a7f37">  /sys/fs/cgroup/.../cpuset.cpus.exclusive = "1"</text>
+
+  <text x="50" y="402" font-family="ui-monospace,Menlo" font-size="11" font-weight="700" fill="#1a7f37">MemoryManager writes:</text>
+  <text x="50" y="420" font-family="ui-monospace,Menlo" font-size="10" fill="#1a7f37">  /sys/fs/cgroup/.../cpuset.mems = "0"             (NUMA 0 only)</text>
+
+  <text x="50" y="450" font-family="ui-monospace,Menlo" font-size="11" font-weight="700" fill="#1a7f37">DeviceManager:</text>
+  <text x="50" y="468" font-family="ui-monospace,Menlo" font-size="10" fill="#1a7f37">  picks a GPU physically on NUMA 0</text>
+
+  <text x="450" y="492" text-anchor="middle" font-size="11" fill="#59636e" font-style="italic">All three resources land on the same NUMA node — PCIe traffic doesn't cross the inter-socket link, host data prep stays cache-warm on adjacent cores</text>
+</svg>

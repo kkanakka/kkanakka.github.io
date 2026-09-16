@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="100%" height="400" style="margin:12px 0;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 566 400">
+    <rect width="100%" height="100%" fill="#fafafa" stroke="#e0e0e0"></rect>
+    
+    <!-- Primary Region -->
+    <rect x="30" y="30" width="200" height="150" fill="#e8f5e9" stroke="#4caf50" stroke-width="3" rx="12"></rect>
+    <text x="130" y="50" text-anchor="middle" font-size="14" font-weight="bold" fill="#2e7d32">PRIMARY REGION</text>
+    
+    <!-- Primary components -->
+    <rect x="50" y="70" width="80" height="40" fill="#c8e6c9" stroke="#388e3c" stroke-width="1" rx="4"></rect>
+    <text x="90" y="85" text-anchor="middle" font-size="10" fill="#2e7d32">App Cluster</text>
+    <text x="90" y="98" text-anchor="middle" font-size="9" fill="#2e7d32">Active</text>
+    
+    <rect x="140" y="70" width="80" height="40" fill="#c8e6c9" stroke="#388e3c" stroke-width="1" rx="4"></rect>
+    <text x="180" y="85" text-anchor="middle" font-size="10" fill="#2e7d32">Database</text>
+    <text x="180" y="98" text-anchor="middle" font-size="9" fill="#2e7d32">Master</text>
+    
+    <rect x="50" y="125" width="170" height="30" fill="#c8e6c9" stroke="#388e3c" stroke-width="1" rx="4"></rect>
+    <text x="135" y="145" text-anchor="middle" font-size="10" fill="#2e7d32">Load Balancer (Active)</text>
+    
+    <!-- DR Region -->
+    <rect x="280" y="30" width="200" height="150" fill="#ffebee" stroke="#f44336" stroke-width="2" stroke-dasharray="5,5" rx="12"></rect>
+    <text x="380" y="50" text-anchor="middle" font-size="14" font-weight="bold" fill="#d32f2f">DR REGION</text>
+    
+    <!-- DR components -->
+    <rect x="300" y="70" width="80" height="40" fill="#ffcdd2" stroke="#d32f2f" stroke-width="1" rx="4"></rect>
+    <text x="340" y="85" text-anchor="middle" font-size="10" fill="#d32f2f">App Cluster</text>
+    <text x="340" y="98" text-anchor="middle" font-size="9" fill="#d32f2f">Standby</text>
+    
+    <rect x="390" y="70" width="80" height="40" fill="#ffcdd2" stroke="#d32f2f" stroke-width="1" rx="4"></rect>
+    <text x="430" y="85" text-anchor="middle" font-size="10" fill="#d32f2f">Database</text>
+    <text x="430" y="98" text-anchor="middle" font-size="9" fill="#d32f2f">Replica</text>
+    
+    <rect x="300" y="125" width="170" height="30" fill="#ffcdd2" stroke="#d32f2f" stroke-width="1" rx="4"></rect>
+    <text x="385" y="145" text-anchor="middle" font-size="10" fill="#d32f2f">Load Balancer (Standby)</text>
+    
+    <!-- DR Controller -->
+    <rect x="170" y="220" width="160" height="80" fill="#e3f2fd" stroke="#2196f3" stroke-width="2" rx="8"></rect>
+    <text x="250" y="240" text-anchor="middle" font-size="12" font-weight="bold" fill="#1976d2">DR Controller</text>
+    <text x="250" y="255" text-anchor="middle" font-size="10" fill="#1976d2">Raft Leader Election</text>
+    <text x="250" y="270" text-anchor="middle" font-size="10" fill="#1976d2">Health Monitoring</text>
+    <text x="250" y="285" text-anchor="middle" font-size="10" fill="#1976d2">Failover Logic</text>
+    
+    <!-- Health Probes -->
+    <rect x="30" y="320" width="100" height="50" fill="#fff3e0" stroke="#ff9800" stroke-width="2" rx="6"></rect>
+    <text x="80" y="340" text-anchor="middle" font-size="11" font-weight="bold" fill="#f57c00">Health Probes</text>
+    <text x="80" y="355" text-anchor="middle" font-size="9" fill="#f57c00">Synthetic Txns</text>
+    
+    <!-- Replication Stream -->
+    <line x1="220" y1="90" x2="300" y2="90" stroke="#ff9800" stroke-width="3" marker-end="url(#arrowhead)"></line>
+    <text x="260" y="85" text-anchor="middle" font-size="9" fill="#ff9800">Async Replication</text>
+    <text x="260" y="105" text-anchor="middle" font-size="8" fill="#ff9800">≤30s RPO</text>
+    
+    <!-- DNS -->
+    <rect x="200" y="330" width="100" height="40" fill="#f3e5f5" stroke="#9c27b0" stroke-width="2" rx="6"></rect>
+    <text x="250" y="345" text-anchor="middle" font-size="11" font-weight="bold" fill="#7b1fa2">DNS Manager</text>
+    <text x="250" y="360" text-anchor="middle" font-size="9" fill="#7b1fa2">Geo Routing</text>
+    
+    <!-- Monitoring -->
+    <rect x="370" y="320" width="100" height="50" fill="#e0f2f1" stroke="#009688" stroke-width="2" rx="6"></rect>
+    <text x="420" y="340" text-anchor="middle" font-size="11" font-weight="bold" fill="#00695c">Monitoring</text>
+    <text x="420" y="355" text-anchor="middle" font-size="9" fill="#00695c">Metrics &amp; Alerts</text>
+    
+    <!-- Connection lines -->
+    <line x1="130" y1="220" x2="80" y2="180" stroke="#666" stroke-width="1" stroke-dasharray="3,3"></line>
+    <line x1="170" y1="260" x2="130" y2="345" stroke="#666" stroke-width="1" stroke-dasharray="3,3"></line>
+    <line x1="250" y1="300" x2="250" y2="330" stroke="#666" stroke-width="1" stroke-dasharray="3,3"></line>
+    <line x1="330" y1="260" x2="380" y2="180" stroke="#666" stroke-width="1" stroke-dasharray="3,3"></line>
+    <line x1="330" y1="280" x2="420" y2="320" stroke="#666" stroke-width="1" stroke-dasharray="3,3"></line>
+  </svg>

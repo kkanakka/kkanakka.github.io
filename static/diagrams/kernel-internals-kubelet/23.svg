@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 900 360" xmlns="http://www.w3.org/2000/svg">
+  <text x="20" y="22" font-size="12" font-weight="600">From L1 to DRAM is ~80× · from L1 to NVMe is ~50,000× · pinning preserves the top of this ladder</text>
+
+  <text x="40" y="48" font-size="10" fill="#59636e">level</text>
+  <text x="180" y="48" font-size="10" fill="#59636e">latency (bar width ∝ relative cost) →</text>
+
+  <!-- L1 -->
+  <rect x="180" y="56" width="20" height="28" fill="#dafbe1" stroke="#1a7f37"></rect>
+  <text x="40" y="75" font-size="11" font-weight="600" fill="#1a7f37">L1 d/i</text>
+  <text x="105" y="75" font-size="11">32 KB</text>
+  <text x="220" y="75" font-size="11" fill="#1a7f37">~1 ns</text>
+  <text x="290" y="75" font-size="10" fill="#59636e">per logical CPU · split data / instruction</text>
+
+  <!-- L2 -->
+  <rect x="180" y="92" width="50" height="28" fill="#dafbe1" stroke="#1a7f37"></rect>
+  <text x="40" y="111" font-size="11" font-weight="600" fill="#1a7f37">L2</text>
+  <text x="105" y="111" font-size="11">1 MB</text>
+  <text x="250" y="111" font-size="11" fill="#1a7f37">~4 ns</text>
+  <text x="320" y="111" font-size="10" fill="#59636e">per physical core (shared by SMT siblings)</text>
+
+  <!-- L3 -->
+  <rect x="180" y="128" width="115" height="28" fill="#fff8c5" stroke="#9a6700"></rect>
+  <text x="40" y="147" font-size="11" font-weight="600" fill="#9a6700">L3</text>
+  <text x="105" y="147" font-size="11">32 MB</text>
+  <text x="315" y="147" font-size="11" fill="#9a6700">~12 ns</text>
+  <text x="385" y="147" font-size="10" fill="#59636e">shared per socket / NUMA node</text>
+
+  <!-- Local DRAM -->
+  <rect x="180" y="164" width="240" height="28" fill="#fff8e6" stroke="#9a6700"></rect>
+  <text x="40" y="183" font-size="11" font-weight="600" fill="#9a6700">DRAM local</text>
+  <text x="105" y="183" font-size="11">256 GB</text>
+  <text x="440" y="183" font-size="11" fill="#9a6700">~80 ns</text>
+  <text x="510" y="183" font-size="10" fill="#59636e">DIMMs on this socket's controller</text>
+
+  <!-- Remote DRAM -->
+  <rect x="180" y="200" width="310" height="28" fill="#ffebe9" stroke="#d1242f"></rect>
+  <text x="40" y="219" font-size="11" font-weight="600" fill="#d1242f">DRAM remote</text>
+  <text x="105" y="219" font-size="11">256 GB</text>
+  <text x="510" y="219" font-size="11" fill="#d1242f">~130 ns</text>
+  <text x="580" y="219" font-size="10" fill="#59636e">across UPI / Infinity Fabric · NUMA penalty</text>
+
+  <!-- NVMe -->
+  <rect x="180" y="236" width="660" height="28" fill="#ffebe9" stroke="#d1242f"></rect>
+  <text x="40" y="255" font-size="11" font-weight="600" fill="#d1242f">NVMe SSD</text>
+  <text x="105" y="255" font-size="11">8 TB</text>
+  <text x="690" y="255" font-size="11" fill="#d1242f">~50 μs (50,000 ns)</text>
+
+  <!-- Gap annotation -->
+  <line x1="200" y1="290" x2="420" y2="290" stroke="#0969da" stroke-width="1" stroke-dasharray="3,3"></line>
+  <line x1="200" y1="284" x2="200" y2="296" stroke="#0969da"></line>
+  <line x1="420" y1="284" x2="420" y2="296" stroke="#0969da"></line>
+  <text x="310" y="310" text-anchor="middle" font-size="11" fill="#0969da" font-weight="500">~80× latency gap · the reason CPU pinning helps · keeps working set warm in L1/L2</text>
+
+  <text x="20" y="345" font-size="10" fill="#59636e">Inspect: <tspan font-family="ui-monospace,Menlo" fill="#0969da">lscpu</tspan> (cache sizes) · <tspan font-family="ui-monospace,Menlo" fill="#0969da">numactl -H</tspan> (NUMA distances) · <tspan font-family="ui-monospace,Menlo" fill="#0969da">perf bench mem</tspan> (measure on your hardware)</text>
+</svg>

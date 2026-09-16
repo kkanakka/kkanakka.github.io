@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 980 360" xmlns="http://www.w3.org/2000/svg"><style>.lbl-title{font-family:'Inter',sans-serif;font-weight:700;font-size:11.5px;fill:#1f2328}
+.lbl-sub{font-family:'JetBrains Mono',monospace;font-size:9.5px;fill:#59636e}
+.lbl-meta{font-family:'JetBrains Mono',monospace;font-size:9px;fill:#818b98}</style>
+  <defs>
+    <marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#59636e"></path>
+    </marker>
+    <marker id="arr2b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0a66c2"></path>
+    </marker>
+  </defs>
+
+  <!-- World band -->
+  <rect x="20" y="30" width="940" height="240" rx="10" fill="#fafbfc" stroke="#eaeef2"></rect>
+  <text x="40" y="55" class="lbl-title">Global control plane</text>
+  <text x="40" y="70" class="lbl-meta">notifier · alert engine · SLO ledger · routes from healthy quorum</text>
+
+  <!-- 5 regions -->
+  <g>
+    <rect x="40" y="90" width="170" height="160" rx="8" fill="#fff" stroke="#54aeff"></rect>
+    <text x="125" y="112" text-anchor="middle" class="lbl-title">us-west-2 · pdx</text>
+    <text x="125" y="128" text-anchor="middle" class="lbl-sub">35% traffic</text>
+    <text x="125" y="148" text-anchor="middle" class="lbl-meta">88 Gbps · 30 gw</text>
+    <text x="125" y="164" text-anchor="middle" class="lbl-meta">10 procs · 130 TSDB</text>
+    <text x="125" y="190" text-anchor="middle" class="lbl-sub" fill="#0a66c2">primary notifier</text>
+    <circle cx="125" cy="220" r="6" fill="#1a7f37"></circle>
+    <text x="138" y="224" class="lbl-meta">healthy</text>
+  </g>
+  <g>
+    <rect x="225" y="90" width="170" height="160" rx="8" fill="#fff" stroke="#54aeff"></rect>
+    <text x="310" y="112" text-anchor="middle" class="lbl-title">eu-west-1 · dub</text>
+    <text x="310" y="128" text-anchor="middle" class="lbl-sub">25% traffic</text>
+    <text x="310" y="148" text-anchor="middle" class="lbl-meta">63 Gbps · 22 gw</text>
+    <text x="310" y="164" text-anchor="middle" class="lbl-meta">7 procs · 94 TSDB</text>
+    <text x="310" y="190" text-anchor="middle" class="lbl-sub" fill="#0a66c2">secondary notifier</text>
+    <circle cx="310" cy="220" r="6" fill="#1a7f37"></circle>
+    <text x="323" y="224" class="lbl-meta">healthy</text>
+  </g>
+  <g>
+    <rect x="410" y="90" width="170" height="160" rx="8" fill="#fff" stroke="#54aeff"></rect>
+    <text x="495" y="112" text-anchor="middle" class="lbl-title">us-east-1 · iad</text>
+    <text x="495" y="128" text-anchor="middle" class="lbl-sub">20% traffic</text>
+    <text x="495" y="148" text-anchor="middle" class="lbl-meta">50 Gbps · 18 gw</text>
+    <text x="495" y="164" text-anchor="middle" class="lbl-meta">5 procs · 75 TSDB</text>
+    <text x="495" y="190" text-anchor="middle" class="lbl-sub" fill="#0a66c2">read replica</text>
+    <circle cx="495" cy="220" r="6" fill="#1a7f37"></circle>
+    <text x="508" y="224" class="lbl-meta">healthy</text>
+  </g>
+  <g>
+    <rect x="595" y="90" width="170" height="160" rx="8" fill="#fff" stroke="#54aeff"></rect>
+    <text x="680" y="112" text-anchor="middle" class="lbl-title">ap-southeast · sin</text>
+    <text x="680" y="128" text-anchor="middle" class="lbl-sub">12% traffic</text>
+    <text x="680" y="148" text-anchor="middle" class="lbl-meta">30 Gbps · 14 gw</text>
+    <text x="680" y="164" text-anchor="middle" class="lbl-meta">3 procs · 45 TSDB</text>
+    <text x="680" y="190" text-anchor="middle" class="lbl-sub" fill="#0a66c2">read replica</text>
+    <circle cx="680" cy="220" r="6" fill="#9a6700"></circle>
+    <text x="693" y="224" class="lbl-meta">degraded (drill)</text>
+  </g>
+  <g>
+    <rect x="780" y="90" width="160" height="160" rx="8" fill="#fff" stroke="#54aeff"></rect>
+    <text x="860" y="112" text-anchor="middle" class="lbl-title">ap-south-1 · bom</text>
+    <text x="860" y="128" text-anchor="middle" class="lbl-sub">8% traffic</text>
+    <text x="860" y="148" text-anchor="middle" class="lbl-meta">20 Gbps · 10 gw</text>
+    <text x="860" y="164" text-anchor="middle" class="lbl-meta">2 procs · 30 TSDB</text>
+    <text x="860" y="190" text-anchor="middle" class="lbl-sub" fill="#0a66c2">read replica</text>
+    <circle cx="860" cy="220" r="6" fill="#1a7f37"></circle>
+    <text x="873" y="224" class="lbl-meta">healthy</text>
+  </g>
+
+  <!-- MM2 lines -->
+  <path d="M210,170 C215,170 220,170 225,170" stroke="#0a66c2" stroke-width="1.5" fill="none" marker-end="url(#arr2b)"></path>
+  <path d="M395,170 L410,170" stroke="#0a66c2" stroke-width="1.5" fill="none" marker-end="url(#arr2b)"></path>
+  <path d="M580,170 L595,170" stroke="#0a66c2" stroke-width="1.5" fill="none" marker-end="url(#arr2b)"></path>
+  <path d="M765,170 L780,170" stroke="#0a66c2" stroke-width="1.5" fill="none" marker-end="url(#arr2b)"></path>
+
+  <text x="490" y="290" text-anchor="middle" class="lbl-sub">MirrorMaker2 · async cross-region · p0+p1 only · 22 GB/s sustained · RPO &lt; 10 s</text>
+  <text x="490" y="310" text-anchor="middle" class="lbl-meta">Failover policy: producer GSLB redirects to nearest healthy region within 5 s · alert dedupe across regions via Spanner global key</text>
+  <text x="490" y="338" text-anchor="middle" class="lbl-meta" fill="#0a66c2">Any single region outage absorbed by remaining 4 — no alerting blackout</text>
+</svg>

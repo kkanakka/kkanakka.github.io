@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 820 430" xmlns="http://www.w3.org/2000/svg" style="max-width:800px;">
+      <defs>
+        <marker id="arr3" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#546e7a"></polygon>
+        </marker>
+        <filter id="sh3" x="-3%" y="-3%" width="106%" height="110%">
+          <fedropshadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.06"></fedropshadow>
+        </filter>
+      </defs>
+
+      <text x="410" y="22" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="15" fill="#b71c1c">LSM-Tree: Write-Optimized Storage Engine</text>
+
+      <!-- Write path -->
+      <rect x="20" y="40" width="140" height="40" rx="8" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1.5"></rect>
+      <text x="90" y="65" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#1b5e20">Write Request</text>
+
+      <line x1="160" y1="60" x2="200" y2="60" stroke="#546e7a" stroke-width="1.5" marker-end="url(#arr3)"></line>
+
+      <!-- WAL -->
+      <rect x="200" y="40" width="100" height="40" rx="8" fill="#fce4ec" stroke="#c62828" stroke-width="1"></rect>
+      <text x="250" y="58" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#c62828">WAL</text>
+      <text x="250" y="72" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" fill="#787774">(crash recovery)</text>
+
+      <line x1="300" y1="60" x2="340" y2="60" stroke="#546e7a" stroke-width="1.5" marker-end="url(#arr3)"></line>
+
+      <!-- Memtable -->
+      <rect x="340" y="35" width="200" height="55" rx="10" fill="#e3f2fd" stroke="#1565c0" stroke-width="2" filter="url(#sh3)"></rect>
+      <text x="440" y="56" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#0d47a1">Memtable (RAM)</text>
+      <text x="440" y="74" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#787774">Red-black tree / skip list — sorted in memory</text>
+
+      <!-- Flush arrow -->
+      <line x1="440" y1="90" x2="440" y2="120" stroke="#c62828" stroke-width="1.5" marker-end="url(#arr3)"></line>
+      <text x="460" y="108" font-family="Inter,sans-serif" font-size="9" fill="#c62828">flush when full (~4MB)</text>
+
+      <!-- SSTable Levels -->
+      <rect x="20" y="120" width="780" height="90" rx="10" fill="#fff3e0" stroke="#e65100" stroke-width="1.5"></rect>
+      <text x="30" y="142" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#e65100">Level 0 (newest SSTables — recently flushed from memtable)</text>
+      <rect x="40" y="150" width="160" height="35" rx="6" fill="#fff" stroke="#ffcc80" stroke-width="1"></rect>
+      <text x="120" y="172" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#37352f">SST-4: a→d sorted</text>
+      <rect x="210" y="150" width="160" height="35" rx="6" fill="#fff" stroke="#ffcc80" stroke-width="1"></rect>
+      <text x="290" y="172" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#37352f">SST-3: b→f sorted</text>
+      <text x="420" y="172" font-family="Inter,sans-serif" font-size="9" fill="#787774">may overlap key ranges</text>
+
+      <line x1="410" y1="210" x2="410" y2="230" stroke="#546e7a" stroke-width="1.2" marker-end="url(#arr3)"></line>
+      <text x="430" y="224" font-family="Inter,sans-serif" font-size="9" fill="#787774">compaction (merge + deduplicate)</text>
+
+      <rect x="20" y="230" width="780" height="70" rx="10" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1.5"></rect>
+      <text x="30" y="252" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#2e7d32">Level 1 (merged, non-overlapping key ranges, larger files)</text>
+      <rect x="40" y="260" width="230" height="30" rx="6" fill="#fff" stroke="#a5d6a7" stroke-width="1"></rect>
+      <text x="155" y="280" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#37352f">SST: a→m sorted, deduplicated</text>
+      <rect x="280" y="260" width="230" height="30" rx="6" fill="#fff" stroke="#a5d6a7" stroke-width="1"></rect>
+      <text x="395" y="280" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#37352f">SST: n→z sorted, deduplicated</text>
+
+      <line x1="410" y1="300" x2="410" y2="320" stroke="#546e7a" stroke-width="1.2" marker-end="url(#arr3)"></line>
+
+      <rect x="20" y="320" width="780" height="50" rx="10" fill="#e3f2fd" stroke="#1565c0" stroke-width="1.5"></rect>
+      <text x="30" y="342" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#0d47a1">Level 2+ (even larger, fully sorted, oldest data)</text>
+      <text x="30" y="360" font-family="Inter,sans-serif" font-size="9" fill="#787774">Each level is ~10x larger than the previous. Compaction runs in background.</text>
+
+      <!-- Read path -->
+      <rect x="600" y="40" width="180" height="40" rx="8" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="1.5"></rect>
+      <text x="690" y="58" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#4a148c">Read: check each level</text>
+      <text x="690" y="72" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" fill="#787774">memtable → L0 → L1 → L2</text>
+
+      <!-- Bottom summary -->
+      <rect x="20" y="385" width="780" height="35" rx="8" fill="#f7f6f3" stroke="#e3e2de" stroke-width="1"></rect>
+      <text x="410" y="405" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#37352f"><tspan font-weight="700">Key insight:</tspan> Writes go to memtable (RAM) = fast. Reads may check multiple levels = slower. Bloom filters skip levels where key doesn't exist.</text>
+    </svg>

@@ -1,44 +1,52 @@
-# AI System Design
+# AI System Design — drop folder
 
-Drop an `.html` file in this folder, push, and it appears on
-<https://kkanakka.github.io/ai-index.html> and in the **AI System Design**
-card on the homepage. No manual index editing.
-
-## Adding a guide
+Put an `.html` file in this folder, push, and it becomes a page in the
+**AI System Design** section of the site. The deploy workflow runs
+`node scripts/convert.js --ai-only`, which converts each file to markdown
+under `docs/ai-system-design/` and rebuilds the section overview.
 
 ```bash
 cp ai-system-design/_template.html ai-system-design/llm-serving.html
-# edit the <title> and <meta> tags, write the content
+# write it, then:
 git add ai-system-design/llm-serving.html
-git commit -m "Add LLM serving architecture guide"
+git commit -m "Add LLM serving guide"
 git push
 ```
 
-The `Build AI System Design index` GitHub Action regenerates the index and
-commits the result. The live site updates a minute or so later.
-
-## How a file becomes a card
-
-The builder reads these from each file's `<head>`:
+## Metadata the converter reads
 
 | Tag | Required | Purpose |
 |---|---|---|
-| `<title>` | yes | Card heading. A ` — Kiran's Tech Hub` suffix is stripped. |
-| `<meta name="description">` | no | One-line summary under the heading. |
-| `<meta name="tags">` | no | Comma-separated pills. |
-| `<meta name="order">` | no | Sort position, lower first. Default: alphabetical. |
-| `<meta name="card-title">` | no | Overrides `<title>` for the card only. |
-| `<meta name="accent">` | no | Hex accent colour. Default: auto-assigned from a palette. |
+| `<title>` | yes | Page and sidebar title. A ` — Kiran's Tech Hub` suffix is stripped. |
+| `<meta name="description">` | no | Page description and search snippet. |
+| `<meta name="order">` | no | Sort position in the sidebar, lower first. Default: alphabetical. |
+| `<meta name="card-title">` | no | Overrides `<title>` for the sidebar label. |
 
-Files beginning with `_` (like `_template.html`) are ignored — use that for
-drafts and templates.
+Files beginning with `_` are ignored — use that prefix for drafts and
+templates.
 
-## Running it locally
+## Writing markdown instead
 
-```bash
-python3 scripts/build_ai_index.py
+You do not have to use HTML. Anything you add directly to
+`docs/ai-system-design/` as a `.md` file shows up in the sidebar with no
+conversion step at all — that is the native Docusaurus path and the better
+option for new writing:
+
+```markdown
+---
+title: "RAG Pipeline Design"
+sidebar_position: 5
+---
+
+Your content here.
 ```
 
-Stdlib only, no dependencies. Safe to run repeatedly; it rewrites only the
-blocks between the `<!-- AI-ENTRIES:START -->` / `<!-- AI-COUNT:START -->`
-markers and leaves everything else alone.
+This drop folder exists for HTML you already have, and for diagram-heavy
+pages you would rather hand-build.
+
+## Running the conversion locally
+
+```bash
+npm run ai      # refresh just this section
+npm start       # preview the site
+```

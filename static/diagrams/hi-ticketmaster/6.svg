@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 800 180" xmlns="http://www.w3.org/2000/svg"><style>.sb-b{fill:#ddf4ff;stroke:var(--accent);stroke-width:1}
+.sb-r{fill:#ffebe9;stroke:var(--danger);stroke-width:1}
+.sb-y{fill:#fff8e6;stroke:var(--attention);stroke-width:1}
+.sb-p{fill:#fbefff;stroke:var(--done);stroke-width:1}
+.sl{font-family:var(--sans);font-size:12px;font-weight:600;fill:var(--fg)}
+.ss{font-family:var(--mono);font-size:10px;fill:var(--fg-muted)}
+.sa{stroke:var(--fg-muted);stroke-width:1.2;fill:none}
+.sa-b{stroke:var(--accent);stroke-width:1.5;fill:none}
+.sa-g{stroke:var(--success);stroke-width:1.5;fill:none}
+.sa-r{stroke:var(--danger);stroke-width:1.5;fill:none}
+.sa-p{stroke:var(--done);stroke-width:1.5;fill:none}</style>
+      <rect class="sb-y" x="20" y="15" width="220" height="70" rx="6"></rect>
+      <text class="sl" x="130" y="35" text-anchor="middle">Add ‘reserved’ status</text>
+      <text class="ss" x="130" y="52" text-anchor="middle">+ reserved_at timestamp</text>
+      <text class="ss" x="130" y="66" text-anchor="middle">+ reserved_by user_id</text>
+
+      <rect class="sb-b" x="280" y="15" width="200" height="70" rx="6"></rect>
+      <text class="sl" x="380" y="35" text-anchor="middle">User clicks seat</text>
+      <text class="ss" x="380" y="52" text-anchor="middle">UPDATE ticket</text>
+      <text class="ss" x="380" y="66" text-anchor="middle">SET status=’reserved’</text>
+
+      <rect class="sb-p" x="520" y="15" width="250" height="70" rx="6"></rect>
+      <text class="sl" x="645" y="35" text-anchor="middle">Cron job every minute</text>
+      <text class="ss" x="645" y="52" text-anchor="middle">UPDATE tickets SET status=’available’</text>
+      <text class="ss" x="645" y="66" text-anchor="middle">WHERE reserved_at &lt; NOW()-10m</text>
+
+      <path class="sa" d="M240,50 L278,50" marker-end="url(#a1)"></path>
+      <path class="sa" d="M480,50 L518,50" marker-end="url(#a1)"></path>
+
+      <rect class="sb-r" x="20" y="105" width="750" height="60" rx="6"></rect>
+      <text class="sl" x="34" y="125">Problems</text>
+      <text class="ss" x="34" y="140">Cron = single point of failure. If it stops, seats stay “reserved” forever = system appears sold out.</text>
+      <text class="ss" x="34" y="155">Cron timing imprecise. Three-state column complicates all queries.</text>
+    </svg>

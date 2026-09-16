@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 800 320" xmlns="http://www.w3.org/2000/svg" style="max-width:750px;">
+      <!-- Operability -->
+      <rect x="20" y="10" width="240" height="300" rx="12" fill="#e3f2fd" stroke="#1565c0" stroke-width="1.5"></rect>
+      <text x="140" y="40" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="14" fill="#0d47a1">Operability</text>
+      <text x="140" y="58" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#787774">"Making Life Easy for Ops"</text>
+      <line x1="40" y1="68" x2="240" y2="68" stroke="#bbdefb" stroke-width="1"></line>
+      <text x="40" y="90" font-family="Inter,sans-serif" font-size="10.5" fill="#37352f">• Monitor health &amp; quick restore</text>
+      <text x="40" y="110" font-family="Inter,sans-serif" font-size="10.5" fill="#37352f">• Track down root causes</text>
+      <text x="40" y="130" font-family="Inter,sans-serif" font-size="10.5" fill="#37352f">• Keep software up to date</text>
+      <text x="40" y="150" font-family="Inter,sans-serif" font-size="10.5" fill="#37352f">• Capacity planning</text>
+      <text x="40" y="170" font-family="Inter,sans-serif" font-size="10.5" fill="#37352f">• Good defaults + overrides</text>
+      <text x="40" y="190" font-family="Inter,sans-serif" font-size="10.5" fill="#37352f">• Self-healing + manual control</text>
+      <text x="40" y="210" font-family="Inter,sans-serif" font-size="10.5" fill="#37352f">• Predictable behavior</text>
+      <rect x="40" y="230" width="200" height="60" rx="8" fill="#bbdefb"></rect>
+      <text x="140" y="252" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#0d47a1">Interview Example:</text>
+      <text x="140" y="268" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Netflix Chaos Monkey</text>
+      <text x="140" y="282" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Google SRE Runbooks</text>
+
+      <!-- Simplicity -->
+      <rect x="280" y="10" width="240" height="300" rx="12" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1.5"></rect>
+      <text x="400" y="40" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="14" fill="#1b5e20">Simplicity</text>
+      <text x="400" y="58" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#787774">"Managing Complexity"</text>
+      <line x1="300" y1="68" x2="500" y2="68" stroke="#c8e6c9" stroke-width="1"></line>
+      <text x="300" y="90" font-family="Inter,sans-serif" font-size="10.5" fill="#37352f">• Remove accidental complexity</text>
+      <text x="300" y="110" font-family="Inter,sans-serif" font-size="10.5" fill="#37352f">• Use good abstractions</text>
+      <text x="300" y="130" font-family="Inter,sans-serif" font-size="10.5" fill="#37352f">• Avoid big ball of mud</text>
+      <text x="300" y="150" font-family="Inter,sans-serif" font-size="10.5" fill="#37352f">• Clean interfaces between</text>
+      <text x="300" y="165" font-family="Inter,sans-serif" font-size="10.5" fill="#37352f">  modules</text>
+      <text x="300" y="185" font-family="Inter,sans-serif" font-size="10.5" fill="#37352f">• Reduce hidden assumptions</text>
+      <text x="300" y="205" font-family="Inter,sans-serif" font-size="10.5" fill="#37352f">• Consistent naming</text>
+      <rect x="300" y="230" width="200" height="60" rx="8" fill="#c8e6c9"></rect>
+      <text x="400" y="252" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#1b5e20">Key Abstractions:</text>
+      <text x="400" y="268" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#37352f">SQL, HTTP, TCP/IP</text>
+      <text x="400" y="282" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#37352f">MapReduce, gRPC</text>
+
+      <!-- Evolvability -->
+      <rect x="540" y="10" width="240" height="300" rx="12" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="1.5"></rect>
+      <text x="660" y="40" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="14" fill="#4a148c">Evolvability</text>
+      <text x="660" y="58" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#787774">"Making Change Easy"</text>
+      <line x1="560" y1="68" x2="760" y2="68" stroke="#e1bee7" stroke-width="1"></line>
+      <text x="560" y="90" font-family="Inter,sans-serif" font-size="10.5" fill="#37352f">• Requirements always change</text>
+      <text x="560" y="110" font-family="Inter,sans-serif" font-size="10.5" fill="#37352f">• New use cases emerge</text>
+      <text x="560" y="130" font-family="Inter,sans-serif" font-size="10.5" fill="#37352f">• Business priorities shift</text>
+      <text x="560" y="150" font-family="Inter,sans-serif" font-size="10.5" fill="#37352f">• Regulatory changes</text>
+      <text x="560" y="170" font-family="Inter,sans-serif" font-size="10.5" fill="#37352f">• Scale forces arch changes</text>
+      <text x="560" y="190" font-family="Inter,sans-serif" font-size="10.5" fill="#37352f">• TDD + refactoring help</text>
+      <rect x="560" y="230" width="200" height="60" rx="8" fill="#e1bee7"></rect>
+      <text x="660" y="252" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#4a148c">Example:</text>
+      <text x="660" y="268" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Twitter timeline refactor:</text>
+      <text x="660" y="282" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Approach 1 → 2 → Hybrid</text>
+    </svg>

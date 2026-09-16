@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 1000 620" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:1000px;">
+  <defs>
+    <marker id="ahk" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#000"></path></marker>
+  </defs>
+
+  <!-- User Space -->
+  <rect x="20" y="10" width="960" height="150" rx="10" fill="#f5f5f5" stroke="#000" stroke-width="2"></rect>
+  <text x="500" y="32" font-size="14" font-weight="bold" text-anchor="middle">USER SPACE (Ring 3 — unprivileged)</text>
+
+  <rect x="40" y="45" width="140" height="50" rx="6" fill="#fff" stroke="#000" stroke-width="1.5"></rect>
+  <text x="110" y="65" font-size="11" font-weight="bold" text-anchor="middle">Application</text>
+  <text x="110" y="82" font-size="10" text-anchor="middle" fill="#555">kubelet, etcd, app</text>
+
+  <rect x="200" y="45" width="140" height="50" rx="6" fill="#fff" stroke="#000" stroke-width="1.5"></rect>
+  <text x="270" y="65" font-size="11" font-weight="bold" text-anchor="middle">glibc / musl</text>
+  <text x="270" y="82" font-size="10" text-anchor="middle" fill="#555">C library wrappers</text>
+
+  <rect x="360" y="45" width="140" height="50" rx="6" fill="#fff" stroke="#000" stroke-width="1.5"></rect>
+  <text x="430" y="65" font-size="11" font-weight="bold" text-anchor="middle">Container Runtime</text>
+  <text x="430" y="82" font-size="10" text-anchor="middle" fill="#555">containerd, runc</text>
+
+  <rect x="520" y="45" width="140" height="50" rx="6" fill="#fff" stroke="#000" stroke-width="1.5"></rect>
+  <text x="590" y="65" font-size="11" font-weight="bold" text-anchor="middle">Shell / Tools</text>
+  <text x="590" y="82" font-size="10" text-anchor="middle" fill="#555">bash, ps, top, perf</text>
+
+  <rect x="680" y="45" width="280" height="50" rx="6" fill="#fff" stroke="#000" stroke-width="1.5"></rect>
+  <text x="820" y="65" font-size="11" font-weight="bold" text-anchor="middle">User Process Memory Layout</text>
+  <text x="820" y="82" font-size="10" text-anchor="middle" fill="#555">text | data | heap → ← stack</text>
+
+  <!-- Process memory detail -->
+  <text x="50" y="125" font-size="10" fill="#555">Every process has: text (code), data (globals), heap (malloc), stack (local vars), memory-mapped regions.</text>
+  <text x="50" y="140" font-size="10" fill="#555">Virtual address space (typically 128 TB on x86-64). Each process thinks it owns all memory — the kernel maps virtual → physical via page tables.</text>
+
+  <!-- Syscall boundary -->
+  <rect x="20" y="165" width="960" height="35" rx="0" fill="#d9d9d9" stroke="#000" stroke-width="2"></rect>
+  <text x="500" y="187" font-size="13" font-weight="bold" text-anchor="middle">SYSTEM CALL INTERFACE (syscall / int 0x80 — mode switch Ring 3 → Ring 0)</text>
+
+  <!-- Kernel Space -->
+  <rect x="20" y="205" width="960" height="400" rx="10" fill="#e8e8e8" stroke="#000" stroke-width="2"></rect>
+  <text x="500" y="227" font-size="14" font-weight="bold" text-anchor="middle">KERNEL SPACE (Ring 0 — privileged, full hardware access)</text>
+
+  <!-- Row 1: Core subsystems -->
+  <rect x="40" y="240" width="180" height="70" rx="6" fill="#fff" stroke="#000" stroke-width="1.5"></rect>
+  <text x="130" y="260" font-size="12" font-weight="bold" text-anchor="middle">Process Scheduler</text>
+  <text x="130" y="278" font-size="10" text-anchor="middle" fill="#555">CFS (fair share)</text>
+  <text x="130" y="292" font-size="10" text-anchor="middle" fill="#555">RT scheduler (FIFO/RR)</text>
+  <text x="130" y="306" font-size="10" text-anchor="middle" fill="#555">cgroup bandwidth ctrl</text>
+
+  <rect x="240" y="240" width="180" height="70" rx="6" fill="#fff" stroke="#000" stroke-width="1.5"></rect>
+  <text x="330" y="260" font-size="12" font-weight="bold" text-anchor="middle">Memory Manager</text>
+  <text x="330" y="278" font-size="10" text-anchor="middle" fill="#555">Page allocator (buddy)</text>
+  <text x="330" y="292" font-size="10" text-anchor="middle" fill="#555">Slab allocator (kmalloc)</text>
+  <text x="330" y="306" font-size="10" text-anchor="middle" fill="#555">OOM killer, swap, THP</text>
+
+  <rect x="440" y="240" width="160" height="70" rx="6" fill="#fff" stroke="#000" stroke-width="1.5"></rect>
+  <text x="520" y="260" font-size="12" font-weight="bold" text-anchor="middle">VFS Layer</text>
+  <text x="520" y="278" font-size="10" text-anchor="middle" fill="#555">Unified file interface</text>
+  <text x="520" y="292" font-size="10" text-anchor="middle" fill="#555">inode, dentry, superblock</text>
+  <text x="520" y="306" font-size="10" text-anchor="middle" fill="#555">ext4, XFS, overlayfs</text>
+
+  <rect x="620" y="240" width="170" height="70" rx="6" fill="#fff" stroke="#000" stroke-width="1.5"></rect>
+  <text x="705" y="260" font-size="12" font-weight="bold" text-anchor="middle">Network Stack</text>
+  <text x="705" y="278" font-size="10" text-anchor="middle" fill="#555">Socket → TCP/UDP → IP</text>
+  <text x="705" y="292" font-size="10" text-anchor="middle" fill="#555">netfilter (iptables)</text>
+  <text x="705" y="306" font-size="10" text-anchor="middle" fill="#555">conntrack, NAPI</text>
+
+  <rect x="810" y="240" width="160" height="70" rx="6" fill="#fff" stroke="#000" stroke-width="1.5"></rect>
+  <text x="890" y="260" font-size="12" font-weight="bold" text-anchor="middle">IPC Subsystem</text>
+  <text x="890" y="278" font-size="10" text-anchor="middle" fill="#555">Pipes, signals, sockets</text>
+  <text x="890" y="292" font-size="10" text-anchor="middle" fill="#555">Shared memory, futex</text>
+  <text x="890" y="306" font-size="10" text-anchor="middle" fill="#555">eventfd, epoll</text>
+
+  <!-- Row 2: cgroups + namespaces -->
+  <rect x="40" y="325" width="450" height="55" rx="6" fill="#fff" stroke="#000" stroke-width="1.5"></rect>
+  <text x="265" y="345" font-size="12" font-weight="bold" text-anchor="middle">cgroups v2 (Resource Control)</text>
+  <text x="265" y="365" font-size="10" text-anchor="middle" fill="#555">cpu.max (CFS bandwidth) | memory.max (OOM) | io.max (block I/O) | pids.max (fork bomb) | cpuset.cpus</text>
+
+  <rect x="510" y="325" width="460" height="55" rx="6" fill="#fff" stroke="#000" stroke-width="1.5"></rect>
+  <text x="740" y="345" font-size="12" font-weight="bold" text-anchor="middle">Namespaces (Visibility Isolation)</text>
+  <text x="740" y="365" font-size="10" text-anchor="middle" fill="#555">pid | net | mnt | uts | ipc | user | cgroup | time — each container gets independent view</text>
+
+  <!-- Row 3: Device drivers + HW abstraction -->
+  <rect x="40" y="395" width="930" height="50" rx="6" fill="#fff" stroke="#000" stroke-width="1.5"></rect>
+  <text x="500" y="415" font-size="12" font-weight="bold" text-anchor="middle">Device Drivers &amp; Hardware Abstraction</text>
+  <text x="500" y="435" font-size="10" text-anchor="middle" fill="#555">Block drivers (NVMe, SCSI) | Network drivers (e1000e, mlx5) | GPU (nvidia) | Character devices (/dev/*) | DMA engine</text>
+
+  <!-- Row 4: Hardware -->
+  <rect x="40" y="460" width="930" height="55" rx="6" fill="#fff" stroke="#000" stroke-width="1.5"></rect>
+  <text x="500" y="480" font-size="12" font-weight="bold" text-anchor="middle">Arch-Specific Layer (x86-64)</text>
+  <text x="500" y="500" font-size="10" text-anchor="middle" fill="#555">Page tables (4-level) | Interrupt descriptor table (IDT) | GDT (segmentation) | TSS (task state) | APIC (interrupts) | MSR registers</text>
+
+  <!-- Hardware -->
+  <rect x="20" y="530" width="960" height="50" rx="6" fill="#f0f0f0" stroke="#000" stroke-width="2"></rect>
+  <text x="500" y="560" font-size="13" font-weight="bold" text-anchor="middle">HARDWARE: CPU cores | RAM (NUMA nodes) | NVMe/SSD | NIC | GPU | BMC</text>
+
+  <!-- Arrows showing syscall path -->
+  <text x="40" y="590" font-size="10" fill="#555">Path: app calls read() → glibc wrapper → syscall instruction → kernel VFS → filesystem → block driver → DMA → disk → data back up</text>
+  <text x="40" y="605" font-size="10" fill="#555">Mode switch cost: ~100ns (syscall) vs ~1μs (interrupt). Every container operation crosses this boundary.</text>
+
+</svg>

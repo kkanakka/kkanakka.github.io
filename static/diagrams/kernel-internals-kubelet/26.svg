@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 900 480" xmlns="http://www.w3.org/2000/svg">
+  <text x="20" y="22" font-size="12" font-weight="600">Same silicon, opposite goals · CPU minimises serial latency · GPU maximises parallel throughput</text>
+
+  <!-- CPU column -->
+  <text x="240" y="50" text-anchor="middle" font-size="13" font-weight="600" fill="#0969da">CPU · latency optimized</text>
+  <text x="240" y="67" text-anchor="middle" font-size="10" fill="#59636e">few cores · big caches · sophisticated control</text>
+
+  <rect x="40" y="78" width="400" height="312" fill="#fafbfc" stroke="#0969da" stroke-width="1.5" rx="4"></rect>
+
+  <!-- 4 cores in 2x2 grid -->
+  <rect x="60" y="92" width="180" height="82" fill="#dafbe1" stroke="#1a7f37"></rect>
+  <text x="150" y="113" text-anchor="middle" font-size="11" font-weight="600">Core 0</text>
+  <text x="150" y="132" text-anchor="middle" font-size="9" fill="#59636e">L1 32K · L2 1M</text>
+  <text x="150" y="146" text-anchor="middle" font-size="9" fill="#59636e">OOO + branch predict</text>
+  <text x="150" y="160" text-anchor="middle" font-size="9" fill="#59636e">complex pipeline</text>
+
+  <rect x="260" y="92" width="180" height="82" fill="#dafbe1" stroke="#1a7f37"></rect>
+  <text x="350" y="113" text-anchor="middle" font-size="11" font-weight="600">Core 1</text>
+  <text x="350" y="132" text-anchor="middle" font-size="9" fill="#59636e">L1 32K · L2 1M</text>
+  <text x="350" y="146" text-anchor="middle" font-size="9" fill="#59636e">~3-5 GHz</text>
+  <text x="350" y="160" text-anchor="middle" font-size="9" fill="#59636e">deep cache</text>
+
+  <rect x="60" y="184" width="180" height="82" fill="#dafbe1" stroke="#1a7f37"></rect>
+  <text x="150" y="205" text-anchor="middle" font-size="11" font-weight="600">Core 2</text>
+  <text x="150" y="224" text-anchor="middle" font-size="9" fill="#59636e">L1 + L2 per core</text>
+  <text x="150" y="252" text-anchor="middle" font-size="9" fill="#59636e">latency-hiding</text>
+
+  <rect x="260" y="184" width="180" height="82" fill="#dafbe1" stroke="#1a7f37"></rect>
+  <text x="350" y="205" text-anchor="middle" font-size="11" font-weight="600">Core 3</text>
+  <text x="350" y="224" text-anchor="middle" font-size="9" fill="#59636e">... 8-128 cores total</text>
+  <text x="350" y="252" text-anchor="middle" font-size="9" fill="#59636e">per socket</text>
+
+  <!-- L3 banner -->
+  <rect x="60" y="276" width="380" height="28" fill="#fff8c5" stroke="#9a6700"></rect>
+  <text x="250" y="294" text-anchor="middle" font-size="11" font-weight="500">L3 cache · 32 MB · shared across all cores</text>
+
+  <!-- DRAM block -->
+  <rect x="60" y="312" width="380" height="68" fill="#fff8e6" stroke="#9a6700"></rect>
+  <text x="250" y="335" text-anchor="middle" font-size="12" font-weight="600" fill="#9a6700">System DRAM (DDR5)</text>
+  <text x="250" y="354" text-anchor="middle" font-size="10" fill="#59636e">256 GB · ~400 GB/s aggregate</text>
+  <text x="250" y="370" text-anchor="middle" font-size="10" fill="#59636e">~80 ns latency · NUMA-attached</text>
+
+  <!-- PCIe link between CPU and GPU -->
+  <line x1="440" y1="234" x2="470" y2="234" stroke="#8250df" stroke-width="5"></line>
+  <text x="455" y="226" text-anchor="middle" font-size="9" fill="#8250df" font-weight="600">PCIe</text>
+  <text x="455" y="252" text-anchor="middle" font-size="9" fill="#8250df">63 GB/s</text>
+
+  <!-- GPU column -->
+  <text x="670" y="50" text-anchor="middle" font-size="13" font-weight="600" fill="#9a6700">GPU · throughput optimized</text>
+  <text x="670" y="67" text-anchor="middle" font-size="10" fill="#59636e">thousands of small cores · hide memory latency w/ parallelism</text>
+
+  <rect x="470" y="78" width="400" height="312" fill="#fafbfc" stroke="#9a6700" stroke-width="1.5" rx="4"></rect>
+
+  <!-- Grid of SMs: 5 cols × 4 rows -->
+  <g font-size="8">
+    <!-- Row 0 -->
+    <rect x="490" y="92" width="64" height="32" fill="#fff8e6" stroke="#9a6700"></rect><text x="522" y="106" text-anchor="middle">SM</text><text x="522" y="118" text-anchor="middle" fill="#59636e">128 cores</text>
+    <rect x="564" y="92" width="64" height="32" fill="#fff8e6" stroke="#9a6700"></rect><text x="596" y="106" text-anchor="middle">SM</text><text x="596" y="118" text-anchor="middle" fill="#59636e">128 cores</text>
+    <rect x="638" y="92" width="64" height="32" fill="#fff8e6" stroke="#9a6700"></rect><text x="670" y="106" text-anchor="middle">SM</text><text x="670" y="118" text-anchor="middle" fill="#59636e">128 cores</text>
+    <rect x="712" y="92" width="64" height="32" fill="#fff8e6" stroke="#9a6700"></rect><text x="744" y="106" text-anchor="middle">SM</text><text x="744" y="118" text-anchor="middle" fill="#59636e">128 cores</text>
+    <rect x="786" y="92" width="64" height="32" fill="#fff8e6" stroke="#9a6700"></rect><text x="818" y="106" text-anchor="middle">SM</text><text x="818" y="118" text-anchor="middle" fill="#59636e">128 cores</text>
+    <!-- Row 1 -->
+    <rect x="490" y="134" width="64" height="32" fill="#fff8e6" stroke="#9a6700"></rect><text x="522" y="148" text-anchor="middle">SM</text><text x="522" y="160" text-anchor="middle" fill="#59636e">+tensor</text>
+    <rect x="564" y="134" width="64" height="32" fill="#fff8e6" stroke="#9a6700"></rect><text x="596" y="148" text-anchor="middle">SM</text><text x="596" y="160" text-anchor="middle" fill="#59636e">+tensor</text>
+    <rect x="638" y="134" width="64" height="32" fill="#fff8e6" stroke="#9a6700"></rect><text x="670" y="148" text-anchor="middle">SM</text><text x="670" y="160" text-anchor="middle" fill="#59636e">+tensor</text>
+    <rect x="712" y="134" width="64" height="32" fill="#fff8e6" stroke="#9a6700"></rect><text x="744" y="148" text-anchor="middle">SM</text><text x="744" y="160" text-anchor="middle" fill="#59636e">+tensor</text>
+    <rect x="786" y="134" width="64" height="32" fill="#fff8e6" stroke="#9a6700"></rect><text x="818" y="148" text-anchor="middle">SM</text><text x="818" y="160" text-anchor="middle" fill="#59636e">+tensor</text>
+    <!-- Row 2 -->
+    <rect x="490" y="176" width="64" height="32" fill="#fff8e6" stroke="#9a6700"></rect><text x="522" y="190" text-anchor="middle">SM</text><text x="522" y="202" text-anchor="middle" fill="#59636e">128 cores</text>
+    <rect x="564" y="176" width="64" height="32" fill="#fff8e6" stroke="#9a6700"></rect><text x="596" y="190" text-anchor="middle">SM</text><text x="596" y="202" text-anchor="middle" fill="#59636e">128 cores</text>
+    <rect x="638" y="176" width="64" height="32" fill="#fff8e6" stroke="#9a6700"></rect><text x="670" y="190" text-anchor="middle">SM</text><text x="670" y="202" text-anchor="middle" fill="#59636e">128 cores</text>
+    <rect x="712" y="176" width="64" height="32" fill="#fff8e6" stroke="#9a6700"></rect><text x="744" y="190" text-anchor="middle">SM</text><text x="744" y="202" text-anchor="middle" fill="#59636e">128 cores</text>
+    <rect x="786" y="176" width="64" height="32" fill="#fff8e6" stroke="#9a6700"></rect><text x="818" y="190" text-anchor="middle">SM</text><text x="818" y="202" text-anchor="middle" fill="#59636e">128 cores</text>
+    <!-- Row 3 -->
+    <rect x="490" y="218" width="64" height="32" fill="#fff8e6" stroke="#9a6700"></rect><text x="522" y="232" text-anchor="middle">SM</text><text x="522" y="244" text-anchor="middle" fill="#59636e">RT core</text>
+    <rect x="564" y="218" width="64" height="32" fill="#fff8e6" stroke="#9a6700"></rect><text x="596" y="232" text-anchor="middle">SM</text><text x="596" y="244" text-anchor="middle" fill="#59636e">RT core</text>
+    <rect x="638" y="218" width="64" height="32" fill="#fff8e6" stroke="#9a6700"></rect><text x="670" y="232" text-anchor="middle">SM</text><text x="670" y="244" text-anchor="middle" fill="#59636e">RT core</text>
+    <rect x="712" y="218" width="64" height="32" fill="#fff8e6" stroke="#9a6700"></rect><text x="744" y="232" text-anchor="middle">SM</text><text x="744" y="244" text-anchor="middle" fill="#59636e">RT core</text>
+    <rect x="786" y="218" width="64" height="32" fill="#fff8e6" stroke="#9a6700"></rect><text x="818" y="232" text-anchor="middle">SM</text><text x="818" y="244" text-anchor="middle" fill="#59636e">RT core</text>
+  </g>
+
+  <!-- "× 132 SMs total" note -->
+  <text x="670" y="266" text-anchor="middle" font-size="9" fill="#59636e">... 132 SMs total · ~17,000 CUDA cores · plus tensor cores · plus RT cores</text>
+
+  <!-- L2 cache -->
+  <rect x="490" y="274" width="360" height="26" fill="#fff8c5" stroke="#9a6700"></rect>
+  <text x="670" y="291" text-anchor="middle" font-size="11" font-weight="500">L2 cache · 50 MB · across all SMs</text>
+
+  <!-- HBM -->
+  <rect x="490" y="308" width="360" height="72" fill="#dafbe1" stroke="#1a7f37"></rect>
+  <text x="670" y="332" text-anchor="middle" font-size="12" font-weight="600" fill="#1a7f37">HBM3 device memory</text>
+  <text x="670" y="350" text-anchor="middle" font-size="10" fill="#59636e">80 GB · ~3 TB/s · 5 stacks of 16 GB</text>
+  <text x="670" y="366" text-anchor="middle" font-size="10" fill="#59636e">on-package · short traces · wide bus</text>
+
+  <!-- Bottom annotations -->
+  <text x="450" y="420" text-anchor="middle" font-size="12" fill="#8250df" font-weight="600">3 TB/s GPU memory vs 400 GB/s host memory · GPU bandwidth ≈ 7× CPU</text>
+  <text x="450" y="440" text-anchor="middle" font-size="10" fill="#59636e">But PCIe between them is only 63 GB/s · ~50× slower than HBM · the link is often the bottleneck</text>
+  <text x="450" y="460" text-anchor="middle" font-size="10" fill="#59636e">Hence: batching · pinned memory · GPUDirect · keep data resident on the GPU</text>
+</svg>

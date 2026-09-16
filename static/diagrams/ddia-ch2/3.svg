@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 820 440" xmlns="http://www.w3.org/2000/svg" style="max-width:800px;">
+      <defs>
+        <marker id="arr3" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#546e7a"></polygon>
+        </marker>
+        <filter id="sh2" x="-3%" y="-3%" width="106%" height="110%">
+          <fedropshadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.06"></fedropshadow>
+        </filter>
+      </defs>
+
+      <text x="410" y="25" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="16" fill="#0077b5">LinkedIn Data Store Landscape</text>
+
+      <!-- Espresso -->
+      <rect x="20" y="50" width="230" height="170" rx="12" fill="#e3f2fd" stroke="#1565c0" stroke-width="2" filter="url(#sh2)"></rect>
+      <text x="135" y="78" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="14" fill="#0d47a1">Espresso</text>
+      <text x="135" y="96" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#787774">Document + Relational Hybrid</text>
+      <line x1="40" y1="105" x2="230" y2="105" stroke="#bbdefb" stroke-width="1"></line>
+      <text x="40" y="123" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• JSON docs in MySQL storage</text>
+      <text x="40" y="140" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Secondary indexes</text>
+      <text x="40" y="157" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Timeline-consistent</text>
+      <text x="40" y="174" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Change capture → Kafka</text>
+      <rect x="40" y="190" width="190" height="20" rx="4" fill="#bbdefb"></rect>
+      <text x="135" y="204" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#0d47a1">Profiles, Messages, Feeds</text>
+
+      <!-- Venice -->
+      <rect x="295" y="50" width="230" height="170" rx="12" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2" filter="url(#sh2)"></rect>
+      <text x="410" y="78" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="14" fill="#1b5e20">Venice</text>
+      <text x="410" y="96" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#787774">Derived Data (Key-Value)</text>
+      <line x1="315" y1="105" x2="505" y2="105" stroke="#c8e6c9" stroke-width="1"></line>
+      <text x="315" y="123" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Batch push + stream write</text>
+      <text x="315" y="140" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• RocksDB storage (LSM-tree)</text>
+      <text x="315" y="157" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Read-only serving layer</text>
+      <text x="315" y="174" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Pre-computed results</text>
+      <rect x="315" y="190" width="190" height="20" rx="4" fill="#c8e6c9"></rect>
+      <text x="410" y="204" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#1b5e20">ML features, recommendations</text>
+
+      <!-- Pinot -->
+      <rect x="570" y="50" width="230" height="170" rx="12" fill="#fff3e0" stroke="#e65100" stroke-width="2" filter="url(#sh2)"></rect>
+      <text x="685" y="78" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="14" fill="#bf360c">Pinot</text>
+      <text x="685" y="96" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#787774">OLAP / Real-Time Analytics</text>
+      <line x1="590" y1="105" x2="780" y2="105" stroke="#ffcc80" stroke-width="1"></line>
+      <text x="590" y="123" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Columnar storage (segments)</text>
+      <text x="590" y="140" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• SQL-like queries (PQL)</text>
+      <text x="590" y="157" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Real-time + offline ingestion</text>
+      <text x="590" y="174" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Star-tree index for aggregation</text>
+      <rect x="590" y="190" width="190" height="20" rx="4" fill="#ffcc80"></rect>
+      <text x="685" y="204" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#bf360c">Who Viewed, Ad Analytics</text>
+
+      <!-- Galene -->
+      <rect x="20" y="260" width="230" height="160" rx="12" fill="#fce4ec" stroke="#c62828" stroke-width="2" filter="url(#sh2)"></rect>
+      <text x="135" y="288" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="14" fill="#c62828">Galene / SEAS</text>
+      <text x="135" y="306" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#787774">Full-Text Search</text>
+      <line x1="40" y1="315" x2="230" y2="315" stroke="#ef9a9a" stroke-width="1"></line>
+      <text x="40" y="333" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Inverted index (Lucene-based)</text>
+      <text x="40" y="350" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• BM25 + custom ranking</text>
+      <text x="40" y="367" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Faceted search, typeahead</text>
+      <rect x="40" y="385" width="190" height="20" rx="4" fill="#ef9a9a"></rect>
+      <text x="135" y="399" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#c62828">People Search, Job Search</text>
+
+      <!-- Liquid -->
+      <rect x="295" y="260" width="230" height="160" rx="12" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="2" filter="url(#sh2)"></rect>
+      <text x="410" y="288" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="14" fill="#4a148c">Liquid</text>
+      <text x="410" y="306" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#787774">Graph Database</text>
+      <line x1="315" y1="315" x2="505" y2="315" stroke="#e1bee7" stroke-width="1"></line>
+      <text x="315" y="333" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Social graph (1st/2nd/3rd)</text>
+      <text x="315" y="350" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Entity relationships</text>
+      <text x="315" y="367" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Graph traversal queries</text>
+      <rect x="315" y="385" width="190" height="20" rx="4" fill="#e1bee7"></rect>
+      <text x="410" y="399" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#4a148c">Connections, PYMK, Endorsements</text>
+
+      <!-- Data Flow -->
+      <rect x="570" y="260" width="230" height="160" rx="12" fill="#e0f7fa" stroke="#00838f" stroke-width="2" filter="url(#sh2)"></rect>
+      <text x="685" y="288" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="14" fill="#006064">Kafka + Samza/Flink</text>
+      <text x="685" y="306" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#787774">Data Pipeline (Glue)</text>
+      <line x1="590" y1="315" x2="780" y2="315" stroke="#80deea" stroke-width="1"></line>
+      <text x="590" y="333" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Change data capture</text>
+      <text x="590" y="350" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Stream processing</text>
+      <text x="590" y="367" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Connects all stores</text>
+      <rect x="590" y="385" width="190" height="20" rx="4" fill="#80deea"></rect>
+      <text x="685" y="399" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#006064">Espresso → Venice/Pinot/Galene</text>
+    </svg>

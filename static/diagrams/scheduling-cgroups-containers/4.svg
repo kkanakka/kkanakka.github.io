@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 800 320" xmlns="http://www.w3.org/2000/svg">
+      <rect x="100" y="40" width="600" height="60" fill="#f6f8fa" stroke="#1f2328" stroke-width="1.5"></rect>
+      <text x="120" y="66" font-family="ui-monospace, monospace" font-size="12" font-weight="700" fill="#1f2328">HOST NAMESPACE (init_pid_ns)</text>
+      <text x="120" y="86" font-family="ui-monospace, monospace" font-size="11" fill="#59636e">PID 1: init, PID 1234: dockerd, PID 5678: container-bash, PID 5679: container-curl</text>
+
+      <rect x="150" y="140" width="200" height="60" fill="#ffffff" stroke="#1f2328" stroke-width="1.5"></rect>
+      <text x="170" y="166" font-family="ui-monospace, monospace" font-size="12" font-weight="700" fill="#0969da">CONTAINER A NAMESPACE</text>
+      <text x="170" y="186" font-family="ui-monospace, monospace" font-size="11" fill="#0969da">PID 1: bash (actually 5678)</text>
+
+      <rect x="400" y="140" width="200" height="60" fill="#ffffff" stroke="#1f2328" stroke-width="1.5"></rect>
+      <text x="420" y="166" font-family="ui-monospace, monospace" font-size="12" font-weight="700" fill="#bf3989">CONTAINER B NAMESPACE</text>
+      <text x="420" y="186" font-family="ui-monospace, monospace" font-size="11" fill="#bf3989">PID 1: nginx (different host PID)</text>
+
+      <rect x="200" y="240" width="150" height="60" fill="#eaeef2" stroke="#1f2328" stroke-width="1.5"></rect>
+      <text x="220" y="266" font-family="ui-monospace, monospace" font-size="12" font-weight="700" fill="#0969da">NESTED NAMESPACE</text>
+      <text x="220" y="286" font-family="ui-monospace, monospace" font-size="11" fill="#0969da">PID 1: sub-process</text>
+
+      <line x1="250" y1="100" x2="250" y2="140" stroke="#1f2328" stroke-width="1.5"></line>
+      <line x1="500" y1="100" x2="500" y2="140" stroke="#1f2328" stroke-width="1.5"></line>
+      <line x1="275" y1="200" x2="275" y2="240" stroke="#1f2328" stroke-width="1.5"></line>
+
+      <text x="120" y="330" font-family="-apple-system, sans-serif" font-size="12" fill="#59636e">Host can see all PIDs. Containers can only see their own tree. Nested containers inherit visibility.</text>
+    </svg>

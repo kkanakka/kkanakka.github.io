@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 800 220" xmlns="http://www.w3.org/2000/svg">
+<line x1="60" y1="180" x2="760" y2="180" stroke="#94a3b8" stroke-width="1"></line>
+<text x="60" y="205" font-family="monospace" font-size="11" fill="#94a3b8">t=0</text>
+<text x="400" y="205" text-anchor="middle" font-family="monospace" font-size="11" fill="#94a3b8">time →</text>
+<line x1="80" y1="180" x2="80" y2="40" stroke="#f87171" stroke-width="3"></line><text x="80" y="34" text-anchor="middle" font-family="monospace" font-size="10" fill="#f87171">FAIL</text>
+<line x1="120" y1="180" x2="120" y2="60" stroke="#fbbf24" stroke-width="3"></line><text x="120" y="54" text-anchor="middle" font-family="monospace" font-size="10" fill="#fbbf24">retry 1</text>
+<line x1="200" y1="180" x2="200" y2="60" stroke="#fbbf24" stroke-width="3"></line><text x="200" y="54" text-anchor="middle" font-family="monospace" font-size="10" fill="#fbbf24">retry 2</text>
+<line x1="360" y1="180" x2="360" y2="60" stroke="#fbbf24" stroke-width="3"></line><text x="360" y="54" text-anchor="middle" font-family="monospace" font-size="10" fill="#fbbf24">retry 3</text>
+<line x1="630" y1="180" x2="630" y2="60" stroke="#4ade80" stroke-width="3"></line><text x="630" y="54" text-anchor="middle" font-family="monospace" font-size="10" fill="#4ade80">retry 4 ✓</text>
+<text x="100" y="155" font-family="monospace" font-size="10" fill="#94a3b8">100ms</text>
+<text x="160" y="155" font-family="monospace" font-size="10" fill="#94a3b8">200ms</text>
+<text x="280" y="155" font-family="monospace" font-size="10" fill="#94a3b8">400ms</text>
+<text x="490" y="155" font-family="monospace" font-size="10" fill="#94a3b8">800ms (+ random jitter)</text>
+<text x="400" y="100" text-anchor="middle" font-family="Inter" font-size="13" fill="#fde047">delay = base · 2ⁿ + random(0, base)</text>
+<text x="400" y="120" text-anchor="middle" font-family="Inter" font-size="11" fill="#94a3b8" font-style="italic">jitter prevents thundering herd — clients don't sync up retries</text>
+</svg>

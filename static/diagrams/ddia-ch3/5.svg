@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 820 780" xmlns="http://www.w3.org/2000/svg" style="max-width:800px;">
+      <defs>
+        <marker id="arrP" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#546e7a"></polygon></marker>
+        <filter id="shP" x="-3%" y="-3%" width="106%" height="110%"><fedropshadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.06"></fedropshadow></filter>
+      </defs>
+
+      <!-- ===== STRATEGY 1: HASH PARTITIONING (Espresso) ===== -->
+      <rect x="10" y="10" width="800" height="230" rx="12" fill="#e3f2fd" stroke="#1565c0" stroke-width="2"></rect>
+      <text x="410" y="38" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="15" fill="#0d47a1">Strategy 1: Hash Partitioning (Espresso)</text>
+
+      <!-- Key → hash → modulo → partition -->
+      <rect x="30" y="55" width="100" height="35" rx="8" fill="#fff" stroke="#1565c0" stroke-width="1.5"></rect>
+      <text x="80" y="77" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#0d47a1">key=12345</text>
+
+      <line x1="130" y1="72" x2="170" y2="72" stroke="#546e7a" stroke-width="1.5" marker-end="url(#arrP)"></line>
+
+      <rect x="170" y="55" width="120" height="35" rx="8" fill="#bbdefb" stroke="#1565c0" stroke-width="1"></rect>
+      <text x="230" y="77" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#0d47a1">FNV hash(key)</text>
+
+      <line x1="290" y1="72" x2="320" y2="72" stroke="#546e7a" stroke-width="1.5" marker-end="url(#arrP)"></line>
+
+      <rect x="320" y="55" width="80" height="35" rx="8" fill="#bbdefb" stroke="#1565c0" stroke-width="1"></rect>
+      <text x="360" y="77" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#0d47a1">% 256</text>
+
+      <line x1="400" y1="72" x2="430" y2="72" stroke="#546e7a" stroke-width="1.5" marker-end="url(#arrP)"></line>
+
+      <rect x="430" y="55" width="90" height="35" rx="8" fill="#c8e6c9" stroke="#2e7d32" stroke-width="2"></rect>
+      <text x="475" y="77" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="11" fill="#2e7d32">P42</text>
+
+      <line x1="520" y1="72" x2="550" y2="72" stroke="#546e7a" stroke-width="1.5" marker-end="url(#arrP)"></line>
+      <text x="535" y="63" font-family="Inter,sans-serif" font-size="8" fill="#787774">Helix</text>
+
+      <rect x="550" y="55" width="100" height="35" rx="8" fill="#fff3e0" stroke="#e65100" stroke-width="1.5"></rect>
+      <text x="600" y="77" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#e65100">Node 6</text>
+
+      <!-- Partition distribution -->
+      <rect x="30" y="105" width="750" height="35" rx="6" fill="#fff" stroke="#90caf9" stroke-width="1"></rect>
+      <text x="40" y="120" font-family="JetBrains Mono,monospace" font-size="9" fill="#37352f">|P0 P1 P2..P7|P8..P15  |P16..P23 |...        |P40 <tspan fill="#c62828" font-weight="700">P41 P42 P43</tspan>..P47|...    |P248..P255|</text>
+      <text x="40" y="132" font-family="Inter,sans-serif" font-size="8" fill="#787774"> Node 1       Node 2     Node 3    ...         Node 6 ← key lands here    ...      Node 32</text>
+
+      <!-- Pros/Cons -->
+      <text x="30" y="160" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#2e7d32">Pros:</text>
+      <text x="85" y="160" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Uniform distribution (no hot spots from key patterns). O(1) to find partition.</text>
+      <text x="30" y="180" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#c62828">Cons:</text>
+      <text x="85" y="180" font-family="Inter,sans-serif" font-size="10" fill="#37352f">No range scans (keys 100-200 scattered everywhere). Fixed partition count — can't auto-split.</text>
+      <text x="30" y="200" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#0d47a1">Adding a node:</text>
+      <text x="155" y="200" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Helix reassigns some partitions to the new node. Partition count stays at 256. Data moves.</text>
+      <text x="30" y="225" font-family="Inter,sans-serif" font-size="10" fill="#787774">Used by: <tspan font-weight="600">Espresso</tspan>, DynamoDB (hash sharding mode), Redis Cluster (16384 hash slots), Cassandra (with Murmur3)</text>
+
+      <!-- ===== STRATEGY 2: RANGE PARTITIONING (TiKV / Spanner) ===== -->
+      <rect x="10" y="255" width="800" height="250" rx="12" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"></rect>
+      <text x="410" y="283" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="15" fill="#1b5e20">Strategy 2: Range Partitioning (TiKV / Spanner)</text>
+
+      <!-- Key → find range → Region -->
+      <rect x="30" y="300" width="100" height="35" rx="8" fill="#fff" stroke="#2e7d32" stroke-width="1.5"></rect>
+      <text x="80" y="322" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#1b5e20">key=user_42</text>
+
+      <line x1="130" y1="317" x2="170" y2="317" stroke="#546e7a" stroke-width="1.5" marker-end="url(#arrP)"></line>
+
+      <rect x="170" y="300" width="180" height="35" rx="8" fill="#c8e6c9" stroke="#2e7d32" stroke-width="1"></rect>
+      <text x="260" y="322" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#1b5e20">PD: which Region has this key?</text>
+
+      <line x1="350" y1="317" x2="390" y2="317" stroke="#546e7a" stroke-width="1.5" marker-end="url(#arrP)"></line>
+
+      <rect x="390" y="300" width="160" height="35" rx="8" fill="#c8e6c9" stroke="#2e7d32" stroke-width="2"></rect>
+      <text x="470" y="322" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="11" fill="#1b5e20">Region 3 [t_u, t_z)</text>
+
+      <line x1="550" y1="317" x2="590" y2="317" stroke="#546e7a" stroke-width="1.5" marker-end="url(#arrP)"></line>
+
+      <rect x="590" y="300" width="100" height="35" rx="8" fill="#fff3e0" stroke="#e65100" stroke-width="1.5"></rect>
+      <text x="640" y="322" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#e65100">TiKV Node 2</text>
+
+      <!-- Region ranges visualized -->
+      <rect x="30" y="350" width="140" height="50" rx="8" fill="#fff" stroke="#a5d6a7" stroke-width="1.5"></rect>
+      <text x="100" y="370" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#1b5e20">Region 1</text>
+      <text x="100" y="388" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#37352f">[a, m) ~256MB</text>
+
+      <rect x="180" y="350" width="140" height="50" rx="8" fill="#fff" stroke="#a5d6a7" stroke-width="1.5"></rect>
+      <text x="250" y="370" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#1b5e20">Region 2</text>
+      <text x="250" y="388" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#37352f">[m, t_u) ~256MB</text>
+
+      <rect x="330" y="350" width="140" height="50" rx="8" fill="#c8e6c9" stroke="#2e7d32" stroke-width="2"></rect>
+      <text x="400" y="370" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="10" fill="#2e7d32">Region 3 ← here!</text>
+      <text x="400" y="388" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#37352f">[t_u, t_z) ~256MB</text>
+
+      <rect x="480" y="350" width="140" height="50" rx="8" fill="#fff" stroke="#a5d6a7" stroke-width="1.5"></rect>
+      <text x="550" y="370" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#1b5e20">Region 4</text>
+      <text x="550" y="388" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#37352f">[t_z, zzz) ~256MB</text>
+
+      <text x="650" y="375" font-family="Inter,sans-serif" font-size="20" fill="#787774">...</text>
+
+      <!-- Auto-split illustration -->
+      <rect x="30" y="415" width="750" height="35" rx="6" fill="#fff3e0" stroke="#e65100" stroke-width="1"></rect>
+      <text x="410" y="437" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#e65100">When Region 3 grows &gt; 256MB → PD auto-splits it into Region 3a [t_u, t_w) and Region 3b [t_w, t_z). New Region can move to another node.</text>
+
+      <!-- Pros/Cons -->
+      <text x="30" y="470" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#2e7d32">Pros:</text>
+      <text x="85" y="470" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Range scans are efficient (SELECT WHERE key BETWEEN 'user_40' AND 'user_50' → single Region). Auto-split/merge.</text>
+      <text x="30" y="490" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#c62828">Cons:</text>
+      <text x="85" y="490" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Sequential writes create hot spots (all inserts go to the last Region). PD must detect and split.</text>
+      <text x="30" y="500" font-family="Inter,sans-serif" font-size="10" fill="#787774">Used by: <tspan font-weight="600">TiKV</tspan>, Google Spanner, HBase, CockroachDB, YugabyteDB</text>
+
+      <!-- ===== STRATEGY 3: CONSISTENT HASHING (DynamoDB / Cassandra) ===== -->
+      <rect x="10" y="520" width="800" height="250" rx="12" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="2"></rect>
+      <text x="410" y="548" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="15" fill="#4a148c">Strategy 3: Consistent Hashing (DynamoDB / Cassandra)</text>
+
+      <!-- Hash ring -->
+      <circle cx="200" cy="670" r="80" fill="none" stroke="#6a1b9a" stroke-width="2"></circle>
+
+      <!-- Nodes on ring -->
+      <circle cx="200" cy="590" r="12" fill="#e1bee7" stroke="#6a1b9a" stroke-width="2"></circle>
+      <text x="200" y="594" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="8" fill="#4a148c">N1</text>
+      <text x="200" y="575" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" fill="#787774">0°</text>
+
+      <circle cx="280" cy="670" r="12" fill="#e1bee7" stroke="#6a1b9a" stroke-width="2"></circle>
+      <text x="280" y="674" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="8" fill="#4a148c">N2</text>
+      <text x="298" y="670" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" fill="#787774">90°</text>
+
+      <circle cx="200" cy="750" r="12" fill="#e1bee7" stroke="#6a1b9a" stroke-width="2"></circle>
+      <text x="200" y="754" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="8" fill="#4a148c">N3</text>
+      <text x="200" y="768" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" fill="#787774">180°</text>
+
+      <circle cx="120" cy="670" r="12" fill="#e1bee7" stroke="#6a1b9a" stroke-width="2"></circle>
+      <text x="120" y="674" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="8" fill="#4a148c">N4</text>
+      <text x="102" y="670" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" fill="#787774">270°</text>
+
+      <!-- Key on ring -->
+      <circle cx="248" cy="618" r="8" fill="#c62828"></circle>
+      <text x="265" y="615" font-family="Inter,sans-serif" font-weight="700" font-size="9" fill="#c62828">key → hash = 45°</text>
+      <text x="265" y="628" font-family="Inter,sans-serif" font-size="9" fill="#37352f">Walk clockwise → N2</text>
+
+      <!-- Right side: explanation -->
+      <text x="350" y="580" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#4a148c">How it works:</text>
+      <text x="350" y="600" font-family="Inter,sans-serif" font-size="10" fill="#37352f">1. Nodes placed on a hash ring (0° to 360°)</text>
+      <text x="350" y="618" font-family="Inter,sans-serif" font-size="10" fill="#37352f">2. Key hashed → position on ring</text>
+      <text x="350" y="636" font-family="Inter,sans-serif" font-size="10" fill="#37352f">3. Walk clockwise to find the first node</text>
+      <text x="350" y="654" font-family="Inter,sans-serif" font-size="10" fill="#37352f">4. That node owns the key</text>
+
+      <text x="350" y="682" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#2e7d32">Adding a node:</text>
+      <text x="350" y="700" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Insert N5 at 135°. Only keys between 90°-135°</text>
+      <text x="350" y="716" font-family="Inter,sans-serif" font-size="10" fill="#37352f">move from N3 to N5. Other keys untouched!</text>
+      <text x="350" y="734" font-family="Inter,sans-serif" font-size="10" fill="#2e7d32">Minimal data movement (1/N of keys move).</text>
+
+      <text x="350" y="758" font-family="Inter,sans-serif" font-size="10" fill="#787774">Used by: <tspan font-weight="600">DynamoDB</tspan>, Cassandra, Riak, Memcached</text>
+      <text x="350" y="765" font-family="Inter,sans-serif" font-size="9" fill="#787774">Virtual nodes (vnodes) fix uneven distribution.</text>
+    </svg>

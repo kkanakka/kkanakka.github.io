@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 760 520" xmlns="http://www.w3.org/2000/svg" style="width:100%;">
+      <!-- Restaurant outline -->
+      <rect x="20" y="15" width="720" height="490" rx="12" fill="#ffffff" stroke="#1f2328" stroke-width="2"></rect>
+      <text x="380" y="42" text-anchor="middle" font-family="Arial,sans-serif" font-size="16" font-weight="700" fill="#1f2328">THE RESTAURANT (= CPU)</text>
+      <text x="380" y="62" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" fill="#59636e">One waiter, many hungry guests</text>
+
+      <!-- VIP Room -->
+      <rect x="40" y="80" width="330" height="170" rx="8" fill="#f5f5f5" stroke="#1f2328" stroke-width="2"></rect>
+      <text x="205" y="102" text-anchor="middle" font-family="ui-monospace,monospace" font-size="11" font-weight="700" fill="#1f2328">VIP ROOM (= RT realm)</text>
+      <text x="205" y="120" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" fill="#59636e">Waiter serves here FIRST. Always.</text>
+      <rect x="60" y="135" width="130" height="45" rx="6" fill="#fff" stroke="#1f2328"></rect>
+      <text x="125" y="155" text-anchor="middle" font-family="ui-monospace,monospace" font-size="10" font-weight="700">SCHED_FIFO</text>
+      <text x="125" y="172" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" fill="#59636e">run until they leave</text>
+      <rect x="210" y="135" width="130" height="45" rx="6" fill="#fff" stroke="#1f2328"></rect>
+      <text x="275" y="155" text-anchor="middle" font-family="ui-monospace,monospace" font-size="10" font-weight="700">SCHED_RR</text>
+      <text x="275" y="172" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" fill="#59636e">timesliced turns</text>
+      <text x="205" y="210" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" fill="#1f2328">Rank = RT priority (1–99)</text>
+      <text x="205" y="228" text-anchor="middle" font-family="Arial,sans-serif" font-size="10" font-style="italic" fill="#59636e">Nice has zero effect here.</text>
+      <text x="205" y="244" text-anchor="middle" font-family="Arial,sans-serif" font-size="10" font-style="italic" fill="#59636e">VIP guests don’t wave arms — they have rank.</text>
+
+      <!-- Main Hall -->
+      <rect x="390" y="80" width="330" height="170" rx="8" fill="#ffffff" stroke="#1f2328" stroke-width="1" stroke-dasharray="4 4"></rect>
+      <text x="555" y="102" text-anchor="middle" font-family="ui-monospace,monospace" font-size="11" font-weight="700" fill="#1f2328">MAIN HALL (= CFS / SCHED_OTHER)</text>
+      <text x="555" y="120" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" fill="#59636e">Everyone shares the waiter fairly.</text>
+      <!-- Loud guy -->
+      <rect x="405" y="135" width="90" height="55" rx="6" fill="#f8f8f8" stroke="#1f2328"></rect>
+      <text x="450" y="152" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" font-weight="700">nice −20</text>
+      <text x="450" y="165" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" fill="#59636e">loud guy</text>
+      <text x="450" y="178" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" fill="#59636e">waving arm</text>
+      <!-- Normal -->
+      <rect x="505" y="135" width="90" height="55" rx="6" fill="#fff" stroke="#1f2328"></rect>
+      <text x="550" y="152" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" font-weight="700">nice 0</text>
+      <text x="550" y="165" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" fill="#59636e">polite</text>
+      <text x="550" y="178" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" fill="#59636e">diner</text>
+      <!-- Quiet lady -->
+      <rect x="605" y="135" width="90" height="55" rx="6" fill="#fff" stroke="#1f2328"></rect>
+      <text x="650" y="152" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" font-weight="700">nice +19</text>
+      <text x="650" y="165" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" fill="#59636e">quiet old</text>
+      <text x="650" y="178" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" fill="#59636e">lady</text>
+      <text x="555" y="215" text-anchor="middle" font-family="Arial,sans-serif" font-size="10" fill="#1f2328">Even the loudest guest doesn’t starve the quiet lady.</text>
+      <text x="555" y="232" text-anchor="middle" font-family="Arial,sans-serif" font-size="10" font-style="italic" fill="#59636e">CFS guarantees everyone eats.</text>
+
+      <!-- Kitchen -->
+      <rect x="40" y="275" width="680" height="105" rx="8" fill="#f0f0f0" stroke="#1f2328" stroke-width="1.5"></rect>
+      <text x="380" y="297" text-anchor="middle" font-family="ui-monospace,monospace" font-size="11" font-weight="700" fill="#1f2328">THE KITCHEN (= kernel running syscall code)</text>
+      <text x="380" y="315" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" fill="#59636e">Waiter is mid-soufflé. A VIP just snapped their fingers. How fast does he react?</text>
+      <rect x="60" y="330" width="195" height="38" rx="5" fill="#fff" stroke="#1f2328"></rect>
+      <text x="157" y="347" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9" font-weight="700">PREEMPT_NONE</text>
+      <text x="157" y="362" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" fill="#59636e">finish plating, then go (~10 ms)</text>
+      <rect x="275" y="330" width="195" height="38" rx="5" fill="#fff" stroke="#1f2328"></rect>
+      <text x="372" y="347" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9" font-weight="700">PREEMPT_VOLUNTARY</text>
+      <text x="372" y="362" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" fill="#59636e">glance between courses (~1 ms)</text>
+      <rect x="490" y="330" width="195" height="38" rx="5" fill="#fff" stroke="#1f2328"></rect>
+      <text x="587" y="347" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9" font-weight="700">PREEMPT_RT</text>
+      <text x="587" y="362" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" fill="#59636e">drop the spoon mid-stir (&lt;100 μs)</text>
+
+      <!-- Decision flow -->
+      <text x="380" y="408" text-anchor="middle" font-family="ui-monospace,monospace" font-size="11" font-weight="700" fill="#1f2328">THE DECISION FLOW</text>
+      <text x="380" y="434" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" fill="#1f2328">Customer arrives → host picks ROOM ← <tspan font-weight="700">SCHED</tspan></text>
+      <text x="380" y="454" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" fill="#1f2328">In main hall? → push politely or loudly ← <tspan font-weight="700">NICE</tspan></text>
+      <text x="380" y="474" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" fill="#1f2328">In VIP room? → ranked by reservation tier ← <tspan font-weight="700">RT priority</tspan></text>
+      <text x="380" y="494" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" fill="#1f2328">Waiter busy in kitchen? → how fast he abandons ← <tspan font-weight="700">PREEMPT</tspan></text>
+    </svg>

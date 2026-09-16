@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 900 360" width="900" height="360" role="img" aria-labelledby="fig17-buddy" xmlns="http://www.w3.org/2000/svg">
+    <title>Figure 17: Buddy allocator free-list health vs fragmentation</title>
+    <rect x="0" y="0" width="900" height="360" fill="#fff"></rect>
+    <text x="40" y="32" fill="#1a7f37" font-size="16" font-weight="700">Healthy</text>
+    <text x="360" y="32" fill="#59636e" font-size="13">Orders 0–10 (each block size = PAGE_SIZE × 2^order)</text>
+    <!-- healthy bars -->
+    <g transform="translate(40,42)">
+      <rect x="0" y="0" width="30" height="100" fill="#dafbe1" stroke="#1a7f37"></rect><text x="6" y="115" fill="#59636e" font-size="11">o0</text>
+      <rect x="42" y="10" width="30" height="90" fill="#dafbe1" stroke="#1a7f37"></rect><text x="48" y="115" fill="#59636e" font-size="11">o1</text>
+      <rect x="84" y="22" width="30" height="78" fill="#dafbe1" stroke="#1a7f37"></rect><text x="90" y="115" fill="#59636e" font-size="11">o2</text>
+      <rect x="126" y="34" width="30" height="66" fill="#dafbe1" stroke="#1a7f37"></rect><text x="132" y="115" fill="#59636e" font-size="11">o3</text>
+      <rect x="168" y="42" width="30" height="58" fill="#dafbe1" stroke="#1a7f37"></rect><text x="174" y="115" fill="#59636e" font-size="11">o4</text>
+      <rect x="210" y="50" width="30" height="50" fill="#dafbe1" stroke="#1a7f37"></rect><text x="216" y="115" fill="#59636e" font-size="11">o5</text>
+      <rect x="252" y="56" width="30" height="44" fill="#dafbe1" stroke="#1a7f37"></rect><text x="258" y="115" fill="#59636e" font-size="11">o6</text>
+      <rect x="294" y="62" width="30" height="38" fill="#dafbe1" stroke="#1a7f37"></rect><text x="300" y="115" fill="#59636e" font-size="11">o7</text>
+      <rect x="336" y="66" width="30" height="34" fill="#cceec7" stroke="#1a7f37" stroke-width="3"></rect><text x="330" y="115" fill="#1a7f37" font-size="11" font-weight="700">o8</text>
+      <rect x="378" y="35" width="36" height="65" fill="#bfeab8" stroke="#1a7f37" stroke-width="4"></rect><text x="372" y="115" fill="#1a7f37" font-size="11" font-weight="700">o9*</text>
+      <rect x="426" y="78" width="30" height="22" fill="#dafbe1" stroke="#1a7f37"></rect><text x="432" y="115" fill="#59636e" font-size="11">o10</text>
+    </g>
+    <text x="620" y="95" fill="#1a7f37" font-size="13" font-weight="600">Order 9 = 512 × 4KiB pages (2 MiB) · 12 free blocks</text>
+    <!-- fragmented row -->
+    <text x="40" y="190" fill="#d1242f" font-size="16" font-weight="700">Fragmented</text>
+    <g transform="translate(40,200)">
+      <rect x="0" y="0" width="40" height="120" fill="#ffebe9" stroke="#d1242f"></rect><text x="8" y="135" fill="#d1242f" font-size="11" font-weight="700">o0</text>
+      <text x="52" y="40" fill="#d1242f" font-weight="700" font-size="13">98213</text>
+      <rect x="104" y="95" width="30" height="25" fill="#ffebe9" stroke="#d1242f"></rect><text x="110" y="135" fill="#59636e" font-size="11">o1</text>
+      <rect x="146" y="108" width="30" height="12" fill="#ffebe9" stroke="#d1242f"></rect><text x="152" y="135" fill="#59636e" font-size="11">o2</text>
+      <rect x="188" y="118" width="30" height="2" fill="#ffebe9" stroke="#d1242f"></rect><text x="194" y="135" fill="#59636e" font-size="11">o3</text>
+      <rect x="230" y="118" width="30" height="2" fill="#f6f8fa" stroke="#d1d9e0"></rect><text x="236" y="135" fill="#59636e" font-size="11">o4</text>
+      <rect x="272" y="118" width="30" height="2" fill="#f6f8fa" stroke="#d1d9e0"></rect><text x="278" y="135" fill="#59636e" font-size="11">o5–10</text>
+    </g>
+    <text x="620" y="285" fill="#59636e" font-size="13">Interpretation: runt supply at middle orders vanished—THP/unmovable pinning common culprits.</text>
+  </svg>

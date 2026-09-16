@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 300" width="900" height="300" role="img" aria-label="CPU max and weight">
+        <defs>
+          <marker id="m8gy" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><polygon points="0 0,6 3,0 6" fill="#59636e"></polygon></marker>
+        </defs>
+        <line x1="450" y1="10" x2="450" y2="290" stroke="#d8dee4" stroke-width="2" stroke-dasharray="4 4"></line>
+        <text x="225" y="28" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12" fill="#0969da" font-weight="700">cpu.max (hard ceiling)</text>
+        <text x="675" y="28" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12" fill="#8250df" font-weight="700">cpu.weight (soft fairness)</text>
+        <!-- Left: CFS -->
+        <rect x="40" y="45" width="160" height="50" rx="6" fill="#ddf4ff" stroke="#0969da" stroke-width="2"></rect>
+        <text x="120" y="68" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" fill="#0969da" font-weight="600">CFS scheduler</text>
+        <text x="120" y="86" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" fill="#59636e">per-cgroup runqueue</text>
+        <polygon points="120,115 145,155 95,155" fill="#fff8c5" stroke="#9a6700" stroke-width="2"></polygon>
+        <text x="120" y="148" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" fill="#9a6700" font-weight="600">quota</text>
+        <text x="120" y="160" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" fill="#9a6700">exhausted?</text>
+        <line x1="120" y1="155" x2="120" y2="172" stroke="#59636e" stroke-width="1"></line>
+        <text x="75" y="195" font-family="system-ui,sans-serif" font-size="10" fill="#1a7f37" font-weight="600">No</text>
+        <rect x="40" y="185" width="130" height="36" rx="4" fill="#dafbe1" stroke="#1a7f37" stroke-width="1.5"></rect>
+        <text x="105" y="207" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" fill="#1a7f37">continue running</text>
+        <text x="168" y="195" font-family="system-ui,sans-serif" font-size="10" fill="#d1242f" font-weight="600">Yes</text>
+        <rect x="155" y="185" width="130" height="48" rx="4" fill="#ffebe9" stroke="#d1242f" stroke-width="2"></rect>
+        <text x="220" y="204" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#d1242f" font-weight="700">THROTTLE — entire cgroup</text>
+        <text x="220" y="220" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#d1242f">stops for rest of period</text>
+        <line x1="95" y1="155" x2="105" y2="185" stroke="#59636e" stroke-width="1.5" marker-end="url(#m8gy)"></line>
+        <line x1="145" y1="155" x2="200" y2="185" stroke="#59636e" stroke-width="1.5" marker-end="url(#m8gy)"></line>
+        <rect x="30" y="248" width="380" height="40" rx="4" fill="#f6f8fa" stroke="#d1d9e0"></rect>
+        <text x="220" y="273" text-anchor="middle" font-family="ui-monospace,monospace" font-size="11" fill="#0550ae">cpu.max = 50000 100000 → 0.5 CPU hard cap</text>
+        <!-- Right: weights + bars -->
+        <rect x="480" y="50" width="140" height="40" rx="4" fill="#ddf4ff" stroke="#0969da"></rect>
+        <text x="550" y="74" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" fill="#0969da">Container A · weight 100</text>
+        <rect x="630" y="50" width="140" height="40" rx="4" fill="#f5f0ff" stroke="#8250df" stroke-width="2"></rect>
+        <text x="700" y="74" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" fill="#8250df">Container B · weight 200</text>
+        <text x="675" y="115" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" fill="#59636e">Under CPU contention:</text>
+        <rect x="480" y="125" width="120" height="28" rx="3" fill="#dafbe1" stroke="#1a7f37"></rect>
+        <text x="540" y="143" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" fill="#1a7f37">A: ⅓ share</text>
+        <rect x="610" y="125" width="240" height="28" rx="3" fill="#f5f0ff" stroke="#8250df"></rect>
+        <text x="730" y="143" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" fill="#8250df">B: ⅔ share</text>
+        <rect x="480" y="165" width="370" height="50" rx="4" fill="#fff8c5" stroke="#bf8700"></rect>
+        <text x="665" y="188" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" fill="#9a6700" font-weight="600">When idle: everyone may burst to full CPU</text>
+        <text x="665" y="205" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" fill="#59636e">weights are dormant without contention</text>
+      </svg>

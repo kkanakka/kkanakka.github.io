@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 800 200" xmlns="http://www.w3.org/2000/svg"><style>.sb{fill:var(--bg-subtle);stroke:var(--border);stroke-width:1}
+.sb-b{fill:#ddf4ff;stroke:var(--accent);stroke-width:1}
+.sb-g{fill:#dafbe1;stroke:var(--success);stroke-width:1}
+.sb-r{fill:#ffebe9;stroke:var(--danger);stroke-width:1}
+.sb-y{fill:#fff8e6;stroke:var(--attention);stroke-width:1}
+.sb-p{fill:#fbefff;stroke:var(--done);stroke-width:1}
+.sb-o{fill:#fff1e5;stroke:var(--orange);stroke-width:1}
+.sl{font-family:var(--sans);font-size:12px;font-weight:600;fill:var(--fg)}
+.ss{font-family:var(--mono);font-size:10px;fill:var(--fg-muted)}
+.sn{font-family:var(--mono);font-weight:700;font-size:11px;fill:var(--accent)}
+.sa{stroke:var(--fg-muted);stroke-width:1.2;fill:none}
+.sa-b{stroke:var(--accent);stroke-width:1.5;fill:none}
+.sa-g{stroke:var(--success);stroke-width:1.5;fill:none}
+.sa-r{stroke:var(--danger);stroke-width:1.5;fill:none}
+.sa-p{stroke:var(--done);stroke-width:1.5;fill:none}</style>
+      <defs><marker id="ab" markerWidth="8" markerHeight="8" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#0969da"></path></marker></defs>
+      <rect class="sb" x="20" y="20" width="120" height="50" rx="6"></rect><text class="sl" x="80" y="42" text-anchor="middle">Client</text><text class="ss" x="80" y="56" text-anchor="middle">in Mumbai</text>
+      <rect class="sb-b" x="180" y="20" width="130" height="50" rx="6"></rect><text class="sl" x="245" y="42" text-anchor="middle">File Service</text><text class="ss" x="245" y="56" text-anchor="middle">check ACL</text>
+      <rect class="sb-y" x="350" y="20" width="140" height="50" rx="6"></rect><text class="sl" x="420" y="42" text-anchor="middle">CDN signed URL</text><text class="ss" x="420" y="56" text-anchor="middle">5min expiry</text>
+      <rect class="sb-p" x="530" y="20" width="180" height="50" rx="6"></rect><text class="sl" x="620" y="42" text-anchor="middle">CDN edge (Mumbai)</text><text class="ss" x="620" y="56" text-anchor="middle">LinkedIn CDN / Akamai</text>
+      <rect class="sb-g" x="350" y="120" width="360" height="50" rx="6"></rect><text class="sl" x="530" y="142" text-anchor="middle">Ambry origin</text><text class="ss" x="530" y="158" text-anchor="middle">CDN fetches once, caches at edge</text>
+      <path class="sa-b" d="M140,45 L178,45" marker-end="url(#ab)"></path><text class="sn" x="159" y="38">1</text>
+      <path class="sa-b" d="M310,45 L348,45" marker-end="url(#ab)"></path><text class="sn" x="329" y="38">2</text>
+      <path class="sa" d="M620,70 L560,118" marker-end="url(#a1)" stroke-dasharray="3,2"></path>
+      <text class="ss" x="600" y="105">cache miss</text>
+      <text class="ss" x="20" y="160">1: request download · 2: ACL check → signed CDN URL · 3: fetch from edge · 4: cache miss fills from Ambry</text>
+    </svg>

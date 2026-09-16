@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 800 220" xmlns="http://www.w3.org/2000/svg"><style>.ascii{background:rgba(0,0,0,0.45);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:14px 18px;font-family:'SF Mono',Menlo,monospace;font-size:12px;color:#cbd5e1;white-space:pre;overflow-x:auto;line-height:1.55;margin:8px 0 12px}
+.asn{color:#c084fc}
+.ascii{font-size:11px}</style>
+<defs><marker id="as" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#f472b6"></path></marker></defs>
+<text x="100" y="30" text-anchor="middle" font-family="Inter" font-size="12" font-weight="700" fill="#22d3ee">CLIENT</text>
+<text x="700" y="30" text-anchor="middle" font-family="Inter" font-size="12" font-weight="700" fill="#f472b6">SERVER</text>
+<line x1="100" y1="40" x2="100" y2="200" stroke="#22d3ee" stroke-width="2" stroke-dasharray="3,4"></line>
+<line x1="700" y1="40" x2="700" y2="200" stroke="#f472b6" stroke-width="2" stroke-dasharray="3,4"></line>
+<line x1="100" y1="60" x2="700" y2="60" stroke="#22d3ee" stroke-width="2" marker-end="url(#as)"></line>
+<text x="400" y="55" text-anchor="middle" font-family="monospace" font-size="11" fill="#cbd5e1">GET /events  Accept: text/event-stream</text>
+<line x1="700" y1="85" x2="100" y2="85" stroke="#fde047" stroke-width="2" marker-end="url(#as)"></line>
+<text x="400" y="80" text-anchor="middle" font-family="monospace" font-size="11" fill="#fde047">200 OK · Content-Type: text/event-stream</text>
+<line x1="700" y1="115" x2="100" y2="115" stroke="#f472b6" stroke-width="1.5" marker-end="url(#as)"></line>
+<text x="400" y="110" text-anchor="middle" font-family="monospace" font-size="11" fill="#f472b6">data: {"price":102.4}</text>
+<line x1="700" y1="140" x2="100" y2="140" stroke="#f472b6" stroke-width="1.5" marker-end="url(#as)"></line>
+<text x="400" y="135" text-anchor="middle" font-family="monospace" font-size="11" fill="#f472b6">data: {"price":102.7}</text>
+<line x1="700" y1="165" x2="100" y2="165" stroke="#f472b6" stroke-width="1.5" marker-end="url(#as)"></line>
+<text x="400" y="160" text-anchor="middle" font-family="monospace" font-size="11" fill="#f472b6">data: {"price":103.1}</text>
+<text x="400" y="195" text-anchor="middle" font-family="Inter" font-size="11" fill="#94a3b8" font-style="italic">One TCP+HTTP response. Many "data:" chunks pushed over time. Client processes each as it arrives.</text>
+</svg>

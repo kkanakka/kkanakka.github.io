@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="600" height="140" viewBox="0 0 600 140" xmlns="http://www.w3.org/2000/svg">
+        <g font-family="Inter,sans-serif" font-size="12" fill="#37352f">
+          <rect x="200" y="5" width="200" height="40" rx="8" fill="#fce4ec" stroke="#c62828" stroke-width="2"></rect><text x="300" y="30" text-anchor="middle" font-weight="700" fill="#c62828">Control Plane (degraded)</text>
+          <text x="300" y="18" text-anchor="middle" font-size="10" fill="#c62828">Config / Flags / Auth</text>
+          <line x1="300" y1="45" x2="150" y2="75" stroke="#c62828" stroke-width="1.5" stroke-dasharray="5,3"></line>
+          <line x1="300" y1="45" x2="300" y2="75" stroke="#c62828" stroke-width="1.5" stroke-dasharray="5,3"></line>
+          <line x1="300" y1="45" x2="450" y2="75" stroke="#c62828" stroke-width="1.5" stroke-dasharray="5,3"></line>
+          <rect x="80" y="75" width="140" height="40" rx="8" fill="#e8f5e9" stroke="#2e7d32"></rect><text x="150" y="100" text-anchor="middle">Service A (healthy)</text>
+          <rect x="230" y="75" width="140" height="40" rx="8" fill="#fff3e0" stroke="#e65100" stroke-width="2"></rect><text x="300" y="100" text-anchor="middle" font-weight="600">Service B (failing)</text>
+          <rect x="380" y="75" width="140" height="40" rx="8" fill="#e8f5e9" stroke="#2e7d32"></rect><text x="450" y="100" text-anchor="middle">Service C (healthy)</text>
+          <text x="300" y="132" text-anchor="middle" font-size="11" fill="#c62828">Per-request sync config checks = CP in hot path → cascade</text>
+        </g>
+      </svg>

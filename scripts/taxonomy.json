@@ -1,0 +1,376 @@
+{
+  "sections": [
+    {
+      "id": "coding",
+      "label": "Coding & Algorithms",
+      "position": 1,
+      "description": "Algorithm walkthroughs, Python drills, and data-structure problems with an SRE lens."
+    },
+    {
+      "id": "linux",
+      "label": "Linux Internals",
+      "position": 2,
+      "description": "Processes, memory, scheduling, cgroups, namespaces, and the kernel paths that containers ride on."
+    },
+    {
+      "id": "foundations",
+      "label": "System Design Foundations",
+      "position": 3,
+      "description": "The building blocks: networking primitives, caching, architecture selection, and a reusable design framework."
+    },
+    {
+      "id": "ddia",
+      "label": "Data-Intensive Systems",
+      "position": 4,
+      "description": "Reliability, data models, storage engines, consensus, replication, and caching."
+    },
+    {
+      "id": "nalsd",
+      "label": "NALSD",
+      "position": 5,
+      "description": "Non-Abstract Large System Design exercises with capacity math, SLOs, and failure modes."
+    },
+    {
+      "id": "sre",
+      "label": "SRE Interview Prep",
+      "position": 6,
+      "description": "Google SRE interview questions, systems design playbooks, debugging scenarios, and reliability patterns."
+    },
+    {
+      "id": "hello-interview",
+      "label": "Hello Interview",
+      "position": 7,
+      "description": "hellointerview.com problems reworked with visual walkthroughs and LinkedIn stack mappings."
+    },
+    {
+      "id": "linkedin",
+      "label": "LinkedIn Production Systems",
+      "position": 8,
+      "description": "Deep dives into real LinkedIn infrastructure: feature flags, secrets, DR, build cache, Espresso."
+    },
+    {
+      "id": "ai-system-design",
+      "label": "AI System Design",
+      "position": 9,
+      "description": "Designing systems that train, serve, and scale machine learning."
+    }
+  ],
+  "pages": {
+    "coding.html": {
+      "section": "coding",
+      "position": 1,
+      "title": "Coding Problems"
+    },
+    "sre-python.html": {
+      "section": "coding",
+      "position": 2,
+      "title": "SRE Python: 38 Production Problems"
+    },
+    "sre-dsa.html": {
+      "section": "coding",
+      "position": 3,
+      "title": "SRE DS/Algo Drills"
+    },
+    "linux-systems-guide.html": {
+      "section": "linux",
+      "position": 1,
+      "title": "Linux Systems Guide"
+    },
+    "linux-processes-memory.html": {
+      "section": "linux",
+      "position": 2,
+      "title": "Processes & Programs"
+    },
+    "linux-memory-architecture.html": {
+      "section": "linux",
+      "position": 3,
+      "title": "Java Memory Architecture"
+    },
+    "linux-networking.html": {
+      "section": "linux",
+      "position": 4,
+      "title": "Networking 101: Browser to LinkedIn"
+    },
+    "linux-scenario-design.html": {
+      "section": "linux",
+      "position": 5,
+      "title": "Linux Scenario Design"
+    },
+    "kernel-internals-kubelet.html": {
+      "section": "linux",
+      "position": 6,
+      "title": "Kernel Internals & the Kubelet"
+    },
+    "linux-scheduling-containers.html": {
+      "section": "linux",
+      "position": 7,
+      "title": "Linux Scheduling & Containers"
+    },
+    "nvidia-linux-os.html": {
+      "section": "linux",
+      "position": 8,
+      "title": "Linux OS Deep Dive"
+    },
+    "gpus-in-kubernetes.html": {
+      "section": "linux",
+      "position": 9,
+      "title": "GPUs in Kubernetes"
+    },
+    "system-design-basics.html": {
+      "section": "foundations",
+      "position": 1,
+      "title": "System Design Basics"
+    },
+    "architecture-selection-guide.html": {
+      "section": "foundations",
+      "position": 2,
+      "title": "Architecture Selection Guide"
+    },
+    "caching-deep-dive.html": {
+      "section": "foundations",
+      "position": 3,
+      "title": "Caching Systems Deep Dive"
+    },
+    "sre-design-framework.html": {
+      "section": "foundations",
+      "position": 4,
+      "title": "SRE Design Interview Framework"
+    },
+    "ddia-ch1.html": {
+      "section": "ddia",
+      "position": 1,
+      "title": "Ch 1: Reliable, Scalable & Maintainable"
+    },
+    "ddia-ch2.html": {
+      "section": "ddia",
+      "position": 2,
+      "title": "Ch 2: Data Models & Query Languages"
+    },
+    "ddia-ch3.html": {
+      "section": "ddia",
+      "position": 3,
+      "title": "Ch 3: Storage & Retrieval"
+    },
+    "ddia-ch4.html": {
+      "section": "ddia",
+      "position": 4,
+      "title": "Ch 4: TiDB, TiKV & Raft Consensus"
+    },
+    "ddia-ch5.html": {
+      "section": "ddia",
+      "position": 5,
+      "title": "Ch 5: How Companies Handle Data"
+    },
+    "ddia-ch6.html": {
+      "section": "ddia",
+      "position": 6,
+      "title": "Ch 6: Caching Strategies"
+    },
+    "nalsd-index.html": {
+      "section": "nalsd",
+      "position": 1,
+      "title": "NALSD Overview"
+    },
+    "nalsd-monitoring-platform.html": {
+      "section": "nalsd",
+      "position": 2,
+      "title": "Monitoring & Alerting Platform"
+    },
+    "nalsd-logging-pipeline.html": {
+      "section": "nalsd",
+      "position": 3,
+      "title": "Distributed Logging Pipeline"
+    },
+    "nalsd-task-queue.html": {
+      "section": "nalsd",
+      "position": 4,
+      "title": "Distributed Task Queue"
+    },
+    "nalsd-tsdb.html": {
+      "section": "nalsd",
+      "position": 5,
+      "title": "Time Series Database"
+    },
+    "nalsd-dht.html": {
+      "section": "nalsd",
+      "position": 6,
+      "title": "Distributed Hash Table"
+    },
+    "nalsd-distributed-cache.html": {
+      "section": "nalsd",
+      "position": 7,
+      "title": "Global Distributed Cache"
+    },
+    "nalsd-slo-tracker.html": {
+      "section": "nalsd",
+      "position": 8,
+      "title": "SLO Error Budget Tracker"
+    },
+    "nalsd-canary-controller.html": {
+      "section": "nalsd",
+      "position": 9,
+      "title": "Canary Deployment Controller"
+    },
+    "nalsd-incident-response.html": {
+      "section": "nalsd",
+      "position": 10,
+      "title": "Global Incident Response"
+    },
+    "nalsd-anomaly-detection.html": {
+      "section": "nalsd",
+      "position": 11,
+      "title": "AI Anomaly Detection Platform"
+    },
+    "nalsd-global-multi-tenant-dns.html": {
+      "section": "nalsd",
+      "position": 12,
+      "title": "Global Multi-Tenant DNS"
+    },
+    "nalsd-bare-metal-lifecycle.html": {
+      "section": "nalsd",
+      "position": 13,
+      "title": "Autonomous Bare Metal Lifecycle"
+    },
+    "google-sre-interview-questions.html": {
+      "section": "sre",
+      "position": 1,
+      "title": "Google SRE Interview Questions"
+    },
+    "google-sre-systems-design.html": {
+      "section": "sre",
+      "position": 2,
+      "title": "Google SRE Systems Design Guide"
+    },
+    "sd-google-sre.html": {
+      "section": "sre",
+      "position": 3,
+      "title": "Google SRE L7: NALSD & Senior Design"
+    },
+    "sre-sysdesign.html": {
+      "section": "sre",
+      "position": 4,
+      "title": "SRE Systems Design Playbook"
+    },
+    "sre-nalsd.html": {
+      "section": "sre",
+      "position": 5,
+      "title": "NALSD War-Room Scenarios"
+    },
+    "sre-debugging.html": {
+      "section": "sre",
+      "position": 6,
+      "title": "SRE Debugging: 21 Scenarios"
+    },
+    "sre-mini-patterns.html": {
+      "section": "sre",
+      "position": 7,
+      "title": "SRE Mini Patterns"
+    },
+    "hi-index.html": {
+      "section": "hello-interview",
+      "position": 1,
+      "title": "Hello Interview Overview"
+    },
+    "hi-dropbox.html": {
+      "section": "hello-interview",
+      "position": 2,
+      "title": "Dropbox"
+    },
+    "hi-google-news.html": {
+      "section": "hello-interview",
+      "position": 3,
+      "title": "Google News"
+    },
+    "hi-ticketmaster.html": {
+      "section": "hello-interview",
+      "position": 4,
+      "title": "Ticketmaster"
+    },
+    "linkedin-feature-flags.html": {
+      "section": "linkedin",
+      "position": 1,
+      "title": "Feature Flag Service"
+    },
+    "linkedin-secrets-rotation.html": {
+      "section": "linkedin",
+      "position": 2,
+      "title": "Secrets Rotation"
+    },
+    "linkedin-disaster-recovery.html": {
+      "section": "linkedin",
+      "position": 3,
+      "title": "Disaster Recovery Orchestrator"
+    },
+    "linkedin-build-cache.html": {
+      "section": "linkedin",
+      "position": 4,
+      "title": "Build Artifact Cache"
+    },
+    "linkedin-config-management.html": {
+      "section": "linkedin",
+      "position": 5,
+      "title": "Config Management"
+    },
+    "linkedin-metrics-aggregator.html": {
+      "section": "linkedin",
+      "position": 6,
+      "title": "Realtime Metrics Aggregator"
+    },
+    "linkedin-kubernetes-autoscaler.html": {
+      "section": "linkedin",
+      "position": 7,
+      "title": "Kubernetes Autoscaler"
+    },
+    "linkedin-capacity-planner.html": {
+      "section": "linkedin",
+      "position": 8,
+      "title": "Capacity Planner"
+    },
+    "linkedin-incident-simulator.html": {
+      "section": "linkedin",
+      "position": 9,
+      "title": "Incident Replay Simulator"
+    },
+    "linkedin-cost-aware-alerting.html": {
+      "section": "linkedin",
+      "position": 10,
+      "title": "Cost-Aware Alerting"
+    },
+    "espresso-backup-strategy-architecture.html": {
+      "section": "linkedin",
+      "position": 11,
+      "title": "Espresso: Backup & Recovery"
+    },
+    "reliability-patterns-linkedin.html": {
+      "section": "linkedin",
+      "position": 12,
+      "title": "Reliability Patterns"
+    },
+    "linux-systems-guide/scheduling-cgroups-containers.html": {
+      "section": "linux",
+      "position": 10,
+      "title": "Scheduling, cgroups & Container Isolation"
+    }
+  },
+  "drop": [
+    "create-diagram-pngs.html",
+    "svg-to-png-converter.html",
+    "test-visual-diagram.html",
+    "index.html",
+    "ai-index.html",
+    "linux-systems-guide/index.html"
+  ],
+  "aliases": {
+    "index.html": "/docs/linux",
+    "sd-index.html": "/docs/foundations",
+    "networking.html": "/docs/linux/linux-networking",
+    "java-memory.html": "/docs/linux/linux-memory-architecture",
+    "chapter2.html": "/docs/ddia/ddia-ch2",
+    "sd-venice.html": "/docs/linkedin",
+    "linux-systems-guide": "/docs/linux",
+    "linux-systems-guide/index.html": "/docs/linux",
+    "linux-systems-guide/sd-index.html": "/docs/foundations",
+    "linux-systems-guide/networking.html": "/docs/linux/linux-networking",
+    "linux-systems-guide/sd-venice.html": "/docs/linkedin"
+  }
+}

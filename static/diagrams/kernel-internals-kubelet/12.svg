@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 900 360" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="aw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1f2328"></path>
+    </marker>
+  </defs>
+
+  <text x="20" y="22" font-size="12" font-weight="600">Virtual → physical translation cost · same CPU, different page size</text>
+
+  <!-- 4K row -->
+  <text x="20" y="60" font-size="11" font-weight="600" fill="#d1242f">4 KiB pages · 4-level walk</text>
+  <text x="20" y="76" font-size="10" fill="#59636e">cr3 → PGD → PUD → PMD → PTE → 4K frame</text>
+
+  <g font-size="10">
+    <rect x="20" y="90" width="80" height="40" fill="#ffebe9" stroke="#d1242f"></rect>
+    <text x="60" y="106" text-anchor="middle">CR3</text>
+    <text x="60" y="120" text-anchor="middle" fill="#59636e">root</text>
+
+    <rect x="120" y="90" width="80" height="40" fill="#ffebe9" stroke="#d1242f"></rect>
+    <text x="160" y="106" text-anchor="middle">PGD</text>
+    <text x="160" y="120" text-anchor="middle" fill="#59636e">L4</text>
+
+    <rect x="220" y="90" width="80" height="40" fill="#ffebe9" stroke="#d1242f"></rect>
+    <text x="260" y="106" text-anchor="middle">PUD</text>
+    <text x="260" y="120" text-anchor="middle" fill="#59636e">L3</text>
+
+    <rect x="320" y="90" width="80" height="40" fill="#ffebe9" stroke="#d1242f"></rect>
+    <text x="360" y="106" text-anchor="middle">PMD</text>
+    <text x="360" y="120" text-anchor="middle" fill="#59636e">L2</text>
+
+    <rect x="420" y="90" width="80" height="40" fill="#ffebe9" stroke="#d1242f"></rect>
+    <text x="460" y="106" text-anchor="middle">PTE</text>
+    <text x="460" y="120" text-anchor="middle" fill="#59636e">L1</text>
+
+    <rect x="540" y="90" width="100" height="40" fill="#dafbe1" stroke="#1a7f37"></rect>
+    <text x="590" y="106" text-anchor="middle">4 KiB frame</text>
+    <text x="590" y="120" text-anchor="middle" fill="#59636e">phys</text>
+
+    <line x1="100" y1="110" x2="120" y2="110" stroke="#1f2328" marker-end="url(#aw)"></line>
+    <line x1="200" y1="110" x2="220" y2="110" stroke="#1f2328" marker-end="url(#aw)"></line>
+    <line x1="300" y1="110" x2="320" y2="110" stroke="#1f2328" marker-end="url(#aw)"></line>
+    <line x1="400" y1="110" x2="420" y2="110" stroke="#1f2328" marker-end="url(#aw)"></line>
+    <line x1="500" y1="110" x2="540" y2="110" stroke="#1f2328" marker-end="url(#aw)"></line>
+  </g>
+
+  <text x="680" y="115" font-size="11" fill="#d1242f" font-weight="500">4 cacheline loads on miss</text>
+  <text x="680" y="130" font-size="10" fill="#59636e">TLB entry covers 4 KiB</text>
+
+  <!-- 2M row -->
+  <text x="20" y="200" font-size="11" font-weight="600" fill="#1a7f37">2 MiB huge pages · 3-level walk</text>
+  <text x="20" y="216" font-size="10" fill="#59636e">cr3 → PGD → PUD → PMD (terminal) → 2 MiB frame</text>
+
+  <g font-size="10">
+    <rect x="20" y="230" width="80" height="40" fill="#dafbe1" stroke="#1a7f37"></rect>
+    <text x="60" y="246" text-anchor="middle">CR3</text>
+    <text x="60" y="260" text-anchor="middle" fill="#59636e">root</text>
+
+    <rect x="120" y="230" width="80" height="40" fill="#dafbe1" stroke="#1a7f37"></rect>
+    <text x="160" y="246" text-anchor="middle">PGD</text>
+
+    <rect x="220" y="230" width="80" height="40" fill="#dafbe1" stroke="#1a7f37"></rect>
+    <text x="260" y="246" text-anchor="middle">PUD</text>
+
+    <rect x="320" y="230" width="120" height="40" fill="#dafbe1" stroke="#1a7f37" stroke-width="2"></rect>
+    <text x="380" y="246" text-anchor="middle">PMD (huge)</text>
+    <text x="380" y="260" text-anchor="middle" fill="#59636e">PS bit set</text>
+
+    <rect x="540" y="230" width="100" height="40" fill="#dafbe1" stroke="#1a7f37"></rect>
+    <text x="590" y="246" text-anchor="middle">2 MiB frame</text>
+
+    <line x1="100" y1="250" x2="120" y2="250" stroke="#1f2328" marker-end="url(#aw)"></line>
+    <line x1="200" y1="250" x2="220" y2="250" stroke="#1f2328" marker-end="url(#aw)"></line>
+    <line x1="300" y1="250" x2="320" y2="250" stroke="#1f2328" marker-end="url(#aw)"></line>
+    <line x1="440" y1="250" x2="540" y2="250" stroke="#1f2328" marker-end="url(#aw)"></line>
+  </g>
+
+  <text x="680" y="255" font-size="11" fill="#1a7f37" font-weight="500">3 cacheline loads on miss</text>
+  <text x="680" y="270" font-size="10" fill="#59636e">TLB entry covers 2 MiB</text>
+
+  <!-- coverage chart -->
+  <text x="20" y="320" font-size="11" font-weight="600">TLB reach · 1500 entries</text>
+  <rect x="20" y="330" width="50" height="14" fill="#ffebe9" stroke="#d1242f"></rect>
+  <text x="80" y="342" font-size="10" fill="#d1242f">4 KiB · ~6 MiB total</text>
+  <rect x="220" y="330" width="250" height="14" fill="#dafbe1" stroke="#1a7f37"></rect>
+  <text x="480" y="342" font-size="10" fill="#1a7f37">2 MiB · ~3 GiB total · ×512</text>
+</svg>

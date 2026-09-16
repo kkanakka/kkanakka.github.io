@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 980 880" xmlns="http://www.w3.org/2000/svg"><style>.box-fill-blue{fill:#ddf4ff;stroke:#54aeff}
+.box-fill-green{fill:#dafbe1;stroke:#4ac26b}
+.box-fill-purple{fill:#fbefff;stroke:#c297ff}
+.box-fill-orange{fill:#fff1e5;stroke:#fd8c73}
+.box-fill-yellow{fill:#fff8c5;stroke:#d4a72c}
+.box-fill-gray{fill:#f6f8fa;stroke:#d0d7de}
+.lbl-title{font-family:'Inter',sans-serif;font-weight:700;font-size:11.5px;fill:#1f2328}
+.lbl-sub{font-family:'JetBrains Mono',monospace;font-size:9.5px;fill:#59636e}
+.lbl-meta{font-family:'JetBrains Mono',monospace;font-size:9px;fill:#818b98}
+.arrow{stroke:#59636e;stroke-width:1.3;fill:none;marker-end:url(#arr)}
+.arrow-dashed{stroke:#cf222e;stroke-width:1.2;fill:none;stroke-dasharray:4,3;marker-end:url(#arr-red)}
+.arrow-green{stroke:#1a7f37;stroke-width:1.5;fill:none;marker-end:url(#arr-green)}</style>
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#59636e"></path>
+    </marker>
+    <marker id="arr-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#cf222e"></path>
+    </marker>
+    <marker id="arr-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1a7f37"></path>
+    </marker>
+  </defs>
+
+  <!-- Top SLO ribbon -->
+  <text x="490" y="22" text-anchor="middle" class="lbl-title" style="font-size:13px">2M series · detect &lt; 2 min · FP ≤ 1% · 5-model ensemble · feedback loop</text>
+
+  <!-- Step badges -->
+  <circle cx="155" cy="58" r="11" fill="#0a66c2"></circle>
+  <text x="155" y="62" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">1</text>
+  <circle cx="490" cy="58" r="11" fill="#0a66c2"></circle>
+  <text x="490" y="62" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">2</text>
+  <circle cx="820" cy="58" r="11" fill="#0a66c2"></circle>
+  <text x="820" y="62" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">3</text>
+  <circle cx="490" cy="200" r="11" fill="#0a66c2"></circle>
+  <text x="490" y="204" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">4</text>
+  <circle cx="490" cy="340" r="11" fill="#0a66c2"></circle>
+  <text x="490" y="344" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">5</text>
+  <circle cx="490" cy="510" r="11" fill="#0a66c2"></circle>
+  <text x="490" y="514" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">6</text>
+  <circle cx="155" cy="650" r="11" fill="#0a66c2"></circle>
+  <text x="155" y="654" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">7</text>
+  <circle cx="490" cy="650" r="11" fill="#0a66c2"></circle>
+  <text x="490" y="654" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">8</text>
+  <circle cx="820" cy="650" r="11" fill="#0a66c2"></circle>
+  <text x="820" y="654" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">9</text>
+  <circle cx="490" cy="800" r="11" fill="#0a66c2"></circle>
+  <text x="490" y="804" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">10</text>
+
+  <!-- ============ ROW 1: Data sources · Ingest · Model registry ============ -->
+  <g>
+    <rect x="20" y="80" width="270" height="80" rx="6" class="box-fill-gray"></rect>
+    <text x="155" y="103" text-anchor="middle" class="lbl-title">Multi-modal data sources</text>
+    <text x="155" y="121" text-anchor="middle" class="lbl-sub">metrics · logs · traces · events</text>
+    <text x="155" y="137" text-anchor="middle" class="lbl-sub">monitoring · logging · APM</text>
+    <text x="155" y="155" text-anchor="middle" class="lbl-meta">2M series · 133k samples/s</text>
+  </g>
+
+  <g>
+    <rect x="320" y="80" width="340" height="80" rx="6" class="box-fill-blue"></rect>
+    <text x="490" y="103" text-anchor="middle" class="lbl-title">Ingestion + normalization</text>
+    <text x="490" y="121" text-anchor="middle" class="lbl-sub">unified time-series schema</text>
+    <text x="490" y="137" text-anchor="middle" class="lbl-sub">deduplication · validation · enrichment</text>
+    <text x="490" y="155" text-anchor="middle" class="lbl-meta">12 nodes · subscribes to monitoring Kafka</text>
+  </g>
+
+  <g>
+    <rect x="680" y="80" width="280" height="80" rx="6" class="box-fill-yellow"></rect>
+    <text x="820" y="103" text-anchor="middle" class="lbl-title">Model registry</text>
+    <text x="820" y="121" text-anchor="middle" class="lbl-sub">5 model artifacts per service</text>
+    <text x="820" y="137" text-anchor="middle" class="lbl-sub">version-controlled · canary deployable</text>
+    <text x="820" y="155" text-anchor="middle" class="lbl-meta">S3 storage · Postgres metadata</text>
+  </g>
+
+  <!-- ============ ROW 2: Kafka ============ -->
+  <g>
+    <rect x="20" y="225" width="940" height="80" rx="6" class="box-fill-green"></rect>
+    <text x="490" y="248" text-anchor="middle" class="lbl-title" style="font-size:13px">Kafka — unified metric stream</text>
+    <text x="490" y="266" text-anchor="middle" class="lbl-sub">topics: metrics.raw · logs.embeddings · traces.spans · events.audit</text>
+    <text x="490" y="282" text-anchor="middle" class="lbl-meta">partitioned by series_id · 7-day retention · 3× replication</text>
+  </g>
+
+  <!-- ============ ROW 3: Feature engineering pipeline ============ -->
+  <rect x="20" y="365" width="940" height="100" rx="8" fill="#fafbfc" stroke="#eaeef2"></rect>
+  <text x="490" y="390" text-anchor="middle" class="lbl-title" style="font-size:13px">Feature engineering (Apache Beam · 240 workers)</text>
+
+  <g>
+    <rect x="40" y="405" width="180" height="50" rx="4" class="box-fill-purple"></rect>
+    <text x="130" y="423" text-anchor="middle" class="lbl-title">Statistical</text>
+    <text x="130" y="438" text-anchor="middle" class="lbl-sub">mean · std · p50/95/99</text>
+    <text x="130" y="450" text-anchor="middle" class="lbl-meta">10 features</text>
+  </g>
+  <g>
+    <rect x="240" y="405" width="180" height="50" rx="4" class="box-fill-purple"></rect>
+    <text x="330" y="423" text-anchor="middle" class="lbl-title">Temporal</text>
+    <text x="330" y="438" text-anchor="middle" class="lbl-sub">lag · EMA · rate</text>
+    <text x="330" y="450" text-anchor="middle" class="lbl-meta">12 features</text>
+  </g>
+  <g>
+    <rect x="440" y="405" width="180" height="50" rx="4" class="box-fill-purple"></rect>
+    <text x="530" y="423" text-anchor="middle" class="lbl-title">Seasonal</text>
+    <text x="530" y="438" text-anchor="middle" class="lbl-sub">hour · day · residual</text>
+    <text x="530" y="450" text-anchor="middle" class="lbl-meta">6 features</text>
+  </g>
+  <g>
+    <rect x="640" y="405" width="160" height="50" rx="4" class="box-fill-purple"></rect>
+    <text x="720" y="423" text-anchor="middle" class="lbl-title">Graph</text>
+    <text x="720" y="438" text-anchor="middle" class="lbl-sub">SLI correlations</text>
+    <text x="720" y="450" text-anchor="middle" class="lbl-meta">8 features</text>
+  </g>
+  <g>
+    <rect x="820" y="405" width="120" height="50" rx="4" class="box-fill-purple"></rect>
+    <text x="880" y="423" text-anchor="middle" class="lbl-title">Text + trace</text>
+    <text x="880" y="438" text-anchor="middle" class="lbl-sub">log · span</text>
+    <text x="880" y="450" text-anchor="middle" class="lbl-meta">10 features</text>
+  </g>
+
+  <!-- ============ ROW 4: Feature store ============ -->
+  <g>
+    <rect x="20" y="535" width="940" height="80" rx="6" class="box-fill-blue"></rect>
+    <text x="490" y="558" text-anchor="middle" class="lbl-title" style="font-size:13px">Feature store</text>
+    <text x="490" y="576" text-anchor="middle" class="lbl-sub">Redis (24h hot · 70 GB) · Bigtable (30d warm · 2.1 TB)</text>
+    <text x="490" y="594" text-anchor="middle" class="lbl-meta">point-in-time correctness · feature versioning · online + offline serve</text>
+  </g>
+
+  <!-- ============ ROW 5: 5-model ensemble ============ -->
+  <rect x="20" y="675" width="940" height="100" rx="8" fill="#fafbfc" stroke="#eaeef2"></rect>
+  <text x="490" y="700" text-anchor="middle" class="lbl-title" style="font-size:13px">Ensemble inference (60 nodes · 5 models in parallel)</text>
+
+  <g>
+    <rect x="40" y="715" width="170" height="50" rx="4" class="box-fill-orange"></rect>
+    <text x="125" y="732" text-anchor="middle" class="lbl-title">Isolation Forest</text>
+    <text x="125" y="747" text-anchor="middle" class="lbl-sub">outliers · 0.5 ms</text>
+    <text x="125" y="760" text-anchor="middle" class="lbl-meta">high-dim points</text>
+  </g>
+  <g>
+    <rect x="225" y="715" width="170" height="50" rx="4" class="box-fill-orange"></rect>
+    <text x="310" y="732" text-anchor="middle" class="lbl-title">LSTM Autoencoder</text>
+    <text x="310" y="747" text-anchor="middle" class="lbl-sub">sequences · 2 ms</text>
+    <text x="310" y="760" text-anchor="middle" class="lbl-meta">temporal patterns</text>
+  </g>
+  <g>
+    <rect x="410" y="715" width="170" height="50" rx="4" class="box-fill-orange"></rect>
+    <text x="495" y="732" text-anchor="middle" class="lbl-title">VAE</text>
+    <text x="495" y="747" text-anchor="middle" class="lbl-sub">generative · 1.5 ms</text>
+    <text x="495" y="760" text-anchor="middle" class="lbl-meta">distribution shifts</text>
+  </g>
+  <g>
+    <rect x="595" y="715" width="170" height="50" rx="4" class="box-fill-orange"></rect>
+    <text x="680" y="732" text-anchor="middle" class="lbl-title">One-Class SVM</text>
+    <text x="680" y="747" text-anchor="middle" class="lbl-sub">boundary · 0.5 ms</text>
+    <text x="680" y="760" text-anchor="middle" class="lbl-meta">novelty</text>
+  </g>
+  <g>
+    <rect x="780" y="715" width="160" height="50" rx="4" class="box-fill-orange"></rect>
+    <text x="860" y="732" text-anchor="middle" class="lbl-title">Transformer</text>
+    <text x="860" y="747" text-anchor="middle" class="lbl-sub">multi-modal · 3 ms</text>
+    <text x="860" y="760" text-anchor="middle" class="lbl-meta">context-aware</text>
+  </g>
+
+  <!-- ============ ROW 6: Decision engine, downstream ============ -->
+  <g>
+    <rect x="40" y="820" width="280" height="50" rx="6" class="box-fill-yellow"></rect>
+    <text x="180" y="838" text-anchor="middle" class="lbl-title">Consensus + decision engine</text>
+    <text x="180" y="852" text-anchor="middle" class="lbl-sub">weighted vote · business context</text>
+    <text x="180" y="865" text-anchor="middle" class="lbl-meta">15 nodes</text>
+  </g>
+  <g>
+    <rect x="340" y="820" width="280" height="50" rx="6" class="box-fill-blue"></rect>
+    <text x="480" y="838" text-anchor="middle" class="lbl-title">→ SLO tracker (signal feed)</text>
+    <text x="480" y="852" text-anchor="middle" class="lbl-sub">tighten alert thresholds early</text>
+    <text x="480" y="865" text-anchor="middle" class="lbl-meta">existing pipeline does paging</text>
+  </g>
+  <g>
+    <rect x="640" y="820" width="300" height="50" rx="6" class="box-fill-green"></rect>
+    <text x="790" y="838" text-anchor="middle" class="lbl-title">Feedback loop · online learner</text>
+    <text x="790" y="852" text-anchor="middle" class="lbl-sub">human labels · retrain trigger</text>
+    <text x="790" y="865" text-anchor="middle" class="lbl-meta">A/B testing for new models</text>
+  </g>
+
+  <!-- Arrows -->
+  <path d="M290,120 L320,120" class="arrow"></path>
+  <path d="M660,120 L680,120" class="arrow" stroke-dasharray="3,2"></path>
+  <text x="675" y="113" text-anchor="middle" class="lbl-meta">model lookup</text>
+  <path d="M490,160 L490,225" class="arrow"></path>
+  <path d="M490,305 L490,365" class="arrow"></path>
+  <path d="M490,465 L490,535" class="arrow"></path>
+  <path d="M490,615 L490,675" class="arrow"></path>
+  <path d="M495,775 L180,820" class="arrow"></path>
+  <path d="M495,775 L480,820" class="arrow"></path>
+  <path d="M495,775 L790,820" class="arrow"></path>
+  <!-- Feedback back to model registry -->
+  <path d="M940,840 Q975,840 975,170 Q975,120 950,120" class="arrow-green" stroke-dasharray="3,3"></path>
+  <text x="945" y="500" class="lbl-meta" fill="#1a7f37">retrain</text>
+</svg>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 760 270" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<linearGradient id="g7" x1="0" x2="1"><stop offset="0" stop-color="#a78bfa"></stop><stop offset="1" stop-color="#c084fc"></stop></linearGradient>
+<linearGradient id="g4" x1="0" x2="1"><stop offset="0" stop-color="#4ade80"></stop><stop offset="1" stop-color="#a3e635"></stop></linearGradient>
+<linearGradient id="g3" x1="0" x2="1"><stop offset="0" stop-color="#60a5fa"></stop><stop offset="1" stop-color="#22d3ee"></stop></linearGradient>
+</defs>
+<rect x="20" y="20" width="720" height="50" rx="8" fill="url(#g7)" opacity=".95"></rect>
+<text x="40" y="42" font-family="monospace" font-size="13" font-weight="700" fill="#1e1b4b">L7  Application</text>
+<text x="40" y="60" font-family="monospace" font-size="11" fill="#1e1b4b">DNS · HTTP/HTTPS · gRPC · WebSocket · WebRTC · SSE</text>
+<rect x="20" y="80" width="720" height="50" rx="8" fill="url(#g4)" opacity=".95"></rect>
+<text x="40" y="102" font-family="monospace" font-size="13" font-weight="700" fill="#0f172a">L4  Transport</text>
+<text x="40" y="120" font-family="monospace" font-size="11" fill="#0f172a">TCP (reliable, ordered) · UDP (fire &amp; forget) · QUIC (UDP + reliability + 0-RTT)</text>
+<rect x="20" y="140" width="720" height="50" rx="8" fill="url(#g3)" opacity=".95"></rect>
+<text x="40" y="162" font-family="monospace" font-size="13" font-weight="700" fill="#0f172a">L3  Network</text>
+<text x="40" y="180" font-family="monospace" font-size="11" fill="#0f172a">IP — addressing &amp; best-effort packet routing across networks</text>
+<rect x="20" y="200" width="720" height="40" rx="8" fill="#334155" opacity=".7"></rect>
+<text x="40" y="225" font-family="monospace" font-size="12" fill="#cbd5e1">L1/L2  Link &amp; Physical (Ethernet, MAC, WiFi, fiber) — usually outside interview scope</text>
+<text x="380" y="262" text-anchor="middle" font-family="Inter" font-size="11" fill="#94a3b8" font-style="italic">Each layer hides the messy details of the layer below.</text>
+</svg>

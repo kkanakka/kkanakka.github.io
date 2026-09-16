@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 800 210" xmlns="http://www.w3.org/2000/svg"><style>.sb-g{fill:#dafbe1;stroke:var(--success);stroke-width:1}
+.sb-r{fill:#ffebe9;stroke:var(--danger);stroke-width:1}
+.sl{font-family:var(--sans);font-size:12px;font-weight:600;fill:var(--fg)}
+.ss{font-family:var(--mono);font-size:10px;fill:var(--fg-muted)}</style>
+      <text class="sl" x="20" y="18" fill="var(--danger)">✗ Offset-based: page=2 breaks when new articles are inserted</text>
+      <rect class="sb-r" x="20" y="28" width="360" height="60" rx="6"></rect>
+      <text class="ss" x="200" y="48" text-anchor="middle">Page 1: articles [1-20] · User reads them</text>
+      <text class="ss" x="200" y="64" text-anchor="middle">5 new articles published → page 2 now has OVERLAP</text>
+      <text class="ss" x="200" y="78" text-anchor="middle">User sees duplicates or misses articles entirely</text>
+      <rect class="sb-r" x="400" y="28" width="360" height="60" rx="6"></rect>
+      <text class="ss" x="580" y="48" text-anchor="middle">SQL: SELECT ... OFFSET 20 LIMIT 20</text>
+      <text class="ss" x="580" y="64" text-anchor="middle">Offset recalculated after inserts = drift</text>
+      <text class="ss" x="580" y="78" text-anchor="middle">Also: OFFSET scans &amp; discards rows = slow</text>
+
+      <line x1="20" y1="105" x2="780" y2="105" stroke="var(--border-muted)"></line>
+
+      <text class="sl" x="20" y="125" fill="var(--success)">✓ Cursor-based: “give me articles after this ULID”</text>
+      <rect class="sb-g" x="20" y="135" width="360" height="60" rx="6"></rect>
+      <text class="ss" x="200" y="155" text-anchor="middle">Page 1: articles [A-T], cursor = T’s ULID</text>
+      <text class="ss" x="200" y="171" text-anchor="middle">5 new articles published → doesn’t matter</text>
+      <text class="ss" x="200" y="187" text-anchor="middle">Page 2: WHERE id &lt; cursor ORDER BY id DESC</text>
+      <rect class="sb-g" x="400" y="135" width="360" height="60" rx="6"></rect>
+      <text class="ss" x="580" y="155" text-anchor="middle">ULIDs are monotonically increasing</text>
+      <text class="ss" x="580" y="171" text-anchor="middle">Stable cursor = no duplicates, no gaps</text>
+      <text class="ss" x="580" y="187" text-anchor="middle">Index seek, not scan → O(log n) always</text>
+    </svg>

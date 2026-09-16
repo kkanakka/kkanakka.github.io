@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 820 520" xmlns="http://www.w3.org/2000/svg" style="max-width:800px;">
+      <defs>
+        <filter id="shAJ" x="-3%" y="-3%" width="106%" height="110%">
+          <fedropshadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.06"></fedropshadow>
+        </filter>
+      </defs>
+
+      <!-- JSON side -->
+      <rect x="20" y="10" width="380" height="500" rx="12" fill="#fff3e0" stroke="#e65100" stroke-width="2"></rect>
+      <text x="210" y="40" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="16" fill="#e65100">JSON (Text Format)</text>
+      <text x="210" y="58" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#787774">Human-readable, self-describing</text>
+
+      <!-- JSON example -->
+      <rect x="40" y="70" width="340" height="130" rx="8" fill="#fff" stroke="#ffcc80" stroke-width="1"></rect>
+      <text x="55" y="90" font-family="JetBrains Mono,monospace" font-size="10" fill="#37352f">{</text>
+      <text x="65" y="106" font-family="JetBrains Mono,monospace" font-size="10" fill="#37352f">"firstName": "Bill",</text>
+      <text x="65" y="122" font-family="JetBrains Mono,monospace" font-size="10" fill="#37352f">"lastName": "Gates",</text>
+      <text x="65" y="138" font-family="JetBrains Mono,monospace" font-size="10" fill="#37352f">"regionId": 91,</text>
+      <text x="65" y="154" font-family="JetBrains Mono,monospace" font-size="10" fill="#37352f">"industryId": 131</text>
+      <text x="55" y="170" font-family="JetBrains Mono,monospace" font-size="10" fill="#37352f">}</text>
+      <text x="300" y="185" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#e65100">= 95 bytes</text>
+
+      <!-- What's actually stored -->
+      <rect x="40" y="200" width="340" height="60" rx="8" fill="#fff8e1" stroke="#ffcc80" stroke-width="1"></rect>
+      <text x="210" y="220" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#e65100">What's in those 95 bytes?</text>
+      <text x="55" y="240" font-family="JetBrains Mono,monospace" font-size="9" fill="#787774">"firstName" ← field name repeated in EVERY document!</text>
+      <text x="55" y="253" font-family="JetBrains Mono,monospace" font-size="9" fill="#787774">"lastName"  ← redundant! schema is baked INTO the data</text>
+
+      <!-- JSON pros/cons -->
+      <text x="40" y="285" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#2e7d32">Pros:</text>
+      <text x="40" y="303" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Human readable (just open the file)</text>
+      <text x="40" y="319" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Self-describing (field names in data)</text>
+      <text x="40" y="335" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Easy to debug &amp; inspect</text>
+      <text x="40" y="351" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Universal (every language parses it)</text>
+
+      <text x="40" y="380" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#c62828">Cons:</text>
+      <text x="40" y="398" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• <tspan font-weight="600">Bloated</tspan>: field names repeat in every doc</text>
+      <text x="40" y="414" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• <tspan font-weight="600">No schema</tspan>: can write garbage, no validation</text>
+      <text x="40" y="430" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• <tspan font-weight="600">No types</tspan>: is "91" a number or string?</text>
+      <text x="40" y="446" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• <tspan font-weight="600">Slow parse</tspan>: text parsing every read</text>
+      <text x="40" y="462" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• <tspan font-weight="600">No evolution rules</tspan>: add a field?</text>
+      <text x="55" y="478" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Old consumers break silently</text>
+
+      <rect x="40" y="488" width="340" height="18" rx="4" fill="#ffcc80"></rect>
+      <text x="210" y="501" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#e65100">Used by: MongoDB (BSON), REST APIs, config files</text>
+
+      <!-- Avro side -->
+      <rect x="420" y="10" width="390" height="500" rx="12" fill="#e3f2fd" stroke="#1565c0" stroke-width="2"></rect>
+      <text x="615" y="40" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="16" fill="#0d47a1">Avro (Binary Format)</text>
+      <text x="615" y="58" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#787774">Compact, schema-driven, evolvable</text>
+
+      <!-- Avro example -->
+      <rect x="440" y="70" width="350" height="130" rx="8" fill="#fff" stroke="#90caf9" stroke-width="1"></rect>
+      <text x="455" y="90" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#0d47a1">Schema (stored ONCE in ZooKeeper):</text>
+      <text x="455" y="106" font-family="JetBrains Mono,monospace" font-size="9" fill="#787774">{"fields": [</text>
+      <text x="465" y="120" font-family="JetBrains Mono,monospace" font-size="9" fill="#787774">{"name":"firstName","type":"string"},</text>
+      <text x="465" y="134" font-family="JetBrains Mono,monospace" font-size="9" fill="#787774">{"name":"lastName","type":"string"}, ...</text>
+      <text x="455" y="148" font-family="JetBrains Mono,monospace" font-size="9" fill="#787774">]}</text>
+      <text x="455" y="168" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#0d47a1">Stored data (just VALUES, no field names):</text>
+      <text x="455" y="184" font-family="JetBrains Mono,monospace" font-size="10" fill="#37352f">08 42 69 6C 6C 0A 47 61 74 65 73 B6 01 86 02</text>
+      <text x="680" y="195" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#0d47a1">= 15 bytes!</text>
+
+      <!-- What's in the bytes -->
+      <rect x="440" y="200" width="350" height="60" rx="8" fill="#e8eaf6" stroke="#90caf9" stroke-width="1"></rect>
+      <text x="615" y="220" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#0d47a1">What's in those 15 bytes?</text>
+      <text x="455" y="240" font-family="JetBrains Mono,monospace" font-size="9" fill="#37352f">08="Bill"(len4) 0A="Gates"(len5) B6 01=91 86 02=131</text>
+      <text x="455" y="253" font-family="JetBrains Mono,monospace" font-size="9" fill="#37352f">No field names! Schema tells you field order &amp; types</text>
+
+      <!-- Avro pros/cons -->
+      <text x="440" y="285" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#2e7d32">Pros:</text>
+      <text x="440" y="303" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• <tspan font-weight="600">6x smaller</tspan>: no field names in data</text>
+      <text x="440" y="319" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• <tspan font-weight="600">Schema enforced</tspan>: write garbage → rejected</text>
+      <text x="440" y="335" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• <tspan font-weight="600">Type safe</tspan>: int is int, string is string</text>
+      <text x="440" y="351" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• <tspan font-weight="600">Fast decode</tspan>: binary, no text parsing</text>
+      <text x="440" y="367" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• <tspan font-weight="600">Schema evolution</tspan>: add/remove fields</text>
+      <text x="450" y="383" font-family="Inter,sans-serif" font-size="10" fill="#37352f">with compatibility rules (fwd/backward)</text>
+      <text x="440" y="399" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• <tspan font-weight="600">Code generation</tspan>: type-safe Java/Python</text>
+
+      <text x="440" y="425" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#c62828">Cons:</text>
+      <text x="440" y="443" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Not human readable (binary blob)</text>
+      <text x="440" y="459" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Need schema to decode (can't just open)</text>
+      <text x="440" y="475" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Schema registry required (ZooKeeper)</text>
+
+      <rect x="440" y="488" width="350" height="18" rx="4" fill="#bbdefb"></rect>
+      <text x="615" y="501" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#0d47a1">Used by: Espresso, Kafka, Hadoop, Spark, Flink</text>
+    </svg>

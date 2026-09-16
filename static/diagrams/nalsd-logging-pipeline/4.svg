@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 980 320" xmlns="http://www.w3.org/2000/svg"><style>.lbl-title{font-family:'Inter',sans-serif;font-weight:700;font-size:11.5px;fill:#1f2328}
+.lbl-sub{font-family:'JetBrains Mono',monospace;font-size:9.5px;fill:#59636e}
+.lbl-meta{font-family:'JetBrains Mono',monospace;font-size:9px;fill:#818b98}
+.arrow{stroke:#59636e;stroke-width:1.3;fill:none;marker-end:url(#arr)}
+.arrow-dashed{stroke:#cf222e;stroke-width:1.2;fill:none;stroke-dasharray:4,3;marker-end:url(#arr-red)}
+.arrow-green{stroke:#1a7f37;stroke-width:1.5;fill:none;marker-end:url(#arr-green)}</style>
+  <defs>
+    <marker id="arr4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#59636e"></path>
+    </marker>
+  </defs>
+
+  <!-- Hot tier card -->
+  <g>
+    <rect x="20" y="40" width="290" height="240" rx="10" fill="#fff1e5" stroke="#fd8c73"></rect>
+    <text x="165" y="65" text-anchor="middle" class="lbl-title" style="font-size:14px">HOT · 0–30 days</text>
+    <text x="165" y="82" text-anchor="middle" class="lbl-sub">SSD-backed search index</text>
+
+    <rect x="40" y="100" width="250" height="20" rx="3" fill="#fff" stroke="#d0d7de"></rect>
+    <rect x="42" y="102" width="246" height="16" fill="#fd8c73"></rect>
+    <text x="295" y="115" text-anchor="end" class="lbl-meta" fill="#fff" font-weight="bold">130 TB</text>
+
+    <text x="40" y="145" class="lbl-sub" style="font-size:10.5px">capacity</text>
+    <text x="290" y="145" text-anchor="end" class="lbl-title" style="font-size:11px">130 TB · 17 nodes</text>
+
+    <text x="40" y="170" class="lbl-sub" style="font-size:10.5px">cost / mo</text>
+    <text x="290" y="170" text-anchor="end" class="lbl-title" style="font-size:11px">$20 K (RI: $7.6 K)</text>
+
+    <text x="40" y="195" class="lbl-sub" style="font-size:10.5px">query latency</text>
+    <text x="290" y="195" text-anchor="end" class="lbl-title" style="font-size:11px">&lt; 800 ms p99</text>
+
+    <text x="40" y="220" class="lbl-sub" style="font-size:10.5px">compression</text>
+    <text x="290" y="220" text-anchor="end" class="lbl-title" style="font-size:11px">6× zstd</text>
+
+    <text x="40" y="245" class="lbl-sub" style="font-size:10.5px">replication</text>
+    <text x="290" y="245" text-anchor="end" class="lbl-title" style="font-size:11px">3× in-region</text>
+
+    <text x="40" y="270" class="lbl-sub" style="font-size:10.5px">durability</text>
+    <text x="290" y="270" text-anchor="end" class="lbl-title" style="font-size:11px">~10 nines</text>
+  </g>
+
+  <!-- Warm tier -->
+  <g>
+    <rect x="335" y="40" width="290" height="240" rx="10" fill="#fff8c5" stroke="#d4a72c"></rect>
+    <text x="480" y="65" text-anchor="middle" class="lbl-title" style="font-size:14px">WARM · 30–90 days</text>
+    <text x="480" y="82" text-anchor="middle" class="lbl-sub">Parquet on object store</text>
+
+    <rect x="355" y="100" width="250" height="20" rx="3" fill="#fff" stroke="#d0d7de"></rect>
+    <rect x="357" y="102" width="92" height="16" fill="#d4a72c"></rect>
+    <text x="605" y="115" text-anchor="end" class="lbl-meta" fill="#9a6700" font-weight="bold">120 TB</text>
+
+    <text x="355" y="145" class="lbl-sub" style="font-size:10.5px">capacity</text>
+    <text x="605" y="145" text-anchor="end" class="lbl-title" style="font-size:11px">120 TB · S3 Standard</text>
+
+    <text x="355" y="170" class="lbl-sub" style="font-size:10.5px">cost / mo</text>
+    <text x="605" y="170" text-anchor="end" class="lbl-title" style="font-size:11px">$5.5 K</text>
+
+    <text x="355" y="195" class="lbl-sub" style="font-size:10.5px">query latency</text>
+    <text x="605" y="195" text-anchor="end" class="lbl-title" style="font-size:11px">5–30 s</text>
+
+    <text x="355" y="220" class="lbl-sub" style="font-size:10.5px">compression</text>
+    <text x="605" y="220" text-anchor="end" class="lbl-title" style="font-size:11px">10× columnar</text>
+
+    <text x="355" y="245" class="lbl-sub" style="font-size:10.5px">replication</text>
+    <text x="605" y="245" text-anchor="end" class="lbl-title" style="font-size:11px">2× cross-region</text>
+
+    <text x="355" y="270" class="lbl-sub" style="font-size:10.5px">durability</text>
+    <text x="605" y="270" text-anchor="end" class="lbl-title" style="font-size:11px">11 nines</text>
+  </g>
+
+  <!-- Cold tier -->
+  <g>
+    <rect x="650" y="40" width="310" height="240" rx="10" fill="#ddf4ff" stroke="#54aeff"></rect>
+    <text x="805" y="65" text-anchor="middle" class="lbl-title" style="font-size:14px">COLD · 90 d – 1 year</text>
+    <text x="805" y="82" text-anchor="middle" class="lbl-sub">Glacier IR · object archive</text>
+
+    <rect x="670" y="100" width="270" height="20" rx="3" fill="#fff" stroke="#d0d7de"></rect>
+    <rect x="672" y="102" width="266" height="16" fill="#54aeff"></rect>
+    <text x="935" y="115" text-anchor="end" class="lbl-meta" fill="#fff" font-weight="bold">550 TB</text>
+
+    <text x="670" y="145" class="lbl-sub" style="font-size:10.5px">capacity</text>
+    <text x="935" y="145" text-anchor="end" class="lbl-title" style="font-size:11px">550 TB · Glacier IR</text>
+
+    <text x="670" y="170" class="lbl-sub" style="font-size:10.5px">cost / mo</text>
+    <text x="935" y="170" text-anchor="end" class="lbl-title" style="font-size:11px">$4.4 K</text>
+
+    <text x="670" y="195" class="lbl-sub" style="font-size:10.5px">query latency</text>
+    <text x="935" y="195" text-anchor="end" class="lbl-title" style="font-size:11px">1–5 min restore</text>
+
+    <text x="670" y="220" class="lbl-sub" style="font-size:10.5px">compression</text>
+    <text x="935" y="220" text-anchor="end" class="lbl-title" style="font-size:11px">10× columnar</text>
+
+    <text x="670" y="245" class="lbl-sub" style="font-size:10.5px">replication</text>
+    <text x="935" y="245" text-anchor="end" class="lbl-title" style="font-size:11px">2× cross-region</text>
+
+    <text x="670" y="270" class="lbl-sub" style="font-size:10.5px">durability</text>
+    <text x="935" y="270" text-anchor="end" class="lbl-title" style="font-size:11px">11 nines</text>
+  </g>
+
+  <!-- Flow arrows -->
+  <path d="M310,160 L335,160" class="arrow"></path>
+  <path d="M625,160 L650,160" class="arrow"></path>
+  <text x="322" y="155" text-anchor="middle" class="lbl-meta">30 d</text>
+  <text x="637" y="155" text-anchor="middle" class="lbl-meta">90 d</text>
+</svg>

@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 820 380" xmlns="http://www.w3.org/2000/svg" style="max-width:800px;">
+      <defs><filter id="sh1" x="-3%" y="-3%" width="106%" height="110%"><fedropshadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.06"></fedropshadow></filter>
+      <marker id="a1" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#546e7a"></polygon></marker></defs>
+
+      <!-- LEFT: Denormalized -->
+      <rect x="10" y="10" width="390" height="360" rx="12" fill="#fce4ec" stroke="#c62828" stroke-width="2"></rect>
+      <text x="205" y="38" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="14" fill="#c62828">Denormalized (Strings Everywhere)</text>
+
+      <rect x="30" y="55" width="350" height="65" rx="8" fill="#fff" stroke="#ef9a9a" stroke-width="1"></rect>
+      <text x="45" y="75" font-family="JetBrains Mono,monospace" font-size="9" fill="#37352f">{"user_id":251, "name":"Bill Gates",</text>
+      <text x="50" y="90" font-family="JetBrains Mono,monospace" font-size="9" fill="#c62828"> "region":"Greater Seattle Area",</text>
+      <text x="50" y="105" font-family="JetBrains Mono,monospace" font-size="9" fill="#c62828"> "industry":"Philanthropy"}</text>
+
+      <rect x="30" y="125" width="350" height="65" rx="8" fill="#fff" stroke="#ef9a9a" stroke-width="1"></rect>
+      <text x="45" y="145" font-family="JetBrains Mono,monospace" font-size="9" fill="#37352f">{"user_id":252, "name":"Satya Nadella",</text>
+      <text x="50" y="160" font-family="JetBrains Mono,monospace" font-size="9" fill="#c62828"> "region":"Greater Seattle Area",</text>
+      <text x="50" y="175" font-family="JetBrains Mono,monospace" font-size="9" fill="#c62828"> "industry":"Philanthropy"}</text>
+
+      <text x="30" y="210" font-family="Inter,sans-serif" font-weight="700" font-size="11" fill="#c62828">Problems:</text>
+      <text x="30" y="228" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• "Greater Seattle Area" repeated 100K times</text>
+      <text x="30" y="246" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Rename city → update EVERY document</text>
+      <text x="30" y="264" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Typos: "Seattle" vs "seattle area" vs "Seatle"</text>
+      <text x="30" y="282" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• No localization (can't show "西雅图" in Chinese)</text>
+      <text x="30" y="300" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Search can't know Seattle is in Washington state</text>
+
+      <rect x="30" y="320" width="350" height="35" rx="6" fill="#ef9a9a"></rect>
+      <text x="205" y="342" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#c62828">Fast reads (no join needed) but write/update nightmare</text>
+
+      <!-- RIGHT: Normalized -->
+      <rect x="420" y="10" width="390" height="360" rx="12" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"></rect>
+      <text x="615" y="38" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="14" fill="#2e7d32">Normalized (IDs + Reference Tables)</text>
+
+      <rect x="440" y="55" width="350" height="50" rx="8" fill="#fff" stroke="#a5d6a7" stroke-width="1"></rect>
+      <text x="455" y="75" font-family="JetBrains Mono,monospace" font-size="9" fill="#37352f">{"user_id":251, "name":"Bill Gates",</text>
+      <text x="460" y="90" font-family="JetBrains Mono,monospace" font-size="9" fill="#2e7d32"> "region_id":101, "industry_id":501}</text>
+
+      <line x1="615" y1="105" x2="615" y2="125" stroke="#2e7d32" stroke-width="1.5" marker-end="url(#a1)"></line>
+      <text x="630" y="118" font-family="Inter,sans-serif" font-size="9" fill="#2e7d32">JOIN</text>
+
+      <rect x="440" y="125" width="170" height="45" rx="8" fill="#c8e6c9" stroke="#2e7d32" stroke-width="1.5"></rect>
+      <text x="455" y="142" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#2e7d32">Regions</text>
+      <text x="455" y="160" font-family="JetBrains Mono,monospace" font-size="9" fill="#37352f">101 → "Greater Seattle Area"</text>
+
+      <rect x="620" y="125" width="150" height="45" rx="8" fill="#c8e6c9" stroke="#2e7d32" stroke-width="1.5"></rect>
+      <text x="635" y="142" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#2e7d32">Industries</text>
+      <text x="635" y="160" font-family="JetBrains Mono,monospace" font-size="9" fill="#37352f">501 → "Philanthropy"</text>
+
+      <text x="440" y="195" font-family="Inter,sans-serif" font-weight="700" font-size="11" fill="#2e7d32">Benefits:</text>
+      <text x="440" y="213" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Name stored ONCE → update in one place</text>
+      <text x="440" y="231" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• No typos (pick from dropdown)</text>
+      <text x="440" y="249" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Localization: 101 → "Seattle" (EN) / "西雅图" (ZH)</text>
+      <text x="440" y="267" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Search: 101 encodes "Seattle is in Washington"</text>
+
+      <rect x="440" y="290" width="350" height="60" rx="6" fill="#c8e6c9"></rect>
+      <text x="615" y="312" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#2e7d32">Clean writes, but NEED JOINs to read!</text>
+      <text x="615" y="332" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#37352f">SQL: trivial JOIN. Document DB: 2 separate queries</text>
+      <text x="615" y="345" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Espresso: no JOINs → use Galene/Venice for resolved views</text>
+    </svg>

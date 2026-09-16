@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="100%" height="650" style="background:#fafafa;border:1px solid #ddd;border-radius:8px;margin:16px 0;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1164 650">
+    <!-- Cloud Billing Sources -->
+    <rect x="50" y="50" width="110" height="70" fill="#fff3e0" stroke="#f57c00" stroke-width="2" rx="4"></rect>
+    <text x="105" y="70" text-anchor="middle" font-size="11" font-weight="bold" fill="#e65100">AWS Billing</text>
+    <text x="105" y="85" text-anchor="middle" font-size="9" fill="#e65100">Cost &amp; Usage</text>
+    <text x="105" y="100" text-anchor="middle" font-size="9" fill="#e65100">Reserved Instance</text>
+    <text x="105" y="115" text-anchor="middle" font-size="9" fill="#e65100">Spot pricing</text>
+    
+    <rect x="180" y="50" width="110" height="70" fill="#e3f2fd" stroke="#1976d2" stroke-width="2" rx="4"></rect>
+    <text x="235" y="70" text-anchor="middle" font-size="11" font-weight="bold" fill="#0d47a1">Azure Billing</text>
+    <text x="235" y="85" text-anchor="middle" font-size="9" fill="#0d47a1">Resource usage</text>
+    <text x="235" y="100" text-anchor="middle" font-size="9" fill="#0d47a1">Subscription costs</text>
+    <text x="235" y="115" text-anchor="middle" font-size="9" fill="#0d47a1">Reserved capacity</text>
+    
+    <rect x="310" y="50" width="110" height="70" fill="#e0f2f1" stroke="#00695c" stroke-width="2" rx="4"></rect>
+    <text x="365" y="70" text-anchor="middle" font-size="11" font-weight="bold" fill="#004d40">GCP Billing</text>
+    <text x="365" y="85" text-anchor="middle" font-size="9" fill="#004d40">BigQuery usage</text>
+    <text x="365" y="100" text-anchor="middle" font-size="9" fill="#004d40">Compute Engine</text>
+    <text x="365" y="115" text-anchor="middle" font-size="9" fill="#004d40">Network egress</text>
+    
+    <rect x="440" y="50" width="110" height="70" fill="#ffebee" stroke="#d32f2f" stroke-width="2" rx="4"></rect>
+    <text x="495" y="70" text-anchor="middle" font-size="11" font-weight="bold" fill="#c62828">Internal Costs</text>
+    <text x="495" y="85" text-anchor="middle" font-size="9" fill="#c62828">Datacenter costs</text>
+    <text x="495" y="100" text-anchor="middle" font-size="9" fill="#c62828">Private cloud</text>
+    <text x="495" y="115" text-anchor="middle" font-size="9" fill="#c62828">Shared services</text>
+    
+    <!-- Billing Ingestor -->
+    <rect x="50" y="150" width="500" height="60" fill="#fff3e0" stroke="#ff5722" stroke-width="2" rx="8"></rect>
+    <text x="300" y="170" text-anchor="middle" font-size="14" font-weight="bold" fill="#d84315">Billing Ingestor &amp; Data Pipeline</text>
+    <text x="300" y="190" text-anchor="middle" font-size="10" fill="#d84315">Real-time streaming • Data quality validation • Currency normalization • Tag enrichment</text>
+    <text x="300" y="205" text-anchor="middle" font-size="10" fill="#d84315">15-minute billing data refresh • Cost attribution • Service mapping</text>
+    
+    <!-- Metrics Normalizer -->
+    <rect x="50" y="240" width="180" height="80" fill="#f3e5f5" stroke="#7b1fa2" stroke-width="2" rx="8"></rect>
+    <text x="140" y="265" text-anchor="middle" font-size="12" font-weight="bold" fill="#4a148c">Metrics Normalizer</text>
+    <text x="140" y="285" text-anchor="middle" font-size="10" fill="#4a148c">• $/RPS calculation</text>
+    <text x="140" y="300" text-anchor="middle" font-size="10" fill="#4a148c">• Cost per SLI</text>
+    <text x="140" y="315" text-anchor="middle" font-size="10" fill="#4a148c">• Usage efficiency</text>
+    
+    <!-- Anomaly Detector -->
+    <rect x="260" y="240" width="180" height="80" fill="#e1f5fe" stroke="#0288d1" stroke-width="2" rx="8"></rect>
+    <text x="350" y="265" text-anchor="middle" font-size="12" font-weight="bold" fill="#01579b">ML Anomaly Detector</text>
+    <text x="350" y="285" text-anchor="middle" font-size="10" fill="#01579b">• Time-series models</text>
+    <text x="350" y="300" text-anchor="middle" font-size="10" fill="#01579b">• Seasonal adjustment</text>
+    <text x="350" y="315" text-anchor="middle" font-size="10" fill="#01579b">• Multi-window analysis</text>
+    
+    <!-- Policy Engine -->
+    <rect x="470" y="240" width="180" height="80" fill="#fff8e1" stroke="#fbc02d" stroke-width="2" rx="8"></rect>
+    <text x="560" y="265" text-anchor="middle" font-size="12" font-weight="bold" fill="#f57c00">Policy Engine</text>
+    <text x="560" y="285" text-anchor="middle" font-size="10" fill="#f57c00">• Budget guardrails</text>
+    <text x="560" y="300" text-anchor="middle" font-size="10" fill="#f57c00">• SLO correlation</text>
+    <text x="560" y="315" text-anchor="middle" font-size="10" fill="#f57c00">• Business impact</text>
+    
+    <!-- Cost Attribution -->
+    <rect x="50" y="350" width="200" height="80" fill="#e8eaf6" stroke="#3f51b5" stroke-width="2" rx="8"></rect>
+    <text x="150" y="375" text-anchor="middle" font-size="12" font-weight="bold" fill="#1a237e">Cost Attribution</text>
+    <text x="150" y="395" text-anchor="middle" font-size="10" fill="#1a237e">• Service tagging</text>
+    <text x="150" y="410" text-anchor="middle" font-size="10" fill="#1a237e">• Team ownership</text>
+    <text x="150" y="425" text-anchor="middle" font-size="10" fill="#1a237e">• Project allocation</text>
+    
+    <!-- Alert Router -->
+    <rect x="280" y="350" width="180" height="80" fill="#ffebee" stroke="#d32f2f" stroke-width="2" rx="8"></rect>
+    <text x="370" y="375" text-anchor="middle" font-size="12" font-weight="bold" fill="#c62828">Alert Router</text>
+    <text x="370" y="395" text-anchor="middle" font-size="10" fill="#c62828">• PagerDuty integration</text>
+    <text x="370" y="410" text-anchor="middle" font-size="10" fill="#c62828">• Slack notifications</text>
+    <text x="370" y="425" text-anchor="middle" font-size="10" fill="#c62828">• Escalation policies</text>
+    
+    <!-- Budget Burn Charts -->
+    <rect x="490" y="350" width="180" height="80" fill="#e0f2f1" stroke="#00695c" stroke-width="2" rx="8"></rect>
+    <text x="580" y="375" text-anchor="middle" font-size="12" font-weight="bold" fill="#004d40">Budget Dashboards</text>
+    <text x="580" y="395" text-anchor="middle" font-size="10" fill="#004d40">• Burn rate charts</text>
+    <text x="580" y="410" text-anchor="middle" font-size="10" fill="#004d40">• Cost forecasting</text>
+    <text x="580" y="425" text-anchor="middle" font-size="10" fill="#004d40">• Efficiency trends</text>
+    
+    <!-- SLO Integration -->
+    <rect x="50" y="460" width="240" height="70" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2" rx="4"></rect>
+    <text x="170" y="485" text-anchor="middle" font-size="12" font-weight="bold" fill="#1b5e20">SLO Integration</text>
+    <text x="170" y="505" text-anchor="middle" font-size="10" fill="#1b5e20">Latency correlation • Error budget impact</text>
+    <text x="170" y="520" text-anchor="middle" font-size="10" fill="#1b5e20">Performance vs cost trade-offs</text>
+    
+    <!-- ChatOps & Remediation -->
+    <rect x="310" y="460" width="240" height="70" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2" rx="4"></rect>
+    <text x="430" y="485" text-anchor="middle" font-size="12" font-weight="bold" fill="#1b5e20">ChatOps Integration</text>
+    <text x="430" y="505" text-anchor="middle" font-size="10" fill="#1b5e20">Slack remediation • Cost recommendations</text>
+    <text x="430" y="520" text-anchor="middle" font-size="10" fill="#1b5e20">Automated resource optimization</text>
+    
+    <!-- Machine Learning Models -->
+    <rect x="50" y="560" width="620" height="50" fill="#e1f5fe" stroke="#0288d1" stroke-width="2" rx="8"></rect>
+    <text x="360" y="580" text-anchor="middle" font-size="14" font-weight="bold" fill="#01579b">ML Cost Forecasting &amp; Anomaly Models</text>
+    <text x="360" y="600" text-anchor="middle" font-size="10" fill="#01579b">Prophet time-series • Isolation Forest • LSTM autoencoders • Ensemble anomaly detection • Seasonal decomposition</text>
+    
+    <!-- Arrows -->
+    <defs>
+      <marker id="arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+        <polygon points="0 0, 10 3.5, 0 7" fill="#666"></polygon>
+      </marker>
+    </defs>
+    
+    <!-- Data ingestion -->
+    <line x1="300" y1="120" x2="300" y2="150" stroke="#666" stroke-width="3" marker-end="url(#arrow)"></line>
+    
+    <!-- Processing pipeline -->
+    <line x1="140" y1="210" x2="140" y2="240" stroke="#666" stroke-width="2" marker-end="url(#arrow)"></line>
+    <line x1="350" y1="210" x2="350" y2="240" stroke="#666" stroke-width="2" marker-end="url(#arrow)"></line>
+    <line x1="560" y1="210" x2="560" y2="240" stroke="#666" stroke-width="2" marker-end="url(#arrow)"></line>
+    
+    <!-- Attribution and alerting -->
+    <line x1="300" y1="320" x2="300" y2="350" stroke="#666" stroke-width="2" marker-end="url(#arrow)"></line>
+    
+    <!-- Integration flows -->
+    <line x1="230" y1="280" x2="260" y2="280" stroke="#666" stroke-width="2" marker-end="url(#arrow)"></line>
+    <line x1="440" y1="280" x2="470" y2="280" stroke="#666" stroke-width="2" marker-end="url(#arrow)"></line>
+    
+    <!-- Dashboard and SLO connections -->
+    <line x1="300" y1="430" x2="300" y2="460" stroke="#2e7d32" stroke-width="2" marker-end="url(#arrow)"></line>
+    
+    <!-- ML feedback -->
+    <line x1="360" y1="560" x2="350" y2="320" stroke="#0288d1" stroke-width="2" stroke-dasharray="5,5"></line>
+    
+    <!-- Labels -->
+    <text x="320" y="135" font-size="9" fill="#666">ingest</text>
+    <text x="245" y="275" font-size="9" fill="#666">normalize</text>
+    <text x="455" y="275" font-size="9" fill="#666">correlate</text>
+    <text x="320" y="445" font-size="9" fill="#2e7d32">integrate</text>
+    <text x="400" y="550" font-size="9" fill="#0288d1">learn</text>
+  </svg>

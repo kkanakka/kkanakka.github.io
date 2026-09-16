@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 820 460" xmlns="http://www.w3.org/2000/svg" style="max-width:800px;">
+      <defs>
+        <marker id="arrL" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#546e7a"></polygon>
+        </marker>
+        <filter id="shL" x="-3%" y="-3%" width="106%" height="110%">
+          <fedropshadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.06"></fedropshadow>
+        </filter>
+      </defs>
+
+      <!-- Data Sources -->
+      <rect x="20" y="10" width="200" height="55" rx="10" fill="#e3f2fd" stroke="#1565c0" stroke-width="1.5" filter="url(#shL)"></rect>
+      <text x="120" y="32" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#0d47a1">Espresso (Profiles)</text>
+      <text x="120" y="50" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#787774">Source of truth</text>
+
+      <rect x="240" y="10" width="160" height="55" rx="10" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1.5" filter="url(#shL)"></rect>
+      <text x="320" y="32" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#1b5e20">Connections DB</text>
+      <text x="320" y="50" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#787774">Espresso</text>
+
+      <rect x="420" y="10" width="160" height="55" rx="10" fill="#fff3e0" stroke="#e65100" stroke-width="1.5" filter="url(#shL)"></rect>
+      <text x="500" y="32" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#bf360c">Companies DB</text>
+      <text x="500" y="50" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#787774">Espresso</text>
+
+      <!-- Arrows to Kafka -->
+      <line x1="120" y1="65" x2="120" y2="90" stroke="#546e7a" stroke-width="1" marker-end="url(#arrL)"></line>
+      <line x1="320" y1="65" x2="320" y2="90" stroke="#546e7a" stroke-width="1" marker-end="url(#arrL)"></line>
+      <line x1="500" y1="65" x2="500" y2="90" stroke="#546e7a" stroke-width="1" marker-end="url(#arrL)"></line>
+
+      <!-- Kafka/Brooklin -->
+      <rect x="50" y="90" width="550" height="40" rx="8" fill="#fce4ec" stroke="#c62828" stroke-width="1.5"></rect>
+      <text x="325" y="115" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="12" fill="#c62828">Kafka / Brooklin (Change Data Capture streams)</text>
+
+      <line x1="325" y1="130" x2="325" y2="155" stroke="#546e7a" stroke-width="1.5" marker-end="url(#arrL)"></line>
+
+      <!-- Ingestion Server -->
+      <rect x="200" y="155" width="250" height="45" rx="10" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="2" filter="url(#shL)"></rect>
+      <text x="325" y="175" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#4a148c">Ingestion Server (Java gRPC)</text>
+      <text x="325" y="192" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#787774">Validate schema, produce to Schema Log + Data Log</text>
+
+      <line x1="325" y1="200" x2="325" y2="225" stroke="#546e7a" stroke-width="1.5" marker-end="url(#arrL)"></line>
+
+      <!-- Log Consumer -->
+      <rect x="220" y="225" width="210" height="35" rx="8" fill="#ede7f6" stroke="#6a1b9a" stroke-width="1"></rect>
+      <text x="325" y="247" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#4a148c">Log Consumer → writes to Core Shards</text>
+
+      <line x1="240" y1="260" x2="140" y2="290" stroke="#546e7a" stroke-width="1.2" marker-end="url(#arrL)"></line>
+      <line x1="325" y1="260" x2="325" y2="290" stroke="#546e7a" stroke-width="1.2" marker-end="url(#arrL)"></line>
+      <line x1="410" y1="260" x2="510" y2="290" stroke="#546e7a" stroke-width="1.2" marker-end="url(#arrL)"></line>
+
+      <!-- Shards (in-memory) -->
+      <rect x="60" y="290" width="160" height="70" rx="10" fill="#e1bee7" stroke="#6a1b9a" stroke-width="2" filter="url(#shL)"></rect>
+      <text x="140" y="312" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#4a148c">Shard 1 (C++)</text>
+      <text x="140" y="328" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#37352f">IN-MEMORY graph data</text>
+      <text x="140" y="344" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#787774">B-tree + Hash indices</text>
+
+      <rect x="245" y="290" width="160" height="70" rx="10" fill="#e1bee7" stroke="#6a1b9a" stroke-width="2" filter="url(#shL)"></rect>
+      <text x="325" y="312" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#4a148c">Shard 2 (C++)</text>
+      <text x="325" y="328" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#37352f">IN-MEMORY graph data</text>
+      <text x="325" y="344" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#787774">B-tree + Hash indices</text>
+
+      <rect x="430" y="290" width="160" height="70" rx="10" fill="#e1bee7" stroke="#6a1b9a" stroke-width="2" filter="url(#shL)"></rect>
+      <text x="510" y="312" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#4a148c">Shard N (C++)</text>
+      <text x="510" y="328" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#37352f">IN-MEMORY graph data</text>
+      <text x="510" y="344" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#787774">B-tree + Hash indices</text>
+
+      <!-- Broker -->
+      <rect x="640" y="170" width="160" height="190" rx="12" fill="#e8eaf6" stroke="#283593" stroke-width="2" filter="url(#shL)"></rect>
+      <text x="720" y="195" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#283593">Broker (C++)</text>
+      <text x="655" y="218" font-family="Inter,sans-serif" font-size="9" fill="#37352f">1. Parse Prologin</text>
+      <text x="655" y="234" font-family="Inter,sans-serif" font-size="9" fill="#37352f">2. Build AST</text>
+      <text x="655" y="250" font-family="Inter,sans-serif" font-size="9" fill="#37352f">3. Algebra tree</text>
+      <text x="655" y="266" font-family="Inter,sans-serif" font-size="9" fill="#37352f">4. Cost estimation</text>
+      <text x="655" y="282" font-family="Inter,sans-serif" font-size="9" fill="#37352f">5. Distribute to shards</text>
+      <text x="655" y="298" font-family="Inter,sans-serif" font-size="9" fill="#37352f">6. Aggregate results</text>
+      <text x="655" y="320" font-family="Inter,sans-serif" font-size="9" fill="#787774">MVCC: snapshot</text>
+      <text x="655" y="336" font-family="Inter,sans-serif" font-size="9" fill="#787774">consistency across shards</text>
+
+      <!-- Arrows Broker ↔ Shards -->
+      <line x1="640" y1="310" x2="590" y2="320" stroke="#283593" stroke-width="1.2" marker-end="url(#arrL)"></line>
+      <line x1="640" y1="320" x2="405" y2="330" stroke="#283593" stroke-width="1.2" marker-end="url(#arrL)"></line>
+      <line x1="640" y1="330" x2="220" y2="330" stroke="#283593" stroke-width="1.2" marker-end="url(#arrL)"></line>
+      <text x="550" y="345" font-family="Inter,sans-serif" font-size="8" fill="#283593">gRPC WorkUnits</text>
+
+      <!-- Client -->
+      <rect x="650" y="390" width="140" height="50" rx="10" fill="#e3f2fd" stroke="#1565c0" stroke-width="2" filter="url(#shL)"></rect>
+      <text x="720" y="412" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#0d47a1">Client (gRPC)</text>
+      <text x="720" y="430" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#787774">20+ LinkedIn services</text>
+
+      <line x1="720" y1="390" x2="720" y2="360" stroke="#1565c0" stroke-width="1.5" marker-end="url(#arrL)"></line>
+      <text x="730" y="378" font-family="Inter,sans-serif" font-size="8" fill="#1565c0">Prologin query</text>
+
+      <!-- NOT source of truth callout -->
+      <rect x="20" y="400" width="370" height="50" rx="8" fill="#fff3e0" stroke="#e65100" stroke-width="1.5"></rect>
+      <text x="205" y="420" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="11" fill="#e65100">Liquid is NOT a source of truth!</text>
+      <text x="205" y="438" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#37352f">In-memory only. "Kill-9 durability." Rebuilt from Kafka on restart.</text>
+    </svg>

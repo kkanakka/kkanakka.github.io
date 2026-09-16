@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 900 580" xmlns="http://www.w3.org/2000/svg">
+  <text x="20" y="22" font-size="12" font-weight="600">node root → three QoS slices → per-pod slice → per-container slice</text>
+
+  <!-- node root -->
+  <rect x="360" y="40" width="180" height="42" fill="#1f2328"></rect>
+  <text x="450" y="60" text-anchor="middle" font-family="ui-monospace,Menlo" font-size="11" fill="#ffffff" font-weight="600">/sys/fs/cgroup</text>
+  <text x="450" y="76" text-anchor="middle" font-size="9" fill="#d1d9e0" font-style="italic">node root</text>
+
+  <!-- three top-level slices -->
+  <line x1="450" y1="82" x2="130" y2="110" stroke="#6e7781"></line>
+  <line x1="450" y1="82" x2="450" y2="110" stroke="#6e7781"></line>
+  <line x1="450" y1="82" x2="770" y2="110" stroke="#6e7781"></line>
+
+  <rect x="40" y="110" width="180" height="42" fill="#f6f8fa" stroke="#6e7781"></rect>
+  <text x="130" y="130" text-anchor="middle" font-family="ui-monospace,Menlo" font-size="10" fill="#24292f">system.slice</text>
+  <text x="130" y="144" text-anchor="middle" font-size="9" fill="#59636e" font-style="italic">sshd, journald</text>
+
+  <rect x="360" y="110" width="180" height="42" fill="#0969da"></rect>
+  <text x="450" y="130" text-anchor="middle" font-family="ui-monospace,Menlo" font-size="10" fill="#ffffff" font-weight="600">kubepods.slice</text>
+  <text x="450" y="144" text-anchor="middle" font-size="9" fill="#cae8ff" font-style="italic">kubelet's domain</text>
+
+  <rect x="680" y="110" width="180" height="42" fill="#f6f8fa" stroke="#6e7781"></rect>
+  <text x="770" y="130" text-anchor="middle" font-family="ui-monospace,Menlo" font-size="10" fill="#24292f">user.slice</text>
+  <text x="770" y="144" text-anchor="middle" font-size="9" fill="#59636e" font-style="italic">interactive logins</text>
+
+  <!-- three QoS sub-slices -->
+  <line x1="450" y1="152" x2="170" y2="180" stroke="#0969da"></line>
+  <line x1="450" y1="152" x2="450" y2="180" stroke="#0969da"></line>
+  <line x1="450" y1="152" x2="730" y2="180" stroke="#0969da"></line>
+
+  <rect x="60" y="180" width="220" height="48" fill="#1a7f37"></rect>
+  <text x="170" y="200" text-anchor="middle" font-family="ui-monospace,Menlo" font-size="10" fill="#ffffff">(no sub-slice)</text>
+  <text x="170" y="216" text-anchor="middle" font-size="11" fill="#ffffff" font-weight="600">Guaranteed pods</text>
+  <text x="170" y="226" text-anchor="middle" font-size="9" fill="#aff5b4" font-style="italic">direct children of kubepods</text>
+
+  <rect x="340" y="180" width="220" height="48" fill="#9a6700"></rect>
+  <text x="450" y="200" text-anchor="middle" font-family="ui-monospace,Menlo" font-size="10" fill="#ffffff">kubepods-burstable.slice</text>
+  <text x="450" y="216" text-anchor="middle" font-size="11" fill="#ffffff" font-weight="600">Burstable pods</text>
+  <text x="450" y="226" text-anchor="middle" font-size="9" fill="#fff8c5" font-style="italic">share leftover capacity</text>
+
+  <rect x="620" y="180" width="220" height="48" fill="#d1242f"></rect>
+  <text x="730" y="200" text-anchor="middle" font-family="ui-monospace,Menlo" font-size="10" fill="#ffffff">kubepods-besteffort.slice</text>
+  <text x="730" y="216" text-anchor="middle" font-size="11" fill="#ffffff" font-weight="600">BestEffort pods</text>
+  <text x="730" y="226" text-anchor="middle" font-size="9" fill="#ffebe9" font-style="italic">whatever is left</text>
+
+  <!-- pod slices -->
+  <line x1="170" y1="228" x2="170" y2="260" stroke="#1a7f37"></line>
+  <line x1="450" y1="228" x2="370" y2="260" stroke="#9a6700"></line>
+  <line x1="450" y1="228" x2="530" y2="260" stroke="#9a6700"></line>
+  <line x1="730" y1="228" x2="730" y2="260" stroke="#d1242f"></line>
+
+  <rect x="60" y="260" width="220" height="80" fill="#dafbe1" stroke="#1a7f37"></rect>
+  <text x="170" y="278" text-anchor="middle" font-family="ui-monospace,Menlo" font-size="9" font-weight="600" fill="#1a7f37">pod-7f3a1b2c.slice</text>
+  <text x="76" y="293" font-family="ui-monospace,Menlo" font-size="9" fill="#1a7f37">cpu.weight = 256</text>
+  <text x="76" y="306" font-family="ui-monospace,Menlo" font-size="9" fill="#1a7f37">cpu.max = 200000 100000</text>
+  <text x="76" y="319" font-family="ui-monospace,Menlo" font-size="9" fill="#1a7f37">memory.max = 2147483648</text>
+  <text x="76" y="332" font-size="9" fill="#1a7f37" font-style="italic">req=lim=2c/2G · Guaranteed</text>
+
+  <rect x="290" y="260" width="160" height="80" fill="#fff8c5" stroke="#9a6700"></rect>
+  <text x="370" y="278" text-anchor="middle" font-family="ui-monospace,Menlo" font-size="9" font-weight="600" fill="#9a6700">pod-9c2e8a.slice</text>
+  <text x="298" y="293" font-family="ui-monospace,Menlo" font-size="9" fill="#9a6700">cpu.weight = 128</text>
+  <text x="298" y="306" font-family="ui-monospace,Menlo" font-size="9" fill="#9a6700">cpu.max = 400000 100000</text>
+  <text x="298" y="319" font-family="ui-monospace,Menlo" font-size="9" fill="#9a6700">memory.max = 4G</text>
+  <text x="298" y="332" font-size="9" fill="#9a6700" font-style="italic">req=1c/1G lim=4c/4G</text>
+
+  <rect x="460" y="260" width="160" height="80" fill="#fff8c5" stroke="#9a6700"></rect>
+  <text x="540" y="278" text-anchor="middle" font-family="ui-monospace,Menlo" font-size="9" font-weight="600" fill="#9a6700">pod-aa11bb.slice</text>
+  <text x="468" y="293" font-family="ui-monospace,Menlo" font-size="9" fill="#9a6700">cpu.weight = 64</text>
+  <text x="468" y="306" font-family="ui-monospace,Menlo" font-size="9" fill="#9a6700">cpu.max = 200000 100000</text>
+  <text x="468" y="319" font-family="ui-monospace,Menlo" font-size="9" fill="#9a6700">memory.max = 2G</text>
+  <text x="468" y="332" font-size="9" fill="#9a6700" font-style="italic">req=0.5c lim=2c</text>
+
+  <rect x="630" y="260" width="220" height="80" fill="#ffebe9" stroke="#d1242f"></rect>
+  <text x="740" y="278" text-anchor="middle" font-family="ui-monospace,Menlo" font-size="9" font-weight="600" fill="#d1242f">pod-cc33dd.slice</text>
+  <text x="646" y="293" font-family="ui-monospace,Menlo" font-size="9" fill="#d1242f">cpu.weight = 1</text>
+  <text x="646" y="306" font-family="ui-monospace,Menlo" font-size="9" fill="#d1242f">cpu.max = max</text>
+  <text x="646" y="319" font-family="ui-monospace,Menlo" font-size="9" fill="#d1242f">memory.max = max</text>
+  <text x="646" y="332" font-size="9" fill="#d1242f" font-style="italic">no requests, no limits</text>
+
+  <!-- container sub-cgroups (smaller) -->
+  <line x1="170" y1="340" x2="120" y2="370" stroke="#1a7f37"></line>
+  <line x1="170" y1="340" x2="220" y2="370" stroke="#1a7f37"></line>
+  <line x1="370" y1="340" x2="370" y2="370" stroke="#9a6700"></line>
+  <line x1="540" y1="340" x2="540" y2="370" stroke="#9a6700"></line>
+  <line x1="740" y1="340" x2="740" y2="370" stroke="#d1242f"></line>
+
+  <g font-family="ui-monospace,Menlo" font-size="8">
+    <rect x="60" y="370" width="110" height="40" fill="#aff5b4" stroke="#1a7f37"></rect>
+    <text x="115" y="384" text-anchor="middle" font-weight="600" fill="#1a7f37">cri-app</text>
+    <text x="115" y="396" text-anchor="middle" fill="#1a7f37">cpu.max=150ms</text>
+    <text x="115" y="406" text-anchor="middle" fill="#1a7f37">mem.max=1.5G</text>
+
+    <rect x="180" y="370" width="110" height="40" fill="#aff5b4" stroke="#1a7f37"></rect>
+    <text x="235" y="384" text-anchor="middle" font-weight="600" fill="#1a7f37">cri-sidecar</text>
+    <text x="235" y="396" text-anchor="middle" fill="#1a7f37">cpu.max=50ms</text>
+    <text x="235" y="406" text-anchor="middle" fill="#1a7f37">mem.max=512M</text>
+
+    <rect x="310" y="370" width="120" height="40" fill="#fff4a8" stroke="#9a6700"></rect>
+    <text x="370" y="384" text-anchor="middle" font-weight="600" fill="#9a6700">cri-redis</text>
+    <text x="370" y="396" text-anchor="middle" fill="#9a6700">cpu.max=400ms</text>
+    <text x="370" y="406" text-anchor="middle" fill="#9a6700">mem.max=4G</text>
+
+    <rect x="480" y="370" width="120" height="40" fill="#fff4a8" stroke="#9a6700"></rect>
+    <text x="540" y="384" text-anchor="middle" font-weight="600" fill="#9a6700">cri-worker</text>
+    <text x="540" y="396" text-anchor="middle" fill="#9a6700">cpu.max=200ms</text>
+    <text x="540" y="406" text-anchor="middle" fill="#9a6700">mem.max=2G</text>
+
+    <rect x="680" y="370" width="120" height="40" fill="#ffd8d4" stroke="#d1242f"></rect>
+    <text x="740" y="384" text-anchor="middle" font-weight="600" fill="#d1242f">cri-job</text>
+    <text x="740" y="396" text-anchor="middle" fill="#d1242f">cpu.max=max</text>
+    <text x="740" y="406" text-anchor="middle" fill="#d1242f">mem.max=max</text>
+  </g>
+
+  <!-- formulas footer -->
+  <rect x="40" y="440" width="820" height="120" fill="#f5faff" stroke="#0969da" rx="3"></rect>
+  <text x="56" y="460" font-size="11" font-weight="600" fill="#0969da">READING THIS TREE</text>
+  <text x="56" y="478" font-size="11" fill="#1f2328"><tspan font-weight="600">cpu.weight</tspan> = proportional share · kubelet derives from CPU request: <tspan font-family="ui-monospace,Menlo">weight = (request_millicores × 1024) / 1000</tspan>, floored at 1</text>
+  <text x="56" y="496" font-size="11" fill="#1f2328"><tspan font-weight="600">cpu.max</tspan> = "quota period" in µs · from CPU limit: <tspan font-family="ui-monospace,Menlo">quota = limit_millicores × 100, period = 100000</tspan></text>
+  <text x="56" y="514" font-size="11" fill="#1f2328"><tspan font-weight="600">memory.max</tspan> = hard cap in bytes · exceeding it triggers cgroup-OOM, killing the highest-scoring process in that cgroup</text>
+  <text x="56" y="532" font-size="11" fill="#1f2328">Pod-level slice caps the pod as a whole · container-level slice caps each container · </text></svg>

@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="100%" height="650" style="background:#fafafa;border:1px solid #ddd;border-radius:8px;margin:16px 0;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1119 650">
+    <!-- Production Incident Sources -->
+    <rect x="50" y="50" width="120" height="70" fill="#ffebee" stroke="#d32f2f" stroke-width="2" rx="4"></rect>
+    <text x="110" y="70" text-anchor="middle" font-size="11" font-weight="bold" fill="#c62828">Incident Logs</text>
+    <text x="110" y="85" text-anchor="middle" font-size="9" fill="#c62828">Application logs</text>
+    <text x="110" y="100" text-anchor="middle" font-size="9" fill="#c62828">System events</text>
+    <text x="110" y="115" text-anchor="middle" font-size="9" fill="#c62828">Error traces</text>
+    
+    <rect x="190" y="50" width="120" height="70" fill="#fff3e0" stroke="#f57c00" stroke-width="2" rx="4"></rect>
+    <text x="250" y="70" text-anchor="middle" font-size="11" font-weight="bold" fill="#e65100">Metrics Data</text>
+    <text x="250" y="85" text-anchor="middle" font-size="9" fill="#e65100">CPU, Memory</text>
+    <text x="250" y="100" text-anchor="middle" font-size="9" fill="#e65100">Latency, Errors</text>
+    <text x="250" y="115" text-anchor="middle" font-size="9" fill="#e65100">Custom SLIs</text>
+    
+    <rect x="330" y="50" width="120" height="70" fill="#e3f2fd" stroke="#1976d2" stroke-width="2" rx="4"></rect>
+    <text x="390" y="70" text-anchor="middle" font-size="11" font-weight="bold" fill="#0d47a1">Alert Timeline</text>
+    <text x="390" y="85" text-anchor="middle" font-size="9" fill="#0d47a1">PagerDuty alerts</text>
+    <text x="390" y="100" text-anchor="middle" font-size="9" fill="#0d47a1">Escalation flow</text>
+    <text x="390" y="115" text-anchor="middle" font-size="9" fill="#0d47a1">Resolution steps</text>
+    
+    <rect x="470" y="50" width="120" height="70" fill="#e0f2f1" stroke="#00695c" stroke-width="2" rx="4"></rect>
+    <text x="530" y="70" text-anchor="middle" font-size="11" font-weight="bold" fill="#004d40">Config Snapshots</text>
+    <text x="530" y="85" text-anchor="middle" font-size="9" fill="#004d40">System configs</text>
+    <text x="530" y="100" text-anchor="middle" font-size="9" fill="#004d40">Deployment state</text>
+    <text x="530" y="115" text-anchor="middle" font-size="9" fill="#004d40">Infrastructure</text>
+    
+    <!-- Incident Archive -->
+    <rect x="50" y="150" width="540" height="60" fill="#fce4ec" stroke="#e91e63" stroke-width="2" rx="8"></rect>
+    <text x="320" y="170" text-anchor="middle" font-size="14" font-weight="bold" fill="#ad1457">Incident Archive &amp; Data Lake</text>
+    <text x="320" y="190" text-anchor="middle" font-size="10" fill="#ad1457">Time-series alignment • PII sanitization • Incident correlation • Template generation</text>
+    <text x="320" y="205" text-anchor="middle" font-size="10" fill="#ad1457">5+ years of incident data • 10K+ archived scenarios • Cross-service impact analysis</text>
+    
+    <!-- Scenario Orchestrator -->
+    <rect x="50" y="240" width="180" height="80" fill="#f3e5f5" stroke="#7b1fa2" stroke-width="2" rx="8"></rect>
+    <text x="140" y="265" text-anchor="middle" font-size="12" font-weight="bold" fill="#4a148c">Scenario Orchestrator</text>
+    <text x="140" y="285" text-anchor="middle" font-size="10" fill="#4a148c">• Session configuration</text>
+    <text x="140" y="300" text-anchor="middle" font-size="10" fill="#4a148c">• Replay speed control</text>
+    <text x="140" y="315" text-anchor="middle" font-size="10" fill="#4a148c">• Chaos injection</text>
+    
+    <!-- Replay Engine -->
+    <rect x="260" y="240" width="180" height="80" fill="#e1f5fe" stroke="#0288d1" stroke-width="2" rx="8"></rect>
+    <text x="350" y="265" text-anchor="middle" font-size="12" font-weight="bold" fill="#01579b">Replay Engine</text>
+    <text x="350" y="285" text-anchor="middle" font-size="10" fill="#01579b">• Time-warped playback</text>
+    <text x="350" y="300" text-anchor="middle" font-size="10" fill="#01579b">• Metric stream replay</text>
+    <text x="350" y="315" text-anchor="middle" font-size="10" fill="#01579b">• Log injection</text>
+    
+    <!-- Synthetic Injectors -->
+    <rect x="470" y="240" width="180" height="80" fill="#fff8e1" stroke="#fbc02d" stroke-width="2" rx="8"></rect>
+    <text x="560" y="265" text-anchor="middle" font-size="12" font-weight="bold" fill="#f57c00">Synthetic Injectors</text>
+    <text x="560" y="285" text-anchor="middle" font-size="10" fill="#f57c00">• Failure injection</text>
+    <text x="560" y="300" text-anchor="middle" font-size="10" fill="#f57c00">• Load simulation</text>
+    <text x="560" y="315" text-anchor="middle" font-size="10" fill="#f57c00">• Chaos experiments</text>
+    
+    <!-- Sandbox Environments -->
+    <rect x="50" y="350" width="130" height="80" fill="#e8eaf6" stroke="#3f51b5" stroke-width="2" rx="4"></rect>
+    <text x="115" y="375" text-anchor="middle" font-size="11" font-weight="bold" fill="#1a237e">LTX1 Sandbox</text>
+    <text x="115" y="390" text-anchor="middle" font-size="9" fill="#1a237e">K8s cluster</text>
+    <text x="115" y="405" text-anchor="middle" font-size="9" fill="#1a237e">Team A training</text>
+    <text x="115" y="420" text-anchor="middle" font-size="9" fill="#1a237e">Network isolation</text>
+    
+    <rect x="200" y="350" width="130" height="80" fill="#e8eaf6" stroke="#3f51b5" stroke-width="2" rx="4"></rect>
+    <text x="265" y="375" text-anchor="middle" font-size="11" font-weight="bold" fill="#1a237e">LVA1 Sandbox</text>
+    <text x="265" y="390" text-anchor="middle" font-size="9" fill="#1a237e">VM cluster</text>
+    <text x="265" y="405" text-anchor="middle" font-size="9" fill="#1a237e">Team B testing</text>
+    <text x="265" y="420" text-anchor="middle" font-size="9" fill="#1a237e">Resource limits</text>
+    
+    <rect x="350" y="350" width="130" height="80" fill="#e8eaf6" stroke="#3f51b5" stroke-width="2" rx="4"></rect>
+    <text x="415" y="375" text-anchor="middle" font-size="11" font-weight="bold" fill="#1a237e">EI4 Sandbox</text>
+    <text x="415" y="390" text-anchor="middle" font-size="9" fill="#1a237e">Docker swarm</text>
+    <text x="415" y="405" text-anchor="middle" font-size="9" fill="#1a237e">Chaos testing</text>
+    <text x="415" y="420" text-anchor="middle" font-size="9" fill="#1a237e">Multi-service</text>
+    
+    <rect x="500" y="350" width="130" height="80" fill="#e8eaf6" stroke="#3f51b5" stroke-width="2" stroke-dasharray="5,5" rx="4"></rect>
+    <text x="565" y="375" text-anchor="middle" font-size="11" font-weight="bold" fill="#1a237e">Auto-Scale</text>
+    <text x="565" y="390" text-anchor="middle" font-size="9" fill="#1a237e">Dynamic</text>
+    <text x="565" y="405" text-anchor="middle" font-size="9" fill="#1a237e">On-demand</text>
+    <text x="565" y="420" text-anchor="middle" font-size="9" fill="#1a237e">Ephemeral</text>
+    
+    <!-- Training Dashboard -->
+    <rect x="50" y="460" width="200" height="80" fill="#e8f4f8" stroke="#0077b5" stroke-width="2" rx="8"></rect>
+    <text x="150" y="485" text-anchor="middle" font-size="12" font-weight="bold" fill="#01579b">Trainer Dashboard</text>
+    <text x="150" y="505" text-anchor="middle" font-size="10" fill="#01579b">• Real-time metrics</text>
+    <text x="150" y="520" text-anchor="middle" font-size="10" fill="#01579b">• Alert storm view</text>
+    <text x="150" y="535" text-anchor="middle" font-size="10" fill="#01579b">• Log stream replay</text>
+    
+    <!-- Scoring Engine -->
+    <rect x="280" y="460" width="180" height="80" fill="#fff8e1" stroke="#fbc02d" stroke-width="2" rx="8"></rect>
+    <text x="370" y="485" text-anchor="middle" font-size="12" font-weight="bold" fill="#f57c00">Scoring Engine</text>
+    <text x="370" y="505" text-anchor="middle" font-size="10" fill="#f57c00">• MTTD tracking</text>
+    <text x="370" y="520" text-anchor="middle" font-size="10" fill="#f57c00">• MTTR measurement</text>
+    <text x="370" y="535" text-anchor="middle" font-size="10" fill="#f57c00">• Action scoring</text>
+    
+    <!-- Self-Service Portal -->
+    <rect x="490" y="460" width="160" height="80" fill="#e0f2f1" stroke="#00695c" stroke-width="2" rx="8"></rect>
+    <text x="570" y="485" text-anchor="middle" font-size="12" font-weight="bold" fill="#004d40">Self-Service Portal</text>
+    <text x="570" y="505" text-anchor="middle" font-size="10" fill="#004d40">• Incident catalog</text>
+    <text x="570" y="520" text-anchor="middle" font-size="10" fill="#004d40">• Session launcher</text>
+    <text x="570" y="535" text-anchor="middle" font-size="10" fill="#004d40">• Progress tracking</text>
+    
+    <!-- Learning Analytics -->
+    <rect x="50" y="570" width="600" height="50" fill="#f3e5f5" stroke="#9c27b0" stroke-width="2" rx="8"></rect>
+    <text x="350" y="590" text-anchor="middle" font-size="14" font-weight="bold" fill="#6a1b9a">Learning Analytics &amp; Effectiveness Measurement</text>
+    <text x="350" y="610" text-anchor="middle" font-size="10" fill="#6a1b9a">Team skill progression • Incident pattern recognition • Knowledge retention analysis • Training ROI metrics</text>
+    
+    <!-- Arrows -->
+    <defs>
+      <marker id="arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+        <polygon points="0 0, 10 3.5, 0 7" fill="#666"></polygon>
+      </marker>
+    </defs>
+    
+    <!-- Data ingestion -->
+    <line x1="320" y1="120" x2="320" y2="150" stroke="#666" stroke-width="3" marker-end="url(#arrow)"></line>
+    
+    <!-- Orchestration flow -->
+    <line x1="140" y1="210" x2="140" y2="240" stroke="#666" stroke-width="2" marker-end="url(#arrow)"></line>
+    <line x1="350" y1="210" x2="350" y2="240" stroke="#666" stroke-width="2" marker-end="url(#arrow)"></line>
+    <line x1="560" y1="210" x2="560" y2="240" stroke="#666" stroke-width="2" marker-end="url(#arrow)"></line>
+    
+    <!-- Sandbox deployment -->
+    <line x1="320" y1="320" x2="320" y2="350" stroke="#3f51b5" stroke-width="2" marker-end="url(#arrow)"></line>
+    
+    <!-- Training interface -->
+    <line x1="320" y1="430" x2="320" y2="460" stroke="#0077b5" stroke-width="2" marker-end="url(#arrow)"></line>
+    
+    <!-- Analytics collection -->
+    <line x1="350" y1="540" x2="350" y2="570" stroke="#9c27b0" stroke-width="2" marker-end="url(#arrow)"></line>
+    
+    <!-- Cross-connections -->
+    <line x1="230" y1="280" x2="260" y2="280" stroke="#666" stroke-width="2" marker-end="url(#arrow)"></line>
+    <line x1="440" y1="280" x2="470" y2="280" stroke="#666" stroke-width="2" marker-end="url(#arrow)"></line>
+    
+    <!-- Labels -->
+    <text x="340" y="135" font-size="9" fill="#666">archive</text>
+    <text x="245" y="275" font-size="9" fill="#666">orchestrate</text>
+    <text x="455" y="275" font-size="9" fill="#666">inject</text>
+    <text x="340" y="345" font-size="9" fill="#3f51b5">sandbox</text>
+    <text x="340" y="455" font-size="9" fill="#0077b5">train</text>
+    <text x="370" y="565" font-size="9" fill="#9c27b0">analyze</text>
+  </svg>

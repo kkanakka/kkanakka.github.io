@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 800 320" xmlns="http://www.w3.org/2000/svg"><style>.sb{fill:var(--bg-subtle);stroke:var(--border);stroke-width:1}
+.sb-b{fill:#ddf4ff;stroke:var(--accent);stroke-width:1}
+.sb-g{fill:#dafbe1;stroke:var(--success);stroke-width:1}
+.sb-r{fill:#ffebe9;stroke:var(--danger);stroke-width:1}
+.sb-y{fill:#fff8e6;stroke:var(--attention);stroke-width:1}
+.sb-p{fill:#fbefff;stroke:var(--done);stroke-width:1}
+.sb-o{fill:#fff1e5;stroke:var(--orange);stroke-width:1}
+.ss{font-family:var(--mono);font-size:10px;fill:var(--fg-muted)}</style>
+      <line x1="80" y1="35" x2="80" y2="310" stroke="var(--border)" stroke-width="1"></line>
+      <line x1="280" y1="35" x2="280" y2="310" stroke="var(--border)" stroke-width="1"></line>
+      <line x1="480" y1="35" x2="480" y2="310" stroke="var(--border)" stroke-width="1"></line>
+      <line x1="680" y1="35" x2="680" y2="310" stroke="var(--border)" stroke-width="1"></line>
+      <rect class="sb" x="35" y="10" width="90" height="22" rx="3"></rect><text class="ss" x="80" y="24" text-anchor="middle">Client</text>
+      <rect class="sb-b" x="235" y="10" width="90" height="22" rx="3"></rect><text class="ss" x="280" y="24" text-anchor="middle">File Service</text>
+      <rect class="sb-y" x="435" y="10" width="90" height="22" rx="3"></rect><text class="ss" x="480" y="24" text-anchor="middle">Espresso</text>
+      <rect class="sb-g" x="635" y="10" width="90" height="22" rx="3"></rect><text class="ss" x="680" y="24" text-anchor="middle">Ambry</text>
+
+      <path d="M80,50 L280,50" stroke="var(--accent)" stroke-width="1.2" marker-end="url(#ab)"></path>
+      <text class="ss" x="180" y="45" text-anchor="middle">1. Check fingerprint</text>
+      <path d="M280,68 L480,68" stroke="var(--fg-muted)" stroke-width="1.2" marker-end="url(#a1)"></path>
+      <text class="ss" x="380" y="63" text-anchor="middle">2. SELECT WHERE fingerprint=...</text>
+      <path d="M480,82 L280,82" stroke="var(--fg-muted)" stroke-width="1.2" stroke-dasharray="3,2" marker-end="url(#ab)"></path>
+      <text class="ss" x="380" y="96" text-anchor="middle">not found</text>
+
+      <path d="M280,115 L680,115" stroke="var(--accent)" stroke-width="1.2" marker-end="url(#ab)"></path>
+      <text class="ss" x="480" y="110" text-anchor="middle">3. CreateMultipartUpload</text>
+      <path d="M680,130 L280,130" stroke="var(--fg-muted)" stroke-width="1.2" stroke-dasharray="3,2" marker-end="url(#ab)"></path>
+      <text class="ss" x="480" y="144" text-anchor="middle">uploadId + presigned URLs</text>
+
+      <path d="M280,158 L480,158" stroke="var(--fg-muted)" stroke-width="1.2" marker-end="url(#a1)"></path>
+      <text class="ss" x="380" y="153" text-anchor="middle">4. INSERT metadata (status=uploading)</text>
+
+      <path d="M280,185 L80,185" stroke="var(--accent)" stroke-width="1.2" stroke-dasharray="3,2" marker-end="url(#ab)"></path>
+      <text class="ss" x="180" y="180" text-anchor="middle">5. uploadId + presigned URLs</text>
+
+      <path d="M80,215 L680,215" stroke="var(--success)" stroke-width="1.5" marker-end="url(#a1)"></path>
+      <text class="ss" x="380" y="210" text-anchor="middle">6. PUT chunk N directly to Ambry (parallel)</text>
+
+      <path d="M80,245 L280,245" stroke="var(--accent)" stroke-width="1.2" marker-end="url(#ab)"></path>
+      <text class="ss" x="180" y="240" text-anchor="middle">7. PATCH /files/:id (chunk N done, ETag)</text>
+
+      <path d="M280,275 L680,275" stroke="var(--accent)" stroke-width="1.2" marker-end="url(#ab)"></path>
+      <text class="ss" x="480" y="270" text-anchor="middle">8. CompleteMultipartUpload</text>
+      <path d="M280,298 L480,298" stroke="var(--fg-muted)" stroke-width="1.2" marker-end="url(#a1)"></path>
+      <text class="ss" x="380" y="293" text-anchor="middle">9. UPDATE status=uploaded</text>
+    </svg>

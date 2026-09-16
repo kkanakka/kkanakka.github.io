@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 400" aria-labelledby="fig4-title">
+      <title id="fig4-title">fork in Java dangerous copy</title>
+      <defs>
+        <marker id="arr4" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#0969da"></path></marker>
+        <marker id="arr4r" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#d1242f"></path></marker>
+      </defs>
+      <!-- Parent -->
+      <rect x="20" y="30" width="240" height="300" rx="6" fill="#ddf4ff" stroke="#0969da" stroke-width="2"></rect>
+      <text x="140" y="55" text-anchor="middle" fill="#1f2328" font-size="14" font-weight="600">Parent Process (JVM)</text>
+      <rect x="40" y="70" width="200" height="50" rx="4" fill="#f5f0ff" stroke="#8250df" stroke-width="2"></rect>
+      <text x="140" y="100" text-anchor="middle" fill="#1f2328" font-size="12">4GB heap</text>
+      <g transform="translate(40,130)">
+        <rect x="0" y="0" width="44" height="22" fill="#fff8c5" stroke="#9a6700" stroke-width="1"></rect><rect x="48" y="0" width="44" height="22" fill="#fff8c5" stroke="#9a6700" stroke-width="1"></rect><rect x="96" y="0" width="44" height="22" fill="#fff8c5" stroke="#9a6700" stroke-width="1"></rect><rect x="144" y="0" width="44" height="22" fill="#fff8c5" stroke="#9a6700" stroke-width="1"></rect>
+        <rect x="0" y="26" width="44" height="22" fill="#fff8c5" stroke="#9a6700" stroke-width="1"></rect><rect x="48" y="26" width="44" height="22" fill="#fff8c5" stroke="#9a6700" stroke-width="1"></rect><rect x="96" y="26" width="44" height="22" fill="#fff8c5" stroke="#9a6700" stroke-width="1"></rect><rect x="144" y="26" width="44" height="22" fill="#fff8c5" stroke="#9a6700" stroke-width="1"></rect>
+        <rect x="0" y="52" width="44" height="22" fill="#fff8c5" stroke="#9a6700" stroke-width="1"></rect><rect x="48" y="52" width="44" height="22" fill="#fff8c5" stroke="#9a6700" stroke-width="1"></rect><rect x="96" y="52" width="44" height="22" fill="#fff8c5" stroke="#9a6700" stroke-width="1"></rect><rect x="144" y="52" width="44" height="22" fill="#fff8c5" stroke="#9a6700" stroke-width="1"></rect>
+        <rect x="72" y="82" width="76" height="22" fill="#fff8c5" stroke="#9a6700" stroke-width="1"></rect><text x="110" y="97" text-anchor="middle" fill="#59636e" font-size="10">200 threads</text>
+      </g>
+      <rect x="40" y="230" width="200" height="40" rx="4" fill="#ffebe9" stroke="#d1242f" stroke-width="2"></rect>
+      <text x="140" y="255" text-anchor="middle" fill="#1f2328" font-size="12">Netty buffers</text>
+      <text x="140" y="310" text-anchor="middle" fill="#59636e" font-size="11">Thread 42 calls <tspan font-family="monospace">Runtime.exec()</tspan></text>
+
+      <!-- Arrow fork -->
+      <line x1="280" y1="180" x2="360" y2="180" stroke="#0969da" stroke-width="3" marker-end="url(#arr4)"></line>
+      <text x="320" y="170" text-anchor="middle" fill="#0969da" font-size="18" font-weight="700">fork()</text>
+
+      <!-- Child -->
+      <rect x="380" y="30" width="500" height="300" rx="6" fill="#ffebe9" stroke="#d1242f" stroke-width="2" stroke-dasharray="8 4"></rect>
+      <text x="630" y="55" text-anchor="middle" fill="#1f2328" font-size="14" font-weight="600">Child Process</text>
+      <rect x="400" y="70" width="200" height="50" rx="4" fill="#f5f0ff" stroke="#8250df" stroke-width="2" stroke-dasharray="6 3"></rect>
+      <text x="500" y="100" text-anchor="middle" fill="#1f2328" font-size="12">Copy of 4GB heap</text>
+      <text x="500" y="115" text-anchor="middle" fill="#59636e" font-size="10">COW — not actually copied yet</text>
+      <rect x="400" y="130" width="90" height="36" rx="4" fill="#fff8c5" stroke="#9a6700" stroke-width="2"></rect>
+      <text x="445" y="152" text-anchor="middle" fill="#1f2328" font-size="11">Thread 42 only!</text>
+      <text x="520" y="150" fill="#d1242f" font-size="12" font-weight="600">199 threads vanished</text>
+      <text x="520" y="172" fill="#1f2328" font-size="11">Mutexes they held → permanently locked!</text>
+      <line x1="500" y1="200" x2="500" y2="238" stroke="#d1242f" stroke-width="2" marker-end="url(#arr4r)"></line>
+      <rect x="415" y="245" width="170" height="55" rx="4" fill="#f6f8fa" stroke="#d1242f" stroke-width="2"></rect>
+      <text x="500" y="268" text-anchor="middle" fill="#1f2328" font-size="14" font-weight="600">exec()</text>
+      <text x="500" y="288" text-anchor="middle" fill="#59636e" font-size="11">Replaces entire address space</text>
+    </svg>

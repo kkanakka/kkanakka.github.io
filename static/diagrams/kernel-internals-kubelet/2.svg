@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 900 380" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arrz" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0969da"></path>
+    </marker>
+  </defs>
+
+  <text x="20" y="22" font-size="12" font-weight="600">Class is the lane · nice positions a task within SCHED_NORMAL only</text>
+
+  <!-- LEFT: class ladder -->
+  <text x="40" y="50" font-size="11" font-weight="500" fill="#59636e">CLASS LADDER · top wins absolutely</text>
+
+  <rect x="40" y="60" width="340" height="56" fill="#ffebe9" stroke="#d1242f"></rect>
+  <text x="56" y="84" font-size="12" font-weight="600" fill="#d1242f">SCHED_DEADLINE</text>
+  <text x="364" y="84" text-anchor="end" font-size="11" fill="#59636e">runtime / deadline / period</text>
+  <text x="56" y="103" font-size="10" fill="#59636e">"finish by this deadline" · admission-controlled</text>
+
+  <rect x="40" y="120" width="340" height="56" fill="#fff8c5" stroke="#9a6700"></rect>
+  <text x="56" y="144" font-size="12" font-weight="600" fill="#9a6700">SCHED_FIFO · SCHED_RR</text>
+  <text x="364" y="144" text-anchor="end" font-size="11" fill="#59636e">rt_priority 1–99</text>
+  <text x="56" y="163" font-size="10" fill="#59636e">audio engines · IRQ threads · higher prio always wins</text>
+
+  <rect x="40" y="180" width="340" height="56" fill="#ddf4ff" stroke="#0969da" stroke-width="2"></rect>
+  <text x="56" y="204" font-size="12" font-weight="600" fill="#0969da">SCHED_NORMAL · SCHED_BATCH</text>
+  <text x="364" y="204" text-anchor="end" font-size="11" fill="#0969da">nice −20 … +19</text>
+  <text x="56" y="223" font-size="10" fill="#59636e">CFS / EEVDF · everything you've ever launched</text>
+
+  <rect x="40" y="240" width="340" height="56" fill="#eaeef2" stroke="#6e7781"></rect>
+  <text x="56" y="264" font-size="12" font-weight="600" fill="#6e7781">SCHED_IDLE</text>
+  <text x="364" y="264" text-anchor="end" font-size="11" fill="#59636e">leftover CPU only</text>
+  <text x="56" y="283" font-size="10" fill="#59636e">runs only when nothing else wants the CPU</text>
+
+  <!-- arrow from NORMAL bar to zoom panel -->
+  <path d="M 380 208 L 460 208" stroke="#0969da" stroke-width="2" fill="none" marker-end="url(#arrz)"></path>
+  <text x="420" y="200" text-anchor="middle" font-size="10" fill="#0969da">zoom</text>
+
+  <!-- RIGHT: nice zoom -->
+  <text x="490" y="50" font-size="11" font-weight="500" fill="#0969da">SCHED_NORMAL · nice → CFS weight</text>
+
+  <!-- baseline -->
+  <line x1="490" y1="296" x2="880" y2="296" stroke="#0969da" stroke-width="1"></line>
+
+  <!-- nice=-20 weight 88761 -->
+  <rect x="500" y="82" width="60" height="214" fill="#0969da"></rect>
+  <text x="530" y="312" text-anchor="middle" font-size="11" fill="#1f2328" font-weight="500">−20</text>
+  <text x="530" y="76" text-anchor="middle" font-size="9" fill="#59636e">88761</text>
+
+  <!-- nice=-10 weight 9548 -->
+  <rect x="575" y="172" width="60" height="124" fill="#0969da" fill-opacity="0.7"></rect>
+  <text x="605" y="312" text-anchor="middle" font-size="11" fill="#1f2328" font-weight="500">−10</text>
+  <text x="605" y="166" text-anchor="middle" font-size="9" fill="#59636e">9548</text>
+
+  <!-- nice=0 weight 1024 -->
+  <rect x="650" y="225" width="60" height="71" fill="#0969da" fill-opacity="0.55"></rect>
+  <text x="680" y="312" text-anchor="middle" font-size="11" fill="#1f2328" font-weight="600">0</text>
+  <text x="680" y="219" text-anchor="middle" font-size="9" fill="#59636e">1024</text>
+  <text x="680" y="328" text-anchor="middle" font-size="9" fill="#0969da">default</text>
+
+  <!-- nice=+10 weight 110 -->
+  <rect x="725" y="266" width="60" height="30" fill="#0969da" fill-opacity="0.4"></rect>
+  <text x="755" y="312" text-anchor="middle" font-size="11" fill="#1f2328" font-weight="500">+10</text>
+  <text x="755" y="260" text-anchor="middle" font-size="9" fill="#59636e">110</text>
+
+  <!-- nice=+19 weight 15 -->
+  <rect x="800" y="288" width="60" height="8" fill="#0969da" fill-opacity="0.3"></rect>
+  <text x="830" y="312" text-anchor="middle" font-size="11" fill="#1f2328" font-weight="500">+19</text>
+  <text x="830" y="282" text-anchor="middle" font-size="9" fill="#59636e">15</text>
+
+  <!-- legend -->
+  <text x="685" y="352" text-anchor="middle" font-size="10" fill="#59636e">more weight ← CFS share → less weight</text>
+  <text x="685" y="367" text-anchor="middle" font-size="10" fill="#59636e">nice differs by 1 → ≈ 10% CPU difference at contention</text>
+</svg>

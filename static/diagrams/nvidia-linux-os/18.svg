@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 800 180" xmlns="http://www.w3.org/2000/svg" style="max-width:800px;width:100%;">
+        <text x="400" y="18" text-anchor="middle" fill="#202122" font-size="13" font-weight="700">/proc/buddyinfo: Free pages at each order (2^order * 4KB)</text>
+        <!-- Orders -->
+        <rect x="20" y="30" width="70" height="120" rx="4" fill="#f8f9fa" stroke="#222"></rect>
+        <text x="55" y="48" text-anchor="middle" fill="#222" font-size="11" font-weight="700">Order 0</text>
+        <text x="55" y="65" text-anchor="middle" fill="#54595d" font-size="11">4 KB</text>
+        <rect x="30" y="75" width="50" height="65" rx="2" fill="#222" opacity="0.3"></rect>
+        <text x="55" y="118" text-anchor="middle" fill="#202122" font-size="11">5240</text>
+        <rect x="100" y="30" width="70" height="120" rx="4" fill="#f8f9fa" stroke="#222"></rect>
+        <text x="135" y="48" text-anchor="middle" fill="#222" font-size="11" font-weight="700">Order 1</text>
+        <text x="135" y="65" text-anchor="middle" fill="#54595d" font-size="11">8 KB</text>
+        <rect x="110" y="85" width="50" height="55" rx="2" fill="#222" opacity="0.3"></rect>
+        <text x="135" y="118" text-anchor="middle" fill="#202122" font-size="11">3120</text>
+        <!-- ... higher orders shrink -->
+        <rect x="180" y="30" width="70" height="120" rx="4" fill="#f8f9fa" stroke="#202122"></rect>
+        <text x="215" y="48" text-anchor="middle" fill="#202122" font-size="11" font-weight="700">Order 4</text>
+        <text x="215" y="65" text-anchor="middle" fill="#54595d" font-size="11">64 KB</text>
+        <rect x="190" y="105" width="50" height="35" rx="2" fill="#202122" opacity="0.3"></rect>
+        <text x="215" y="118" text-anchor="middle" fill="#202122" font-size="11">412</text>
+        <rect x="260" y="30" width="70" height="120" rx="4" fill="#f8f9fa" stroke="#202122"></rect>
+        <text x="295" y="48" text-anchor="middle" fill="#202122" font-size="11" font-weight="700">Order 7</text>
+        <text x="295" y="65" text-anchor="middle" fill="#54595d" font-size="11">512 KB</text>
+        <rect x="270" y="115" width="50" height="25" rx="2" fill="#202122" opacity="0.3"></rect>
+        <text x="295" y="128" text-anchor="middle" fill="#202122" font-size="11">28</text>
+        <rect x="340" y="30" width="70" height="120" rx="4" fill="#f8f9fa" stroke="#202122"></rect>
+        <text x="375" y="48" text-anchor="middle" fill="#202122" font-size="11" font-weight="700">Order 9</text>
+        <text x="375" y="65" text-anchor="middle" fill="#54595d" font-size="11">2 MB</text>
+        <rect x="350" y="130" width="50" height="10" rx="2" fill="#202122" opacity="0.3"></rect>
+        <text x="375" y="140" text-anchor="middle" fill="#202122" font-size="11">2</text>
+        <rect x="420" y="30" width="70" height="120" rx="4" fill="#f8f9fa" stroke="#202122"></rect>
+        <text x="455" y="48" text-anchor="middle" fill="#202122" font-size="11" font-weight="700">Order 10</text>
+        <text x="455" y="65" text-anchor="middle" fill="#54595d" font-size="11">4 MB</text>
+        <rect x="430" y="138" width="50" height="2" rx="1" fill="#202122" opacity="0.3"></rect>
+        <text x="455" y="140" text-anchor="middle" fill="#202122" font-size="11">0</text>
+        <!-- Arrow showing problem -->
+        <rect x="520" y="30" width="260" height="120" rx="8" fill="#f8f9fa" stroke="#202122"></rect>
+        <text x="650" y="52" text-anchor="middle" fill="#202122" font-size="12" font-weight="700">Fragmentation Problem</text>
+        <text x="650" y="72" text-anchor="middle" fill="#54595d" font-size="11">Lots of free 4KB pages</text>
+        <text x="650" y="86" text-anchor="middle" fill="#54595d" font-size="11">but NO free 2MB/4MB blocks</text>
+        <text x="650" y="100" text-anchor="middle" fill="#54595d" font-size="11">Huge page allocation FAILS</text>
+        <text x="650" y="120" text-anchor="middle" fill="#202122" font-size="11" font-weight="600">Fix: compact or reserve at boot</text>
+    </svg>

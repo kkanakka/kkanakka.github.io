@@ -1,0 +1,9 @@
+{
+  "label": "LinkedIn Production Systems",
+  "position": 8,
+  "link": {
+    "type": "generated-index",
+    "slug": "/linkedin",
+    "description": "Deep dives into real LinkedIn infrastructure: feature flags, secrets, DR, build cache, Espresso."
+  }
+}

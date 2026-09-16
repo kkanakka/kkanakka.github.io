@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 900 460" width="900" height="460" role="img" aria-labelledby="fig16-io" xmlns="http://www.w3.org/2000/svg">
+    <title>Figure 16: Block I/O stack with observability tooling</title>
+    <rect x="0" y="0" width="900" height="460" fill="#ffffff"></rect>
+    <line x1="420" y1="20" x2="420" y2="430" stroke="#d1d9e0" stroke-width="1" stroke-dasharray="4 3"></line>
+    <text x="40" y="42" fill="#59636e" font-size="14" font-weight="700">Stack layer</text>
+    <text x="440" y="42" fill="#59636e" font-size="14" font-weight="700">Tools / probes</text>
+    <!-- Rows -->
+    <rect x="30" y="55" width="360" height="38" rx="6" ry="6" fill="#dafbe1" stroke="#1a7f37" stroke-width="1.5"></rect><text x="45" y="78" fill="#1f2328" font-size="14">Application</text>
+    <text x="435" y="78" fill="#1f2328" font-size="13">Application profilers · user-level traces</text>
+    <rect x="30" y="100" width="360" height="38" rx="6" ry="6" fill="#ddf4ff" stroke="#0969da"></rect><text x="45" y="123" fill="#1f2328" font-size="14">syscall boundary</text>
+    <text x="435" y="123" fill="#1f2328" font-size="13">strace -f -tt -y</text>
+    <rect x="30" y="145" width="360" height="38" rx="6" ry="6" fill="#ddf4ff" stroke="#0969da"></rect><text x="45" y="168" fill="#1f2328" font-size="14">VFS</text>
+    <text x="435" y="168" fill="#1f2328" font-size="13">bpftrace VFS probes · ftrace -e vfs_*</text>
+    <rect x="30" y="190" width="360" height="38" rx="6" ry="6" fill="#ddf4ff" stroke="#0969da"></rect><text x="45" y="213" fill="#1f2328" font-size="14">Filesystem</text>
+    <text x="435" y="213" fill="#1f2328" font-size="13">xfs_io · xfs_metadump · ext4/debugfs knobs</text>
+    <rect x="30" y="235" width="360" height="38" rx="6" ry="6" fill="#fff8c5" stroke="#9a6700"></rect><text x="45" y="258" fill="#1f2328" font-size="14">Page cache</text>
+    <text x="435" y="258" fill="#1f2328" font-size="13">cachestat (BPF) · perf stat page faults · drop_caches sparingly</text>
+    <rect x="30" y="280" width="360" height="38" rx="6" ry="6" fill="#fff8c5" stroke="#9a6700"></rect><text x="45" y="303" fill="#1f2328" font-size="14">Block layer</text>
+    <text x="435" y="303" fill="#1f2328" font-size="13">iostat · biolatency · biosnoop · blktrace</text>
+    <rect x="30" y="325" width="360" height="38" rx="6" ry="6" fill="#ffebe9" stroke="#d1242f"></rect><text x="45" y="348" fill="#1f2328" font-size="14">I/O scheduler / queue</text>
+    <text x="435" y="348" fill="#1f2328" font-size="13">blk-mq stats · nr_requests · wbt lat · queue depth</text>
+    <rect x="30" y="370" width="360" height="38" rx="6" ry="6" fill="#ffebe9" stroke="#d1242f"></rect><text x="45" y="393" fill="#1f2328" font-size="14">Driver</text>
+    <text x="435" y="393" fill="#1f2328" font-size="13">nvme error-log · dmesg · driver tracepoints</text>
+    <rect x="30" y="415" width="360" height="38" rx="6" ry="6" fill="#f6f8fa" stroke="#8250df" stroke-width="1.5"></rect><text x="45" y="438" fill="#1f2328" font-size="14">Device (NVMe/SAS/virtio)</text>
+    <text x="435" y="438" fill="#1f2328" font-size="13">nvme smart-log · smartctl -a /dev/sdX</text>
+  </svg>

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 800 280" xmlns="http://www.w3.org/2000/svg"><style>.sb-b{fill:#ddf4ff;stroke:var(--accent);stroke-width:1}
+.sb-g{fill:#dafbe1;stroke:var(--success);stroke-width:1}
+.sb-r{fill:#ffebe9;stroke:var(--danger);stroke-width:1}
+.sb-y{fill:#fff8e6;stroke:var(--attention);stroke-width:1}
+.sb-p{fill:#fbefff;stroke:var(--done);stroke-width:1}
+.sl{font-family:var(--sans);font-size:12px;font-weight:600;fill:var(--fg)}
+.ss{font-family:var(--mono);font-size:10px;fill:var(--fg-muted)}
+.sn{font-family:var(--mono);font-weight:700;font-size:11px;fill:var(--accent)}
+.sa{stroke:var(--fg-muted);stroke-width:1.2;fill:none}
+.sa-b{stroke:var(--accent);stroke-width:1.5;fill:none}
+.sa-g{stroke:var(--success);stroke-width:1.5;fill:none}
+.sa-r{stroke:var(--danger);stroke-width:1.5;fill:none}
+.sa-p{stroke:var(--done);stroke-width:1.5;fill:none}</style>
+      <defs><marker id="ag" markerWidth="8" markerHeight="8" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#1a7f37"></path></marker></defs>
+      <rect class="sb-b" x="20" y="20" width="170" height="70" rx="6"></rect>
+      <text class="sl" x="105" y="42" text-anchor="middle">10M users hit</text>
+      <text class="sl" x="105" y="56" text-anchor="middle">“buy tickets”</text>
+      <text class="ss" x="105" y="76" text-anchor="middle">10:00 AM on-sale</text>
+
+      <rect class="sb-y" x="230" y="20" width="300" height="70" rx="6"></rect>
+      <text class="sl" x="380" y="42" text-anchor="middle">Virtual Waiting Room</text>
+      <text class="ss" x="380" y="56" text-anchor="middle">Couchbase Sorted Doc keyed by event:42:queue</text>
+      <text class="ss" x="380" y="70" text-anchor="middle">score = join_timestamp · fair ordering</text>
+
+      <rect class="sb-g" x="570" y="20" width="200" height="70" rx="6"></rect>
+      <text class="sl" x="670" y="42" text-anchor="middle">Booking Service</text>
+      <text class="ss" x="670" y="56" text-anchor="middle">handles N users/sec</text>
+      <text class="ss" x="670" y="70" text-anchor="middle">at sustainable load</text>
+
+      <path class="sa-b" d="M190,55 L228,55" marker-end="url(#ab)"></path><text class="sn" x="209" y="48">1</text>
+      <path class="sa-g" d="M530,55 L568,55" marker-end="url(#ag)"></path><text class="sn" x="549" y="48">3</text>
+
+      <rect class="sb-p" x="230" y="120" width="300" height="50" rx="6"></rect>
+      <text class="sl" x="380" y="140" text-anchor="middle">SSE / WebSocket per waiting user</text>
+      <text class="ss" x="380" y="156" text-anchor="middle">push position: “you are #4,231 in line”</text>
+      <path class="sa-p" d="M380,90 L380,118" marker-end="url(#a1)"></path><text class="sn" x="390" y="108">2</text>
+
+      <rect class="sb-r" x="230" y="195" width="300" height="45" rx="6"></rect>
+      <text class="sl" x="380" y="215" text-anchor="middle">admitted:42 Couchbase Set</text>
+      <text class="ss" x="380" y="230" text-anchor="middle">Booking Service rejects requests not in this set</text>
+      <path class="sa" d="M380,170 L380,193" marker-end="url(#a1)"></path><text class="sn" x="390" y="185">4</text>
+
+      <text class="ss" x="400" y="265" text-anchor="middle">Dequeue rate matches Booking Service capacity (e.g. 5K users/min)</text>
+    </svg>

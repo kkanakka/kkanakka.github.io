@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 820 340" xmlns="http://www.w3.org/2000/svg" style="max-width:800px;">
+      <defs><marker id="a2" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#546e7a"></polygon></marker>
+      <filter id="sh2" x="-3%" y="-3%" width="106%" height="110%"><fedropshadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.06"></fedropshadow></filter></defs>
+
+      <!-- DC 1: Primary -->
+      <rect x="20" y="30" width="350" height="250" rx="12" fill="#e3f2fd" stroke="#1565c0" stroke-width="2" filter="url(#sh2)"></rect>
+      <text x="195" y="55" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="14" fill="#0d47a1">DC-1 (US West) — PRIMARY</text>
+
+      <rect x="40" y="70" width="130" height="40" rx="8" fill="#c8e6c9" stroke="#2e7d32" stroke-width="2"></rect>
+      <text x="105" y="95" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="11" fill="#2e7d32">LEADER</text>
+
+      <rect x="200" y="70" width="70" height="40" rx="8" fill="#bbdefb" stroke="#1565c0" stroke-width="1"></rect>
+      <text x="235" y="95" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#0d47a1">Follower</text>
+
+      <rect x="290" y="70" width="70" height="40" rx="8" fill="#bbdefb" stroke="#1565c0" stroke-width="1"></rect>
+      <text x="325" y="95" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#0d47a1">Follower</text>
+
+      <!-- User writes -->
+      <rect x="40" y="130" width="310" height="30" rx="6" fill="#c8e6c9"></rect>
+      <text x="195" y="150" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#1b5e20">User writes here: UPDATE profile SET headline='CEO' → ~3ms</text>
+
+      <rect x="40" y="175" width="310" height="80" rx="8" fill="#fff" stroke="#90caf9" stroke-width="1"></rect>
+      <text x="55" y="195" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Cache (Couchbase/Memcache)</text>
+      <text x="55" y="213" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Search (Galene)</text>
+      <text x="55" y="231" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Analytics (Pinot)</text>
+      <text x="55" y="249" font-family="Inter,sans-serif" font-size="10" fill="#787774">All derived stores, updated via Kafka</text>
+
+      <!-- DC 2: Read Replica -->
+      <rect x="450" y="30" width="350" height="250" rx="12" fill="#fff3e0" stroke="#e65100" stroke-width="2" filter="url(#sh2)"></rect>
+      <text x="625" y="55" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="14" fill="#e65100">DC-2 (Europe) — READ REPLICA</text>
+
+      <rect x="470" y="70" width="130" height="40" rx="8" fill="#ffcc80" stroke="#e65100" stroke-width="1"></rect>
+      <text x="535" y="90" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#e65100">Follower</text>
+      <text x="535" y="103" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" fill="#787774">(read-only)</text>
+
+      <rect x="470" y="130" width="310" height="30" rx="6" fill="#ffcc80"></rect>
+      <text x="625" y="150" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#e65100">European user reads here: GET profile → fast, local</text>
+
+      <rect x="470" y="175" width="310" height="55" rx="8" fill="#fff" stroke="#ffcc80" stroke-width="1"></rect>
+      <text x="485" y="195" font-family="Inter,sans-serif" font-size="10" fill="#37352f">European user WRITES → routed to DC-1 Leader</text>
+      <text x="485" y="213" font-family="Inter,sans-serif" font-size="10" fill="#c62828">Cross-ocean latency: ~150ms (speed of light)</text>
+      <text x="485" y="224" font-family="Inter,sans-serif" font-size="9" fill="#787774">This is the price of single-leader consistency</text>
+
+      <!-- Async replication arrow -->
+      <line x1="370" y1="90" x2="470" y2="90" stroke="#e65100" stroke-width="2" stroke-dasharray="6,3" marker-end="url(#a2)"></line>
+      <text x="420" y="82" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#e65100">async</text>
+      <text x="420" y="105" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" fill="#787774">Kafka CDC</text>
+      <text x="420" y="117" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" fill="#787774">~50-200ms lag</text>
+
+      <!-- Bottom: who uses this -->
+      <rect x="20" y="295" width="780" height="35" rx="8" fill="#f7f6f3" stroke="#e3e2de" stroke-width="1"></rect>
+      <text x="410" y="318" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#37352f">Used by: <tspan font-weight="700">LinkedIn</tspan> (Espresso), <tspan font-weight="700">Facebook</tspan> (TAO), <tspan font-weight="700">Gmail</tspan> (Bigtable), <tspan font-weight="700">Twitter</tspan> (Manhattan), <tspan font-weight="700">WhatsApp</tspan> — all single-leader per user/shard</text>
+    </svg>

@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 820 480" xmlns="http://www.w3.org/2000/svg" style="max-width:800px;">
+      <defs>
+        <marker id="arrE" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#546e7a"></polygon>
+        </marker>
+        <filter id="shE" x="-3%" y="-3%" width="106%" height="110%">
+          <fedropshadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.06"></fedropshadow>
+        </filter>
+      </defs>
+
+      <!-- Client -->
+      <rect x="300" y="10" width="220" height="50" rx="10" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2" filter="url(#shE)"></rect>
+      <text x="410" y="32" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#1b5e20">Client (espresso-pub SDK)</text>
+      <text x="410" y="48" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#787774">Builder pattern, R2/D2 transport, schema-aware</text>
+
+      <line x1="410" y1="60" x2="410" y2="85" stroke="#546e7a" stroke-width="1.5" marker-end="url(#arrE)"></line>
+
+      <!-- Router -->
+      <rect x="200" y="85" width="420" height="90" rx="12" fill="#e3f2fd" stroke="#1565c0" stroke-width="2" filter="url(#shE)"></rect>
+      <text x="410" y="108" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="14" fill="#0d47a1">Espresso Router (Stateless, Netty)</text>
+      <text x="220" y="128" font-family="Inter,sans-serif" font-size="9" fill="#37352f">1. Parse path: /db/table/key</text>
+      <text x="220" y="142" font-family="Inter,sans-serif" font-size="9" fill="#37352f">2. FNV hash key → partition ID</text>
+      <text x="220" y="156" font-family="Inter,sans-serif" font-size="9" fill="#37352f">3. Helix lookup: partition → host</text>
+      <text x="430" y="128" font-family="Inter,sans-serif" font-size="9" fill="#37352f">4. ACL check &amp; auth</text>
+      <text x="430" y="142" font-family="Inter,sans-serif" font-size="9" fill="#37352f">5. Check L1/L2 cache</text>
+      <text x="430" y="156" font-family="Inter,sans-serif" font-size="9" fill="#37352f">6. Forward to storage node</text>
+
+      <!-- Cache -->
+      <rect x="660" y="95" width="140" height="70" rx="8" fill="#fff3e0" stroke="#e65100" stroke-width="1.5"></rect>
+      <text x="730" y="118" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#bf360c">Cache (2-tier)</text>
+      <text x="675" y="135" font-family="Inter,sans-serif" font-size="9" fill="#37352f">L1: OHC (off-heap)</text>
+      <text x="675" y="150" font-family="Inter,sans-serif" font-size="9" fill="#37352f">L2: Couchbase</text>
+      <line x1="620" y1="130" x2="660" y2="130" stroke="#e65100" stroke-width="1" stroke-dasharray="4"></line>
+
+      <!-- Helix/ZK -->
+      <rect x="20" y="100" width="150" height="60" rx="8" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="1.5"></rect>
+      <text x="95" y="123" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#4a148c">Helix + ZooKeeper</text>
+      <text x="35" y="140" font-family="Inter,sans-serif" font-size="9" fill="#37352f">Partition → host map</text>
+      <text x="35" y="153" font-family="Inter,sans-serif" font-size="9" fill="#37352f">Schema registry</text>
+      <line x1="170" y1="130" x2="200" y2="130" stroke="#6a1b9a" stroke-width="1" stroke-dasharray="4"></line>
+
+      <line x1="320" y1="175" x2="250" y2="215" stroke="#546e7a" stroke-width="1.5" marker-end="url(#arrE)"></line>
+      <line x1="410" y1="175" x2="410" y2="215" stroke="#546e7a" stroke-width="1.5" marker-end="url(#arrE)"></line>
+      <line x1="500" y1="175" x2="570" y2="215" stroke="#546e7a" stroke-width="1.5" marker-end="url(#arrE)"></line>
+
+      <!-- Storage Nodes -->
+      <rect x="120" y="215" width="180" height="120" rx="10" fill="#e8eaf6" stroke="#283593" stroke-width="1.5" filter="url(#shE)"></rect>
+      <text x="210" y="238" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#283593">Storage Node 1</text>
+      <text x="210" y="253" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#283593">LEADER (partitions 0-85)</text>
+      <rect x="140" y="265" width="140" height="25" rx="4" fill="#c5cae9"></rect>
+      <text x="210" y="282" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#283593">MySQL/InnoDB</text>
+      <rect x="140" y="295" width="140" height="25" rx="4" fill="#dcedc8"></rect>
+      <text x="210" y="312" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#33691e">Lucene Index</text>
+
+      <rect x="320" y="215" width="180" height="120" rx="10" fill="#e8eaf6" stroke="#283593" stroke-width="1.5" filter="url(#shE)"></rect>
+      <text x="410" y="238" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#283593">Storage Node 2</text>
+      <text x="410" y="253" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#283593">LEADER (partitions 86-170)</text>
+      <rect x="340" y="265" width="140" height="25" rx="4" fill="#c5cae9"></rect>
+      <text x="410" y="282" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#283593">MySQL/InnoDB</text>
+      <rect x="340" y="295" width="140" height="25" rx="4" fill="#dcedc8"></rect>
+      <text x="410" y="312" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#33691e">Lucene Index</text>
+
+      <rect x="520" y="215" width="180" height="120" rx="10" fill="#e8eaf6" stroke="#283593" stroke-width="1.5" filter="url(#shE)"></rect>
+      <text x="610" y="238" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#283593">Storage Node 3</text>
+      <text x="610" y="253" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#283593">LEADER (partitions 171-255)</text>
+      <rect x="540" y="265" width="140" height="25" rx="4" fill="#c5cae9"></rect>
+      <text x="610" y="282" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#283593">MySQL/InnoDB</text>
+      <rect x="540" y="295" width="140" height="25" rx="4" fill="#dcedc8"></rect>
+      <text x="610" y="312" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#33691e">Lucene Index</text>
+
+      <!-- Binlog → Kafka -->
+      <line x1="210" y1="335" x2="210" y2="370" stroke="#c62828" stroke-width="1.2" marker-end="url(#arrE)"></line>
+      <line x1="410" y1="335" x2="410" y2="370" stroke="#c62828" stroke-width="1.2" marker-end="url(#arrE)"></line>
+      <line x1="610" y1="335" x2="610" y2="370" stroke="#c62828" stroke-width="1.2" marker-end="url(#arrE)"></line>
+      <text x="310" y="358" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#c62828">MySQL binlog</text>
+
+      <!-- Kafka -->
+      <rect x="120" y="370" width="580" height="45" rx="10" fill="#fce4ec" stroke="#c62828" stroke-width="1.5" filter="url(#shE)"></rect>
+      <text x="410" y="393" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="12" fill="#c62828">Kafka (Change Data Capture)</text>
+      <text x="410" y="408" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#787774">BinlogTranslator → EspressoEvent → KafkaProducer | per-partition topics</text>
+
+      <!-- Downstream -->
+      <line x1="250" y1="415" x2="180" y2="445" stroke="#546e7a" stroke-width="1" marker-end="url(#arrE)"></line>
+      <line x1="370" y1="415" x2="330" y2="445" stroke="#546e7a" stroke-width="1" marker-end="url(#arrE)"></line>
+      <line x1="450" y1="415" x2="490" y2="445" stroke="#546e7a" stroke-width="1" marker-end="url(#arrE)"></line>
+      <line x1="570" y1="415" x2="640" y2="445" stroke="#546e7a" stroke-width="1" marker-end="url(#arrE)"></line>
+
+      <rect x="120" y="445" width="110" height="28" rx="6" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1"></rect>
+      <text x="175" y="464" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#1b5e20">Venice</text>
+      <rect x="270" y="445" width="110" height="28" rx="6" fill="#fff3e0" stroke="#e65100" stroke-width="1"></rect>
+      <text x="325" y="464" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#bf360c">Pinot</text>
+      <rect x="430" y="445" width="110" height="28" rx="6" fill="#fce4ec" stroke="#c62828" stroke-width="1"></rect>
+      <text x="485" y="464" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#c62828">Galene</text>
+      <rect x="580" y="445" width="120" height="28" rx="6" fill="#e8eaf6" stroke="#283593" stroke-width="1"></rect>
+      <text x="640" y="464" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#283593">Follower DCs</text>
+    </svg>

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 900 380" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="fig10-title">
+        <title id="fig10-title">Figure 10: Linux RX packet path and bypass routes</title>
+        <!-- Stage boxes -->
+        <defs>
+          <marker id="arrowEnd" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#59636e"></polygon>
+          </marker>
+        </defs>
+        <g font-family="sans-serif" font-size="12" fill="#1f2328">
+          <rect x="20" y="120" width="72" height="44" rx="6" fill="#ddf4ff" stroke="#0969da" stroke-width="1.5"></rect>
+          <text x="56" y="147" text-anchor="middle" font-weight="600">NIC</text>
+          <rect x="110" y="120" width="88" height="44" rx="6" fill="#f6f8fa" stroke="#d1d9e0"></rect>
+          <text x="154" y="147" text-anchor="middle" font-weight="600">RX ring</text>
+          <rect x="216" y="120" width="64" height="44" rx="6" fill="#f6f8fa" stroke="#d1d9e0"></rect>
+          <text x="248" y="147" text-anchor="middle" font-weight="600">NAPI</text>
+          <rect x="296" y="120" width="56" height="44" rx="6" fill="#fff8c5" stroke="#9a6700"></rect>
+          <text x="324" y="147" text-anchor="middle" font-weight="600">XDP</text>
+          <rect x="368" y="120" width="56" height="44" rx="6" fill="#f6f8fa" stroke="#d1d9e0"></rect>
+          <text x="396" y="147" text-anchor="middle" font-weight="600">GRO</text>
+          <rect x="440" y="120" width="110" height="44" rx="6" fill="#ffebe9" stroke="#d1242f" stroke-width="1.2"></rect>
+          <text x="495" y="140" text-anchor="middle" font-weight="600">IP / netfilter</text>
+          <text x="495" y="155" text-anchor="middle" font-size="10" fill="#59636e">(nft/iptables hooks)</text>
+          <rect x="568" y="120" width="56" height="44" rx="6" fill="#dafbe1" stroke="#1a7f37"></rect>
+          <text x="596" y="147" text-anchor="middle" font-weight="600">TCP</text>
+          <rect x="638" y="120" width="72" height="44" rx="6" fill="#ddf4ff" stroke="#0969da"></rect>
+          <text x="674" y="147" text-anchor="middle" font-weight="600">socket</text>
+          <rect x="726" y="120" width="72" height="44" rx="6" fill="#ffffff" stroke="#8250df" stroke-width="1.8"></rect>
+          <text x="762" y="147" text-anchor="middle" font-weight="600">app</text>
+        </g>
+        <!-- Horizontal arrows -->
+        <g stroke="#59636e" stroke-width="2" fill="none" marker-end="url(#arrowEnd)">
+          <line x1="92" y1="142" x2="108" y2="142"></line>
+          <line x1="198" y1="142" x2="214" y2="142"></line>
+          <line x1="280" y1="142" x2="294" y2="142"></line>
+          <line x1="352" y1="142" x2="366" y2="142"></line>
+          <line x1="424" y1="142" x2="438" y2="142"></line>
+          <line x1="550" y1="142" x2="566" y2="142"></line>
+          <line x1="624" y1="142" x2="636" y2="142"></line>
+          <line x1="710" y1="142" x2="724" y2="142"></line>
+        </g>
+        <!-- Bypass ① XDP -> AF_XDP -->
+        <path d="M 324 164 Q 324 248 520 278 Q 688 298 774 246" fill="none" stroke="#1a7f37" stroke-width="2.5" stroke-dasharray="8 6"></path>
+        <rect x="500" y="288" width="180" height="36" rx="6" fill="#dafbe1" stroke="#1a7f37"></rect>
+        <text x="590" y="303" text-anchor="middle" font-size="11" fill="#1a7f37" font-weight="600">① XDP → AF_XDP userspace</text>
+        <text x="590" y="317" text-anchor="middle" font-size="10" fill="#59636e">(green dashed bypass)</text>
+        <!-- Bypass ② DPDK -->
+        <path d="M 56 118 Q 40 52 420 42 Q 820 38 834 118" fill="none" stroke="#d1242f" stroke-width="2.5" stroke-dasharray="10 7"></path>
+        <rect x="320" y="8" width="260" height="30" rx="6" fill="#ffebe9" stroke="#d1242f"></rect>
+        <text x="450" y="22" text-anchor="middle" font-size="11" fill="#d1242f" font-weight="600">② DPDK / userspace polls NIC (kernel bypass arc)</text>
+        <text x="450" y="34" text-anchor="middle" font-size="10" fill="#59636e">uio/vfio; not POSIX sockets</text>
+        <!-- SO_BUSY_POLL callout -->
+        <rect x="640" y="190" width="240" height="56" rx="8" fill="#fff8c5" stroke="#9a6700"></rect>
+        <text x="760" y="212" text-anchor="middle" font-size="12" fill="#9a6700" font-weight="600">SO_BUSY_POLL / busy_read</text>
+        <text x="760" y="230" text-anchor="middle" font-size="10" fill="#59636e">Spin in recv path ↔ NAPI dequeue</text>
+        <path d="M 760 190 L 750 174" stroke="#9a6700" stroke-width="1.5" fill="none"></path>
+        <line x1="750" y1="174" x2="710" y2="164" stroke="#9a6700" stroke-width="1.5"></line>
+      </svg>

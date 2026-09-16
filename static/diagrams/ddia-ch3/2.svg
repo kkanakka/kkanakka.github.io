@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 820 280" xmlns="http://www.w3.org/2000/svg" style="max-width:780px;">
+      <defs>
+        <marker id="arr2" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#546e7a"></polygon>
+        </marker>
+      </defs>
+
+      <!-- In-memory hash map -->
+      <rect x="20" y="20" width="300" height="240" rx="12" fill="#e3f2fd" stroke="#1565c0" stroke-width="2"></rect>
+      <text x="170" y="48" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#0d47a1">In-Memory Hash Map</text>
+
+      <rect x="40" y="60" width="260" height="28" rx="4" fill="#fff" stroke="#90caf9" stroke-width="1"></rect>
+      <text x="55" y="79" font-family="JetBrains Mono,monospace" font-size="10" fill="#37352f">"user:42"    → offset 0</text>
+      <rect x="40" y="93" width="260" height="28" rx="4" fill="#fff" stroke="#90caf9" stroke-width="1"></rect>
+      <text x="55" y="112" font-family="JetBrains Mono,monospace" font-size="10" fill="#37352f">"user:123"   → offset 64</text>
+      <rect x="40" y="126" width="260" height="28" rx="4" fill="#c8e6c9" stroke="#2e7d32" stroke-width="1.5"></rect>
+      <text x="55" y="145" font-family="JetBrains Mono,monospace" font-weight="700" font-size="10" fill="#2e7d32">"user:12345" → offset 128</text>
+      <rect x="40" y="159" width="260" height="28" rx="4" fill="#fff" stroke="#90caf9" stroke-width="1"></rect>
+      <text x="55" y="178" font-family="JetBrains Mono,monospace" font-size="10" fill="#37352f">"user:999"   → offset 256</text>
+
+      <text x="170" y="215" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#0d47a1">O(1) lookup — constant time!</text>
+      <text x="170" y="232" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#787774">Limitation: ALL keys must fit in RAM</text>
+      <text x="170" y="248" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#787774">No range queries ("all users 100-200")</text>
+
+      <!-- Arrow to disk -->
+      <line x1="320" y1="140" x2="380" y2="140" stroke="#2e7d32" stroke-width="2" marker-end="url(#arr2)"></line>
+      <text x="350" y="132" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#2e7d32">seek</text>
+
+      <!-- Disk file -->
+      <rect x="380" y="20" width="420" height="240" rx="12" fill="#f7f6f3" stroke="#e3e2de" stroke-width="2"></rect>
+      <text x="590" y="48" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#37352f">Append-Only Data File (on Disk)</text>
+
+      <rect x="400" y="60" width="380" height="25" rx="4" fill="#fff" stroke="#e3e2de" stroke-width="1"></rect>
+      <text x="410" y="77" font-family="JetBrains Mono,monospace" font-size="9" fill="#787774">offset 0:   user:42,{"name":"San Francisco",...}</text>
+      <rect x="400" y="90" width="380" height="25" rx="4" fill="#fff" stroke="#e3e2de" stroke-width="1"></rect>
+      <text x="410" y="107" font-family="JetBrains Mono,monospace" font-size="9" fill="#787774">offset 64:  user:123,{"name":"London",...}</text>
+      <rect x="400" y="120" width="380" height="25" rx="4" fill="#c8e6c9" stroke="#2e7d32" stroke-width="1.5"></rect>
+      <text x="410" y="137" font-family="JetBrains Mono,monospace" font-weight="700" font-size="9" fill="#2e7d32">offset 128: user:12345,{"name":"Satya",...}</text>
+      <rect x="400" y="150" width="380" height="25" rx="4" fill="#fff" stroke="#e3e2de" stroke-width="1"></rect>
+      <text x="410" y="167" font-family="JetBrains Mono,monospace" font-size="9" fill="#787774">offset 256: user:999,{"name":"Amy",...}</text>
+      <rect x="400" y="180" width="380" height="25" rx="4" fill="#fff3e0" stroke="#e65100" stroke-width="1"></rect>
+      <text x="410" y="197" font-family="JetBrains Mono,monospace" font-size="9" fill="#e65100">offset 320: user:42,{"name":"SF Updated",...} ← newer!</text>
+
+      <text x="590" y="228" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Writes: always APPEND to end (sequential, fast)</text>
+      <text x="590" y="246" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Old values not deleted — compaction cleans up later</text>
+    </svg>

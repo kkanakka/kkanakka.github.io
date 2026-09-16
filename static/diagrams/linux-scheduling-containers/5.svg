@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 860 220" xmlns="http://www.w3.org/2000/svg">
+  <text x="430" y="22" text-anchor="middle" font-size="12" fill="#59636e">Worst-case preemption latency (log₁₀ axis from 1µs … 100ms)</text>
+  <line x1="120" y1="175" x2="800" y2="175" stroke="#d8dee4" stroke-width="2"></line>
+  <text x="120" y="198" font-size="9" fill="#59636e">1µs</text>
+  <text x="256" y="198" font-size="9" fill="#59636e">10µs</text>
+  <text x="392" y="198" font-size="9" fill="#59636e">100µs</text>
+  <text x="528" y="198" font-size="9" fill="#59636e">1ms</text>
+  <text x="664" y="198" font-size="9" fill="#59636e">10ms</text>
+  <text x="800" y="198" text-anchor="end" font-size="9" fill="#59636e">100ms</text>
+  <line x1="120" y1="175" x2="120" y2="42" stroke="#d1d9e0"></line>
+  <line x1="256" y1="175" x2="256" y2="42" stroke="#d1d9e0" stroke-dasharray="2,3"></line>
+  <line x1="392" y1="175" x2="392" y2="42" stroke="#d1d9e0" stroke-dasharray="2,3"></line>
+  <line x1="528" y1="175" x2="528" y2="42" stroke="#d1d9e0" stroke-dasharray="2,3"></line>
+  <line x1="664" y1="175" x2="664" y2="42" stroke="#d1d9e0" stroke-dasharray="2,3"></line>
+  <line x1="800" y1="175" x2="800" y2="42" stroke="#d1d9e0"></line>
+  <text x="20" y="60" fill="#59636e" font-size="11">PREEMPT_RT (~30µs bounded)</text>
+  <rect x="120" y="46" width="201" height="22" fill="#dafbe1" stroke="#1a7f37"></rect>
+  <text x="220" y="62" text-anchor="middle" font-size="11" fill="#1a7f37" font-weight="600">PREEMPT_RT</text>
+  <text x="20" y="100" fill="#59636e" font-size="11">PREEMPT (~500µs)</text>
+  <rect x="120" y="86" width="367" height="22" fill="#ddf4ff" stroke="#0969da"></rect>
+  <text x="300" y="102" text-anchor="middle" font-size="11" fill="#0969da">PREEMPT</text>
+  <text x="20" y="140" fill="#59636e" font-size="11">PREEMPT_VOLUNTARY (~3ms)</text>
+  <rect x="120" y="126" width="473" height="22" fill="#fff8c5" stroke="#9a6700"></rect>
+  <text x="356" y="142" text-anchor="middle" font-size="11" fill="#9a6700">PREEMPT_VOLUNTARY</text>
+  <text x="20" y="180" fill="#59636e" font-size="11">PREEMPT_NONE (~50ms)</text>
+  <rect x="120" y="166" width="639" height="22" fill="#ffebe9" stroke="#d1242f"></rect>
+  <text x="440" y="182" text-anchor="middle" font-size="11" fill="#d1242f">PREEMPT_NONE</text>
+</svg>

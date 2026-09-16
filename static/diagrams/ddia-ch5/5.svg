@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 820 300" xmlns="http://www.w3.org/2000/svg" style="max-width:780px;">
+      <defs><filter id="sh7" x="-3%" y="-3%" width="106%" height="110%"><fedropshadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.06"></fedropshadow></filter></defs>
+
+      <rect x="10" y="10" width="800" height="280" rx="14" fill="#f7f6f3" stroke="#2e7d32" stroke-width="2"></rect>
+      <text x="410" y="40" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="16" fill="#2e7d32">The Meta-Pattern Across ALL Companies</text>
+
+      <text x="30" y="70" font-family="Inter,sans-serif" font-weight="600" font-size="12" fill="#37352f">1. Most systems use single-leader for the primary write path.</text>
+      <text x="35" y="90" font-family="Inter,sans-serif" font-size="10" fill="#787774">LinkedIn, Facebook, Twitter, Gmail, WhatsApp — all single-leader-per-shard.</text>
+
+      <text x="30" y="115" font-family="Inter,sans-serif" font-weight="600" font-size="12" fill="#37352f">2. Multi-leader ONLY when concurrent edits to the same mutable object are the product.</text>
+      <text x="35" y="135" font-family="Inter,sans-serif" font-size="10" fill="#787774">Google Docs (OT), Figma (CRDTs). Nowhere else.</text>
+
+      <text x="30" y="160" font-family="Inter,sans-serif" font-weight="600" font-size="12" fill="#37352f">3. Strong global consistency (Spanner/Paxos) ONLY when correctness &gt; latency.</text>
+      <text x="35" y="180" font-family="Inter,sans-serif" font-size="10" fill="#787774">Payments, permissions, ad billing, inventory. NOT social feeds or play counts.</text>
+
+      <text x="30" y="205" font-family="Inter,sans-serif" font-weight="600" font-size="12" fill="#37352f">4. Read paths are always more sophisticated than write paths.</text>
+      <text x="35" y="225" font-family="Inter,sans-serif" font-size="10" fill="#787774">Writes: "put it in source of truth." Reads: precomputed timelines, caches, search indexes, ML ranking.</text>
+
+      <text x="30" y="250" font-family="Inter,sans-serif" font-weight="600" font-size="12" fill="#37352f">5. No single database does everything. Polyglot persistence + event streams.</text>
+      <text x="35" y="270" font-family="Inter,sans-serif" font-size="10" fill="#787774">Espresso → Kafka → Venice / Galene / Pinot / Liquid. CQRS: normalized writes, denormalized reads.</text>
+    </svg>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="500" height="120" viewBox="0 0 500 120" xmlns="http://www.w3.org/2000/svg">
+        <g font-family="Inter,sans-serif" font-size="13" fill="#37352f">
+          <rect x="20" y="10" width="200" height="45" rx="8" fill="#e3f2fd" stroke="#1565c0" stroke-width="1.5"></rect>
+          <text x="120" y="37" text-anchor="middle" font-weight="600">BDP = 1 Gbps × 200ms</text>
+          <text x="120" y="70" text-anchor="middle" font-size="20" font-weight="700" fill="#1565c0">= 25 MB</text>
+          <rect x="280" y="10" width="200" height="45" rx="8" fill="#fce4ec" stroke="#c62828" stroke-width="1.5"></rect>
+          <text x="380" y="37" text-anchor="middle" font-weight="600">tcp_rmem max = 4 MB</text>
+          <text x="380" y="70" text-anchor="middle" font-size="14" font-weight="700" fill="#c62828">&lt;&lt; BDP — pipe underfilled!</text>
+          <text x="250" y="105" text-anchor="middle" font-size="12" fill="#787774">Window too small = throughput capped at ~180 Mbps</text>
+        </g>
+      </svg>

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 900 340" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="f5a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#59636e"></path></marker>
+  </defs>
+  <text x="25" y="28" fill="#59636e" font-size="12">Tasks sharing host namespaces</text>
+  <rect x="20" y="40" width="70" height="36" fill="#fff8c5" stroke="#9a6700" rx="3"></rect><text x="55" y="62" text-anchor="middle" font-size="12" font-weight="600">A</text>
+  <rect x="100" y="40" width="70" height="36" fill="#fff8c5" stroke="#9a6700" rx="3"></rect><text x="135" y="62" text-anchor="middle" font-size="12" font-weight="600">B</text>
+  <line x1="90" y1="58" x2="215" y2="118" stroke="#59636e" marker-end="url(#f5a)"></line>
+  <line x1="170" y1="58" x2="250" y2="118" stroke="#59636e" marker-end="url(#f5a)"></line>
+  <rect x="200" y="110" width="220" height="44" fill="#ddf4ff" stroke="#0969da" rx="4"></rect>
+  <text x="310" y="130" text-anchor="middle" font-size="13" font-weight="600">nsproxy · host*</text>
+  <text x="310" y="148" text-anchor="middle" font-size="10" fill="#59636e"> refcounted aggregate pointer</text>
+  <rect x="20" y="180" width="90" height="36" fill="#dafbe1" stroke="#1a7f37" rx="3"></rect><text x="65" y="202" text-anchor="middle" font-size="12" font-weight="600">C</text>
+  <line x1="90" y1="198" x2="200" y2="268" stroke="#1a7f37" stroke-width="2" marker-end="url(#f5a)"></line>
+  <rect x="200" y="250" width="240" height="44" fill="#dafbe1" stroke="#1a7f37" rx="4"></rect>
+  <text x="320" y="271" text-anchor="middle" font-size="13" font-weight="600">nsproxy · container*</text>
+  <line x1="420" y1="132" x2="500" y2="90" stroke="#d8dee4"></line><line x1="420" y1="132" x2="500" y2="140" stroke="#d8dee4"></line><line x1="420" y1="132" x2="500" y2="190" stroke="#d8dee4"></line>
+  <text x="510" y="40" fill="#0969da" font-size="12" font-weight="600">host_* structs</text>
+  <rect x="500" y="50" width="180" height="26" fill="#ffebe9" stroke="#d1242f" rx="3"></rect><text x="590" y="67" text-anchor="middle" font-size="10">host_uts_ns</text>
+  <rect x="500" y="82" width="180" height="26" fill="#ffebe9" stroke="#d1242f" rx="3"></rect><text x="590" y="99" text-anchor="middle" font-size="10">host_net_ns</text>
+  <rect x="500" y="114" width="180" height="26" fill="#ffebe9" stroke="#d1242f" rx="3"></rect><text x="590" y="131" text-anchor="middle" font-size="10">host_pid_ns</text>
+  <text x="510" y="170" fill="#1a7f37" font-size="12" font-weight="600">ctr_* structs</text>
+  <rect x="500" y="178" width="180" height="26" fill="#dafbe1" stroke="#1a7f37" rx="3"></rect><text x="590" y="195" text-anchor="middle" font-size="10">ctr_uts_ns</text>
+  <rect x="500" y="208" width="180" height="26" fill="#dafbe1" stroke="#1a7f37" rx="3"></rect><text x="590" y="225" text-anchor="middle" font-size="10">ctr_net_ns</text>
+  <rect x="500" y="238" width="180" height="26" fill="#dafbe1" stroke="#1a7f37" rx="3"></rect><text x="590" y="255" text-anchor="middle" font-size="10">ctr_pid_ns</text>
+  <line x1="440" y1="272" x2="500" y2="215" stroke="#1a7f37" stroke-dasharray="3"></line>
+  <text x="700" y="160" font-size="10" fill="#8250df" font-style="italic">task_struct → nsproxy → per-ns</text>
+</svg>

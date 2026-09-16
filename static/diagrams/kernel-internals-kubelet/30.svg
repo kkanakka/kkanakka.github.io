@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 900 380" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="acs30" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#d1242f"></path>
+    </marker>
+    <marker id="acg30" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1a7f37"></path>
+    </marker>
+  </defs>
+
+  <text x="20" y="22" font-size="11" font-weight="600" fill="#59636e">TASKS</text>
+  <text x="370" y="22" font-size="11" font-weight="600" fill="#59636e">CSS_SET · deduplicated</text>
+  <text x="700" y="22" font-size="11" font-weight="600" fill="#59636e">PER-CONTROLLER STATE</text>
+
+  <!-- Tasks column -->
+  <g font-family="ui-monospace,Menlo" font-size="10">
+    <rect x="20" y="42" width="170" height="28" fill="#ddf4ff" stroke="#0969da"></rect>
+    <text x="105" y="61" text-anchor="middle" fill="#0969da">pid 1042 (nginx)</text>
+    <rect x="20" y="76" width="170" height="28" fill="#ddf4ff" stroke="#0969da"></rect>
+    <text x="105" y="95" text-anchor="middle" fill="#0969da">pid 1043 (worker)</text>
+    <rect x="20" y="110" width="170" height="28" fill="#ddf4ff" stroke="#0969da"></rect>
+    <text x="105" y="129" text-anchor="middle" fill="#0969da">pid 1044 (worker)</text>
+
+    <rect x="20" y="160" width="170" height="28" fill="#ddf4ff" stroke="#0969da"></rect>
+    <text x="105" y="179" text-anchor="middle" fill="#0969da">pid 2055 (redis)</text>
+    <rect x="20" y="194" width="170" height="28" fill="#ddf4ff" stroke="#0969da"></rect>
+    <text x="105" y="213" text-anchor="middle" fill="#0969da">pid 2056 (bgsave)</text>
+
+    <rect x="20" y="244" width="170" height="28" fill="#ddf4ff" stroke="#0969da"></rect>
+    <text x="105" y="263" text-anchor="middle" fill="#0969da">pid 3001 (kubelet)</text>
+    <rect x="20" y="278" width="170" height="28" fill="#ddf4ff" stroke="#0969da"></rect>
+    <text x="105" y="297" text-anchor="middle" fill="#0969da">pid 3088 (containerd)</text>
+  </g>
+
+  <!-- css_set boxes -->
+  <rect x="320" y="62" width="180" height="56" fill="#fff5f5" stroke="#d1242f"></rect>
+  <text x="410" y="80" text-anchor="middle" font-family="ui-monospace,Menlo" font-size="10" font-weight="600" fill="#d1242f">css_set #1</text>
+  <text x="410" y="96" text-anchor="middle" font-family="ui-monospace,Menlo" font-size="9" fill="#59636e">3 tasks share</text>
+  <text x="410" y="110" text-anchor="middle" font-size="10" font-style="italic" fill="#59636e">nginx pod</text>
+
+  <rect x="320" y="172" width="180" height="56" fill="#fff5f5" stroke="#d1242f"></rect>
+  <text x="410" y="190" text-anchor="middle" font-family="ui-monospace,Menlo" font-size="10" font-weight="600" fill="#d1242f">css_set #2</text>
+  <text x="410" y="206" text-anchor="middle" font-family="ui-monospace,Menlo" font-size="9" fill="#59636e">2 tasks share</text>
+  <text x="410" y="220" text-anchor="middle" font-size="10" font-style="italic" fill="#59636e">redis pod</text>
+
+  <rect x="320" y="256" width="180" height="56" fill="#fff5f5" stroke="#d1242f"></rect>
+  <text x="410" y="274" text-anchor="middle" font-family="ui-monospace,Menlo" font-size="10" font-weight="600" fill="#d1242f">css_set #3</text>
+  <text x="410" y="290" text-anchor="middle" font-family="ui-monospace,Menlo" font-size="9" fill="#59636e">2 tasks share</text>
+  <text x="410" y="304" text-anchor="middle" font-size="10" font-style="italic" fill="#59636e">system.slice</text>
+
+  <!-- task → css_set arrows -->
+  <line x1="190" y1="56" x2="318" y2="80" stroke="#d1242f" stroke-width="1" marker-end="url(#acs30)"></line>
+  <line x1="190" y1="90" x2="318" y2="90" stroke="#d1242f" stroke-width="1" marker-end="url(#acs30)"></line>
+  <line x1="190" y1="124" x2="318" y2="100" stroke="#d1242f" stroke-width="1" marker-end="url(#acs30)"></line>
+  <line x1="190" y1="174" x2="318" y2="190" stroke="#d1242f" stroke-width="1" marker-end="url(#acs30)"></line>
+  <line x1="190" y1="208" x2="318" y2="200" stroke="#d1242f" stroke-width="1" marker-end="url(#acs30)"></line>
+  <line x1="190" y1="258" x2="318" y2="276" stroke="#d1242f" stroke-width="1" marker-end="url(#acs30)"></line>
+  <line x1="190" y1="292" x2="318" y2="288" stroke="#d1242f" stroke-width="1" marker-end="url(#acs30)"></line>
+
+  <!-- Per-controller state column -->
+  <g font-family="ui-monospace,Menlo" font-size="9">
+    <rect x="630" y="42" width="200" height="22" fill="#dafbe1" stroke="#1a7f37"></rect>
+    <text x="640" y="57" fill="#1a7f37">memory_cgrp_state</text>
+    <text x="822" y="57" text-anchor="end" fill="#1a7f37" font-weight="600">2G cap</text>
+
+    <rect x="630" y="68" width="200" height="22" fill="#dafbe1" stroke="#1a7f37"></rect>
+    <text x="640" y="83" fill="#1a7f37">cpu_cgrp_state</text>
+    <text x="822" y="83" text-anchor="end" fill="#1a7f37" font-weight="600">200/100ms</text>
+
+    <rect x="630" y="94" width="200" height="22" fill="#dafbe1" stroke="#1a7f37"></rect>
+    <text x="640" y="109" fill="#1a7f37">io_cgrp_state</text>
+    <text x="822" y="109" text-anchor="end" fill="#1a7f37" font-weight="600">10MB/s</text>
+
+    <rect x="630" y="120" width="200" height="22" fill="#dafbe1" stroke="#1a7f37"></rect>
+    <text x="640" y="135" fill="#1a7f37">pids_cgrp_state</text>
+    <text x="822" y="135" text-anchor="end" fill="#1a7f37" font-weight="600">1024</text>
+
+    <rect x="630" y="170" width="200" height="22" fill="#ddf4ff" stroke="#0969da"></rect>
+    <text x="640" y="185" fill="#0969da">memory_cgrp_state</text>
+    <text x="822" y="185" text-anchor="end" fill="#0969da" font-weight="600">512M</text>
+
+    <rect x="630" y="196" width="200" height="22" fill="#ddf4ff" stroke="#0969da"></rect>
+    <text x="640" y="211" fill="#0969da">cpu_cgrp_state</text>
+    <text x="822" y="211" text-anchor="end" fill="#0969da" font-weight="600">100/100ms</text>
+
+    <rect x="630" y="254" width="200" height="22" fill="#f6f8fa" stroke="#6e7781"></rect>
+    <text x="640" y="269" fill="#59636e">no limits</text>
+    <text x="822" y="269" text-anchor="end" fill="#59636e" font-weight="600">unbounded</text>
+  </g>
+
+  <!-- css_set → state arrows -->
+  <line x1="500" y1="90" x2="628" y2="52" stroke="#1a7f37" stroke-width="1" marker-end="url(#acg30)"></line>
+  <line x1="500" y1="90" x2="628" y2="78" stroke="#1a7f37" stroke-width="1" marker-end="url(#acg30)"></line>
+  <line x1="500" y1="90" x2="628" y2="104" stroke="#1a7f37" stroke-width="1" marker-end="url(#acg30)"></line>
+  <line x1="500" y1="90" x2="628" y2="130" stroke="#1a7f37" stroke-width="1" marker-end="url(#acg30)"></line>
+  <line x1="500" y1="200" x2="628" y2="180" stroke="#0969da" stroke-width="1" marker-end="url(#acg30)"></line>
+  <line x1="500" y1="200" x2="628" y2="206" stroke="#0969da" stroke-width="1" marker-end="url(#acg30)"></line>
+  <line x1="500" y1="284" x2="628" y2="264" stroke="#6e7781" stroke-width="1" marker-end="url(#acg30)"></line>
+
+  <text x="450" y="358" text-anchor="middle" font-size="11" fill="#59636e" font-style="italic">~7,000 tasks on a busy node typically collapse to ~80 css_sets</text>
+</svg>

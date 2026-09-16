@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 900 360" width="900" height="360" role="img" aria-labelledby="fig19-roll" xmlns="http://www.w3.org/2000/svg">
+    <title>Figure 19: Staged kernel rollout with health gates</title>
+    <defs>
+      <marker id="arr-b" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#0969da"></path></marker>
+    </defs>
+    <circle cx="120" cy="200" r="35" fill="#ddf4ff" stroke="#0969da" stroke-width="2"></circle><text x="105" y="195" font-size="14" font-weight="700">10</text><text x="88" y="212" font-size="11" fill="#59636e">0.1%</text>
+    <text x="70" y="140" fill="#1a7f37" font-size="12" font-weight="600">health OK</text>
+    <line x1="155" y1="200" x2="215" y2="200" stroke="#0969da" stroke-width="2" marker-end="url(#arr-b)"></line>
+    <circle cx="280" cy="200" r="45" fill="#ddf4ff" stroke="#0969da" stroke-width="2"></circle><text x="255" y="195" font-size="15" font-weight="700">100</text><text x="245" y="212" font-size="11">wave 1 · 1%</text>
+    <text x="220" y="140" fill="#1a7f37" font-size="12" font-weight="600">SLO gates</text>
+    <line x1="325" y1="200" x2="385" y2="200" stroke="#0969da" stroke-width="2" marker-end="url(#arr-b)"></line>
+    <circle cx="460" cy="200" r="56" fill="#ddf4ff" stroke="#0969da" stroke-width="2"></circle><text x="425" y="195" font-size="16" font-weight="700">1000</text><text x="415" y="212" font-size="11">wave 2 · 10%</text>
+    <text x="395" y="140" fill="#1a7f37" font-size="12" font-weight="600">auto promote</text>
+    <line x1="516" y1="200" x2="580" y2="200" stroke="#0969da" stroke-width="2" marker-end="url(#arr-b)"></line>
+    <circle cx="670" cy="200" r="72" fill="#ddf4ff" stroke="#0969da" stroke-width="2"></circle><text x="625" y="195" font-size="17" font-weight="700">5000</text><text x="620" y="212" font-size="11">wave 3 · 50%</text>
+    <text x="600" y="140" fill="#1a7f37" font-size="12" font-weight="600">regression budget</text>
+    <line x1="742" y1="200" x2="800" y2="200" stroke="#0969da" stroke-width="2" marker-end="url(#arr-b)"></line>
+    <circle cx="820" cy="200" r="82" fill="#dafbe1" stroke="#1a7f37" stroke-width="2.5"></circle><text x="773" y="195" font-size="18" font-weight="700">10000</text><text x="755" y="212" font-size="11">wave 4 · 100%</text>
+    <!-- rollback dashed -->
+    <path d="M 780 295 Q 440 340 140 285" stroke="#d1242f" stroke-width="2.5" fill="none" stroke-dasharray="8 6"></path>
+    <text x="360" y="335" fill="#d1242f" font-size="13" font-weight="700">Rollback / kexec-prev-kernel cohort</text>
+  </svg>

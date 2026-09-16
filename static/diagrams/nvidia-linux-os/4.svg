@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 760 360" xmlns="http://www.w3.org/2000/svg" style="width:100%;">
+      <text x="20" y="32" font-family="ui-monospace,monospace" font-size="11" font-weight="700" fill="#1f2328">SCENARIO: high-priority task arrives at marker ● while kernel is mid-syscall</text>
+      <text x="20" y="78" font-family="Arial,sans-serif" font-size="14" font-weight="600" fill="#1f2328">PREEMPT_NONE</text>
+      <text x="160" y="78" font-family="Arial,sans-serif" font-size="12" fill="#59636e">server / max throughput</text>
+      <line x1="20" y1="100" x2="700" y2="100" stroke="#1f2328" stroke-width="3"></line>
+      <circle cx="140" cy="100" r="6" fill="#1f2328"></circle>
+      <text x="140" y="125" text-anchor="middle" font-family="ui-monospace,monospace" font-size="10" fill="#1f2328">arrival</text>
+      <line x1="630" y1="86" x2="630" y2="114" stroke="#1f2328" stroke-width="2"></line>
+      <text x="630" y="78" text-anchor="middle" font-family="ui-monospace,monospace" font-size="10" font-weight="700" fill="#1f2328">SWITCH</text>
+      <text x="385" y="148" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" fill="#59636e">~10 ms — must wait until the syscall returns</text>
+      <text x="20" y="190" font-family="Arial,sans-serif" font-size="14" font-weight="600" fill="#1f2328">PREEMPT_VOLUNTARY</text>
+      <text x="200" y="190" font-family="Arial,sans-serif" font-size="12" fill="#59636e">desktop / production default</text>
+      <line x1="20" y1="212" x2="700" y2="212" stroke="#1f2328" stroke-width="3"></line>
+      <line x1="80" y1="206" x2="80" y2="218" stroke="#59636e" stroke-width="1"></line>
+      <line x1="160" y1="206" x2="160" y2="218" stroke="#59636e" stroke-width="1"></line>
+      <line x1="240" y1="206" x2="240" y2="218" stroke="#59636e" stroke-width="1"></line>
+      <line x1="320" y1="206" x2="320" y2="218" stroke="#59636e" stroke-width="1"></line>
+      <line x1="400" y1="206" x2="400" y2="218" stroke="#59636e" stroke-width="1"></line>
+      <line x1="480" y1="206" x2="480" y2="218" stroke="#59636e" stroke-width="1"></line>
+      <line x1="560" y1="206" x2="560" y2="218" stroke="#59636e" stroke-width="1"></line>
+      <line x1="640" y1="206" x2="640" y2="218" stroke="#59636e" stroke-width="1"></line>
+      <circle cx="140" cy="212" r="6" fill="#1f2328"></circle>
+      <line x1="240" y1="198" x2="240" y2="226" stroke="#1f2328" stroke-width="2"></line>
+      <text x="240" y="190" text-anchor="middle" font-family="ui-monospace,monospace" font-size="10" font-weight="700" fill="#1f2328">SWITCH</text>
+      <text x="100" y="250" font-family="ui-monospace,monospace" font-size="10" fill="#59636e">| = cond_resched() checkpoints</text>
+      <text x="500" y="250" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" fill="#59636e">~1–5 ms — wait for next checkpoint</text>
+      <text x="20" y="294" font-family="Arial,sans-serif" font-size="14" font-weight="600" fill="#1f2328">PREEMPT_RT</text>
+      <text x="140" y="294" font-family="Arial,sans-serif" font-size="12" fill="#59636e">real-time / audio / robotics</text>
+      <line x1="20" y1="316" x2="700" y2="316" stroke="#1f2328" stroke-width="3"></line>
+      <circle cx="140" cy="316" r="6" fill="#1f2328"></circle>
+      <line x1="153" y1="302" x2="153" y2="330" stroke="#1f2328" stroke-width="2"></line>
+      <text x="153" y="294" text-anchor="middle" font-family="ui-monospace,monospace" font-size="10" font-weight="700" fill="#1f2328">SWITCH</text>
+      <text x="385" y="352" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" fill="#59636e">&lt;100 μs — kernel preempts almost anywhere</text>
+    </svg>

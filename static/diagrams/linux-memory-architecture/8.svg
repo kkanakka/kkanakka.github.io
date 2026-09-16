@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 340" role="img" aria-labelledby="fig8-title fig8-desc" style="width:100%;max-width:900px;height:auto;display:block"><style>.t8{font-family:system-ui,-apple-system,Segoe UI,Helvetica,Arial,sans-serif;font-size:13px;fill:#1f2328}
+.lbl8{font-family:system-ui,sans-serif;font-size:11px;font-weight:600}
+.box{stroke:#d1d9e0;stroke-width:1;rx:6;ry:6}</style>
+<title id="fig8-title">Netty I/O paths — heap vs direct vs zero-copy</title>
+<desc id="fig8-desc">Three horizontal paths comparing two copies via heap byte array, one copy via direct ByteBuffer, and zero-copy sendfile from page cache to NIC.</desc>
+
+<!-- Path labels -->
+<text x="20" y="52" class="lbl8" fill="#1f2328">Heap byte[]</text>
+<text x="20" y="148" class="lbl8" fill="#1f2328">Direct ByteBuffer</text>
+<text x="20" y="244" class="lbl8" fill="#1f2328">sendfile()</text>
+<!-- PATH 1 -->
+<rect x="120" y="28" width="120" height="44" class="box" fill="#f5f0ff"></rect><text x="180" y="55" text-anchor="middle" class="t8">JVM Heap</text>
+<polygon points="260,42 284,42 274,52 284,62 260,62 270,52" fill="#59636e"></polygon><text x="295" y="58" class="t8" font-size="12">copy</text>
+<rect x="348" y="28" width="130" height="44" class="box" fill="#ffebe9"></rect><text x="413" y="55" text-anchor="middle" class="t8">Native temp</text>
+<polygon points="498,42 522,42 512,52 522,62 498,62 508,52" fill="#59636e"></polygon><text x="533" y="58" class="t8" font-size="12">copy</text>
+<rect x="586" y="28" width="130" height="44" class="box" fill="#f6f8fa"></rect><text x="651" y="55" text-anchor="middle" class="t8">Kernel sk_buff</text>
+<polygon points="736,42 760,42 750,52 760,62 736,62 746,52" fill="#59636e"></polygon>
+<rect x="774" y="28" width="86" height="44" class="box" fill="#f6f8fa"></rect><text x="817" y="55" text-anchor="middle" class="t8">NIC</text>
+<text x="120" y="92" class="t8" font-weight="700" fill="#d1242f">2 copies</text>
+<!-- PATH 2 -->
+<rect x="120" y="124" width="140" height="44" class="box" fill="#ffebe9"></rect><text x="190" y="151" text-anchor="middle" class="t8">Direct Buffer</text>
+<polygon points="280,138 304,138 294,148 304,158 280,158 290,148" fill="#59636e"></polygon><text x="315" y="154" class="t8" font-size="12">copy</text>
+<rect x="382" y="124" width="130" height="44" class="box" fill="#f6f8fa"></rect><text x="447" y="151" text-anchor="middle" class="t8">Kernel sk_buff</text>
+<polygon points="532,138 556,138 546,148 556,158 532,158 542,148" fill="#59636e"></polygon>
+<rect x="570" y="124" width="86" height="44" class="box" fill="#f6f8fa"></rect><text x="613" y="151" text-anchor="middle" class="t8">NIC</text>
+<text x="684" y="151" class="t8" font-weight="700" fill="#1a7f37">1 copy — faster</text>
+<!-- PATH 3 -->
+<rect x="120" y="218" width="130" height="44" class="box" fill="#ddf4ff"></rect><text x="185" y="246" text-anchor="middle" class="t8">Page Cache</text>
+<polygon points="270,232 294,232 284,242 294,252 270,252 280,242" fill="#59636e"></polygon><text x="305" y="248" class="t8" font-size="12">DMA</text>
+<rect x="352" y="218" width="86" height="44" class="box" fill="#f6f8fa"></rect><text x="395" y="246" text-anchor="middle" class="t8">NIC</text>
+<text x="460" y="246" class="t8" font-weight="700" fill="#0969da">0 copies — zero-copy!</text>
+</svg>

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 900 320" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arr_mc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0969da"></path>
+    </marker>
+    <marker id="arr_mc_g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1a7f37"></path>
+    </marker>
+  </defs>
+
+  <text x="20" y="22" font-size="12" font-weight="600">B wakes up · A is stuck in kernel · scheduler finds a free core instead</text>
+
+  <!-- Timeline -->
+  <line x1="120" y1="55" x2="860" y2="55" stroke="#d1d9e0" stroke-dasharray="2,4"></line>
+  <text x="120" y="44" fill="#0969da" font-size="10">time →</text>
+
+  <!-- Core 0 label -->
+  <text x="20" y="85" font-size="12" font-weight="600" fill="#9a6700">Core 0</text>
+
+  <!-- Core 0: task A in kernel (non-preemptible) -->
+  <rect x="120" y="68" width="720" height="32" fill="#fff8c5" stroke="#9a6700"></rect>
+  <text x="480" y="89" text-anchor="middle" font-size="11">Task A · in syscall · non-preemptible · PREEMPT_NONE</text>
+
+  <!-- Lock icon on core 0 -->
+  <rect x="830" y="68" width="30" height="32" fill="#ffebe9" stroke="#d1242f"></rect>
+  <text x="845" y="88" text-anchor="middle" font-size="10" fill="#d1242f">🔒</text>
+
+  <!-- Core 1 label -->
+  <text x="20" y="155" font-size="12" font-weight="600" fill="#1a7f37">Core 1</text>
+
+  <!-- Core 1: idle, then B runs -->
+  <rect x="120" y="138" width="300" height="32" fill="#eaeef2" stroke="#6e7781" stroke-dasharray="3,3"></rect>
+  <text x="270" y="159" text-anchor="middle" font-size="11" fill="#6e7781">idle</text>
+
+  <rect x="420" y="138" width="440" height="32" fill="#dafbe1" stroke="#1a7f37" stroke-width="2"></rect>
+  <text x="640" y="159" text-anchor="middle" font-size="12" font-weight="600" fill="#1a7f37">Task B · SCHED_DEADLINE · runs immediately</text>
+
+  <!-- Wake-up event -->
+  <line x1="380" y1="50" x2="380" y2="100" stroke="#d1242f" stroke-width="2"></line>
+  <text x="384" y="46" fill="#d1242f" font-size="10" font-weight="600">⚡ B wakes</text>
+
+  <!-- Scheduler dispatch arrow: from wake event down to core 1 -->
+  <path d="M 380 100 Q 380 120 420 138" stroke="#0969da" stroke-width="2" fill="none" marker-end="url(#arr_mc)"></path>
+  <text x="410" y="125" fill="#0969da" font-size="10">select_task_rq → core 1</text>
+
+  <!-- IPI arrow -->
+  <path d="M 400 115 L 420 130" stroke="#0969da" stroke-width="1" stroke-dasharray="2,2" fill="none"></path>
+  <text x="430" y="128" fill="#0969da" font-size="9">IPI</text>
+
+  <!-- Annotation box -->
+  <rect x="120" y="200" width="740" height="90" fill="#f0fdf4" stroke="#1a7f37" rx="4"></rect>
+  <text x="140" y="222" font-size="11" font-weight="600" fill="#1a7f37">Key insight</text>
+  <text x="140" y="242" font-size="11" fill="#59636e">try_to_wake_up() doesn't care that A is non-preemptible on core 0.</text>
+  <text x="140" y="260" font-size="11" fill="#59636e">It just asks: "which CPU should B land on?" — and picks core 1.</text>
+  <text x="140" y="278" font-size="11" fill="#59636e">A keeps its core, B gets a different one. Both run in parallel. No preemption needed.</text>
+</svg>

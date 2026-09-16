@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 880 220" xmlns="http://www.w3.org/2000/svg">
+  <rect x="10" y="10" width="410" height="200" fill="#dafbe1" stroke="#1a7f37" stroke-width="2" rx="6"></rect>
+  <text x="215" y="36" text-anchor="middle" font-size="13" font-weight="600" fill="#1a7f37">A in user mode — gate OPEN</text>
+  <rect x="40" y="55" width="100" height="28" fill="#fff8c5" stroke="#9a6700"></rect><text x="90" y="73" text-anchor="middle" font-size="11">A user</text>
+  <path d="M150 69 L280 69" stroke="#1a7f37" stroke-width="2"></path><polygon points="280,69 270,64 270,74" fill="#1a7f37"></polygon>
+  <text x="200" y="62" font-size="10" fill="#1a7f37" font-weight="600">B preempts</text>
+  <rect x="290" y="55" width="100" height="28" fill="#ddf4ff" stroke="#0969da"></rect><text x="340" y="73" text-anchor="middle" font-size="11">B runs</text>
+  <text x="215" y="125" text-anchor="middle" font-size="11" fill="#59636e">Higher priority wakes → immediate reschedule on return paths</text>
+  <text x="215" y="185" text-anchor="middle" font-size="10" fill="#1a7f37">IRQ exit / syscall exit always honor TIF_NEED_RESCHED here</text>
+  <rect x="455" y="10" width="415" height="200" fill="#ffebe9" stroke="#d1242f" stroke-width="2" rx="6"></rect>
+  <text x="662" y="36" text-anchor="middle" font-size="13" font-weight="600" fill="#d1242f">A in kernel (PREEMPT_NONE) — gate CLOSED</text>
+  <rect x="485" y="55" width="120" height="28" fill="#fff8c5" stroke="#9a6700"></rect><text x="545" y="73" text-anchor="middle" font-size="11">A syscall</text>
+  <rect x="620" y="52" width="90" height="34" fill="#d1242f" fill-opacity="0.15" stroke="#d1242f" stroke-dasharray="4"></rect>
+  <text x="665" y="73" text-anchor="middle" font-size="10" fill="#d1242f">closed</text>
+  <rect x="720" y="55" width="120" height="28" fill="#ddf4ff" stroke="#0969da" opacity="0.45"></rect>
+  <text x="780" y="73" text-anchor="middle" font-size="11" fill="#59636e">B waits…</text>
+  <path d="M545 115 L662 145 L780 115" stroke="none"></path><text x="662" y="148" text-anchor="middle" font-size="11" fill="#59636e">Higher task marks resched;</text>
+  <text x="662" y="165" text-anchor="middle" font-size="11" fill="#59636e">PREEMPT_COUNT / model blocks preempt until kernel quiescent</text>
+  <rect x="500" y="175" width="325" height="28" fill="#fff8c5" stroke="#9a6700" stroke-dasharray="3"></rect>
+  <text x="662" y="193" text-anchor="middle" font-size="10">B runs only after A returns to user or hits cond_resched()</text>
+</svg>

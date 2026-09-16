@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 900 440" xmlns="http://www.w3.org/2000/svg"><style>.sb{fill:var(--bg-subtle);stroke:var(--border);stroke-width:1}
+.sb-b{fill:#ddf4ff;stroke:var(--accent);stroke-width:1}
+.sb-g{fill:#dafbe1;stroke:var(--success);stroke-width:1}
+.sb-r{fill:#ffebe9;stroke:var(--danger);stroke-width:1}
+.sb-y{fill:#fff8e6;stroke:var(--attention);stroke-width:1}
+.sb-p{fill:#fbefff;stroke:var(--done);stroke-width:1}
+.sb-o{fill:#fff1e5;stroke:var(--orange);stroke-width:1}
+.sl{font-family:var(--sans);font-size:12px;font-weight:600;fill:var(--fg)}
+.ss{font-family:var(--mono);font-size:10px;fill:var(--fg-muted)}</style>
+      <defs><marker id="ag" markerWidth="8" markerHeight="8" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#1a7f37"></path></marker></defs>
+
+      <rect class="sb-o" x="20" y="20" width="140" height="50" rx="6"></rect><text class="sl" x="90" y="42" text-anchor="middle">Publishers</text><text class="ss" x="90" y="56" text-anchor="middle">RSS + webhooks</text>
+      <rect class="sb" x="20" y="100" width="140" height="50" rx="6"></rect><text class="sl" x="90" y="122" text-anchor="middle">Users</text><text class="ss" x="90" y="136" text-anchor="middle">100M DAU</text>
+
+      <rect class="sb-b" x="220" y="20" width="160" height="50" rx="6"></rect><text class="sl" x="300" y="42" text-anchor="middle">Data Collection Svc</text><text class="ss" x="300" y="56" text-anchor="middle">polls RSS, processes hooks</text>
+      <rect class="sb-y" x="220" y="100" width="160" height="50" rx="6"></rect><text class="sl" x="300" y="122" text-anchor="middle">API Gateway (d2)</text><text class="ss" x="300" y="136" text-anchor="middle">TLS, auth, rate-limit</text>
+
+      <rect class="sb-b" x="440" y="100" width="160" height="50" rx="6"></rect><text class="sl" x="520" y="122" text-anchor="middle">Feed Service</text><text class="ss" x="520" y="136" text-anchor="middle">reads cache, formats</text>
+
+      <rect class="sb-g" x="660" y="20" width="180" height="55" rx="6"></rect><text class="sl" x="750" y="42" text-anchor="middle">Espresso</text><text class="ss" x="750" y="56" text-anchor="middle">articles + publishers metadata</text>
+
+      <rect class="sb-r" x="660" y="100" width="180" height="55" rx="6"></rect><text class="sl" x="750" y="122" text-anchor="middle">Couchbase / Redis</text><text class="ss" x="750" y="136" text-anchor="middle">pre-computed regional feeds</text>
+
+      <rect class="sb-p" x="440" y="220" width="160" height="50" rx="6"></rect><text class="sl" x="520" y="242" text-anchor="middle">Ambry</text><text class="ss" x="520" y="256" text-anchor="middle">thumbnails</text>
+      <rect class="sb-o" x="660" y="220" width="180" height="50" rx="6"></rect><text class="sl" x="750" y="242" text-anchor="middle">LinkedIn CDN</text><text class="ss" x="750" y="256" text-anchor="middle">edge delivery</text>
+
+      <rect class="sb-y" x="440" y="320" width="400" height="55" rx="6"></rect><text class="sl" x="640" y="342" text-anchor="middle">Kafka (CDC events)</text><text class="ss" x="640" y="358" text-anchor="middle">new-article events trigger cache refresh via Samza workers</text>
+
+      <rect class="sb-p" x="440" y="400" width="160" height="30" rx="6"></rect><text class="sl" x="520" y="420" text-anchor="middle">Samza workers</text>
+      <rect class="sb-g" x="660" y="400" width="180" height="30" rx="6"></rect><text class="sl" x="750" y="420" text-anchor="middle">Feed Gen → cache update</text>
+
+      <path d="M160,45 L218,45" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#ab)" fill="none"></path>
+      <path d="M160,125 L218,125" stroke="var(--fg-muted)" stroke-width="1.5" marker-end="url(#a1)" fill="none"></path>
+      <path d="M380,125 L438,125" stroke="var(--fg-muted)" stroke-width="1.5" marker-end="url(#a1)" fill="none"></path>
+
+      <path d="M380,45 L658,45" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#ab)" fill="none"></path>
+      <text class="ss" x="500" y="38" fill="var(--accent)">write articles</text>
+
+      <path d="M520,150 L750,158 L750,155" stroke="var(--success)" stroke-width="1.5" marker-end="url(#ag)" fill="none"></path>
+      <text class="ss" x="620" y="168" fill="var(--success)">read cache</text>
+
+      <path d="M520,150 L520,218" stroke="var(--fg-muted)" stroke-width="1.5" stroke-dasharray="3,2" marker-end="url(#a1)" fill="none"></path>
+      <text class="ss" x="535" y="195">thumb refs</text>
+      <path d="M600,245 L658,245" stroke="var(--fg-muted)" stroke-width="1.5" stroke-dasharray="3,2" marker-end="url(#a1)" fill="none"></path>
+
+      <path d="M750,75 L640,318" stroke="var(--danger)" stroke-width="1.5" stroke-dasharray="3,2" marker-end="url(#a1)" fill="none"></path>
+      <text class="ss" x="710" y="200" fill="var(--danger)">CDC</text>
+
+      <path d="M640,375 L520,398" stroke="var(--fg-muted)" stroke-width="1.5" marker-end="url(#a1)" fill="none"></path>
+      <path d="M640,375 L750,398" stroke="var(--fg-muted)" stroke-width="1.5" marker-end="url(#a1)" fill="none"></path>
+    </svg>

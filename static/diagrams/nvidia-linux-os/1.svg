@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 900 260" xmlns="http://www.w3.org/2000/svg" style="width:100%;">
+        <!-- Model 1 -->
+        <rect x="20" y="10" width="270" height="110" rx="10" fill="#f5f5f5" stroke="#222"></rect>
+        <text x="155" y="32" text-anchor="middle" fill="#222" font-size="13" font-weight="700">PREEMPT_NONE</text>
+        <text x="155" y="50" text-anchor="middle" fill="#54595d" font-size="11">(Server / Throughput)</text>
+        <text x="155" y="70" text-anchor="middle" fill="#54595d" font-size="11">Kernel code runs to completion</text>
+        <text x="155" y="84" text-anchor="middle" fill="#54595d" font-size="11">Only preempts at syscall return</text>
+        <text x="155" y="98" text-anchor="middle" fill="#54595d" font-size="11">Max throughput, worst latency</text>
+        <text x="155" y="112" text-anchor="middle" fill="#202122" font-size="11" font-weight="600">Latency: ~10ms worst case</text>
+        <!-- Model 2 -->
+        <rect x="315" y="10" width="270" height="110" rx="10" fill="#f8f9fa" stroke="#202122"></rect>
+        <text x="450" y="32" text-anchor="middle" fill="#202122" font-size="13" font-weight="700">PREEMPT_VOLUNTARY</text>
+        <text x="450" y="50" text-anchor="middle" fill="#54595d" font-size="11">(Desktop / General)</text>
+        <text x="450" y="70" text-anchor="middle" fill="#54595d" font-size="11">Adds explicit preemption points</text>
+        <text x="450" y="84" text-anchor="middle" fill="#54595d" font-size="11">might_sleep() calls in long paths</text>
+        <text x="450" y="98" text-anchor="middle" fill="#54595d" font-size="11">Balance of throughput &amp; latency</text>
+        <text x="450" y="112" text-anchor="middle" fill="#202122" font-size="11" font-weight="600">Latency: ~1-5ms typical</text>
+        <!-- Model 3 -->
+        <rect x="610" y="10" width="270" height="110" rx="10" fill="#f8f9fa" stroke="#222"></rect>
+        <text x="745" y="32" text-anchor="middle" fill="#222" font-size="13" font-weight="700">PREEMPT_RT</text>
+        <text x="745" y="50" text-anchor="middle" fill="#54595d" font-size="11">(Real-Time / Low-Latency)</text>
+        <text x="745" y="70" text-anchor="middle" fill="#54595d" font-size="11">Nearly all kernel code preemptible</text>
+        <text x="745" y="84" text-anchor="middle" fill="#54595d" font-size="11">Spinlocks → rt_mutexes (sleeping)</text>
+        <text x="745" y="98" text-anchor="middle" fill="#54595d" font-size="11">IRQ handlers → kernel threads</text>
+        <text x="745" y="112" text-anchor="middle" fill="#222" font-size="11" font-weight="600">Latency: &lt;100μs guaranteed</text>
+        <!-- Timeline -->
+        <rect x="20" y="140" width="860" height="50" rx="8" fill="#f0f0f0" stroke="var(--border)"></rect>
+        <text x="450" y="160" text-anchor="middle" fill="#202122" font-size="13" font-weight="700">Preemption Timeline: What Happens When High-Priority Task Arrives</text>
+        <!-- NONE -->
+        <rect x="40" y="200" width="250" height="40" rx="6" fill="#f8f9fa" stroke="#202122"></rect>
+        <text x="165" y="215" text-anchor="middle" fill="#202122" font-size="11">NONE: waits for syscall boundary</text>
+        <text x="165" y="230" text-anchor="middle" fill="#54595d" font-size="11">━━━━━━━━━━┃ preempt here</text>
+        <!-- VOL -->
+        <rect x="320" y="200" width="250" height="40" rx="6" fill="#f8f9fa" stroke="#202122"></rect>
+        <text x="445" y="215" text-anchor="middle" fill="#202122" font-size="11">VOLUNTARY: preempts at check point</text>
+        <text x="445" y="230" text-anchor="middle" fill="#54595d" font-size="11">━━━┃ might_sleep() → preempt</text>
+        <!-- RT -->
+        <rect x="600" y="200" width="250" height="40" rx="6" fill="#f8f9fa" stroke="#222"></rect>
+        <text x="725" y="215" text-anchor="middle" fill="#222" font-size="11">RT: preempts almost immediately</text>
+        <text x="725" y="230" text-anchor="middle" fill="#54595d" font-size="11">┃ &lt;100μs → preempt</text>
+    </svg>

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 900 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="fig13-title">
+        <title id="fig13-title">Figure 13: Parallel write throughput vs concurrency</title>
+        <!-- Axes -->
+        <line x1="80" y1="270" x2="820" y2="270" stroke="#59636e" stroke-width="2"></line>
+        <line x1="80" y1="50" x2="80" y2="270" stroke="#59636e" stroke-width="2"></line>
+        <text x="28" y="170" transform="rotate(-90 28 170)" fill="#59636e" font-size="13">GB/s</text>
+        <text x="450" y="325" text-anchor="middle" fill="#59636e" font-size="13">Concurrent writers</text>
+        <!-- Y ticks -->
+        <g font-size="11" fill="#59636e">
+          <text x="72" y="274" text-anchor="end">0</text>
+          <text x="72" y="226" text-anchor="end">2</text>
+          <text x="72" y="178" text-anchor="end">4</text>
+          <text x="72" y="130" text-anchor="end">6</text>
+          <text x="72" y="82" text-anchor="end">8</text>
+        </g>
+        <g stroke="#d8dee4">
+          <line x1="80" y1="226" x2="820" y2="226"></line>
+          <line x1="80" y1="178" x2="820" y2="178"></line>
+          <line x1="80" y1="130" x2="820" y2="130"></line>
+          <line x1="80" y1="82" x2="820" y2="82"></line>
+        </g>
+        <!-- X labels log-ish positions -->
+        <g font-size="10" fill="#59636e" text-anchor="middle">
+          <text x="120" y="288">1</text><text x="200" y="288">4</text><text x="280" y="288">16</text>
+          <text x="360" y="288">64</text><text x="440" y="288">256</text><text x="540" y="288">512</text><text x="660" y="288">768</text><text x="780" y="288">1024</text>
+        </g>
+        <!-- Grid -->
+        <g stroke="#f0f0f0"><line x1="120" y1="50" x2="120" y2="270"></line><line x1="280" y1="50" x2="280" y2="270"></line><line x1="440" y1="50" x2="440" y2="270"></line><line x1="660" y1="50" x2="660" y2="270"></line></g>
+        <!-- XFS polyline approximate linear to 7.5 -->
+        <!-- Map x:120=1,780=1024 linear in log-ish spacing used above - use piecewise coords -->
+        <polyline fill="none" stroke="#0969da" stroke-width="3" points="120,250 165,238 215,218 268,188 328,154 392,132 458,118 536,112 622,109 716,107 780,106"></polyline>
+        <!-- ext4 plateau ~4.5 slight regression -->
+        <polyline fill="none" stroke="#9a6700" stroke-width="3" points="120,250 165,226 215,198 268,174 328,164 392,162 458,166 536,171 622,176 716,178 780,177"></polyline>
+        <!-- Data points circles XFS -->
+        <g fill="#0969da" stroke="#ffffff" stroke-width="1">
+          <circle cx="120" cy="250" r="5"></circle><circle cx="215" cy="218" r="5"></circle><circle cx="328" cy="154" r="5"></circle>
+          <circle cx="458" cy="118" r="5"></circle><circle cx="622" cy="109" r="5"></circle><circle cx="780" cy="106" r="5"></circle>
+        </g>
+        <g fill="#9a6700" stroke="#ffffff" stroke-width="1">
+          <circle cx="120" cy="250" r="5"></circle><circle cx="215" cy="198" r="5"></circle><circle cx="328" cy="164" r="5"></circle>
+          <circle cx="458" cy="166" r="5"></circle><circle cx="622" cy="176" r="5"></circle><circle cx="780" cy="177" r="5"></circle>
+        </g>
+        <text x="790" y="100" fill="#0969da" font-size="12" font-weight="700">XFS ~7.5 GB/s</text>
+        <text x="790" y="170" fill="#9a6700" font-size="12" font-weight="700">ext4 ~4.5 GB/s plateau</text>
+      </svg>

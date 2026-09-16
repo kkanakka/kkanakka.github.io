@@ -1,0 +1,9 @@
+{
+  "label": "SRE Interview Prep",
+  "position": 6,
+  "link": {
+    "type": "generated-index",
+    "slug": "/sre",
+    "description": "Google SRE interview questions, systems design playbooks, debugging scenarios, and reliability patterns."
+  }
+}

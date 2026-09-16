@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="100%" height="550" style="background:#fafafa;border:1px solid #ddd;border-radius:8px;margin:16px 0;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1067 550">
+    <!-- Control Plane -->
+    <rect x="50" y="50" width="180" height="100" fill="#e3f2fd" stroke="#1976d2" stroke-width="2" rx="8"></rect>
+    <text x="140" y="75" text-anchor="middle" font-size="14" font-weight="bold" fill="#1976d2">Control Plane</text>
+    <text x="140" y="95" text-anchor="middle" font-size="11" fill="#1976d2">React UI + REST API</text>
+    <text x="140" y="110" text-anchor="middle" font-size="10" fill="#1976d2">Flag CRUD, Targeting Rules</text>
+    <text x="140" y="125" text-anchor="middle" font-size="10" fill="#1976d2">Rollout Management</text>
+    <text x="140" y="140" text-anchor="middle" font-size="10" fill="#1976d2">Kill Switch</text>
+    
+    <!-- Espresso Metadata Store -->
+    <rect x="280" y="50" width="150" height="100" fill="#e8f5e9" stroke="#388e3c" stroke-width="2" rx="8"></rect>
+    <text x="355" y="75" text-anchor="middle" font-size="14" font-weight="bold" fill="#388e3c">Espresso Store</text>
+    <text x="355" y="95" text-anchor="middle" font-size="11" fill="#388e3c">Flag Metadata</text>
+    <text x="355" y="110" text-anchor="middle" font-size="10" fill="#388e3c">Targeting Rules</text>
+    <text x="355" y="125" text-anchor="middle" font-size="10" fill="#388e3c">Multi-DC Replication</text>
+    <text x="355" y="140" text-anchor="middle" font-size="10" fill="#388e3c">Version History</text>
+    
+    <!-- Kafka Distribution -->
+    <rect x="480" y="50" width="150" height="100" fill="#fff3e0" stroke="#f57c00" stroke-width="2" rx="8"></rect>
+    <text x="555" y="75" text-anchor="middle" font-size="14" font-weight="bold" fill="#f57c00">Kafka Distribution</text>
+    <text x="555" y="95" text-anchor="middle" font-size="11" fill="#f57c00">Delta Streaming</text>
+    <text x="555" y="110" text-anchor="middle" font-size="10" fill="#f57c00">Per-DC Topic</text>
+    <text x="555" y="125" text-anchor="middle" font-size="10" fill="#f57c00">Change Events</text>
+    <text x="555" y="140" text-anchor="middle" font-size="10" fill="#f57c00">Replay Queue</text>
+    
+    <!-- Edge Evaluators -->
+    <rect x="50" y="200" width="130" height="80" fill="#f3e5f5" stroke="#7b1fa2" stroke-width="2" rx="8"></rect>
+    <text x="115" y="225" text-anchor="middle" font-size="12" font-weight="bold" fill="#7b1fa2">Edge SDK</text>
+    <text x="115" y="245" text-anchor="middle" font-size="10" fill="#7b1fa2">In-Memory Cache</text>
+    <text x="115" y="260" text-anchor="middle" font-size="10" fill="#7b1fa2">Service A</text>
+    
+    <rect x="200" y="200" width="130" height="80" fill="#f3e5f5" stroke="#7b1fa2" stroke-width="2" rx="8"></rect>
+    <text x="265" y="225" text-anchor="middle" font-size="12" font-weight="bold" fill="#7b1fa2">Edge SDK</text>
+    <text x="265" y="245" text-anchor="middle" font-size="10" fill="#7b1fa2">Local Evaluation</text>
+    <text x="265" y="260" text-anchor="middle" font-size="10" fill="#7b1fa2">Service B</text>
+    
+    <rect x="350" y="200" width="130" height="80" fill="#f3e5f5" stroke="#7b1fa2" stroke-width="2" rx="8"></rect>
+    <text x="415" y="225" text-anchor="middle" font-size="12" font-weight="bold" fill="#7b1fa2">Edge SDK</text>
+    <text x="415" y="245" text-anchor="middle" font-size="10" fill="#7b1fa2">Hash-Based Cohorts</text>
+    <text x="415" y="260" text-anchor="middle" font-size="10" fill="#7b1fa2">Service C</text>
+    
+    <rect x="500" y="200" width="130" height="80" fill="#f3e5f5" stroke="#7b1fa2" stroke-width="2" rx="8"></rect>
+    <text x="565" y="225" text-anchor="middle" font-size="12" font-weight="bold" fill="#7b1fa2">Edge SDK</text>
+    <text x="565" y="245" text-anchor="middle" font-size="10" fill="#7b1fa2">≤2ms Evaluation</text>
+    <text x="565" y="260" text-anchor="middle" font-size="10" fill="#7b1fa2">Service D</text>
+    
+    <!-- Memcache Layer -->
+    <rect x="50" y="320" width="200" height="60" fill="#e0f2f1" stroke="#00695c" stroke-width="2" rx="8"></rect>
+    <text x="150" y="340" text-anchor="middle" font-size="14" font-weight="bold" fill="#00695c">Memcache Cluster</text>
+    <text x="150" y="360" text-anchor="middle" font-size="10" fill="#00695c">Warm Cache for SDK Bootstrap</text>
+    <text x="150" y="375" text-anchor="middle" font-size="10" fill="#00695c">TTL: 5 minutes</text>
+    
+    <!-- Audit Service -->
+    <rect x="300" y="320" width="180" height="60" fill="#fce4ec" stroke="#c2185b" stroke-width="2" rx="8"></rect>
+    <text x="390" y="340" text-anchor="middle" font-size="14" font-weight="bold" fill="#c2185b">Audit Service</text>
+    <text x="390" y="360" text-anchor="middle" font-size="10" fill="#c2185b">Hash-Chained Log (Kafka + Espresso)</text>
+    <text x="390" y="375" text-anchor="middle" font-size="10" fill="#c2185b">Compliance &amp; Debug</text>
+    
+    <!-- Monitoring -->
+    <rect x="520" y="320" width="150" height="60" fill="#e8eaf6" stroke="#3f51b5" stroke-width="2" rx="8"></rect>
+    <text x="595" y="340" text-anchor="middle" font-size="14" font-weight="bold" fill="#3f51b5">Checkly Monitoring</text>
+    <text x="595" y="360" text-anchor="middle" font-size="10" fill="#3f51b5">Flag Drift Detection</text>
+    <text x="595" y="375" text-anchor="middle" font-size="10" fill="#3f51b5">SLO Burn Rate</text>
+    
+    <!-- Cross-Colo Replication -->
+    <rect x="50" y="420" width="580" height="60" fill="#fff8e1" stroke="#fbc02d" stroke-width="2" rx="8"></rect>
+    <text x="340" y="440" text-anchor="middle" font-size="14" font-weight="bold" fill="#f57c00">Cross-Colo Replication</text>
+    <text x="340" y="460" text-anchor="middle" font-size="10" fill="#f57c00">LTX1 ← Kafka Replication → LVA1 ← Kafka Replication → EI4 ← Kafka Replication → Grid2</text>
+    <text x="340" y="475" text-anchor="middle" font-size="10" fill="#f57c00">Regional Kafka Topics: feature-flags-ltx1, feature-flags-lva1, feature-flags-ei4, feature-flags-grid2</text>
+    
+    <!-- Arrows -->
+    <defs>
+      <marker id="arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+        <polygon points="0 0, 10 3.5, 0 7" fill="#666"></polygon>
+      </marker>
+    </defs>
+    
+    <!-- Data flow arrows -->
+    <line x1="230" y1="100" x2="280" y2="100" stroke="#666" stroke-width="2" marker-end="url(#arrow)"></line>
+    <line x1="430" y1="100" x2="480" y2="100" stroke="#666" stroke-width="2" marker-end="url(#arrow)"></line>
+    <line x1="520" y1="150" x2="415" y2="200" stroke="#666" stroke-width="2" marker-end="url(#arrow)"></line>
+    <line x1="540" y1="150" x2="265" y2="200" stroke="#666" stroke-width="2" marker-end="url(#arrow)"></line>
+    <line x1="560" y1="150" x2="115" y2="200" stroke="#666" stroke-width="2" marker-end="url(#arrow)"></line>
+    <line x1="580" y1="150" x2="565" y2="200" stroke="#666" stroke-width="2" marker-end="url(#arrow)"></line>
+    
+    <!-- Memcache connections -->
+    <line x1="150" y1="320" x2="115" y2="280" stroke="#00695c" stroke-width="2" stroke-dasharray="5,5"></line>
+    <line x1="180" y1="320" x2="265" y2="280" stroke="#00695c" stroke-width="2" stroke-dasharray="5,5"></line>
+    
+    <!-- Audit connections -->
+    <line x1="355" y1="150" x2="390" y2="320" stroke="#c2185b" stroke-width="2" stroke-dasharray="3,3"></line>
+    
+    <!-- Labels -->
+    <text x="255" y="95" font-size="9" fill="#666">write</text>
+    <text x="455" y="95" font-size="9" fill="#666">stream</text>
+    <text x="450" y="175" font-size="9" fill="#666">delta</text>
+    <text x="130" y="310" font-size="9" fill="#00695c">bootstrap</text>
+    <text x="420" y="240" font-size="9" fill="#c2185b">audit</text>
+  </svg>

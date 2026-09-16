@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 980 420" xmlns="http://www.w3.org/2000/svg"><style>.lbl-title{font-family:'Inter',sans-serif;font-weight:700;font-size:11.5px;fill:#1f2328}
+.lbl-sub{font-family:'JetBrains Mono',monospace;font-size:9.5px;fill:#59636e}
+.lbl-meta{font-family:'JetBrains Mono',monospace;font-size:9px;fill:#818b98}</style>
+  <!-- Ring circle -->
+  <circle cx="290" cy="210" r="150" fill="none" stroke="#d0d7de" stroke-width="2"></circle>
+
+  <!-- 8 nodes positioned -->
+  <circle cx="290" cy="60" r="20" fill="#ddf4ff" stroke="#54aeff" stroke-width="2"></circle>
+  <text x="290" y="65" text-anchor="middle" class="lbl-title">N₀</text>
+  <text x="290" y="40" text-anchor="middle" class="lbl-meta">0x00</text>
+
+  <circle cx="395" cy="100" r="20" fill="#ddf4ff" stroke="#54aeff" stroke-width="2"></circle>
+  <text x="395" y="105" text-anchor="middle" class="lbl-title">N₁</text>
+  <text x="425" y="90" class="lbl-meta">0x20</text>
+
+  <circle cx="440" cy="210" r="20" fill="#dafbe1" stroke="#4ac26b" stroke-width="3"></circle>
+  <text x="440" y="215" text-anchor="middle" class="lbl-title">N₂</text>
+  <text x="470" y="215" class="lbl-meta">0x40 ← owner of key K</text>
+
+  <circle cx="395" cy="320" r="20" fill="#ddf4ff" stroke="#54aeff" stroke-width="2"></circle>
+  <text x="395" y="325" text-anchor="middle" class="lbl-title">N₃</text>
+  <text x="425" y="325" class="lbl-meta">0x60</text>
+
+  <circle cx="290" cy="360" r="20" fill="#ddf4ff" stroke="#54aeff" stroke-width="2"></circle>
+  <text x="290" y="365" text-anchor="middle" class="lbl-title">N₄</text>
+  <text x="290" y="395" text-anchor="middle" class="lbl-meta">0x80</text>
+
+  <circle cx="185" cy="320" r="20" fill="#ddf4ff" stroke="#54aeff" stroke-width="2"></circle>
+  <text x="185" y="325" text-anchor="middle" class="lbl-title">N₅</text>
+  <text x="155" y="325" text-anchor="end" class="lbl-meta">0xA0</text>
+
+  <circle cx="140" cy="210" r="20" fill="#fff1e5" stroke="#fd8c73" stroke-width="3"></circle>
+  <text x="140" y="215" text-anchor="middle" class="lbl-title">N₆</text>
+  <text x="110" y="215" text-anchor="end" class="lbl-meta">0xC0 ← request enters</text>
+
+  <circle cx="185" cy="100" r="20" fill="#ddf4ff" stroke="#54aeff" stroke-width="2"></circle>
+  <text x="185" y="105" text-anchor="middle" class="lbl-title">N₇</text>
+  <text x="155" y="90" text-anchor="end" class="lbl-meta">0xE0</text>
+
+  <!-- Finger arrows from N6 -->
+  <path d="M155 200 Q 200 130 280 80" stroke="#0a66c2" stroke-width="2" fill="none" marker-end="url(#arr-blue)" stroke-dasharray="4,2"></path>
+  <path d="M160 200 Q 280 130 420 200" stroke="#0a66c2" stroke-width="2.5" fill="none" marker-end="url(#arr-blue)"></path>
+  <text x="280" y="160" class="lbl-meta" fill="#0a66c2">finger to N₂ (hop 1)</text>
+
+  <defs>
+    <marker id="arr-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0a66c2"></path>
+    </marker>
+  </defs>
+
+  <!-- Right side: finger table explanation -->
+  <text x="560" y="50" class="lbl-title" style="font-size:13px">N₆'s finger table (8 nodes example)</text>
+
+  <rect x="560" y="65" width="380" height="220" fill="#f6f8fa" stroke="#d0d7de"></rect>
+  <text x="580" y="85" class="lbl-meta" font-family="JetBrains Mono">i  | start          | successor</text>
+  <text x="580" y="100" class="lbl-meta" font-family="JetBrains Mono">─────────────────────────────</text>
+  <text x="580" y="115" class="lbl-sub" font-family="JetBrains Mono">0  | 0xC0 + 2^0     | N₇</text>
+  <text x="580" y="130" class="lbl-sub" font-family="JetBrains Mono">1  | 0xC0 + 2^1     | N₇</text>
+  <text x="580" y="145" class="lbl-sub" font-family="JetBrains Mono">2  | 0xC0 + 2^2     | N₇</text>
+  <text x="580" y="160" class="lbl-sub" font-family="JetBrains Mono">3  | 0xC0 + 2^3     | N₇</text>
+  <text x="580" y="175" class="lbl-sub" font-family="JetBrains Mono">4  | 0xC0 + 2^4     | N₀</text>
+  <text x="580" y="190" class="lbl-sub" font-family="JetBrains Mono">5  | 0xC0 + 2^5     | N₁</text>
+  <text x="580" y="205" class="lbl-sub" font-family="JetBrains Mono" font-weight="700" fill="#0a66c2">6  | 0xC0 + 2^6     | N₂ ←</text>
+  <text x="580" y="220" class="lbl-sub" font-family="JetBrains Mono">7  | 0xC0 + 2^7     | N₅</text>
+
+  <text x="560" y="265" class="lbl-title" style="font-size:13px">Lookup for key K (hash 0x40):</text>
+  <text x="560" y="285" class="lbl-sub">1. K is at 0x40, far from N₆ (0xC0)</text>
+  <text x="560" y="300" class="lbl-sub">2. N₆ scans finger table backwards</text>
+  <text x="560" y="315" class="lbl-sub">3. Largest finger preceding K = N₂</text>
+  <text x="560" y="330" class="lbl-sub">4. Forward to N₂ → DONE (1 hop!)</text>
+  <text x="560" y="350" class="lbl-meta" fill="#0a66c2">Without fingers: 4 successor hops</text>
+  <text x="560" y="365" class="lbl-meta" fill="#0a66c2">With fingers: 1 hop</text>
+  <text x="560" y="385" class="lbl-meta">In production (N=1000): 10 fingers → max 10 hops, average ≤ 3</text>
+</svg>

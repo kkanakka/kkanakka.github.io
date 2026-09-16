@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 900 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="fig14-title">
+        <title id="fig14-title">Figure 14: mq-deadline reordering illustration</title>
+        <text x="120" y="40" font-size="15" font-weight="700" fill="#1f2328">Submitted</text>
+        <text x="400" y="40" font-size="15" font-weight="700" fill="#1f2328">FIFO queues</text>
+        <text x="705" y="40" font-size="15" font-weight="700" fill="#1f2328">Dispatch</text>
+        <!-- Left column blocks -->
+        <g font-size="11">
+          <rect x="60" y="70" width="46" height="28" rx="4" fill="#ddf4ff" stroke="#0969da"></rect><text x="83" y="88" text-anchor="middle">R</text>
+          <rect x="110" y="70" width="46" height="28" rx="4" fill="#fff8c5" stroke="#9a6700"></rect><text x="133" y="88" text-anchor="middle">W</text>
+          <rect x="160" y="70" width="46" height="28" rx="4" fill="#ddf4ff" stroke="#0969da"></rect><text x="183" y="88" text-anchor="middle">R</text>
+          <rect x="210" y="70" width="46" height="28" rx="4" fill="#fff8c5" stroke="#9a6700"></rect><text x="233" y="88" text-anchor="middle">W</text>
+          <rect x="110" y="110" width="46" height="28" rx="4" fill="#ddf4ff" stroke="#0969da"></rect><text x="133" y="128" text-anchor="middle">R</text>
+          <rect x="160" y="110" width="46" height="28" rx="4" fill="#fff8c5" stroke="#9a6700"></rect><text x="183" y="128" text-anchor="middle">W</text>
+        </g>
+        <!-- Middle dual queues -->
+        <rect x="330" y="60" width="200" height="95" rx="8" fill="#ffebe9" stroke="#d1242f" stroke-dasharray="4 3"></rect>
+        <text x="430" y="82" text-anchor="middle" font-size="12" font-weight="600" fill="#d1242f">reads (deadline 500 ms)</text>
+        <rect x="348" y="92" width="36" height="22" rx="3" fill="#ddf4ff" stroke="#0969da"></rect><text x="366" y="107" text-anchor="middle" font-size="10">R1</text>
+        <rect x="392" y="92" width="36" height="22" rx="3" fill="#ddf4ff" stroke="#0969da"></rect><text x="410" y="107" text-anchor="middle" font-size="10">R3</text>
+        <rect x="436" y="92" width="36" height="22" rx="3" fill="#ddf4ff" stroke="#0969da"></rect><text x="454" y="107" text-anchor="middle" font-size="10">R5</text>
+        <rect x="330" y="175" width="200" height="95" rx="8" fill="#ffebe9" stroke="#d1242f" stroke-dasharray="4 3"></rect>
+        <text x="430" y="197" text-anchor="middle" font-size="12" font-weight="600" fill="#d1242f">writes (deadline 5 s)</text>
+        <rect x="348" y="208" width="36" height="22" rx="3" fill="#fff8c5" stroke="#9a6700"></rect><text x="366" y="223" text-anchor="middle" font-size="10">W2</text>
+        <rect x="392" y="208" width="36" height="22" rx="3" fill="#fff8c5" stroke="#9a6700"></rect><text x="410" y="223" text-anchor="middle" font-size="10">W4</text>
+        <rect x="436" y="208" width="36" height="22" rx="3" fill="#fff8c5" stroke="#9a6700"></rect><text x="454" y="223" text-anchor="middle" font-size="10">W6</text>
+        <!-- Arrows dispatch -->
+        <path d="M 530 120 L 615 115" stroke="#59636e" stroke-width="2" marker-end="url(#dsp)"></path>
+        <path d="M 530 220 L 615 235" stroke="#59636e" stroke-width="2" marker-end="url(#dsp)"></path>
+        <defs>
+          <marker id="dsp" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#59636e"></polygon>
+          </marker>
+        </defs>
+        <!-- Right dispatch -->
+        <text x="640" y="110" fill="#59636e" font-size="12">Order:</text>
+        <rect x="640" y="120" width="220" height="160" rx="8" fill="#f6f8fa" stroke="#d1d9e0"></rect>
+        <g font-size="12" font-family="sans-serif">
+          <rect x="655" y="132" width="190" height="22" rx="4" fill="#ddf4ff" stroke="#0969da"></rect><text x="750" y="147" text-anchor="middle">R1</text>
+          <rect x="655" y="160" width="190" height="22" rx="4" fill="#ddf4ff" stroke="#0969da"></rect><text x="750" y="175" text-anchor="middle">R3</text>
+          <rect x="655" y="188" width="190" height="22" rx="4" fill="#ddf4ff" stroke="#0969da"></rect><text x="750" y="203" text-anchor="middle">R5</text>
+          <rect x="655" y="226" width="190" height="22" rx="4" fill="#fff8c5" stroke="#9a6700"></rect><text x="750" y="241" text-anchor="middle">W2</text>
+          <rect x="655" y="254" width="190" height="22" rx="4" fill="#fff8c5" stroke="#9a6700"></rect><text x="750" y="269" text-anchor="middle">W4 → W6</text>
+        </g>
+      </svg>

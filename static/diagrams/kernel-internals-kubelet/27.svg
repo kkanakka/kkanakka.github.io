@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 900 460" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="apurp" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#8250df"></path>
+    </marker>
+  </defs>
+
+  <text x="20" y="22" font-size="12" font-weight="600">Time → · Both CPU and GPU have idle phases · the goal is overlapping them with batching and streams</text>
+
+  <!-- CPU lane -->
+  <rect x="40" y="50" width="820" height="130" fill="#f5faff" stroke="#0969da" rx="3"></rect>
+  <text x="60" y="74" font-size="11" font-weight="600" fill="#0969da">CPU + DRAM lane</text>
+
+  <rect x="70" y="92" width="100" height="76" fill="#ddf4ff" stroke="#0969da"></rect>
+  <text x="120" y="115" text-anchor="middle" font-size="10" font-weight="500">NIC RX</text>
+  <text x="120" y="131" text-anchor="middle" font-size="9" fill="#59636e">→ DRAM</text>
+  <text x="120" y="145" text-anchor="middle" font-size="9" fill="#59636e">via NIC DMA</text>
+  <text x="120" y="159" text-anchor="middle" font-size="9" fill="#59636e">100 GbE</text>
+
+  <rect x="180" y="92" width="80" height="76" fill="#ddf4ff" stroke="#0969da"></rect>
+  <text x="220" y="115" text-anchor="middle" font-size="10" font-weight="500">Parse</text>
+  <text x="220" y="131" text-anchor="middle" font-size="9" fill="#59636e">HTTP</text>
+  <text x="220" y="145" text-anchor="middle" font-size="9" fill="#59636e">extract tensor</text>
+  <text x="220" y="159" text-anchor="middle" font-size="9" fill="#59636e">CPU work</text>
+
+  <rect x="270" y="92" width="120" height="76" fill="#ddf4ff" stroke="#0969da"></rect>
+  <text x="330" y="115" text-anchor="middle" font-size="10" font-weight="500">cudaMemcpy</text>
+  <text x="330" y="131" text-anchor="middle" font-size="9" fill="#59636e">DRAM → HBM</text>
+  <text x="330" y="145" text-anchor="middle" font-size="9" fill="#59636e">+ cuLaunchKernel</text>
+  <text x="330" y="159" text-anchor="middle" font-size="9" fill="#59636e">issue work</text>
+
+  <!-- CPU idle (dashed) -->
+  <rect x="400" y="92" width="160" height="76" fill="#ffffff" stroke="#0969da" stroke-dasharray="3,3"></rect>
+  <text x="480" y="125" text-anchor="middle" font-size="10" fill="#0969da" font-weight="500">CPU idle (waits)</text>
+  <text x="480" y="142" text-anchor="middle" font-size="9" fill="#59636e">— or prep next batch —</text>
+  <text x="480" y="156" text-anchor="middle" font-size="9" fill="#59636e">async streams help</text>
+
+  <rect x="570" y="92" width="120" height="76" fill="#ddf4ff" stroke="#0969da"></rect>
+  <text x="630" y="115" text-anchor="middle" font-size="10" font-weight="500">cudaMemcpy</text>
+  <text x="630" y="131" text-anchor="middle" font-size="9" fill="#59636e">HBM → DRAM</text>
+  <text x="630" y="145" text-anchor="middle" font-size="9" fill="#59636e">results back</text>
+
+  <rect x="700" y="92" width="70" height="76" fill="#ddf4ff" stroke="#0969da"></rect>
+  <text x="735" y="115" text-anchor="middle" font-size="10" font-weight="500">Format</text>
+  <text x="735" y="131" text-anchor="middle" font-size="9" fill="#59636e">response</text>
+  <text x="735" y="145" text-anchor="middle" font-size="9" fill="#59636e">JSON</text>
+
+  <rect x="780" y="92" width="70" height="76" fill="#ddf4ff" stroke="#0969da"></rect>
+  <text x="815" y="115" text-anchor="middle" font-size="10" font-weight="500">NIC TX</text>
+  <text x="815" y="131" text-anchor="middle" font-size="9" fill="#59636e">→ wire</text>
+
+  <!-- GPU lane -->
+  <rect x="40" y="260" width="820" height="130" fill="#fffbeb" stroke="#9a6700" rx="3"></rect>
+  <text x="60" y="284" font-size="11" font-weight="600" fill="#9a6700">GPU + HBM lane</text>
+
+  <!-- GPU idle (dashed) -->
+  <rect x="70" y="302" width="320" height="76" fill="#ffffff" stroke="#9a6700" stroke-dasharray="3,3"></rect>
+  <text x="230" y="332" text-anchor="middle" font-size="10" fill="#9a6700" font-weight="500">GPU idle — waiting for data</text>
+  <text x="230" y="349" text-anchor="middle" font-size="9" fill="#59636e">expensive silicon doing nothing</text>
+  <text x="230" y="363" text-anchor="middle" font-size="9" fill="#59636e">"GPU util 40%" lives here</text>
+
+  <!-- GPU compute (highlighted) -->
+  <rect x="400" y="302" width="160" height="76" fill="#fff8e6" stroke="#9a6700" stroke-width="2.5"></rect>
+  <text x="480" y="325" text-anchor="middle" font-size="11" font-weight="600">Compute</text>
+  <text x="480" y="343" text-anchor="middle" font-size="9" fill="#59636e">tensor cores · matmul</text>
+  <text x="480" y="357" text-anchor="middle" font-size="9" fill="#59636e">HBM at 3 TB/s</text>
+  <text x="480" y="370" text-anchor="middle" font-size="9" fill="#59636e">17k CUDA cores busy</text>
+
+  <!-- GPU idle after (dashed) -->
+  <rect x="570" y="302" width="280" height="76" fill="#ffffff" stroke="#9a6700" stroke-dasharray="3,3"></rect>
+  <text x="710" y="332" text-anchor="middle" font-size="10" fill="#9a6700" font-weight="500">GPU idle again</text>
+  <text x="710" y="349" text-anchor="middle" font-size="9" fill="#59636e">waiting for next request</text>
+  <text x="710" y="363" text-anchor="middle" font-size="9" fill="#59636e">batch larger to fix this</text>
+
+  <!-- PCIe vertical arrows -->
+  <line x1="330" y1="168" x2="450" y2="302" stroke="#8250df" stroke-width="2.5" marker-end="url(#apurp)"></line>
+  <text x="358" y="218" font-size="9" fill="#8250df" font-weight="600">PCIe Gen5 x16</text>
+  <text x="358" y="232" font-size="9" fill="#8250df">63 GB/s</text>
+  <text x="358" y="246" font-size="9" fill="#8250df">DRAM → HBM</text>
+
+  <line x1="510" y1="302" x2="630" y2="168" stroke="#8250df" stroke-width="2.5" marker-end="url(#apurp)"></line>
+  <text x="548" y="218" font-size="9" fill="#8250df" font-weight="600">PCIe Gen5 x16</text>
+  <text x="548" y="232" font-size="9" fill="#8250df">63 GB/s</text>
+  <text x="548" y="246" font-size="9" fill="#8250df">HBM → DRAM</text>
+
+  <!-- Time axis -->
+  <line x1="40" y1="410" x2="860" y2="410" stroke="#1f2328" stroke-width="1.5"></line>
+  <text x="40" y="428" font-size="10" fill="#59636e">t=0</text>
+  <text x="450" y="428" text-anchor="middle" font-size="10" fill="#59636e">time →</text>
+  <text x="860" y="428" text-anchor="end" font-size="10" fill="#59636e">response sent</text>
+
+  <!-- Phase labels above time axis -->
+  <text x="120" y="445" text-anchor="middle" font-size="9" fill="#59636e">ingest</text>
+  <text x="220" y="445" text-anchor="middle" font-size="9" fill="#59636e">host prep</text>
+  <text x="330" y="445" text-anchor="middle" font-size="9" fill="#59636e">copy to GPU</text>
+  <text x="480" y="445" text-anchor="middle" font-size="9" fill="#59636e">GPU compute</text>
+  <text x="630" y="445" text-anchor="middle" font-size="9" fill="#59636e">copy back</text>
+  <text x="780" y="445" text-anchor="middle" font-size="9" fill="#59636e">respond</text>
+</svg>

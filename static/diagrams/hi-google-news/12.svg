@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 800 150" xmlns="http://www.w3.org/2000/svg"><style>.sb{fill:var(--bg-subtle);stroke:var(--border);stroke-width:1}
+.sb-b{fill:#ddf4ff;stroke:var(--accent);stroke-width:1}
+.sb-g{fill:#dafbe1;stroke:var(--success);stroke-width:1}
+.sb-r{fill:#ffebe9;stroke:var(--danger);stroke-width:1}
+.sb-y{fill:#fff8e6;stroke:var(--attention);stroke-width:1}
+.sb-p{fill:#fbefff;stroke:var(--done);stroke-width:1}
+.sb-o{fill:#fff1e5;stroke:var(--orange);stroke-width:1}
+.sl{font-family:var(--sans);font-size:12px;font-weight:600;fill:var(--fg)}
+.ss{font-family:var(--mono);font-size:10px;fill:var(--fg-muted)}
+.sa{stroke:var(--fg-muted);stroke-width:1.2;fill:none}
+.sa-b{stroke:var(--accent);stroke-width:1.5;fill:none}
+.sa-g{stroke:var(--success);stroke-width:1.5;fill:none}
+.sa-r{stroke:var(--danger);stroke-width:1.5;fill:none}
+.sa-p{stroke:var(--done);stroke-width:1.5;fill:none}</style>
+      <rect class="sb-r" x="300" y="15" width="150" height="45" rx="6"></rect><text class="sl" x="375" y="35" text-anchor="middle">Master</text><text class="ss" x="375" y="50" text-anchor="middle">writes only (ZADD)</text>
+
+      <rect class="sb-b" x="50" y="90" width="120" height="40" rx="4"></rect><text class="ss" x="110" y="114" text-anchor="middle">Replica 1</text>
+      <rect class="sb-b" x="190" y="90" width="120" height="40" rx="4"></rect><text class="ss" x="250" y="114" text-anchor="middle">Replica 2</text>
+      <rect class="sb-b" x="330" y="90" width="120" height="40" rx="4"></rect><text class="ss" x="390" y="114" text-anchor="middle">Replica 3</text>
+      <rect class="sb-b" x="470" y="90" width="120" height="40" rx="4"></rect><text class="ss" x="530" y="114" text-anchor="middle">Replica N</text>
+      <rect class="sb" x="610" y="90" width="120" height="40" rx="4"></rect><text class="ss" x="670" y="106" text-anchor="middle">... scale out</text><text class="ss" x="670" y="120" text-anchor="middle">as needed</text>
+
+      <path class="sa" d="M340,60 L110,88" marker-end="url(#a1)"></path>
+      <path class="sa" d="M360,60 L250,88" marker-end="url(#a1)"></path>
+      <path class="sa" d="M390,60 L390,88" marker-end="url(#a1)"></path>
+      <path class="sa" d="M410,60 L530,88" marker-end="url(#a1)"></path>
+
+      <text class="ss" x="375" y="148" text-anchor="middle">Reads round-robin across replicas · Replication lag &lt; 200ms · Sentinel auto-failover</text>
+    </svg>

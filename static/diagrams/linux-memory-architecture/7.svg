@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 340" aria-labelledby="fig7-title">
+      <title id="fig7-title">memory max breakdown stacked bar</title>
+      <!-- bar track -->
+      <rect x="80" y="50" width="700" height="48" rx="4" fill="#f6f8fa" stroke="#d1d9e0" stroke-width="1"></rect>
+      <!-- scale: total usable width maps 3.4GB to ~700px => ~205.88 px/GB -->
+      <!-- 2.5GB = 514.7, 800MB = 137.45, 100MB = 17.18 -->
+      <rect x="80" y="50" width="515" height="48" fill="#f5f0ff" stroke="#8250df" stroke-width="1"></rect>
+      <text x="337" y="78" text-anchor="middle" fill="#1f2328" font-size="12" font-weight="600">Anon RSS (heap + stacks) 2.5GB</text>
+      <rect x="595" y="50" width="137" height="48" fill="#ddf4ff" stroke="#0969da" stroke-width="1"></rect>
+      <text x="663" y="78" text-anchor="middle" fill="#1f2328" font-size="11">File cache 800MB</text>
+      <rect x="732" y="50" width="48" height="48" fill="#e8eaed" stroke="#59636e" stroke-width="1"></rect>
+      <text x="756" y="78" text-anchor="middle" fill="#1f2328" font-size="10">slab 100MB</text>
+      <text x="430" y="115" text-anchor="middle" fill="#59636e" font-size="11">Total ≈ 3.4GB of ~4GB limit — headroom shrinking</text>
+      <!-- max line -->
+      <line x1="780" y1="40" x2="780" y2="130" stroke="#d1242f" stroke-width="3"></line>
+      <text x="785" y="35" fill="#d1242f" font-size="11" font-weight="600">memory.max = 4GB</text>
+      <polygon points="780,130 775,120 785,120" fill="#d1242f"></polygon>
+
+      <!-- steps below -->
+      <text x="80" y="165" fill="#1f2328" font-size="13" font-weight="600">When exceeded (sustained):</text>
+      <rect x="80" y="180" width="740" height="48" rx="4" fill="#fff8c5" stroke="#9a6700" stroke-width="1"></rect>
+      <text x="100" y="210" fill="#1f2328" font-size="12"><tspan font-weight="600" fill="#9a6700">Step 1:</tspan> Reclaim page cache → slower I/O, longer startup, noisy GC unrelated to heap</text>
+      <rect x="80" y="238" width="740" height="52" rx="4" fill="#ffebe9" stroke="#d1242f" stroke-width="2"></rect>
+      <text x="100" y="270" fill="#1f2328" font-size="13"><tspan font-weight="700" fill="#d1242f">Step 2:</tspan> OOM kill — cgroup picks a victim process; pod may restart</text>
+    </svg>

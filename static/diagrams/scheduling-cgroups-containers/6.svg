@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg">
+      <rect x="100" y="40" width="200" height="320" fill="#f6f8fa" stroke="#1f2328" stroke-width="1.5"></rect>
+      <text x="120" y="66" font-family="ui-monospace, monospace" font-size="12" font-weight="700" fill="#1f2328">CPU CORE 0</text>
+
+      <rect x="120" y="80" width="160" height="40" fill="#ffffff" stroke="#0969da"></rect>
+      <text x="130" y="96" font-family="ui-monospace, monospace" font-size="10" font-weight="600">L1 I-CACHE</text>
+      <text x="130" y="110" font-family="ui-monospace, monospace" font-size="9">32KB, 1 cycle</text>
+
+      <rect x="120" y="130" width="160" height="40" fill="#ffffff" stroke="#0969da"></rect>
+      <text x="130" y="146" font-family="ui-monospace, monospace" font-size="10" font-weight="600">L1 D-CACHE</text>
+      <text x="130" y="160" font-family="ui-monospace, monospace" font-size="9">32KB, 1 cycle</text>
+
+      <rect x="120" y="180" width="160" height="40" fill="#eaeef2" stroke="#1f2328"></rect>
+      <text x="130" y="196" font-family="ui-monospace, monospace" font-size="10" font-weight="600">TLB</text>
+      <text x="130" y="210" font-family="ui-monospace, monospace" font-size="9">1536 entries</text>
+
+      <rect x="120" y="230" width="160" height="40" fill="#eaeef2" stroke="#1f2328"></rect>
+      <text x="130" y="246" font-family="ui-monospace, monospace" font-size="10" font-weight="600">L2 CACHE</text>
+      <text x="130" y="260" font-family="ui-monospace, monospace" font-size="9">256KB, 3 cycles</text>
+
+      <rect x="120" y="280" width="160" height="40" fill="#eaeef2" stroke="#1f2328"></rect>
+      <text x="130" y="296" font-family="ui-monospace, monospace" font-size="10" font-weight="600">L3 CACHE</text>
+      <text x="130" y="310" font-family="ui-monospace, monospace" font-size="9">8MB, 12 cycles</text>
+
+      <rect x="500" y="40" width="200" height="320" fill="#f6f8fa" stroke="#1f2328" stroke-width="1.5"></rect>
+      <text x="520" y="66" font-family="ui-monospace, monospace" font-size="12" font-weight="700" fill="#1f2328">CPU CORE 1</text>
+
+      <rect x="520" y="80" width="160" height="40" fill="#f6f8fa" stroke="#d1d9e0"></rect>
+      <text x="530" y="96" font-family="ui-monospace, monospace" font-size="10" font-weight="600" fill="#818b98">L1 I-CACHE</text>
+      <text x="530" y="110" font-family="ui-monospace, monospace" font-size="9" fill="#818b98">COLD / EMPTY</text>
+
+      <rect x="520" y="130" width="160" height="40" fill="#f6f8fa" stroke="#d1d9e0"></rect>
+      <text x="530" y="146" font-family="ui-monospace, monospace" font-size="10" font-weight="600" fill="#818b98">L1 D-CACHE</text>
+      <text x="530" y="160" font-family="ui-monospace, monospace" font-size="9" fill="#818b98">COLD / EMPTY</text>
+
+      <rect x="520" y="180" width="160" height="40" fill="#f6f8fa" stroke="#d1d9e0"></rect>
+      <text x="530" y="196" font-family="ui-monospace, monospace" font-size="10" font-weight="600" fill="#818b98">TLB</text>
+      <text x="530" y="210" font-family="ui-monospace, monospace" font-size="9" fill="#818b98">COLD / EMPTY</text>
+
+      <rect x="520" y="230" width="160" height="40" fill="#eaeef2" stroke="#1f2328"></rect>
+      <text x="530" y="246" font-family="ui-monospace, monospace" font-size="10" font-weight="600">L2 CACHE</text>
+      <text x="530" y="260" font-family="ui-monospace, monospace" font-size="9">Different data</text>
+
+      <rect x="320" y="280" width="160" height="40" fill="#eaeef2" stroke="#1f2328"></rect>
+      <text x="360" y="296" font-family="ui-monospace, monospace" font-size="10" font-weight="600">L3 CACHE</text>
+      <text x="345" y="310" font-family="ui-monospace, monospace" font-size="9">SHARED (good!)</text>
+
+      <path d="M300 300 L320 300" fill="none" stroke="#1f2328" stroke-width="1.5"></path>
+      <path d="M480 300 L500 300" fill="none" stroke="#1f2328" stroke-width="1.5"></path>
+
+      <path d="M350 240 Q400 160 550 240" fill="none" stroke="#bf3989" stroke-width="2" marker-end="url(#arr3)"></path>
+      <text x="420" y="140" font-family="-apple-system, sans-serif" font-size="11" font-weight="600" fill="#bf3989">Process migration</text>
+      <text x="420" y="156" font-family="-apple-system, sans-serif" font-size="11" fill="#bf3989">Cache misses!</text>
+    </svg>

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="780" height="110" viewBox="0 0 780 110" xmlns="http://www.w3.org/2000/svg">
+      <defs><marker id="ah" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#1565c0"></polygon></marker></defs>
+      <g font-family="Inter,sans-serif" font-size="13" fill="#37352f">
+        <rect x="5" y="30" width="90" height="50" rx="8" fill="#e3f2fd" stroke="#1565c0" stroke-width="1.5"></rect><text x="50" y="60" text-anchor="middle" font-weight="600">1. Clarify</text>
+        <line x1="95" y1="55" x2="125" y2="55" stroke="#1565c0" stroke-width="1.5" marker-end="url(#ah)"></line>
+        <rect x="130" y="30" width="110" height="50" rx="8" fill="#e3f2fd" stroke="#1565c0" stroke-width="1.5"></rect><text x="185" y="60" text-anchor="middle" font-weight="600">2. Check Layers</text>
+        <line x1="240" y1="55" x2="270" y2="55" stroke="#1565c0" stroke-width="1.5" marker-end="url(#ah)"></line>
+        <rect x="275" y="30" width="110" height="50" rx="8" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="1.5"></rect><text x="330" y="60" text-anchor="middle" font-weight="600">3. Hypothesize</text>
+        <line x1="385" y1="55" x2="415" y2="55" stroke="#1565c0" stroke-width="1.5" marker-end="url(#ah)"></line>
+        <rect x="420" y="30" width="90" height="50" rx="8" fill="#fff3e0" stroke="#e65100" stroke-width="1.5"></rect><text x="465" y="60" text-anchor="middle" font-weight="600">4. Prioritize</text>
+        <line x1="510" y1="55" x2="540" y2="55" stroke="#1565c0" stroke-width="1.5" marker-end="url(#ah)"></line>
+        <rect x="545" y="30" width="90" height="50" rx="8" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1.5"></rect><text x="590" y="60" text-anchor="middle" font-weight="600">5. Stabilize</text>
+        <line x1="635" y1="55" x2="665" y2="55" stroke="#1565c0" stroke-width="1.5" marker-end="url(#ah)"></line>
+        <rect x="670" y="30" width="90" height="50" rx="8" fill="#e8eaf6" stroke="#283593" stroke-width="1.5"></rect><text x="715" y="60" text-anchor="middle" font-weight="600">6. Prevent</text>
+      </g>
+    </svg>

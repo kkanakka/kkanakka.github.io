@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 480" role="img" aria-labelledby="fig9-title" style="width:100%;max-width:900px;height:auto;display:block">
+<title id="fig9-title">ZooKeeper write request — end-to-end memory trace</title>
+<defs>
+<marker id="arr9" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><polygon points="0,0 8,4 0,8" fill="#59636e"></polygon></marker>
+</defs>
+<text x="24" y="34" fill="#59636e" font-family="system-ui,sans-serif" font-size="12" font-weight="600">Memory region</text>
+<rect x="24" y="42" width="88" height="428" rx="6" fill="#fafbfc" stroke="#d1d9e0"></rect>
+<text x="68" y="256" fill="#59636e" font-family="system-ui,sans-serif" font-size="11" text-anchor="middle" transform="rotate(-90 68 256)">annotation rail</text>
+<text x="40" y="70" fill="#1f2328" font-family="system-ui,sans-serif" font-size="10">KERNEL</text>
+<text x="40" y="116" fill="#1f2328" font-family="system-ui,sans-serif" font-size="10">STACK+HEAP</text>
+<text x="40" y="164" fill="#1f2328" font-family="system-ui,sans-serif" font-size="10">OFF-HEAP</text>
+<text x="40" y="212" fill="#1f2328" font-family="system-ui,sans-serif" font-size="10">HEAP Eden</text>
+<text x="40" y="260" fill="#1f2328" font-family="system-ui,sans-serif" font-size="10">MIXED</text>
+<text x="40" y="308" fill="#1f2328" font-family="system-ui,sans-serif" font-size="10">OFF-HEAP</text>
+<text x="40" y="356" fill="#1f2328" font-family="system-ui,sans-serif" font-size="10">OLD GEN</text>
+<text x="40" y="404" fill="#1f2328" font-family="system-ui,sans-serif" font-size="10">RESP OUT</text>
+<g font-family="system-ui,sans-serif" font-size="11" fill="#1f2328">
+<rect x="148" y="48" width="704" height="40" rx="8" fill="#f6f8fa" stroke="#d1d9e0"></rect>
+<text x="166" y="72" font-size="12" font-weight="600">1. Client TCP arrives</text>
+<text x="420" y="72" font-size="10" fill="#59636e">KERNEL</text>
+<text x="500" y="72" font-size="10">socket fd, sk_buff</text>
+<line x1="500" y1="88" x2="500" y2="96" stroke="#59636e" marker-end="url(#arr9)"></line>
+
+<rect x="148" y="96" width="704" height="40" rx="8" fill="#fff8c5" stroke="#d1d9e0"></rect>
+<text x="166" y="120" font-size="12" font-weight="600">2. Netty EventLoop epoll_wait</text>
+<text x="420" y="120" font-size="10" fill="#9a6700">STACK</text>
+<text x="462" y="120" font-size="10">+</text>
+<text x="474" y="120" font-size="10" fill="#8250df">HEAP</text>
+<text x="530" y="120" font-size="10">EventLoop frames, tasks</text>
+<line x1="500" y1="136" x2="500" y2="144" stroke="#59636e" marker-end="url(#arr9)"></line>
+
+<rect x="148" y="144" width="704" height="40" rx="8" fill="#ffebe9" stroke="#d1d9e0"></rect>
+<text x="166" y="168" font-size="12" font-weight="600">3. Read into Netty buffer</text>
+<text x="420" y="168" font-size="10" fill="#d1242f">OFF-HEAP</text>
+<text x="500" y="168" font-size="10">DirectByteBuffer</text>
+<line x1="500" y1="184" x2="500" y2="192" stroke="#59636e" marker-end="url(#arr9)"></line>
+
+<rect x="148" y="192" width="704" height="40" rx="8" fill="#f5f0ff" stroke="#d1d9e0"></rect>
+<text x="166" y="216" font-size="12" font-weight="600">4. Deserialize → Request object</text>
+<text x="420" y="216" font-size="10" fill="#8250df">HEAP Eden</text>
+<text x="510" y="216" font-size="10">Short-lived graphs</text>
+<line x1="500" y1="232" x2="500" y2="240" stroke="#59636e" marker-end="url(#arr9)"></line>
+
+<rect x="148" y="240" width="704" height="40" rx="8" fill="#fdf6e3" stroke="#d1d9e0"></rect>
+<text x="166" y="264" font-size="12" font-weight="600">5. PrepRequestProcessor validates</text>
+<text x="420" y="264" font-size="10" fill="#9a6700">STACK</text>
+<text x="462" y="264" font-size="10">+</text>
+<text x="474" y="264" font-size="10" fill="#8250df">HEAP</text>
+<text x="530" y="264" font-size="10">ACLs, ephemeral state</text>
+<line x1="500" y1="280" x2="500" y2="288" stroke="#59636e" marker-end="url(#arr9)"></line>
+
+<rect x="148" y="288" width="704" height="40" rx="8" fill="#ffebe9" stroke="#d1d9e0"></rect>
+<text x="166" y="312" font-size="12" font-weight="600">6. SyncRequestProcessor → txn log</text>
+<text x="430" y="312" font-size="10">OFF-HEAP → PAGE CACHE → Disk</text>
+<line x1="500" y1="328" x2="500" y2="336" stroke="#59636e" marker-end="url(#arr9)"></line>
+
+<rect x="148" y="336" width="704" height="40" rx="8" fill="#f5f0ff" stroke="#d1d9e0"></rect>
+<text x="166" y="360" font-size="12" font-weight="600">7. FinalRequestProcessor → data tree</text>
+<text x="420" y="360" font-size="10" fill="#8250df">HEAP Old Gen</text>
+<text x="516" y="360" font-size="10">DataTree mutation</text>
+<line x1="500" y1="376" x2="500" y2="384" stroke="#59636e" marker-end="url(#arr9)"></line>
+
+<rect x="148" y="384" width="704" height="40" rx="8" fill="#f6f8fa" stroke="#d1d9e0"></rect>
+<text x="166" y="408" font-size="12" font-weight="600">8. Response sent back</text>
+<text x="420" y="408" font-size="10" fill="#d1242f">OFF-HEAP</text>
+<text x="488" y="408" font-size="10">→</text>
+<text x="498" y="408" font-size="10" fill="#59636e">KERNEL</text>
+<text x="562" y="408" font-size="10">→ NIC</text>
+</g>
+</svg>

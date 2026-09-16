@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 800 240" xmlns="http://www.w3.org/2000/svg"><style>.sb{fill:var(--bg-subtle);stroke:var(--border);stroke-width:1}
+.sb-b{fill:#ddf4ff;stroke:var(--accent);stroke-width:1}
+.sb-g{fill:#dafbe1;stroke:var(--success);stroke-width:1}
+.sb-r{fill:#ffebe9;stroke:var(--danger);stroke-width:1}
+.sb-y{fill:#fff8e6;stroke:var(--attention);stroke-width:1}
+.sb-p{fill:#fbefff;stroke:var(--done);stroke-width:1}
+.sb-o{fill:#fff1e5;stroke:var(--orange);stroke-width:1}
+.sl{font-family:var(--sans);font-size:12px;font-weight:600;fill:var(--fg)}
+.ss{font-family:var(--mono);font-size:10px;fill:var(--fg-muted)}
+.sa{stroke:var(--fg-muted);stroke-width:1.2;fill:none}
+.sa-b{stroke:var(--accent);stroke-width:1.5;fill:none}
+.sa-g{stroke:var(--success);stroke-width:1.5;fill:none}
+.sa-r{stroke:var(--danger);stroke-width:1.5;fill:none}
+.sa-p{stroke:var(--done);stroke-width:1.5;fill:none}</style>
+      <defs><marker id="ap2" markerWidth="8" markerHeight="8" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#8250df"></path></marker></defs>
+      <text class="sl" x="20" y="18" fill="var(--success)">Path A: Webhook (real-time, seconds)</text>
+      <rect class="sb-o" x="20" y="28" width="140" height="50" rx="6"></rect><text class="sl" x="90" y="48" text-anchor="middle">Publisher</text><text class="ss" x="90" y="62" text-anchor="middle">publishes article</text>
+      <rect class="sb-g" x="200" y="28" width="180" height="50" rx="6"></rect><text class="sl" x="290" y="48" text-anchor="middle">POST /webhooks</text><text class="ss" x="290" y="62" text-anchor="middle">HMAC-signed payload</text>
+      <rect class="sb-b" x="420" y="28" width="160" height="50" rx="6"></rect><text class="sl" x="500" y="48" text-anchor="middle">Data Collection Svc</text><text class="ss" x="500" y="62" text-anchor="middle">validate + process</text>
+      <rect class="sb-p" x="620" y="28" width="140" height="50" rx="6"></rect><text class="sl" x="690" y="48" text-anchor="middle">Kafka → cache</text><text class="ss" x="690" y="62" text-anchor="middle">&lt; 30 seconds</text>
+      <path d="M160,53 L198,53" stroke="var(--done)" stroke-width="1.5" marker-end="url(#ap2)" fill="none"></path>
+      <path d="M380,53 L418,53" stroke="var(--done)" stroke-width="1.5" marker-end="url(#ap2)" fill="none"></path>
+      <path d="M580,53 L618,53" stroke="var(--done)" stroke-width="1.5" marker-end="url(#ap2)" fill="none"></path>
+
+      <line x1="20" y1="100" x2="780" y2="100" stroke="var(--border-muted)"></line>
+
+      <text class="sl" x="20" y="120" fill="var(--attention)">Path B: RSS polling (fallback, 15-60 min)</text>
+      <rect class="sb-o" x="20" y="130" width="140" height="50" rx="6"></rect><text class="sl" x="90" y="150" text-anchor="middle">Publisher</text><text class="ss" x="90" y="164" text-anchor="middle">no webhook support</text>
+      <rect class="sb-y" x="200" y="130" width="180" height="50" rx="6"></rect><text class="sl" x="290" y="150" text-anchor="middle">RSS Poller (cron)</text><text class="ss" x="290" y="164" text-anchor="middle">adaptive: 15min-6h</text>
+      <rect class="sb-b" x="420" y="130" width="160" height="50" rx="6"></rect><text class="sl" x="500" y="150" text-anchor="middle">Data Collection Svc</text><text class="ss" x="500" y="164" text-anchor="middle">parse XML, dedup</text>
+      <rect class="sb-g" x="620" y="130" width="140" height="50" rx="6"></rect><text class="sl" x="690" y="150" text-anchor="middle">Espresso → CDC</text><text class="ss" x="690" y="164" text-anchor="middle">eventual freshness</text>
+      <path class="sa" d="M160,155 L198,155" marker-end="url(#a1)"></path>
+      <path class="sa" d="M380,155 L418,155" marker-end="url(#a1)"></path>
+      <path class="sa" d="M580,155 L618,155" marker-end="url(#a1)"></path>
+
+      <rect class="sb" x="20" y="200" width="740" height="30" rx="6"></rect>
+      <text class="ss" x="390" y="220" text-anchor="middle">With 100M DAU, publishers </text></svg>

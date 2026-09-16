@@ -1,0 +1,9 @@
+{
+  "label": "Data-Intensive Systems",
+  "position": 4,
+  "link": {
+    "type": "generated-index",
+    "slug": "/ddia",
+    "description": "Reliability, data models, storage engines, consensus, replication, and caching."
+  }
+}

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 820 330" xmlns="http://www.w3.org/2000/svg" style="max-width:800px;">
+      <defs><filter id="sh3" x="-3%" y="-3%" width="106%" height="110%"><fedropshadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.06"></fedropshadow></filter></defs>
+
+      <text x="410" y="22" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="15" fill="#2e7d32">Do You Need Multi-Leader?</text>
+
+      <!-- Decision flow -->
+      <rect x="260" y="40" width="300" height="35" rx="8" fill="#e8eaf6" stroke="#283593" stroke-width="1.5"></rect>
+      <text x="410" y="63" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#283593">Can multiple users write the SAME object concurrently?</text>
+
+      <!-- NO branch -->
+      <rect x="30" y="110" width="320" height="85" rx="10" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2" filter="url(#sh3)"></rect>
+      <text x="190" y="135" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="#2e7d32">NO → Single-Leader</text>
+      <text x="50" y="155" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Each object has one writer (or writes are rare).</text>
+      <text x="50" y="173" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Gmail, LinkedIn profiles, Twitter tweets,</text>
+      <text x="50" y="188" font-family="Inter,sans-serif" font-size="10" fill="#37352f">WhatsApp messages, YouTube metadata</text>
+
+      <!-- YES branch -->
+      <rect x="470" y="110" width="320" height="35" rx="8" fill="#fff3e0" stroke="#e65100" stroke-width="1.5"></rect>
+      <text x="630" y="133" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#e65100">YES → Can you restructure to avoid it?</text>
+
+      <!-- YES-YES: Avoid it -->
+      <rect x="470" y="170" width="150" height="70" rx="10" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1.5"></rect>
+      <text x="545" y="192" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#2e7d32">YES → Do that!</text>
+      <text x="485" y="210" font-family="Inter,sans-serif" font-size="9" fill="#37352f">Make objects immutable</text>
+      <text x="485" y="224" font-family="Inter,sans-serif" font-size="9" fill="#37352f">or per-user owned</text>
+
+      <!-- YES-NO: Multi-leader -->
+      <rect x="640" y="170" width="150" height="70" rx="10" fill="#fce4ec" stroke="#c62828" stroke-width="2"></rect>
+      <text x="715" y="192" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="11" fill="#c62828">NO → Multi-Leader</text>
+      <text x="655" y="210" font-family="Inter,sans-serif" font-size="9" fill="#37352f">Use OT or CRDTs</text>
+      <text x="655" y="224" font-family="Inter,sans-serif" font-size="9" fill="#37352f">Google Docs, Figma</text>
+
+      <!-- Arrows -->
+      <line x1="330" y1="75" x2="190" y2="110" stroke="#2e7d32" stroke-width="1.5"></line>
+      <text x="230" y="92" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#2e7d32">NO</text>
+      <line x1="490" y1="75" x2="630" y2="110" stroke="#e65100" stroke-width="1.5"></line>
+      <text x="570" y="92" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#e65100">YES</text>
+      <line x1="590" y1="145" x2="545" y2="170" stroke="#2e7d32" stroke-width="1"></line>
+      <line x1="670" y1="145" x2="715" y2="170" stroke="#c62828" stroke-width="1"></line>
+
+      <!-- Bottom: real-world examples -->
+      <rect x="30" y="260" width="760" height="60" rx="10" fill="#f7f6f3" stroke="#e3e2de" stroke-width="1"></rect>
+      <text x="410" y="282" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#37352f">90% of systems at scale use Single-Leader. Multi-leader only for collaborative editing.</text>
+      <text x="410" y="302" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#787774">WhatsApp group chat = shared but single-leader (messages are append-only, no conflicts). Shared Google Calendar = single-leader (editing same event is rare).</text>
+    </svg>

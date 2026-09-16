@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 900 500" xmlns="http://www.w3.org/2000/svg"><style>.sb-b{fill:#ddf4ff;stroke:var(--accent);stroke-width:1}
+.sb-g{fill:#dafbe1;stroke:var(--success);stroke-width:1}
+.sb-r{fill:#ffebe9;stroke:var(--danger);stroke-width:1}
+.sb-y{fill:#fff8e6;stroke:var(--attention);stroke-width:1}
+.sb-p{fill:#fbefff;stroke:var(--done);stroke-width:1}
+.sb-o{fill:#fff1e5;stroke:var(--orange);stroke-width:1}
+.sl{font-family:var(--sans);font-size:12px;font-weight:600;fill:var(--fg)}
+.ss{font-family:var(--mono);font-size:10px;fill:var(--fg-muted)}</style>
+      <defs>
+        <marker id="aFb" markerWidth="8" markerHeight="8" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#0969da"></path></marker>
+        <marker id="aFg" markerWidth="8" markerHeight="8" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#1a7f37"></path></marker>
+        <marker id="aFr" markerWidth="8" markerHeight="8" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#d1242f"></path></marker>
+        <marker id="aFp" markerWidth="8" markerHeight="8" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#8250df"></path></marker>
+      </defs>
+
+      <!-- Row 1: Client, CDN, API GW, Waiting Room, SSE -->
+      <rect class="sb-b" x="20" y="20" width="140" height="60" rx="6"></rect><text class="sl" x="90" y="42" text-anchor="middle">Client</text><text class="ss" x="90" y="56" text-anchor="middle">web + mobile + SSE</text>
+      <rect class="sb-y" x="185" y="20" width="130" height="60" rx="6"></rect><text class="sl" x="250" y="42" text-anchor="middle">LinkedIn CDN</text><text class="ss" x="250" y="56" text-anchor="middle">static + cached pages</text>
+      <rect class="sb-y" x="340" y="20" width="150" height="60" rx="6"></rect><text class="sl" x="415" y="42" text-anchor="middle">API Gateway (d2)</text><text class="ss" x="415" y="56" text-anchor="middle">auth, rate limit, LB</text>
+      <rect class="sb-o" x="515" y="20" width="150" height="60" rx="6"></rect><text class="sl" x="590" y="42" text-anchor="middle">Waiting Room</text><text class="ss" x="590" y="56" text-anchor="middle">hot events only</text>
+      <rect class="sb-g" x="690" y="20" width="160" height="60" rx="6"></rect><text class="sl" x="770" y="42" text-anchor="middle">SSE Servers</text><text class="ss" x="770" y="56" text-anchor="middle">seat + queue updates</text>
+
+      <!-- Row 2: Services -->
+      <rect class="sb-b" x="20" y="120" width="160" height="60" rx="6"></rect><text class="sl" x="100" y="142" text-anchor="middle">Event Service</text><text class="ss" x="100" y="156" text-anchor="middle">view + ticket statuses</text>
+      <rect class="sb-b" x="210" y="120" width="160" height="60" rx="6"></rect><text class="sl" x="290" y="142" text-anchor="middle">Search Service</text><text class="ss" x="290" y="156" text-anchor="middle">keyword + filters</text>
+      <rect class="sb-r" x="400" y="120" width="160" height="60" rx="6"></rect><text class="sl" x="480" y="142" text-anchor="middle">Booking Service</text><text class="ss" x="480" y="156" text-anchor="middle">reserve + confirm</text>
+      <rect class="sb-p" x="590" y="120" width="160" height="60" rx="6"></rect><text class="sl" x="670" y="142" text-anchor="middle">Stripe</text><text class="ss" x="670" y="156" text-anchor="middle">payment + webhooks</text>
+
+      <!-- Row 3: Data stores -->
+      <rect class="sb-r" x="20" y="230" width="270" height="90" rx="6"></rect>
+      <text class="sl" x="155" y="250" text-anchor="middle">Couchbase</text>
+      <text class="ss" x="155" y="268" text-anchor="middle">distributed locks (ticket:X)</text>
+      <text class="ss" x="155" y="282" text-anchor="middle">waiting room queue (event:X:queue)</text>
+      <text class="ss" x="155" y="296" text-anchor="middle">read cache (event:X:details)</text>
+      <text class="ss" x="155" y="310" text-anchor="middle">search result cache</text>
+
+      <rect class="sb-y" x="310" y="230" width="170" height="90" rx="6"></rect>
+      <text class="sl" x="395" y="250" text-anchor="middle">Galene</text>
+      <text class="ss" x="395" y="268" text-anchor="middle">inverted index of events</text>
+      <text class="ss" x="395" y="282" text-anchor="middle">fuzzy + relevance</text>
+      <text class="ss" x="395" y="296" text-anchor="middle">geo + date filters</text>
+
+      <rect class="sb-p" x="500" y="230" width="170" height="90" rx="6"></rect>
+      <text class="sl" x="585" y="250" text-anchor="middle">Kafka + Brooklin</text>
+      <text class="ss" x="585" y="268" text-anchor="middle">CDC → Galene sync</text>
+      <text class="ss" x="585" y="282" text-anchor="middle">seat change events</text>
+      <text class="ss" x="585" y="296" text-anchor="middle">audit stream</text>
+
+      <rect class="sb-g" x="690" y="230" width="160" height="90" rx="6"></rect>
+      <text class="sl" x="770" y="250" text-anchor="middle">Espresso</text>
+      <text class="ss" x="770" y="268" text-anchor="middle">Events, Tickets</text>
+      <text class="ss" x="770" y="282" text-anchor="middle">Bookings, Venues</text>
+      <text class="ss" x="770" y="296" text-anchor="middle">source of truth</text>
+
+      <!-- Row 4: Espresso replicas + Samza -->
+      <rect class="sb-b" x="690" y="360" width="160" height="50" rx="6"></rect>
+      <text class="sl" x="770" y="382" text-anchor="middle">Espresso replicas</text>
+      <text class="ss" x="770" y="396" text-anchor="middle">read-only, &lt;100ms lag</text>
+
+      <rect class="sb-o" x="500" y="360" width="170" height="50" rx="6"></rect>
+      <text class="sl" x="585" y="382" text-anchor="middle">Samza workers</text>
+      <text class="ss" x="585" y="396" text-anchor="middle">SSE fan-out, indexing</text>
+
+      <!-- Arrows -->
+      <path d="M160,50 L183,50" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#aFb)" fill="none"></path>
+      <path d="M160,60 L338,50" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#aFb)" fill="none"></path>
+      <path d="M160,30 L770,28 L770,78" stroke="var(--success)" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#aFg)" fill="none"></path>
+      <text class="ss" x="450" y="22" fill="var(--success)">SSE</text>
+
+      <path d="M415,80 L100,118" stroke="var(--fg-muted)" stroke-width="1.2" marker-end="url(#a1)" fill="none"></path>
+      <path d="M415,80 L290,118" stroke="var(--fg-muted)" stroke-width="1.2" marker-end="url(#a1)" fill="none"></path>
+      <path d="M415,80 L480,118" stroke="var(--fg-muted)" stroke-width="1.2" marker-end="url(#a1)" fill="none"></path>
+
+      <path d="M560,150 L588,150" stroke="var(--done)" stroke-width="1.5" marker-end="url(#aFp)" fill="none"></path>
+
+      <path d="M480,180 L155,228" stroke="var(--danger)" stroke-width="1.5" marker-end="url(#aFr)" fill="none"></path>
+      <text class="ss" x="310" y="200" fill="var(--danger)">locks</text>
+      <path d="M480,180 L770,228" stroke="var(--success)" stroke-width="1.5" marker-end="url(#aFg)" fill="none"></path>
+      <text class="ss" x="650" y="200" fill="var(--success)">write</text>
+      <path d="M290,180 L395,228" stroke="var(--attention)" stroke-width="1.5" marker-end="url(#a1)" fill="none"></path>
+      <text class="ss" x="340" y="200" fill="var(--attention)">search</text>
+      <path d="M100,180 L770,358" stroke="var(--accent)" stroke-width="1.2" stroke-dasharray="3,2" marker-end="url(#aFb)" fill="none"></path>
+      <text class="ss" x="450" y="270" fill="var(--accent)">read replicas</text>
+
+      <path d="M770,320 L770,358" stroke="var(--fg-muted)" stroke-width="1.2" stroke-dasharray="3,2" marker-end="url(#a1)" fill="none"></path>
+      <text class="ss" x="830" y="345">replication</text>
+
+      <path d="M770,290 L672,280" stroke="var(--done)" stroke-width="1.2" marker-end="url(#aFp)" fill="none"></path>
+      <text class="ss" x="730" y="310" fill="var(--done)">CDC</text>
+      <path d="M500,290 L482,290" stroke="var(--done)" stroke-width="1.2" marker-end="url(#aFp)" fill="none"></path>
+
+      <path d="M585,320 L585,358" stroke="var(--fg-muted)" stroke-width="1.2" marker-end="url(#a1)" fill="none"></path>
+    </svg>

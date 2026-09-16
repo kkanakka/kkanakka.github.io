@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 820 450" xmlns="http://www.w3.org/2000/svg" style="max-width:800px;">
+      <defs><filter id="sh5" x="-3%" y="-3%" width="106%" height="110%"><fedropshadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.06"></fedropshadow></filter></defs>
+
+      <text x="410" y="22" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="16" fill="#2e7d32">Raft vs Paxos — Same Guarantees, Different Approach</text>
+
+      <!-- Same box -->
+      <rect x="200" y="35" width="420" height="55" rx="10" fill="#e8eaf6" stroke="#283593" stroke-width="2"></rect>
+      <text x="410" y="57" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#283593">BOTH guarantee: Safety + Liveness + Quorum (majority)</text>
+      <text x="410" y="78" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Both solve: "how do N nodes agree on a sequence of values when some fail?"</text>
+
+      <!-- Paxos -->
+      <rect x="10" y="110" width="395" height="330" rx="12" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="2" filter="url(#sh5)"></rect>
+      <text x="207" y="138" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="16" fill="#4a148c">Paxos (1989)</text>
+      <text x="207" y="156" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#787774">Leslie Lamport. "The Part-Time Parliament"</text>
+
+      <text x="30" y="180" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#4a148c">How it works:</text>
+      <text x="30" y="198" font-family="Inter,sans-serif" font-size="10" fill="#37352f">1. <tspan font-weight="600">Prepare:</tspan> Proposer asks acceptors to promise</text>
+      <text x="35" y="213" font-family="Inter,sans-serif" font-size="10" fill="#37352f">not to accept older proposals</text>
+      <text x="30" y="231" font-family="Inter,sans-serif" font-size="10" fill="#37352f">2. <tspan font-weight="600">Accept:</tspan> If majority promises → send value</text>
+      <text x="30" y="249" font-family="Inter,sans-serif" font-size="10" fill="#37352f">3. Multi-Paxos: elect stable leader, skip Prepare</text>
+
+      <text x="30" y="275" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#c62828">Why it's hard:</text>
+      <text x="30" y="293" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Abstract, mathematical, hard to understand</text>
+      <text x="30" y="311" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Doesn't specify leader election or log mgmt</text>
+      <text x="30" y="329" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Multiple proposers can cause livelock</text>
+      <text x="30" y="347" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Google Chubby: "significant gap between</text>
+      <text x="35" y="362" font-family="Inter,sans-serif" font-size="10" fill="#37352f">  Paxos description and real-world needs"</text>
+
+      <rect x="30" y="380" width="355" height="45" rx="6" fill="#e1bee7"></rect>
+      <text x="207" y="400" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#4a148c">Used by: Google Spanner, Google Chubby,</text>
+      <text x="207" y="416" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#37352f">Cassandra (lightweight txns), Azure Cosmos DB</text>
+
+      <!-- Raft -->
+      <rect x="415" y="110" width="395" height="330" rx="12" fill="#e3f2fd" stroke="#1565c0" stroke-width="2" filter="url(#sh5)"></rect>
+      <text x="612" y="138" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="16" fill="#0d47a1">Raft (2013)</text>
+      <text x="612" y="156" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#787774">Ongaro &amp; Ousterhout. "Understandable Consensus"</text>
+
+      <text x="435" y="180" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#0d47a1">How it works (3 clear sub-problems):</text>
+      <text x="435" y="198" font-family="Inter,sans-serif" font-size="10" fill="#37352f">1. <tspan font-weight="600">Leader election:</tspan> timeout → Candidate → votes</text>
+      <text x="435" y="216" font-family="Inter,sans-serif" font-size="10" fill="#37352f">2. <tspan font-weight="600">Log replication:</tspan> Leader → append → replicate</text>
+      <text x="440" y="231" font-family="Inter,sans-serif" font-size="10" fill="#37352f">to followers → majority ACK → commit</text>
+      <text x="435" y="249" font-family="Inter,sans-serif" font-size="10" fill="#37352f">3. <tspan font-weight="600">Safety:</tspan> leader must have all committed entries</text>
+
+      <text x="435" y="275" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#2e7d32">Why it won:</text>
+      <text x="435" y="293" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Designed for understandability (primary goal)</text>
+      <text x="435" y="311" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Strong leader (all writes flow one direction)</text>
+      <text x="435" y="329" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Specifies: log compaction, membership changes</text>
+      <text x="435" y="347" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Rich ecosystem (etcd, TiKV, CockroachDB)</text>
+      <text x="435" y="362" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Debuggable at 3am in production</text>
+
+      <rect x="435" y="380" width="355" height="45" rx="6" fill="#bbdefb"></rect>
+      <text x="612" y="400" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#0d47a1">Used by: TiDB/TiKV, etcd, CockroachDB, Consul,</text>
+      <text x="612" y="416" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#37352f">MongoDB (repl), Kafka (KRaft), Kubernetes (etcd)</text>
+    </svg>

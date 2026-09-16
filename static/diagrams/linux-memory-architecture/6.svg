@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 420" aria-labelledby="fig6-title">
+      <title id="fig6-title">NUMA and cgroup boundaries</title>
+      <defs><marker id="mh6" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#8250df"></path></marker></defs>
+      <!-- NUMA sockets -->
+      <rect x="40" y="25" width="360" height="160" rx="6" fill="#ddf4ff" stroke="#0969da" stroke-width="2"></rect>
+      <text x="220" y="48" text-anchor="middle" fill="#1f2328" font-size="13" font-weight="600">Socket 0</text>
+      <text x="220" y="68" text-anchor="middle" fill="#59636e" font-size="11">cores 0–7 · local RAM 64GB · ~80ns local</text>
+      <rect x="60" y="85" width="320" height="40" rx="3" fill="#f6f8fa" stroke="#d1d9e0" stroke-width="1"></rect>
+      <text x="220" y="110" text-anchor="middle" fill="#1f2328" font-size="11">Cores 0–7</text>
+      <rect x="60" y="130" width="320" height="40" rx="3" fill="#f5f0ff" stroke="#8250df" stroke-width="1"></rect>
+      <text x="220" y="155" text-anchor="middle" fill="#1f2328" font-size="11">Local DRAM 64GB (NUMA node 0)</text>
+
+      <rect x="500" y="25" width="360" height="160" rx="6" fill="#dafbe1" stroke="#1a7f37" stroke-width="2"></rect>
+      <text x="680" y="48" text-anchor="middle" fill="#1f2328" font-size="13" font-weight="600">Socket 1</text>
+      <text x="680" y="68" text-anchor="middle" fill="#59636e" font-size="11">cores 8–15 · local RAM 64GB · ~80ns local</text>
+      <rect x="520" y="85" width="320" height="40" rx="3" fill="#f6f8fa" stroke="#d1d9e0" stroke-width="1"></rect>
+      <text x="680" y="110" text-anchor="middle" fill="#1f2328" font-size="11">Cores 8–15</text>
+      <rect x="520" y="130" width="320" height="40" rx="3" fill="#f5f0ff" stroke="#8250df" stroke-width="1"></rect>
+      <text x="680" y="155" text-anchor="middle" fill="#1f2328" font-size="11">Local DRAM 64GB (NUMA node 1)</text>
+
+      <line x1="400" y1="105" x2="500" y2="105" stroke="#9a6700" stroke-width="3" stroke-dasharray="6 4"></line>
+      <text x="450" y="98" text-anchor="middle" fill="#59636e" font-size="10">QPI / UPI</text>
+      <text x="450" y="125" text-anchor="middle" fill="#9a6700" font-size="11" font-weight="600">~150ns cross-node (1.9× slower!)</text>
+
+      <!-- threads and heap arrows -->
+      <circle cx="120" cy="105" r="8" fill="#fff8c5" stroke="#9a6700" stroke-width="1"></circle><text x="120" y="78" text-anchor="middle" fill="#1f2328" font-size="9">JVM T1</text>
+      <path d="M120,88 L120,75" stroke="#8250df" stroke-width="1.5" marker-end="url(#mh6)"></path>
+      <circle cx="200" cy="105" r="8" fill="#fff8c5" stroke="#9a6700" stroke-width="1"></circle><text x="200" y="78" text-anchor="middle" fill="#1f2328" font-size="9">JVM T2</text>
+      <path d="M200,88 L180,140" stroke="#8250df" stroke-width="1.5" marker-end="url(#mh6)"></path>
+      <circle cx="650" cy="105" r="8" fill="#fff8c5" stroke="#9a6700" stroke-width="1"></circle><text x="650" y="78" text-anchor="middle" fill="#1f2328" font-size="9">JVM T3</text>
+      <path d="M650,88 L650,140" stroke="#8250df" stroke-width="1.5" marker-end="url(#mh6)"></path>
+      <text x="390" y="195" fill="#59636e" font-size="11">Java threads run on varied cores; object access may be local or remote to allocation node</text>
+
+      <!-- cgroup half -->
+      <rect x="40" y="220" width="820" height="180" rx="8" fill="none" stroke="#d1242f" stroke-width="2" stroke-dasharray="10 5"></rect>
+      <text x="50" y="242" fill="#d1242f" font-size="12" font-weight="600">cgroup boundary</text>
+      <rect x="80" y="260" width="220" height="120" rx="4" fill="#ffebe9" stroke="#d1242f" stroke-width="1"></rect>
+      <text x="190" y="282" text-anchor="middle" fill="#1f2328" font-size="11" font-weight="600">CPU &amp; memory limits</text>
+      <text x="95" y="302" fill="#1f2328" font-size="10" font-family="monospace">cpuset.cpus = 0-3</text>
+      <text x="95" y="320" fill="#1f2328" font-size="10" font-family="monospace">memory.max = 4GB</text>
+      <text x="95" y="338" fill="#1f2328" font-size="10" font-family="monospace">cpu.max = 200000/100000</text>
+      <text x="95" y="358" fill="#59636e" font-size="9">(example: 2 CPUs worth of quota)</text>
+      <rect x="340" y="275" width="480" height="90" rx="6" fill="#ddf4ff" stroke="#0969da" stroke-width="2"></rect>
+      <text x="580" y="305" text-anchor="middle" fill="#1f2328" font-size="14" font-weight="600">JVM process (all threads)</text>
+      <text x="580" y="328" text-anchor="middle" fill="#59636e" font-size="11">scheduling + RSS charged inside this cgroup</text>
+      <text x="450" y="395" text-anchor="middle" fill="#9a6700" font-size="12" font-weight="600">Kubernetes pod = cgroup jail</text>
+    </svg>

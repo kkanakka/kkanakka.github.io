@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 800 360" xmlns="http://www.w3.org/2000/svg">
+      <rect x="80" y="60" width="280" height="120" fill="#f6f8fa" stroke="#1f2328" stroke-width="1.5"></rect>
+      <text x="100" y="86" font-family="ui-monospace, monospace" font-size="12" font-weight="700" fill="#1f2328">NUMA NODE 0</text>
+      <rect x="120" y="100" width="40" height="30" fill="#ffffff" stroke="#0969da"></rect>
+      <text x="130" y="120" font-family="ui-monospace, monospace" font-size="9">CPU 0</text>
+      <rect x="170" y="100" width="40" height="30" fill="#ffffff" stroke="#0969da"></rect>
+      <text x="180" y="120" font-family="ui-monospace, monospace" font-size="9">CPU 1</text>
+      <rect x="220" y="100" width="40" height="30" fill="#ffffff" stroke="#0969da"></rect>
+      <text x="230" y="120" font-family="ui-monospace, monospace" font-size="9">CPU 2</text>
+      <rect x="270" y="100" width="40" height="30" fill="#ffffff" stroke="#0969da"></rect>
+      <text x="280" y="120" font-family="ui-monospace, monospace" font-size="9">CPU 3</text>
+      <rect x="120" y="140" width="160" height="30" fill="#eaeef2" stroke="#1f2328"></rect>
+      <text x="130" y="160" font-family="ui-monospace, monospace" font-size="10">LOCAL MEMORY 16GB</text>
+
+      <rect x="440" y="60" width="280" height="120" fill="#f6f8fa" stroke="#1f2328" stroke-width="1.5"></rect>
+      <text x="460" y="86" font-family="ui-monospace, monospace" font-size="12" font-weight="700" fill="#1f2328">NUMA NODE 1</text>
+      <rect x="480" y="100" width="40" height="30" fill="#ffffff" stroke="#bf3989"></rect>
+      <text x="490" y="120" font-family="ui-monospace, monospace" font-size="9">CPU 4</text>
+      <rect x="530" y="100" width="40" height="30" fill="#ffffff" stroke="#bf3989"></rect>
+      <text x="540" y="120" font-family="ui-monospace, monospace" font-size="9">CPU 5</text>
+      <rect x="580" y="100" width="40" height="30" fill="#ffffff" stroke="#bf3989"></rect>
+      <text x="590" y="120" font-family="ui-monospace, monospace" font-size="9">CPU 6</text>
+      <rect x="630" y="100" width="40" height="30" fill="#ffffff" stroke="#bf3989"></rect>
+      <text x="640" y="120" font-family="ui-monospace, monospace" font-size="9">CPU 7</text>
+      <rect x="480" y="140" width="160" height="30" fill="#eaeef2" stroke="#1f2328"></rect>
+      <text x="490" y="160" font-family="ui-monospace, monospace" font-size="10">LOCAL MEMORY 16GB</text>
+
+      <path d="M360 120 Q400 120 440 120" fill="none" stroke="#1f2328" stroke-width="2" stroke-dasharray="4,4"></path>
+      <text x="365" y="110" font-family="-apple-system, sans-serif" font-size="10" fill="#59636e">Interconnect</text>
+      <text x="365" y="140" font-family="-apple-system, sans-serif" font-size="10" fill="#59636e">(slower)</text>
+
+      <rect x="200" y="220" width="400" height="100" fill="#ffffff" stroke="#1f2328" stroke-width="1.5"></rect>
+      <text x="220" y="246" font-family="ui-monospace, monospace" font-size="12" font-weight="700" fill="#1f2328">MEMORY ACCESS LATENCY</text>
+      <text x="220" y="270" font-family="-apple-system, sans-serif" font-size="12" fill="#0969da">Node 0 CPU → Node 0 Memory: ~100ns</text>
+      <text x="220" y="290" font-family="-apple-system, sans-serif" font-size="12" fill="#bf3989">Node 0 CPU → Node 1 Memory: ~150ns (1.5x slower)</text>
+      <text x="220" y="310" font-family="-apple-system, sans-serif" font-size="12" fill="#59636e">Performance penalty for cross-node memory access</text>
+    </svg>

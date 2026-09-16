@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 820 340" xmlns="http://www.w3.org/2000/svg" style="max-width:780px;">
+      <defs><filter id="sh1" x="-3%" y="-3%" width="106%" height="110%"><fedropshadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.06"></fedropshadow></filter></defs>
+
+      <text x="410" y="22" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="15" fill="#e65100">The Latency Pyramid — Why Caching Matters</text>
+
+      <!-- L1 Cache -->
+      <rect x="300" y="40" width="220" height="40" rx="8" fill="#c8e6c9" stroke="#2e7d32" stroke-width="2" filter="url(#sh1)"></rect>
+      <text x="410" y="58" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="11" fill="#2e7d32">L1 CPU Cache</text>
+      <text x="410" y="73" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#787774">~1 ns</text>
+      <text x="540" y="63" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#2e7d32">1x</text>
+
+      <!-- L2/L3 Cache -->
+      <rect x="260" y="88" width="300" height="40" rx="8" fill="#c8e6c9" stroke="#2e7d32" stroke-width="1.5"></rect>
+      <text x="410" y="106" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#2e7d32">L2/L3 CPU Cache</text>
+      <text x="410" y="121" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#787774">~10 ns</text>
+      <text x="580" y="111" font-family="Inter,sans-serif" font-size="10" fill="#2e7d32">10x</text>
+
+      <!-- RAM -->
+      <rect x="220" y="136" width="380" height="40" rx="8" fill="#bbdefb" stroke="#1565c0" stroke-width="1.5"></rect>
+      <text x="410" y="154" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#0d47a1">Main Memory (RAM)</text>
+      <text x="410" y="169" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#787774">~100 ns</text>
+      <text x="620" y="159" font-family="Inter,sans-serif" font-size="10" fill="#0d47a1">100x</text>
+
+      <!-- In-memory cache (Redis/Memcached) -->
+      <rect x="180" y="184" width="460" height="40" rx="8" fill="#e3f2fd" stroke="#1565c0" stroke-width="2"></rect>
+      <text x="410" y="202" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="11" fill="#0d47a1">In-Memory Cache (Redis/Memcached/Couchbase)</text>
+      <text x="410" y="217" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#787774">~0.1-1 ms (network + RAM)</text>
+      <text x="660" y="207" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#0d47a1">100K-1M x</text>
+
+      <!-- SSD -->
+      <rect x="140" y="232" width="540" height="40" rx="8" fill="#fff3e0" stroke="#e65100" stroke-width="1.5"></rect>
+      <text x="410" y="250" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#e65100">SSD Random Read</text>
+      <text x="410" y="265" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#787774">~0.1-0.5 ms</text>
+      <text x="700" y="255" font-family="Inter,sans-serif" font-size="10" fill="#e65100">100K x</text>
+
+      <!-- Database query -->
+      <rect x="100" y="280" width="620" height="45" rx="8" fill="#fce4ec" stroke="#c62828" stroke-width="2"></rect>
+      <text x="410" y="298" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="11" fill="#c62828">Database Query (MySQL/Espresso/Spanner)</text>
+      <text x="410" y="318" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#787774">~2-50 ms (network + disk + query processing)</text>
+      <text x="740" y="305" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#c62828">2M-50M x</text>
+    </svg>

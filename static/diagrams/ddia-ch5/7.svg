@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 820 310" xmlns="http://www.w3.org/2000/svg" style="max-width:800px;">
+      <defs><marker id="aZ" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#546e7a"></polygon></marker></defs>
+
+      <text x="410" y="22" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="15" fill="#2e7d32">ZAB: Four Phases of Operation</text>
+
+      <!-- Phase 0 -->
+      <rect x="20" y="45" width="180" height="100" rx="10" fill="#fce4ec" stroke="#c62828" stroke-width="2"></rect>
+      <text x="110" y="68" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#c62828">Phase 0</text>
+      <text x="110" y="85" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#c62828">Leader Election</text>
+      <text x="35" y="105" font-family="Inter,sans-serif" font-size="9" fill="#37352f">Vote for highest (zxid, serverId)</text>
+      <text x="35" y="120" font-family="Inter,sans-serif" font-size="9" fill="#37352f">Winner = most recent state</text>
+      <text x="35" y="135" font-family="Inter,sans-serif" font-size="9" fill="#787774">~200ms</text>
+
+      <line x1="200" y1="95" x2="230" y2="95" stroke="#546e7a" stroke-width="1.5" marker-end="url(#aZ)"></line>
+
+      <!-- Phase 1 -->
+      <rect x="230" y="45" width="155" height="100" rx="10" fill="#fff3e0" stroke="#e65100" stroke-width="2"></rect>
+      <text x="307" y="68" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#e65100">Phase 1</text>
+      <text x="307" y="85" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#e65100">Discovery</text>
+      <text x="245" y="105" font-family="Inter,sans-serif" font-size="9" fill="#37352f">Leader collects last zxid</text>
+      <text x="245" y="120" font-family="Inter,sans-serif" font-size="9" fill="#37352f">from each follower</text>
+
+      <line x1="385" y1="95" x2="415" y2="95" stroke="#546e7a" stroke-width="1.5" marker-end="url(#aZ)"></line>
+
+      <!-- Phase 2 -->
+      <rect x="415" y="45" width="170" height="100" rx="10" fill="#e3f2fd" stroke="#1565c0" stroke-width="2"></rect>
+      <text x="500" y="68" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#0d47a1">Phase 2</text>
+      <text x="500" y="85" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#0d47a1">Synchronization</text>
+      <text x="430" y="105" font-family="Inter,sans-serif" font-size="9" fill="#37352f">Send SNAP/DIFF/TRUNC</text>
+      <text x="430" y="120" font-family="Inter,sans-serif" font-size="9" fill="#37352f">to converge all logs</text>
+      <text x="430" y="135" font-family="Inter,sans-serif" font-size="9" fill="#787774">TRUNC = rollback uncommitted</text>
+
+      <line x1="585" y1="95" x2="615" y2="95" stroke="#546e7a" stroke-width="1.5" marker-end="url(#aZ)"></line>
+
+      <!-- Phase 3 -->
+      <rect x="615" y="45" width="185" height="100" rx="10" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"></rect>
+      <text x="707" y="68" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#2e7d32">Phase 3</text>
+      <text x="707" y="85" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#2e7d32">Broadcast (Normal Op)</text>
+      <text x="630" y="105" font-family="Inter,sans-serif" font-size="9" fill="#37352f">Leader: PROPOSAL(zxid, txn)</text>
+      <text x="630" y="120" font-family="Inter,sans-serif" font-size="9" fill="#37352f">Followers: fsync → ACK</text>
+      <text x="630" y="135" font-family="Inter,sans-serif" font-size="9" fill="#37352f">Majority ACK → COMMIT</text>
+
+      <!-- zxid explanation -->
+      <rect x="20" y="170" width="780" height="55" rx="10" fill="#f7f6f3" stroke="#e3e2de" stroke-width="1"></rect>
+      <text x="30" y="192" font-family="Inter,sans-serif" font-weight="700" font-size="12" fill="#37352f">zxid = 64-bit compound identifier</text>
+      <text x="30" y="212" font-family="JetBrains Mono,monospace" font-size="10" fill="#37352f">| epoch (high 32 bits) | counter (low 32 bits) |  e.g. zxid = 0x0005_0000002A = epoch 5, txn 42</text>
+
+      <!-- What makes ZAB different -->
+      <rect x="20" y="240" width="780" height="60" rx="10" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1.5"></rect>
+      <text x="30" y="262" font-family="Inter,sans-serif" font-weight="700" font-size="11" fill="#2e7d32">What makes ZAB different from Raft?</text>
+      <text x="30" y="280" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• <tspan font-weight="600">Primary Order guarantee:</tspan> if ANY server delivered a txn, ALL future servers deliver it in the same position (stronger than basic Paxos)</text>
+      <text x="30" y="296" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• <tspan font-weight="600">Explicit Discovery + Sync phases:</tspan> handles "catch up a new cluster" more carefully than Raft's log matching (critical for ZooKeeper's coordination use case)</text>
+    </svg>

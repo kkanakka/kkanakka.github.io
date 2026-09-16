@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="100%" height="650" style="background:#fafafa;border:1px solid #ddd;border-radius:8px;margin:16px 0;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 921 650">
+    <!-- Node Agents (Exporters) -->
+    <rect x="50" y="50" width="150" height="80" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2" rx="8"></rect>
+    <text x="125" y="75" text-anchor="middle" font-size="12" font-weight="bold" fill="#1b5e20">Node Agents</text>
+    <text x="125" y="95" text-anchor="middle" font-size="10" fill="#1b5e20">50K+ Hosts</text>
+    <text x="125" y="110" text-anchor="middle" font-size="10" fill="#1b5e20">CPU, Memory, Disk</text>
+    <text x="125" y="125" text-anchor="middle" font-size="10" fill="#1b5e20">Network, Custom</text>
+    
+    <rect x="220" y="50" width="150" height="80" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2" rx="8"></rect>
+    <text x="295" y="75" text-anchor="middle" font-size="12" font-weight="bold" fill="#1b5e20">App Metrics</text>
+    <text x="295" y="95" text-anchor="middle" font-size="10" fill="#1b5e20">20K+ Services</text>
+    <text x="295" y="110" text-anchor="middle" font-size="10" fill="#1b5e20">Latency, Errors</text>
+    <text x="295" y="125" text-anchor="middle" font-size="10" fill="#1b5e20">Throughput, Custom</text>
+    
+    <rect x="390" y="50" width="150" height="80" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2" rx="8"></rect>
+    <text x="465" y="75" text-anchor="middle" font-size="12" font-weight="bold" fill="#1b5e20">Business Metrics</text>
+    <text x="465" y="95" text-anchor="middle" font-size="10" fill="#1b5e20">User Actions</text>
+    <text x="465" y="110" text-anchor="middle" font-size="10" fill="#1b5e20">Revenue, Growth</text>
+    <text x="465" y="125" text-anchor="middle" font-size="10" fill="#1b5e20">A/B Experiments</text>
+    
+    <!-- Ingestion Gateways -->
+    <rect x="50" y="170" width="120" height="60" fill="#e3f2fd" stroke="#1976d2" stroke-width="2" rx="4"></rect>
+    <text x="110" y="190" text-anchor="middle" font-size="11" font-weight="bold" fill="#0d47a1">LTX1 Gateway</text>
+    <text x="110" y="210" text-anchor="middle" font-size="9" fill="#0d47a1">Shard 0-15</text>
+    <text x="110" y="225" text-anchor="middle" font-size="9" fill="#0d47a1">4M metrics/s</text>
+    
+    <rect x="190" y="170" width="120" height="60" fill="#e3f2fd" stroke="#1976d2" stroke-width="2" rx="4"></rect>
+    <text x="250" y="190" text-anchor="middle" font-size="11" font-weight="bold" fill="#0d47a1">LVA1 Gateway</text>
+    <text x="250" y="210" text-anchor="middle" font-size="9" fill="#0d47a1">Shard 16-31</text>
+    <text x="250" y="225" text-anchor="middle" font-size="9" fill="#0d47a1">3M metrics/s</text>
+    
+    <rect x="330" y="170" width="120" height="60" fill="#e3f2fd" stroke="#1976d2" stroke-width="2" rx="4"></rect>
+    <text x="390" y="190" text-anchor="middle" font-size="11" font-weight="bold" fill="#0d47a1">EI4 Gateway</text>
+    <text x="390" y="210" text-anchor="middle" font-size="9" fill="#0d47a1">Shard 32-47</text>
+    <text x="390" y="225" text-anchor="middle" font-size="9" fill="#0d47a1">2M metrics/s</text>
+    
+    <rect x="470" y="170" width="120" height="60" fill="#e3f2fd" stroke="#1976d2" stroke-width="2" stroke-dasharray="5,5" rx="4"></rect>
+    <text x="530" y="190" text-anchor="middle" font-size="11" font-weight="bold" fill="#0d47a1">Auto-Scale</text>
+    <text x="530" y="210" text-anchor="middle" font-size="9" fill="#0d47a1">Dynamic</text>
+    <text x="530" y="225" text-anchor="middle" font-size="9" fill="#0d47a1">On-Demand</text>
+    
+    <!-- Stream Processor -->
+    <rect x="50" y="270" width="540" height="80" fill="#fff3e0" stroke="#f57c00" stroke-width="2" rx="8"></rect>
+    <text x="320" y="295" text-anchor="middle" font-size="14" font-weight="bold" fill="#e65100">Stream Processor (Kafka Streams + Samza)</text>
+    <text x="320" y="315" text-anchor="middle" font-size="10" fill="#e65100">Real-time Aggregation • Deduplication • Gorilla Compression • Cardinality Control</text>
+    <text x="320" y="330" text-anchor="middle" font-size="10" fill="#e65100">Backpressure Detection • Auto-scaling • Time Window Processing • Late Data Handling</text>
+    <text x="320" y="345" text-anchor="middle" font-size="10" fill="#e65100">10M+ metrics/sec → 2M aggregated series/sec</text>
+    
+    <!-- Hot Storage (InGraphs TSDB) -->
+    <rect x="50" y="380" width="180" height="80" fill="#f3e5f5" stroke="#7b1fa2" stroke-width="2" rx="8"></rect>
+    <text x="140" y="405" text-anchor="middle" font-size="12" font-weight="bold" fill="#4a148c">Hot Storage</text>
+    <text x="140" y="425" text-anchor="middle" font-size="10" fill="#4a148c">InGraphs TSDB</text>
+    <text x="140" y="440" text-anchor="middle" font-size="10" fill="#4a148c">SSD + Memory</text>
+    <text x="140" y="455" text-anchor="middle" font-size="10" fill="#4a148c">24h retention</text>
+    
+    <!-- Cold Storage (Ambry) -->
+    <rect x="250" y="380" width="180" height="80" fill="#e0f2f1" stroke="#00695c" stroke-width="2" rx="8"></rect>
+    <text x="340" y="405" text-anchor="middle" font-size="12" font-weight="bold" fill="#004d40">Cold Storage</text>
+    <text x="340" y="425" text-anchor="middle" font-size="10" fill="#004d40">Ambry Object Store</text>
+    <text x="340" y="440" text-anchor="middle" font-size="10" fill="#004d40">Compressed Archives</text>
+    <text x="340" y="455" text-anchor="middle" font-size="10" fill="#004d40">90-day retention</text>
+    
+    <!-- Query Service -->
+    <rect x="450" y="380" width="140" height="80" fill="#ffebee" stroke="#d32f2f" stroke-width="2" rx="8"></rect>
+    <text x="520" y="405" text-anchor="middle" font-size="12" font-weight="bold" fill="#c62828">Query Service</text>
+    <text x="520" y="425" text-anchor="middle" font-size="10" fill="#c62828">PromQL Engine</text>
+    <text x="520" y="440" text-anchor="middle" font-size="10" fill="#c62828">Query Federation</text>
+    <text x="520" y="455" text-anchor="middle" font-size="10" fill="#c62828">Caching Layer</text>
+    
+    <!-- Alert Engine -->
+    <rect x="50" y="490" width="200" height="60" fill="#fff8e1" stroke="#fbc02d" stroke-width="2" rx="8"></rect>
+    <text x="150" y="515" text-anchor="middle" font-size="12" font-weight="bold" fill="#f57c00">Alert Engine</text>
+    <text x="150" y="535" text-anchor="middle" font-size="10" fill="#f57c00">SLO Evaluation • Notification</text>
+    <text x="150" y="545" text-anchor="middle" font-size="10" fill="#f57c00">Escalation • Rate Limiting</text>
+    
+    <!-- Cardinality Controller -->
+    <rect x="270" y="490" width="160" height="60" fill="#fff8e1" stroke="#fbc02d" stroke-width="2" rx="8"></rect>
+    <text x="350" y="515" text-anchor="middle" font-size="12" font-weight="bold" fill="#f57c00">Cardinality Control</text>
+    <text x="350" y="535" text-anchor="middle" font-size="10" fill="#f57c00">Dynamic Sampling</text>
+    <text x="350" y="545" text-anchor="middle" font-size="10" fill="#f57c00">Label Dropping</text>
+    
+    <!-- Dashboards -->
+    <rect x="450" y="490" width="140" height="60" fill="#fff8e1" stroke="#fbc02d" stroke-width="2" rx="8"></rect>
+    <text x="520" y="515" text-anchor="middle" font-size="12" font-weight="bold" fill="#f57c00">Dashboards</text>
+    <text x="520" y="535" text-anchor="middle" font-size="10" fill="#f57c00">Grafana UI</text>
+    <text x="520" y="545" text-anchor="middle" font-size="10" fill="#f57c00">Real-time Charts</text>
+    
+    <!-- Arrows -->
+    <defs>
+      <marker id="arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+        <polygon points="0 0, 10 3.5, 0 7" fill="#666"></polygon>
+      </marker>
+    </defs>
+    
+    <!-- Data flow -->
+    <line x1="125" y1="130" x2="110" y2="170" stroke="#666" stroke-width="2" marker-end="url(#arrow)"></line>
+    <line x1="295" y1="130" x2="250" y2="170" stroke="#666" stroke-width="2" marker-end="url(#arrow)"></line>
+    <line x1="465" y1="130" x2="390" y2="170" stroke="#666" stroke-width="2" marker-end="url(#arrow)"></line>
+    
+    <!-- Gateway to processor -->
+    <line x1="320" y1="230" x2="320" y2="270" stroke="#666" stroke-width="3" marker-end="url(#arrow)"></line>
+    
+    <!-- Processor to storage -->
+    <line x1="250" y1="350" x2="140" y2="380" stroke="#666" stroke-width="2" marker-end="url(#arrow)"></line>
+    <line x1="320" y1="350" x2="340" y2="380" stroke="#666" stroke-width="2" marker-end="url(#arrow)"></line>
+    <line x1="390" y1="350" x2="520" y2="380" stroke="#666" stroke-width="2" marker-end="url(#arrow)"></line>
+    
+    <!-- Storage to services -->
+    <line x1="140" y1="460" x2="150" y2="490" stroke="#666" stroke-width="2" marker-end="url(#arrow)"></line>
+    <line x1="340" y1="460" x2="350" y2="490" stroke="#666" stroke-width="2" marker-end="url(#arrow)"></line>
+    <line x1="520" y1="460" x2="520" y2="490" stroke="#666" stroke-width="2" marker-end="url(#arrow)"></line>
+    
+    <!-- Cardinality feedback -->
+    <line x1="350" y1="490" x2="350" y2="350" stroke="#fbc02d" stroke-width="2" stroke-dasharray="5,5"></line>
+    
+    <!-- Labels -->
+    <text x="270" y="250" font-size="9" fill="#666">10M/s</text>
+    <text x="200" y="370" font-size="9" fill="#666">hot</text>
+    <text x="380" y="370" font-size="9" fill="#666">cold</text>
+    <text x="470" y="370" font-size="9" fill="#666">query</text>
+    <text x="370" y="480" font-size="9" fill="#fbc02d">feedback</text>
+  </svg>

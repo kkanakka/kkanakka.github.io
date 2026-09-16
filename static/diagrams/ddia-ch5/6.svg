@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 820 400" xmlns="http://www.w3.org/2000/svg" style="max-width:800px;">
+      <defs><marker id="aP" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#546e7a"></polygon></marker>
+      <filter id="shP" x="-3%" y="-3%" width="106%" height="110%"><fedropshadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.06"></fedropshadow></filter></defs>
+
+      <text x="410" y="22" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="15" fill="#2e7d32">Basic Paxos: Two-Phase Write Flow</text>
+
+      <!-- Proposer -->
+      <rect x="20" y="50" width="100" height="330" rx="10" fill="#e3f2fd" stroke="#1565c0" stroke-width="2"></rect>
+      <text x="70" y="75" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="11" fill="#0d47a1">Proposer</text>
+      <text x="70" y="92" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" fill="#787774">(any node)</text>
+
+      <!-- Acceptors -->
+      <rect x="250" y="50" width="80" height="330" rx="10" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"></rect>
+      <text x="290" y="75" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="11" fill="#2e7d32">A1</text>
+      <rect x="370" y="50" width="80" height="330" rx="10" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"></rect>
+      <text x="410" y="75" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="11" fill="#2e7d32">A2</text>
+      <rect x="490" y="50" width="80" height="330" rx="10" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"></rect>
+      <text x="530" y="75" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="11" fill="#2e7d32">A3</text>
+
+      <!-- Learner -->
+      <rect x="680" y="50" width="100" height="330" rx="10" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="2"></rect>
+      <text x="730" y="75" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="11" fill="#4a148c">Learner</text>
+
+      <!-- Phase 1: PREPARE -->
+      <rect x="130" y="100" width="110" height="20" rx="4" fill="#1565c0"></rect>
+      <text x="185" y="114" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="9" fill="#fff">PHASE 1: PREPARE</text>
+
+      <line x1="120" y1="130" x2="250" y2="130" stroke="#1565c0" stroke-width="1.5" marker-end="url(#aP)"></line>
+      <line x1="120" y1="130" x2="370" y2="140" stroke="#1565c0" stroke-width="1.5" marker-end="url(#aP)"></line>
+      <line x1="120" y1="130" x2="490" y2="150" stroke="#1565c0" stroke-width="1.5" marker-end="url(#aP)"></line>
+      <text x="130" y="125" font-family="JetBrains Mono,monospace" font-size="8" fill="#1565c0">PREPARE(ballot=42)</text>
+
+      <!-- Acceptor responses -->
+      <text x="260" y="155" font-family="Inter,sans-serif" font-size="7" fill="#2e7d32">fsync promise!</text>
+      <text x="380" y="165" font-family="Inter,sans-serif" font-size="7" fill="#2e7d32">fsync promise!</text>
+      <text x="500" y="172" font-family="Inter,sans-serif" font-size="7" fill="#c62828">timeout ✗</text>
+
+      <line x1="250" y1="170" x2="120" y2="185" stroke="#2e7d32" stroke-width="1.2" marker-end="url(#aP)"></line>
+      <line x1="370" y1="180" x2="120" y2="190" stroke="#2e7d32" stroke-width="1.2" marker-end="url(#aP)"></line>
+      <text x="170" y="200" font-family="Inter,sans-serif" font-size="8" fill="#2e7d32">PROMISE(ballot=42) — majority (2/3) ✓</text>
+
+      <!-- Phase 2: ACCEPT -->
+      <rect x="130" y="215" width="110" height="20" rx="4" fill="#e65100"></rect>
+      <text x="185" y="229" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="9" fill="#fff">PHASE 2: ACCEPT</text>
+
+      <line x1="120" y1="250" x2="250" y2="250" stroke="#e65100" stroke-width="1.5" marker-end="url(#aP)"></line>
+      <line x1="120" y1="250" x2="370" y2="260" stroke="#e65100" stroke-width="1.5" marker-end="url(#aP)"></line>
+      <line x1="120" y1="250" x2="490" y2="265" stroke="#e65100" stroke-width="1" stroke-dasharray="4"></line>
+      <text x="130" y="245" font-family="JetBrains Mono,monospace" font-size="8" fill="#e65100">ACCEPT(ballot=42, value="X")</text>
+
+      <text x="260" y="272" font-family="Inter,sans-serif" font-size="7" fill="#2e7d32">fsync accepted!</text>
+      <text x="380" y="280" font-family="Inter,sans-serif" font-size="7" fill="#2e7d32">fsync accepted!</text>
+
+      <line x1="250" y1="285" x2="120" y2="300" stroke="#2e7d32" stroke-width="1.2" marker-end="url(#aP)"></line>
+      <line x1="370" y1="290" x2="120" y2="305" stroke="#2e7d32" stroke-width="1.2" marker-end="url(#aP)"></line>
+      <text x="130" y="315" font-family="Inter,sans-serif" font-weight="700" font-size="9" fill="#2e7d32">ACCEPTED by majority → value "X" is CHOSEN ✓</text>
+
+      <!-- Notify learner -->
+      <line x1="120" y1="330" x2="680" y2="340" stroke="#6a1b9a" stroke-width="1.5" marker-end="url(#aP)"></line>
+      <text x="400" y="335" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" fill="#6a1b9a">LEARN: value "X" chosen at ballot 42</text>
+
+      <!-- fsync callout -->
+      <rect x="600" y="120" width="180" height="100" rx="8" fill="#fff3e0" stroke="#e65100" stroke-width="1.5"></rect>
+      <text x="690" y="140" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="10" fill="#e65100">fsync = real bottleneck</text>
+      <text x="615" y="158" font-family="Inter,sans-serif" font-size="9" fill="#37352f">Acceptors MUST fsync</text>
+      <text x="615" y="172" font-family="Inter,sans-serif" font-size="9" fill="#37352f">before responding.</text>
+      <text x="615" y="190" font-family="Inter,sans-serif" font-size="9" fill="#37352f">SSD: ~0.5ms per fsync</text>
+      <text x="615" y="204" font-family="Inter,sans-serif" font-size="9" fill="#37352f">HDD: ~10ms per fsync</text>
+      <text x="615" y="215" font-family="Inter,sans-serif" font-size="9" fill="#c62828">Batching fsyncs = key opt</text>
+    </svg>

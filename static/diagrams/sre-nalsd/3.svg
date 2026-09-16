@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="700" height="70" viewBox="0 0 700 70" xmlns="http://www.w3.org/2000/svg">
+        <defs><marker id="a8" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#1565c0"></polygon></marker></defs>
+        <g font-family="Inter,sans-serif" font-size="12" fill="#37352f">
+          <rect x="5" y="15" width="70" height="40" rx="6" fill="#e3f2fd" stroke="#1565c0"></rect><text x="40" y="39" text-anchor="middle" font-weight="600">NIC</text>
+          <line x1="75" y1="35" x2="95" y2="35" stroke="#1565c0" stroke-width="1.5" marker-end="url(#a8)"></line>
+          <rect x="100" y="15" width="80" height="40" rx="6" fill="#e3f2fd" stroke="#1565c0"></rect><text x="140" y="39" text-anchor="middle">RX Ring</text>
+          <line x1="180" y1="35" x2="200" y2="35" stroke="#1565c0" stroke-width="1.5" marker-end="url(#a8)"></line>
+          <rect x="205" y="15" width="70" height="40" rx="6" fill="#e3f2fd" stroke="#1565c0"></rect><text x="240" y="39" text-anchor="middle">NAPI</text>
+          <line x1="275" y1="35" x2="295" y2="35" stroke="#1565c0" stroke-width="1.5" marker-end="url(#a8)"></line>
+          <rect x="300" y="15" width="80" height="40" rx="6" fill="#fce4ec" stroke="#c62828" stroke-width="2"></rect><text x="340" y="39" text-anchor="middle" font-weight="600">softirq</text>
+          <line x1="380" y1="35" x2="400" y2="35" stroke="#1565c0" stroke-width="1.5" marker-end="url(#a8)"></line>
+          <rect x="405" y="15" width="70" height="40" rx="6" fill="#e3f2fd" stroke="#1565c0"></rect><text x="440" y="39" text-anchor="middle">qdisc</text>
+          <line x1="475" y1="35" x2="495" y2="35" stroke="#1565c0" stroke-width="1.5" marker-end="url(#a8)"></line>
+          <rect x="500" y="15" width="80" height="40" rx="6" fill="#e8f5e9" stroke="#2e7d32"></rect><text x="540" y="39" text-anchor="middle">Socket</text>
+        </g>
+      </svg>

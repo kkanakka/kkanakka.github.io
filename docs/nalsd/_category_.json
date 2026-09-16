@@ -1,0 +1,9 @@
+{
+  "label": "NALSD",
+  "position": 5,
+  "link": {
+    "type": "generated-index",
+    "slug": "/nalsd",
+    "description": "Non-Abstract Large System Design exercises with capacity math, SLOs, and failure modes."
+  }
+}

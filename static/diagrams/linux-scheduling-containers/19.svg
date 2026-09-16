@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 560" role="img" aria-label="End-to-end kernel path for a container file read">
+      <defs>
+        <marker id="aj" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+          <path d="M0,0 L8,4 L0,8 Z" fill="#59636e"></path>
+        </marker>
+      </defs>
+      <text x="450" y="14" text-anchor="middle" fill="#59636e" font-size="11" font-weight="600">container file read · end-to-end kernel path</text>
+
+      <!-- Main column: boxes x=255 w=210, centered flow -->
+      <g font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif" font-size="11">
+        <!-- 1 Userspace -->
+        <rect x="255" y="22" width="210" height="38" rx="8" ry="8" fill="#dafbe1" stroke="#1a7f37" stroke-width="1.5"></rect>
+        <text x="360" y="40" text-anchor="middle" fill="#1a7f37" font-weight="700">Userspace process</text>
+        <text x="360" y="54" text-anchor="middle" fill="#1a7f37" font-size="10">"read('/app/data.txt')"</text>
+        <line x1="360" y1="60" x2="360" y2="72" stroke="#59636e" stroke-width="1.2" marker-end="url(#aj)"></line>
+
+        <!-- 2 sys_read -->
+        <rect x="255" y="72" width="210" height="32" rx="6" ry="6" fill="#f6f8fa" stroke="#d1d9e0" stroke-width="1.2"></rect>
+        <text x="360" y="92" text-anchor="middle" fill="#59636e" font-weight="600">sys_read()</text>
+        <line x1="360" y1="104" x2="360" y2="114" stroke="#59636e" stroke-width="1.2" marker-end="url(#aj)"></line>
+
+        <!-- 3 VFS path -->
+        <rect x="255" y="114" width="210" height="30" rx="6" ry="6" fill="#ddf4ff" stroke="#0969da" stroke-width="1.2"></rect>
+        <text x="360" y="134" text-anchor="middle" fill="#0969da" font-weight="600">VFS path lookup</text>
+        <line x1="360" y1="144" x2="360" y2="154" stroke="#59636e" stroke-width="1.2" marker-end="url(#aj)"></line>
+
+        <!-- 4 mount ns -->
+        <rect x="255" y="154" width="210" height="38" rx="6" ry="6" fill="#ddf4ff" stroke="#0969da" stroke-width="1.2"></rect>
+        <text x="360" y="172" text-anchor="middle" fill="#0969da" font-weight="600">mount namespace lookup</text>
+        <text x="360" y="186" text-anchor="middle" fill="#59636e" font-size="10">which mount table?</text>
+        <line x1="360" y1="192" x2="360" y2="202" stroke="#59636e" stroke-width="1.2" marker-end="url(#aj)"></line>
+
+        <!-- 5 overlayfs -->
+        <rect x="255" y="202" width="210" height="42" rx="6" ry="6" fill="#f5f0ff" stroke="#8250df" stroke-width="1.2"></rect>
+        <text x="360" y="222" text-anchor="middle" fill="#8250df" font-weight="600">overlayfs selected</text>
+        <text x="360" y="238" text-anchor="middle" fill="#59636e" font-size="10">upperdir or lowerdir?</text>
+        <line x1="360" y1="244" x2="360" y2="254" stroke="#59636e" stroke-width="1.2" marker-end="url(#aj)"></line>
+
+        <!-- 6 fs -->
+        <rect x="255" y="254" width="210" height="32" rx="6" ry="6" fill="#fff8c5" stroke="#9a6700" stroke-width="1.2"></rect>
+        <text x="360" y="274" text-anchor="middle" fill="#9a6700" font-weight="600">actual filesystem (ext4/xfs)</text>
+        <line x1="360" y1="286" x2="360" y2="296" stroke="#59636e" stroke-width="1.2" marker-end="url(#aj)"></line>
+
+        <!-- 7 page cache -->
+        <rect x="255" y="296" width="210" height="38" rx="6" ry="6" fill="#dafbe1" stroke="#1a7f37" stroke-width="1.2"></rect>
+        <text x="360" y="314" text-anchor="middle" fill="#1a7f37" font-weight="600">page cache</text>
+        <text x="360" y="328" text-anchor="middle" fill="#59636e" font-size="10">cached? return immediately</text>
+        <line x1="360" y1="334" x2="360" y2="344" stroke="#59636e" stroke-width="1.2" marker-end="url(#aj)"></line>
+
+        <!-- 8 block -->
+        <rect x="255" y="344" width="210" height="34" rx="6" ry="6" fill="#f6f8fa" stroke="#d1d9e0" stroke-width="1.2"></rect>
+        <text x="360" y="360" text-anchor="middle" fill="#59636e" font-weight="600">block layer · blk-mq</text>
+        <text x="360" y="374" text-anchor="middle" fill="#59636e" font-size="9.5">(if miss)</text>
+        <line x1="360" y1="378" x2="360" y2="388" stroke="#59636e" stroke-width="1.2" marker-end="url(#aj)"></line>
+
+        <!-- 9 io cgroup -->
+        <rect x="255" y="388" width="210" height="38" rx="6" ry="6" fill="#fff8c5" stroke="#9a6700" stroke-width="1.2"></rect>
+        <text x="360" y="406" text-anchor="middle" fill="#9a6700" font-weight="600">io cgroup controller</text>
+        <text x="360" y="420" text-anchor="middle" fill="#59636e" font-size="10">io.max throttle?</text>
+        <line x1="360" y1="426" x2="360" y2="436" stroke="#59636e" stroke-width="1.2" marker-end="url(#aj)"></line>
+
+        <!-- 10 driver -->
+        <rect x="255" y="436" width="210" height="30" rx="6" ry="6" fill="#f6f8fa" stroke="#d1d9e0" stroke-width="1.2"></rect>
+        <text x="360" y="456" text-anchor="middle" fill="#59636e" font-weight="600">device driver</text>
+        <line x1="360" y1="466" x2="360" y2="476" stroke="#59636e" stroke-width="1.2" marker-end="url(#aj)"></line>
+
+        <!-- 11 disk -->
+        <rect x="255" y="476" width="210" height="34" rx="6" ry="6" fill="#24292f" stroke="#24292f" stroke-width="1.2"></rect>
+        <text x="360" y="498" text-anchor="middle" fill="#ffffff" font-weight="700">disk</text>
+
+        <!-- Right annotations -->
+        <line x1="485" y1="41" x2="485" y2="104" stroke="#d8dee4" stroke-width="1" stroke-dasharray="3 2"></line>
+        <text x="495" y="58" fill="#59636e" font-size="10.5" font-style="italic">process (task_struct)</text>
+        <text x="495" y="72" fill="#59636e" font-size="10.5" font-style="italic">steps 1–2</text>
+
+        <line x1="485" y1="129" x2="485" y2="192" stroke="#d8dee4" stroke-width="1" stroke-dasharray="3 2"></line>
+        <text x="495" y="152" fill="#59636e" font-size="10.5" font-style="italic">namespaces (mnt_ns)</text>
+        <text x="495" y="166" fill="#59636e" font-size="10.5" font-style="italic">steps 3–4</text>
+
+        <line x1="485" y1="214" x2="485" y2="236" stroke="#d8dee4" stroke-width="1" stroke-dasharray="3 2"></line>
+        <text x="495" y="228" fill="#59636e" font-size="10.5" font-style="italic">overlayfs · step 5</text>
+
+        <line x1="485" y1="262" x2="485" y2="278" stroke="#d8dee4" stroke-width="1" stroke-dasharray="3 2"></line>
+        <text x="495" y="272" fill="#59636e" font-size="10.5" font-style="italic">VFS → filesystem · step 6</text>
+
+        <line x1="485" y1="305" x2="485" y2="328" stroke="#d8dee4" stroke-width="1" stroke-dasharray="3 2"></line>
+        <text x="495" y="318" fill="#59636e" font-size="10.5" font-style="italic">memory (page cache)</text>
+        <text x="495" y="332" fill="#59636e" font-size="10.5" font-style="italic">step 7</text>
+
+        <line x1="485" y1="352" x2="485" y2="414" stroke="#d8dee4" stroke-width="1" stroke-dasharray="3 2"></line>
+        <text x="495" y="376" fill="#59636e" font-size="10.5" font-style="italic">cgroup (io controller)</text>
+        <text x="495" y="390" fill="#59636e" font-size="10.5" font-style="italic">steps 8–9</text>
+
+        <line x1="485" y1="441" x2="485" y2="502" stroke="#d8dee4" stroke-width="1" stroke-dasharray="3 2"></line>
+        <text x="495" y="468" fill="#59636e" font-size="10.5" font-style="italic">hardware</text>
+        <text x="495" y="482" fill="#59636e" font-size="10.5" font-style="italic">steps 10–11</text>
+      </g>
+    </svg>

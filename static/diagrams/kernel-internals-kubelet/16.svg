@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 900 460" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ais" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0969da"></path>
+    </marker>
+  </defs>
+
+  <text x="20" y="22" font-size="12" font-weight="600">Walk the stack top-down · measure once per layer before tuning</text>
+
+  <!-- Layers -->
+  <g font-size="11">
+    <rect x="40" y="50" width="260" height="38" fill="#dafbe1" stroke="#1a7f37"></rect>
+    <text x="170" y="74" text-anchor="middle" fill="#1a7f37" font-weight="600">Application</text>
+
+    <rect x="40" y="98" width="260" height="38" fill="#ddf4ff" stroke="#0969da"></rect>
+    <text x="170" y="122" text-anchor="middle">syscall · glibc · io_uring</text>
+
+    <rect x="40" y="146" width="260" height="38" fill="#ddf4ff" stroke="#0969da"></rect>
+    <text x="170" y="170" text-anchor="middle">VFS</text>
+
+    <rect x="40" y="194" width="260" height="38" fill="#ddf4ff" stroke="#0969da"></rect>
+    <text x="170" y="218" text-anchor="middle">Filesystem · XFS / ext4 · journal</text>
+
+    <rect x="40" y="242" width="260" height="38" fill="#ddf4ff" stroke="#0969da"></rect>
+    <text x="170" y="266" text-anchor="middle">Page cache · dirty writeback</text>
+
+    <rect x="40" y="290" width="260" height="38" fill="#ddf4ff" stroke="#0969da"></rect>
+    <text x="170" y="314" text-anchor="middle">Block layer · blk-mq · merging</text>
+
+    <rect x="40" y="338" width="260" height="38" fill="#ddf4ff" stroke="#0969da"></rect>
+    <text x="170" y="362" text-anchor="middle">I/O scheduler · mq-deadline / none</text>
+
+    <rect x="40" y="386" width="260" height="38" fill="#fff8c5" stroke="#9a6700"></rect>
+    <text x="170" y="410" text-anchor="middle">Driver · nvme / scsi</text>
+
+    <rect x="40" y="434" width="260" height="16" fill="#fff8e6" stroke="#9a6700"></rect>
+    <text x="170" y="446" text-anchor="middle" font-size="10">Device · NVMe / HDD / network</text>
+  </g>
+
+  <!-- Tools annotation -->
+  <text x="340" y="44" font-size="11" font-weight="500" fill="#59636e">TOOLS · what they reveal</text>
+
+  <g font-size="10.5" fill="#59636e">
+    <line x1="300" y1="69" x2="350" y2="69" stroke="#0969da" stroke-dasharray="2,2"></line>
+    <text x="358" y="73"><tspan font-family="ui-monospace,Menlo" fill="#0969da">strace -tt -T -p</tspan> · per-syscall timing</text>
+
+    <line x1="300" y1="117" x2="350" y2="117" stroke="#0969da" stroke-dasharray="2,2"></line>
+    <text x="358" y="121"><tspan font-family="ui-monospace,Menlo" fill="#0969da">bpftrace tracepoint:syscalls</tspan></text>
+
+    <line x1="300" y1="165" x2="350" y2="165" stroke="#0969da" stroke-dasharray="2,2"></line>
+    <text x="358" y="169"><tspan font-family="ui-monospace,Menlo" fill="#0969da">ftrace fs_*</tspan> · open/read/write trace</text>
+
+    <line x1="300" y1="213" x2="350" y2="213" stroke="#0969da" stroke-dasharray="2,2"></line>
+    <text x="358" y="217"><tspan font-family="ui-monospace,Menlo" fill="#0969da">xfs_io</tspan> · <tspan font-family="ui-monospace,Menlo" fill="#0969da">filefrag</tspan> · jbd2 commits</text>
+
+    <line x1="300" y1="261" x2="350" y2="261" stroke="#0969da" stroke-dasharray="2,2"></line>
+    <text x="358" y="265"><tspan font-family="ui-monospace,Menlo" fill="#0969da">cachestat</tspan> · <tspan font-family="ui-monospace,Menlo" fill="#0969da">/proc/meminfo Dirty</tspan></text>
+
+    <line x1="300" y1="309" x2="350" y2="309" stroke="#0969da" stroke-dasharray="2,2"></line>
+    <text x="358" y="313"><tspan font-family="ui-monospace,Menlo" fill="#0969da">iostat -xz 1</tspan> · await · %util · queue depth</text>
+
+    <line x1="300" y1="357" x2="350" y2="357" stroke="#0969da" stroke-dasharray="2,2"></line>
+    <text x="358" y="361"><tspan font-family="ui-monospace,Menlo" fill="#0969da">biolatency</tspan> · <tspan font-family="ui-monospace,Menlo" fill="#0969da">biosnoop</tspan> · <tspan font-family="ui-monospace,Menlo" fill="#0969da">blktrace</tspan></text>
+
+    <line x1="300" y1="405" x2="350" y2="405" stroke="#0969da" stroke-dasharray="2,2"></line>
+    <text x="358" y="409"><tspan font-family="ui-monospace,Menlo" fill="#0969da">nvme smart-log</tspan> · NVMe queue stats</text>
+
+    <line x1="300" y1="442" x2="350" y2="442" stroke="#0969da" stroke-dasharray="2,2"></line>
+    <text x="358" y="446"><tspan font-family="ui-monospace,Menlo" fill="#0969da">smartctl -a</tspan> · vendor diagnostics</text>
+  </g>
+</svg>

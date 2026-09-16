@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 800 280" xmlns="http://www.w3.org/2000/svg" style="max-width:750px;">
+      <!-- Declarative -->
+      <rect x="20" y="10" width="360" height="260" rx="12" fill="#e3f2fd" stroke="#1565c0" stroke-width="2"></rect>
+      <text x="200" y="40" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="15" fill="#0d47a1">Declarative</text>
+      <text x="200" y="58" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#787774">"What data I want"</text>
+      <line x1="40" y1="68" x2="360" y2="68" stroke="#bbdefb" stroke-width="1"></line>
+      <text x="40" y="90" font-family="JetBrains Mono,monospace" font-size="10" fill="#37352f">SELECT * FROM animals</text>
+      <text x="40" y="106" font-family="JetBrains Mono,monospace" font-size="10" fill="#37352f">WHERE family = 'Sharks';</text>
+      <text x="40" y="135" font-family="Inter,sans-serif" font-size="10" fill="#2e7d32">✓ DB chooses indexes, join order</text>
+      <text x="40" y="152" font-family="Inter,sans-serif" font-size="10" fill="#2e7d32">✓ Parallelizable by engine</text>
+      <text x="40" y="169" font-family="Inter,sans-serif" font-size="10" fill="#2e7d32">✓ Perf improves without rewrite</text>
+      <text x="40" y="186" font-family="Inter,sans-serif" font-size="10" fill="#2e7d32">✓ More concise</text>
+      <rect x="40" y="205" width="320" height="45" rx="8" fill="#bbdefb"></rect>
+      <text x="200" y="225" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#0d47a1">SQL, CSS, Cypher, SPARQL, PQL (Pinot)</text>
+      <text x="200" y="242" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#546e7a">Also: MongoDB Aggregation Pipeline</text>
+
+      <!-- Imperative -->
+      <rect x="420" y="10" width="360" height="260" rx="12" fill="#fff3e0" stroke="#e65100" stroke-width="2"></rect>
+      <text x="600" y="40" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="15" fill="#bf360c">Imperative</text>
+      <text x="600" y="58" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#787774">"How to get the data"</text>
+      <line x1="440" y1="68" x2="760" y2="68" stroke="#ffcc80" stroke-width="1"></line>
+      <text x="440" y="88" font-family="JetBrains Mono,monospace" font-size="10" fill="#37352f">for (var i=0; i &lt; animals.length;</text>
+      <text x="440" y="103" font-family="JetBrains Mono,monospace" font-size="10" fill="#37352f">     i++) {</text>
+      <text x="440" y="118" font-family="JetBrains Mono,monospace" font-size="10" fill="#37352f">  if (animals[i].family ===</text>
+      <text x="440" y="133" font-family="JetBrains Mono,monospace" font-size="10" fill="#37352f">      "Sharks") sharks.push(...);</text>
+      <text x="440" y="148" font-family="JetBrains Mono,monospace" font-size="10" fill="#37352f">}</text>
+      <text x="440" y="175" font-family="Inter,sans-serif" font-size="10" fill="#c62828">✗ Must specify iteration order</text>
+      <text x="440" y="192" font-family="Inter,sans-serif" font-size="10" fill="#c62828">✗ Hard to parallelize</text>
+      <text x="440" y="209" font-family="Inter,sans-serif" font-size="10" fill="#c62828">✗ Rewrite needed for optimization</text>
+      <rect x="440" y="230" width="320" height="25" rx="8" fill="#ffcc80"></rect>
+      <text x="600" y="247" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="11" fill="#bf360c">IMS, CODASYL, DOM manipulation</text>
+    </svg>

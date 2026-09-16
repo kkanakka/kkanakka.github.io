@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 760 580" xmlns="http://www.w3.org/2000/svg" style="width:100%;">
+      <defs>
+        <marker id="slc" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M2 1L8 5L2 9" fill="none" stroke="#1f2328" stroke-width="1.5" stroke-linecap="round"></path>
+        </marker>
+      </defs>
+      <rect x="280" y="20" width="200" height="45" fill="#1f2328"></rect>
+      <text x="380" y="40" text-anchor="middle" font-family="ui-monospace,monospace" font-size="10" font-weight="700" fill="#ffffff">SCHEDULER WAKE-UP</text>
+      <text x="380" y="56" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" font-style="italic" fill="#ffffff">"Who runs next?"</text>
+      <line x1="380" y1="70" x2="380" y2="95" stroke="#1f2328" stroke-width="1.5" marker-end="url(#slc)"></line>
+      <rect x="100" y="100" width="560" height="90" fill="#ffffff" stroke="#1f2328" stroke-width="1.5"></rect>
+      <text x="120" y="125" font-family="ui-monospace,monospace" font-size="10" font-weight="700" fill="#1f2328">STEP 1 · LAYER 2 — pick the class</text>
+      <line x1="120" y1="135" x2="640" y2="135" stroke="#d1d9e0"></line>
+      <text x="120" y="158" font-family="Arial,sans-serif" font-size="13" font-weight="600" fill="#1f2328">Walk classes in strict order. Find the highest-tier class with a runnable task.</text>
+      <text x="120" y="180" font-family="ui-monospace,monospace" font-size="10" fill="#1f2328">DEADLINE → FIFO → RR → OTHER (CFS) → BATCH → IDLE</text>
+      <line x1="380" y1="195" x2="380" y2="220" stroke="#1f2328" stroke-width="1.5" marker-end="url(#slc)"></line>
+      <rect x="100" y="225" width="560" height="110" fill="#ffffff" stroke="#1f2328" stroke-width="1.5"></rect>
+      <text x="120" y="250" font-family="ui-monospace,monospace" font-size="10" font-weight="700" fill="#1f2328">STEP 2 · LAYER 3 — rank within the class</text>
+      <line x1="120" y1="260" x2="640" y2="260" stroke="#d1d9e0"></line>
+      <text x="120" y="283" font-family="Arial,sans-serif" font-size="13" font-weight="600" fill="#1f2328">Use the priority number to pick the specific task.</text>
+      <text x="120" y="305" font-family="ui-monospace,monospace" font-size="10" fill="#1f2328">RT classes  →  highest RT priority (1–99, bigger = wins)</text>
+      <text x="120" y="323" font-family="ui-monospace,monospace" font-size="10" fill="#1f2328">CFS         →  lowest virtual runtime, weighted by nice</text>
+      <line x1="380" y1="340" x2="380" y2="365" stroke="#1f2328" stroke-width="1.5" marker-end="url(#slc)"></line>
+      <rect x="100" y="370" width="560" height="100" fill="#ffffff" stroke="#1f2328" stroke-width="1.5"></rect>
+      <text x="120" y="395" font-family="ui-monospace,monospace" font-size="10" font-weight="700" fill="#1f2328">STEP 3 · LAYER 1 — how fast can we switch?</text>
+      <line x1="120" y1="405" x2="640" y2="405" stroke="#d1d9e0"></line>
+      <text x="120" y="428" font-family="Arial,sans-serif" font-size="13" font-weight="600" fill="#1f2328">Preemption model decides when the running kernel code can be interrupted.</text>
+      <text x="120" y="450" font-family="ui-monospace,monospace" font-size="10" fill="#1f2328">PREEMPT_NONE       → wait until syscall return  (~10 ms)</text>
+      <text x="120" y="463" font-family="ui-monospace,monospace" font-size="10" fill="#1f2328">PREEMPT_VOLUNTARY  → wait until cond_resched()  (~1 ms)</text>
+      <line x1="380" y1="475" x2="380" y2="500" stroke="#1f2328" stroke-width="1.5" marker-end="url(#slc)"></line>
+      <rect x="250" y="505" width="260" height="45" fill="#1f2328"></rect>
+      <text x="380" y="525" text-anchor="middle" font-family="ui-monospace,monospace" font-size="10" font-weight="700" fill="#ffffff">CONTEXT SWITCH HAPPENS</text>
+      <text x="380" y="541" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" font-style="italic" fill="#ffffff">selected task is now on CPU</text>
+    </svg>

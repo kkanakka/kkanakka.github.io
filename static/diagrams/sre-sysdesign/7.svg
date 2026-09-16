@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="100%" height="350" style="margin:12px 0;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 558 350">
+    <rect width="100%" height="100%" fill="#fafafa" stroke="#e0e0e0"></rect>
+    
+    <!-- Cost Data Sources -->
+    <rect x="20" y="30" width="80" height="40" fill="#e3f2fd" stroke="#2196f3" stroke-width="2" rx="6"></rect>
+    <text x="60" y="45" text-anchor="middle" font-size="10" font-weight="bold" fill="#1976d2">Cloud Billing</text>
+    <text x="60" y="58" text-anchor="middle" font-size="8" fill="#1976d2">AWS/GCP</text>
+    
+    <rect x="20" y="80" width="80" height="40" fill="#e3f2fd" stroke="#2196f3" stroke-width="2" rx="6"></rect>
+    <text x="60" y="95" text-anchor="middle" font-size="10" font-weight="bold" fill="#1976d2">K8s Metrics</text>
+    <text x="60" y="108" text-anchor="middle" font-size="8" fill="#1976d2">Resource Usage</text>
+    
+    <rect x="20" y="130" width="80" height="40" fill="#e3f2fd" stroke="#2196f3" stroke-width="2" rx="6"></rect>
+    <text x="60" y="145" text-anchor="middle" font-size="10" font-weight="bold" fill="#1976d2">App Metrics</text>
+    <text x="60" y="158" text-anchor="middle" font-size="8" fill="#1976d2">Request Count</text>
+    
+    <!-- Cost Aggregator -->
+    <rect x="130" y="60" width="100" height="80" fill="#e8f5e9" stroke="#4caf50" stroke-width="2" rx="8"></rect>
+    <text x="180" y="80" text-anchor="middle" font-size="12" font-weight="bold" fill="#2e7d32">Cost</text>
+    <text x="180" y="95" text-anchor="middle" font-size="12" font-weight="bold" fill="#2e7d32">Aggregator</text>
+    <text x="180" y="115" text-anchor="middle" font-size="9" fill="#2e7d32">• Tag Mapping</text>
+    <text x="180" y="128" text-anchor="middle" font-size="9" fill="#2e7d32">• Attribution</text>
+    
+    <!-- Anomaly Detector -->
+    <rect x="260" y="30" width="100" height="60" fill="#fff3e0" stroke="#ff9800" stroke-width="2" rx="8"></rect>
+    <text x="310" y="50" text-anchor="middle" font-size="12" font-weight="bold" fill="#f57c00">Anomaly</text>
+    <text x="310" y="65" text-anchor="middle" font-size="12" font-weight="bold" fill="#f57c00">Detector</text>
+    <text x="310" y="80" text-anchor="middle" font-size="9" fill="#f57c00">ML Models</text>
+    
+    <!-- Budget Monitor -->
+    <rect x="260" y="100" width="100" height="60" fill="#f3e5f5" stroke="#9c27b0" stroke-width="2" rx="8"></rect>
+    <text x="310" y="120" text-anchor="middle" font-size="12" font-weight="bold" fill="#7b1fa2">Budget</text>
+    <text x="310" y="135" text-anchor="middle" font-size="12" font-weight="bold" fill="#7b1fa2">Monitor</text>
+    <text x="310" y="150" text-anchor="middle" font-size="9" fill="#7b1fa2">Burn Rate</text>
+    
+    <!-- Waste Detector -->
+    <rect x="390" y="30" width="100" height="60" fill="#e0f2f1" stroke="#009688" stroke-width="2" rx="8"></rect>
+    <text x="440" y="50" text-anchor="middle" font-size="12" font-weight="bold" fill="#00695c">Waste</text>
+    <text x="440" y="65" text-anchor="middle" font-size="12" font-weight="bold" fill="#00695c">Detector</text>
+    <text x="440" y="80" text-anchor="middle" font-size="9" fill="#00695c">Idle Resources</text>
+    
+    <!-- Cost-SLO Calculator -->
+    <rect x="390" y="100" width="100" height="60" fill="#fce4ec" stroke="#e91e63" stroke-width="2" rx="8"></rect>
+    <text x="440" y="120" text-anchor="middle" font-size="12" font-weight="bold" fill="#c2185b">Cost-SLO</text>
+    <text x="440" y="135" text-anchor="middle" font-size="12" font-weight="bold" fill="#c2185b">Calculator</text>
+    <text x="440" y="150" text-anchor="middle" font-size="9" fill="#c2185b">$/SLO Ratio</text>
+    
+    <!-- Alert Router -->
+    <rect x="180" y="200" width="140" height="60" fill="#e8eaf6" stroke="#3f51b5" stroke-width="2" rx="8"></rect>
+    <text x="250" y="220" text-anchor="middle" font-size="12" font-weight="bold" fill="#303f9f">Alert Router</text>
+    <text x="250" y="240" text-anchor="middle" font-size="10" fill="#303f9f">Severity Classification</text>
+    <text x="250" y="253" text-anchor="middle" font-size="9" fill="#303f9f">Slack/PagerDuty</text>
+    
+    <!-- Dashboard -->
+    <rect x="20" y="290" width="80" height="40" fill="#fff8e1" stroke="#fbc02d" stroke-width="2" rx="6"></rect>
+    <text x="60" y="305" text-anchor="middle" font-size="10" font-weight="bold" fill="#f57c00">Cost</text>
+    <text x="60" y="318" text-anchor="middle" font-size="10" font-weight="bold" fill="#f57c00">Dashboard</text>
+    
+    <!-- Auto-actions -->
+    <rect x="410" y="290" width="80" height="40" fill="#fff8e1" stroke="#fbc02d" stroke-width="2" rx="6"></rect>
+    <text x="450" y="305" text-anchor="middle" font-size="10" font-weight="bold" fill="#f57c00">Auto Actions</text>
+    <text x="450" y="318" text-anchor="middle" font-size="8" fill="#f57c00">Scale Down</text>
+    
+    <!-- Data flow arrows -->
+    <defs>
+      <marker id="arrowhead4" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+        <polygon points="0 0, 10 3.5, 0 7" fill="#666"></polygon>
+      </marker>
+    </defs>
+    
+    <!-- Sources to aggregator -->
+    <line x1="100" y1="100" x2="130" y2="100" stroke="#666" stroke-width="2" marker-end="url(#arrowhead4)"></line>
+    
+    <!-- Aggregator to detectors -->
+    <line x1="230" y1="80" x2="260" y2="60" stroke="#666" stroke-width="2" marker-end="url(#arrowhead4)"></line>
+    <line x1="230" y1="100" x2="260" y2="130" stroke="#666" stroke-width="2" marker-end="url(#arrowhead4)"></line>
+    <line x1="230" y1="120" x2="390" y2="60" stroke="#666" stroke-width="2" marker-end="url(#arrowhead4)"></line>
+    <line x1="230" y1="120" x2="390" y2="130" stroke="#666" stroke-width="2" marker-end="url(#arrowhead4)"></line>
+    
+    <!-- Detectors to alert router -->
+    <line x1="310" y1="90" x2="250" y2="200" stroke="#666" stroke-width="2" marker-end="url(#arrowhead4)"></line>
+    <line x1="310" y1="160" x2="250" y2="200" stroke="#666" stroke-width="2" marker-end="url(#arrowhead4)"></line>
+    <line x1="440" y1="90" x2="280" y2="200" stroke="#666" stroke-width="2" marker-end="url(#arrowhead4)"></line>
+    <line x1="440" y1="160" x2="280" y2="200" stroke="#666" stroke-width="2" marker-end="url(#arrowhead4)"></line>
+    
+    <!-- Alerts out -->
+    <line x1="200" y1="260" x2="100" y2="290" stroke="#666" stroke-width="2" marker-end="url(#arrowhead4)"></line>
+    <line x1="300" y1="260" x2="410" y2="290" stroke="#666" stroke-width="2" marker-end="url(#arrowhead4)"></line>
+    
+    <!-- Labels -->
+    <text x="115" y="95" font-size="9" fill="#666">costs</text>
+    <text x="245" y="75" font-size="9" fill="#666">analyze</text>
+    <text x="340" y="185" font-size="9" fill="#666">alert</text>
+  </svg>

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 800 110" xmlns="http://www.w3.org/2000/svg"><style>.sb-b{fill:#ddf4ff;stroke:var(--accent);stroke-width:1}
+.sb-g{fill:#dafbe1;stroke:var(--success);stroke-width:1}
+.sb-y{fill:#fff8e6;stroke:var(--attention);stroke-width:1}
+.sb-p{fill:#fbefff;stroke:var(--done);stroke-width:1}
+.sl{font-family:var(--sans);font-size:12px;font-weight:600;fill:var(--fg)}
+.ss{font-family:var(--mono);font-size:10px;fill:var(--fg-muted)}</style>
+      <defs><marker id="a1" markerWidth="8" markerHeight="8" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#656d76"></path></marker></defs>
+      <rect class="sb-b" x="20" y="10" width="170" height="85" rx="6"></rect>
+      <text class="sl" x="105" y="30" text-anchor="middle">Availability</text>
+      <text class="ss" x="105" y="48" text-anchor="middle">AP system</text>
+      <text class="ss" x="105" y="62" text-anchor="middle">eventual consistency</text>
+      <text class="ss" x="105" y="76" text-anchor="middle">across devices is OK</text>
+      <rect class="sb-y" x="210" y="10" width="170" height="85" rx="6"></rect>
+      <text class="sl" x="295" y="30" text-anchor="middle">Scale</text>
+      <text class="ss" x="295" y="48" text-anchor="middle">files up to 50GB</text>
+      <text class="ss" x="295" y="62" text-anchor="middle">millions of users</text>
+      <rect class="sb-g" x="400" y="10" width="170" height="85" rx="6"></rect>
+      <text class="sl" x="485" y="30" text-anchor="middle">Durability</text>
+      <text class="ss" x="485" y="48" text-anchor="middle">no data loss</text>
+      <text class="ss" x="485" y="62" text-anchor="middle">recoverable on</text>
+      <text class="ss" x="485" y="76" text-anchor="middle">corruption / failure</text>
+      <rect class="sb-p" x="590" y="10" width="170" height="85" rx="6"></rect>
+      <text class="sl" x="675" y="30" text-anchor="middle">Latency</text>
+      <text class="ss" x="675" y="48" text-anchor="middle">fast upload,</text>
+      <text class="ss" x="675" y="62" text-anchor="middle">download, and sync</text>
+      <text class="ss" x="675" y="76" text-anchor="middle">despite huge files</text>
+    </svg>

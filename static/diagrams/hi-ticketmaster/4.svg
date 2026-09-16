@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 800 130" xmlns="http://www.w3.org/2000/svg"><style>.sb{fill:var(--bg-subtle);stroke:var(--border);stroke-width:1}
+.sb-b{fill:#ddf4ff;stroke:var(--accent);stroke-width:1}
+.sb-g{fill:#dafbe1;stroke:var(--success);stroke-width:1}
+.sb-r{fill:#ffebe9;stroke:var(--danger);stroke-width:1}
+.sb-y{fill:#fff8e6;stroke:var(--attention);stroke-width:1}
+.sb-p{fill:#fbefff;stroke:var(--done);stroke-width:1}
+.sb-o{fill:#fff1e5;stroke:var(--orange);stroke-width:1}
+.sl{font-family:var(--sans);font-size:12px;font-weight:600;fill:var(--fg)}
+.ss{font-family:var(--mono);font-size:10px;fill:var(--fg-muted)}
+.sn{font-family:var(--mono);font-weight:700;font-size:11px;fill:var(--accent)}
+.sa-b{stroke:var(--accent);stroke-width:1.5;fill:none}</style>
+      <rect class="sb" x="20" y="20" width="120" height="50" rx="6"></rect><text class="sl" x="80" y="42" text-anchor="middle">Client</text><text class="ss" x="80" y="56" text-anchor="middle">search bar</text>
+      <rect class="sb-y" x="170" y="20" width="140" height="50" rx="6"></rect><text class="sl" x="240" y="42" text-anchor="middle">API Gateway</text>
+      <rect class="sb-p" x="340" y="20" width="160" height="50" rx="6"></rect><text class="sl" x="420" y="42" text-anchor="middle">Search Service</text>
+      <rect class="sb-g" x="530" y="20" width="150" height="50" rx="6"></rect><text class="sl" x="605" y="42" text-anchor="middle">Espresso</text><text class="ss" x="605" y="56" text-anchor="middle">LIKE '%query%'</text>
+
+      <path class="sa-b" d="M140,45 L168,45" marker-end="url(#ab)"></path><text class="sn" x="154" y="38">1</text>
+      <path class="sa-b" d="M310,45 L338,45" marker-end="url(#ab)"></path><text class="sn" x="324" y="38">2</text>
+      <path class="sa-b" d="M500,45 L528,45" marker-end="url(#ab)"></path><text class="sn" x="514" y="38">3</text>
+
+      <text class="ss" x="400" y="100" text-anchor="middle" fill="var(--danger)">LIKE '%Taylor%' can’t use B-tree index = full table scan = seconds per query</text>
+      <text class="ss" x="400" y="115" text-anchor="middle" fill="var(--danger)">Section 10 replaces this with Galene (LinkedIn’s search engine)</text>
+    </svg>

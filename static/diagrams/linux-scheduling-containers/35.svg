@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 900 360" width="900" height="360" role="img" aria-labelledby="fig23-cache" xmlns="http://www.w3.org/2000/svg">
+    <title>Figure 23: Latency-aware memory pyramid (order-of-magnitude)</title>
+    <rect x="0" y="0" width="900" height="360" fill="#fff"></rect>
+    <!-- bars increasing width -->
+    <rect x="420" y="40" width="40" height="28" fill="#dafbe1" stroke="#1a7f37"></rect><text x="300" y="58" fill="#59636e" font-size="13">L1 d/i 32 KB · ~1 ns</text>
+    <rect x="400" y="85" width="80" height="30" fill="#ddf4ff" stroke="#0969da"></rect><text x="270" y="104" fill="#59636e" font-size="13">L2 1 MB · ~4 ns</text>
+    <rect x="360" y="132" width="160" height="34" fill="#fff8c5" stroke="#9a6700"></rect><text x="210" y="152" fill="#59636e" font-size="13">L3 32 MB · ~12 ns</text>
+    <rect x="280" y="182" width="320" height="38" fill="#fff8c5" stroke="#9a6700"></rect><text x="120" y="205" fill="#59636e" font-size="13">DRAM local 256 GB · ~80 ns</text>
+    <rect x="220" y="235" width="440" height="40" fill="#ffebe9" stroke="#d1242f"></rect><text x="60" y="258" fill="#59636e" font-size="13">DRAM remote 256 GB · ~130 ns</text>
+    <rect x="40" y="290" width="820" height="44" fill="#ffebe9" stroke="#d1242f"></rect><text x="40" y="317" fill="#59636e" font-size="13">NVMe 8 TB · ~50 µs (media-dependent)</text>
+    <text x="600" y="70" fill="#8250df" font-size="14" font-weight="700">Gap ≈ 80×</text>
+    <line x1="560" y1="54" x2="560" y2="215" stroke="#8250df" stroke-width="2" stroke-dasharray="5 4"></line>
+    <text x="570" y="140" fill="#59636e" font-size="12">L1 ↔ local DRAM (~1 ns ↔ ~80 ns)</text>
+  </svg>

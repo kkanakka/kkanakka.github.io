@@ -1,0 +1,9 @@
+{
+  "label": "Coding & Algorithms",
+  "position": 1,
+  "link": {
+    "type": "generated-index",
+    "slug": "/coding",
+    "description": "Algorithm walkthroughs, Python drills, and data-structure problems with an SRE lens."
+  }
+}

@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 820 360" xmlns="http://www.w3.org/2000/svg" style="max-width:800px;">
+      <defs><marker id="aN" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#546e7a"></polygon></marker>
+      <filter id="shN" x="-3%" y="-3%" width="106%" height="110%"><fedropshadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.06"></fedropshadow></filter></defs>
+
+      <text x="410" y="22" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="15" fill="#1a73e8">NALSD Iterative Design: 1x → 10x → 100x</text>
+
+      <!-- 1x -->
+      <rect x="20" y="45" width="240" height="300" rx="12" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2" filter="url(#shN)"></rect>
+      <text x="140" y="72" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="14" fill="#2e7d32">1x (MVP)</text>
+      <text x="140" y="92" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#787774">100K req/s, single region</text>
+
+      <text x="40" y="115" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Single MySQL instance</text>
+      <text x="40" y="133" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• One app server pool</text>
+      <text x="40" y="151" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Redis cache in front</text>
+      <text x="40" y="169" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Simple LB (L4)</text>
+
+      <text x="40" y="200" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#c62828">What breaks at 10x?</text>
+      <text x="40" y="218" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• MySQL write bottleneck</text>
+      <text x="40" y="236" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Single-region failure = total outage</text>
+      <text x="40" y="254" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Cache miss storm</text>
+
+      <rect x="40" y="275" width="200" height="50" rx="6" fill="#c8e6c9"></rect>
+      <text x="140" y="295" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#2e7d32">NALSD calculation:</text>
+      <text x="140" y="312" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#37352f">3 app servers, 1 DB, 1 Redis, 1 LB</text>
+
+      <!-- Arrow -->
+      <line x1="260" y1="200" x2="290" y2="200" stroke="#546e7a" stroke-width="2" marker-end="url(#aN)"></line>
+
+      <!-- 10x -->
+      <rect x="290" y="45" width="240" height="300" rx="12" fill="#fff3e0" stroke="#e65100" stroke-width="2" filter="url(#shN)"></rect>
+      <text x="410" y="72" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="14" fill="#e65100">10x (Scale)</text>
+      <text x="410" y="92" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#787774">1M req/s, 2 regions</text>
+
+      <text x="310" y="115" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Sharded DB (Vitess/Spanner)</text>
+      <text x="310" y="133" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Multi-region active-passive</text>
+      <text x="310" y="151" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Distributed cache (Redis Cluster)</text>
+      <text x="310" y="169" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• L7 LB with health checks</text>
+
+      <text x="310" y="200" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#c62828">What breaks at 100x?</text>
+      <text x="310" y="218" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Cross-region latency</text>
+      <text x="310" y="236" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Hot shard bottleneck</text>
+      <text x="310" y="254" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Thundering herd on failover</text>
+
+      <rect x="310" y="275" width="200" height="50" rx="6" fill="#ffcc80"></rect>
+      <text x="410" y="295" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#e65100">NALSD calculation:</text>
+      <text x="410" y="312" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#37352f">30 app, 8 DB shards, 6 Redis, 2 LB</text>
+
+      <!-- Arrow -->
+      <line x1="530" y1="200" x2="560" y2="200" stroke="#546e7a" stroke-width="2" marker-end="url(#aN)"></line>
+
+      <!-- 100x -->
+      <rect x="560" y="45" width="240" height="300" rx="12" fill="#fce4ec" stroke="#c62828" stroke-width="2" filter="url(#shN)"></rect>
+      <text x="680" y="72" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="14" fill="#c62828">100x (Global)</text>
+      <text x="680" y="92" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#787774">10M req/s, 5+ regions</text>
+
+      <text x="580" y="115" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Global Spanner/TiDB</text>
+      <text x="580" y="133" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Multi-region active-active</text>
+      <text x="580" y="151" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Edge caching (CDN)</text>
+      <text x="580" y="169" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Anycast VIPs, GSLB</text>
+      <text x="580" y="187" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Load shedding + circuit breakers</text>
+      <text x="580" y="205" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Chaos testing (DiRT)</text>
+
+      <text x="580" y="235" font-family="Inter,sans-serif" font-weight="600" font-size="10" fill="#c62828">L7 SRE concerns:</text>
+      <text x="580" y="253" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Cost: $X M/month. Can we do 40% less?</text>
+      <text x="580" y="271" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• What if BGP leak isolates APAC?</text>
+      <text x="580" y="289" font-family="Inter,sans-serif" font-size="10" fill="#37352f">• Zero-downtime schema migration?</text>
+
+      <rect x="580" y="305" width="200" height="30" rx="6" fill="#ef9a9a"></rect>
+      <text x="680" y="324" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="9" fill="#c62828">300+ app, 50 DB, 40 cache, 10 LB, CDN</text>
+    </svg>

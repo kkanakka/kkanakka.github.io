@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 980 820" xmlns="http://www.w3.org/2000/svg"><style>.box-fill-blue{fill:#ddf4ff;stroke:#54aeff}
+.box-fill-green{fill:#dafbe1;stroke:#4ac26b}
+.box-fill-purple{fill:#fbefff;stroke:#c297ff}
+.box-fill-orange{fill:#fff1e5;stroke:#fd8c73}
+.box-fill-red{fill:#ffebe9;stroke:#ff8182}
+.box-fill-yellow{fill:#fff8c5;stroke:#d4a72c}
+.box-fill-gray{fill:#f6f8fa;stroke:#d0d7de}
+.lbl-title{font-family:'Inter',sans-serif;font-weight:700;font-size:11.5px;fill:#1f2328}
+.lbl-sub{font-family:'JetBrains Mono',monospace;font-size:9.5px;fill:#59636e}
+.lbl-meta{font-family:'JetBrains Mono',monospace;font-size:9px;fill:#818b98}
+.arrow{stroke:#59636e;stroke-width:1.3;fill:none;marker-end:url(#arr)}
+.arrow-dashed{stroke:#cf222e;stroke-width:1.2;fill:none;stroke-dasharray:4,3;marker-end:url(#arr-red)}
+.arrow-green{stroke:#1a7f37;stroke-width:1.5;fill:none;marker-end:url(#arr-green)}</style>
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#59636e"></path>
+    </marker>
+    <marker id="arr-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#cf222e"></path>
+    </marker>
+    <marker id="arr-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1a7f37"></path>
+    </marker>
+  </defs>
+
+  <!-- Top SLO ribbon -->
+  <text x="490" y="22" text-anchor="middle" class="lbl-title" style="font-size:13px">500M users · 10M reads/s · 1M writes/s · p99 ≤ 5ms · ≥ 95% hit rate · global write &lt; 1s</text>
+
+  <!-- Step badges -->
+  <circle cx="155" cy="58" r="11" fill="#0a66c2"></circle>
+  <text x="155" y="62" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">1</text>
+  <circle cx="490" cy="58" r="11" fill="#0a66c2"></circle>
+  <text x="490" y="62" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">2</text>
+  <circle cx="820" cy="58" r="11" fill="#0a66c2"></circle>
+  <text x="820" y="62" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">3</text>
+  <circle cx="490" cy="200" r="11" fill="#0a66c2"></circle>
+  <text x="490" y="204" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">4</text>
+  <circle cx="155" cy="345" r="11" fill="#0a66c2"></circle>
+  <text x="155" y="349" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">5</text>
+  <circle cx="820" cy="345" r="11" fill="#0a66c2"></circle>
+  <text x="820" y="349" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">6</text>
+  <circle cx="490" cy="490" r="11" fill="#0a66c2"></circle>
+  <text x="490" y="494" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">7</text>
+  <circle cx="155" cy="630" r="11" fill="#0a66c2"></circle>
+  <text x="155" y="634" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">8</text>
+  <circle cx="490" cy="630" r="11" fill="#0a66c2"></circle>
+  <text x="490" y="634" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">9</text>
+  <circle cx="820" cy="630" r="11" fill="#0a66c2"></circle>
+  <text x="820" y="634" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="11" font-weight="700">10</text>
+
+  <!-- ============ ROW 1: Clients · Proxy · Hash ring lookup ============ -->
+  <g>
+    <rect x="20" y="80" width="270" height="80" rx="6" class="box-fill-gray"></rect>
+    <text x="155" y="103" text-anchor="middle" class="lbl-title">Client services</text>
+    <text x="155" y="121" text-anchor="middle" class="lbl-sub">Feed · Search · InMail · Profile</text>
+    <text x="155" y="137" text-anchor="middle" class="lbl-sub">Jobs · Notif · Connect</text>
+    <text x="155" y="155" text-anchor="middle" class="lbl-meta">~2 M app pods · gRPC client SDK</text>
+  </g>
+
+  <g>
+    <rect x="320" y="80" width="340" height="80" rx="6" class="box-fill-blue"></rect>
+    <text x="490" y="103" text-anchor="middle" class="lbl-title">Regional proxy (per-region)</text>
+    <text x="490" y="121" text-anchor="middle" class="lbl-sub">Envoy + consistent hash · rate limit · health</text>
+    <text x="490" y="137" text-anchor="middle" class="lbl-sub">connection pooling · pipelining · circuit breaker</text>
+    <text x="490" y="155" text-anchor="middle" class="lbl-meta">40 nodes · p99 LB latency &lt; 1 ms</text>
+  </g>
+
+  <g>
+    <rect x="680" y="80" width="280" height="80" rx="6" class="box-fill-yellow"></rect>
+    <text x="820" y="103" text-anchor="middle" class="lbl-title">Hash ring config (Spanner)</text>
+    <text x="820" y="121" text-anchor="middle" class="lbl-sub">CRC32 ring with 256 virtual nodes/shard</text>
+    <text x="820" y="137" text-anchor="middle" class="lbl-sub">version-controlled · gossip propagation</text>
+    <text x="820" y="155" text-anchor="middle" class="lbl-meta">updates on shard add/remove · failover</text>
+  </g>
+
+  <!-- ============ ROW 2: Cache cluster mesh ============ -->
+  <rect x="20" y="225" width="940" height="100" rx="8" fill="#fafbfc" stroke="#eaeef2"></rect>
+  <text x="490" y="250" text-anchor="middle" class="lbl-title" style="font-size:13px">Cache cluster mesh (per-region · 24 shards × 3 nodes each = 72 nodes top region)</text>
+
+  <g>
+    <rect x="40" y="265" width="115" height="50" rx="4" class="box-fill-green"></rect>
+    <text x="97" y="282" text-anchor="middle" class="lbl-title">Shard 01</text>
+    <text x="97" y="297" text-anchor="middle" class="lbl-sub">128 GB · 150k QPS</text>
+    <text x="97" y="310" text-anchor="middle" class="lbl-meta">M + 2R</text>
+  </g>
+  <g>
+    <rect x="170" y="265" width="115" height="50" rx="4" class="box-fill-green"></rect>
+    <text x="227" y="282" text-anchor="middle" class="lbl-title">Shard 02</text>
+    <text x="227" y="297" text-anchor="middle" class="lbl-sub">128 GB · 150k QPS</text>
+    <text x="227" y="310" text-anchor="middle" class="lbl-meta">M + 2R</text>
+  </g>
+  <g>
+    <rect x="300" y="265" width="115" height="50" rx="4" class="box-fill-green"></rect>
+    <text x="357" y="282" text-anchor="middle" class="lbl-title">Shard 03</text>
+    <text x="357" y="297" text-anchor="middle" class="lbl-sub">128 GB · 150k QPS</text>
+    <text x="357" y="310" text-anchor="middle" class="lbl-meta">M + 2R</text>
+  </g>
+  <g>
+    <rect x="430" y="265" width="115" height="50" rx="4" class="box-fill-green"></rect>
+    <text x="487" y="282" text-anchor="middle" class="lbl-title">Shard 04</text>
+    <text x="487" y="297" text-anchor="middle" class="lbl-sub">128 GB · 150k QPS</text>
+    <text x="487" y="310" text-anchor="middle" class="lbl-meta">M + 2R</text>
+  </g>
+  <text x="600" y="297" text-anchor="middle" class="lbl-title" style="font-size:18px">···</text>
+  <g>
+    <rect x="630" y="265" width="115" height="50" rx="4" class="box-fill-green"></rect>
+    <text x="687" y="282" text-anchor="middle" class="lbl-title">Shard 23</text>
+    <text x="687" y="297" text-anchor="middle" class="lbl-sub">128 GB · 150k QPS</text>
+    <text x="687" y="310" text-anchor="middle" class="lbl-meta">M + 2R</text>
+  </g>
+  <g>
+    <rect x="760" y="265" width="115" height="50" rx="4" class="box-fill-green"></rect>
+    <text x="817" y="282" text-anchor="middle" class="lbl-title">Shard 24</text>
+    <text x="817" y="297" text-anchor="middle" class="lbl-sub">128 GB · 150k QPS</text>
+    <text x="817" y="310" text-anchor="middle" class="lbl-meta">M + 2R</text>
+  </g>
+
+  <!-- ============ ROW 3: Cache miss path + DB fallback ============ -->
+  <g>
+    <rect x="20" y="370" width="280" height="100" rx="6" class="box-fill-red"></rect>
+    <text x="160" y="393" text-anchor="middle" class="lbl-title">Cache miss handler</text>
+    <text x="160" y="410" text-anchor="middle" class="lbl-sub">DB read · request coalescing</text>
+    <text x="160" y="427" text-anchor="middle" class="lbl-sub">thundering-herd prevention</text>
+    <text x="160" y="445" text-anchor="middle" class="lbl-meta">circuit breaker on DB</text>
+    <text x="160" y="460" text-anchor="middle" class="lbl-meta">populates cache on success</text>
+  </g>
+
+  <g>
+    <rect x="340" y="370" width="300" height="100" rx="6" class="box-fill-gray"></rect>
+    <text x="490" y="393" text-anchor="middle" class="lbl-title">Database fallback (read replicas)</text>
+    <text x="490" y="410" text-anchor="middle" class="lbl-sub">Postgres + Spanner read replicas</text>
+    <text x="490" y="427" text-anchor="middle" class="lbl-sub">connection pool · bulkhead</text>
+    <text x="490" y="445" text-anchor="middle" class="lbl-meta">25 replicas · 50ms p99 read</text>
+    <text x="490" y="460" text-anchor="middle" class="lbl-meta">protected by circuit breakers</text>
+  </g>
+
+  <g>
+    <rect x="680" y="370" width="280" height="100" rx="6" class="box-fill-purple"></rect>
+    <text x="820" y="393" text-anchor="middle" class="lbl-title">Warming service</text>
+    <text x="820" y="410" text-anchor="middle" class="lbl-sub">ML key prediction</text>
+    <text x="820" y="427" text-anchor="middle" class="lbl-sub">time-of-day patterns · user-based</text>
+    <text x="820" y="445" text-anchor="middle" class="lbl-meta">batch preload before peak</text>
+    <text x="820" y="460" text-anchor="middle" class="lbl-meta">target 80% warming hit rate</text>
+  </g>
+
+  <!-- ============ ROW 4: Write coordinator ============ -->
+  <g>
+    <rect x="20" y="515" width="940" height="80" rx="6" class="box-fill-orange"></rect>
+    <text x="490" y="538" text-anchor="middle" class="lbl-title" style="font-size:13px">Cross-region write coordinator</text>
+    <text x="490" y="555" text-anchor="middle" class="lbl-sub">write-through to primary region cache · async fanout to peer regions via Kafka</text>
+    <text x="490" y="573" text-anchor="middle" class="lbl-sub">conflict resolution: last-writer-wins (timestamps) or CRDTs for counters</text>
+    <text x="490" y="590" text-anchor="middle" class="lbl-meta">15 nodes · target propagation p99 &lt; 1 s</text>
+  </g>
+
+  <!-- ============ ROW 5: Invalidation bus + State + Observability ============ -->
+  <g>
+    <rect x="20" y="655" width="280" height="100" rx="6" class="box-fill-green"></rect>
+    <text x="160" y="678" text-anchor="middle" class="lbl-title">Invalidation bus (Kafka)</text>
+    <text x="160" y="695" text-anchor="middle" class="lbl-sub">topic: cache.invalidations</text>
+    <text x="160" y="712" text-anchor="middle" class="lbl-sub">partitioned by key · 24h retention</text>
+    <text x="160" y="730" text-anchor="middle" class="lbl-meta">MirrorMaker2 cross-region async</text>
+    <text x="160" y="745" text-anchor="middle" class="lbl-meta">tombstones only · not full values</text>
+  </g>
+
+  <g>
+    <rect x="340" y="655" width="300" height="100" rx="6" class="box-fill-blue"></rect>
+    <text x="490" y="678" text-anchor="middle" class="lbl-title">Regional invalidation subscriber</text>
+    <text x="490" y="695" text-anchor="middle" class="lbl-sub">consumes per-region from Kafka</text>
+    <text x="490" y="712" text-anchor="middle" class="lbl-sub">applies DEL to local cache shards</text>
+    <text x="490" y="730" text-anchor="middle" class="lbl-meta">next read from that region misses</text>
+    <text x="490" y="745" text-anchor="middle" class="lbl-meta">→ re-fetches from local DB replica</text>
+  </g>
+
+  <g>
+    <rect x="680" y="655" width="280" height="100" rx="6" class="box-fill-yellow"></rect>
+    <text x="820" y="678" text-anchor="middle" class="lbl-title">Observability + chaos</text>
+    <text x="820" y="695" text-anchor="middle" class="lbl-sub">hit ratio · latency · memory · keys</text>
+    <text x="820" y="712" text-anchor="middle" class="lbl-sub">synthetic tests every 30s</text>
+    <text x="820" y="730" text-anchor="middle" class="lbl-meta">chaos: shard kill · network partition</text>
+    <text x="820" y="745" text-anchor="middle" class="lbl-meta">auto-remediation playbooks</text>
+  </g>
+
+  <!-- ============ ARROWS ============ -->
+  <path d="M290,120 L320,120" class="arrow-green"></path>
+  <text x="305" y="115" text-anchor="middle" class="lbl-meta" fill="#1a7f37">READ</text>
+  <path d="M660,120 L680,120" class="arrow" stroke-dasharray="3,2"></path>
+  <text x="670" y="115" text-anchor="middle" class="lbl-meta">ring lookup</text>
+  <path d="M490,160 L490,225" class="arrow-green"></path>
+  <path d="M490,325 L160,370" class="arrow-dashed"></path>
+  <text x="240" y="358" text-anchor="middle" class="lbl-meta" fill="#cf222e">cache miss (~5%)</text>
+  <path d="M300,420 L340,420" class="arrow"></path>
+  <path d="M640,420 L680,420" class="arrow" stroke-dasharray="3,2"></path>
+  <text x="660" y="412" text-anchor="middle" class="lbl-meta">preload</text>
+  <path d="M160,470 L160,515" class="arrow" stroke-dasharray="3,2"></path>
+  <path d="M820,470 L820,515" class="arrow" stroke-dasharray="3,2"></path>
+  <path d="M490,595 L160,655" class="arrow"></path>
+  <text x="330" y="630" text-anchor="middle" class="lbl-meta">async fanout</text>
+  <path d="M300,705 L340,705" class="arrow"></path>
+  <path d="M640,705 L490,420" class="arrow" stroke-dasharray="3,2"></path>
+  <text x="600" y="540" text-anchor="middle" class="lbl-meta">apply DEL → next read misses</text>
+
+</svg>
