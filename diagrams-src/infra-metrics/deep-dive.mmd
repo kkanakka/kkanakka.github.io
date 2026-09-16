@@ -1,0 +1,10 @@
+%% section: Deep dives
+flowchart TB
+    A["10M points per second"] --> B{"What actually breaks first?"}
+    B -->|"Volume"| C["Compression handles it — Gorilla gets to ~1.3 bytes a sample"]
+    B -->|"Cardinality"| D["Every unique label set is a separate series"]
+    D --> E["One unbounded label — a user id or a request id — and the index explodes"]
+    E --> F["Enforce a cardinality budget at ingest"]
+    F --> G["Reject or aggregate the offending series, and tell its owner"]
+    C --> H["Tier by age: full resolution hot, downsampled cold"]
+    G --> H

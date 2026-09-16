@@ -6,13 +6,14 @@ sidebar_label: "Espresso: Backup & Recovery"
 description: "Espresso: Backup & Recovery"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/espresso-backup-strategy-architecture/sequence.svg" alt="How it works — espresso-backup-strategy-architecture" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/espresso-backup-strategy-architecture/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 Helix-partitioned MySQL, Kafka/Xinfra replication, GPFS/XtraBackup pipelines, snapshot service, and recovery tradeoffs — styled like the Venice architecture deep-dive, grounded in `espresso-storage-node` `BackupTask`, infra specs, and production incidents.
 
 WIP · Internal engineering reference

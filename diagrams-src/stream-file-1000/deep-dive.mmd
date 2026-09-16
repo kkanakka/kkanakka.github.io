@@ -1,0 +1,13 @@
+%% section: Deep dives
+flowchart TB
+    A["One file, 1000 hosts"] --> B{"Topology"}
+    B -->|"Star from the source"| C["Time = 1000 x transfer — the source NIC is the limit"]
+    B -->|"Binary tree"| D["Time ~ log2(1000) x transfer, about 10 hops deep"]
+    B -->|"Pipelined chain"| E["Chunk it — host N forwards chunk 1 while receiving chunk 2"]
+    E --> F["Time approaches one transfer plus the chain depth"]
+    D --> G{"Failure behaviour"}
+    F --> G
+    G --> H["Chain: one dead host stalls everything behind it"]
+    G --> I["Tree: one dead node orphans its subtree"]
+    H --> J["Both need a supervisor to re-link around failures"]
+    I --> J

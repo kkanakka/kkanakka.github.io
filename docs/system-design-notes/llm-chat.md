@@ -6,13 +6,14 @@ sidebar_label: "ChatGPT / Claude‑style chat"
 description: "hard · streaming · stateless model, stateful product · GPU capacity · where context lives"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/llm-chat/sequence.svg" alt="How it works — llm-chat" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/llm-chat/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 <header>
   
   <span class="tag">hard · streaming · stateless model, stateful product · GPU capacity · where context lives</span>
@@ -268,6 +269,12 @@ Idempotency-Key header on the POST; client retries after a dropped stream resume
 <div class="note"><b>Consequences the design leans on:</b> prefill cost grows with prompt length, so TTFT depends on context size and the Context Builder's trimming directly buys latency; decode is one pass per token, so ITL is roughly constant and batching many users' decode steps into one GPU pass is how throughput scales; the KV cache lives in GPU memory only for the request, which is why nothing about the chat persists on the model server; and identical system‑prompt prefixes can share cached attention state (prefix caching), which is why the system prompt is kept byte‑identical across users.</div>
 
 ## Deep dives {#lc-deepdives}
+
+<!-- DIAGRAM:deep-dive:START -->
+
+<img src="/diagrams/llm-chat/deep-dive.svg" alt="Deep dive" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:deep-dive:END -->
 
 ### 1. Streaming and the stateful connection
 

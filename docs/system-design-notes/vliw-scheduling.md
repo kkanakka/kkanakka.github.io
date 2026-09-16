@@ -6,13 +6,14 @@ sidebar_label: "Schedule instructions on a VLIW pipeline"
 description: "coding/compilers · list scheduling · dependency DAG · latencies · resource constraints"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/vliw-scheduling/sequence.svg" alt="How it works — vliw-scheduling" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/vliw-scheduling/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 <header>
   
   <span class="tag">coding/compilers · list scheduling · dependency DAG · latencies · resource constraints</span>
@@ -162,6 +163,12 @@ def schedule(ops, units):            # ops: list of dict(id, unit, dst, srcs, la
 </ol>
 
 ## Deep dives {#vliw-scheduling-deep}
+
+<!-- DIAGRAM:deep-dive:START -->
+
+<img src="/diagrams/vliw-scheduling/deep-dive.svg" alt="Deep dive" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:deep-dive:END -->
 
 <div class="cards">
 <div><h4>Building the DAG</h4><ul><li>Walk ops in order; for each source find the last writer (RAW edge with the writer's latency); for each destination add WAR edges from prior readers and a WAW edge from the prior writer.</li><li>Memory: loads/stores to possibly‑aliasing addresses get ordering edges; with alias analysis you can drop them.</li><li>Register renaming (if the target allows or you allocate later) removes WAR/WAW and exposes more parallelism; say it.</li></ul></div>

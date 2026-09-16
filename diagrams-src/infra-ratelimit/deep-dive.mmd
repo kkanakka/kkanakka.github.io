@@ -1,0 +1,11 @@
+%% section: Deep dives
+flowchart TB
+    A["Limit an API across 50 edge nodes"] --> B{"Where does the counter live?"}
+    B -->|"Central store, per request"| C["Correct, but a network hop on every call"]
+    B -->|"Local counter per node"| D["Fast, but the real limit becomes 50x"]
+    B -->|"Leased buckets"| E["Node leases a slice of the global budget"]
+    E --> F["Spends locally, refreshes when low"]
+    F --> G["One hop per lease, not per request"]
+    G --> H{"Cost of the lease"}
+    H --> I["Slight over-admission at the boundary"]
+    I --> J["Shrink the lease as the client nears its limit"]

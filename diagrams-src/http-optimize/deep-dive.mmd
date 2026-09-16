@@ -1,0 +1,11 @@
+%% section: Deep dives
+flowchart TB
+    A["Many requests to one API"] --> B{"Connection handling"}
+    B -->|"New connection each time"| C["TLS handshake dominates — often more than the request"]
+    B -->|"Pooled and reused"| D["Handshake amortised across requests"]
+    D --> E{"How much concurrency?"}
+    E -->|"As much as possible"| F["Server returns 429s — you went slower, not faster"]
+    E -->|"Bounded, tuned to the limit"| G["Steady throughput at the server's ceiling"]
+    G --> H{"On a 429"}
+    H --> I["Honour Retry-After, add jitter"]
+    I --> J["Without jitter every client retries in lockstep and re-creates the spike"]

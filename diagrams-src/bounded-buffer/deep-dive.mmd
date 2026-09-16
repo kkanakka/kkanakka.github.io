@@ -1,0 +1,9 @@
+%% section: Deep dives
+flowchart TB
+    A["Consumer wakes from wait"] --> B{"Re-check the predicate?"}
+    B -->|"if (empty) wait()"| C["Spurious wakeup slips through, pops from an empty buffer"]
+    B -->|"while (empty) wait()"| D["Safe — re-checks before proceeding"]
+    D --> E{"Which condition do you signal?"}
+    E -->|"One shared condition"| F["Wakes producers and consumers alike — thundering herd"]
+    E -->|"Separate notEmpty and notFull"| G["Only the side that can make progress is woken"]
+    G --> H["signal wakes one, broadcast wakes all — pick by whether several can proceed"]

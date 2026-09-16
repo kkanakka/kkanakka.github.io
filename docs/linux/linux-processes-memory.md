@@ -6,13 +6,14 @@ sidebar_label: "Processes & Programs"
 description: "Processes & Programs"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/linux-processes-memory/sequence.svg" alt="How it works — linux-processes-memory" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/linux-processes-memory/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 A complete visual guide to how programs become processes, memory layout, virtual memory, stack frames, command-line arguments, environment variables, and non-local gotos.
 
 Based on The Linux Programming Interface — Chapter 6

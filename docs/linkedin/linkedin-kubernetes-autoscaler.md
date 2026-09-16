@@ -6,13 +6,14 @@ sidebar_label: "Kubernetes Autoscaler"
 description: "Kubernetes Autoscaler"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/linkedin-kubernetes-autoscaler/sequence.svg" alt="How it works — linkedin-kubernetes-autoscaler" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/linkedin-kubernetes-autoscaler/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 SLO-Aware Feedback Control — Cost vs Latency Optimization
 
 A sophisticated autoscaling system that coordinates HPA, VPA, and Cluster Autoscaler across LinkedIn's multi-region fleet: sub-120ms p95 latency SLO, 30-second scale-out, graceful scale-in with PDB safety, and 75% cost efficiency through intelligent feedback loops.

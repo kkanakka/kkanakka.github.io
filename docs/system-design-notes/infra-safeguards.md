@@ -6,13 +6,14 @@ sidebar_label: "Safeguard / classifier serving in the re…"
 description: "hard · Anthropic · tier‑0 dependency · fail‑closed · degraded modes · canaries"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/infra-safeguards/sequence.svg" alt="How it works — infra-safeguards" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/infra-safeguards/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 <header>
   
   <span class="tag">hard · Anthropic · tier‑0 dependency · fail‑closed · degraded modes · canaries</span>
@@ -176,6 +177,12 @@ GET  /internal/canaries/results                            -&gt; {blockedRate, a
 </ol>
 
 ## Deep dives {#infra-safeguards-deep}
+
+<!-- DIAGRAM:deep-dive:START -->
+
+<img src="/diagrams/infra-safeguards/deep-dive.svg" alt="Deep dive" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:deep-dive:END -->
 
 <div class="cards">
   <div><h4>Latency without weakening</h4><ul>

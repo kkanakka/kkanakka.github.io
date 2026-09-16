@@ -6,13 +6,14 @@ sidebar_label: "Ch 4: TiDB, TiKV & Raft Consensus"
 description: "Ch 4: TiDB, TiKV & Raft Consensus"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/ddia-ch4/sequence.svg" alt="How it works — ddia-ch4" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/ddia-ch4/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 How a distributed NewSQL database works: Raft consensus for replication, Regions for partitioning, PD for scheduling — no Helix, no master. Open-source alternative to Spanner.
 
 Data Intensive Systems • Chapter 4 • Interview Guide

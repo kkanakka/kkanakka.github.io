@@ -1,0 +1,12 @@
+%% section: Version 2: distributed crawler deep dives
+flowchart TB
+    A["URL pulled from the frontier"] --> B{"Seen this URL?"}
+    B -->|"Yes"| C["Drop"]
+    B -->|"No"| D["Fetch, honouring robots.txt and the host's rate limit"]
+    D --> E["Hash the content"]
+    E --> F{"Seen this content before?"}
+    F -->|"Yes"| G["Different URL, same page — mirrors and session ids"]
+    F -->|"No"| H["Parse and enqueue the links"]
+    G --> C
+    H --> I{"Frontier growing without bound?"}
+    I --> J["Prioritise by depth and domain quality, cap per host"]

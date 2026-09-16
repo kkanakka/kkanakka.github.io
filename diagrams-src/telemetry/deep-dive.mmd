@@ -1,0 +1,11 @@
+%% section: Part 2: reconcile naming variants
+flowchart TB
+    A["Same metric, three names from three teams"] --> B{"Reconcile when?"}
+    B -->|"At query time"| C["Every dashboard carries the alias list forever"]
+    B -->|"At ingest"| D["One canonical series, aliases recorded"]
+    D --> E{"A rename lands"}
+    E --> F["Old name keeps resolving through the alias map"]
+    F --> G["Dashboards and alerts do not break during the migration"]
+    D --> H{"Two names turn out to mean different things"}
+    H --> I["Merging them silently corrupts history"]
+    I --> J["Require an explicit mapping — never infer from name similarity"]

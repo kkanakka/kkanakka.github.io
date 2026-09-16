@@ -6,13 +6,14 @@ sidebar_label: "Multi‑region, multi‑cloud LLM inference …"
 description: "hard · Anthropic · cells · N+1 · degraded modes · GPUs don’t autoscale"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/infra-multiregion/sequence.svg" alt="How it works — infra-multiregion" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/infra-multiregion/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 <header>
   
   <span class="tag">hard · Anthropic · cells · N+1 · degraded modes · GPUs don’t autoscale</span>
@@ -168,6 +169,12 @@ GET  /internal/modes                     -&gt; current levels per region</code><
 </ol>
 
 ## Deep dives {#infra-multiregion-deep}
+
+<!-- DIAGRAM:deep-dive:START -->
+
+<img src="/diagrams/infra-multiregion/deep-dive.svg" alt="Deep dive" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:deep-dive:END -->
 
 <div class="cards">
   <div><h4>Cells as failure units</h4><ul>

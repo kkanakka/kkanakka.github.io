@@ -6,13 +6,14 @@ sidebar_label: "SRE Systems Design Playbook"
 description: "SRE Systems Design Playbook"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/sre-sysdesign/sequence.svg" alt="How it works — sre-sysdesign" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/sre-sysdesign/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 10 classic Google SRE design problems with SLO sheets, baseline → production architectures, reliability stressors, trade-off tables, failure drills, and evaluation lens.
 
 Google SRE • Systems Design • 10 Problems • 64 Pages

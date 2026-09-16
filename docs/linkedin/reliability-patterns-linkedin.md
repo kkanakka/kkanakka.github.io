@@ -6,13 +6,14 @@ sidebar_label: "Reliability Patterns"
 description: "Reliability Patterns"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/reliability-patterns-linkedin/sequence.svg" alt="How it works — reliability-patterns-linkedin" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/reliability-patterns-linkedin/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 [SRE Systems Design](/docs/sre/google-sre-systems-design)
 
 "Which reliability patterns mitigate failure modes?" — Deep dive into LinkedIn's infrastructure patterns using Espresso as the primary example

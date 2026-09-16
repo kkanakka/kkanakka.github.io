@@ -6,13 +6,14 @@ sidebar_label: "SLOs and monitoring across the token path"
 description: "medium · Anthropic · TTFT / ITL · trace propagation · latency ledger · burn rate"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/infra-slo/sequence.svg" alt="How it works — infra-slo" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/infra-slo/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 <header>
   
   <span class="tag">medium · Anthropic · TTFT / ITL · trace propagation · latency ledger · burn rate</span>
@@ -169,6 +170,12 @@ Metrics emitted per request (labels: model, tier, region, cell, ctx_bucket):
 </ol>
 
 ## Deep dives {#infra-slo-deep}
+
+<!-- DIAGRAM:deep-dive:START -->
+
+<img src="/diagrams/infra-slo/deep-dive.svg" alt="Deep dive" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:deep-dive:END -->
 
 <div class="cards">
   <div><h4>Why these SLIs</h4><ul>

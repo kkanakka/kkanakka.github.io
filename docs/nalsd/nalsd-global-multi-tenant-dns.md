@@ -6,13 +6,14 @@ sidebar_label: "Global Multi-Tenant DNS"
 description: "Global Multi-Tenant DNS"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/nalsd-global-multi-tenant-dns/sequence.svg" alt="How it works — nalsd-global-multi-tenant-dns" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/nalsd-global-multi-tenant-dns/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 [Home](/) › [NALSD](/docs/nalsd/nalsd-index) › Global Multi-Tenant DNS
 
 Complete study guide — original interview module + full Q&A walkthrough (request lifecycle, anycast, resolver chain, layers 1–4, replication, tenant model, write path) + 10 failure scenarios with block/sequence diagrams.

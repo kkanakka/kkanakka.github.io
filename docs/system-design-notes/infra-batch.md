@@ -6,13 +6,14 @@ sidebar_label: "Job scheduler / batch inference queue"
 description: "medium · materialized executions · atomic claim · leases · priority isolation"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/infra-batch/sequence.svg" alt="How it works — infra-batch" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/infra-batch/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 <header>
   
   <span class="tag">medium · materialized executions · atomic claim · leases · priority isolation</span>
@@ -161,6 +162,12 @@ Worker:  claim(n) → UPDATE … SKIP LOCKED;  heartbeat(execIds);  complete(exe
 </ol>
 
 ## Deep dives {#infra-batch-deep}
+
+<!-- DIAGRAM:deep-dive:START -->
+
+<img src="/diagrams/infra-batch/deep-dive.svg" alt="Deep dive" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:deep-dive:END -->
 
 <div class="cards">
   <div><h4>Exactly the mechanisms</h4><ul>

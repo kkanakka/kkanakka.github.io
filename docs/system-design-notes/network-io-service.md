@@ -6,13 +6,14 @@ sidebar_label: "Scalable network I/O service (upload / d…"
 description: "hard · high‑volume bytes · zero‑copy · backpressure · range requests · resumable"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/network-io-service/sequence.svg" alt="How it works — network-io-service" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/network-io-service/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 <header>
   
   <span class="tag">hard · high‑volume bytes · zero‑copy · backpressure · range requests · resumable</span>
@@ -168,6 +169,12 @@ HEAD /objects/:id                          -&gt; size, etag (for resume)</code><
 </ol>
 
 ## Deep dives {#network-io-service-deep}
+
+<!-- DIAGRAM:deep-dive:START -->
+
+<img src="/diagrams/network-io-service/deep-dive.svg" alt="Deep dive" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:deep-dive:END -->
 
 <div class="cards">
 <div><h4>Node data plane</h4><ul><li>Async I/O (epoll/io_uring), one event loop per core, no thread per connection; 100K connections is memory for sockets, not stacks.</li><li>Zero‑copy: <code>sendfile</code>/<code>splice</code> from page cache or NVMe to socket; kTLS so encryption happens in kernel; avoid userspace buffers on the hot path.</li><li>Bounded per‑connection buffers; read from the source only when the socket is writable. TCP flow control is the backpressure mechanism, so a slow client slows only its own stream.</li><li>Large NIC offloads (TSO/GRO), pinned IRQs, huge pages: mention, don't dwell.</li></ul></div>

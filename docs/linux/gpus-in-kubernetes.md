@@ -6,13 +6,14 @@ sidebar_label: "GPUs in Kubernetes"
 description: "GPUs in Kubernetes"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/gpus-in-kubernetes/sequence.svg" alt="How it works — gpus-in-kubernetes" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/gpus-in-kubernetes/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 [home](/)/ [linux guide](/docs/linux/linux-systems-guide)/ **GPUs in Kubernetes**
 
 v1 · Updated 2026-05

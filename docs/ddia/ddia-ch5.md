@@ -6,13 +6,14 @@ sidebar_label: "Ch 5: How Companies Handle Data"
 description: "Ch 5: How Companies Handle Data"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/ddia-ch5/sequence.svg" alt="How it works — ddia-ch5" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/ddia-ch5/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 Replication, multi-DC writes, conflict resolution, Raft vs Paxos, and why "the best way to solve a hard consensus problem is to redesign your data model so you don't have one."
 
 Data Intensive Systems • Chapter 5 • Interview Guide

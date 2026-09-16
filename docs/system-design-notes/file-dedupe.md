@@ -6,13 +6,14 @@ sidebar_label: "Robust file deduplication"
 description: "medium · hashing · filesystem races · corruption · hardlinks vs content store · verification"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/file-dedupe/sequence.svg" alt="How it works — file-dedupe" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/file-dedupe/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 <header>
   
   <span class="tag">medium · hashing · filesystem races · corruption · hardlinks vs content store · verification</span>
@@ -161,6 +162,12 @@ undo(action): restore victim from keeper (copy) if link removed; verify hash</co
 </ol>
 
 ## Deep dives {#file-dedupe-deep}
+
+<!-- DIAGRAM:deep-dive:START -->
+
+<img src="/diagrams/file-dedupe/deep-dive.svg" alt="Deep dive" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:deep-dive:END -->
 
 <div class="cards">
 <div><h4>Hashing correctly</h4><ul><li>Use a cryptographic hash (SHA‑256/BLAKE3) so accidental collisions are impossible in practice; still verify before destructive action when data matters (byte‑compare is cheap relative to the deletion risk).</li><li>Stream hashes in chunks; parallelize across files, not within one file on spinning disks; bound concurrency per device.</li><li>Partial hash on head only can be fooled by files with identical headers (media containers); use head + tail or a middle sample.</li></ul></div>

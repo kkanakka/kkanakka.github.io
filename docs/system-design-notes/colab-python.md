@@ -6,13 +6,14 @@ sidebar_label: "Design and code a Python solution in Colab"
 description: "coding · structure · tests · maintainability · what \"senior code\" looks like in a notebook"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/colab-python/sequence.svg" alt="How it works — colab-python" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/colab-python/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 <header>
   
   <span class="tag">coding · structure · tests · maintainability · what "senior code" looks like in a notebook</span>
@@ -171,6 +172,12 @@ def main(path: str, k: int = 10):
 </ol>
 
 ## Deep dives {#colab-python-deep}
+
+<!-- DIAGRAM:deep-dive:START -->
+
+<img src="/diagrams/colab-python/deep-dive.svg" alt="Deep dive" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:deep-dive:END -->
 
 <div class="cards">
 <div><h4>Structure</h4><ul><li>Separate pure logic from I/O; test the pure part with in‑memory data.</li><li>Small functions with one job; names that say what, docstrings that say why or the invariant.</li><li>Types on public functions; dataclasses for records instead of dict soup.</li><li>Constants and config at the top; no magic numbers in the middle of loops.</li></ul></div>

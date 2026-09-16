@@ -6,13 +6,14 @@ sidebar_label: "Prompt‑sharing platform"
 description: "medium · data model · versioning · permissions · search · forks"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/prompt-sharing/sequence.svg" alt="How it works — prompt-sharing" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/prompt-sharing/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 <header>
   
   <span class="tag">medium · data model · versioning · permissions · search · forks</span>
@@ -174,6 +175,12 @@ POST /prompts/:id/reactions {type}</code></pre>
 </ol>
 
 ## Deep dives {#prompt-sharing-deep}
+
+<!-- DIAGRAM:deep-dive:START -->
+
+<img src="/diagrams/prompt-sharing/deep-dive.svg" alt="Deep dive" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:deep-dive:END -->
 
 <div class="cards">
 <div><h4>Versioning and forks</h4><ul><li>Versions are append‑only rows; the prompt points at head. Rollback = new version copying an old one, so history is linear and complete.</li><li>Fork stores forkedFromVersionId, giving exact provenance; a lineage query walks the chain. "Sync from upstream" = show diff between source head and forked base, optional new version.</li><li>Templates: variables parsed at save time and stored as structured fields for validation and search.</li></ul></div>

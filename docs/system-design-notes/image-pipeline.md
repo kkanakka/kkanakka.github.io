@@ -6,13 +6,14 @@ sidebar_label: "Scale a batch image‑processing pipeline"
 description: "medium · queues · workers · retries · idempotency · backpressure"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/image-pipeline/sequence.svg" alt="How it works — image-pipeline" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/image-pipeline/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 <header>
   
   <span class="tag">medium · queues · workers · retries · idempotency · backpressure</span>
@@ -173,6 +174,12 @@ Queue message: {jobId, step, attempt, imageKey, params, dedupeKey}</code></pre>
 </ol>
 
 ## Deep dives {#image-pipeline-deep}
+
+<!-- DIAGRAM:deep-dive:START -->
+
+<img src="/diagrams/image-pipeline/deep-dive.svg" alt="Deep dive" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:deep-dive:END -->
 
 <div class="cards">
 <div><h4>Idempotency, the whole game</h4><ul><li>Output key is a pure function of (content hash, op, params, code version). Re‑running writes the same key; use conditional PUT so a duplicate is a no‑op.</li><li>Ack the queue message only after the output write and status update; at‑least‑once delivery + idempotent effect = exactly‑once result.</li><li>Job dedupe key at submit prevents double jobs from retried uploads.</li></ul></div>

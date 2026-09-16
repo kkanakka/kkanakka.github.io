@@ -6,13 +6,14 @@ sidebar_label: "Ch 1: Reliable, Scalable & Maintainable"
 description: "Ch 1: Reliable, Scalable & Maintainable"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/ddia-ch1/sequence.svg" alt="How it works — ddia-ch1" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/ddia-ch1/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 The three pillars every data-intensive system must master — with interview-focused diagrams, real-world case studies from Twitter, Netflix, and Amazon.
 
 Data Intensive Systems • Chapter 1 • Interview Guide

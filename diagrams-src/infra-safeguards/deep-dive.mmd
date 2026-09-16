@@ -1,0 +1,13 @@
+%% section: Deep dives
+flowchart TB
+    A["Classifier is on the request path"] --> B{"It becomes slow or unavailable"}
+    B --> C["Fail closed"]
+    B --> D["Fail open"]
+    C --> E["Every request refused — a safety dependency became an availability outage"]
+    D --> F["Requests pass unscreened — availability preserved, safety lost"]
+    E --> G{"Middle ground"}
+    F --> G
+    G --> H["Tiered: cheap local check always, expensive check best-effort"]
+    G --> I["Timeout with a conservative default for that content class"]
+    H --> J["Decide the policy before the incident, not during it"]
+    I --> J

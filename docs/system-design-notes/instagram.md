@@ -6,13 +6,14 @@ sidebar_label: "Instagram"
 description: "medium · scaling reads · fan‑out on write · celebrity problem · large blobs + CDN"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/instagram/sequence.svg" alt="How it works — instagram" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/instagram/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 <header>
   
   <span class="tag">medium · scaling reads · fan‑out on write · celebrity problem · large blobs + CDN</span>
@@ -210,6 +211,12 @@ GET  /feed?cursor=&amp;limit=                  -&gt; {posts[], nextCursor}   (cu
 </ul>
 
 ## Deep dives {#ig-deepdives}
+
+<!-- DIAGRAM:deep-dive:START -->
+
+<img src="/diagrams/instagram/deep-dive.svg" alt="Deep dive" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:deep-dive:END -->
 
 ### 1. Feed under 500 ms: fan‑out on write and the celebrity problem
 

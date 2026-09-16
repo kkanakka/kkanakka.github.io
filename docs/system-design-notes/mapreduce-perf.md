@@ -6,13 +6,14 @@ sidebar_label: "Optimize MapReduce performance"
 description: "medium · shuffle · data locality · skew · combiners · parallelism"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/mapreduce-perf/sequence.svg" alt="How it works — mapreduce-perf" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/mapreduce-perf/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 <header>
   
   <span class="tag">medium · shuffle · data locality · skew · combiners · parallelism</span>
@@ -139,6 +140,12 @@ Levers:  combiner · map-side join / broadcast small side · partitioner for ske
 </ol>
 
 ## Deep dives {#mapreduce-perf-deep}
+
+<!-- DIAGRAM:deep-dive:START -->
+
+<img src="/diagrams/mapreduce-perf/deep-dive.svg" alt="Deep dive" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:deep-dive:END -->
 
 <div class="cards">
 <div><h4>Shuffle</h4><ul><li>Combiner (or map‑side aggregation in Spark) is the single biggest win for aggregations: sum/count/max are associative; average needs (sum, count).</li><li>Compress map output; use a binary, compact serialization; increase sort buffer to avoid multiple spills; ensure enough reducers to parallelize fetch.</li><li>Map‑side joins: broadcast the small table; avoid shuffling the big one. Bucketed/pre‑partitioned inputs let joins skip shuffle entirely.</li></ul></div>

@@ -6,13 +6,14 @@ sidebar_label: "Monitoring & Alerting Platform"
 description: "Monitoring & Alerting Platform"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/nalsd-monitoring-platform/sequence.svg" alt="How it works — nalsd-monitoring-platform" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/nalsd-monitoring-platform/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 in
 
 in/observability

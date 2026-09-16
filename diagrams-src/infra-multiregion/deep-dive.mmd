@@ -1,0 +1,13 @@
+%% section: Deep dives
+flowchart TB
+    A["A region is lost"] --> B{"Can the others absorb it?"}
+    B -->|"N+1 provisioned"| C["Yes — that is what the spare capacity is for"]
+    B -->|"Running hot"| D["Cascading overload as traffic piles on"]
+    D --> E{"Degrade instead of failing"}
+    E --> F["Smaller model"]
+    E --> G["Shorter context"]
+    E --> H["Queue with an honest wait estimate"]
+    F --> I["A slower answer beats a 503"]
+    G --> I
+    H --> I
+    C --> J["Cells limit blast radius — one bad cell is not one bad region"]

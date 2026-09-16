@@ -6,13 +6,14 @@ sidebar_label: "Linux Scheduling & Containers"
 description: "Linux Scheduling & Containers"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/linux-scheduling-containers/sequence.svg" alt="How it works — linux-scheduling-containers" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/linux-scheduling-containers/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 docs/ kernel/ **internals**
 
 v6.x · Updated 2026-05

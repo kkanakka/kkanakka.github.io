@@ -6,13 +6,14 @@ sidebar_label: "SRE Design Interview Framework"
 description: "SRE Design Interview Framework"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/sre-design-framework/sequence.svg" alt="How it works — sre-design-framework" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/sre-design-framework/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 The systematic Google-style approach for any system design interview — from requirements to trade-offs. Master the reliability-first reasoning that distinguishes senior SRE candidates.
 
 Google SRE • Design Framework • Universal Template

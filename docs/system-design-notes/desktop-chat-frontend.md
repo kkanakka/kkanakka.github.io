@@ -6,13 +6,14 @@ sidebar_label: "Desktop AI chat frontend"
 description: "medium · cross‑platform · streaming state · offline · secure token storage"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/desktop-chat-frontend/sequence.svg" alt="How it works — desktop-chat-frontend" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/desktop-chat-frontend/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 <header>
   
   <span class="tag">medium · cross‑platform · streaming state · offline · secure token storage</span>
@@ -177,6 +178,12 @@ Local: SQLite (conversations, messages, drafts, outbox, sync cursors); keychain 
 </ol>
 
 ## Deep dives {#desktop-chat-frontend-deep}
+
+<!-- DIAGRAM:deep-dive:START -->
+
+<img src="/diagrams/desktop-chat-frontend/deep-dive.svg" alt="Deep dive" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:deep-dive:END -->
 
 <div class="cards">
 <div><h4>State and streaming</h4><ul><li>One immutable store (Redux/Zustand‑style); every network event becomes an action; UI is a pure function of state, which makes replay/debugging trivial.</li><li>Token batching: coalesce SSE deltas into one UI update per animation frame; unthrottled updates freeze the renderer at 50+ tokens/s.</li><li>Virtualized list; long conversations paged from SQLite, not held in memory.</li></ul></div>

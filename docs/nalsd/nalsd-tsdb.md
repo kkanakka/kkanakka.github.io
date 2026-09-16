@@ -6,13 +6,14 @@ sidebar_label: "Time Series Database"
 description: "Time Series Database"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/nalsd-tsdb/sequence.svg" alt="How it works — nalsd-tsdb" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/nalsd-tsdb/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 in
 
 in/tsdb

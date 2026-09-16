@@ -1,0 +1,12 @@
+%% section: Deep dives
+stateDiagram-v2
+    [*] --> Registered: publish immutable version
+    Registered --> Canary: route 1% of traffic
+    Canary --> Evaluating: gates on quality and latency
+    Evaluating --> Canary: hold, keep sampling
+    Evaluating --> Promoting: gates pass
+    Evaluating --> RollingBack: gates fail
+    Promoting --> Live: step traffic up
+    Live --> Draining: previous version drains
+    Draining --> [*]: in-flight streams finish on their own version
+    RollingBack --> Registered: old version never unloaded, so rollback is instant

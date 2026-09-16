@@ -1,0 +1,10 @@
+%% section: Who does what, one turn at a time
+flowchart TB
+    A["Token streaming with safety on the path"] --> B{"When do you screen?"}
+    B -->|"Input only"| C["Fast, but the output is unchecked"]
+    B -->|"Full output, then send"| D["Safe, but streaming is gone — user waits for everything"]
+    B -->|"Incrementally, as it streams"| E["Screen each chunk before releasing it"]
+    E --> F{"A later chunk trips the classifier"}
+    F --> G["Earlier tokens are already on the user's screen"]
+    G --> H["Retract and replace, or stop and explain"]
+    H --> I["Buffer a short window before releasing — latency traded for retractability"]

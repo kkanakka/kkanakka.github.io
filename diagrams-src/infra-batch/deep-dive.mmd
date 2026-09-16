@@ -1,0 +1,11 @@
+%% section: Deep dives
+flowchart TB
+    A["Submit a job of 1M items"] --> B{"How is progress tracked?"}
+    B -->|"A cursor on the job"| C["Restart means guessing where it stopped"]
+    B -->|"One row per execution, up front"| D["State is queryable and restartable per item"]
+    D --> E["Worker claims a batch atomically"]
+    E --> F{"Worker dies"}
+    F --> G["Lease expires, only the unfinished items return"]
+    G --> H["No duplicate work, no lost items"]
+    D --> I["Cost: 1M rows before any work starts"]
+    I --> J["Worth it — the alternative is an unrestartable job"]

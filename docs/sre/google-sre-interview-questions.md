@@ -6,13 +6,14 @@ sidebar_label: "Google SRE Interview Questions"
 description: "Google SRE Interview Questions"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/google-sre-interview-questions/sequence.svg" alt="How it works — google-sre-interview-questions" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/google-sre-interview-questions/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 Comprehensive deep-dives into Linux internals, networking, processes, filesystems, containers, and sysadmin — with kernel diagrams, commands, and follow-up chains.
 
 [Kiran's Tech Hub](/) → [Linux Systems Guide](/docs/linux/linux-systems-guide) → Google SRE Interview

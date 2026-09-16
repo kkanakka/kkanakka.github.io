@@ -1,0 +1,11 @@
+%% section: Deep dives
+flowchart TB
+    A["10,000 buyers, 100 units"] --> B{"Where is the contention?"}
+    B --> C["One row holding the stock count"]
+    C --> D{"How do you decrement it?"}
+    D -->|"SELECT then UPDATE"| E["Lost updates — two buyers read the same count"]
+    D -->|"UPDATE ... WHERE stock > 0"| F["Atomic, the database serialises it"]
+    D -->|"Redis DECR"| G["Fast, but durability is now your problem"]
+    F --> H{"Still too hot?"}
+    H -->|"Yes"| I["Split the counter into N buckets, claim from one at random"]
+    I --> J["Contention drops N-fold, at the cost of uneven drain"]

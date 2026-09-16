@@ -6,13 +6,14 @@ sidebar_label: "SRE Mini Patterns"
 description: "SRE Mini Patterns"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/sre-mini-patterns/sequence.svg" alt="How it works — sre-mini-patterns" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/sre-mini-patterns/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 Reliability Design Building Blocks — Google SRE Interview Essentials
 
 Short-form, laser-focused reliability design exercises covering the breadth of building blocks Google expects candidates to know cold. Master these 14 patterns to demonstrate senior-level systems thinking in production incident scenarios.

@@ -6,13 +6,14 @@ sidebar_label: "SRE Debugging: 21 Scenarios"
 description: "SRE Debugging: 21 Scenarios"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/sre-debugging/sequence.svg" alt="How it works — sre-debugging" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/sre-debugging/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 21 production scenarios across Network, Database, Application, and OS/Kernel — the exact format Google SRE interviewers use. Symptom → Diagnose → Root Cause → Fix → Senior Signal.
 
 Google SRE Interview • Debugging Handbook • 21 Scenarios

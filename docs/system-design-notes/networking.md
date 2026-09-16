@@ -6,13 +6,14 @@ sidebar_label: "Networking essentials, compact"
 description: "layers · TCP/UDP · HTTP · API styles · realtime · load balancing · failure handling"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/networking/sequence.svg" alt="How it works — networking" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/networking/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 <header>
   
   <span class="tag">layers · TCP/UDP · HTTP · API styles · realtime · load balancing · failure handling</span>
@@ -137,6 +138,12 @@ description: "layers · TCP/UDP · HTTP · API styles · realtime · load balanc
 </div>
 
 ## Failure handling deep dives (senior+ bait) {#nw-failures}
+
+<!-- DIAGRAM:deep-dive:START -->
+
+<img src="/diagrams/networking/deep-dive.svg" alt="Deep dive" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:deep-dive:END -->
 
 <figure>
 <svg viewBox="0 0 980 150" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Circuit breaker states: closed, open, half-open with transitions">

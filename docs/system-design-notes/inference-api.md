@@ -6,13 +6,14 @@ sidebar_label: "High‑concurrency Inference API (batch se…"
 description: "hard · Anthropic‑style · batching · pull dispatch · response routing · capacity feedback"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/inference-api/sequence.svg" alt="How it works — inference-api" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/inference-api/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 <header>
   
   <span class="tag">hard · Anthropic‑style · batching · pull dispatch · response routing · capacity feedback</span>
@@ -178,6 +179,12 @@ Latency:     2 (LB) + 1 + 5 (gateway) + ~20 (queue) + 1 + 4 (claim) + 50 (GPU) +
 </ol>
 
 ## Deep analysis: the decisions and why {#ia-deep}
+
+<!-- DIAGRAM:deep-dive:START -->
+
+<img src="/diagrams/inference-api/deep-dive.svg" alt="Deep dive" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:deep-dive:END -->
 
 ### 1. Sync outside, async inside: where does the connection live?
 

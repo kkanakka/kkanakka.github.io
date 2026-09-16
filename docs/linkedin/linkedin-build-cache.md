@@ -6,13 +6,14 @@ sidebar_label: "Build Artifact Cache"
 description: "Build Artifact Cache"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/linkedin-build-cache/sequence.svg" alt="How it works — linkedin-build-cache" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/linkedin-build-cache/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 CI/CD Reliability Design — Content-Addressable Deduplication
 
 A mission-critical build cache for LinkedIn's distributed CI/CD pipeline: 100ms p95 retrieval, 90% hit rate, content-addressable storage with lease-based eviction and global consistency convergence under 60 seconds.

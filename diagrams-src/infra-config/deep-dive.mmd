@@ -1,0 +1,10 @@
+%% section: Deep dives
+flowchart TB
+    A["Leader holds a lock and writes"] --> B["Leader pauses — GC or a partition"]
+    B --> C["Session expires, a new leader is elected"]
+    C --> D["New leader writes with a higher token"]
+    D --> E["Old leader resumes, still believes it holds the lock"]
+    E --> F{"Does its write land?"}
+    F -->|"Lock only"| G["Yes — two writers, corrupted state"]
+    F -->|"Fencing token"| H["Rejected: its token is older than what the resource has seen"]
+    H --> I["The resource enforces it, not the lock service"]

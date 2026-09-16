@@ -6,13 +6,14 @@ sidebar_label: "Global Distributed Cache"
 description: "Global Distributed Cache"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/nalsd-distributed-cache/sequence.svg" alt="How it works — nalsd-distributed-cache" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/nalsd-distributed-cache/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 in
 
 in/cache

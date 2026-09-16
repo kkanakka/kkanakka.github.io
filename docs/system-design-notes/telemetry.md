@@ -6,13 +6,14 @@ sidebar_label: "Telemetry with metric‑name reconciliation"
 description: "hard · Anthropic · ingest + store + query · metric identity · aliases with evidence · provenance and correction"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/telemetry/sequence.svg" alt="How it works — telemetry" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/telemetry/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 <header>
   
   <span class="tag">hard · Anthropic · ingest + store + query · metric identity · aliases with evidence · provenance and correction</span>
@@ -206,6 +207,12 @@ GET  /v1/registry/unresolved             -&gt; raw names seen with counts, sampl
 </ul>
 
 ## Part 2: reconcile naming variants {#tl-part2}
+
+<!-- DIAGRAM:deep-dive:START -->
+
+<img src="/diagrams/telemetry/deep-dive.svg" alt="Deep dive" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:deep-dive:END -->
 
 ### The mapping model
 

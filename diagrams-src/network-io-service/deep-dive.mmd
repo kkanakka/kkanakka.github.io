@@ -1,0 +1,10 @@
+%% section: Deep dives
+flowchart TB
+    A["Client uploads faster than disk accepts"] --> B{"What absorbs the difference?"}
+    B -->|"Unbounded in-memory queue"| C["Memory grows until the process is OOM-killed"]
+    B -->|"Stop reading the socket"| D["TCP's receive window closes"]
+    D --> E["The sender slows down — backpressure, for free"]
+    E --> F{"Download path"}
+    F --> G["read into user space, then write to the socket"]
+    F --> H["sendfile — kernel moves it, no user-space copy"]
+    H --> I["Halves the memory traffic on a bytes-heavy service"]

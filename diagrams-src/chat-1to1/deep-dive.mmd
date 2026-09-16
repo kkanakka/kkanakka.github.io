@@ -1,0 +1,11 @@
+%% section: Deep dives
+flowchart TB
+    A["Message sent"] --> B["Persist with a per-conversation sequence number"]
+    B --> C{"Is the recipient connected?"}
+    C -->|"Yes"| D["Publish to the gateway holding that socket"]
+    C -->|"No"| E["Leave it stored, send a push notification"]
+    D --> F{"Did the client ack?"}
+    F -->|"No"| E
+    E --> G["Client reconnects"]
+    G --> H["Asks for everything after its last sequence number"]
+    H --> I["Gap-free ordering without the server tracking per-device state"]

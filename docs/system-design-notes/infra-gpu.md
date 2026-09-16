@@ -6,13 +6,14 @@ sidebar_label: "GPU cluster scheduler and training check…"
 description: "hard · gang scheduling · fragmentation · async sharded checkpoints · manifest · stragglers"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/infra-gpu/sequence.svg" alt="How it works — infra-gpu" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/infra-gpu/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 <header>
   
   <span class="tag">hard · gang scheduling · fragmentation · async sharded checkpoints · manifest · stragglers</span>
@@ -187,6 +188,12 @@ Restore:    GET manifest (latest complete) → each rank GET its shard, verify h
 </ol>
 
 ## Deep dives {#infra-gpu-deep}
+
+<!-- DIAGRAM:deep-dive:START -->
+
+<img src="/diagrams/infra-gpu/deep-dive.svg" alt="Deep dive" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:deep-dive:END -->
 
 <div class="cards">
   <div><h4>Scheduler: what to say</h4><ul>

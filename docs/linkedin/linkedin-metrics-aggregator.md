@@ -6,13 +6,14 @@ sidebar_label: "Realtime Metrics Aggregator"
 description: "Realtime Metrics Aggregator"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/linkedin-metrics-aggregator/sequence.svg" alt="How it works — linkedin-metrics-aggregator" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/linkedin-metrics-aggregator/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 Observability Reliability — High-Cardinality Streams at Scale
 
 The backbone of LinkedIn's monitoring culture: 10M metrics/sec ingestion, 2-second query latency, dynamic cardinality control, and SLO-driven alerting across millions of nodes worldwide with Gorilla compression and tiered storage.

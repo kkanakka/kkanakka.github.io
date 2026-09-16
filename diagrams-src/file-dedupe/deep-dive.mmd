@@ -1,0 +1,12 @@
+%% section: Deep dives
+flowchart TB
+    A["Millions of files"] --> B["Group by size — only equal sizes can match"]
+    B --> C["Hash a small prefix of each candidate"]
+    C --> D{"Prefixes differ?"}
+    D -->|"Yes"| E["Not duplicates — stop, no full read"]
+    D -->|"No"| F["Full content hash"]
+    F --> G{"Hashes equal?"}
+    G -->|"Yes"| H["Compare byte for byte before acting"]
+    H --> I["Re-stat: the file may have changed since the walk"]
+    I --> J["Only now is it safe to link or delete"]
+    G -->|"No"| E

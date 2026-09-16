@@ -6,13 +6,14 @@ sidebar_label: "Stream a large file to 1000 hosts as fas…"
 description: "medium · bandwidth math · pipelined chain vs tree vs swarm · the origin is never the answer"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/stream-file-1000/sequence.svg" alt="How it works — stream-file-1000" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/stream-file-1000/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 <header>
   
   <span class="tag">medium · bandwidth math · pipelined chain vs tree vs swarm · the origin is never the answer</span>
@@ -161,6 +162,12 @@ GET  /transfers/:id/status      -&gt; {done, slowest, stalled[]}</code></pre>
 </ol>
 
 ## Deep dives {#sf-deepdives}
+
+<!-- DIAGRAM:deep-dive:START -->
+
+<img src="/diagrams/stream-file-1000/deep-dive.svg" alt="Deep dive" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:deep-dive:END -->
 
 ### 1. Chain vs tree vs swarm: pick by failure tolerance, not by speed
 

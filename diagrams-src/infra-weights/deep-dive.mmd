@@ -1,0 +1,10 @@
+%% section: Deep dives
+flowchart TB
+    A["300 GB of weights to 1000 nodes"] --> B{"Distribution shape"}
+    B -->|"Origin to each node"| C["Origin NIC is the wall — 300 TB out"]
+    B -->|"Tree"| D["Depth log N, but an inner node failing stalls a subtree"]
+    B -->|"Swarm"| E["Every node serves what it already has"]
+    E --> F["Chunk selection: rarest first"]
+    F --> G["No single chunk becomes the bottleneck everyone waits on"]
+    G --> H["Verify each chunk hash before use"]
+    H --> I["A corrupt chunk fails locally instead of poisoning the swarm"]

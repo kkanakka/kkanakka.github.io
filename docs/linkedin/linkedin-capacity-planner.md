@@ -6,13 +6,14 @@ sidebar_label: "Capacity Planner"
 description: "Capacity Planner"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/linkedin-capacity-planner/sequence.svg" alt="How it works — linkedin-capacity-planner" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/linkedin-capacity-planner/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 Forecast-Driven Infrastructure — Cost vs Reliability Optimization
 
 An intelligent capacity planning system that forecasts compute, storage, and network needs across hundreds of LinkedIn services: ≤8% forecast error, 99% reservation hit-rate, automated procurement, and capacity error budget management with ensemble ML models and hierarchical reconciliation.

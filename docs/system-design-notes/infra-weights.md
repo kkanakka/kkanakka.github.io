@@ -6,13 +6,14 @@ sidebar_label: "Distribute a large file (model weights) …"
 description: "hard · Anthropic · chunking · swarm · rarest‑first · per‑chunk hashes"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/infra-weights/sequence.svg" alt="How it works — infra-weights" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/infra-weights/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 <header>
   
   <span class="tag">hard · Anthropic · chunking · swarm · rarest‑first · per‑chunk hashes</span>
@@ -162,6 +163,12 @@ GET  /distributions/:id/progress                     -&gt; {done, inProgress, fa
 </ol>
 
 ## Deep dives {#infra-weights-deep}
+
+<!-- DIAGRAM:deep-dive:START -->
+
+<img src="/diagrams/infra-weights/deep-dive.svg" alt="Deep dive" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:deep-dive:END -->
 
 <div class="cards">
   <div><h4>Mechanisms</h4><ul>

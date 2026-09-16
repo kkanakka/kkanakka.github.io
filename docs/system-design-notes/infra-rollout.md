@@ -6,13 +6,14 @@ sidebar_label: "Model rollout: canary, promote, roll bac…"
 description: "hard · Anthropic · immutable versions · gates · prefetch · draining"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/infra-rollout/sequence.svg" alt="How it works — infra-rollout" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/infra-rollout/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 <header>
   
   <span class="tag">hard · Anthropic · immutable versions · gates · prefetch · draining</span>
@@ -166,6 +167,12 @@ POST /replicas/:id/drain                                -&gt; READY→DRAINING (
 </ol>
 
 ## Deep dives {#infra-rollout-deep}
+
+<!-- DIAGRAM:deep-dive:START -->
+
+<img src="/diagrams/infra-rollout/deep-dive.svg" alt="Deep dive" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:deep-dive:END -->
 
 <div class="cards">
   <div><h4>Immutability and identity</h4><ul>

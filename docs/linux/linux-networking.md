@@ -6,13 +6,14 @@ sidebar_label: "Networking 101: Browser to LinkedIn"
 description: "Networking 101: Browser to LinkedIn"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/linux-networking/sequence.svg" alt="How it works — linux-networking" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/linux-networking/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 [Linux Internals](/docs/linux) [Java Memory](/docs/linux/linux-memory-architecture) [System Design Hub](/docs/foundations)
 
 Every step from keystroke to rendered page, with DNS, BGP, ECMP, GLB, IPVS, ATS, and the application tier.

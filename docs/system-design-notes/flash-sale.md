@@ -6,13 +6,14 @@ sidebar_label: "Flash sale"
 description: "hard · contention · scaling writes · fairness"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/flash-sale/sequence.svg" alt="How it works — flash-sale" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/flash-sale/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 <header>
   
   <span class="tag">hard · contention · scaling writes · fairness</span>
@@ -288,6 +289,12 @@ GET  /purchases/:purchaseId                     -&gt; poll until Stripe webhook 
 </div>
 
 ## Deep dives (the four things the interviewer is waiting for) {#fs-deepdives}
+
+<!-- DIAGRAM:deep-dive:START -->
+
+<img src="/diagrams/flash-sale/deep-dive.svg" alt="Deep dive" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:deep-dive:END -->
 
 ### 1. Correctness under contention: the hot row
 

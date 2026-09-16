@@ -6,13 +6,14 @@ sidebar_label: "NALSD War-Room Scenarios"
 description: "NALSD War-Room Scenarios"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/sre-nalsd/sequence.svg" alt="How it works — sre-nalsd" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/sre-nalsd/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 18 Non-Abstract Large Systems Design scenarios — the exact format Google SRE uses. Diagnose running global infrastructure, not abstract whiteboard designs.
 
 Google SRE • NALSD Practice • 18 Scenarios • Full Playbook

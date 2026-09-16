@@ -1,0 +1,11 @@
+%% section: Deep dives
+flowchart TB
+    A["Worker picks up a job"] --> B["Derivative key = hash of source id, size and format"]
+    B --> C{"Worker dies mid-encode"}
+    C --> D["Lease expires, job returns to the queue"]
+    D --> E["Another worker redoes it"]
+    E --> F["Writes to the same deterministic key"]
+    F --> G["Overwrite, not a duplicate — retries are safe"]
+    C --> H{"Job fails repeatedly"}
+    H --> I["Backoff, then the dead-letter queue after N attempts"]
+    I --> J["A poison image cannot occupy the pool forever"]

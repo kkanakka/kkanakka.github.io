@@ -6,13 +6,14 @@ sidebar_label: "Dropbox"
 description: "Dropbox"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/hi-dropbox/sequence.svg" alt="How it works — hi-dropbox" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/hi-dropbox/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 [home](/)/ [hello interview](/docs/hello-interview/hi-index)/ **Dropbox**
 
 hellointerview·2026-05

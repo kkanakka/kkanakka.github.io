@@ -1,0 +1,10 @@
+%% section: Deep analysis: the decisions and why
+flowchart TB
+    A["Requests arrive at random times"] --> B{"How do you batch them?"}
+    B -->|"Wait for N requests"| C["Low latency requests pay for the slow ones"]
+    B -->|"Fixed time window"| D["Idle GPU whenever traffic dips"]
+    B -->|"Continuous batching"| E["New requests join between decode steps"]
+    E --> F["GPU stays saturated without a latency tax"]
+    F --> G{"What actually limits the batch?"}
+    G --> H["KV cache — grows with sequence length times concurrency"]
+    H --> I["Admission control on total tokens, not request count"]

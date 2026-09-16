@@ -1,0 +1,15 @@
+%% section: Failure handling deep dives (senior+ bait)
+flowchart TB
+    A["Pick a realtime transport"] --> B{"Who needs to send?"}
+    B -->|"Server to client only"| C["Server-Sent Events"]
+    C --> D["Plain HTTP, auto-reconnect, works through proxies"]
+    B -->|"Both directions, continuously"| E["WebSocket"]
+    E --> F["Stateful connections — now you own connection affinity"]
+    B -->|"Peer to peer, media"| G["WebRTC"]
+    G --> H["NAT traversal, TURN servers, real operational cost"]
+    B -->|"Client asks occasionally"| I["Polling"]
+    I --> J["Boring and fine — do not reach past it without a reason"]
+    D --> K["Pick the weakest tool that satisfies the requirement"]
+    F --> K
+    H --> K
+    J --> K

@@ -6,13 +6,14 @@ sidebar_label: "Thread‑safe producer‑consumer buffer"
 description: "coding · mutex + condition variables · bounded queue · shutdown · fairness"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/bounded-buffer/sequence.svg" alt="How it works — bounded-buffer" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/bounded-buffer/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 <header>
   
   <span class="tag">coding · mutex + condition variables · bounded queue · shutdown · fairness</span>
@@ -166,6 +167,12 @@ class BoundedBuffer:
 </ol>
 
 ## Deep dives {#bounded-buffer-deep}
+
+<!-- DIAGRAM:deep-dive:START -->
+
+<img src="/diagrams/bounded-buffer/deep-dive.svg" alt="Deep dive" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:deep-dive:END -->
 
 <div class="cards">
 <div><h4>Why two conditions on one lock</h4><ul><li>One lock guards the whole invariant (queue contents + closed). Two conditions let you wake the right side: a put wakes a consumer, a take wakes a producer. A single condition with <code>notify_all</code> works but thunders.</li><li><code>notify()</code> not <code>notify_all()</code> for the normal path: one item admits exactly one waiter. <code>notify_all()</code> only on close.</li><li>Always <code>while</code>, never <code>if</code>: another thread may consume the slot between the notify and your wake, and spurious wakeups exist.</li></ul></div>

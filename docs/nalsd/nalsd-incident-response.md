@@ -6,13 +6,14 @@ sidebar_label: "Global Incident Response"
 description: "Global Incident Response"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/nalsd-incident-response/sequence.svg" alt="How it works — nalsd-incident-response" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/nalsd-incident-response/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 in
 
 in/incident

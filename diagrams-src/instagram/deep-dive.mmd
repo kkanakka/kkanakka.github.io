@@ -1,0 +1,11 @@
+%% section: Deep dives
+flowchart TB
+    A["A user opens their feed"] --> B{"When is the feed built?"}
+    B -->|"On write"| C["Push the post into every follower's list"]
+    B -->|"On read"| D["Query everyone they follow, merge, sort"]
+    C --> E["Reads are one lookup — great for normal accounts"]
+    C --> F["A celebrity post means millions of writes"]
+    D --> G["Writes are cheap, reads are expensive"]
+    F --> H["Hybrid: push for ordinary accounts, pull for celebrities"]
+    G --> H
+    H --> I["Merge the two at read time, so neither path explodes"]

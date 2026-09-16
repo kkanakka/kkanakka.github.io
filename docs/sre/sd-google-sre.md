@@ -6,13 +6,14 @@ sidebar_label: "Google SRE L7: NALSD & Senior Design"
 description: "Google SRE L7: NALSD & Senior Design"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/sd-google-sre/sequence.svg" alt="How it works — sd-google-sre" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/sd-google-sre/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 Non-Abstract Large System Design (NALSD), the three design archetypes, Senior Staff curveballs, and the exact rubric Google SRE interviewers use to evaluate you.
 
 Senior Staff SRE • L7 Interview Guide • NALSD Framework

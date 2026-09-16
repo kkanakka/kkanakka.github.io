@@ -6,13 +6,14 @@ sidebar_label: "Secrets Rotation"
 description: "Secrets Rotation"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/linkedin-secrets-rotation/sequence.svg" alt="How it works — linkedin-secrets-rotation" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/linkedin-secrets-rotation/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 Production Security Design — Zero-Downtime Credential Management
 
 A security-first secrets rotation service for LinkedIn scale: 60-second propagation, 99.999% availability, dual-key handoff, and automated rollback. Built with Vault, Kafka, Espresso, and LinkedIn infrastructure patterns.
@@ -491,7 +492,6 @@ Database passwords require careful connection pool management
 | Standard | 90 days | 2 hours | Low (quarterly impact) |
 | Basic | 180 days | 24 hours | Very Low (semi-annual) |
 
-
 **
 
 **
@@ -656,6 +656,5 @@ Database passwords require careful connection pool management
 -   Cross-DC replication delay (60s) during failures
 -   Manual investigation required for failed rotations
 -   High operational complexity for security team
-
 
 **

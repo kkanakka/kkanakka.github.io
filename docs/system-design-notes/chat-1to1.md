@@ -6,13 +6,14 @@ sidebar_label: "1‑to‑1 chat system"
 description: "medium · Anthropic · WebSockets · pub/sub routing · per‑conversation sequence · inbox + in‑flight delivery"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/chat-1to1/sequence.svg" alt="How it works — chat-1to1" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/chat-1to1/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 <header>
   
   <span class="tag">medium · Anthropic · WebSockets · pub/sub routing · per‑conversation sequence · inbox + in‑flight delivery</span>
@@ -197,6 +198,12 @@ REST
 </ol>
 
 ## Deep dives {#ch-deepdives}
+
+<!-- DIAGRAM:deep-dive:START -->
+
+<img src="/diagrams/chat-1to1/deep-dive.svg" alt="Deep dive" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:deep-dive:END -->
 
 ### 1. Why WebSockets, and what that costs
 

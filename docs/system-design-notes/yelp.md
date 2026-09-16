@@ -6,13 +6,14 @@ sidebar_label: "Yelp (local business search + reviews)"
 description: "medium · scaling reads · geospatial index · optimistic locking · \"keep it simple\" is the senior signal"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/yelp/sequence.svg" alt="How it works — yelp" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/yelp/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 <header>
   
   <span class="tag">medium · scaling reads · geospatial index · optimistic locking · "keep it simple" is the senior signal</span>
@@ -162,6 +163,12 @@ POST /businesses/:id/reviews  {rating, text?}      -&gt; Review   (userId from J
 <div class="note"><b>Service split rule:</b> split when functionality is unrelated or the read/write patterns differ enough to need independent scaling. Search and view are both read‑heavy → one Business Service. Reviews are rare writes → separate Review Service. Same database for both is fine at this size; "one DB per microservice" is a preference, not a law.</div>
 
 ## Deep dives {#yp-deepdives}
+
+<!-- DIAGRAM:deep-dive:START -->
+
+<img src="/diagrams/yelp/deep-dive.svg" alt="Deep dive" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:deep-dive:END -->
 
 ### 1. Average rating in search results
 

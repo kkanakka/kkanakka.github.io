@@ -1,0 +1,11 @@
+%% section: Deep dives
+flowchart TB
+    A["Job needs 64 GPUs"] --> B{"Partial placement?"}
+    B -->|"Allow it"| C["48 GPUs sit idle waiting for 16 more — deadlock risk"]
+    B -->|"Gang schedule"| D["All 64 or none"]
+    D --> E{"Cluster is fragmented"}
+    E --> F["Free GPUs exist but not together"]
+    F --> G["Preempt lower-priority work to defragment"]
+    G --> H["Preempted jobs resume from their checkpoint"]
+    D --> I["Topology matters: NVLink peers beat GPUs on separate PCIe roots"]
+    I --> J["A topology-blind scheduler halves your training throughput"]

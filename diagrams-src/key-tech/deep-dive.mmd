@@ -1,0 +1,13 @@
+%% section: Queue vs stream in one picture
+flowchart TB
+    A["Naming a technology"] --> B{"Can you justify it in one sentence?"}
+    B -->|"No"| C["Do not name it — the follow-up will expose it"]
+    B -->|"Yes"| D["State the property you need"]
+    D --> E["Then the box that provides it"]
+    E --> F["Then what it costs you"]
+    F --> G["Kafka: ordered replayable log, at the cost of operational weight"]
+    F --> H["Redis: microsecond reads, at the cost of another consistency story"]
+    F --> I["Postgres: transactions, until one machine is not enough"]
+    G --> J["A confident default plus its cost beats a survey of five options"]
+    H --> J
+    I --> J

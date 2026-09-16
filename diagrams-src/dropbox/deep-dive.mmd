@@ -1,0 +1,12 @@
+%% section: Deep dives
+flowchart TB
+    U["Client has a 5 GB file"] --> C["Split into fixed-size chunks"]
+    C --> H["Hash each chunk"]
+    H --> Q{"Server already has this hash?"}
+    Q -->|"Yes"| S["Skip it — this is the dedupe win"]
+    Q -->|"No"| P["Presigned PUT straight to object storage"]
+    P --> M["Commit a manifest: ordered chunk hashes"]
+    S --> M
+    M --> R{"Resume after a dropped connection"}
+    R --> RA["Re-ask which chunks are missing"]
+    RA --> RB["Only the gap is re-sent, not the file"]

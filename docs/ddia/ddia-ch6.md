@@ -6,13 +6,14 @@ sidebar_label: "Ch 6: Caching Strategies"
 description: "Ch 6: Caching Strategies"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/ddia-ch6/sequence.svg" alt="How it works — ddia-ch6" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/ddia-ch6/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 Cache-aside, write-through, write-behind. How Memcached, Redis, and Couchbase work. Cache miss flows, eviction, persistence, and where each fits in production architectures.
 
 Data Intensive Systems • Chapter 6 • Interview Guide

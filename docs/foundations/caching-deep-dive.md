@@ -6,13 +6,14 @@ sidebar_label: "Caching Systems Deep Dive"
 description: "Caching Systems Deep Dive"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/caching-deep-dive/sequence.svg" alt="How it works — caching-deep-dive" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/caching-deep-dive/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 A deep dive into cache patterns, strategies, and systems — from bootstrap problems to LinkedIn's 4.8M reads/sec architecture
 
 ## 1\. Why Two Caches? The Bootstrap Problem

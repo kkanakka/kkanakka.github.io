@@ -6,13 +6,14 @@ sidebar_label: "Dropbox"
 description: "easy · handling large blobs · presigned URLs · chunking · sync"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/dropbox/sequence.svg" alt="How it works — dropbox" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/dropbox/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 <header>
   
   <span class="tag">easy · handling large blobs · presigned URLs · chunking · sync</span>
@@ -225,6 +226,12 @@ User comes from the JWT, never the body.</code></pre>
 </ul>
 
 ## Deep dives {#db-deepdives}
+
+<!-- DIAGRAM:deep-dive:START -->
+
+<img src="/diagrams/dropbox/deep-dive.svg" alt="Deep dive" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:deep-dive:END -->
 
 ### 1. Large files (where the interview time goes)
 

@@ -1,0 +1,10 @@
+%% section: Deep dives
+flowchart TB
+    A["Need a unique short code"] --> B{"How do you generate it?"}
+    B -->|"Hash the URL"| C["Collisions — must check and retry"]
+    B -->|"Random"| D["Collisions get likelier as the table fills"]
+    B -->|"Counter to base62"| E["No collisions by construction"]
+    E --> F{"Single counter?"}
+    F -->|"Yes"| G["A write bottleneck and a single point of failure"]
+    F -->|"Ranges handed to each host"| H["Each host allocates locally, no coordination per write"]
+    H --> I["Codes are non-sequential per host, so they are not guessable in order"]

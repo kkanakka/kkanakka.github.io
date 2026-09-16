@@ -6,13 +6,14 @@ sidebar_label: "Metrics monitoring at 10M points/sec"
 description: "hard · cardinality · Gorilla · retention tiers · alerting failure domain"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/infra-metrics/sequence.svg" alt="How it works — infra-metrics" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/infra-metrics/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 <header>
   
   <span class="tag">hard · cardinality · Gorilla · retention tiers · alerting failure domain</span>
@@ -152,6 +153,12 @@ Alerting:        rules evaluated every 15–60 s against the evaluator’s own r
 </ol>
 
 ## Deep dives {#infra-metrics-deep}
+
+<!-- DIAGRAM:deep-dive:START -->
+
+<img src="/diagrams/infra-metrics/deep-dive.svg" alt="Deep dive" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:deep-dive:END -->
 
 <div class="cards">
   <div><h4>Cardinality control</h4><ul>

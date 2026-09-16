@@ -6,13 +6,14 @@ sidebar_label: "Key technologies, compact"
 description: "one paragraph each · what · when · must‑know · names"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/key-tech/sequence.svg" alt="How it works — key-tech" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/key-tech/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 <header>
   
   <span class="tag">one paragraph each · what · when · must‑know · names</span>
@@ -106,6 +107,12 @@ description: "one paragraph each · what · when · must‑know · names"
 </figure>
 
 ## Queue vs stream in one picture {#kt-queue}
+
+<!-- DIAGRAM:deep-dive:START -->
+
+<img src="/diagrams/key-tech/deep-dive.svg" alt="Deep dive" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:deep-dive:END -->
 
 <figure>
 <svg viewBox="0 0 980 170" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Queue: message removed after ack by one worker. Stream: retained log read by multiple consumer groups at their own offsets">

@@ -6,13 +6,14 @@ sidebar_label: "Linux Systems Guide"
 description: "Linux Systems Guide"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/linux-systems-guide/sequence.svg" alt="How it works — linux-systems-guide" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/linux-systems-guide/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 Deep dives into how Linux manages processes, memory, containers, and networking — with diagrams, code examples, and real-world debugging techniques.
 
 [

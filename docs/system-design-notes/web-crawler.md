@@ -6,13 +6,14 @@ sidebar_label: "Concurrent web crawler"
 description: "medium · combines \"design a crawler\" + \"scale with a thread pool\" + \"locked concurrent crawler\" · frontier · politeness · dedupe · termination"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/web-crawler/sequence.svg" alt="How it works — web-crawler" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/web-crawler/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 <header>
   
   <span class="tag">medium · combines "design a crawler" + "scale with a thread pool" + "locked concurrent crawler" · frontier · politeness · dedupe · termination</span>
@@ -225,6 +226,12 @@ class Crawler:
 </div>
 
 ## Version 2: distributed crawler deep dives {#cr-deepdives}
+
+<!-- DIAGRAM:deep-dive:START -->
+
+<img src="/diagrams/web-crawler/deep-dive.svg" alt="Deep dive" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:deep-dive:END -->
 
 ### 1. The frontier: what next, and when
 

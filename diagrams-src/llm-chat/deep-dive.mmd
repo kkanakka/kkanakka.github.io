@@ -1,0 +1,11 @@
+%% section: Deep dives
+flowchart TB
+    A["Conversation grows past the context window"] --> B{"What do you drop?"}
+    B -->|"Oldest turns"| C["Cheap, but the model forgets the premise"]
+    B -->|"Summarise the old turns"| D["Keeps the thread, costs an extra model call"]
+    B -->|"Retrieve only relevant turns"| E["Best quality, needs an index per conversation"]
+    D --> F["Store the summary, not the raw turns"]
+    E --> F
+    F --> G{"Streaming connection drops mid-answer"}
+    G --> H["The turn was persisted as it streamed"]
+    H --> I["Client resumes from the stored offset — no regeneration, no double billing"]

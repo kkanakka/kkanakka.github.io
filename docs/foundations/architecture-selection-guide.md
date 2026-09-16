@@ -6,13 +6,14 @@ sidebar_label: "Architecture Selection Guide"
 description: "Architecture Selection Guide"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/architecture-selection-guide/sequence.svg" alt="How it works — architecture-selection-guide" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/architecture-selection-guide/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 Comprehensive guide to choosing the right system for your architecture — databases, caching, messaging, storage, and more
 
 ### Contents

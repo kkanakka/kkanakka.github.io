@@ -5,13 +5,13 @@ sidebar_label: "Overview"
 description: "Designing systems that train, serve, and scale machine learning."
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/overview/sequence.svg" alt="How it works — overview" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/overview/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
 
 Designing systems that train, serve, and scale machine learning — inference
 architecture, vector search, retrieval pipelines, GPU scheduling, and the

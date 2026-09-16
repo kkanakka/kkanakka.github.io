@@ -1,0 +1,9 @@
+%% section: Deep dives
+flowchart TB
+    A["Find businesses within 5 km"] --> B{"How do you index location?"}
+    B -->|"Two B-tree indexes on lat and lng"| C["Returns a box, and the planner picks only one index"]
+    B -->|"Geohash prefix"| D["Nearby points share a prefix — a range scan"]
+    B -->|"Quadtree / S2 cells"| E["Adapts to density, harder to maintain"]
+    D --> F["Edge case: two points either side of a cell boundary are far apart in the index"]
+    F --> G["Query the neighbouring cells too, then filter by true distance"]
+    E --> G

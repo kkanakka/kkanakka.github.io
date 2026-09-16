@@ -1,0 +1,12 @@
+%% section: Deep dives
+flowchart TB
+    A["They ask for working code"] --> B["Signature and docstring first"]
+    B --> C["Smallest correct version"]
+    C --> D["Tests for the edges: empty, single, malformed, huge"]
+    D --> E{"Now make it scale"}
+    E --> F["Stream instead of loading"]
+    E --> G["Bound the memory explicitly"]
+    F --> H["Tests still pass — that is the proof it is still correct"]
+    G --> H
+    H --> I["Readable and tested beats clever"]
+    I --> J["They are reading it as code they would have to maintain"]

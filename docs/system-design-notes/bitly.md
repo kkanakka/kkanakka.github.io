@@ -6,13 +6,14 @@ sidebar_label: "Bit.ly (URL shortener)"
 description: "easy · scaling reads · unique id generation · 1000:1 read/write"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/bitly/sequence.svg" alt="How it works — bitly" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/bitly/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 <header>
   
   <span class="tag">easy · scaling reads · unique id generation · 1000:1 read/write</span>
@@ -157,6 +158,12 @@ GET  /{short_code}                                        -&gt; 302 Found, Locat
 </ol>
 
 ## Deep dives {#bl-deepdives}
+
+<!-- DIAGRAM:deep-dive:START -->
+
+<img src="/diagrams/bitly/deep-dive.svg" alt="Deep dive" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:deep-dive:END -->
 
 ### 1. Unique, short, cheap codes
 

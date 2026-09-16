@@ -6,13 +6,14 @@ sidebar_label: "Disaster Recovery Orchestrator"
 description: "Disaster Recovery Orchestrator"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/linkedin-disaster-recovery/sequence.svg" alt="How it works — linkedin-disaster-recovery" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/linkedin-disaster-recovery/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 Business Continuity Design — Automated Regional Failover
 
 A resilience-first DR orchestrator for LinkedIn scale: 5-minute RTO, 30-second RPO, automated failover with Raft consensus, and chaos engineering validation. Built for zero-manual-intervention business continuity.

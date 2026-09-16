@@ -1,0 +1,11 @@
+%% section: Deep dives
+flowchart TB
+    A["Author edits a shared prompt"] --> B{"Overwrite or version?"}
+    B -->|"Overwrite"| C["Everyone's saved link silently changes meaning"]
+    B -->|"New immutable version"| D["Old links keep resolving to what was shared"]
+    D --> E{"What does a bare link point at?"}
+    E --> F["Pinned version — reproducible, can go stale"]
+    E --> G["Latest — always current, not reproducible"]
+    F --> H["Offer both: /p/abc pins, /p/abc/latest follows"]
+    G --> H
+    H --> I["Forks record their parent, so provenance survives"]

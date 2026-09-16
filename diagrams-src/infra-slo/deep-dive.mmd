@@ -1,0 +1,12 @@
+%% section: Deep dives
+flowchart TB
+    A["Users say it feels slow"] --> B{"Which number shows it?"}
+    B -->|"Average request time"| C["Hides everything — a long generation looks like a slow system"]
+    B -->|"TTFT"| D["Time to first token — the perceived responsiveness"]
+    B -->|"Inter-token latency"| E["Smoothness once it starts"]
+    D --> F["Split the budget by stage: auth, queue, prefill, decode"]
+    E --> F
+    F --> G{"Which stage spent it?"}
+    G --> H["Queue time means capacity"]
+    G --> I["Prefill time means prompt length"]
+    G --> J["Decode time means batch pressure"]

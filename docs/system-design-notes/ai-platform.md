@@ -6,13 +6,14 @@ sidebar_label: "AI chat platform, end to end"
 description: "ties together ChatGPT chat + Inference API + metering + training · who does what"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/ai-platform/sequence.svg" alt="How it works — ai-platform" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/ai-platform/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 <header>
   
   <span class="tag">ties together ChatGPT chat + Inference API + metering + training · who does what</span>
@@ -184,6 +185,12 @@ description: "ties together ChatGPT chat + Inference API + metering + training �
 </ol>
 
 ## Who does what, one turn at a time {#ap-who}
+
+<!-- DIAGRAM:deep-dive:START -->
+
+<img src="/diagrams/ai-platform/deep-dive.svg" alt="Deep dive" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:deep-dive:END -->
 
 <ol class="order">
   <li><b>Gateway:</b> verify JWT, check Redis quota (tokens/min for the tier, messages/day), route.</li>

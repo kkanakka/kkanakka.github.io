@@ -1,0 +1,11 @@
+%% section: What all ten have in common
+flowchart TB
+    A["Any inference infrastructure problem"] --> B["1. What is the unit of work?"]
+    B --> C["Tokens and GPU-seconds, not requests and CPU"]
+    C --> D["2. What is the hard limit?"]
+    D --> E["KV cache, GPU memory, interconnect bandwidth"]
+    E --> F["3. What happens when it is lost?"]
+    F --> G["Cells, N+1, and a degraded mode that still answers"]
+    G --> H["4. Which number proves it is healthy?"]
+    H --> I["TTFT and inter-token latency, split by stage"]
+    I --> J["Answer those four and the specific problem mostly falls out"]

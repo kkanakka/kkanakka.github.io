@@ -6,13 +6,14 @@ sidebar_label: "AI Anomaly Detection Platform"
 description: "AI Anomaly Detection Platform"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/nalsd-anomaly-detection/sequence.svg" alt="How it works — nalsd-anomaly-detection" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/nalsd-anomaly-detection/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 in
 
 in/anomaly

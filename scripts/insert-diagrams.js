@@ -1,10 +1,17 @@
 #!/usr/bin/env node
 /**
- * Place each rendered diagram into its page, under a "How it works" heading
- * directly after the frontmatter.
+ * Place rendered diagrams into their pages.
  *
- * The block is delimited by HTML comments so the script is idempotent: a
- * re-run replaces the block rather than stacking another copy.
+ * A source may declare where it belongs with a leading directive:
+ *
+ *     %% section: Deep dives
+ *     %% caption: What happens when the leader pauses
+ *
+ * With a `section`, the diagram is inserted directly under that markdown
+ * heading. Without one it goes at the top of the page, under "How it works".
+ *
+ * Each insertion is delimited by a comment carrying the diagram's name, so
+ * re-running replaces that block instead of stacking duplicates.
  */
 const fs = require('fs');
 const path = require('path');
@@ -12,10 +19,7 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '..');
 const DOCS = path.join(ROOT, 'docs');
 const SRC = path.join(ROOT, 'diagrams-src');
-const START = '<!-- DIAGRAM:START -->';
-const END = '<!-- DIAGRAM:END -->';
 
-/** page slug -> its .md path */
 const pageFor = {};
 for (const section of fs.readdirSync(DOCS)) {
   const dir = path.join(DOCS, section);
@@ -25,43 +29,74 @@ for (const section of fs.readdirSync(DOCS)) {
   }
 }
 
-const CAPTION = {
-  sequence: 'How it works',
-};
+const titleCase = (s) => s.replace(/[-_]/g, ' ').replace(/^./, (c) => c.toUpperCase());
 
-let inserted = 0, skipped = [];
+function directives(file) {
+  const head = fs.readFileSync(file, 'utf8').split('\n').slice(0, 6);
+  const out = {};
+  for (const line of head) {
+    const m = line.match(/^\s*%%\s*(section|caption)\s*:\s*(.+?)\s*$/);
+    if (m) out[m[1]] = m[2];
+  }
+  return out;
+}
+
+let pages = 0, blocks = 0;
+const skipped = [];
+
 for (const slug of fs.readdirSync(SRC)) {
   const dir = path.join(SRC, slug);
   if (!fs.statSync(dir).isDirectory()) continue;
   const md = pageFor[slug];
   if (!md) { skipped.push(`${slug}: no matching page`); continue; }
 
-  const diagrams = fs.readdirSync(dir)
-    .filter((f) => f.endsWith('.mmd'))
-    .map((f) => f.replace(/\.mmd$/, ''))
-    .filter((name) => fs.existsSync(path.join(ROOT, 'static/diagrams', slug, `${name}.svg`)))
-    .sort();
-  if (!diagrams.length) { skipped.push(`${slug}: nothing rendered`); continue; }
-
-  const body = diagrams.map((name) => {
-    const heading = CAPTION[name] || name.replace(/[-_]/g, ' ').replace(/^./, (c) => c.toUpperCase());
-    return `## ${heading}\n\n<img src="/diagrams/${slug}/${name}.svg" alt="${heading} — ${slug}" class="doc-diagram doc-diagram-seq" />`;
-  }).join('\n\n');
-
-  const block = `${START}\n\n${body}\n\n${END}`;
   let text = fs.readFileSync(md, 'utf8');
+  const names = fs.readdirSync(dir).filter((f) => f.endsWith('.mmd')).sort();
+  let touched = false;
 
-  if (text.includes(START)) {
-    text = text.replace(new RegExp(`${START}[\\s\\S]*?${END}`), block);
-  } else {
-    const fm = text.match(/^---\n[\s\S]*?\n---\n/);
-    if (!fm) { skipped.push(`${slug}: no frontmatter`); continue; }
-    text = fm[0] + '\n' + block + '\n' + text.slice(fm[0].length);
+  for (const file of names) {
+    const name = file.replace(/\.mmd$/, '');
+    const svg = path.join(ROOT, 'static/diagrams', slug, `${name}.svg`);
+    if (!fs.existsSync(svg)) { skipped.push(`${slug}/${name}: not rendered`); continue; }
+
+    const d = directives(path.join(dir, file));
+    const caption = d.caption || (name === 'sequence' ? 'How it works' : titleCase(name));
+    const START = `<!-- DIAGRAM:${name}:START -->`;
+    const END = `<!-- DIAGRAM:${name}:END -->`;
+    const img = `<img src="/diagrams/${slug}/${name}.svg" alt="${caption.replace(/"/g, '&quot;')}" class="doc-diagram doc-diagram-seq" />`;
+
+    // under a named section the heading already labels it, so no extra heading
+    const block = d.section
+      ? `${START}\n\n${img}\n\n${END}`
+      : `${START}\n\n## ${caption}\n\n${img}\n\n${END}`;
+
+    if (text.includes(START)) {
+      text = text.replace(new RegExp(`${START}[\\s\\S]*?${END}`), block);
+    } else if (d.section) {
+      // literal line match - heading text contains parens, plus signs and
+      // colons, and getting the regex escaping wrong silently skips the page
+      const lines = text.split('\n');
+      // prefix match: the directive names the stable part of the heading,
+      // which often carries a parenthetical the author may reword
+      const i = lines.findIndex((l) => /^##+ /.test(l) &&
+        l.replace(/^##+ /, '').replace(/\s*\{#.*$/, '').trim().startsWith(d.section));
+      if (i === -1) { skipped.push(`${slug}/${name}: section "${d.section}" not found`); continue; }
+      lines.splice(i + 1, 0, '', block);
+      text = lines.join('\n');
+    } else {
+      const fm = text.match(/^---\n[\s\S]*?\n---\n/);
+      if (!fm) { skipped.push(`${slug}/${name}: no frontmatter`); continue; }
+      text = fm[0] + '\n' + block + '\n' + text.slice(fm[0].length);
+    }
+    blocks++;
+    touched = true;
   }
-  fs.writeFileSync(md, text);
-  inserted++;
-  console.log(`  ${slug}  (${diagrams.length})`);
+
+  if (touched) { fs.writeFileSync(md, text); pages++; }
 }
 
-console.log(`\ninserted into ${inserted} page(s)`);
-if (skipped.length) { console.log('skipped:'); skipped.forEach((s) => console.log('  ' + s)); }
+console.log(`${blocks} diagram block(s) across ${pages} page(s)`);
+if (skipped.length) {
+  console.log(`\nskipped (${skipped.length}):`);
+  skipped.slice(0, 20).forEach((s) => console.log('  ' + s));
+}

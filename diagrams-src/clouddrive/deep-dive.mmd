@@ -1,0 +1,11 @@
+%% section: Deep dives
+flowchart TB
+    A["Viewer opens a shared file"] --> B["Permission check at the metadata tier"]
+    B --> C{"Allowed?"}
+    C -->|"No"| D["Deny — the CDN never sees the request"]
+    C -->|"Yes"| E["Mint a short-lived signed URL"]
+    E --> F["Viewer fetches from the CDN"]
+    F --> G{"Access revoked a minute later?"}
+    G --> H["The signed URL is still valid until it expires"]
+    H --> I["Keep the TTL short, and purge the edge on revocation"]
+    I --> J["Long TTL means fast, but revocation is slow — that is the trade"]

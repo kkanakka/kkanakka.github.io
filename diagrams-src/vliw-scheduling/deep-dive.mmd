@@ -1,0 +1,12 @@
+%% section: Deep dives
+flowchart TB
+    A["Instructions with dependences"] --> B["Build the dependence graph"]
+    B --> C["Weight each edge with its latency"]
+    C --> D["Ready list: predecessors have retired"]
+    D --> E{"Which ready instruction first?"}
+    E -->|"Arbitrary"| F["Long-latency ops start late, stalling the tail"]
+    E -->|"Longest path to exit"| G["Critical path starts as early as possible"]
+    G --> H["Pack into this cycle's slots, respecting resource limits"]
+    H --> I{"Slot unfillable?"}
+    I --> J["Emit a no-op — the static schedule's cost"]
+    J --> K["Hardware does no reordering, so a wrong schedule is a wrong program"]

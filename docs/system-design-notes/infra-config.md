@@ -6,13 +6,14 @@ sidebar_label: "Strongly consistent config service / lea…"
 description: "medium · ZooKeeper · quorum · watches · sessions · fencing · last‑known‑good"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/infra-config/sequence.svg" alt="How it works — infra-config" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/infra-config/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 <header>
   
   <span class="tag">medium · ZooKeeper · quorum · watches · sessions · fencing · last‑known‑good</span>
@@ -172,6 +173,12 @@ Downstream store API: write(payload, epoch)  → rejected if epoch &lt; last_see
 </ol>
 
 ## Deep dives {#infra-config-deep}
+
+<!-- DIAGRAM:deep-dive:START -->
+
+<img src="/diagrams/infra-config/deep-dive.svg" alt="Deep dive" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:deep-dive:END -->
 
 <div class="cards">
   <div><h4>Consensus facts to have ready</h4><ul>

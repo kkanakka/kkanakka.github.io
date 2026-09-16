@@ -6,13 +6,14 @@ sidebar_label: "Autonomous Bare Metal Lifecycle"
 description: "Autonomous Bare Metal Lifecycle"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/nalsd-bare-metal-lifecycle/sequence.svg" alt="How it works — nalsd-bare-metal-lifecycle" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/nalsd-bare-metal-lifecycle/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 Complete visual guide — the full interview module: end-to-end lifecycle, the five layers, discovery orchestration, PXE & imaging, validation, GPU discovery, metrics, SKU management, remediation, self-healing, immutable infra, firmware, config, supply chain, compliance, split-brain, catastrophic recovery, and cloud/hybrid. 7 diagrams.
 
 **Contents**

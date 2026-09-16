@@ -6,13 +6,14 @@ sidebar_label: "Cost-Aware Alerting"
 description: "Cost-Aware Alerting"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/linkedin-cost-aware-alerting/sequence.svg" alt="How it works — linkedin-cost-aware-alerting" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/linkedin-cost-aware-alerting/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 Budget Burn vs Reliability — Sustainable Operations at Scale
 
 An intelligent cost monitoring platform that makes cloud spend an operational signal as important as latency: 2-minute alert latency for cost anomalies, 95% service coverage, SLO integration for business impact correlation, and budget burn rate management with ML-based anomaly detection.

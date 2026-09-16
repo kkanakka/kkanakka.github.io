@@ -6,13 +6,14 @@ sidebar_label: "Optimize HTTP requests for speed and lim…"
 description: "medium · client‑side concurrency · rate limits · batching · caching · retries"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/http-optimize/sequence.svg" alt="How it works — http-optimize" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/http-optimize/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 <header>
   
   <span class="tag">medium · client‑side concurrency · rate limits · batching · caching · retries</span>
@@ -164,6 +165,12 @@ Headers read: X-RateLimit-Remaining, X-RateLimit-Reset, Retry-After; write: If-N
 </ol>
 
 ## Deep dives {#http-optimize-deep}
+
+<!-- DIAGRAM:deep-dive:START -->
+
+<img src="/diagrams/http-optimize/deep-dive.svg" alt="Deep dive" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:deep-dive:END -->
 
 <div class="cards">
 <div><h4>Fewer bytes, fewer round trips</h4><ul><li>Keep‑alive and HTTP/2 multiplexing: one TLS handshake, many streams; avoids the 1–2 RTT per request that dominates small calls.</li><li>Batch endpoints when available; otherwise coalesce identical in‑flight requests (single‑flight).</li><li>Compression, minimal fields (<code>?fields=</code>), conditional GETs with ETags so unchanged data costs a 304.</li><li>Pipelining order: cheap cached checks first, expensive calls last.</li></ul></div>

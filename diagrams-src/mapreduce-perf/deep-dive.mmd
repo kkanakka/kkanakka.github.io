@@ -1,0 +1,11 @@
+%% section: Deep dives
+flowchart TB
+    A["Job runs long"] --> B{"Where is the time?"}
+    B -->|"Map phase"| C["Splits too large, or not near the data"]
+    B -->|"Shuffle"| D["Usually here — it is the only all-to-all step"]
+    B -->|"Reduce"| E["One reducer finishing long after the rest"]
+    D --> F["Add a combiner: aggregate locally before emitting"]
+    F --> G["Shuffle volume drops by the reduction factor"]
+    E --> H["Skew — one key holds most of the rows"]
+    H --> I["Salt the hot key across N reducers, then merge"]
+    C --> J["Move compute to the data, not the reverse"]

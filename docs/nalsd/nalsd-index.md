@@ -6,13 +6,14 @@ sidebar_label: "NALSD Overview"
 description: "NALSD Overview"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/nalsd-index/sequence.svg" alt="How it works — nalsd-index" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/nalsd-index/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 Non-Abstract Large System Design — Google SRE-style exercises designing real LinkedIn infrastructure systems with capacity planning, SLOs, failure modes, and operational trade-offs.
 
 [

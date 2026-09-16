@@ -6,13 +6,14 @@ sidebar_label: "Global photo/video storage and sharing (…"
 description: "medium · object storage · CDN · sharing/permissions · multi‑region · dedupe"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/clouddrive/sequence.svg" alt="How it works — clouddrive" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/clouddrive/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 <header>
   
   <span class="tag">medium · object storage · CDN · sharing/permissions · multi‑region · dedupe</span>
@@ -190,6 +191,12 @@ GET  /s/:token                                -&gt; shared view (checks expiry/p
 </ol>
 
 ## Deep dives {#clouddrive-deep}
+
+<!-- DIAGRAM:deep-dive:START -->
+
+<img src="/diagrams/clouddrive/deep-dive.svg" alt="Deep dive" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:deep-dive:END -->
 
 <div class="cards">
 <div><h4>Storage layout</h4><ul><li>Originals: home region only, 11‑nines object store, lifecycle to cold after N days without access; content hash as key gives per‑user dedupe (same photo from two devices) and cross‑user dedupe if privacy allows (say the caveat).</li><li>Derivatives: small, replicated to every region; that's what browsing hits. 95% of views never touch the original.</li><li>Metadata sharded by ownerId; timeline query = one partition range on takenAt; album = list of item ids.</li></ul></div>

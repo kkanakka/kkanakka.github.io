@@ -6,13 +6,14 @@ sidebar_label: "Ticketmaster"
 description: "Ticketmaster"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/hi-ticketmaster/sequence.svg" alt="How it works — hi-ticketmaster" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/hi-ticketmaster/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 [home](/)/ [hello interview](/docs/hello-interview/hi-index)/ **Ticketmaster**
 
 hellointerview·2026-05

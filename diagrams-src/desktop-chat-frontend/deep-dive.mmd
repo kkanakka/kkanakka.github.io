@@ -1,0 +1,12 @@
+%% section: Deep dives
+flowchart TB
+    A["User sends a message"] --> B["Write locally, mark pending"]
+    B --> C["Render immediately — optimistic"]
+    C --> D{"Network result"}
+    D -->|"Streamed fine"| E["Mark complete"]
+    D -->|"Dropped mid-stream"| F["Partial turn is already on disk"]
+    F --> G["Reconnect, resume from the stored offset"]
+    D -->|"Failed outright"| H["Mark failed, offer retry — never silently drop"]
+    E --> I{"Same account on two devices"}
+    I --> J["Server sequence number orders the turns"]
+    J --> K["Local state reconciles against it on reconnect"]

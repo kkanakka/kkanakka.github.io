@@ -6,13 +6,14 @@ sidebar_label: "Java Memory Architecture"
 description: "Java Memory Architecture"
 ---
 
-<!-- DIAGRAM:START -->
+<!-- DIAGRAM:sequence:START -->
 
 ## How it works
 
-<img src="/diagrams/linux-memory-architecture/sequence.svg" alt="How it works — linux-memory-architecture" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/linux-memory-architecture/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
-<!-- DIAGRAM:END -->
+<!-- DIAGRAM:sequence:END -->
+
 [Chapter 2: Fundamentals](/docs/ddia/ddia-ch2)
 
 Mapping JVM Internals to Linux Process Memory
