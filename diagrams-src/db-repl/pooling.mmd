@@ -1,0 +1,12 @@
+%% section: Connection pooling
+%% caption: Why the pool size matters
+flowchart TB
+    APP["App instances × threads"] --> POOL["Connection pool"]
+    POOL --> PG["Postgres — one backend process per connection"]
+    PG --> MEM["Each backend costs memory and a scheduler slot"]
+    MEM --> THRASH["Too many: context switching, lock contention, throughput falls"]
+    POOL --> SMALL["Too few: queueing at the pool, latency climbs"]
+    POOL --> RIGHT["Right size ≈ cores × 2 + effective spindles"]
+    PGB["PgBouncer — transaction pooling"] -.-> PG
+    PGB --> NOTE["Multiplexes many clients onto few backends"]
+    NOTE --> CAVEAT["Breaks session state: prepared statements, advisory locks, temp tables"]

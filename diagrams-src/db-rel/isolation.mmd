@@ -1,0 +1,14 @@
+%% section: Transactions, isolation, MVCC
+%% caption: Isolation levels and what each prevents
+flowchart TB
+    A["Two concurrent transactions"] --> RC["Read Committed"]
+    RC --> RC1["Each statement gets a fresh snapshot"]
+    RC1 --> RC2["Non-repeatable read — same query, different answer"]
+    A --> RR["Repeatable Read"]
+    RR --> RR1["Snapshot fixed at the first read"]
+    RR1 --> RR2["Phantoms possible in the standard, blocked by Postgres snapshots"]
+    A --> SER["Serializable"]
+    SER --> SER1["Behaves as if transactions ran one at a time"]
+    SER1 --> SER2["Cost: aborts under contention, not blocking"]
+    MV["MVCC — readers see a version, writers make a new one"] -.-> RC
+    MV -.-> RR

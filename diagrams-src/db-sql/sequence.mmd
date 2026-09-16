@@ -1,0 +1,16 @@
+%% caption: Reading a query plan
+flowchart TB
+    Q["Query"] --> PARSE["Parse and rewrite"]
+    PARSE --> PLAN["Planner · cost-based"]
+    PLAN --> STATS[("Statistics — row counts, distributions")]
+    STATS --> PLAN
+    PLAN --> CHOICE{"Access path"}
+    CHOICE --> SEQ["Sequential scan — cheap when most rows match"]
+    CHOICE --> IDX["Index scan — cheap when few match"]
+    CHOICE --> BITMAP["Bitmap scan — in between"]
+    PLAN --> JOIN{"Join strategy"}
+    JOIN --> NL["Nested loop — small outer, indexed inner"]
+    JOIN --> HASH["Hash join — large unsorted inputs"]
+    JOIN --> MERGE["Merge join — both already sorted"]
+    EXEC["EXPLAIN ANALYZE · estimated vs actual rows"] -.-> PLAN
+    EXEC --> BAD["A large estimate/actual gap means stale statistics"]

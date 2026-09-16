@@ -1,0 +1,13 @@
+%% section: Control plane
+%% caption: Control plane and node
+flowchart TB
+    U["kubectl / clients"] --> API["kube-apiserver · the only door to etcd"]
+    API --> ETCD[("etcd · the single source of truth")]
+    API --> SCHED["kube-scheduler · filter then score"]
+    API --> CM["controller-manager · reconciliation loops"]
+    API --> CCM["cloud-controller-manager"]
+    API -. watch .-> KUBELET["kubelet · on each node"]
+    KUBELET --> CRI["container runtime"]
+    KUBELET --> POD["Pods"]
+    KPROXY["kube-proxy · Service rules"] --> POD
+    NOTE["Everything is a loop: observe desired, observe actual, act to close the gap"] -.-> CM

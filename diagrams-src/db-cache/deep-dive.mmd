@@ -1,0 +1,10 @@
+%% caption: The two failure modes
+flowchart TB
+    A["Cache under load"] --> S{"Failure mode"}
+    S --> ST["Stampede — one hot key expires, every request goes to the database at once"]
+    ST --> F1["Fix: per-key lock, one loader, the rest wait"]
+    ST --> F2["Fix: serve stale while one request refreshes"]
+    S --> AV["Avalanche — a whole cohort expires together"]
+    AV --> F3["Fix: jitter the TTLs so expiry spreads"]
+    S --> PEN["Penetration — requests for keys that do not exist"]
+    PEN --> F4["Fix: cache the negative result, or a bloom filter in front"]

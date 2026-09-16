@@ -1,0 +1,20 @@
+%% section: What "graceful shutdown" actually requires
+%% caption: Graceful shutdown, step by step
+sequenceDiagram
+    autonumber
+    participant O as Orchestrator
+    participant LB as Load balancer
+    participant P as Process
+    participant C as In-flight requests
+    O->>P: SIGTERM
+    P->>P: mark readiness failing first
+    LB->>P: readiness check fails
+    LB->>LB: remove from the pool
+    Note over LB,P: stop accepting before you stop serving, or you drop the requests in between
+    P->>C: finish what is already running
+    C-->>P: done
+    P->>P: close connections, flush, exit 0
+    alt still running at the deadline
+        O->>P: SIGKILL
+        Note over O,P: TimeoutStopSec / terminationGracePeriodSeconds must exceed your longest request
+    end

@@ -1,0 +1,9 @@
+{
+  "label": "Databases & Analytics",
+  "position": 5,
+  "link": {
+    "type": "generated-index",
+    "slug": "/databases",
+    "description": "Databases from an operator's seat: why replication lags, how failover avoids split brain, what a tombstone costs a read, and the Kafka and analytics half of the pipeline."
+  }
+}

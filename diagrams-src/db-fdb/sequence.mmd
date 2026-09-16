@@ -1,0 +1,22 @@
+%% caption: A transaction, end to end
+sequenceDiagram
+    autonumber
+    participant C as Client
+    participant G as GRV proxy
+    participant P as Commit proxy
+    participant R as Resolver
+    participant T as Transaction logs
+    participant S as Storage servers
+    C->>G: get a read version
+    G-->>C: version N
+    C->>S: reads at version N — consistent snapshot
+    C->>P: commit with read and write conflict ranges
+    P->>R: does anything conflict since version N?
+    alt conflict
+        R-->>C: retry — optimistic concurrency, no locks were ever held
+    else clean
+        R->>T: assign a commit version, make it durable
+        T->>S: apply asynchronously
+        P-->>C: committed
+    end
+    Note over C,S: five-second transaction limit — long scans must be chunked

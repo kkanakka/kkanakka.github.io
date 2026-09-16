@@ -1,0 +1,12 @@
+%% section: Deployment and ReplicaSet
+%% caption: The ownership chain
+flowchart TB
+    DEP["Deployment · declares the desired version"] --> RS1["ReplicaSet v2 · current"]
+    DEP --> RS0["ReplicaSet v1 · kept for rollback"]
+    RS1 --> P1["Pod"]
+    RS1 --> P2["Pod"]
+    RS0 --> P0["Pod — scaled to 0 after rollout"]
+    DEP -. "rollout undo re-scales v1" .-> RS0
+    SS["StatefulSet · stable identity and storage"] --> SP["pod-0, pod-1 — ordered, each with its own PVC"]
+    DS["DaemonSet · one per node"] --> DP["Pod on every matching node"]
+    JOB["Job / CronJob · run to completion"] --> JP["Pod, retried to backoffLimit"]

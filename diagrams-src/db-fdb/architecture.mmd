@@ -1,0 +1,12 @@
+%% caption: Architecture
+flowchart TB
+    CL["Client library"] --> PROXY["Commit proxies"]
+    CL --> GRV["GRV proxies · read versions"]
+    PROXY --> RES["Resolvers · conflict detection"]
+    RES --> TLOG["Transaction logs · durable, ordered"]
+    TLOG --> SS["Storage servers"]
+    SS --> CL
+    CC["Cluster controller"] -.-> PROXY
+    CC -.-> TLOG
+    NOTE["One ordered key-value store. Everything else - SQL, documents, queues - is a layer above it"] -.-> CL
+    SLOW["One slow disk on one storage server throttles the whole cluster"] -.-> SS

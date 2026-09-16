@@ -1,0 +1,16 @@
+%% section: Services
+%% caption: How a request reaches a pod
+sequenceDiagram
+    autonumber
+    participant C as Client pod
+    participant DNS as CoreDNS
+    participant PX as kube-proxy rules
+    participant P as Backend pod
+    C->>DNS: resolve my-svc.my-ns.svc.cluster.local
+    DNS-->>C: the Service's ClusterIP — a virtual IP, nothing listens on it
+    C->>PX: packet to ClusterIP
+    PX->>PX: iptables or IPVS rule rewrites the destination
+    PX->>P: DNAT to a ready pod IP
+    P-->>C: response
+    Note over PX: the rule set comes from EndpointSlices, which come from readiness
+    Note over C,P: headless Service returns pod IPs directly instead — that is how StatefulSets are addressed

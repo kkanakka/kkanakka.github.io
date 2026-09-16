@@ -1,0 +1,26 @@
+%% section: Phases and container states
+%% caption: Pod lifecycle and the three probes
+sequenceDiagram
+    autonumber
+    participant API as API server
+    participant K as kubelet
+    participant C as Container
+    participant EP as Endpoints
+    API->>K: pod assigned
+    K->>C: pull image, create sandbox, start init containers
+    C->>C: main container starts
+    K->>C: startup probe — gives a slow starter room
+    Note over K,C: while the startup probe runs, liveness and readiness are suppressed
+    K->>C: readiness probe
+    C-->>K: ready
+    K->>EP: add to the Service endpoints — traffic arrives now
+    loop while running
+        K->>C: liveness probe
+        alt liveness fails
+            K->>C: restart the container
+        end
+        K->>C: readiness probe
+        alt readiness fails
+            K->>EP: remove from endpoints, do not restart
+        end
+    end

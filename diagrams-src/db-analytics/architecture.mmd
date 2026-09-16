@@ -1,0 +1,15 @@
+%% section: Kafka
+%% caption: Kafka's shape
+flowchart TB
+    P1["Producer"] --> T["Topic"]
+    P2["Producer"] --> T
+    T --> PA["Partition 0 · ordered log"]
+    T --> PB["Partition 1"]
+    PA --> LA["Leader broker"]
+    LA --> FA["Follower · ISR"]
+    PB --> LB2["Leader broker"]
+    LA --> CG1["Consumer group A · one consumer per partition"]
+    LB2 --> CG1
+    LA --> CG2["Consumer group B · independent offsets"]
+    OFF[("Committed offsets")] --- CG1
+    NOTE["Ordering is per partition only. The partition key is the design decision"] -.-> T

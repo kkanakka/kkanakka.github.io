@@ -1,0 +1,10 @@
+%% section: Streams and batch
+%% caption: Delivery guarantees
+flowchart TB
+    A["Consumer processes a message"] --> W{"When do you commit the offset?"}
+    W -->|"Before processing"| AMO["At-most-once — a crash loses the message"]
+    W -->|"After processing"| ALO["At-least-once — a crash reprocesses it"]
+    ALO --> IDEM["Make the handler idempotent and at-least-once is enough"]
+    W -->|"Transactionally with the output"| EO["Effectively-once within Kafka"]
+    EO --> LIMIT["Only holds while the side effects are also transactional"]
+    IDEM --> KEY["Idempotency key, or an upsert on a natural key"]

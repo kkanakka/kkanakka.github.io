@@ -1,0 +1,12 @@
+%% section: Why replicas lag
+%% caption: Where replication lag comes from
+flowchart TB
+    L["Replica is lagging"] --> A{"Where?"}
+    A --> SHIP["Shipping — network between primary and replica"]
+    A --> APPLY["Applying — replica cannot keep up"]
+    APPLY --> SINGLE["Single-threaded apply against a parallel write load"]
+    APPLY --> CONFL["Query conflicts — a long read blocks apply"]
+    APPLY --> IOB["Replica disk slower than the primary's"]
+    SHIP --> WAN["Cross-region latency or saturated link"]
+    L --> IMPACT["Impact: stale reads, and the RPO if you fail over now"]
+    IMPACT --> ROUTE["Route read-your-own-writes back to the primary"]

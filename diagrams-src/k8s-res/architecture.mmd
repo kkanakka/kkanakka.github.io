@@ -1,0 +1,14 @@
+%% section: Requests, limits, and what they do in the kernel
+%% caption: Requests, limits and QoS
+flowchart TB
+    POD["Pod spec"] --> REQ["requests · what the scheduler reserves"]
+    POD --> LIM["limits · what the kernel enforces"]
+    REQ --> SCHED["Scheduling decision only — not a runtime guarantee"]
+    LIM --> CPU["cpu.max — throttled, never killed"]
+    LIM --> MEM["memory.max — OOM-killed, no throttling"]
+    REQ --> QOS{"QoS class"}
+    QOS --> G["Guaranteed · requests == limits"]
+    QOS --> B["Burstable · requests < limits"]
+    QOS --> BE["BestEffort · neither set"]
+    BE --> EVICT["Evicted first under node pressure"]
+    G --> LAST["Evicted last, and eligible for exclusive CPUs"]

@@ -1,0 +1,12 @@
+%% section: Consistency, repair, tombstones
+%% caption: Tombstones and why deletes hurt reads
+flowchart TB
+    DEL["DELETE a row"] --> TS["Writes a tombstone — a marker, not a removal"]
+    TS --> WHY["Needed so a replica that was down does not resurrect the row"]
+    TS --> READ["Reads must scan past every tombstone in range"]
+    READ --> SLOW["A partition full of tombstones reads slowly, then fails on the threshold"]
+    TS --> GC["gc_grace_seconds — kept this long before compaction can drop it"]
+    GC --> REPAIR{"Repair run within that window?"}
+    REPAIR -->|"No"| ZOMBIE["Deleted data can come back"]
+    REPAIR -->|"Yes"| SAFE["Tombstone compacted away safely"]
+    ANTI["Anti-pattern: queue-like tables with constant deletes"] -.-> SLOW

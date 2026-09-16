@@ -1,0 +1,12 @@
+%% section: Locks and the slow-query investigation
+%% caption: Chasing a slow query
+flowchart TB
+    S["Query is slow"] --> Q1{"Slow always, or only sometimes?"}
+    Q1 -->|"Always"| PLAN["Read the plan — seq scan, bad estimate, missing index"]
+    Q1 -->|"Sometimes"| LOCK{"Waiting on a lock?"}
+    LOCK -->|"Yes"| BLOCK["Find the blocking session and what it holds"]
+    BLOCK --> LONG["A long transaction holding row locks, or DDL taking an exclusive lock"]
+    LOCK -->|"No"| RES{"Resource pressure?"}
+    RES --> IO["Buffer cache miss ratio, disk latency"]
+    RES --> CPU["Sorts and hashes spilling to disk"]
+    PLAN --> FIX["Index, rewrite, or update statistics"]

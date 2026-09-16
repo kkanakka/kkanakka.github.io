@@ -1,0 +1,20 @@
+%% section: Termination, and the rolling-update 502
+%% caption: Where the rolling-update 502 comes from
+sequenceDiagram
+    autonumber
+    participant K as kubelet
+    participant EP as Endpoints
+    participant PX as kube-proxy
+    participant P as Pod
+    participant C as Client
+    K->>P: SIGTERM
+    K->>EP: mark the pod terminating
+    par these race
+        EP->>PX: update rules on every node
+        P->>P: begins shutting down
+    end
+    C->>PX: request
+    PX->>P: routed to a pod that is already closing
+    P-->>C: 502
+    Note over EP,PX: endpoint propagation is not instant — the pod must keep serving through it
+    Note over P: fix: preStop sleep, so the pod stays up while the rules catch up

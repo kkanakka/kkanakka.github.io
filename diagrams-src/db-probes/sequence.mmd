@@ -1,0 +1,8 @@
+%% caption: How to answer a database probe
+flowchart TB
+    Q["The question"] --> OP["Answer as an operator, not a DBA"]
+    OP --> M["Name the mechanism"]
+    M --> C["Name what it costs"]
+    C --> S["Name the signal you would watch"]
+    S --> EX["Give the concrete number or command"]
+    EX --> DONE["e.g. 'replication lag is bytes behind on the WAL — I would alert on seconds_behind and treat it as my RPO'"]

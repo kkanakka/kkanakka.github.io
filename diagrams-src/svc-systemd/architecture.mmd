@@ -1,0 +1,14 @@
+%% section: Anatomy of a unit
+%% caption: Unit dependencies and ordering
+flowchart TB
+    T["multi-user.target"] --> S["my-service.service"]
+    S --> W["Wants= · start it too, but do not fail if it fails"]
+    S --> R["Requires= · if it fails, I fail"]
+    S --> A["After= · ordering only, says nothing about starting"]
+    W --> N1["Wants + After is the usual pair"]
+    R --> N2["Requires without After is a classic bug — starts together, races"]
+    S --> EX["ExecStart · the process systemd supervises"]
+    EX --> TYPE{"Type="}
+    TYPE --> SIMPLE["simple — ready the moment it forks"]
+    TYPE --> NOTIFY["notify — ready when it says so, via sd_notify"]
+    TYPE --> FORK["forking — ready when the parent exits"]

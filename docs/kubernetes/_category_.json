@@ -1,0 +1,9 @@
+{
+  "label": "Kubernetes",
+  "position": 7,
+  "link": {
+    "type": "generated-index",
+    "slug": "/kubernetes",
+    "description": "The reconciliation machine and how it fails: control plane, workload objects, pod lifecycle and probes, scheduling, networking, storage, and the debugging playbook."
+  }
+}

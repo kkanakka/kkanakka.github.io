@@ -1,0 +1,19 @@
+%% section: Write and read paths
+%% caption: Write path and read path
+sequenceDiagram
+    autonumber
+    participant C as Client
+    participant Co as Coordinator
+    participant CL as Commit log
+    participant MT as Memtable
+    participant SS as SSTables
+    C->>Co: write at consistency level
+    Co->>CL: append durably
+    Co->>MT: apply in memory
+    Co-->>C: ack once CL replicas respond
+    MT->>SS: flush when full — immutable from here
+    C->>Co: read
+    Co->>MT: check memtable
+    Co->>SS: check each SSTable via bloom filter
+    Note over SS: a row spread across many SSTables makes reads slower — that is what compaction fixes
+    Co-->>C: merged latest-timestamp result

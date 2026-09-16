@@ -1,0 +1,16 @@
+%% section: CrashLoopBackOff
+%% caption: Debugging by the phase you are stuck in
+flowchart TB
+    P["Pod is not running"] --> PH{"What phase?"}
+    PH --> PEND["Pending"]
+    PEND --> SCHEDMSG["Read the scheduler's message — insufficient cpu/memory, taints, affinity, no PV"]
+    PH --> CC["ContainerCreating"]
+    CC --> IMG["Image pull, secret mount, volume attach — in that order"]
+    PH --> CLB["CrashLoopBackOff"]
+    CLB --> LOGS["kubectl logs --previous — the container exited, so read the dead one"]
+    LOGS --> EXIT{"Exit code"}
+    EXIT --> E1["1 — application error"]
+    EXIT --> E137["137 — OOM-killed, raise the limit or fix the leak"]
+    EXIT --> E143["143 — SIGTERM, it was asked to stop"]
+    PH --> RUN["Running but no traffic"]
+    RUN --> RDY["Readiness failing means no endpoints — check the probe, not the network"]

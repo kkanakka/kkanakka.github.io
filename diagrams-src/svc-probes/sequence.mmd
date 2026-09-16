@@ -1,0 +1,7 @@
+%% caption: Answering a service-management probe
+flowchart TB
+    Q["The question"] --> U["Name the unit of control — unit file, cgroup, signal"]
+    U --> M["Say what systemd does, not what you would script"]
+    M --> F["Name the failure it prevents"]
+    F --> S["Name the command that shows it"]
+    S --> EG["e.g. 'Type=notify means readiness is the service's own claim — systemctl status shows it, and it is why After= alone does not mean ready'"]

@@ -1,0 +1,16 @@
+%% section: Restart behavior
+%% caption: Restart, backoff and the rate limit
+stateDiagram-v2
+    [*] --> Activating
+    Activating --> Active: started
+    Active --> Failed: non-zero exit or watchdog
+    Failed --> Activating: Restart= policy, after RestartSec
+    Activating --> RateLimited: StartLimitBurst exceeded in StartLimitIntervalSec
+    RateLimited --> [*]: systemd gives up — the unit stays failed
+    Active --> Deactivating: stop
+    Deactivating --> [*]
+    note right of RateLimited
+        The rate limit is what stops a crash loop
+        consuming the box. It also means a real
+        outage needs `systemctl reset-failed`.
+    end note

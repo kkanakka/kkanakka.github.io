@@ -1,0 +1,19 @@
+%% section: Replication modes
+%% caption: Synchronous versus asynchronous
+sequenceDiagram
+    autonumber
+    participant C as Client
+    participant P as Primary
+    participant R as Replica
+    C->>P: write
+    P->>P: append to WAL
+    alt asynchronous
+        P-->>C: committed
+        P->>R: ship WAL later
+        Note over P,R: fast, but a primary loss costs everything not yet shipped
+    else synchronous
+        P->>R: ship WAL
+        R-->>P: acknowledged
+        P-->>C: committed
+        Note over P,R: no data loss on failover, and every commit pays the round trip
+    end

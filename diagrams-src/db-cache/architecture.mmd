@@ -1,0 +1,10 @@
+%% caption: Where each cache sits
+flowchart TB
+    APP["Application"] --> L1["In-process cache · nanoseconds, per instance"]
+    L1 --> RD[("Redis / Memcached · shared, a network hop")]
+    RD --> DB[("Database")]
+    L1 -. "invalidation is the hard part" .-> RD
+    RD --> EV["Eviction · LRU, LFU, TTL with jitter"]
+    RD --> PERS["Persistence · RDB snapshot, AOF log"]
+    PERS --> NOTE["Redis is durable-ish. Treat it as a cache unless you have configured otherwise"]
+    RD --> CLU["Cluster · hash slots, not consistent hashing"]

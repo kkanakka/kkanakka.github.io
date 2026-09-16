@@ -1,0 +1,11 @@
+%% caption: Operating a cluster
+flowchart TB
+    OPS["Operator"] --> UP["Upgrades · control plane first, then nodes"]
+    UP --> SKEW["Version skew: kubelet may trail the API server, never lead"]
+    OPS --> DRAIN["Drain a node"]
+    DRAIN --> PDB["PodDisruptionBudget · what may be evicted at once"]
+    PDB --> STUCK["A PDB that can never be satisfied hangs the drain forever"]
+    OPS --> ETCD["etcd · backup, defrag, watch the DB size"]
+    ETCD --> QUORUM["Lose quorum and the cluster is read-only"]
+    OPS --> CAP["Capacity · requests committed vs node allocatable"]
+    OPS --> CERT["Certificate expiry — the quiet cluster killer"]

@@ -3,5 +3,6 @@
    2. site        - theme vars + styles ported from the source pages
    3. compact     - authoritative density layer, must win, so it is last */
 @import "./gpu-manual.css";
+@import "./icloud-guide.css";
 @import "./site.css";
 @import "./compact.css";

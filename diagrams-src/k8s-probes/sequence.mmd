@@ -1,0 +1,7 @@
+%% caption: Answering a Kubernetes probe
+flowchart TB
+    Q["The question"] --> LOOP["Start from the reconciliation loop — who observes, who acts"]
+    LOOP --> OBJ["Name the object and its controller"]
+    OBJ --> FAIL["Name how it fails, not just how it works"]
+    FAIL --> CMD["Name the command that shows it"]
+    CMD --> EG["e.g. 'readiness removes it from EndpointSlices, so traffic stops without a restart — kubectl get endpointslice proves it'"]

@@ -1,0 +1,19 @@
+%% section: Failover without split brain
+%% caption: Failover and the fencing that prevents split brain
+sequenceDiagram
+    autonumber
+    participant M as Monitor
+    participant P as Old primary
+    participant R as Replica
+    participant VIP as Traffic director
+    M->>P: health check fails
+    M->>R: how far behind are you?
+    R-->>M: lag = the data about to be lost
+    alt lag within RPO
+        M->>P: fence — STONITH or revoke its lease
+        Note over P: fencing first. Promoting without it is how you get two primaries
+        M->>R: promote
+        M->>VIP: point writes at the new primary
+    else lag too large
+        M->>M: hold and escalate — failing over would lose committed writes
+    end

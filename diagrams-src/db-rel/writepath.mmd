@@ -1,0 +1,16 @@
+%% section: The write path and durability
+%% caption: The write path
+sequenceDiagram
+    autonumber
+    participant C as Client
+    participant B as Buffer pool
+    participant W as WAL
+    participant D as Data files
+    C->>B: UPDATE row
+    B->>B: modify the page in memory — now dirty
+    B->>W: append the change record
+    W->>W: fsync on commit
+    Note over W: durability is the WAL's fsync, not the data file write
+    W-->>C: COMMIT returns
+    B-->>D: checkpoint flushes dirty pages later
+    Note over D: a crash replays the WAL forward from the last checkpoint

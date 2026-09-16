@@ -1,0 +1,16 @@
+%% caption: Where your stdout actually goes
+sequenceDiagram
+    autonumber
+    participant P as Process
+    participant J as journald
+    participant D as Disk journal
+    participant F as rsyslog / shipper
+    P->>J: writes to stdout and stderr
+    Note over P,J: systemd wires both to the journal socket, not to a file
+    J->>J: attach metadata — unit, PID, UID, boot id
+    J->>D: append, subject to SystemMaxUse and rate limits
+    alt rate limit hit
+        J-->>P: messages dropped, and it logs that it dropped them
+    end
+    J->>F: forward for central collection
+    Note over D: volatile in /run unless /var/log/journal exists — logs vanish on reboot

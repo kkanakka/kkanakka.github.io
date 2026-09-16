@@ -1,0 +1,12 @@
+%% section: Topology and data placement
+%% caption: Ring, tokens and replica placement
+flowchart TB
+    K["Partition key"] --> H["Hash — Murmur3 token"]
+    H --> RING(("Token ring"))
+    RING --> N1["Node A · token range"]
+    N1 --> N2["Node B — replica 2"]
+    N2 --> N3["Node C — replica 3"]
+    SNITCH["Snitch · rack and datacentre awareness"] -.-> N2
+    SNITCH -.-> N3
+    NOTE["NetworkTopologyStrategy spreads replicas across racks, then datacentres"] -.-> SNITCH
+    VN["vnodes — many small ranges per node, so rebuilds draw from many peers"] -.-> RING

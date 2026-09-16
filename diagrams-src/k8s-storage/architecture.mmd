@@ -1,0 +1,13 @@
+%% section: Volumes
+%% caption: PV, PVC and the CSI chain
+flowchart TB
+    POD["Pod"] --> PVC["PersistentVolumeClaim · what the app asks for"]
+    PVC --> SC["StorageClass · how to provision it"]
+    SC --> CSI["CSI driver"]
+    CSI --> PV["PersistentVolume · the actual disk"]
+    PV --> POD
+    CM["ConfigMap / Secret"] --> POD
+    CM --> NOTE["Mounted as a volume: updates propagate. Injected as env: they never do"]
+    PV --> RECLAIM{"reclaimPolicy"}
+    RECLAIM --> DEL["Delete — disk goes when the claim goes"]
+    RECLAIM --> RET["Retain — disk survives, and you clean up"]

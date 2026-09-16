@@ -1,0 +1,14 @@
+%% section: Rollback as a design requirement
+%% caption: Deployment strategies compared
+flowchart TB
+    D["A new version"] --> S{"Strategy"}
+    S --> ROLL["Rolling · replace a few at a time"]
+    ROLL --> R1["Cheap, no extra capacity"]
+    ROLL --> R2["Both versions live at once — the API must tolerate it"]
+    S --> BLUE["Blue-green · full second environment"]
+    BLUE --> B1["Instant cutover and instant rollback"]
+    BLUE --> B2["Double the capacity for the window"]
+    S --> CAN["Canary · small slice, measured"]
+    CAN --> C1["Catches what tests did not"]
+    CAN --> C2["Needs per-version metrics to be worth anything"]
+    MIG["Schema: expand, migrate, contract — never in one deploy"] -.-> ROLL
