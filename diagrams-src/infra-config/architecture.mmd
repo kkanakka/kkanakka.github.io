@@ -1,0 +1,12 @@
+%% section: Design
+%% caption: Architecture
+flowchart TB
+    A["Node A"] --> ZK["Quorum store · ZooKeeper / etcd"]
+    B["Node B"] --> ZK
+    ZK --> LEASE["Ephemeral leader node + fencing token"]
+    LEASE --> A
+    A -- "write with token" --> RES["Shared resource"]
+    B -- "write with a higher token" --> RES
+    RES --> CHK["Token check — reject anything older"]
+    ZK -.-> WATCH["Watches · notify on change"]
+    WATCH --> B

@@ -1,0 +1,14 @@
+%% section: Final design
+%% caption: Architecture
+flowchart TB
+    U["User"] --> API["Search API"]
+    API --> GEO[("Geospatial index — S2 / geohash cells")]
+    API --> BIZ[("Business store")]
+    API --> AGG[("Rating aggregates")]
+    GEO -- candidate ids --> API
+    W["Review writer"] --> RV["Review service"]
+    RV --> RDB[("Reviews")]
+    RV -. async .-> AGGW["Aggregate updater"]
+    AGGW --> AGG
+    RV -. async .-> IDX["Index updater"]
+    IDX --> GEO

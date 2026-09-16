@@ -51,6 +51,12 @@ Latency:     2 (LB) + 1 + 5 (gateway) + ~20 (queue) + 1 + 4 (claim) + 50 (GPU) +
 
 ## Architecture {#ia-diagram}
 
+<!-- DIAGRAM:architecture:START -->
+
+<img src="/diagrams/inference-api/architecture.svg" alt="Architecture" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:architecture:END -->
+
 <figure>
 <svg viewBox="0 0 980 470" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Inference API architecture: clients to load balancer to API gateway with rate limiter; gateway enqueues to per-tier Redis lists and holds the connection; batcher pulls in priority order into inflight lists, forms batches, pushes to a batch queue; GPU workers BLPOP batches, run inference, publish per-request responses to the owning gateway's pub/sub channel; gateway resolves pending socket; heartbeats feed healthy GPU count to the rate limiter; Postgres for audit">
   <defs>

@@ -54,6 +54,12 @@ GET  /purchases/:purchaseId                     -&gt; poll until Stripe webhook 
 
 ## Final design {#fs-diagram}
 
+<!-- DIAGRAM:architecture:START -->
+
+<img src="/diagrams/flash-sale/architecture.svg" alt="Architecture" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:architecture:END -->
+
 <figure>
 <svg viewBox="0 0 980 520" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Flash sale architecture: client to API gateway, waiting room on sharded Redis, sale service, Postgres with ReservationUnit rows, Stripe with webhook">
   <defs>

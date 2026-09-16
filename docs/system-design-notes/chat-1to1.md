@@ -66,6 +66,12 @@ REST
 
 ## Design {#ch-diagram}
 
+<!-- DIAGRAM:architecture:START -->
+
+<img src="/diagrams/chat-1to1/architecture.svg" alt="Architecture" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:architecture:END -->
+
 <figure>
 <svg viewBox="0 0 980 420" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="1-to-1 chat: clients hold WebSockets to WS servers behind an L4 load balancer; Message Service assigns per-conversation sequence via Redis INCR, inserts into sharded Postgres, pushes to per-device inbox lists, publishes on user channel; the recipient's WS server subscribed to that channel moves the message to an in-flight list, delivers, and deletes on ACK">
   <defs>

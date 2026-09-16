@@ -1,0 +1,14 @@
+%% section: Design
+%% caption: Architecture
+flowchart TB
+    IN[("Input splits")] --> M1["Mapper · scheduled near its data"]
+    IN --> M2["Mapper"]
+    M1 --> CMB1["Combiner — local aggregation"]
+    M2 --> CMB2["Combiner"]
+    CMB1 --> SH["Shuffle · partition, sort, transfer"]
+    CMB2 --> SH
+    SH --> R1["Reducer"]
+    SH --> R2["Reducer"]
+    R1 --> OUT[("Output")]
+    R2 --> OUT
+    SKEW["Hot key · salted across reducers"] -.-> SH

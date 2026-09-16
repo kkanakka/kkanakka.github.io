@@ -54,6 +54,12 @@ Metrics emitted per request (labels: model, tier, region, cell, ctx_bucket):
 
 ## Design {#infra-slo-design}
 
+<!-- DIAGRAM:architecture:START -->
+
+<img src="/diagrams/infra-slo/architecture.svg" alt="Architecture" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:architecture:END -->
+
 <figure>
 <svg viewBox="0 0 980 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Token path hops with one trace id and a per-hop latency ledger; SLIs defined at the edge: TTFT, inter-token latency, completion success; bucketed by context length; burn rate alerting">
   <defs><marker id="s1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#1F4E9E"></path></marker></defs>

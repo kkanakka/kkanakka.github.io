@@ -54,6 +54,12 @@ Downstream store API: write(payload, epoch)  → rejected if epoch &lt; last_see
 
 ## Design {#infra-config-design}
 
+<!-- DIAGRAM:architecture:START -->
+
+<img src="/diagrams/infra-config/architecture.svg" alt="Architecture" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:architecture:END -->
+
 <figure>
 <svg viewBox="0 0 980 290" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ZooKeeper quorum of 5; ephemeral sequential znodes for leader election; watches notify clients of config changes; session timeouts detect dead leaders; fencing token (epoch) passed to storage which rejects stale epochs; clients cache last-known-good config">
   <defs><marker id="k1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#1F4E9E"></path></marker><marker id="k2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#B45309"></path></marker></defs>

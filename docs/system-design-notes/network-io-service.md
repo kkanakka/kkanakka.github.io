@@ -49,6 +49,12 @@ HEAD /objects/:id                          -&gt; size, etag (for resume)</code><
 
 ## Design {#network-io-service-design}
 
+<!-- DIAGRAM:architecture:START -->
+
+<img src="/diagrams/network-io-service/architecture.svg" alt="Architecture" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:architecture:END -->
+
 <figure>
 <svg viewBox="0 0 980 210" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Network I/O service: L4 load balancer to I/O nodes running an async event loop with zero-copy send and bounded per-connection buffers; upload path streams chunks to local NVMe staging then object storage; download path serves from local cache or storage via sendfile; control plane holds metadata and sessions">
 <defs><marker id="dg1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#1F4E9E"></path></marker><marker id="dg3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#B45309"></path></marker></defs>

@@ -1,0 +1,13 @@
+%% section: Design
+%% caption: Architecture
+flowchart TB
+    U["Job submission"] --> API["Kubernetes API"]
+    API --> GS["Gang scheduler"]
+    GS --> TOPO["Topology view · NVLink islands, NUMA"]
+    GS --> POOL[("GPU inventory")]
+    GS --> W["Worker pods — all ranks or none"]
+    W --> GPU["GPUs"]
+    W --> CK[("Checkpoint store")]
+    GS -. "preempt to defragment" .-> LOW["Lower-priority jobs"]
+    W -. "rank failure" .-> GS
+    CK -. resume .-> W

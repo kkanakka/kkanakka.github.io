@@ -45,6 +45,12 @@ description: "read this first · cross‑cutting concerns · building blocks"
 
 ## The standard request path and what lives where {#fd-path}
 
+<!-- DIAGRAM:architecture:START -->
+
+<img src="/diagrams/foundations/architecture.svg" alt="Architecture" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:architecture:END -->
+
 <figure>
 <svg viewBox="0 0 980 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Standard request path: client, CDN, API gateway with cross-cutting concerns, services, cache, database, queue and workers">
   <defs><marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#1F4E9E"></path></marker></defs>

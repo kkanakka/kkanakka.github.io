@@ -1,0 +1,15 @@
+%% section: Design
+%% caption: Architecture
+flowchart TB
+    O["Owner"] --> API["API"]
+    API --> META[("Metadata — ownership, ACLs, versions")]
+    API -- presigned PUT --> O
+    O --> OBJ[("Object storage")]
+    OBJ --> REP["Cross-region replication"]
+    V["Viewer"] --> API
+    API -- "permission check here" --> META
+    API -- "short-lived signed URL" --> V
+    V --> CDN["CDN"]
+    CDN --> OBJ
+    API -.-> PURGE["Edge purge on revoke"]
+    PURGE --> CDN

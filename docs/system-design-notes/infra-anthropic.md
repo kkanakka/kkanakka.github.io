@@ -22,6 +22,12 @@ description: "10 problems · each has its own page below · shared patterns"
 
 ## What all ten have in common {#ia-common}
 
+<!-- DIAGRAM:architecture:START -->
+
+<img src="/diagrams/infra-anthropic/architecture.svg" alt="Architecture" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:architecture:END -->
+
 <!-- DIAGRAM:deep-dive:START -->
 
 <img src="/diagrams/infra-anthropic/deep-dive.svg" alt="Deep dive" class="doc-diagram doc-diagram-seq" />

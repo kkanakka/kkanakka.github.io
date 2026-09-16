@@ -53,6 +53,12 @@ GET  /distributions/:id/progress                     -&gt; {done, inProgress, fa
 
 ## Design {#infra-weights-design}
 
+<!-- DIAGRAM:architecture:START -->
+
+<img src="/diagrams/infra-weights/architecture.svg" alt="Architecture" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:architecture:END -->
+
 <figure>
 <svg viewBox="0 0 980 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Weights distribution: manifest with per-chunk hashes; origin seeds a few nodes; tracker knows which nodes have which chunks; nodes pull rarest chunks first from peers, prefer same-rack peers; verify each chunk">
   <defs><marker id="w1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#1F4E9E"></path></marker><marker id="w2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#B45309"></path></marker></defs>

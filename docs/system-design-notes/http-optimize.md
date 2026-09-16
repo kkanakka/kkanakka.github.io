@@ -48,6 +48,12 @@ Headers read: X-RateLimit-Remaining, X-RateLimit-Reset, Retry-After; write: If-N
 
 ## Design {#http-optimize-design}
 
+<!-- DIAGRAM:architecture:START -->
+
+<img src="/diagrams/http-optimize/architecture.svg" alt="Architecture" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:architecture:END -->
+
 <figure>
 <svg viewBox="0 0 980 280" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="HTTP request optimizer: bounded work queue, coalescer/batcher, cache, token-bucket + concurrency limiter, worker pool with keep-alive HTTP/2 client, retry with backoff and jitter, checkpoint store">
 <defs><marker id="dg1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#1F4E9E"></path></marker><marker id="dg3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#B45309"></path></marker></defs>

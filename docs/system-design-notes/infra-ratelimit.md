@@ -53,6 +53,12 @@ Response headers: x-ratelimit-limit / -remaining / -reset; 429 body says which l
 
 ## Design {#infra-ratelimit-design}
 
+<!-- DIAGRAM:architecture:START -->
+
+<img src="/diagrams/infra-ratelimit/architecture.svg" alt="Architecture" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:architecture:END -->
+
 <figure>
 <svg viewBox="0 0 980 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Quota service leases slices of a key's per-minute budget to gateway instances; gateways run local token buckets; on request they reserve max_tokens, then settle actual usage on completion and refund the difference; if the quota service is unreachable gateways fall back to a conservative local default, never unlimited">
   <defs><marker id="q1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#1F4E9E"></path></marker><marker id="q2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#B45309"></path></marker></defs>

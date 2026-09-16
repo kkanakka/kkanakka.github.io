@@ -1,0 +1,14 @@
+%% section: Design
+%% caption: Architecture
+flowchart TB
+    SEED["Seeds"] --> FR[("Frontier · priority per host")]
+    FR --> POL["Politeness scheduler · one queue per host"]
+    POL --> F1["Fetcher"]
+    POL --> F2["Fetcher"]
+    F1 --> ROB["robots.txt cache"]
+    F1 --> WEB["The web"]
+    F1 --> PARSE["Parser"]
+    PARSE --> SEEN[("URL seen set + content hashes")]
+    SEEN --> FR
+    PARSE --> STORE[("Content store")]
+    SEEN -. "duplicate" .-> DROP["Drop"]

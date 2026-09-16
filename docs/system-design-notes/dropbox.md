@@ -59,6 +59,12 @@ User comes from the JWT, never the body.</code></pre>
 
 ## Final design {#db-diagram}
 
+<!-- DIAGRAM:architecture:START -->
+
+<img src="/diagrams/dropbox/architecture.svg" alt="Architecture" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:architecture:END -->
+
 <figure>
 <svg viewBox="0 0 980 420" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Dropbox architecture: uploader chunks file and puts chunks straight to S3 with presigned URLs; File Service is the control plane over the metadata DB; S3 notifies on completion; downloads go through a CDN with signed URLs; sync via WebSocket push plus polling fallback">
   <defs>

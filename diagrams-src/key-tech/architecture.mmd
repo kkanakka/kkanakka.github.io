@@ -1,0 +1,13 @@
+%% section: Blob upload / download flow (draw it once, reuse everywhere)
+%% caption: Architecture
+flowchart TB
+    CL["Client"] -- "1. ask to upload" --> API["Application"]
+    API -- "2. presigned URL" --> CL
+    CL -- "3. PUT bytes direct" --> OBJ[("Object storage")]
+    CL -- "4. commit" --> API
+    API --> META[("Metadata — key, size, owner")]
+    V["Viewer"] -- "5. request" --> API
+    API -- "6. check permission" --> META
+    API -- "7. signed GET" --> V
+    V -- "8. fetch" --> CDN["CDN"]
+    CDN --> OBJ

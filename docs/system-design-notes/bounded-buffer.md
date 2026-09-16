@@ -83,6 +83,12 @@ class BoundedBuffer:
 
 ## Design {#bounded-buffer-design}
 
+<!-- DIAGRAM:architecture:START -->
+
+<img src="/diagrams/bounded-buffer/architecture.svg" alt="Architecture" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:architecture:END -->
+
 <figure>
 <svg viewBox="0 0 980 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Bounded buffer: producers wait on not_full, consumers wait on not_empty, both under one mutex guarding a ring buffer with a closed flag">
 <defs><marker id="dg1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#1F4E9E"></path></marker><marker id="dg3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#B45309"></path></marker></defs>

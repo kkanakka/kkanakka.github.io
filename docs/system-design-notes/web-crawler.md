@@ -55,6 +55,12 @@ Internal worker loop:  claim() → fetch() → parse() → dedupe() → enqueue(
 
 ## Design {#cr-diagram}
 
+<!-- DIAGRAM:architecture:START -->
+
+<img src="/diagrams/web-crawler/architecture.svg" alt="Architecture" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:architecture:END -->
+
 <figure>
 <svg viewBox="0 0 980 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Crawler architecture: scheduler seeds a URL frontier partitioned by host with per-host politeness; fetcher workers consult robots and DNS caches, fetch with timeouts, store raw pages in blob storage, parse links, canonicalize, check URL and content dedupe, push new URLs back to the frontier; metadata in a URL store; recrawl scheduler feeds priorities">
   <defs><marker id="cw1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#1F4E9E"></path></marker><marker id="cw2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#B45309"></path></marker></defs>

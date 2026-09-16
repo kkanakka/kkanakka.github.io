@@ -68,6 +68,12 @@ GET  /transfers/:id/status      -&gt; {done, slowest, stalled[]}</code></pre>
 
 ## Design {#sf-diagram}
 
+<!-- DIAGRAM:architecture:START -->
+
+<img src="/diagrams/stream-file-1000/architecture.svg" alt="Architecture" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:architecture:END -->
+
 <figure>
 <svg viewBox="0 0 980 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Pipelined distribution: coordinator computes a rack-aware chain or shallow tree; origin streams chunks to the first hosts; every host forwards each chunk to its downstream while writing it locally; per-chunk hash verification; progress reports to the coordinator; stalled host triggers a splice so its downstream pulls from the next healthy upstream or a swarm peer">
   <defs><marker id="sf1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#1F4E9E"></path></marker><marker id="sf2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#B45309"></path></marker></defs>

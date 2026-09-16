@@ -1,0 +1,14 @@
+%% section: Design
+%% caption: Architecture
+flowchart TB
+    CL["Clients"] --> E1["Edge node"]
+    CL --> E2["Edge node"]
+    E1 --> L1["Local leased bucket"]
+    E2 --> L2["Local leased bucket"]
+    L1 -- "lease refill" --> QS["Quota service"]
+    L2 -- "lease refill" --> QS
+    QS --> ST[("Global counters")]
+    L1 -- allowed --> API["Backend"]
+    L2 -- allowed --> API
+    L1 -- "429 Retry-After" --> CL
+    QS -.-> CFG[("Per-tenant limits")]

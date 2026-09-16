@@ -54,6 +54,12 @@ Restore:    GET manifest (latest complete) → each rank GET its shard, verify h
 
 ## Design {#infra-gpu-design}
 
+<!-- DIAGRAM:architecture:START -->
+
+<img src="/diagrams/infra-gpu/architecture.svg" alt="Architecture" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:architecture:END -->
+
 <figure>
 <svg viewBox="0 0 980 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Left: gang scheduler places all-or-nothing jobs on topology-aware slots, backfills small jobs, defragments by preemption. Right: async sharded checkpointing where each rank writes its shard to local NVMe then uploads to object storage; a completion manifest is written last; stragglers handled by timeout and fallback to previous complete checkpoint">
   <defs><marker id="g1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#1F4E9E"></path></marker></defs>

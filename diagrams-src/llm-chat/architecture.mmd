@@ -1,0 +1,15 @@
+%% section: High‑level design
+%% caption: Architecture
+flowchart TB
+    U["User"] --> API["Chat API"]
+    API --> AUTH["Auth and quota"]
+    API --> HIST[("Conversation store")]
+    API --> CTX["Context builder · window budget"]
+    HIST --> CTX
+    CTX --> SUM["Summariser — when the thread overflows"]
+    SUM --> HIST
+    CTX --> INF["Inference service"]
+    INF --> GPU["GPU fleet"]
+    INF -- "SSE tokens" --> U
+    INF --> HIST
+    API -.-> MET["Token metering"]

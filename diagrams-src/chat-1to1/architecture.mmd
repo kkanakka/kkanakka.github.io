@@ -1,0 +1,14 @@
+%% section: Design
+%% caption: Architecture
+flowchart TB
+    A["Sender"] --> GA["Gateway A · holds the socket"]
+    GA --> MSG["Message service"]
+    MSG --> DB[("Messages — per-conversation sequence")]
+    MSG --> PS["Pub/sub · one topic per user"]
+    PS --> GB["Gateway B"]
+    GB --> B["Recipient"]
+    B -- ack --> GB
+    GB --> MSG
+    MSG -. offline .-> PUSH["Push notification"]
+    PUSH --> B
+    REG[("Connection registry — user to gateway")] --- PS

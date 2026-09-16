@@ -1,0 +1,13 @@
+%% section: Design
+%% caption: Architecture
+flowchart TB
+    A["Author"] --> API["API"]
+    API --> P[("Prompts — immutable versions")]
+    API --> VIS[("Visibility — private, link, team, public")]
+    API --> FORK["Fork — records parent"]
+    FORK --> P
+    V["Viewer"] --> API
+    API -- "check visibility" --> VIS
+    API -- "resolve version" --> P
+    API --> SEARCH[("Search index")]
+    P -. async .-> SEARCH

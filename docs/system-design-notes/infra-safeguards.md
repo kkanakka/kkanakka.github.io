@@ -53,6 +53,12 @@ GET  /internal/canaries/results                            -&gt; {blockedRate, a
 
 ## Design {#infra-safeguards-design}
 
+<!-- DIAGRAM:architecture:START -->
+
+<img src="/diagrams/infra-safeguards/architecture.svg" alt="Architecture" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:architecture:END -->
+
 <figure>
 <svg viewBox="0 0 980 270" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Request path with input classifier before inference and output classifier over the stream; classifier fleet is a tier-0 service with its own cells; fail-closed policy with pre-approved degraded modes; synthetic canary requests that must be blocked">
   <defs><marker id="c1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#1F4E9E"></path></marker><marker id="c2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#B45309"></path></marker></defs>

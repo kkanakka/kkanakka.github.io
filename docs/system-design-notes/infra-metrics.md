@@ -53,6 +53,12 @@ Alerting:        rules evaluated every 15–60 s against the evaluator’s own r
 
 ## Design {#infra-metrics-design}
 
+<!-- DIAGRAM:architecture:START -->
+
+<img src="/diagrams/infra-metrics/architecture.svg" alt="Architecture" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:architecture:END -->
+
 <figure>
 <svg viewBox="0 0 980 280" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Metrics pipeline: agents scrape and pre-aggregate; ingestion enforces cardinality limits; Kafka; TSDB shards by series hash with Gorilla compression; retention tiers via downsampling; alert evaluators in a separate failure domain with their own recent-data store; absence alerts">
   <defs><marker id="t1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#1F4E9E"></path></marker></defs>

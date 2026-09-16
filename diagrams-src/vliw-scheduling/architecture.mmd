@@ -1,0 +1,12 @@
+%% section: Design
+%% caption: Architecture
+flowchart TB
+    SRC["Instruction stream"] --> DEP["Dependence graph · true, anti, output"]
+    DEP --> LAT["Latency weights"]
+    LAT --> PRI["Priority · longest path to exit"]
+    PRI --> RDY["Ready list"]
+    RDY --> PACK["Bundle packer · resource slots"]
+    PACK --> RES["Resource table · units per cycle"]
+    PACK --> BUN[("Scheduled bundles")]
+    PACK -. "unfillable slot" .-> NOP["No-op"]
+    NOP --> BUN

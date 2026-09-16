@@ -1,0 +1,16 @@
+%% section: Final design
+%% caption: Architecture
+flowchart TB
+    C["Creator"] --> UP["Upload service"]
+    UP --> OBJ[("Media storage")]
+    UP --> POST["Post service"]
+    POST --> PDB[("Posts")]
+    POST --> FAN["Fan-out workers"]
+    FAN --> FEED[("Feed cache — per follower")]
+    FAN -. "skipped for celebrities" .-> SKIP["Pull at read time"]
+    V["Viewer"] --> FS["Feed service"]
+    FS --> FEED
+    FS --> SKIP
+    SKIP --> PDB
+    FS --> CDN["CDN"]
+    CDN --> OBJ

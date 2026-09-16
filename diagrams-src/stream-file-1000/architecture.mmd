@@ -1,0 +1,13 @@
+%% section: Design
+%% caption: Architecture
+flowchart TB
+    SRC[("Source · manifest of chunks")] --> T["Tracker · who has what"]
+    SRC --> H1["Host 1"]
+    H1 --> H2["Host 2"]
+    H2 --> H3["Host 3"]
+    H3 --> HN["Host N"]
+    T --- H1
+    T --- H2
+    T --- HN
+    SUP["Supervisor · re-links around a dead host"] -.-> H2
+    H1 -. "verify chunk hash" .-> V["Integrity check"]

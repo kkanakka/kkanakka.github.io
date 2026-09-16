@@ -1,0 +1,13 @@
+%% section: Design
+%% caption: Architecture
+flowchart TB
+    OPS["Operator"] --> REG[("Model registry · immutable versions")]
+    REG --> RT["Traffic router"]
+    RT --> VN["Version N — stable"]
+    RT --> VN1["Version N+1 — canary"]
+    VN --> GPU1["GPU pool"]
+    VN1 --> GPU2["GPU pool"]
+    VN1 -.-> GATE["Quality and latency gates"]
+    VN -.-> GATE
+    GATE --> RT
+    RT -. "streams stay pinned to their version" .-> VN

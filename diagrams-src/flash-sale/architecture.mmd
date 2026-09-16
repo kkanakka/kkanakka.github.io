@@ -1,0 +1,14 @@
+%% section: Final design
+%% caption: Architecture
+flowchart TB
+    U["Buyers"] --> Q["Waiting room · admission tokens"]
+    Q --> LB["Load balancer"]
+    LB --> API["Order API"]
+    API --> INV["Inventory service"]
+    INV --> RD[("Redis — sharded stock counters")]
+    INV --> DB[("Orders — source of truth")]
+    API --> PAY["Payment"]
+    PAY --> DB
+    INV -. "TTL expiry" .-> REL["Reservation reaper"]
+    REL --> RD
+    API -.-> OBS["Metrics · admitted, reserved, sold, released"]

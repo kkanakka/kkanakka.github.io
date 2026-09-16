@@ -1,0 +1,13 @@
+%% section: Design
+%% caption: Architecture
+flowchart TB
+    ROOT["Scan root"] --> WALK["Walker · path, size, inode"]
+    WALK --> SZ{"Group by size"}
+    SZ -- unique size --> DONE["Not a duplicate"]
+    SZ -- same size --> PRE["Prefix hash · first N KB"]
+    PRE -- differs --> DONE
+    PRE -- matches --> FULL["Full content hash"]
+    FULL --> IDX[("Hash to paths index")]
+    IDX --> CMP["Byte-for-byte compare"]
+    CMP --> RESTAT["Re-stat — changed since the walk?"]
+    RESTAT --> ACT["Link, delete, or report"]

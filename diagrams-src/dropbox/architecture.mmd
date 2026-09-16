@@ -1,0 +1,13 @@
+%% section: Final design
+%% caption: Architecture
+flowchart TB
+    C["Client · chunks and hashes locally"] --> API["Metadata API"]
+    API --> META[("File and chunk metadata")]
+    API -- "which chunks are new?" --> C
+    API -- presigned URLs --> C
+    C -- "PUT chunks direct" --> OBJ[("Object storage")]
+    C -- "GET chunks" --> CDN["CDN"]
+    CDN --> OBJ
+    API --> NOTIF["Change notifier"]
+    NOTIF --> C2["Other devices"]
+    C2 --> API

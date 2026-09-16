@@ -1,0 +1,12 @@
+%% section: Design
+%% caption: Architecture
+flowchart TB
+    CL["Clients"] --> ACC["Acceptor"]
+    ACC --> EV["Event loop · epoll / kqueue"]
+    EV --> CONN["Per-connection state · bounded buffer"]
+    CONN -- upload --> DISK[("Storage")]
+    DISK -- "sendfile, zero copy" --> CONN
+    CONN -- "stop reading when slow" --> BP["TCP backpressure"]
+    BP --> CL
+    EV --> POOL["Worker pool — blocking work only"]
+    POOL --> DISK

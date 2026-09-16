@@ -1,0 +1,13 @@
+%% section: Design
+%% caption: Architecture
+flowchart TB
+    REQ["Request"] --> CHEAP["Cheap local check · always runs"]
+    CHEAP --> CLS["Classifier service"]
+    CLS --> INF["Inference"]
+    INF --> OUTCHK["Output screening · incremental"]
+    OUTCHK --> U["User"]
+    CLS -. "timeout or down" .-> POL["Fallback policy"]
+    POL --> INF
+    POL --> REFUSE["Refuse"]
+    CLS --> MODEL[("Classifier models")]
+    OUTCHK -.-> AUDIT[("Audit log")]

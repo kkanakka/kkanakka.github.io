@@ -1,0 +1,20 @@
+%% section: Platform map
+%% caption: Architecture
+flowchart TB
+    U["Users — web, mobile, API"] --> EDGE["Edge · TLS, WAF, rate limit"]
+    EDGE --> GW["API gateway · auth, quota, routing"]
+    GW --> SAFE["Safety classifiers"]
+    GW --> CHAT["Chat service"]
+    CHAT --> CTX[("Conversation store")]
+    CHAT --> RET["Retrieval"]
+    RET --> VEC[("Vector store")]
+    CHAT --> ROUTER["Model router"]
+    ROUTER --> INF1["Inference replica"]
+    ROUTER --> INF2["Inference replica"]
+    INF1 --> GPU1["GPU pool"]
+    INF2 --> GPU1
+    CHAT --> METER["Token metering"]
+    METER --> BILL[("Usage and billing")]
+    GW -.telemetry.-> OBS["Observability · TTFT, ITL, errors"]
+    INF1 -.-> OBS
+    TRAIN["Training plane"] -. weights only .-> ROUTER

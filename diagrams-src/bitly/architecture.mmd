@@ -1,0 +1,14 @@
+%% section: Final design
+%% caption: Architecture
+flowchart LR
+    U["Client"] --> LB["Load balancer"]
+    LB --> W["Write API"]
+    LB --> R["Redirect API"]
+    W --> IDG["ID generator · base62 ranges per host"]
+    W --> DB[("URL store — short_code PK")]
+    R --> CA[("Cache — hot codes")]
+    CA -- miss --> DB
+    DB -- populate --> CA
+    R -- "302 Found" --> U
+    R -.async.-> AN["Click events"]
+    AN --> ANS[("Analytics store")]

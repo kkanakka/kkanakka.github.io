@@ -1,0 +1,15 @@
+%% section: Design
+%% caption: Architecture
+flowchart TB
+    U["Clients"] --> GSLB["Global routing · health + latency"]
+    GSLB --> RA["Region A"]
+    GSLB --> RB["Region B"]
+    RA --> CA1["Cell"]
+    RA --> CA2["Cell"]
+    RB --> CB1["Cell"]
+    RB --> CB2["Cell"]
+    CA1 --> GA["GPU pool"]
+    CB1 --> GB["GPU pool"]
+    HC["Health checks"] -.-> GSLB
+    CAP["Capacity model · N+1 per region"] -.-> GSLB
+    DEG["Degraded mode · smaller model, shorter context"] -.-> RB

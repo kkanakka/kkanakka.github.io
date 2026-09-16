@@ -1,0 +1,12 @@
+%% section: One web request, layer by layer
+%% caption: Architecture
+flowchart TB
+    APP["Application · HTTP"] --> TLS["TLS · encryption"]
+    TLS --> TCP["TCP · ordering, retransmit, congestion"]
+    TCP --> IP["IP · routing, longest prefix match"]
+    IP --> L2["Ethernet · ARP, MAC"]
+    L2 --> NIC["NIC"]
+    NIC --> NET(("Network"))
+    NET --> LB["Load balancer · L4 or L7"]
+    LB --> SRV["Server"]
+    DNSR["DNS resolution"] -.before anything.-> APP

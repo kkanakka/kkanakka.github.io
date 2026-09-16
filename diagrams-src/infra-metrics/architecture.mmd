@@ -1,0 +1,15 @@
+%% section: Design
+%% caption: Architecture
+flowchart TB
+    AG["Agents · pre-aggregate"] --> ING["Ingest gateway"]
+    ING --> CARD["Cardinality guard"]
+    CARD -- reject --> OWNER["Notify the owner"]
+    CARD --> SH1["Shard"]
+    CARD --> SH2["Shard"]
+    SH1 --> HOT[("Hot tier — full resolution, Gorilla")]
+    SH2 --> HOT
+    HOT --> ROLL["Downsampler"]
+    ROLL --> COLD[("Cold tier — coarse, long retention")]
+    Q["Query service"] --> HOT
+    Q --> COLD
+    Q --> DASH["Dashboards and alerts"]

@@ -81,6 +81,12 @@ def schedule(ops, units):            # ops: list of dict(id, unit, dst, srcs, la
 
 ## Design {#vliw-scheduling-design}
 
+<!-- DIAGRAM:architecture:START -->
+
+<img src="/diagrams/vliw-scheduling/architecture.svg" alt="Architecture" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:architecture:END -->
+
 <figure>
 <svg viewBox="0 0 980 190" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="List scheduling: build dependency DAG with latencies, compute critical-path priorities, then cycle by cycle fill functional-unit slots from the ready list in priority order">
 <defs><marker id="dg1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#1F4E9E"></path></marker><marker id="dg3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#B45309"></path></marker></defs>

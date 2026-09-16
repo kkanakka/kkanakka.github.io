@@ -53,6 +53,12 @@ Local: SQLite (conversations, messages, drafts, outbox, sync cursors); keychain 
 
 ## Design {#desktop-chat-frontend-design}
 
+<!-- DIAGRAM:architecture:START -->
+
+<img src="/diagrams/desktop-chat-frontend/architecture.svg" alt="Architecture" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:architecture:END -->
+
 <figure>
 <svg viewBox="0 0 980 280" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Desktop chat client architecture: UI layer with view models; app core with state store, streaming client, outbox and sync engine; local SQLite and keychain; backend over HTTPS/SSE">
 <defs><marker id="dg1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#1F4E9E"></path></marker><marker id="dg3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#B45309"></path></marker></defs>

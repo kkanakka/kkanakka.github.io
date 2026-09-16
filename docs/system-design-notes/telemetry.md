@@ -59,6 +59,12 @@ GET  /v1/registry/unresolved             -&gt; raw names seen with counts, sampl
 
 ## Design {#tl-diagram}
 
+<!-- DIAGRAM:architecture:START -->
+
+<img src="/diagrams/telemetry/architecture.svg" alt="Architecture" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:architecture:END -->
+
 <figure>
 <svg viewBox="0 0 980 420" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Telemetry architecture: client SDK buffers and batches; ingest edge validates and appends to Kafka; resolver consults the metric registry to map scoped raw names to metric ids and writes both a raw observation store with provenance and a canonical time-series store; unresolved names are quarantined; query API expands aliases by time range; a backfill job re-derives canonical data from raw when a mapping changes; registry changes require owner approval and evidence">
   <defs><marker id="tm1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#1F4E9E"></path></marker><marker id="tm2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#B45309"></path></marker></defs>

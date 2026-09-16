@@ -54,6 +54,12 @@ POST /replicas/:id/drain                                -&gt; READY→DRAINING (
 
 ## Design {#infra-rollout-design}
 
+<!-- DIAGRAM:architecture:START -->
+
+<img src="/diagrams/infra-rollout/architecture.svg" alt="Architecture" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:architecture:END -->
+
 <figure>
 <svg viewBox="0 0 980 280" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Rollout pipeline: immutable version in registry, prefetch weights to nodes, canary percentage via router, gates on burn rate and quality evals, promote by ramp, rollback by pointer flip, draining keeps in-flight streams on the old version">
   <defs><marker id="r1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#1F4E9E"></path></marker></defs>

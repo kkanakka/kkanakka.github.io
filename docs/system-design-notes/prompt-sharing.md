@@ -52,6 +52,12 @@ POST /prompts/:id/reactions {type}</code></pre>
 
 ## Design {#prompt-sharing-design}
 
+<!-- DIAGRAM:architecture:START -->
+
+<img src="/diagrams/prompt-sharing/architecture.svg" alt="Architecture" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:architecture:END -->
+
 <figure>
 <svg viewBox="0 0 980 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Prompt platform: gateway, prompt service with versioning, permission service with cached ACL, Postgres for prompts/versions/shares, Elasticsearch fed by CDC for search with visibility filters, stats aggregator">
 <defs><marker id="dg1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#1F4E9E"></path></marker><marker id="dg3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#B45309"></path></marker></defs>

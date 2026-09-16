@@ -54,6 +54,12 @@ GET  /internal/modes                     -&gt; current levels per region</code><
 
 ## Design {#infra-multiregion-design}
 
+<!-- DIAGRAM:architecture:START -->
+
+<img src="/diagrams/infra-multiregion/architecture.svg" alt="Architecture" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:architecture:END -->
+
 <figure>
 <svg viewBox="0 0 980 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Global router over regions on two clouds; each region contains cells that are independent failure units with router, replicas, KV cache; N+1 regional capacity; degraded modes ladder">
   <defs><marker id="m1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#1F4E9E"></path></marker></defs>

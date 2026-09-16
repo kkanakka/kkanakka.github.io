@@ -1,0 +1,11 @@
+%% section: What all ten have in common
+%% caption: Architecture
+flowchart TB
+    REQ["Every request"] --> UNIT["Unit of work · tokens and GPU-seconds"]
+    UNIT --> LIMIT["Hard limit · KV cache, GPU memory, interconnect"]
+    LIMIT --> CAP["Capacity model"]
+    CAP --> REL["Failure design · cells, N+1, degraded mode"]
+    REL --> OBS["Observability · TTFT, ITL, per stage"]
+    OBS --> CAP
+    CAP -.-> COST["Cost per token"]
+    REL -.-> BLAST["Blast radius"]

@@ -22,6 +22,12 @@ description: "layers · TCP/UDP · HTTP · API styles · realtime · load balanc
 
 ## One web request, layer by layer {#nw-request}
 
+<!-- DIAGRAM:architecture:START -->
+
+<img src="/diagrams/networking/architecture.svg" alt="Architecture" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:architecture:END -->
+
 <figure>
 <svg viewBox="0 0 980 230" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Sequence: DNS lookup, TCP three-way handshake, HTTP request and response, TCP four-way teardown, with layer labels">
   <defs><marker id="a9" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#1B2430"></path></marker></defs>

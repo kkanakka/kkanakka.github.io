@@ -1,0 +1,16 @@
+%% section: The standard request path and what lives where
+%% caption: Architecture
+flowchart TB
+    CL["Client"] --> DNS["DNS"]
+    CL --> CDN["CDN · static and cacheable"]
+    CDN --> LB["Load balancer · L7"]
+    LB --> API["Application tier — stateless"]
+    API --> CA[("Cache")]
+    API --> DB[("Primary database")]
+    DB --> RR[("Read replicas")]
+    API --> Q["Queue"]
+    Q --> W["Workers — async work"]
+    W --> DB
+    API --> OBJ[("Object storage — blobs")]
+    API --> SR[("Search index")]
+    API -.-> OBS["Metrics, logs, traces"]

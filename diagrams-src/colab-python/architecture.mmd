@@ -1,0 +1,10 @@
+%% section: Design
+%% caption: Architecture
+flowchart TB
+    IN["Input — file or stream"] --> RD["Streaming reader"]
+    RD --> PARSE["Parse · skip malformed, count them"]
+    PARSE --> CORE["Core logic — pure, testable"]
+    CORE --> AGG["Bounded accumulator · heap, counter, sketch"]
+    AGG --> OUT["Formatted output"]
+    TESTS["Tests — empty, single, malformed, large"] -.verify.-> CORE
+    CLI["Argument parsing · dry-run"] --> IN

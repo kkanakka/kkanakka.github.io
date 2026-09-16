@@ -1,0 +1,14 @@
+%% section: Design
+%% caption: Architecture
+flowchart TB
+    U["Uploader"] --> OBJ[("Object storage — originals")]
+    U --> API["API"]
+    API --> JOBS[("Job rows — one per derivative")]
+    API --> Q["Queue"]
+    Q --> W1["Worker"]
+    Q --> W2["Worker"]
+    W1 --> OBJ
+    W1 --> DERIV[("Derivatives — deterministic keys")]
+    W1 --> JOBS
+    W1 -. "N failures" .-> DLQ["Dead-letter queue"]
+    DERIV --> CDN["CDN"]

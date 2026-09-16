@@ -1,0 +1,16 @@
+%% section: Design
+%% caption: Architecture
+flowchart TB
+    U["User"] --> GW["Gateway"]
+    GW --> QUEUE["Queue"]
+    QUEUE --> PRE["Prefill"]
+    PRE --> DEC["Decode"]
+    DEC --> U
+    GW -. span .-> TR["Trace collector"]
+    QUEUE -. span .-> TR
+    PRE -. span .-> TR
+    DEC -. span .-> TR
+    TR --> TS[("Metrics store")]
+    TS --> SLO["SLO evaluator · TTFT, ITL per stage"]
+    SLO --> BURN["Burn-rate alerts"]
+    BURN --> OC["On-call"]

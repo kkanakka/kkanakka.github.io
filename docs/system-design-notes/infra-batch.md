@@ -53,6 +53,12 @@ Worker:  claim(n) → UPDATE … SKIP LOCKED;  heartbeat(execIds);  complete(exe
 
 ## Design {#infra-batch-design}
 
+<!-- DIAGRAM:architecture:START -->
+
+<img src="/diagrams/infra-batch/architecture.svg" alt="Architecture" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:architecture:END -->
+
 <figure>
 <svg viewBox="0 0 980 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Batch pipeline: job submitted, materialized into per-item executions in a DB, workers claim items atomically with a lease, heartbeat, process via the low-priority inference path, write results to S3, reaper reclaims expired leases; separate GPU pool or priority so batch yields to interactive">
   <defs><marker id="b1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#1F4E9E"></path></marker><marker id="b2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#B45309"></path></marker></defs>

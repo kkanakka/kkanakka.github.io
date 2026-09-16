@@ -1,0 +1,14 @@
+%% section: Design
+%% caption: Architecture
+flowchart TB
+    U["User"] --> UI["Renderer · chat view"]
+    UI --> STORE[("Local store — turns, drafts, offsets")]
+    UI --> NET["Sync layer"]
+    NET -- "streaming request" --> API["Backend API"]
+    API --> INF["Inference"]
+    INF -- tokens --> API
+    API -- SSE --> NET
+    NET --> STORE
+    STORE --> UI
+    NET -. "resume from offset" .-> API
+    UPD["Auto-updater"] --> UI

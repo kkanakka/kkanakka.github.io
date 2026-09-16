@@ -55,6 +55,12 @@ Idempotency-Key header on the POST; client retries after a dropped stream resume
 
 ## High‑level design {#lc-diagram}
 
+<!-- DIAGRAM:architecture:START -->
+
+<img src="/diagrams/llm-chat/architecture.svg" alt="Architecture" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:architecture:END -->
+
 <figure>
 <svg viewBox="0 0 980 560" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="LLM chat architecture: client streams over SSE through gateway to chat service; chat service reads conversation store and memory store, builds prompt, calls inference gateway that batches onto GPU model servers with KV cache; assistant tokens are appended to the conversation store; async workers summarize and extract memory; safety filters on both sides">
   <defs>

@@ -49,6 +49,12 @@ undo(action): restore victim from keeper (copy) if link removed; verify hash</co
 
 ## Design {#file-dedupe-design}
 
+<!-- DIAGRAM:architecture:START -->
+
+<img src="/diagrams/file-dedupe/architecture.svg" alt="Architecture" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:architecture:END -->
+
 <figure>
 <svg viewBox="0 0 980 210" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Dedupe pipeline: walker stats files, size grouping, partial hash, full hash, verification, reversible reclaim via hardlink/reflink or content store, with a catalog DB for incremental rescans and undo">
 <defs><marker id="dg1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#1F4E9E"></path></marker><marker id="dg3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#B45309"></path></marker></defs>

@@ -1,0 +1,13 @@
+%% section: Design
+%% caption: Architecture
+flowchart TB
+    EM["Emitters · inconsistent names"] --> ING["Ingest"]
+    ING --> REC["Name reconciler"]
+    REC --> MAP[("Canonical name + alias map")]
+    REC --> SH["Shards"]
+    SH --> TS[("Time-series store")]
+    Q["Query service"] --> MAP
+    Q --> TS
+    Q --> DASH["Dashboards"]
+    MAP -. "old names keep resolving" .-> Q
+    OPS["Explicit mapping review"] --> MAP

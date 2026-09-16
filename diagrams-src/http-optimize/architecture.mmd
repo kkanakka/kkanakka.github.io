@@ -1,0 +1,13 @@
+%% section: Design
+%% caption: Architecture
+flowchart TB
+    APP["Application"] --> POOL["Connection pool · keep-alive, HTTP/2"]
+    POOL --> SEM["Concurrency limiter"]
+    SEM --> RL["Client-side rate limiter"]
+    RL --> API["Remote API"]
+    API -- "200" --> APP
+    API -- "429 Retry-After" --> BACK["Backoff with jitter"]
+    BACK --> RL
+    APP --> BATCH["Batcher — where the API supports it"]
+    BATCH --> SEM
+    API -.-> MET["Metrics · in-flight, 429 rate, p99"]

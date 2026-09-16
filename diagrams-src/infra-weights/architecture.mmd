@@ -1,0 +1,15 @@
+%% section: Design
+%% caption: Architecture
+flowchart TB
+    REG[("Weight registry · manifest + chunk hashes")] --> T["Tracker"]
+    REG --> S["Seed nodes"]
+    S --> N1["Node"]
+    N1 <--> N2["Node"]
+    N2 <--> N3["Node"]
+    N1 <--> N3
+    T --- N1
+    T --- N2
+    T --- N3
+    N1 --> V["Verify chunk hash"]
+    V --> LOCAL[("Local weight cache")]
+    LOCAL --> SRV["Model server starts"]

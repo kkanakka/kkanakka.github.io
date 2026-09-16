@@ -1,0 +1,15 @@
+%% section: Architecture
+%% caption: Architecture
+flowchart TB
+    CL["Clients"] --> GW["API gateway · auth, quota, token budget"]
+    GW --> Q["Priority queue"]
+    Q --> R["Router · picks by free KV cache"]
+    R --> S1["Model server"]
+    R --> S2["Model server"]
+    S1 --> B1["Running batch"]
+    B1 --> G1["GPUs · tensor parallel within the node"]
+    S2 --> B2["Running batch"]
+    B2 --> G2["GPUs"]
+    S1 -. "cache pressure" .-> R
+    G1 -.-> OBS["Metrics · TTFT, ITL, queue depth, cache use"]
+    WT[("Weight store")] -. load .-> S1

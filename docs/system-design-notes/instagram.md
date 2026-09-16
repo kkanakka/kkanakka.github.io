@@ -54,6 +54,12 @@ GET  /feed?cursor=&amp;limit=                  -&gt; {posts[], nextCursor}   (cu
 
 ## Final design {#ig-diagram}
 
+<!-- DIAGRAM:architecture:START -->
+
+<img src="/diagrams/instagram/architecture.svg" alt="Architecture" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:architecture:END -->
+
 <figure>
 <svg viewBox="0 0 980 440" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Instagram architecture: client uploads media straight to S3 by presigned URL; S3 notifies Post Service and an image processing pipeline; Post Service writes DynamoDB and emits postId to a queue; Feed Fan-out Service pushes the postId into each follower's precomputed Redis feed except for celebrity authors; feed read merges Redis feed with recent celebrity posts; media served from S3 through a global CDN">
   <defs>

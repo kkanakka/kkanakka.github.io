@@ -53,6 +53,12 @@ GET  /{short_code}                                        -&gt; 302 Found, Locat
 
 ## Final design {#bl-diagram}
 
+<!-- DIAGRAM:architecture:START -->
+
+<img src="/diagrams/bitly/architecture.svg" alt="Architecture" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:architecture:END -->
+
 <figure>
 <svg viewBox="0 0 980 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Bitly architecture: client to API gateway; read service checks Redis cache then Postgres and returns 302; write service gets a counter batch from Redis, base62-encodes, writes Postgres">
   <defs><marker id="c1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#1F4E9E"></path></marker><marker id="c2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#B45309"></path></marker></defs>

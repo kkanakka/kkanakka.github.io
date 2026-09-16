@@ -1,0 +1,14 @@
+%% section: Design
+%% caption: Architecture
+flowchart TB
+    CL["Client"] --> API["Job API"]
+    API --> JOBS[("Jobs")]
+    API --> EX[("Executions — one row per item, up front")]
+    SCH["Scheduler"] --> EX
+    SCH --> W1["Worker"]
+    SCH --> W2["Worker"]
+    W1 --> EX
+    W1 --> MODEL["Inference / compute"]
+    W1 -. "lease expiry returns unfinished items" .-> EX
+    CL -- "poll progress" --> API
+    API -- "count by state" --> EX

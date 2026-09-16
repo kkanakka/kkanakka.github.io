@@ -37,6 +37,12 @@ description: "ties together ChatGPT chat + Inference API + metering + training Â
 
 ## Platform map {#ap-diagram}
 
+<!-- DIAGRAM:architecture:START -->
+
+<img src="/diagrams/ai-platform/architecture.svg" alt="Architecture" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:architecture:END -->
+
 <figure>
 <svg viewBox="0 0 980 640" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="AI chat platform in planes: edge and product plane with chat service and context builder; data plane with conversation store, memory, blob; serving plane with inference gateway, batch queue, GPU workers, model registry; metering and billing plane fed by Kafka usage events; training plane with data pipeline, training cluster, evals, registry and canary rollout; ops plane">
   <defs>

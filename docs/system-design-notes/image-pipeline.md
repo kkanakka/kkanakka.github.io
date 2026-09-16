@@ -50,6 +50,12 @@ Queue message: {jobId, step, attempt, imageKey, params, dedupeKey}</code></pre>
 
 ## Design {#image-pipeline-design}
 
+<!-- DIAGRAM:architecture:START -->
+
+<img src="/diagrams/image-pipeline/architecture.svg" alt="Architecture" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:architecture:END -->
+
 <figure>
 <svg viewBox="0 0 980 290" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Image pipeline: producers enqueue to a priority queue; a dispatcher expands the DAG; per-step queues with worker pools; idempotent outputs keyed by content and params; status store; DLQ; autoscaler on queue depth">
 <defs><marker id="dg1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#1F4E9E"></path></marker><marker id="dg3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#B45309"></path></marker></defs>
