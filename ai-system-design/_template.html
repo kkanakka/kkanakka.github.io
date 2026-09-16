@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<!-- ============================================================
+     COPY THIS FILE to start a new AI System Design guide.
+     Files starting with "_" are ignored by the index builder.
+
+       cp ai-system-design/_template.html ai-system-design/my-guide.html
+
+     Then edit the <title> and the <meta> tags below — they drive
+     how this page appears on the AI System Design index.
+     ============================================================ -->
+
+<title>Your Guide Title — Kiran's Tech Hub</title>
+<meta name="description" content="One sentence describing what this guide covers.">
+<meta name="tags" content="Tag One, Tag Two, Tag Three">
+<!-- optional: pin position in the list (lower = earlier); omit to sort by title -->
+<!-- <meta name="order" content="10"> -->
+<!-- optional: override the accent colour; omit to auto-assign -->
+<!-- <meta name="accent" content="#6940a5"> -->
+
+<style>
+  :root {
+    --bg: #ffffff; --surface: #f7f6f3; --border: #e3e2de;
+    --text: #37352f; --text-muted: #787774; --accent: #6940a5;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg); color: var(--text);
+    line-height: 1.7; font-size: 15px;
+  }
+  .container { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+  .hero {
+    background: linear-gradient(180deg, #faf8fd 0%, #ffffff 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 48px 0 36px;
+  }
+  .hero h1 { font-size: 2.1em; font-weight: 700; margin-bottom: 12px; }
+  .hero p { color: var(--text-muted); font-size: 1.05em; }
+  .back {
+    display: inline-flex; align-items: center; gap: 6px;
+    color: var(--text-muted); text-decoration: none;
+    font-size: 0.88em; font-weight: 500; padding: 20px 0 0;
+  }
+  .back:hover { color: var(--accent); }
+  main { padding: 28px 0 56px; }
+  h2 {
+    font-size: 1.4em; font-weight: 700; margin: 36px 0 12px;
+    padding-bottom: 8px; border-bottom: 1px solid var(--border);
+  }
+  h3 { font-size: 1.1em; font-weight: 600; margin: 24px 0 8px; }
+  p { margin-bottom: 14px; }
+  ul, ol { margin: 0 0 14px 22px; }
+  li { margin-bottom: 6px; }
+  code {
+    background: var(--surface); border: 1px solid var(--border);
+    padding: 1px 6px; border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.88em;
+  }
+  pre {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 16px 18px; overflow-x: auto;
+    margin-bottom: 16px;
+  }
+  pre code { background: none; border: none; padding: 0; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 18px; font-size: 0.93em; }
+  th, td { border: 1px solid var(--border); padding: 9px 12px; text-align: left; }
+  th { background: var(--surface); font-weight: 600; }
+  .callout {
+    background: rgba(105,64,165,0.06);
+    border-left: 3px solid var(--accent);
+    border-radius: 6px; padding: 14px 18px; margin-bottom: 18px;
+  }
+  .footer {
+    text-align: center; padding: 32px 0;
+    color: var(--text-muted); font-size: 0.85em;
+    border-top: 1px solid var(--border);
+  }
+  @media (max-width: 640px) {
+    .hero { padding: 32px 0 24px; }
+    .hero h1 { font-size: 1.6em; }
+    table { display: block; overflow-x: auto; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="container">
+    <h1>Your Guide Title</h1>
+    <p>One sentence describing what this guide covers.</p>
+  </div>
+</div>
+
+<div class="container">
+  <a href="/ai-index.html" class="back">&larr; Back to AI System Design</a>
+  <main>
+
+    <h2>Problem</h2>
+    <p>What are we designing, and what makes it hard?</p>
+
+    <h2>Requirements</h2>
+    <h3>Functional</h3>
+    <ul>
+      <li>...</li>
+    </ul>
+    <h3>Non-functional</h3>
+    <ul>
+      <li>Latency target: ...</li>
+      <li>Throughput: ...</li>
+      <li>Availability: ...</li>
+    </ul>
+
+    <h2>Estimates</h2>
+    <div class="callout">
+      Back-of-the-envelope numbers go here — QPS, storage, GPU memory, tokens/sec.
+    </div>
+
+    <h2>Architecture</h2>
+    <p>Diagram and component walkthrough.</p>
+
+    <h2>Deep Dives</h2>
+    <p>The interesting trade-offs.</p>
+
+    <h2>Failure Modes</h2>
+    <table>
+      <tr><th>Failure</th><th>Blast radius</th><th>Mitigation</th></tr>
+      <tr><td>...</td><td>...</td><td>...</td></tr>
+    </table>
+
+  </main>
+</div>
+
+<div class="footer">
+  Kiran's Tech Hub — Built for learning and interview preparation
+</div>
+
+</body>
+</html>

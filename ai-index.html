@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<title>AI System Design — Kiran's Tech Hub</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #f7f6f3;
+    --border: #e3e2de;
+    --text: #37352f;
+    --text-muted: #787774;
+    --accent: #6940a5;
+    --card: #ffffff;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    font-size: 15px;
+  }
+  .container { max-width: 960px; margin: 0 auto; padding: 0 24px; }
+
+  .hero {
+    background: linear-gradient(180deg, #faf8fd 0%, #ffffff 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 56px 0 44px;
+    text-align: center;
+  }
+  .hero h1 { font-size: 2.4em; font-weight: 700; margin-bottom: 14px; }
+  .hero h1 span { color: var(--accent); }
+  .hero p {
+    font-size: 1.05em; color: var(--text-muted);
+    max-width: 680px; margin: 0 auto;
+  }
+  .hero .count {
+    display: inline-block;
+    margin-top: 18px;
+    background: rgba(105,64,165,0.1);
+    color: var(--accent);
+    border-radius: 20px;
+    padding: 4px 14px;
+    font-size: 0.85em;
+    font-weight: 600;
+  }
+
+  .back {
+    display: inline-flex; align-items: center; gap: 6px;
+    color: var(--text-muted); text-decoration: none;
+    font-size: 0.88em; font-weight: 500;
+    padding: 20px 0 0;
+  }
+  .back:hover { color: var(--accent); }
+
+  .entries {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    padding: 36px 0 56px;
+  }
+
+  .entry {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--entry-accent, var(--accent));
+    border-radius: 12px;
+    padding: 24px 22px;
+    text-decoration: none;
+    color: var(--text);
+    transition: all 0.25s ease;
+    display: flex;
+    flex-direction: column;
+  }
+  .entry:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+    border-color: var(--entry-accent, var(--accent));
+  }
+  .entry h2 {
+    font-size: 1.15em; font-weight: 700; margin-bottom: 8px;
+    color: var(--entry-accent, var(--accent));
+  }
+  .entry p {
+    font-size: 0.9em; color: var(--text-muted); margin-bottom: 16px; flex: 1;
+  }
+  .entry .tag-row {
+    display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px;
+  }
+  .entry .tag {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 3px 10px;
+    border-radius: 6px;
+    font-size: 0.75em;
+    color: var(--text-muted);
+  }
+  .entry .cta {
+    font-size: 0.88em; font-weight: 600;
+    color: var(--entry-accent, var(--accent));
+  }
+
+  .empty {
+    grid-column: 1 / -1;
+    background: var(--surface);
+    border: 1px dashed var(--border);
+    border-radius: 12px;
+    padding: 36px 28px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.95em;
+  }
+  .empty code {
+    background: #fff; border: 1px solid var(--border);
+    padding: 2px 6px; border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.9em;
+  }
+
+  .footer {
+    text-align: center;
+    padding: 32px 0;
+    color: var(--text-muted);
+    font-size: 0.85em;
+    border-top: 1px solid var(--border);
+  }
+
+  @media (max-width: 640px) {
+    .hero { padding: 36px 0 28px; }
+    .hero h1 { font-size: 1.7em; }
+    .entries { grid-template-columns: 1fr; padding: 28px 0 40px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="container">
+    <h1>AI <span>System Design</span></h1>
+    <p>Designing systems that train, serve, and scale machine learning — inference architecture, vector search, retrieval pipelines, GPU scheduling, and the reliability patterns that hold them together.</p>
+    <div class="count">
+      <!-- AI-COUNT:START -->
+      0 guides
+      <!-- AI-COUNT:END -->
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <a href="/" class="back">&larr; Back to Tech Hub</a>
+  <div class="entries">
+      <!-- AI-ENTRIES:START -->
+      <p class="empty">No guides yet. Drop an <code>.html</code> file into <code>ai-system-design/</code>, push, and it appears here automatically.</p>
+      <!-- AI-ENTRIES:END -->
+  </div>
+</div>
+
+<div class="footer">
+  Kiran's Tech Hub — Built for learning and interview preparation
+</div>
+
+</body>
+</html>
