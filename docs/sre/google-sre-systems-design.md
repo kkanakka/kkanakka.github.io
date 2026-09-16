@@ -490,7 +490,141 @@ This is next-level thinking. The candidate is no longer just processing alerts; 
 
 #### 🏗️ Production-Grade Global Incident Response System
 
-┌─────────────────────────────────────────────────────────────────────────────────────────┐ │ GLOBAL INCIDENT RESPONSE SYSTEM │ │ 5M Alerts/Day │ p99 < 30s Delivery │ 99.999% Reliability │ └─────────────────────────────────────────────────────────────────────────────────────────┘ ┌─────────────────────────────────────────────────────────────────────────────────────────┐ │ ALERT SOURCES (Monitoring Systems) │ ├─────────────────────────────────────────────────────────────────────────────────────────┤ │ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ │ │ │ Prometheus │ │ Stackdriver │ │ Datadog │ │ NewRelic │ │ Custom Apps │ │ │ │ ┌─────────┐ │ │ ┌─────────┐ │ │ ┌─────────┐ │ │ ┌─────────┐ │ │ ┌─────────┐ │ │ │ │ │Webhook │ │ │ │Webhook │ │ │ │Webhook │ │ │ │Webhook │ │ │ │gRPC/API │ │ │ │ │ │Auth │ │ │ │Auth │ │ │ │Auth │ │ │ │Auth │ │ │ │TLS Cert │ │ │ │ │ │Payload │ │ │ │Payload │ │ │ │Payload │ │ │ │Payload │ │ │ │Schema │ │ │ │ │ └─────────┘ │ │ └─────────┘ │ │ └─────────┘ │ │ └─────────┘ │ │ └─────────┘ │ │ │ └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘ │ │ Common Alert Schema: service, severity, timestamp, fingerprint, metadata │ └─────────────────────────────────────────────────────────────────────────────────────────┘ │ HTTPS Webhooks ▼ ┌─────────────────────────────────────────────────────────────────────────────────────────┐ │ MULTI-REGION INGESTION TIER │ ├─────────────────────────────────────────────────────────────────────────────────────────┤ │ ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐ │ │ │ US-WEST-1 │ │ US-EAST-1 │ │ EU-WEST-1 │ │ │ │ ┌─────────────┐ │ │ ┌─────────────┐ │ │ ┌─────────────┐ │ │ │ │ │Alert Gateway│ │ │ │Alert Gateway│ │ │ │Alert Gateway│ │ │ │ │ │• Rate Limit │ │ │ │• Rate Limit │ │ │ │• Rate Limit │ │ │ │ │ │• Validation │ │ │ │• Validation │ │ │ │• Validation │ │ │ │ │ │• Auth Check │ │ │ │• Auth Check │ │ │ │• Auth Check │ │ │ │ │ │• Schema Norm│ │ │ │• Schema Norm│ │ │ │• Schema Norm│ │ │ │ │ │• Enrichment │ │ │ │• Enrichment │ │ │ │• Enrichment │ │ │ │ │ └─────────────┘ │ │ └─────────────┘ │ │ └─────────────┘ │ │ │ │ Load Balancer │ │ Load Balancer │ │ Load Balancer │ │ │ │ Health Checks │ │ Health Checks │ │ Health Checks │ │ │ └─────────────────┘ └─────────────────┘ └─────────────────┘ │ │ Active-Active: Regional failover in <10s │ Cross-region alert replication │ └─────────────────────────────────────────────────────────────────────────────────────────┘ │ ▼ ┌─────────────────────────────────────────────────────────────────────────────────────────┐ │ DURABLE ALERT QUEUE (Multi-Region Kafka) │ ├─────────────────────────────────────────────────────────────────────────────────────────┤ │ ┌────────────────────────────────────────────────────────────────────────────────┐ │ │ │ Topic: raw-alerts │ Partitions: 500 │ Retention: 7d │ Replication: 3x │ │ │ ├────────────────────────┼──────────────────┼───────────────┼────────────────────┤ │ │ │ Partition Key: service\_name + fingerprint │ Ordering: per alert type │ │ │ │ DLQ: malformed-alerts │ Throughput: 100k alerts/sec sustained │ │ │ └────────────────────────────────────────────────────────────────────────────────┘ │ │ MirrorMaker 2.0 for cross-region replication │ Backpressure controls │ └─────────────────────────────────────────────────────────────────────────────────────────┘ │ ▼ ┌─────────────────────────────────────────────────────────────────────────────────────────┐ │ INTELLIGENT PROCESSING PIPELINE │ ├─────────────────────────────────────────────────────────────────────────────────────────┤ │ ┌──────────────────────────┐ ┌──────────────────────────┐ ┌──────────────────────────┐ │ │ │ DEDUPLICATION ENGINE │ │ CORRELATION & GROUPING │ │ PRIORITY & ROUTING │ │ │ │ ┌──────────────────────┐ │ │ ┌──────────────────────┐ │ │ ┌──────────────────────┐ │ │ │ │ │ Fingerprint Cache │ │ │ │ Service Dependency │ │ │ │ Alert Severity Map │ │ │ │ │ │ • Rolling window │ │ │ │ Graph (Real-time) │ │ │ │ • P0: Page immediat. │ │ │ │ │ │ • Similar alerts │ │ │ │ ┌──────────────────┐ │ │ │ │ • P1: Page in 5min │ │ │ │ │ │ • Configurable TTL │ │ │ │ │Service A → DB │ │ │ │ │ • P2: Ticket only │ │ │ │ │ │ Storm prevention │ │ │ │ │Service B → Cache │ │ │ │ │ • P3: Metrics only │ │ │ │ │ │ • Max 10/min/service │ │ │ │ │Service C → Queue │ │ │ │ │ Escalation Policies │ │ │ │ │ └──────────────────────┘ │ │ │ └──────────────────┘ │ │ │ └──────────────────────┘ │ │ │ │ ┌──────────────────────┐ │ │ │ Temporal Correlation │ │ │ ┌──────────────────────┐ │ │ │ │ │ Semantic Similarity │ │ │ │ • 60s time window │ │ │ │ On-Call Scheduler │ │ │ │ │ │ • NLP fingerprints │ │ │ │ • Root cause detect │ │ │ │ • Teams/Rotations │ │ │ │ │ │ • ML-based grouping │ │ │ │ • Composite alerts │ │ │ │ • Escalation ladder │ │ │ │ │ │ • Alert families │ │ │ │ • Impact propagation │ │ │ │ • Time zone aware │ │ │ │ │ └──────────────────────┘ │ │ └──────────────────────┘ │ │ └──────────────────────┘ │ │ │ └──────────────────────────┘ └──────────────────────────┘ └──────────────────────────┘ │ │ Stateless workers │ Auto-scaling │ Circuit breakers │ Checkpoints for recovery │ └─────────────────────────────────────────────────────────────────────────────────────────┘ │ ▼ ┌─────────────────────────────────────────────────────────────────────────────────────────┐ │ MULTI-CHANNEL NOTIFICATION SYSTEM │ ├─────────────────────────────────────────────────────────────────────────────────────────┤ │ ┌─────────────────────────┐ ┌─────────────────────────┐ ┌─────────────────────────┐ │ │ │ PRIMARY CHANNELS │ │ SECONDARY CHANNELS │ │ FALLBACK CHANNELS │ │ │ │ ┌─────────────────────┐ │ │ ┌─────────────────────┐ │ │ ┌─────────────────────┐ │ │ │ │ │ PagerDuty API │ │ │ │ Slack Webhooks │ │ │ │ SMS Gateway │ │ │ │ │ │ • Circuit breaker │ │ │ │ • Rich formatting │ │ │ │ • Twilio/AWS SNS │ │ │ │ │ │ • Retry w/backoff │ │ │ │ • Thread management │ │ │ │ • Global coverage │ │ │ │ │ │ • Incident tracking │ │ │ │ • Bot interactions │ │ │ │ • Last resort only │ │ │ │ │ └─────────────────────┘ │ │ └─────────────────────┘ │ │ └─────────────────────┘ │ │ │ │ ┌─────────────────────┐ │ │ ┌─────────────────────┐ │ │ ┌─────────────────────┐ │ │ │ │ │ Email SMTP │ │ │ │ Microsoft Teams │ │ │ │ Push Notifications │ │ │ │ │ │ • Multi-provider │ │ │ │ • Adaptive cards │ │ │ │ • Mobile apps │ │ │ │ │ │ • HTML + plaintext │ │ │ │ • Action buttons │ │ │ │ • Wake-up capable │ │ │ │ │ │ • Template engine │ │ │ │ • Deep links │ │ │ │ • Location aware │ │ │ │ │ └─────────────────────┘ │ │ └─────────────────────┘ │ │ └─────────────────────┘ │ │ │ └─────────────────────────┘ └─────────────────────────┘ └─────────────────────────┘ │ │ Delivery Strategy: Primary first → Secondary if fail → Fallback if P0/P1 │ └─────────────────────────────────────────────────────────────────────────────────────────┘ │ ▼ ┌─────────────────────────────────────────────────────────────────────────────────────────┐ │ ACKNOWLEDGMENT & STATE TRACKING │ ├─────────────────────────────────────────────────────────────────────────────────────────┤ │ ┌─────────────────────────┐ ┌─────────────────────────┐ │ │ │ STATE DATABASE │ │ AUDIT & ANALYTICS │ │ │ │ ┌─────────────────────┐ │ │ ┌─────────────────────┐ │ │ │ │ │ Multi-Region │ │ │ │ Alert Lifecycle │ │ │ │ │ │ Spanner/Postgres │ │ │ │ • Time to ack │ │ │ │ │ │ ┌─────────────────┐ │ │ │ │ • Resolution time │ │ │ │ │ │ │ │Alert States: │ │ │ │ │ • False pos. rate │ │ │ │ │ │ │ │- FIRING │ │ │◄────────────►│ │ │ • Channel success │ │ │ │ │ │ │ │- ACKNOWLEDGED │ │ │ │ │ │ Trend Analysis │ │ │ │ │ │ │ │- RESOLVED │ │ │ │ │ │ • Service patterns │ │ │ │ │ │ │ │- ESCALATED │ │ │ │ │ │ • Team performance │ │ │ │ │ │ │ │- SUPPRESSED │ │ │ │ │ │ • System health │ │ │ │ │ │ │ └─────────────────┘ │ │ │ │ └─────────────────────┘ │ │ │ │ │ └─────────────────────┘ │ │ └─────────────────────────┘ │ │ │ └─────────────────────────┘ └─────────────────────────────┘ │ │ Global consistency │ Conflict resolution │ SLI computation │ Alerting feedback loops │ └─────────────────────────────────────────────────────────────────────────────────────────┘ Alert Lifecycle Flow: 1. INGEST: Multi-source → Gateway → Schema normalization → Queue 2. PROCESS: Deduplication → Correlation → Priority assignment → Routing rules 3. NOTIFY: Multi-channel dispatch → Delivery confirmation → Retry logic 4. TRACK: State updates → Global sync → Audit trail → Analytics pipeline 5. RESOLVE: Manual/Auto resolution → Notification → Post-incident analysis Key Reliability Patterns Applied: • Multi-region active-active ingestion (no single point of failure) • Semantic alert correlation (reduces noise, increases signal) • Priority-based delivery (critical alerts bypass throttling) • Multi-path notification (redundancy across channels) • Global state synchronization (audit and consistency)
+```text
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                    GLOBAL INCIDENT RESPONSE SYSTEM                                      │
+│              5M Alerts/Day │ p99 < 30s Delivery │ 99.999% Reliability                  │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│ ALERT SOURCES (Monitoring Systems)                                                     │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐      │
+│  │ Prometheus  │ │ Stackdriver │ │  Datadog    │ │  NewRelic   │ │ Custom Apps │      │
+│  │ ┌─────────┐ │ │ ┌─────────┐ │ │ ┌─────────┐ │ │ ┌─────────┐ │ │ ┌─────────┐ │      │
+│  │ │Webhook  │ │ │ │Webhook  │ │ │ │Webhook  │ │ │ │Webhook  │ │ │ │gRPC/API │ │      │
+│  │ │Auth     │ │ │ │Auth     │ │ │ │Auth     │ │ │ │Auth     │ │ │ │TLS Cert │ │      │
+│  │ │Payload  │ │ │ │Payload  │ │ │ │Payload  │ │ │ │Payload  │ │ │ │Schema   │ │      │
+│  │ └─────────┘ │ │ └─────────┘ │ │ └─────────┘ │ │ └─────────┘ │ │ └─────────┘ │      │
+│  └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘      │
+│  Common Alert Schema: service, severity, timestamp, fingerprint, metadata             │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+                                         │ HTTPS Webhooks
+                                         ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│ MULTI-REGION INGESTION TIER                                                             │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐                        │
+│  │   US-WEST-1     │  │   US-EAST-1     │  │    EU-WEST-1    │                        │
+│  │ ┌─────────────┐ │  │ ┌─────────────┐ │  │ ┌─────────────┐ │                        │
+│  │ │Alert Gateway│ │  │ │Alert Gateway│ │  │ │Alert Gateway│ │                        │
+│  │ │• Rate Limit │ │  │ │• Rate Limit │ │  │ │• Rate Limit │ │                        │
+│  │ │• Validation │ │  │ │• Validation │ │  │ │• Validation │ │                        │
+│  │ │• Auth Check │ │  │ │• Auth Check │ │  │ │• Auth Check │ │                        │
+│  │ │• Schema Norm│ │  │ │• Schema Norm│ │  │ │• Schema Norm│ │                        │
+│  │ │• Enrichment │ │  │ │• Enrichment │ │  │ │• Enrichment │ │                        │
+│  │ └─────────────┘ │  │ └─────────────┘ │  │ └─────────────┘ │                        │
+│  │  Load Balancer  │  │  Load Balancer  │  │  Load Balancer  │                        │
+│  │  Health Checks  │  │  Health Checks  │  │  Health Checks  │                        │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘                        │
+│  Active-Active: Regional failover in <10s │ Cross-region alert replication            │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+                                         │
+                                         ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│ DURABLE ALERT QUEUE (Multi-Region Kafka)                                               │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│  ┌────────────────────────────────────────────────────────────────────────────────┐   │
+│  │ Topic: raw-alerts      │ Partitions: 500 │ Retention: 7d │ Replication: 3x    │   │
+│  ├────────────────────────┼──────────────────┼───────────────┼────────────────────┤   │
+│  │ Partition Key: service_name + fingerprint │ Ordering: per alert type           │   │
+│  │ DLQ: malformed-alerts  │ Throughput: 100k alerts/sec sustained                 │   │
+│  └────────────────────────────────────────────────────────────────────────────────┘   │
+│  MirrorMaker 2.0 for cross-region replication │ Backpressure controls              │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+                                         │
+                                         ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│ INTELLIGENT PROCESSING PIPELINE                                                         │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│  ┌──────────────────────────┐ ┌──────────────────────────┐ ┌──────────────────────────┐ │
+│  │   DEDUPLICATION ENGINE   │ │ CORRELATION & GROUPING   │ │  PRIORITY & ROUTING      │ │
+│  │ ┌──────────────────────┐ │ │ ┌──────────────────────┐ │ │ ┌──────────────────────┐ │ │
+│  │ │ Fingerprint Cache    │ │ │ │ Service Dependency   │ │ │ │ Alert Severity Map   │ │ │
+│  │ │ • Rolling window     │ │ │ │ Graph (Real-time)    │ │ │ │ • P0: Page immediat. │ │ │
+│  │ │ • Similar alerts     │ │ │ │ ┌──────────────────┐ │ │ │ │ • P1: Page in 5min   │ │ │
+│  │ │ • Configurable TTL   │ │ │ │ │Service A → DB    │ │ │ │ │ • P2: Ticket only    │ │ │
+│  │ │ Storm prevention     │ │ │ │ │Service B → Cache │ │ │ │ │ • P3: Metrics only   │ │ │
+│  │ │ • Max 10/min/service │ │ │ │ │Service C → Queue │ │ │ │ │ Escalation Policies  │ │ │
+│  │ └──────────────────────┘ │ │ │ └──────────────────┘ │ │ │ └──────────────────────┘ │ │
+│  │ ┌──────────────────────┐ │ │ │ Temporal Correlation │ │ │ ┌──────────────────────┐ │ │
+│  │ │ Semantic Similarity  │ │ │ │ • 60s time window    │ │ │ │ On-Call Scheduler    │ │ │
+│  │ │ • NLP fingerprints   │ │ │ │ • Root cause detect  │ │ │ │ • Teams/Rotations    │ │ │
+│  │ │ • ML-based grouping  │ │ │ │ • Composite alerts   │ │ │ │ • Escalation ladder  │ │ │
+│  │ │ • Alert families     │ │ │ │ • Impact propagation │ │ │ │ • Time zone aware    │ │ │
+│  │ └──────────────────────┘ │ │ └──────────────────────┘ │ │ └──────────────────────┘ │ │
+│  └──────────────────────────┘ └──────────────────────────┘ └──────────────────────────┘ │
+│  Stateless workers │ Auto-scaling │ Circuit breakers │ Checkpoints for recovery         │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+                                         │
+                                         ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│ MULTI-CHANNEL NOTIFICATION SYSTEM                                                       │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────────────┐  ┌─────────────────────────┐  ┌─────────────────────────┐ │
+│  │  PRIMARY CHANNELS       │  │  SECONDARY CHANNELS     │  │   FALLBACK CHANNELS     │ │
+│  │ ┌─────────────────────┐ │  │ ┌─────────────────────┐ │  │ ┌─────────────────────┐ │ │
+│  │ │ PagerDuty API       │ │  │ │ Slack Webhooks      │ │  │ │ SMS Gateway         │ │ │
+│  │ │ • Circuit breaker   │ │  │ │ • Rich formatting   │ │  │ │ • Twilio/AWS SNS    │ │ │
+│  │ │ • Retry w/backoff   │ │  │ │ • Thread management │ │  │ │ • Global coverage   │ │ │
+│  │ │ • Incident tracking │ │  │ │ • Bot interactions  │ │  │ │ • Last resort only  │ │ │
+│  │ └─────────────────────┘ │  │ └─────────────────────┘ │  │ └─────────────────────┘ │ │
+│  │ ┌─────────────────────┐ │  │ ┌─────────────────────┐ │  │ ┌─────────────────────┐ │ │
+│  │ │ Email SMTP          │ │  │ │ Microsoft Teams     │ │  │ │ Push Notifications  │ │ │
+│  │ │ • Multi-provider    │ │  │ │ • Adaptive cards    │ │  │ │ • Mobile apps       │ │ │
+│  │ │ • HTML + plaintext  │ │  │ │ • Action buttons    │ │  │ │ • Wake-up capable   │ │ │
+│  │ │ • Template engine   │ │  │ │ • Deep links        │ │  │ │ • Location aware    │ │ │
+│  │ └─────────────────────┘ │  │ └─────────────────────┘ │  │ └─────────────────────┘ │ │
+│  └─────────────────────────┘  └─────────────────────────┘  └─────────────────────────┘ │
+│  Delivery Strategy: Primary first → Secondary if fail → Fallback if P0/P1              │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+                                         │
+                                         ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│ ACKNOWLEDGMENT & STATE TRACKING                                                         │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────────────┐              ┌─────────────────────────┐                  │
+│  │    STATE DATABASE       │              │   AUDIT & ANALYTICS     │                  │
+│  │ ┌─────────────────────┐ │              │ ┌─────────────────────┐ │                  │
+│  │ │ Multi-Region        │ │              │ │ Alert Lifecycle     │ │                  │
+│  │ │ Spanner/Postgres    │ │              │ │ • Time to ack       │ │                  │
+│  │ │ ┌─────────────────┐ │ │              │ │ • Resolution time   │ │ │                  │
+│  │ │ │Alert States:    │ │ │              │ │ • False pos. rate   │ │ │                  │
+│  │ │ │- FIRING         │ │ │◄────────────►│ │ │ • Channel success   │ │ │                  │
+│  │ │ │- ACKNOWLEDGED   │ │ │              │ │ │ Trend Analysis      │ │ │                  │
+│  │ │ │- RESOLVED       │ │ │              │ │ │ • Service patterns  │ │ │                  │
+│  │ │ │- ESCALATED      │ │ │              │ │ │ • Team performance  │ │ │                  │
+│  │ │ │- SUPPRESSED     │ │ │              │ │ │ • System health     │ │ │                  │
+│  │ │ └─────────────────┘ │ │              │ │ └─────────────────────┘ │ │                  │
+│  │ └─────────────────────┘ │              │ └─────────────────────────┘ │                  │
+│  └─────────────────────────┘              └─────────────────────────────┘                  │
+│  Global consistency │ Conflict resolution │ SLI computation │ Alerting feedback loops      │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+Alert Lifecycle Flow:
+1. INGEST: Multi-source → Gateway → Schema normalization → Queue
+2. PROCESS: Deduplication → Correlation → Priority assignment → Routing rules
+3. NOTIFY: Multi-channel dispatch → Delivery confirmation → Retry logic
+4. TRACK: State updates → Global sync → Audit trail → Analytics pipeline
+5. RESOLVE: Manual/Auto resolution → Notification → Post-incident analysis
+
+Key Reliability Patterns Applied:
+• Multi-region active-active ingestion (no single point of failure)
+• Semantic alert correlation (reduces noise, increases signal)
+• Priority-based delivery (critical alerts bypass throttling)
+• Multi-path notification (redundancy across channels)
+• Global state synchronization (audit and consistency)
+```
 
 #### 🔧 Technical Implementation Details:
 
@@ -555,7 +689,130 @@ They've not only defined SLOs for the services being tracked but also for the tr
 
 #### 🏗️ Production-Grade SLO Error Budget Tracker
 
-┌─────────────────────────────────────────────────────────────────────────────────────────┐ │ SLO ERROR BUDGET TRACKER SYSTEM │ │ p95 < 60s Compute │ 99.99% Accuracy │ < 5min Alert Delay │ └─────────────────────────────────────────────────────────────────────────────────────────┘ ┌─────────────────────────────────────────────────────────────────────────────────────────┐ │ SLI DATA SOURCES (Raw Telemetry Streams) │ ├─────────────────────────────────────────────────────────────────────────────────────────┤ │ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ │ │ │Load Balancer│ │API Gateway │ │ Application │ │ Database │ │Infrastructure│ │ │ │ ┌─────────┐ │ │ ┌─────────┐ │ │ ┌─────────┐ │ │ ┌─────────┐ │ │ ┌─────────┐ │ │ │ │ │Req Count│ │ │ │Success │ │ │ │Response │ │ │ │Query │ │ │ │CPU/Mem │ │ │ │ │ │2xx/4xx/ │ │ │ │Rate │ │ │ │Latency │ │ │ │Latency │ │ │ │Disk I/O │ │ │ │ │ │5xx codes│ │ │ │Error % │ │ │ │P50/P95/ │ │ │ │Timeouts │ │ │ │Network │ │ │ │ │ │Latency │ │ │ │Throughp.│ │ │ │P99 dist │ │ │ │Connect │ │ │ │Health │ │ │ │ │ └─────────┘ │ │ └─────────┘ │ │ └─────────┘ │ │ └─────────┘ │ │ └─────────┘ │ │ │ └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘ │ │ Structured metrics │ Prometheus format │ OpenTelemetry │ Custom exporters │ └─────────────────────────────────────────────────────────────────────────────────────────┘ │ Pull/Push APIs ▼ ┌─────────────────────────────────────────────────────────────────────────────────────────┐ │ SLI INGESTION & NORMALIZATION LAYER │ ├─────────────────────────────────────────────────────────────────────────────────────────┤ │ ┌─────────────────────────┐ ┌─────────────────────────┐ │ │ │ COLLECTION AGENTS │ │ NORMALIZATION ENGINE │ │ │ │ ┌─────────────────────┐ │ │ ┌─────────────────────┐ │ │ │ │ │ Prometheus Scraper │ │ │ │ Schema Validator │ │ │ │ │ │ • Service discovery │ │ │ │ • Standard SLI fmt │ │ │ │ │ │ • Auto-scaling │ │ │ │ • Unit conversion │ │ │ │ │ │ • Failure handling │ │ │ │ • Timestamp norm. │ │ │ │ │ └─────────────────────┘ │◄────────────►│ │ • Metadata enrich │ │ │ │ │ ┌─────────────────────┐ │ │ └─────────────────────┘ │ │ │ │ │ Push Gateway │ │ │ ┌─────────────────────┐ │ │ │ │ │ • Batch processing │ │ │ │ SLI Type Classifier │ │ │ │ │ │ • Rate limiting │ │ │ │ • Availability │ │ │ │ │ │ • Authentication │ │ │ │ • Latency (P95/P99) │ │ │ │ │ │ • Circuit breakers │ │ │ │ • Throughput │ │ │ │ │ └─────────────────────┘ │ │ │ • Error rate │ │ │ │ └─────────────────────────┘ │ └─────────────────────┘ │ │ └─────────────────────────────────────────────────────────────────────────────────────────┘ │ ▼ ┌─────────────────────────────────────────────────────────────────────────────────────────┐ │ REAL-TIME SLO COMPUTATION ENGINE (Apache Beam/Dataflow) │ ├─────────────────────────────────────────────────────────────────────────────────────────┤ │ ┌──────────────────────────┐ ┌──────────────────────────┐ ┌──────────────────────────┐ │ │ │ SLIDING WINDOWS │ │ SLO RULE ENGINE │ │ BURN RATE CALCULATOR │ │ │ │ ┌──────────────────────┐ │ │ ┌──────────────────────┐ │ │ ┌──────────────────────┐ │ │ │ │ │ 1-minute windows │ │ │ │ SLO Configuration │ │ │ │ Multi-Window Burn │ │ │ │ │ │ 5-minute windows │ │ │ │ ┌──────────────────┐ │ │ │ │ ┌──────────────────┐ │ │ │ │ │ │ 1-hour windows │ │ │ │ │Service: auth-svc │ │ │ │ │ │ 1h window: 14.4x │ │ │ │ │ │ │ 6-hour windows │ │ │ │ │SLO: 99.9% avail │ │ │ │ │ │ 6h window: 6x │ │ │ │ │ │ │ 24-hour windows │ │ │ │ │Error Budget: 8.7h│ │ │ │ │ │ 24h window: 3x │ │ │ │ │ │ │ 30-day windows │ │ │ │ │Budget Period: 30d│ │ │ │ │ │ 30d window: 1x │ │ │ │ │ │ └──────────────────────┘ │ │ │ └──────────────────┘ │ │ │ └──────────────────┘ │ │ │ │ │ Watermarks & Late Data │ │ │ SLI → SLO Mapping │ │ │ Alert Thresholds │ │ │ │ │ Exactly-once processing │ │ │ Dynamic config reload │ │ │ Multi-burn detection │ │ │ │ └──────────────────────────┘ └──────────────────────────┘ └──────────────────────────┘ │ │ State: Bigtable checkpoints │ Config: Spanner/etcd │ Alerts: Kafka topics │ └─────────────────────────────────────────────────────────────────────────────────────────┘ │ ▼ ┌─────────────────────────────────────────────────────────────────────────────────────────┐ │ SLO STATE STORE & ALERT ENGINE │ ├─────────────────────────────────────────────────────────────────────────────────────────┤ │ ┌─────────────────────────┐ ┌─────────────────────────┐ │ │ │ TIME-SERIES STORAGE │ │ ALERT GENERATOR │ │ │ │ ┌─────────────────────┐ │ │ ┌─────────────────────┐ │ │ │ │ │ Bigtable/DynamoDB │ │ │ │ Burn Rate Rules │ │ │ │ │ │ ┌─────────────────┐ │ │ │ │ ┌─────────────────┐ │ │ │ │ │ │ │ Row Key: │ │ │ │ │ │ FAST: >14.4x │ │ │ │ │ │ │ │service#slo#time │ │ │ │ │ │ burn in 1h │ │ │ │ │ │ │ │ │ │ │ │ │ │ → Page immed. │ │ │ │ │ │ │ │ Columns: │ │ │◄────────────►│ │ │ SLOW: >3x burn │ │ │ │ │ │ │ │ - good\_events │ │ │ │ │ │ in 24h │ │ │ │ │ │ │ │ - total\_events │ │ │ │ │ │ → Warning alert │ │ │ │ │ │ │ │ - slo\_target │ │ │ │ │ └─────────────────┘ │ │ │ │ │ │ │ - budget\_remain │ │ │ │ │ Budget Exhaustion │ │ │ │ │ │ │ │ - burn\_rate │ │ │ │ │ • 50% budget → warn │ │ │ │ │ │ │ └─────────────────┘ │ │ │ │ • 90% budget → crit │ │ │ │ │ │ └─────────────────────┘ │ │ └─────────────────────┘ │ │ │ └─────────────────────────┘ └─────────────────────────┘ │ │ Sharded by service │ Auto-scaling │ Read replicas │ Alert deduplication │ └─────────────────────────────────────────────────────────────────────────────────────────┘ │ ▼ ┌─────────────────────────────────────────────────────────────────────────────────────────┐ │ API LAYER & DASHBOARD SERVICES │ ├─────────────────────────────────────────────────────────────────────────────────────────┤ │ ┌─────────────────────────┐ ┌─────────────────────────┐ ┌─────────────────────────┐ │ │ │ QUERY API │ │ DASHBOARD SERVICE │ │ CONFIGURATION API │ │ │ │ ┌─────────────────────┐ │ │ ┌─────────────────────┐ │ │ ┌─────────────────────┐ │ │ │ │ │ GraphQL Endpoint │ │ │ │ Real-time SLO Views │ │ │ │ SLO CRUD Operations │ │ │ │ │ │ • Service queries │ │ │ │ • Error budget viz │ │ │ │ • Version control │ │ │ │ │ │ • Time range filter │ │ │ │ • Burn rate trends │ │ │ │ • Approval workflow │ │ │ │ │ │ • Aggregation funcs │ │ │ │ • Alert timeline │ │ │ │ • Rollback support │ │ │ │ │ │ • Caching layer │ │ │ │ • Multi-service view│ │ │ │ • Schema validation │ │ │ │ │ └─────────────────────┘ │ │ └─────────────────────┘ │ │ └─────────────────────┘ │ │ │ │ ┌─────────────────────┐ │ │ ┌─────────────────────┐ │ │ ┌─────────────────────┐ │ │ │ │ │ REST API Gateway │ │ │ │ Team Ownership Map │ │ │ │ Audit & Change Log │ │ │ │ │ │ • Rate limiting │ │ │ │ • On-call rotations │ │ │ │ • Who changed what │ │ │ │ │ │ • Authentication │ │ │ │ • Escalation paths │ │ │ │ • When and why │ │ │ │ │ │ • Request batching │ │ │ │ • Contact methods │ │ │ │ • Impact analysis │ │ │ │ │ └─────────────────────┘ │ │ └─────────────────────┘ │ │ └─────────────────────┘ │ │ │ └─────────────────────────┘ └─────────────────────────┘ └─────────────────────────┘ │ │ Multi-tenant isolation │ Redis caching │ Load balancing │ Circuit breakers │ └─────────────────────────────────────────────────────────────────────────────────────────┘ SLO Computation Logic: 1. INGEST: Raw SLI metrics → Normalization → Structured events 2. COMPUTE: Sliding window aggregation → SLO compliance % → Error budget calculation 3. ALERT: Multi-window burn rate detection → Threshold breach → Alert generation 4. SERVE: Query API → Cached results → Dashboard visualization → Team notifications 5. CONFIG: Dynamic SLO management → Version control → Approval workflow → Rollback Key Reliability Patterns Applied: • Exactly-once stream processing (duplicate SLI handling) • Multi-window burn rate alerting (fast + slow burn detection) • Immutable SLO configuration (versioned, auditable changes) • Circuit breakers on data sources (prevent SLI cascade failures) • Global state replication (cross-region SLO consistency)
+```text
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                        SLO ERROR BUDGET TRACKER SYSTEM                                 │
+│                p95 < 60s Compute │ 99.99% Accuracy │ < 5min Alert Delay              │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│ SLI DATA SOURCES (Raw Telemetry Streams)                                               │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐      │
+│  │Load Balancer│ │API Gateway  │ │ Application │ │ Database    │ │Infrastructure│      │
+│  │ ┌─────────┐ │ │ ┌─────────┐ │ │ ┌─────────┐ │ │ ┌─────────┐ │ │ ┌─────────┐ │      │
+│  │ │Req Count│ │ │ │Success  │ │ │ │Response │ │ │ │Query    │ │ │ │CPU/Mem  │ │      │
+│  │ │2xx/4xx/ │ │ │ │Rate     │ │ │ │Latency  │ │ │ │Latency  │ │ │ │Disk I/O │ │      │
+│  │ │5xx codes│ │ │ │Error %  │ │ │ │P50/P95/ │ │ │ │Timeouts │ │ │ │Network  │ │      │
+│  │ │Latency  │ │ │ │Throughp.│ │ │ │P99 dist │ │ │ │Connect  │ │ │ │Health   │ │      │
+│  │ └─────────┘ │ │ └─────────┘ │ │ └─────────┘ │ │ └─────────┘ │ │ └─────────┘ │      │
+│  └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘      │
+│  Structured metrics │ Prometheus format │ OpenTelemetry │ Custom exporters           │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+                                         │ Pull/Push APIs
+                                         ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│ SLI INGESTION & NORMALIZATION LAYER                                                     │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────────────┐              ┌─────────────────────────┐                  │
+│  │  COLLECTION AGENTS      │              │  NORMALIZATION ENGINE   │                  │
+│  │ ┌─────────────────────┐ │              │ ┌─────────────────────┐ │                  │
+│  │ │ Prometheus Scraper  │ │              │ │ Schema Validator    │ │                  │
+│  │ │ • Service discovery │ │              │ │ • Standard SLI fmt  │ │                  │
+│  │ │ • Auto-scaling      │ │              │ │ • Unit conversion   │ │                  │
+│  │ │ • Failure handling  │ │              │ │ • Timestamp norm.   │ │                  │
+│  │ └─────────────────────┘ │◄────────────►│ │ • Metadata enrich   │ │                  │
+│  │ ┌─────────────────────┐ │              │ └─────────────────────┘ │                  │
+│  │ │ Push Gateway        │ │              │ ┌─────────────────────┐ │                  │
+│  │ │ • Batch processing  │ │              │ │ SLI Type Classifier │ │                  │
+│  │ │ • Rate limiting     │ │              │ │ • Availability      │ │                  │
+│  │ │ • Authentication    │ │              │ │ • Latency (P95/P99) │ │                  │
+│  │ │ • Circuit breakers  │ │              │ │ • Throughput        │ │                  │
+│  │ └─────────────────────┘ │              │ │ • Error rate        │ │                  │
+│  └─────────────────────────┘              │ └─────────────────────┘ │                  │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+                                         │
+                                         ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│ REAL-TIME SLO COMPUTATION ENGINE (Apache Beam/Dataflow)                                │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│  ┌──────────────────────────┐ ┌──────────────────────────┐ ┌──────────────────────────┐ │
+│  │   SLIDING WINDOWS        │ │   SLO RULE ENGINE        │ │   BURN RATE CALCULATOR   │ │
+│  │ ┌──────────────────────┐ │ │ ┌──────────────────────┐ │ │ ┌──────────────────────┐ │ │
+│  │ │ 1-minute windows     │ │ │ │ SLO Configuration    │ │ │ │ Multi-Window Burn    │ │ │
+│  │ │ 5-minute windows     │ │ │ │ ┌──────────────────┐ │ │ │ │ ┌──────────────────┐ │ │ │
+│  │ │ 1-hour windows       │ │ │ │ │Service: auth-svc │ │ │ │ │ │ 1h window: 14.4x │ │ │ │
+│  │ │ 6-hour windows       │ │ │ │ │SLO: 99.9% avail │ │ │ │ │ │ 6h window: 6x    │ │ │ │
+│  │ │ 24-hour windows      │ │ │ │ │Error Budget: 8.7h│ │ │ │ │ │ 24h window: 3x   │ │ │ │
+│  │ │ 30-day windows       │ │ │ │ │Budget Period: 30d│ │ │ │ │ │ 30d window: 1x   │ │ │ │
+│  │ └──────────────────────┘ │ │ │ └──────────────────┘ │ │ │ └──────────────────┘ │ │ │
+│  │ Watermarks & Late Data  │ │ │ SLI → SLO Mapping    │ │ │ Alert Thresholds     │ │ │
+│  │ Exactly-once processing │ │ │ Dynamic config reload │ │ │ Multi-burn detection │ │ │
+│  └──────────────────────────┘ └──────────────────────────┘ └──────────────────────────┘ │
+│  State: Bigtable checkpoints │ Config: Spanner/etcd │ Alerts: Kafka topics            │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+                                         │
+                                         ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│ SLO STATE STORE & ALERT ENGINE                                                          │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────────────┐              ┌─────────────────────────┐                  │
+│  │   TIME-SERIES STORAGE   │              │    ALERT GENERATOR      │                  │
+│  │ ┌─────────────────────┐ │              │ ┌─────────────────────┐ │                  │
+│  │ │ Bigtable/DynamoDB   │ │              │ │ Burn Rate Rules     │ │                  │
+│  │ │ ┌─────────────────┐ │ │              │ │ ┌─────────────────┐ │ │                  │
+│  │ │ │ Row Key:        │ │ │              │ │ │ FAST: >14.4x    │ │ │                  │
+│  │ │ │service#slo#time │ │ │              │ │ │ burn in 1h      │ │ │                  │
+│  │ │ │                 │ │ │              │ │ │ → Page immed.   │ │ │                  │
+│  │ │ │ Columns:        │ │ │◄────────────►│ │ │ SLOW: >3x burn  │ │ │                  │
+│  │ │ │ - good_events   │ │ │              │ │ │ in 24h          │ │ │                  │
+│  │ │ │ - total_events  │ │ │              │ │ │ → Warning alert │ │ │                  │
+│  │ │ │ - slo_target    │ │ │              │ │ └─────────────────┘ │ │                  │
+│  │ │ │ - budget_remain │ │ │              │ │ Budget Exhaustion   │ │ │                  │
+│  │ │ │ - burn_rate     │ │ │              │ │ • 50% budget → warn │ │ │                  │
+│  │ │ └─────────────────┘ │ │              │ │ • 90% budget → crit │ │ │                  │
+│  │ └─────────────────────┘ │              │ └─────────────────────┘ │                  │
+│  └─────────────────────────┘              └─────────────────────────┘                  │
+│  Sharded by service │ Auto-scaling │ Read replicas │ Alert deduplication                │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+                                         │
+                                         ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│ API LAYER & DASHBOARD SERVICES                                                          │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────────────┐  ┌─────────────────────────┐  ┌─────────────────────────┐ │
+│  │    QUERY API            │  │  DASHBOARD SERVICE      │  │   CONFIGURATION API     │ │
+│  │ ┌─────────────────────┐ │  │ ┌─────────────────────┐ │  │ ┌─────────────────────┐ │ │
+│  │ │ GraphQL Endpoint    │ │  │ │ Real-time SLO Views │ │  │ │ SLO CRUD Operations │ │ │
+│  │ │ • Service queries   │ │  │ │ • Error budget viz  │ │  │ │ • Version control   │ │ │
+│  │ │ • Time range filter │ │  │ │ • Burn rate trends  │ │  │ │ • Approval workflow │ │ │
+│  │ │ • Aggregation funcs │ │  │ │ • Alert timeline    │ │  │ │ • Rollback support  │ │ │
+│  │ │ • Caching layer     │ │  │ │ • Multi-service view│ │  │ │ • Schema validation │ │ │
+│  │ └─────────────────────┘ │  │ └─────────────────────┘ │  │ └─────────────────────┘ │ │
+│  │ ┌─────────────────────┐ │  │ ┌─────────────────────┐ │  │ ┌─────────────────────┐ │ │
+│  │ │ REST API Gateway    │ │  │ │ Team Ownership Map  │ │  │ │ Audit & Change Log  │ │ │
+│  │ │ • Rate limiting     │ │  │ │ • On-call rotations │ │  │ │ • Who changed what  │ │ │
+│  │ │ • Authentication    │ │  │ │ • Escalation paths  │ │  │ │ • When and why      │ │ │
+│  │ │ • Request batching  │ │  │ │ • Contact methods   │ │  │ │ • Impact analysis   │ │ │
+│  │ └─────────────────────┘ │  │ └─────────────────────┘ │  │ └─────────────────────┘ │ │
+│  └─────────────────────────┘  └─────────────────────────┘  └─────────────────────────┘ │
+│  Multi-tenant isolation │ Redis caching │ Load balancing │ Circuit breakers           │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+SLO Computation Logic:
+1. INGEST: Raw SLI metrics → Normalization → Structured events
+2. COMPUTE: Sliding window aggregation → SLO compliance % → Error budget calculation  
+3. ALERT: Multi-window burn rate detection → Threshold breach → Alert generation
+4. SERVE: Query API → Cached results → Dashboard visualization → Team notifications
+5. CONFIG: Dynamic SLO management → Version control → Approval workflow → Rollback
+
+Key Reliability Patterns Applied:  
+• Exactly-once stream processing (duplicate SLI handling)
+• Multi-window burn rate alerting (fast + slow burn detection)
+• Immutable SLO configuration (versioned, auditable changes)
+• Circuit breakers on data sources (prevent SLI cascade failures)
+• Global state replication (cross-region SLO consistency)
+```
 
 #### 🔧 Technical Implementation Details:
 

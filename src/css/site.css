@@ -1,0 +1,203 @@
+/* Docusaurus theme variables plus the styles ported from the imported
+   source pages. Loaded before compact.css, which sets final density. */
+/**
+ * Any CSS included here will be global. The classic template
+ * bundles Infima by default. Infima is a CSS framework designed to
+ * work well for content-centric websites.
+ */
+
+/* You can override the default Infima variables here. */
+:root {
+  --ifm-color-primary: #2e8555;
+  --ifm-color-primary-dark: #29784c;
+  --ifm-color-primary-darker: #277148;
+  --ifm-color-primary-darkest: #205d3b;
+  --ifm-color-primary-light: #33925d;
+  --ifm-color-primary-lighter: #359962;
+  --ifm-color-primary-lightest: #3cad6e;
+  --ifm-code-font-size: 95%;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+}
+
+/* For readability concerns, you should choose a lighter palette in dark mode. */
+[data-theme='dark'] {
+  --ifm-color-primary: #25c2a0;
+  --ifm-color-primary-dark: #21af90;
+  --ifm-color-primary-darker: #1fa588;
+  --ifm-color-primary-darkest: #1a8870;
+  --ifm-color-primary-light: #29d5b0;
+  --ifm-color-primary-lighter: #32d8b4;
+  --ifm-color-primary-lightest: #4fddbf;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+}
+
+/* ------------------------------------------------------------------
+   Diagrams extracted from the original hand-written pages.
+   They are standalone .svg files served from /diagrams/, so they get a
+   light plate behind them: many were drawn with dark strokes on an
+   implicit white page and would otherwise vanish in dark mode.
+   ------------------------------------------------------------------ */
+.doc-diagram {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  margin: 1.5rem 0;
+  background: #ffffff;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 8px;
+  padding: 0.5rem;
+}
+
+/* Wide tables from the source pages should scroll, not break the layout. */
+.markdown table { display: block; overflow-x: auto; max-width: 100%; }
+.markdown img { max-width: 100%; height: auto; }
+
+/* The source pages nest headings deeply; keep them readable in the TOC. */
+.markdown h2 { margin-top: 2.25rem; }
+.markdown h3 { margin-top: 1.75rem; }
+
+/* Sequence diagrams are rendered from the Mermaid sources in diagrams-src/.
+   They are wider and airier than the extracted page diagrams, so they get
+   more room and no hard max-width. */
+.doc-diagram-seq {
+  padding: 1rem 0.75rem;
+  background: #ffffff;
+}
+
+/* ---------------------------------------------------------------
+   System Design Notes — the compact problem format.
+   Imported verbatim from the source page, so the requirement boards,
+   note callouts and inline diagrams keep their original layout.
+   Scoped to .markdown so it cannot disturb the migrated pages.
+   --------------------------------------------------------------- */
+.markdown /* ---------- content ---------- */
+  .problem { margin-bottom:64px;padding-bottom:40px;border-bottom:1px solid var(--ifm-border) }
+.markdown .problem > header { margin-bottom:24px }
+.markdown .problem > header h2 { font-size:2.4rem;font-weight:800;margin:0 0 6px;letter-spacing:-.02em;line-height:1.15 }
+.markdown .problem > header .tag { display:inline-block;font-size:12px;color:var(--ifm-font-color-secondary);background:var(--ifm-code-bg);border:1px solid var(--ifm-border);border-radius:12px;padding:2px 10px }
+.markdown .problem h3 { font-size:1.5rem;font-weight:700;margin:40px 0 12px;padding-top:8px;color:var(--ifm-font-color) }
+.markdown .problem h3::before { content:"#";color:var(--ifm-color-primary);opacity:0;margin-left:-1.1em;width:1.1em;display:inline-block }
+.markdown .problem h3:hover::before { opacity:.6 }
+.markdown .problem h4 { font-size:1.1rem;font-weight:700;margin:24px 0 8px }
+.markdown .problem ul { padding-left:22px }
+.markdown .problem li { margin:6px 0 }
+.markdown .board { display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:800px }
+.markdown .board > div { border:1px solid var(--ifm-border);background:var(--ifm-surface);padding:14px 18px;border-radius:8px;box-shadow:0 1px 2px rgba(0,0,0,.06) }
+.markdown .board h4 { margin:0 0 8px;font-size:14px;text-transform:uppercase;letter-spacing:.04em;color:var(--ifm-font-color-secondary) }
+.markdown .board ol { margin:0;padding-left:20px;font-size:14.5px }
+.markdown .board .out { color:var(--ifm-font-color-secondary);text-decoration:line-through }
+.markdown /* admonitions */
+  .note, .markdown .trap { position:relative;padding:14px 16px 14px 18px;margin:20px 0;max-width:var(--measure);border-radius:8px;border-left:5px solid }
+.markdown .note::before, .markdown .trap::before { display:block;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px }
+.markdown .note { border-color:#009400;background:#e6f6e6 }
+html[data-theme="dark"] .markdown .note { background:#003100 }
+.markdown .note::before { content:"💡 Tip";color:#009400 }
+.markdown .trap { border-color:#e6a700;background:#fff8e6 }
+html[data-theme="dark"] .markdown .trap { background:#4d3800 }
+.markdown .trap::before { content:"⚠️ Caution";color:#e6a700 }
+.markdown figure { margin:20px 0 8px;background:var(--ifm-surface);border:1px solid var(--ifm-border);border-radius:8px;padding:16px;overflow:auto;box-shadow:0 1px 2px rgba(0,0,0,.06) }
+.markdown figure svg { display:block;width:100%;height:auto;max-width:980px;font-family:var(--ifm-font) }
+html[data-theme="dark"] .markdown figure { background:#fff }
+.markdown figcaption { font-size:13px;color:var(--ifm-font-color-secondary);margin-top:8px }
+.markdown .legend { display:flex;gap:18px;flex-wrap:wrap;font-size:13px;color:var(--ifm-font-color-secondary);margin:8px 0 0 }
+.markdown .legend span::before { content:"";display:inline-block;width:12px;height:12px;border-radius:2px;margin-right:6px;vertical-align:-1px }
+.markdown .legend .l-blue::before { background:#1F4E9E }
+.markdown .legend .l-teal::before { background:#0F766E }
+.markdown .legend .l-plum::before { background:#6B2D6B }
+.markdown .legend .l-amber::before { background:#B45309 }
+.markdown table { border-collapse:collapse;display:block;overflow:auto;max-width:100%;font-size:14.5px;margin:16px 0 }
+.markdown th { font-weight:700;background:var(--ifm-code-bg) }
+.markdown .cards { display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;max-width:960px;margin:12px 0 }
+.markdown .cards > div { border:1px solid var(--ifm-border);background:var(--ifm-surface);padding:14px 16px;border-radius:8px;font-size:14.5px;box-shadow:0 1px 2px rgba(0,0,0,.06) }
+.markdown .cards h4 { margin:0 0 6px;font-size:15px }
+.markdown .cards ul { margin:0;padding-left:18px }
+.markdown .cards li { margin:3px 0;max-width:none }
+.markdown .cards pre { max-width:none;box-shadow:none;font-size:12.5px;padding:10px 12px }
+.markdown .board { grid-template-columns:1fr }
+.markdown .problem > header h2 { font-size:1.8rem }
+.markdown .tm { font-size:11px;fill:#1B2430;font-family:"IBM Plex Mono",Menlo,monospace }
+.markdown .lbl { font-size:11px;fill:#1F4E9E }
+.markdown .nt { fill:#F6F8FA;stroke:#D6DDE5;rx:4 }
+.markdown .tm { font-size:10.5px;fill:#1B2430;font-family:"IBM Plex Mono",Menlo,monospace }
+.markdown .lbl { font-size:10.5px;fill:#1F4E9E }
+.markdown .fa { stroke:#B45309;stroke-width:1.4;fill:none;marker-end:url(#e3);stroke-dasharray:2 4 }
+.markdown .fa { stroke:#B45309;stroke-width:1.5;fill:none;marker-end:url(#f2);stroke-dasharray:2 4 }
+.markdown .fa { stroke:#B45309;stroke-width:1.4;fill:none;marker-end:url(#y2);stroke-dasharray:2 4 }
+.markdown .fa { stroke:#B45309;stroke-width:1.4;fill:none;marker-end:url(#w2);stroke-dasharray:2 4 }
+.markdown .fa { stroke:#B45309;stroke-width:1.4;fill:none;marker-end:url(#c2);stroke-dasharray:2 4 }
+.markdown .fa { stroke:#B45309;stroke-width:1.4;fill:none;marker-end:url(#q2);stroke-dasharray:2 4 }
+.markdown .fa { stroke:#B45309;stroke-width:1.4;fill:none;marker-end:url(#b2);stroke-dasharray:2 4 }
+.markdown .fa { stroke:#B45309;stroke-width:1.4;fill:none;marker-end:url(#k2);stroke-dasharray:2 4 }
+.markdown .fa { stroke:#B45309;stroke-width:1.4;fill:none;marker-end:url(#ig3);stroke-dasharray:2 4 }
+.markdown .fa { stroke:#B45309;stroke-width:1.4;fill:none;marker-end:url(#tm2);stroke-dasharray:2 4 }
+.markdown .fa { stroke:#B45309;stroke-width:1.4;fill:none;marker-end:url(#cw2);stroke-dasharray:2 4 }
+.markdown .fa { stroke:#B45309;stroke-width:1.4;fill:none;marker-end:url(#sf2);stroke-dasharray:2 4 }
+.markdown .fa { stroke:#B45309;stroke-width:1.4;fill:none;marker-end:url(#dg3);stroke-dasharray:2 4 }
+
+/* The imported rules reference the source page's own variable names.
+   Map them onto Infima so the format renders in both themes. */
+:root {
+  --ifm-border: var(--ifm-color-emphasis-300);
+  --ifm-surface: var(--ifm-background-surface-color);
+  --ifm-code-bg: var(--ifm-color-emphasis-100);
+  --ifm-font: var(--ifm-font-family-base);
+  --ifm-mono: var(--ifm-font-family-monospace);
+  --ifm-pre-bg: var(--ifm-color-emphasis-100);
+  --ifm-font-color: var(--ifm-font-color-base);
+  --ifm-font-color-secondary: var(--ifm-color-emphasis-700);
+  --measure: 100%;
+}
+
+/* Diagrams in this section are inline svg on a light plate. The source drew
+   them for a white page, so dark mode keeps the plate white rather than
+   inverting strokes that were never designed to invert. */
+.markdown figure {
+  background: #ffffff;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin: 1.25rem 0;
+  overflow-x: auto;
+}
+.markdown figure svg { display: block; width: 100%; height: auto; }
+html[data-theme="dark"] .markdown figure { background: #ffffff; }
+
+/* Requirement boards stack on narrow screens. */
+@media (max-width: 720px) {
+  .markdown .board { grid-template-columns: 1fr; }
+}
+
+/* The section's tag line, shown under the page title. */
+.markdown > .tag, .markdown .tag {
+  display: inline-block;
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  background: var(--ifm-color-emphasis-100);
+  border: 1px solid var(--ifm-color-emphasis-200);
+  color: var(--ifm-color-emphasis-700);
+  margin-bottom: 1rem;
+}
+
+/* The GPU manual's diagrams are a mix of inline svg and HTML/CSS flow charts,
+   all drawn with dark ink for a white page. Keep the plate white in dark mode
+   rather than inverting strokes that were never designed to invert. */
+.markdown figure:has(.gm-flow),
+.markdown figure:has(.gm-layer),
+.markdown figure:has(.gm-stack-d),
+.markdown figure:has(svg) {
+  background: #ffffff;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 8px;
+  padding: 0.85rem;
+  overflow-x: auto;
+}
+html[data-theme="dark"] .markdown figure:has(.gm-flow),
+html[data-theme="dark"] .markdown figure:has(.gm-layer),
+html[data-theme="dark"] .markdown figure:has(.gm-stack-d) { background: #ffffff; }
+
+/* keep the manual's ink dark inside those white plates in either theme */
+.markdown figure .gm-flow, .markdown figure .gm-layer,
+.markdown figure .gm-stack-d, .markdown figure .gm-grid2 { color: #1f2328; }
+

@@ -88,7 +88,17 @@ Runs over UDP. Built-in TLS 1.3, 0-RTT resumption, no head-of-line blocking. Pow
 
 Stateless request/response. Method + path + headers + (optional) body. Standardized status codes.
 
-REQUEST RESPONSE ──────────────────────────────────── ──────────────────────────────────── GET /users/42 HTTP/2 HTTP/2 200 OK Host: api.example.com Content-Type: application/json Authorization: Bearer eyJ… Content-Encoding: br Accept: application/json Cache-Control: no-store Accept-Encoding: gzip, br ETag: "v17-9f3a" (no body for GET) {"id":42,"name":"Ada Lovelace"}
+```text
+REQUEST                                       RESPONSE
+────────────────────────────────────      ────────────────────────────────────
+GET /users/42 HTTP/2                       HTTP/2 200 OK
+Host: api.example.com                      Content-Type: application/json
+Authorization: Bearer eyJ…                 Content-Encoding: br
+Accept: application/json                   Cache-Control: no-store
+Accept-Encoding: gzip, br                  ETag: "v17-9f3a"
+                                           
+(no body for GET)                          {"id":42,"name":"Ada Lovelace"}
+```
 
 ##### 2xx Success
 
@@ -126,7 +136,18 @@ Encrypts payload & integrity-checks. **Doesn't** validate the request body — a
 
 Model your domain as *resources* (nouns), not operations (verbs). HTTP method + path expresses intent.
 
-RESOURCE VERB PATH RESULT ───────────────────────────────────────────────────────────────── User GET /users → list users User GET /users/{id} → one user User POST /users → create (server assigns id) User PUT /users/{id} → replace User PATCH /users/{id} → partial update User DELETE /users/{id} → remove Posts of a user GET /users/{id}/posts → nested resource
+```text
+RESOURCE          VERB     PATH                  RESULT
+─────────────────────────────────────────────────────────────────
+User              GET      /users                → list users
+User              GET      /users/{id}           → one user
+User              POST     /users                → create (server assigns id)
+User              PUT      /users/{id}           → replace
+User              PATCH    /users/{id}           → partial update
+User              DELETE   /users/{id}           → remove
+
+Posts of a user   GET      /users/{id}/posts     → nested resource
+```
 
 ##### ❌ Operation-shaped (anti-pattern)
 
@@ -166,13 +187,34 @@ Schema-first (Protocol Buffers) → smaller, faster, type-safe. Built for servic
 
 ##### JSON over HTTP/1.1 — 40 bytes
 
-{ "id": "123", "name": "John Doe" }
+```text
+{ 
+  "id": "123", 
+  "name": "John Doe" 
+}
+```
 
 ##### Protobuf over HTTP/2 — 15 bytes
 
-0A 03 31 32 33 12 08 6A 6F 68 6E 20 64 6F 65 ← <3x smaller
+```text
+0A 03 31 32 33 12 08 6A 6F
+68 6E 20 64 6F 65   ←  <3x
+                         smaller
+```
 
-.proto schema (single source of truth) message User { string id = 1; string name = 2; } message GetUserRequest { string id = 1; } message GetUserResponse { User user = 1; } service UserService { rpc GetUser (GetUserRequest) returns (GetUserResponse); rpc StreamPosts (StreamReq) returns (stream Post); // server streaming } ──────────────────────────────── protoc generates client + server stubs in Go, Java, Python, Rust, ...
+```text
+.proto schema (single source of truth)
+message User { string id = 1; string name = 2; }
+message GetUserRequest  { string id = 1; }
+message GetUserResponse { User user = 1; }
+
+service UserService {
+  rpc GetUser (GetUserRequest) returns (GetUserResponse);
+  rpc StreamPosts (StreamReq) returns (stream Post);   // server streaming
+}
+────────────────────────────────
+protoc generates client + server stubs in Go, Java, Python, Rust, ...
+```
 
 #### Where to use this
 
@@ -285,7 +327,15 @@ A box (HAProxy, NGINX, Envoy, AWS ALB/NLB, F5) sits between client and servers. 
 
 #### B. Idempotency keys (so retries are safe)
 
-Without idempotency: Client → POST /charge {amount: 10} FAIL (timeout) … but server processed it! Client → POST /charge {amount: 10} retry user charged twice 💥 With idempotency: Client → POST /charge Idempotency-Key: 7f3a-... {amount: 10} Server stores key + result. Same key → same response, executed once.
+```text
+Without idempotency:
+  Client → POST /charge   {amount: 10}    FAIL (timeout)   … but server processed it!
+  Client → POST /charge   {amount: 10}    retry           user charged twice 💥
+
+With idempotency:
+  Client → POST /charge   Idempotency-Key: 7f3a-...   {amount: 10}
+  Server stores key + result. Same key → same response, executed once.
+```
 
 #### C. Circuit breaker state machine
 

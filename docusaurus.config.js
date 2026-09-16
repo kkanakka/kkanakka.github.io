@@ -106,7 +106,9 @@ const config = {
         copyright: `Kiran's Tech Hub — built for learning and interview preparation.`,
       },
       prism: {
-        theme: prismThemes.github,
+        // dracula in both modes: code blocks stay dark on a light page, which
+        // is what makes the command/output blocks legible at this density
+        theme: prismThemes.dracula,
         darkTheme: prismThemes.dracula,
         additionalLanguages: ['bash', 'python', 'sql', 'yaml', 'json', 'go', 'java', 'c'],
       },

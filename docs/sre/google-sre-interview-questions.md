@@ -56,7 +56,36 @@ How does network/database boot work? Explain protocols like TCP, FTP, BOOTP.
 
 Network booting involves a client machine with no local OS obtaining its network configuration and boot image entirely over the network. The process relies on a layered set of protocols:
 
-┌──────────────┐ ┌──────────────┐ │ PXE Client │ │ DHCP/TFTP │ │ (no local OS)│ │ Server │ └──────┬───────┘ └──────┬───────┘ │ 1. DHCPDISCOVER (broadcast) │ │ ──────────────────────────────────────────> │ │ │ │ 2. DHCPOFFER (IP + next-server + filename) │ │ <────────────────────────────────────────── │ │ │ │ 3. DHCPREQUEST │ │ ──────────────────────────────────────────> │ │ │ │ 4. DHCPACK │ │ <────────────────────────────────────────── │ │ │ │ 5. TFTP Read Request (pxelinux.0) │ │ ──────────────────────────────────────────> │ │ │ │ 6. TFTP Data (boot loader binary) │ │ <────────────────────────────────────────── │ │ │ │ 7. Boot loader fetches kernel + initrd │ │ ──────────────────────────────────────────> │ │ │ │ 8. Kernel boots, NFS/HTTP root mount │ │ ──────────────────────────────────────────> │ ▼ ▼
+```text
+┌──────────────┐                              ┌──────────────┐
+│   PXE Client │                              │  DHCP/TFTP   │
+│ (no local OS)│                              │    Server     │
+└──────┬───────┘                              └──────┬───────┘
+       │  1. DHCPDISCOVER (broadcast)                │
+       │ ──────────────────────────────────────────> │
+       │                                             │
+       │  2. DHCPOFFER (IP + next-server + filename) │
+       │ <────────────────────────────────────────── │
+       │                                             │
+       │  3. DHCPREQUEST                             │
+       │ ──────────────────────────────────────────> │
+       │                                             │
+       │  4. DHCPACK                                 │
+       │ <────────────────────────────────────────── │
+       │                                             │
+       │  5. TFTP Read Request (pxelinux.0)          │
+       │ ──────────────────────────────────────────> │
+       │                                             │
+       │  6. TFTP Data (boot loader binary)          │
+       │ <────────────────────────────────────────── │
+       │                                             │
+       │  7. Boot loader fetches kernel + initrd     │
+       │ ──────────────────────────────────────────> │
+       │                                             │
+       │  8. Kernel boots, NFS/HTTP root mount        │
+       │ ──────────────────────────────────────────> │
+       ▼                                             ▼
+```
 
 #### Protocol Stack
 
@@ -69,7 +98,18 @@ Network booting involves a client machine with no local OS obtaining its network
 
 #### TCP/IP Fundamentals
 
-Application Layer │ HTTP, FTP, DNS, SSH, SMTP ─────────────────────┼────────────────────────── Transport Layer │ TCP (reliable, ordered, connection-oriented) │ UDP (unreliable, unordered, connectionless) ─────────────────────┼────────────────────────── Network Layer │ IP (addressing, routing), ICMP, ARP ─────────────────────┼────────────────────────── Data Link Layer │ Ethernet frames, MAC addresses, switches ─────────────────────┼────────────────────────── Physical Layer │ Cables, radio waves, electrical signals
+```text
+Application Layer    │ HTTP, FTP, DNS, SSH, SMTP
+─────────────────────┼──────────────────────────
+Transport Layer      │ TCP (reliable, ordered, connection-oriented)
+                     │ UDP (unreliable, unordered, connectionless)
+─────────────────────┼──────────────────────────
+Network Layer        │ IP (addressing, routing), ICMP, ARP
+─────────────────────┼──────────────────────────
+Data Link Layer      │ Ethernet frames, MAC addresses, switches
+─────────────────────┼──────────────────────────
+Physical Layer       │ Cables, radio waves, electrical signals
+```
 
 #### TCP Three-Way Handshake (Kernel Level)
 
@@ -167,7 +207,28 @@ conntrack -L | wc -l
 sysctl net.netfilter.nf_conntrack_max
 ```
 
-SYN Flood Attack & SYN Cookie Defense ══════════════════════════════════════ Normal: SYN Flood: Client → SYN → Server Attacker → 1000s SYN → Server ← SYN-ACK ← ← SYN-ACK (fills queue) → ACK → (never ACKs → half-open) ESTABLISHED SYN queue exhausted! SYN Cookie Defense (kernel): ┌─────────────────────────────────────────────────┐ │ Server does NOT allocate state on SYN │ │ Instead, encodes: MSS + timestamp + hash │ │ into the sequence number of SYN-ACK │ │ │ │ On ACK: │ │ 1. Extract cookie from ack\_seq - 1 │ │ 2. Validate HMAC(src\_ip, dst\_ip, ports, secret) │ │ 3. If valid → create connection (no queue used) │ └─────────────────────────────────────────────────┘
+```text
+SYN Flood Attack & SYN Cookie Defense
+══════════════════════════════════════
+
+Normal:                         SYN Flood:
+Client → SYN → Server           Attacker → 1000s SYN → Server
+       ← SYN-ACK ←                       ← SYN-ACK (fills queue)
+       → ACK →                            (never ACKs → half-open)
+       ESTABLISHED                        SYN queue exhausted!
+
+SYN Cookie Defense (kernel):
+┌─────────────────────────────────────────────────┐
+│ Server does NOT allocate state on SYN            │
+│ Instead, encodes: MSS + timestamp + hash         │
+│ into the sequence number of SYN-ACK              │
+│                                                   │
+│ On ACK:                                           │
+│   1. Extract cookie from ack_seq - 1              │
+│   2. Validate HMAC(src_ip, dst_ip, ports, secret) │
+│   3. If valid → create connection (no queue used) │
+└─────────────────────────────────────────────────┘
+```
 
 ##### Follow-up Questions
 
@@ -223,7 +284,24 @@ ip route show cache
 
 #### Routing Table Anatomy
 
-$ ip route show default via 10.0.0.1 dev eth0 proto dhcp metric 100 10.0.0.0/24 dev eth0 proto kernel scope link src 10.0.0.50 metric 100 172.17.0.0/16 dev docker0 proto kernel scope link src 172.17.0.1 192.168.1.0/24 via 10.0.0.254 dev eth0 metric 200 Field Breakdown: ────────────────────────────────────────────────────── default → destination 0.0.0.0/0 (catch-all) via 10.0.0.1 → next-hop gateway dev eth0 → outgoing interface proto dhcp → route was learned via DHCP proto kernel → route auto-created by kernel for directly connected networks scope link → destination is on-link (same L2 segment) src 10.0.0.50 → preferred source address when using this route metric 100 → preference (lower = preferred)
+```text
+$ ip route show
+default via 10.0.0.1 dev eth0 proto dhcp metric 100
+10.0.0.0/24 dev eth0 proto kernel scope link src 10.0.0.50 metric 100
+172.17.0.0/16 dev docker0 proto kernel scope link src 172.17.0.1
+192.168.1.0/24 via 10.0.0.254 dev eth0 metric 200
+
+Field Breakdown:
+──────────────────────────────────────────────────────
+default         → destination 0.0.0.0/0 (catch-all)
+via 10.0.0.1    → next-hop gateway
+dev eth0        → outgoing interface
+proto dhcp      → route was learned via DHCP
+proto kernel    → route auto-created by kernel for directly connected networks
+scope link      → destination is on-link (same L2 segment)
+src 10.0.0.50   → preferred source address when using this route
+metric 100      → preference (lower = preferred)
+```
 
 #### Advanced Concepts
 
@@ -279,11 +357,75 @@ This is a discussion question. Depending on the candidate's level of experience,
 
 #### Complete Network Flow
 
-$ curl http://www.example.com/page Step 1: DNS Resolution curl → getaddrinfo("www.example.com") → /etc/nsswitch.conf → "hosts: files dns" → /etc/hosts (miss) → /etc/resolv.conf → nameserver 10.0.0.1 → UDP:53 query A www.example.com ← 93.184.216.34 Step 2: Socket Creation socket(AF\_INET, SOCK\_STREAM, 0) → fd=3 ↓ kernel: allocate struct socket, struct sock Step 3: TCP Connect (3-way handshake) connect(fd, {93.184.216.34:80}) → \[SYN seq=x\] → kernel: tcp\_v4\_connect() ← \[SYN-ACK seq=y ack=x+1\] ← kernel: tcp\_v4\_do\_rcv() → \[ACK ack=y+1\] → ESTABLISHED Step 4: HTTP Request send(fd, "GET /page HTTP/1.1\\r\\n" "Host: www.example.com\\r\\n" "\\r\\n") → kernel: tcp\_sendmsg() → sk\_buff → ip\_queue\_xmit() → IP: src=10.0.0.50 dst=93.184.216.34 proto=TCP → Ethernet: src\_mac → dst\_mac(gateway) → wire Step 5: HTTP Response recv(fd, buffer, 8192) ← "HTTP/1.1 200 OK\\r\\n..." ← kernel: tcp\_rcv\_established() → sk\_buff → socket buffer Step 6: Connection Close close(fd) → \[FIN\] → \[ACK\] → \[FIN\] → \[ACK\] (4-way teardown) → kernel: tcp\_close() → TIME\_WAIT (2\*MSL = 60s default)
+```text
+$ curl http://www.example.com/page
+
+Step 1: DNS Resolution
+   curl → getaddrinfo("www.example.com")
+     → /etc/nsswitch.conf → "hosts: files dns"
+     → /etc/hosts (miss)
+     → /etc/resolv.conf → nameserver 10.0.0.1
+     → UDP:53 query A www.example.com
+     ← 93.184.216.34
+
+Step 2: Socket Creation
+   socket(AF_INET, SOCK_STREAM, 0) → fd=3
+   ↓ kernel: allocate struct socket, struct sock
+
+Step 3: TCP Connect (3-way handshake)
+   connect(fd, {93.184.216.34:80})
+   → [SYN seq=x]              → kernel: tcp_v4_connect()
+   ← [SYN-ACK seq=y ack=x+1]  ← kernel: tcp_v4_do_rcv()
+   → [ACK ack=y+1]             → ESTABLISHED
+
+Step 4: HTTP Request
+   send(fd, "GET /page HTTP/1.1\r\n"
+            "Host: www.example.com\r\n"
+            "\r\n")
+   → kernel: tcp_sendmsg() → sk_buff → ip_queue_xmit()
+   → IP: src=10.0.0.50 dst=93.184.216.34 proto=TCP
+   → Ethernet: src_mac → dst_mac(gateway) → wire
+
+Step 5: HTTP Response
+   recv(fd, buffer, 8192)
+   ← "HTTP/1.1 200 OK\r\n..."
+   ← kernel: tcp_rcv_established() → sk_buff → socket buffer
+
+Step 6: Connection Close
+   close(fd)
+   → [FIN] → [ACK] → [FIN] → [ACK]  (4-way teardown)
+   → kernel: tcp_close() → TIME_WAIT (2*MSL = 60s default)
+```
 
 #### Kernel Path of a Packet
 
-Outgoing Packet (curl sends data): ═══════════════════════════════════ Application: write(fd, data) │ ▼ Socket Layer: sock\_sendmsg() │ ▼ TCP: tcp\_sendmsg() → segment, set seq/ack, checksum │ ▼ IP: ip\_queue\_xmit() → route lookup (fib\_lookup) │ → set src/dst IP, TTL, checksum ▼ Netfilter: NF\_INET\_LOCAL\_OUT → iptables OUTPUT chain │ ▼ Neighbor/ARP: neigh\_resolve\_output() → ARP cache or ARP request │ ▼ Device: dev\_queue\_xmit() → Ethernet frame → qdisc │ ▼ NIC Driver: e1000\_xmit\_frame() → DMA ring buffer → wire
+```text
+Outgoing Packet (curl sends data):
+═══════════════════════════════════
+
+  Application: write(fd, data)
+       │
+       ▼
+  Socket Layer: sock_sendmsg()
+       │
+       ▼
+  TCP: tcp_sendmsg() → segment, set seq/ack, checksum
+       │
+       ▼
+  IP: ip_queue_xmit() → route lookup (fib_lookup)
+       │                → set src/dst IP, TTL, checksum
+       ▼
+  Netfilter: NF_INET_LOCAL_OUT → iptables OUTPUT chain
+       │
+       ▼
+  Neighbor/ARP: neigh_resolve_output() → ARP cache or ARP request
+       │
+       ▼
+  Device: dev_queue_xmit() → Ethernet frame → qdisc
+       │
+       ▼
+  NIC Driver: e1000_xmit_frame() → DMA ring buffer → wire
+```
 
 ```
 # Trace the full network path of a curl request
@@ -355,7 +497,28 @@ Write a program to work out which signals can't be trapped.
 
 #### Why Can't They Be Trapped?
 
-Signal Delivery Path in the Kernel ═══════════════════════════════════ Signal sent (kill(), kernel event) │ ▼ kernel/signal.c: send\_signal() │ ├── SIGKILL or SIGSTOP? │ YES → force\_sig\_info() │ → Cannot be blocked (sigdelsetmask) │ → Cannot have handler (SIG\_DFL forced) │ → Kernel handles directly │ └── Other signal? → Add to task's pending signal set → When returning to userspace: do\_signal() → handle\_signal() → Call registered handler (if any) → Or default action (SIG\_DFL)
+```text
+Signal Delivery Path in the Kernel
+═══════════════════════════════════
+
+  Signal sent (kill(), kernel event)
+       │
+       ▼
+  kernel/signal.c: send_signal()
+       │
+       ├── SIGKILL or SIGSTOP?
+       │     YES → force_sig_info()
+       │           → Cannot be blocked (sigdelsetmask)
+       │           → Cannot have handler (SIG_DFL forced)
+       │           → Kernel handles directly
+       │
+       └── Other signal?
+             → Add to task's pending signal set
+             → When returning to userspace:
+               do_signal() → handle_signal()
+               → Call registered handler (if any)
+               → Or default action (SIG_DFL)
+```
 
 #### Program to Find Untrappable Signals
 
@@ -427,7 +590,38 @@ The relationship is read by `fork(1)` or `clone(1)` and preserved across `exec(1
 
 #### Process Tree in the Kernel
 
-Kernel Data Structures (include/linux/sched.h) ═══════════════════════════════════════════════ struct task\_struct { pid\_t pid; // Process ID pid\_t tgid; // Thread Group ID (= pid for main thread) struct task\_struct \*parent; // Pointer to parent struct list\_head children; // List of children struct list\_head sibling; // Linkage in parent's children list struct task\_struct \*real\_parent; // Actual parent (before ptrace) struct task\_struct \*group\_leader; // Thread group leader int exit\_code; // Exit status for parent to read int exit\_signal; // Signal to send to parent on exit ... }; Process Tree: ───────────── init (PID 1) ├── sshd (PID 100) │ └── bash (PID 200) │ ├── vim (PID 300) │ └── grep (PID 301) ├── cron (PID 101) └── nginx (PID 102) ├── worker (PID 400) └── worker (PID 401)
+```text
+Kernel Data Structures (include/linux/sched.h)
+═══════════════════════════════════════════════
+
+struct task_struct {
+    pid_t pid;                    // Process ID
+    pid_t tgid;                   // Thread Group ID (= pid for main thread)
+
+    struct task_struct *parent;   // Pointer to parent
+    struct list_head children;    // List of children
+    struct list_head sibling;     // Linkage in parent's children list
+
+    struct task_struct *real_parent;  // Actual parent (before ptrace)
+    struct task_struct *group_leader; // Thread group leader
+
+    int exit_code;               // Exit status for parent to read
+    int exit_signal;             // Signal to send to parent on exit
+    ...
+};
+
+Process Tree:
+─────────────
+     init (PID 1)
+     ├── sshd (PID 100)
+     │   └── bash (PID 200)
+     │       ├── vim (PID 300)
+     │       └── grep (PID 301)
+     ├── cron (PID 101)
+     └── nginx (PID 102)
+         ├── worker (PID 400)
+         └── worker (PID 401)
+```
 
 #### fork() Deep Dive
 
@@ -465,7 +659,29 @@ int main() {
 
 #### What Happens in the Kernel During fork()
 
-fork() → sys\_fork() → kernel\_clone() → copy\_process() ═══════════════════════════════════════════════════════ 1. copy\_process(): ├── dup\_task\_struct() → Allocate new task\_struct + kernel stack ├── copy\_creds() → Copy credentials (uid, gid, capabilities) ├── copy\_mm() → Clone memory map (COW page tables) │ └── dup\_mmap() → Duplicate VMAs, mark pages read-only │ └── All pages are shared with COW (Copy-on-Write) │ → Parent writes? Page fault → copy\_one\_pte() → new page ├── copy\_fs() → Copy filesystem context (cwd, root) ├── copy\_files() → Duplicate file descriptor table │ └── Each fd shares same struct file (refcount++) ├── copy\_sighand() → Copy signal handlers ├── copy\_signal() → Copy signal delivery state ├── copy\_io() → Copy I/O context └── copy\_thread() → Set up new kernel stack, return point 2. Assign new PID (alloc\_pid) 3. Add to parent's children list 4. Wake up new process (wake\_up\_new\_task)
+```text
+fork() → sys_fork() → kernel_clone() → copy_process()
+═══════════════════════════════════════════════════════
+
+1. copy_process():
+   ├── dup_task_struct()     → Allocate new task_struct + kernel stack
+   ├── copy_creds()          → Copy credentials (uid, gid, capabilities)
+   ├── copy_mm()             → Clone memory map (COW page tables)
+   │   └── dup_mmap()        → Duplicate VMAs, mark pages read-only
+   │       └── All pages are shared with COW (Copy-on-Write)
+   │           → Parent writes? Page fault → copy_one_pte() → new page
+   ├── copy_fs()             → Copy filesystem context (cwd, root)
+   ├── copy_files()          → Duplicate file descriptor table
+   │   └── Each fd shares same struct file (refcount++)
+   ├── copy_sighand()        → Copy signal handlers
+   ├── copy_signal()         → Copy signal delivery state
+   ├── copy_io()             → Copy I/O context
+   └── copy_thread()         → Set up new kernel stack, return point
+
+2. Assign new PID (alloc_pid)
+3. Add to parent's children list
+4. Wake up new process (wake_up_new_task)
+```
 
 #### Key Observations
 
@@ -512,7 +728,25 @@ What happens if a parent process exits before its child dies?
 
 The orphaned process is re-parented. In the old days, orphaned processes were always adopted by `init` (PID 1). Modern Linux has the concept of **subreapers**.
 
-Re-parenting Flow ═════════════════ Parent (PID 100) exits while Child (PID 200) still running: BEFORE: AFTER: init (1) init (1) └── Parent (100) └── Child (200) ← re-parented! └── Child (200) With subreaper (e.g., systemd, Docker): init (1) └── container-shim (50) \[SUBREAPER\] └── Parent (100) └── Child (200) Parent exits → Child re-parented to subreaper (50), NOT init (1)
+```text
+Re-parenting Flow
+═════════════════
+
+Parent (PID 100) exits while Child (PID 200) still running:
+
+BEFORE:                           AFTER:
+  init (1)                         init (1)
+  └── Parent (100)                 └── Child (200)  ← re-parented!
+      └── Child (200)
+
+With subreaper (e.g., systemd, Docker):
+  init (1)
+  └── container-shim (50) [SUBREAPER]
+      └── Parent (100)
+          └── Child (200)
+
+Parent exits → Child re-parented to subreaper (50), NOT init (1)
+```
 
 #### Kernel Code Path
 
@@ -588,11 +822,63 @@ The `fork()` system call creates a (nearly) complete copy of a process, which ha
 
 `fork()` returns **twice**: once in the parent (returning child's PID) and once in the child (returning 0). The kernel distinguishes them by setting different return values in each process's register context.
 
-How fork() Returns Twice ════════════════════════ kernel\_clone() → copy\_process() │ ├── Create child task\_struct (copy of parent) │ └── copy\_thread() sets child's pt\_regs: │ child\_regs->ax = 0 ← child will "return" 0 │ └── Return child's PID to parent parent\_regs->ax = child\_pid ← parent gets child's PID Both processes resume from the SAME instruction (the return from the fork() syscall), but with different values in RAX register: Parent thread: Child thread: RAX = child\_pid (> 0) RAX = 0 → fork() "returns" child\_pid → fork() "returns" 0
+```text
+How fork() Returns Twice
+════════════════════════
+
+kernel_clone() → copy_process()
+  │
+  ├── Create child task_struct (copy of parent)
+  │   └── copy_thread() sets child's pt_regs:
+  │       child_regs->ax = 0    ← child will "return" 0
+  │
+  └── Return child's PID to parent
+      parent_regs->ax = child_pid  ← parent gets child's PID
+
+Both processes resume from the SAME instruction
+(the return from the fork() syscall), but with
+different values in RAX register:
+
+Parent thread:                     Child thread:
+  RAX = child_pid (> 0)             RAX = 0
+  → fork() "returns" child_pid      → fork() "returns" 0
+```
 
 #### Copy-on-Write (COW) Memory
 
-Before fork(): ┌─────────────────────────┐ │ Parent Process (PID 100) │ │ │ │ Virtual Page → Physical │ │ 0x1000 → Frame A (RW) │ │ 0x2000 → Frame B (RW) │ │ 0x3000 → Frame C (RW) │ └─────────────────────────┘ After fork() (both point to SAME physical pages, marked READ-ONLY): ┌─────────────────────┐ ┌─────────────────────┐ │ Parent (PID 100) │ │ Child (PID 200) │ │ 0x1000 → Frame A (R) │ │ 0x1000 → Frame A (R) │ │ 0x2000 → Frame B (R) │ │ 0x2000 → Frame B (R) │ │ 0x3000 → Frame C (R) │ │ 0x3000 → Frame C (R) │ └─────────────────────┘ └─────────────────────┘ Child writes to 0x2000: 1. Page fault (write to read-only page) 2. Kernel: do\_wp\_page() → wp\_page\_copy() 3. Allocate new Frame D, copy Frame B → Frame D 4. Update child's page table: 0x2000 → Frame D (RW) 5. If parent is only remaining reference: mark Frame B as RW ┌─────────────────────┐ ┌─────────────────────┐ │ Parent (PID 100) │ │ Child (PID 200) │ │ 0x1000 → Frame A (R) │ │ 0x1000 → Frame A (R) │ │ 0x2000 → Frame B (RW)│ │ 0x2000 → Frame D (RW)│ ← NEW COPY │ 0x3000 → Frame C (R) │ │ 0x3000 → Frame C (R) │ └─────────────────────┘ └─────────────────────┘
+```text
+Before fork():
+┌─────────────────────────┐
+│ Parent Process (PID 100) │
+│                          │
+│ Virtual Page → Physical  │
+│ 0x1000 → Frame A (RW)   │
+│ 0x2000 → Frame B (RW)   │
+│ 0x3000 → Frame C (RW)   │
+└─────────────────────────┘
+
+After fork() (both point to SAME physical pages, marked READ-ONLY):
+┌─────────────────────┐     ┌─────────────────────┐
+│ Parent (PID 100)     │     │ Child (PID 200)      │
+│ 0x1000 → Frame A (R) │     │ 0x1000 → Frame A (R) │
+│ 0x2000 → Frame B (R) │     │ 0x2000 → Frame B (R) │
+│ 0x3000 → Frame C (R) │     │ 0x3000 → Frame C (R) │
+└─────────────────────┘     └─────────────────────┘
+
+Child writes to 0x2000:
+  1. Page fault (write to read-only page)
+  2. Kernel: do_wp_page() → wp_page_copy()
+  3. Allocate new Frame D, copy Frame B → Frame D
+  4. Update child's page table: 0x2000 → Frame D (RW)
+  5. If parent is only remaining reference: mark Frame B as RW
+
+┌─────────────────────┐     ┌─────────────────────┐
+│ Parent (PID 100)     │     │ Child (PID 200)      │
+│ 0x1000 → Frame A (R) │     │ 0x1000 → Frame A (R) │
+│ 0x2000 → Frame B (RW)│     │ 0x2000 → Frame D (RW)│ ← NEW COPY
+│ 0x3000 → Frame C (R) │     │ 0x3000 → Frame C (R) │
+└─────────────────────┘     └─────────────────────┘
+```
 
 <a id="proc-kill"></a>
 
@@ -628,7 +914,30 @@ kill -l
 
 #### Kernel Path: kill() System Call
 
-kill(pid, sig) → sys\_kill() → kill\_something\_info() ════════════════════════════════════════════════════ pid > 0: kill\_proc\_info(sig, pid) → Send signal to specific process pid == 0: kill\_pgrp\_info(sig, current->pgrp) → Send signal to entire process group pid == -1: for\_each\_process(p) → Send signal to all processes you can signal pid < -1: kill\_pgrp\_info(sig, -pid) → Send signal to process group |pid| Actual delivery: → group\_send\_sig\_info() → \_\_send\_signal() → Allocate sigqueue → Add to task->pending.signal or task->signal->shared\_pending → set\_tsk\_thread\_flag(TIF\_SIGPENDING) → wake\_up\_state(task, TASK\_INTERRUPTIBLE)
+```text
+kill(pid, sig) → sys_kill() → kill_something_info()
+════════════════════════════════════════════════════
+
+pid > 0:  kill_proc_info(sig, pid)
+          → Send signal to specific process
+
+pid == 0: kill_pgrp_info(sig, current->pgrp)
+          → Send signal to entire process group
+
+pid == -1: for_each_process(p)
+           → Send signal to all processes you can signal
+
+pid < -1: kill_pgrp_info(sig, -pid)
+          → Send signal to process group |pid|
+
+Actual delivery:
+  → group_send_sig_info()
+    → __send_signal()
+      → Allocate sigqueue
+      → Add to task->pending.signal or task->signal->shared_pending
+      → set_tsk_thread_flag(TIF_SIGPENDING)
+      → wake_up_state(task, TASK_INTERRUPTIBLE)
+```
 
 ##### Follow-up Questions
 
@@ -665,7 +974,41 @@ It replaces the current process image with a new image. The PID stays the same. 
 
 #### What exec() Does in the Kernel
 
-execve("/bin/ls", \["ls", "-la"\], envp) → sys\_execve() → do\_execveat\_common() ════════════════════════════════════════ 1. open\_exec(filename) → Open the binary, check permissions (+x) → Read first 128 bytes to detect format 2. Detect binary format: → ELF: "\\x7fELF" → load\_elf\_binary() → Script: "#!" → load\_script() → re-exec interpreter → a.out (legacy) 3. flush\_old\_exec() → Release old memory mappings (mm\_struct) → Clear signal handlers (reset to SIG\_DFL) → Close FD\_CLOEXEC file descriptors 4. setup\_new\_exec() → Set process name (comm field) → Set new credentials if setuid/setgid 5. Load new image: ├── Map .text section (executable code) → read-only, executable ├── Map .data section (initialized data) → read-write ├── Map .bss section (zeroed data) → read-write ├── Set up stack (argv, envp, auxv) ├── Map dynamic linker (ld-linux.so) if dynamically linked └── Set instruction pointer to entry point (e\_entry or ld.so) 6. start\_thread(regs, elf\_entry, sp) → Set registers: RIP=entry\_point, RSP=new\_stack → Return to userspace → new program begins
+```text
+execve("/bin/ls", ["ls", "-la"], envp)
+→ sys_execve() → do_execveat_common()
+════════════════════════════════════════
+
+1. open_exec(filename)
+   → Open the binary, check permissions (+x)
+   → Read first 128 bytes to detect format
+
+2. Detect binary format:
+   → ELF: "\x7fELF" → load_elf_binary()
+   → Script: "#!" → load_script() → re-exec interpreter
+   → a.out (legacy)
+
+3. flush_old_exec()
+   → Release old memory mappings (mm_struct)
+   → Clear signal handlers (reset to SIG_DFL)
+   → Close FD_CLOEXEC file descriptors
+
+4. setup_new_exec()
+   → Set process name (comm field)
+   → Set new credentials if setuid/setgid
+
+5. Load new image:
+   ├── Map .text section (executable code) → read-only, executable
+   ├── Map .data section (initialized data) → read-write
+   ├── Map .bss section (zeroed data) → read-write
+   ├── Set up stack (argv, envp, auxv)
+   ├── Map dynamic linker (ld-linux.so) if dynamically linked
+   └── Set instruction pointer to entry point (e_entry or ld.so)
+
+6. start_thread(regs, elf_entry, sp)
+   → Set registers: RIP=entry_point, RSP=new_stack
+   → Return to userspace → new program begins
+```
 
 #### Key: exec() Never Returns (on success)
 
@@ -738,11 +1081,51 @@ What is virtual memory? How does it work? This is a deep and complex topic that 
 
 Virtual memory is an abstraction where each process sees its own private, contiguous address space. The OS + hardware (MMU) transparently maps virtual addresses to physical RAM pages. This provides isolation, allows overcommit, and enables features like demand paging and memory-mapped files.
 
-Process Virtual Address Space (x86\_64) ══════════════════════════════════════ 0xFFFFFFFFFFFFFFFF ┌─────────────────┐ │ Kernel Space │ (upper half, per-architecture) 0xFFFF800000000000 ├─────────────────┤ │ (hole/unused) │ 0x00007FFFFFFFFFFF ├─────────────────┤ │ Stack ↓ │ grows downward │ ... │ │ Memory-mapped │ shared libs, mmap regions │ ... │ │ Heap ↑ │ grows upward (brk/sbrk/mmap) ├─────────────────┤ │ BSS (.bss) │ uninitialized globals (zeroed) │ Data (.data) │ initialized globals │ Text (.text) │ executable code (read-only) 0x0000000000400000 ├─────────────────┤ │ (reserved/null) │ NULL pointer dereference → SIGSEGV 0x0000000000000000 └─────────────────┘
+```text
+Process Virtual Address Space (x86_64)
+══════════════════════════════════════
+
+ 0xFFFFFFFFFFFFFFFF ┌─────────────────┐
+                    │  Kernel Space     │ (upper half, per-architecture)
+ 0xFFFF800000000000 ├─────────────────┤
+                    │  (hole/unused)    │
+ 0x00007FFFFFFFFFFF ├─────────────────┤
+                    │  Stack ↓          │ grows downward
+                    │  ...              │
+                    │  Memory-mapped    │ shared libs, mmap regions
+                    │  ...              │
+                    │  Heap ↑           │ grows upward (brk/sbrk/mmap)
+                    ├─────────────────┤
+                    │  BSS (.bss)       │ uninitialized globals (zeroed)
+                    │  Data (.data)     │ initialized globals
+                    │  Text (.text)     │ executable code (read-only)
+ 0x0000000000400000 ├─────────────────┤
+                    │  (reserved/null)  │ NULL pointer dereference → SIGSEGV
+ 0x0000000000000000 └─────────────────┘
+```
 
 #### Page Table Walk (4-Level on x86\_64)
 
-Virtual Address: 48 bits used (of 64) ┌──────┬──────┬──────┬──────┬──────┐ │ PML4 │ PDPT │ PD │ PT │Offset│ │9 bits│9 bits│9 bits│9 bits│12 bit│ └──┬───┴──┬───┴──┬───┴──┬───┴──┬───┘ │ │ │ │ │ ▼ ▼ ▼ ▼ ▼ ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐ ┌────────────┐ │PML4E│→│PDPTE│→│ PDE │→│ PTE │→│Physical Addr│ │Table│ │Table│ │Table│ │Table│ │ (+ offset) │ └─────┘ └─────┘ └─────┘ └─────┘ └────────────┘ ↑ CR3 register (per-process, stored in task\_struct->mm->pgd) TLB (Translation Lookaside Buffer): Cache of recent virtual→physical translations TLB miss → full page table walk (expensive!) Context switch → TLB flush (unless PCID used)
+```text
+Virtual Address: 48 bits used (of 64)
+┌──────┬──────┬──────┬──────┬──────┐
+│ PML4 │ PDPT │  PD  │  PT  │Offset│
+│9 bits│9 bits│9 bits│9 bits│12 bit│
+└──┬───┴──┬───┴──┬───┴──┬───┴──┬───┘
+   │      │      │      │      │
+   ▼      ▼      ▼      ▼      ▼
+┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐ ┌────────────┐
+│PML4E│→│PDPTE│→│ PDE │→│ PTE │→│Physical Addr│
+│Table│ │Table│ │Table│ │Table│ │ (+ offset)  │
+└─────┘ └─────┘ └─────┘ └─────┘ └────────────┘
+  ↑
+  CR3 register (per-process, stored in task_struct->mm->pgd)
+
+TLB (Translation Lookaside Buffer):
+  Cache of recent virtual→physical translations
+  TLB miss → full page table walk (expensive!)
+  Context switch → TLB flush (unless PCID used)
+```
 
 #### Page Fault Types
 
@@ -806,9 +1189,50 @@ An inode is the on-disk (and in-memory) representation of a file in the file sys
 
 #### Inode Contents
 
-struct inode (on-disk, ext4 as example): ════════════════════════════════════════ Field Description ──────────────────── ─ ───────────────────────────────── i\_mode File type + permissions (rwxrwxrwx) i\_uid Owner user ID i\_gid Owner group ID i\_size File size in bytes i\_atime Last access time i\_mtime Last modification time i\_ctime Last inode change time (NOT creation) i\_links\_count Number of hard links to this inode i\_blocks Number of 512-byte blocks allocated i\_block\[15\] Pointers to data blocks: \[0-11\] → 12 direct block pointers \[12\] → indirect (points to block of pointers) \[13\] → double indirect \[14\] → triple indirect i\_flags Immutable, append-only, etc. In ext4, also: extents (instead of block pointers for large files)
+```text
+struct inode (on-disk, ext4 as example):
+════════════════════════════════════════
 
-Block Pointers (Traditional Unix FS): ═════════════════════════════════════ inode ┌──────────┐ │ direct 0 │ → \[data block\] │ direct 1 │ → \[data block\] │ ... │ │ direct 11 │ → \[data block\] ← 12 × 4KB = 48KB directly │ │ │ indirect │ → \[ptr block\] → \[data blocks\] ← ~4MB │ dbl indir │ → \[ptr\] → \[ptr block\] → \[data\] ← ~4GB │ tpl indir │ → \[ptr\] → \[ptr\] → \[ptr\] → \[data\] ← ~4TB └──────────┘ ext4 uses EXTENTS instead (more efficient for large files): (start\_block, length) tuples stored in inode or extent tree
+Field                  Description
+──────────────────── ─ ─────────────────────────────────
+i_mode               File type + permissions (rwxrwxrwx)
+i_uid                Owner user ID
+i_gid                Owner group ID
+i_size               File size in bytes
+i_atime              Last access time
+i_mtime              Last modification time
+i_ctime              Last inode change time (NOT creation)
+i_links_count        Number of hard links to this inode
+i_blocks             Number of 512-byte blocks allocated
+i_block[15]          Pointers to data blocks:
+                       [0-11]  → 12 direct block pointers
+                       [12]    → indirect (points to block of pointers)
+                       [13]    → double indirect
+                       [14]    → triple indirect
+i_flags              Immutable, append-only, etc.
+
+In ext4, also: extents (instead of block pointers for large files)
+```
+
+```text
+Block Pointers (Traditional Unix FS):
+═════════════════════════════════════
+
+inode
+┌──────────┐
+│ direct 0  │ → [data block]
+│ direct 1  │ → [data block]
+│ ...        │
+│ direct 11 │ → [data block]         ← 12 × 4KB = 48KB directly
+│            │
+│ indirect   │ → [ptr block] → [data blocks]        ← ~4MB
+│ dbl indir  │ → [ptr] → [ptr block] → [data]       ← ~4GB
+│ tpl indir  │ → [ptr] → [ptr] → [ptr] → [data]     ← ~4TB
+└──────────┘
+
+ext4 uses EXTENTS instead (more efficient for large files):
+  (start_block, length) tuples stored in inode or extent tree
+```
 
 #### Commands
 
@@ -856,15 +1280,89 @@ Describe in-depth how Unix-type filesystems are organized.
 
 #### Filesystem Layout (ext4)
 
-Disk Layout: ═══════════ ┌──────────┬──────────────────────────────────────────────────┐ │Boot Block│ Block Group 0 │ │(1024 B) │ │ ├──────────┼─────────┬──────┬──────┬─────────┬────────────────┤ │ │Super │Group │Block │ Inode │ Data Blocks │ │ │Block │Desc │Bitmap│ Bitmap │ │ │ │ │Table │ │ │ Inode Table │ ├──────────┼─────────┼──────┼──────┼─────────┼────────────────┤ │ │ Block Group 1 │ │ ├─────────┬──────┬──────┬─────────┬────────────────┤ │ │Super │Group │Block │ Inode │ Data Blocks │ │ │(backup) │Desc │Bitmap│ Bitmap │ │ │ │ │(bkup)│ │ │ Inode Table │ └──────────┴─────────┴──────┴──────┴─────────┴────────────────┘ Key Components: Superblock: Filesystem metadata (block size, inode count, free blocks) Group Desc: Per-group metadata (bitmap locations, free counts) Block Bitmap: 1 bit per block (0=free, 1=used) Inode Bitmap: 1 bit per inode (0=free, 1=used) Inode Table: Array of inode structures Data Blocks: Actual file content + directory entries
+```text
+Disk Layout:
+═══════════
+
+┌──────────┬──────────────────────────────────────────────────┐
+│Boot Block│              Block Group 0                        │
+│(1024 B)  │                                                   │
+├──────────┼─────────┬──────┬──────┬─────────┬────────────────┤
+│          │Super    │Group │Block │ Inode   │ Data Blocks     │
+│          │Block    │Desc  │Bitmap│ Bitmap  │                 │
+│          │         │Table │      │         │ Inode Table     │
+├──────────┼─────────┼──────┼──────┼─────────┼────────────────┤
+│          │              Block Group 1                        │
+│          ├─────────┬──────┬──────┬─────────┬────────────────┤
+│          │Super    │Group │Block │ Inode   │ Data Blocks     │
+│          │(backup) │Desc  │Bitmap│ Bitmap  │                 │
+│          │         │(bkup)│      │         │ Inode Table     │
+└──────────┴─────────┴──────┴──────┴─────────┴────────────────┘
+
+Key Components:
+  Superblock:    Filesystem metadata (block size, inode count, free blocks)
+  Group Desc:    Per-group metadata (bitmap locations, free counts)
+  Block Bitmap:  1 bit per block (0=free, 1=used)
+  Inode Bitmap:  1 bit per inode (0=free, 1=used)
+  Inode Table:   Array of inode structures
+  Data Blocks:   Actual file content + directory entries
+```
 
 #### Directory Structure
 
-A directory is just a file whose data blocks contain directory entries: Directory "/home/user": ┌────────────┬──────────┬────────────┬───────────┐ │ inode: 100 │ rec\_len │ name\_len:1 │ name: "." │ ← current dir ├────────────┼──────────┼────────────┼───────────┤ │ inode: 50 │ rec\_len │ name\_len:2 │ name: ".."│ ← parent dir ├────────────┼──────────┼────────────┼───────────┤ │ inode: 201 │ rec\_len │ name\_len:8 │ name:"doc"│ ← regular file ├────────────┼──────────┼────────────┼───────────┤ │ inode: 202 │ rec\_len │ name\_len:5 │ name:"pics"│ ← subdirectory └────────────┴──────────┴────────────┴───────────┘ Looking up "/home/user/docs/file.txt": 1. Start at root inode (inode 2) 2. Read root directory data → find "home" → inode 50 3. Read inode 50 data → find "user" → inode 100 4. Read inode 100 data → find "docs" → inode 201 5. Read inode 201 data → find "file.txt" → inode 305 6. Read inode 305 → get file metadata + block pointers
+```text
+A directory is just a file whose data blocks contain directory entries:
+
+Directory "/home/user":
+┌────────────┬──────────┬────────────┬───────────┐
+│ inode: 100 │ rec_len  │ name_len:1 │ name: "." │  ← current dir
+├────────────┼──────────┼────────────┼───────────┤
+│ inode: 50  │ rec_len  │ name_len:2 │ name: ".."│  ← parent dir
+├────────────┼──────────┼────────────┼───────────┤
+│ inode: 201 │ rec_len  │ name_len:8 │ name:"doc"│  ← regular file
+├────────────┼──────────┼────────────┼───────────┤
+│ inode: 202 │ rec_len  │ name_len:5 │ name:"pics"│ ← subdirectory
+└────────────┴──────────┴────────────┴───────────┘
+
+Looking up "/home/user/docs/file.txt":
+  1. Start at root inode (inode 2)
+  2. Read root directory data → find "home" → inode 50
+  3. Read inode 50 data → find "user" → inode 100
+  4. Read inode 100 data → find "docs" → inode 201
+  5. Read inode 201 data → find "file.txt" → inode 305
+  6. Read inode 305 → get file metadata + block pointers
+```
 
 #### Virtual Filesystem (VFS) Layer
 
-Linux VFS — Uniform Interface to All Filesystem Types ═════════════════════════════════════════════════════ User Space: open() / read() / write() / stat() │ ▼ VFS Layer: struct file\_operations { .read = generic\_file\_read\_iter, .write = generic\_file\_write\_iter, .open = ext4\_file\_open, ... } │ ├── ext4 → ext4\_readdir(), ext4\_lookup() ├── xfs → xfs\_file\_read\_iter() ├── btrfs → btrfs\_readdir() ├── tmpfs → shmem\_readdir() ├── procfs → proc\_readdir() ├── sysfs → sysfs\_readdir() └── NFS → nfs\_readdir() Key VFS objects: struct super\_block → Represents a mounted filesystem struct inode → In-memory inode (cached from disk) struct dentry → Directory entry cache (name → inode mapping) struct file → Open file instance (position, flags)
+```text
+Linux VFS — Uniform Interface to All Filesystem Types
+═════════════════════════════════════════════════════
+
+  User Space:  open() / read() / write() / stat()
+       │
+       ▼
+  VFS Layer:   struct file_operations {
+                 .read = generic_file_read_iter,
+                 .write = generic_file_write_iter,
+                 .open = ext4_file_open,
+                 ...
+               }
+       │
+       ├── ext4       → ext4_readdir(), ext4_lookup()
+       ├── xfs        → xfs_file_read_iter()
+       ├── btrfs      → btrfs_readdir()
+       ├── tmpfs      → shmem_readdir()
+       ├── procfs     → proc_readdir()
+       ├── sysfs      → sysfs_readdir()
+       └── NFS        → nfs_readdir()
+
+Key VFS objects:
+  struct super_block   → Represents a mounted filesystem
+  struct inode         → In-memory inode (cached from disk)
+  struct dentry        → Directory entry cache (name → inode mapping)
+  struct file          → Open file instance (position, flags)
+```
 
 <a id="fs-symlinks-hardlinks"></a>
 
@@ -888,7 +1386,31 @@ Symlinks v. Hardlinks. Discuss.
 | **Performance** | Direct inode lookup (fast) | Extra dereference (read symlink → then resolve path) |
 | **`ls -l`** | Looks like regular file, link count > 1 | Shows `l` type, displays `→ target` |
 
-Hard Link: ────────── Directory A: Directory B: "file.txt" → inode 42 "backup.txt" → inode 42 ↓ ┌────────────┐ │ Inode 42 │ i\_links\_count = 2 │ size, perms │ Same content, same metadata │ block ptrs │ └────────────┘ Delete "file.txt" → i\_links\_count = 1, data NOT freed Delete "backup.txt" → i\_links\_count = 0, data freed Symbolic Link: ────────────── "shortcut" → inode 99 (type: symlink) ↓ Content of inode 99's data: "/path/to/original" ↓ Kernel: resolve "/path/to/original" → inode 42 → actual data Delete original → "shortcut" still exists but points to nothing (ENOENT)
+```text
+Hard Link:
+──────────
+  Directory A:              Directory B:
+  "file.txt" → inode 42    "backup.txt" → inode 42
+                     ↓
+              ┌────────────┐
+              │ Inode 42    │  i_links_count = 2
+              │ size, perms │  Same content, same metadata
+              │ block ptrs  │
+              └────────────┘
+  Delete "file.txt" → i_links_count = 1, data NOT freed
+  Delete "backup.txt" → i_links_count = 0, data freed
+
+
+Symbolic Link:
+──────────────
+  "shortcut" → inode 99 (type: symlink)
+                 ↓
+  Content of inode 99's data: "/path/to/original"
+                                ↓
+  Kernel: resolve "/path/to/original" → inode 42 → actual data
+
+  Delete original → "shortcut" still exists but points to nothing (ENOENT)
+```
 
 ```
 # Create hard link
@@ -936,7 +1458,28 @@ On native UNIX filesystems, talk about the 12-bit permissions block. Sticky bits
 
 #### Answer
 
-The 12-bit Permission Field: ════════════════════════════ Bit layout (octal representation): ┌───┬───┬───┬───┐ │ S │ U │ G │ O │ │sst│rwx│rwx│rwx│ └───┴───┴───┴───┘ Special bits (S): 4 = setuid (s in user execute) 2 = setgid (s in group execute) 1 = sticky (t in other execute) Example: 4755 = -rwsr-xr-x (setuid + rwx for owner, rx for group/other) Permission Check Order (FIRST match wins): 1. Are you the owner? → Use owner bits (U) 2. Are you in the group? → Use group bits (G) ← STOPS HERE 3. Otherwise → Use other bits (O)
+```text
+The 12-bit Permission Field:
+════════════════════════════
+
+  Bit layout (octal representation):
+  ┌───┬───┬───┬───┐
+  │ S │ U │ G │ O │
+  │sst│rwx│rwx│rwx│
+  └───┴───┴───┴───┘
+
+  Special bits (S):
+    4 = setuid (s in user execute)
+    2 = setgid (s in group execute)
+    1 = sticky (t in other execute)
+
+  Example: 4755 = -rwsr-xr-x (setuid + rwx for owner, rx for group/other)
+
+Permission Check Order (FIRST match wins):
+  1. Are you the owner? → Use owner bits (U)
+  2. Are you in the group? → Use group bits (G)  ← STOPS HERE
+  3. Otherwise → Use other bits (O)
+```
 
 #### The 0707 Trick Question
 
@@ -1121,7 +1664,27 @@ done
 
 #### Kernel Perspective
 
-Process File Descriptor Table (kernel) ═══════════════════════════════════════ task\_struct └── files (struct files\_struct) └── fdt (struct fdtable) └── fd\[\] (array of struct file \*) \[0\] → struct file { f\_path, f\_pos, f\_op, f\_mode } \[1\] → struct file { ... } \[2\] → struct file { ... } \[3\] → struct file { f\_path → /home/user/data.txt } struct file: f\_path → (vfsmount, dentry) → full path f\_pos → current read/write offset f\_op → file\_operations (read, write, mmap, ...) f\_mode → FMODE\_READ | FMODE\_WRITE f\_flags → O\_RDONLY, O\_NONBLOCK, etc. f\_count → reference count (fork shares, close decrements)
+```text
+Process File Descriptor Table (kernel)
+═══════════════════════════════════════
+
+task_struct
+  └── files (struct files_struct)
+        └── fdt (struct fdtable)
+              └── fd[] (array of struct file *)
+                    [0] → struct file { f_path, f_pos, f_op, f_mode }
+                    [1] → struct file { ... }
+                    [2] → struct file { ... }
+                    [3] → struct file { f_path → /home/user/data.txt }
+
+struct file:
+  f_path    → (vfsmount, dentry) → full path
+  f_pos     → current read/write offset
+  f_op      → file_operations (read, write, mmap, ...)
+  f_mode    → FMODE_READ | FMODE_WRITE
+  f_flags   → O_RDONLY, O_NONBLOCK, etc.
+  f_count   → reference count (fork shares, close decrements)
+```
 
 ## Containers & VMs 2 Questions
 
@@ -1146,7 +1709,46 @@ Can we talk about containers? What is a container and how is it different from a
 | **Security** | Shared kernel = larger attack surface | Strong isolation (separate kernels) |
 | **Use case** | Microservices, CI/CD, dev environments | Multi-tenant, different OS, strong isolation |
 
-Virtual Machine Architecture: ═════════════════════════════ ┌──────────┐ ┌──────────┐ ┌──────────┐ │ App A │ │ App B │ │ App C │ ├──────────┤ ├──────────┤ ├──────────┤ │ Bins/Libs │ │ Bins/Libs │ │ Bins/Libs │ ├──────────┤ ├──────────┤ ├──────────┤ │ Guest OS │ │ Guest OS │ │ Guest OS │ ← Full kernel each! └────┬─────┘ └────┬─────┘ └────┬─────┘ └────────────┼────────────┘ ┌───────┴───────┐ │ Hypervisor │ (KVM, Xen, VMware) ├───────────────┤ │ Host OS │ ├───────────────┤ │ Hardware │ └───────────────┘ Container Architecture: ═══════════════════════ ┌──────────┐ ┌──────────┐ ┌──────────┐ │ App A │ │ App B │ │ App C │ ├──────────┤ ├──────────┤ ├──────────┤ │ Bins/Libs │ │ Bins/Libs │ │ Bins/Libs │ └────┬─────┘ └────┬─────┘ └────┬─────┘ │ namespaces │ cgroups │ └────────────┼────────────┘ ┌───────┴───────┐ │ Container │ (Docker, containerd, CRI-O) │ Runtime │ ├───────────────┤ │ Shared Kernel │ ← ONE kernel for all! ├───────────────┤ │ Hardware │ └───────────────┘
+```text
+Virtual Machine Architecture:
+═════════════════════════════
+
+┌──────────┐ ┌──────────┐ ┌──────────┐
+│   App A   │ │   App B   │ │   App C   │
+├──────────┤ ├──────────┤ ├──────────┤
+│ Bins/Libs │ │ Bins/Libs │ │ Bins/Libs │
+├──────────┤ ├──────────┤ ├──────────┤
+│ Guest OS  │ │ Guest OS  │ │ Guest OS  │  ← Full kernel each!
+└────┬─────┘ └────┬─────┘ └────┬─────┘
+     └────────────┼────────────┘
+          ┌───────┴───────┐
+          │  Hypervisor    │  (KVM, Xen, VMware)
+          ├───────────────┤
+          │   Host OS      │
+          ├───────────────┤
+          │   Hardware     │
+          └───────────────┘
+
+
+Container Architecture:
+═══════════════════════
+
+┌──────────┐ ┌──────────┐ ┌──────────┐
+│   App A   │ │   App B   │ │   App C   │
+├──────────┤ ├──────────┤ ├──────────┤
+│ Bins/Libs │ │ Bins/Libs │ │ Bins/Libs │
+└────┬─────┘ └────┬─────┘ └────┬─────┘
+     │ namespaces  │  cgroups   │
+     └────────────┼────────────┘
+          ┌───────┴───────┐
+          │ Container      │  (Docker, containerd, CRI-O)
+          │ Runtime        │
+          ├───────────────┤
+          │ Shared Kernel  │  ← ONE kernel for all!
+          ├───────────────┤
+          │   Hardware     │
+          └───────────────┘
+```
 
 #### Common Container Implementations
 
@@ -1183,7 +1785,41 @@ Containers use two primary kernel features: **namespaces** (isolation) and **cgr
 | `cgroup` | Cgroup root | `CLONE_NEWCGROUP` | Container sees its own cgroup tree |
 | `time` | Clock | `CLONE_NEWTIME` | Introduced in 5.6 (boot/monotonic) |
 
-How Docker Creates a Container (simplified): ═════════════════════════════════════════════ dockerd receives "docker run alpine /bin/sh" │ ▼ containerd → runc (OCI runtime) │ ▼ runc calls clone() with namespace flags: clone(CLONE\_NEWNS | CLONE\_NEWPID | CLONE\_NEWNET | CLONE\_NEWUTS | CLONE\_NEWIPC | CLONE\_NEWUSER) │ ├── New PID namespace → process is PID 1 inside ├── New mount namespace → pivot\_root to container rootfs ├── New network namespace → veth pair (container ↔ bridge) ├── New UTS namespace → set hostname └── New user namespace → map UID 0 → host UID 100000 │ ▼ Set up cgroups: /sys/fs/cgroup/cpu/docker/<container-id>/cpu.max /sys/fs/cgroup/memory/docker/<container-id>/memory.max /sys/fs/cgroup/pids/docker/<container-id>/pids.max │ ▼ Apply security: seccomp filter (block dangerous syscalls) Drop capabilities (CAP\_SYS\_ADMIN, etc.) AppArmor/SELinux profile │ ▼ exec("/bin/sh") inside the container
+```text
+How Docker Creates a Container (simplified):
+═════════════════════════════════════════════
+
+  dockerd receives "docker run alpine /bin/sh"
+       │
+       ▼
+  containerd → runc (OCI runtime)
+       │
+       ▼
+  runc calls clone() with namespace flags:
+    clone(CLONE_NEWNS | CLONE_NEWPID | CLONE_NEWNET |
+          CLONE_NEWUTS | CLONE_NEWIPC | CLONE_NEWUSER)
+       │
+       ├── New PID namespace → process is PID 1 inside
+       ├── New mount namespace → pivot_root to container rootfs
+       ├── New network namespace → veth pair (container ↔ bridge)
+       ├── New UTS namespace → set hostname
+       └── New user namespace → map UID 0 → host UID 100000
+       │
+       ▼
+  Set up cgroups:
+    /sys/fs/cgroup/cpu/docker/<container-id>/cpu.max
+    /sys/fs/cgroup/memory/docker/<container-id>/memory.max
+    /sys/fs/cgroup/pids/docker/<container-id>/pids.max
+       │
+       ▼
+  Apply security:
+    seccomp filter (block dangerous syscalls)
+    Drop capabilities (CAP_SYS_ADMIN, etc.)
+    AppArmor/SELinux profile
+       │
+       ▼
+  exec("/bin/sh") inside the container
+```
 
 #### Cgroups v2 Resource Control
 
@@ -1214,7 +1850,26 @@ ls -la /proc/$$/ns/
 nsenter --target <PID> --mount --uts --ipc --net --pid
 ```
 
-Container Network Namespace (veth pair): ════════════════════════════════════════ Host Network Namespace Container Network Namespace ┌───────────────────────┐ ┌──────────────────────────┐ │ │ │ │ │ eth0 (10.0.0.50) │ │ eth0 (172.17.0.2) │ │ docker0 (172.17.0.1) │ │ ↑ │ │ │ │ │ │ │ │ ├── veth123abc ─────┼──────┼── veth (renamed eth0) │ │ ├── veth456def ─────┼──┐ │ │ │ └── ... │ │ └──────────────────────────┘ │ │ │ │ iptables NAT: │ │ Container 2 Network Namespace │ 172.17.0.0/16 → │ │ ┌──────────────────────────┐ │ MASQUERADE │ └───┼── veth (renamed eth0) │ │ │ │ eth0 (172.17.0.3) │ └───────────────────────┘ └──────────────────────────┘
+```text
+Container Network Namespace (veth pair):
+════════════════════════════════════════
+
+Host Network Namespace          Container Network Namespace
+┌───────────────────────┐      ┌──────────────────────────┐
+│                       │      │                          │
+│  eth0 (10.0.0.50)     │      │  eth0 (172.17.0.2)       │
+│  docker0 (172.17.0.1) │      │    ↑                     │
+│    │                   │      │    │                     │
+│    ├── veth123abc ─────┼──────┼── veth (renamed eth0)    │
+│    ├── veth456def ─────┼──┐   │                          │
+│    └── ...             │  │   └──────────────────────────┘
+│                       │  │
+│  iptables NAT:        │  │   Container 2 Network Namespace
+│  172.17.0.0/16 →      │  │   ┌──────────────────────────┐
+│    MASQUERADE          │  └───┼── veth (renamed eth0)    │
+│                       │      │  eth0 (172.17.0.3)       │
+└───────────────────────┘      └──────────────────────────┘
+```
 
 **WARNING:** This isn't school; don't expect candidates to reel off all eight namespaces perfectly. A good candidate might only get three or four, but if they can't get at least mount and networking, they aren't showing a good understanding of containers.
 
@@ -1305,7 +1960,25 @@ What process is PID 1? What does it do? How does it know what to start?
 
 PID 1 is the `init` process — the first (and possibly only) user process brought up by the kernel. It is responsible for configuring the system and starting daemons. It is the ultimate progenitor to (nearly) all user processes and becomes the parent for any orphaned processes.
 
-Kernel Boot → PID 1 ═══════════════════ Bootloader (GRUB) → loads vmlinuz + initrd → Kernel: start\_kernel() → ... hardware init, scheduler init, memory init ... → kernel\_init() → Try to exec, in order: 1. /sbin/init 2. /etc/init 3. /bin/init 4. /bin/sh (last resort) → This becomes PID 1 init Systems Evolution: SysV init → Upstart → systemd (most Linux distros today) (sequential) (event) (parallel, dependency graph, socket activation)
+```text
+Kernel Boot → PID 1
+═══════════════════
+
+Bootloader (GRUB) → loads vmlinuz + initrd
+  → Kernel: start_kernel()
+    → ... hardware init, scheduler init, memory init ...
+    → kernel_init()
+      → Try to exec, in order:
+        1. /sbin/init
+        2. /etc/init
+        3. /bin/init
+        4. /bin/sh (last resort)
+      → This becomes PID 1
+
+init Systems Evolution:
+  SysV init  →  Upstart  →  systemd (most Linux distros today)
+  (sequential)  (event)     (parallel, dependency graph, socket activation)
+```
 
 #### PID 1 Special Properties
 
@@ -1543,7 +2216,32 @@ ssh user@remote-host     # Agent provides the key
 
 #### How ssh-agent Works
 
-ssh-agent Architecture: ═══════════════════════ ssh-agent (daemon process) ├── Listens on Unix domain socket: $SSH\_AUTH\_SOCK ├── Holds decrypted private keys in memory └── Accepts signing requests from ssh clients Flow: 1. ssh connects to remote server 2. Remote server sends challenge 3. ssh asks ssh-agent (via socket) to sign the challenge 4. ssh-agent signs with the private key IN MEMORY 5. ssh sends signed response to server → Private key NEVER leaves the agent's memory → Private key NEVER sent over the network Agent Forwarding (ssh -A): ┌─────────┐ ┌─────────┐ ┌─────────┐ │ Laptop │───→│ Jump Box │───→│ Target │ │ (agent) │ │ (forward)│ │ (auth) │ └─────────┘ └─────────┘ └─────────┘ Agent socket forwarded: target asks jumpbox, jumpbox asks your laptop's agent to sign
+```text
+ssh-agent Architecture:
+═══════════════════════
+
+  ssh-agent (daemon process)
+  ├── Listens on Unix domain socket: $SSH_AUTH_SOCK
+  ├── Holds decrypted private keys in memory
+  └── Accepts signing requests from ssh clients
+
+  Flow:
+  1. ssh connects to remote server
+  2. Remote server sends challenge
+  3. ssh asks ssh-agent (via socket) to sign the challenge
+  4. ssh-agent signs with the private key IN MEMORY
+  5. ssh sends signed response to server
+  → Private key NEVER leaves the agent's memory
+  → Private key NEVER sent over the network
+
+  Agent Forwarding (ssh -A):
+  ┌─────────┐    ┌─────────┐    ┌─────────┐
+  │ Laptop   │───→│ Jump Box │───→│ Target   │
+  │ (agent)  │    │ (forward)│    │ (auth)   │
+  └─────────┘    └─────────┘    └─────────┘
+  Agent socket forwarded: target asks jumpbox,
+  jumpbox asks your laptop's agent to sign
+```
 
 ##### Follow-up Questions
 

@@ -1,0 +1,211 @@
+/* ===================================================================
+   Compact document layer.
+
+   The site's CSS accreted from two imported pages, each carrying its own
+   vertical rhythm - one of them a per-problem layout with 64px section
+   gaps and 2.4rem headings that ended up applying site-wide. This layer is
+   authoritative: it sets one density for every page so a migrated NALSD
+   guide, a System Design Notes problem and a GPU manual chapter all read
+   the same.
+
+   Target is a printed-reference density - tight leading, small heading
+   steps, little air around tables and figures - while keeping Docusaurus's
+   type, colour and dark mode.
+   =================================================================== */
+
+:root {
+  --doc-fs: 15px;
+  --doc-lh: 1.58;
+  --doc-gap: 0.62rem;     /* the standard gap between blocks */
+}
+
+/* ---- container: give the text more of the page ---- */
+.theme-doc-markdown { max-width: none; }
+.docItemCol_node_modules-\@docusaurus-theme-classic-lib-theme-DocItem-Layout-styles-module { max-width: none; }
+article { max-width: none; }
+
+/* ---- base text ---- */
+.markdown {
+  font-size: var(--doc-fs);
+  line-height: var(--doc-lh);
+}
+.markdown > :first-child { margin-top: 0; }
+.markdown p { margin: 0 0 var(--doc-gap); }
+
+/* ---- headings: small steps, tight to the text they introduce ---- */
+.markdown h1 {
+  font-size: 1.85rem; font-weight: 700; line-height: 1.2;
+  margin: 0 0 0.5rem; letter-spacing: -0.015em;
+}
+.markdown h2, .markdown .problem h2, .markdown .problem > header h2 {
+  font-size: 1.3rem; font-weight: 700; line-height: 1.25;
+  margin: 1.45rem 0 0.45rem; padding: 0.3rem 0 0;
+  letter-spacing: -0.01em;
+  border-top: 1px solid var(--ifm-color-emphasis-200);
+}
+.markdown h2:first-of-type { border-top: 0; padding-top: 0; margin-top: 0.6rem; }
+.markdown h3, .markdown .problem h3 {
+  font-size: 1.06rem; font-weight: 650; line-height: 1.3;
+  margin: 1rem 0 0.3rem; padding: 0; border: 0;
+}
+.markdown h4, .markdown .problem h4 {
+  font-size: 0.95rem; font-weight: 650;
+  margin: 0.8rem 0 0.25rem;
+}
+.markdown h5, .markdown h6 { font-size: 0.9rem; margin: 0.7rem 0 0.2rem; }
+
+/* ---- lists ---- */
+.markdown ul, .markdown ol, .markdown .problem ul, .markdown .problem ol {
+  margin: 0.3rem 0 var(--doc-gap);
+  padding-left: 1.3rem;
+}
+.markdown li, .markdown .problem li { margin: 0.15rem 0; }
+.markdown li > p { margin: 0 0 0.25rem; }
+.markdown li > ul, .markdown li > ol { margin: 0.15rem 0 0.3rem; }
+
+/* ---- tables: the biggest space win on reference pages ---- */
+.markdown table {
+  display: table; width: 100%; max-width: 100%;
+  border-collapse: collapse;
+  font-size: 0.86rem; line-height: 1.45;
+  margin: 0.5rem 0 var(--doc-gap);
+}
+.markdown .table-wrapper, .markdown div:has(> table) { overflow-x: auto; }
+.markdown table th, .markdown table td {
+  padding: 5px 9px; border: 1px solid var(--ifm-color-emphasis-300);
+  vertical-align: top;
+}
+.markdown table th { background: var(--ifm-color-emphasis-100); font-weight: 650; }
+.markdown table tr { border-top: 0; }
+.markdown table p { margin: 0; }
+
+/* ---- code ---- */
+.markdown pre {
+  margin: 0.45rem 0 var(--doc-gap);
+  padding: 0.65rem 0.8rem;
+  font-size: 0.8rem; line-height: 1.5;
+  border-radius: 6px;
+}
+.markdown pre code { font-size: inherit; line-height: inherit; }
+.markdown code { font-size: 0.85em; padding: 0.1em 0.35em; }
+.markdown .theme-code-block { margin-bottom: var(--doc-gap); }
+
+/* ---- figures and diagrams ---- */
+.markdown figure {
+  margin: 0.6rem 0 var(--doc-gap);
+  padding: 0.6rem;
+  border-radius: 6px;
+  box-shadow: none;
+}
+.markdown figcaption { margin-top: 0.35rem; font-size: 0.8rem; }
+.markdown .doc-diagram { margin: 0.6rem 0 var(--doc-gap); padding: 0.5rem; }
+.markdown .doc-diagram-seq { padding: 0.6rem 0.5rem; }
+
+/* ---- callouts ---- */
+.markdown .note, .markdown .trap, .markdown .warn, .markdown .tip {
+  margin: 0.55rem 0 var(--doc-gap);
+  padding: 0.55rem 0.75rem;
+  font-size: 0.9rem; line-height: 1.5;
+}
+.markdown .note p:last-child, .markdown .trap p:last-child { margin-bottom: 0; }
+.markdown .admonition { margin: 0.6rem 0 var(--doc-gap); padding: 0.6rem 0.8rem; }
+.markdown .admonition-heading { margin-bottom: 0.25rem; }
+.markdown .admonition-heading h5 { margin: 0; font-size: 0.85rem; }
+.markdown .admonition-content > :last-child { margin-bottom: 0; }
+
+/* ---- the imported per-problem layout: strip its page-level spacing ---- */
+.markdown .problem {
+  margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 0;
+}
+.markdown .problem > header { margin-bottom: 0.6rem; }
+.markdown .board { gap: 0.7rem; max-width: none; margin: 0.4rem 0 var(--doc-gap); }
+.markdown .board > div { padding: 0.6rem 0.8rem; }
+.markdown .board h4 { margin: 0 0 0.3rem; font-size: 0.72rem; }
+.markdown .board ol { margin: 0; padding-left: 1.1rem; font-size: 0.88rem; }
+.markdown .cards { gap: 0.6rem; margin: 0.4rem 0 var(--doc-gap); }
+
+/* ---- horizontal rules and blockquotes ---- */
+.markdown hr { margin: 1rem 0; border: 0; border-top: 1px solid var(--ifm-color-emphasis-200); }
+.markdown blockquote {
+  margin: 0.5rem 0 var(--doc-gap); padding: 0.4rem 0.85rem;
+  font-size: 0.93rem;
+}
+
+/* ---- details / collapsibles ---- */
+.markdown details { margin: 0.5rem 0 var(--doc-gap); padding: 0.5rem 0.75rem; }
+.markdown details > summary { margin-bottom: 0.3rem; }
+
+/* ---- sidebar and TOC: match the tighter density ---- */
+.menu__list .menu__list { margin-top: 0; }
+.menu__link { padding: 0.3rem 0.75rem; font-size: 0.855rem; line-height: 1.35; }
+.menu__list-item { margin-top: 0.1rem; }
+.table-of-contents { font-size: 0.8rem; }
+.table-of-contents__link { padding: 0.15rem 0; }
+.table-of-contents li { margin: 0.1rem 0; }
+
+/* ---- page chrome ---- */
+.theme-doc-breadcrumbs { margin-bottom: 0.5rem !important; font-size: 0.8rem; }
+.pagination-nav { margin-top: 1.2rem; }
+.theme-doc-footer { margin-top: 1rem; padding-top: 0.6rem; }
+.theme-doc-version-badge { margin-bottom: 0.5rem; }
+
+@media (max-width: 996px) {
+  :root { --doc-fs: 14.5px; }
+  .markdown table { font-size: 0.82rem; }
+}
+
+/* ===================================================================
+   Code blocks: dark surface with syntax colour in both themes.
+   Prism is set to dracula for light and dark alike; these rules make the
+   surrounding chrome (title bar, line numbers, inline copy button) match
+   so a light-mode page does not show a dark block in a light frame.
+   =================================================================== */
+:root {
+  --code-surface: #282a36;
+  --code-surface-2: #21222c;
+  --code-ink: #f8f8f2;
+  --code-border: #3a3d4d;
+}
+.markdown pre,
+.theme-code-block pre,
+div[class*="codeBlockContainer"] {
+  background: var(--code-surface) !important;
+  color: var(--code-ink);
+  border: 1px solid var(--code-border);
+}
+div[class*="codeBlockTitle"] {
+  background: var(--code-surface-2) !important;
+  color: var(--code-ink);
+  border-bottom: 1px solid var(--code-border);
+  font-size: 0.78rem;
+  padding: 0.35rem 0.8rem;
+}
+div[class*="codeBlockContainer"] { box-shadow: none; border-radius: 6px; }
+.markdown pre code { color: var(--code-ink); background: none; }
+span[class*="codeLine"]:hover { background: rgba(255, 255, 255, 0.05); }
+button[class*="copyButton"] {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: var(--code-ink) !important;
+  border: 1px solid var(--code-border);
+}
+
+/* Raw <pre> from the imported pages - those never became Prism blocks,
+   so they need the same treatment explicitly. */
+.markdown pre:not([class]),
+.markdown figure pre,
+.markdown .problem pre {
+  background: var(--code-surface);
+  color: var(--code-ink);
+  border: 1px solid var(--code-border);
+  border-radius: 6px;
+  padding: 0.65rem 0.8rem;
+  overflow-x: auto;
+}
+.markdown pre:not([class]) code { color: var(--code-ink); }
+
+/* Inline code stays light so it does not fight the prose. */
+.markdown :not(pre) > code {
+  background: var(--ifm-color-emphasis-100);
+  border: 1px solid var(--ifm-color-emphasis-200);
+  color: var(--ifm-color-emphasis-900);
+}

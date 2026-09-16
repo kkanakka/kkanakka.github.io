@@ -22,13 +22,80 @@ Every step from keystroke to rendered page, with DNS, BGP, ECMP, GLB, IPVS, ATS,
 
 [ADNS — laptop needs an IP](#phase-a) [BDNS query travels to resolver](#phase-b) [CResolver walks the hierarchy](#phase-c) [DTCP SYN leaves the laptop](#phase-d) [EBGP routes across ASes](#phase-e) [FInside the POP: ECMP → IPVS](#phase-f) [GATS accepts, TLS handshake](#phase-g) [HATS: cache or origin?](#phase-h) [IL7 LB → app → fanout](#phase-i) [JResponse flows back](#phase-j) [KBrowser parses & renders](#phase-k) [LDeep dive: where IS the GLB?](#phase-l) [★Summary & glossary](#summary)
 
-╔══════════════════════════════════════════════════════════════════════════════╗ ║ THE WHOLE JOURNEY IN ONE PICTURE ║ ╚══════════════════════════════════════════════════════════════════════════════╝ \[Laptop\] │ │ 1\. DNS lookup ▼ \[Home Router\] ──► \[ISP\] ──► \[ISP Recursive Resolver 75.75.75.75\] │ │ │ │ walks root → .com → Dynect │ ▼ │ linkedin.com = 13.107.42.14 │ │ ◄────────────────────────────────────┘ │ │ 2\. TCP SYN to 13.107.42.14 ▼ \[Home Router\] ──► \[Comcast AS7922\] ──► \[Level3 AS3356\] ──► \[LinkedIn AS14413 Edge\] │ ────────── each hop: BGP + ARP + Ethernet rewrite ────────── ▼ \[POP Edge Router\] │ │ ECMP hash ┌─────────────────────────────────┤ ▼ ▼ \[GLB/IPVS-1\] \[GLB/IPVS-2\] \[GLB/IPVS-3\] \[GLB/IPVS-4\] (all announce VIP 13.107.42.14 via iBGP) │ │ consistent hash → backend ▼ \[ATS node 7\] ← TLS termination + caching │ │ cache miss → origin ▼ \[Internal L7 LB\] │ ▼ \[App Server: feed-service\] │ (fans out to member-graph, ranking, activity, profile)
+```text
+╔══════════════════════════════════════════════════════════════════════════════╗
+║               THE WHOLE JOURNEY IN ONE PICTURE                             ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+  [Laptop]
+     │
+     │ 1. DNS lookup
+     ▼
+  [Home Router] ──► [ISP] ──► [ISP Recursive Resolver 75.75.75.75]
+     │                                    │
+     │                                    │ walks root → .com → Dynect
+     │                                    ▼
+     │                             linkedin.com = 13.107.42.14
+     │                                    │
+     ◄────────────────────────────────────┘
+     │
+     │ 2. TCP SYN to 13.107.42.14
+     ▼
+  [Home Router] ──► [Comcast AS7922] ──► [Level3 AS3356] ──► [LinkedIn AS14413 Edge]
+                                                                              │
+                    ────────── each hop: BGP + ARP + Ethernet rewrite ──────────
+                                                                              ▼
+                                                                 [POP Edge Router]
+                                                                              │
+                                                                              │ ECMP hash
+                                            ┌─────────────────────────────────┤
+                                            ▼                                 ▼
+                                      [GLB/IPVS-1]  [GLB/IPVS-2]  [GLB/IPVS-3]  [GLB/IPVS-4]
+                                           (all announce VIP 13.107.42.14 via iBGP)
+                                            │
+                                            │ consistent hash → backend
+                                            ▼
+                                      [ATS node 7]  ← TLS termination + caching
+                                            │
+                                            │ cache miss → origin
+                                            ▼
+                                      [Internal L7 LB]
+                                            │
+                                            ▼
+                                      [App Server: feed-service]
+                                            │
+                                      (fans out to member-graph,
+                                       ranking, activity, profile)
+```
 
 <a id="phase-a"></a>
 
 🔍 PHASE A DNS — laptop needs an IP for linkedin.com
 
-Step 1: Browser calls getaddrinfo("linkedin.com") → checks browser cache → MISS → checks OS cache → MISS Step 2: OS reads /etc/nsswitch.conf → "hosts: files dns" → checks /etc/hosts → not found → falls through to DNS Step 3: OS reads /etc/resolv.conf → nameserver = 75.75.75.75 (populated by DHCP when laptop joined the Wi-Fi) Step 4: OS builds DNS query: UDP dst port 53, DNS "linkedin.com A?" IP dst = 75.75.75.75 src = 192.168.1.42 Step 5: Routing table says: 75.75.75.75 not local → use default gateway 192.168.1.1 → ARP cache for 192.168.1.1 → HIT → MAC aa:bb:cc:11:22:33 Step 6: Build Ethernet frame: Eth dst = aa:bb:cc:11:22:33 src = 11:22:33:44:55:66 → hand to NIC → WiFi transmits
+```text
+Step 1:  Browser calls getaddrinfo("linkedin.com")
+         → checks browser cache → MISS
+         → checks OS cache → MISS
+
+Step 2:  OS reads /etc/nsswitch.conf → "hosts: files dns"
+         → checks /etc/hosts → not found
+         → falls through to DNS
+
+Step 3:  OS reads /etc/resolv.conf → nameserver = 75.75.75.75
+         (populated by DHCP when laptop joined the Wi-Fi)
+
+Step 4:  OS builds DNS query:
+            UDP dst port 53, DNS "linkedin.com A?"
+            IP dst = 75.75.75.75  src = 192.168.1.42
+
+Step 5:  Routing table says: 75.75.75.75 not local
+         → use default gateway 192.168.1.1
+         → ARP cache for 192.168.1.1 → HIT → MAC aa:bb:cc:11:22:33
+
+Step 6:  Build Ethernet frame:
+            Eth dst = aa:bb:cc:11:22:33  src = 11:22:33:44:55:66
+         → hand to NIC → WiFi transmits
+```
 
 ▼
 
@@ -36,7 +103,20 @@ Step 1: Browser calls getaddrinfo("linkedin.com") → checks browser cache → M
 
 📡 PHASE B DNS query travels to resolver
 
-Step 7: Home router receives frame → strips Eth header, reads IP dst = 75.75.75.75 → performs NAT: src IP 192.168.1.42 → 73.15.92.6 (public) → ARP for ISP gateway 68.85.4.1 → MAC ff:ee:dd:99:88:77 → rewrites Ethernet → forwards out WAN port Step 8: Comcast ISP gateway (AS7922) receives → routes internally (OSPF/IS-IS) toward resolver cluster → multiple internal Ethernet rewrites Step 9: Recursive resolver at 75.75.75.75 receives query → cache MISS → begins iterative lookup
+```text
+Step 7:  Home router receives frame
+         → strips Eth header, reads IP dst = 75.75.75.75
+         → performs NAT: src IP 192.168.1.42 → 73.15.92.6 (public)
+         → ARP for ISP gateway 68.85.4.1 → MAC ff:ee:dd:99:88:77
+         → rewrites Ethernet → forwards out WAN port
+
+Step 8:  Comcast ISP gateway (AS7922) receives
+         → routes internally (OSPF/IS-IS) toward resolver cluster
+         → multiple internal Ethernet rewrites
+
+Step 9:  Recursive resolver at 75.75.75.75 receives query
+         → cache MISS → begins iterative lookup
+```
 
 ▼
 
@@ -44,7 +124,24 @@ Step 7: Home router receives frame → strips Eth header, reads IP dst = 75.75.7
 
 🌳 PHASE C Recursive resolver walks the DNS hierarchy
 
-Step 10: Resolver → ROOT nameserver (198.41.0.4, a.root-servers.net) Q: "linkedin.com A?" A: "don't know — for .com, ask gTLD servers at 192.5.6.30..." Step 11: Resolver → .com TLD nameserver (192.5.6.30, Verisign) Q: "linkedin.com A?" A: "ask ns1.p43.dynect.net at 208.78.70.43..." Step 12: Resolver → LinkedIn authoritative NS (208.78.70.43, Oracle Dyn) Q: "linkedin.com A?" GeoDNS logic: resolver IP 75.75.75.75 = US East → Ashburn POP A: "linkedin.com. 300 IN A 13.107.42.14" Step 13: Resolver caches answer (TTL 300s) → DNS reply travels back → home router → laptop → Browser now has: linkedin.com = 13.107.42.14
+```text
+Step 10: Resolver → ROOT nameserver (198.41.0.4, a.root-servers.net)
+          Q: "linkedin.com A?"
+          A: "don't know — for .com, ask gTLD servers at 192.5.6.30..."
+
+Step 11: Resolver → .com TLD nameserver (192.5.6.30, Verisign)
+          Q: "linkedin.com A?"
+          A: "ask ns1.p43.dynect.net at 208.78.70.43..."
+
+Step 12: Resolver → LinkedIn authoritative NS (208.78.70.43, Oracle Dyn)
+          Q: "linkedin.com A?"
+          GeoDNS logic: resolver IP 75.75.75.75 = US East → Ashburn POP
+          A: "linkedin.com. 300 IN A 13.107.42.14"
+
+Step 13: Resolver caches answer (TTL 300s)
+          → DNS reply travels back → home router → laptop
+          → Browser now has: linkedin.com = 13.107.42.14
+```
 
 ▼
 
@@ -52,7 +149,18 @@ Step 10: Resolver → ROOT nameserver (198.41.0.4, a.root-servers.net) Q: "linke
 
 🤝 PHASE D TCP SYN leaves the laptop toward LinkedIn
 
-Step 14: Laptop builds TCP SYN IP dst = 13.107.42.14 src = 192.168.1.42 TCP dst port 443, src port 51234, flags = SYN Step 15: Routing table: dst not local → default gateway 192.168.1.1 ARP cache HIT → MAC aa:bb:cc:11:22:33 Ethernet frame built → sent over WiFi Step 16: Home router → NAT src to 73.15.92.6 → ARP for ISP gateway → Eth rewritten → forwards
+```text
+Step 14: Laptop builds TCP SYN
+          IP dst = 13.107.42.14  src = 192.168.1.42
+          TCP dst port 443, src port 51234, flags = SYN
+
+Step 15: Routing table: dst not local → default gateway 192.168.1.1
+          ARP cache HIT → MAC aa:bb:cc:11:22:33
+          Ethernet frame built → sent over WiFi
+
+Step 16: Home router → NAT src to 73.15.92.6
+          → ARP for ISP gateway → Eth rewritten → forwards
+```
 
 ▼
 
@@ -60,7 +168,22 @@ Step 14: Laptop builds TCP SYN IP dst = 13.107.42.14 src = 192.168.1.42 TCP dst 
 
 🗺️ PHASE E BGP routes the packet across ASes to LinkedIn's POP
 
-Step 17: Comcast ISP gateway (AS7922) BGP table: 13.107.42.0/24 → next-hop 4.69.201.1 (Level3) ARP → MAC 00:11:22:aa:bb:cc → Eth rewritten → forwards Step 18: Level3 edge router (AS3356) BGP: 13.107.42.0/24 → next-hop 129.250.2.1 (Level3 core) ARP → MAC 44:55:66:dd:ee:ff → Eth rewritten → forwards Step 19: Level3 core router BGP: learned 13.107.42.0/24 from LinkedIn peering at Equinix next-hop = 52.93.128.1 (LinkedIn edge) ARP → MAC aa:11:bb:22:cc:33 → Eth rewritten → forwards Step 20: Packet arrives at LinkedIn edge router (AS14413, Ashburn POP)
+```text
+Step 17: Comcast ISP gateway (AS7922)
+          BGP table: 13.107.42.0/24 → next-hop 4.69.201.1 (Level3)
+          ARP → MAC 00:11:22:aa:bb:cc  → Eth rewritten → forwards
+
+Step 18: Level3 edge router (AS3356)
+          BGP: 13.107.42.0/24 → next-hop 129.250.2.1 (Level3 core)
+          ARP → MAC 44:55:66:dd:ee:ff  → Eth rewritten → forwards
+
+Step 19: Level3 core router
+          BGP: learned 13.107.42.0/24 from LinkedIn peering at Equinix
+          next-hop = 52.93.128.1 (LinkedIn edge)
+          ARP → MAC aa:11:bb:22:cc:33  → Eth rewritten → forwards
+
+Step 20: Packet arrives at LinkedIn edge router (AS14413, Ashburn POP)
+```
 
 ▼
 
@@ -68,9 +191,48 @@ Step 17: Comcast ISP gateway (AS7922) BGP table: 13.107.42.0/24 → next-hop 4.6
 
 ⚖️ PHASE F Inside the POP: Edge → ECMP → GLB/IPVS → Backend
 
-══════════════════════════════════════════════════════════════════════════ Key concept: the VIP 13.107.42.14 is announced at THREE nested scopes. ══════════════════════════════════════════════════════════════════════════ eBGP (internet-wide) → "AS14413 owns 13.107.42.0/24" iBGP (edge → ToR) → "ToR aggregates /32s from IPVS pool" iBGP (IPVS → ToR) → "I (each IPVS box) have 13.107.42.14/32" Same IP. Different broadcast scope at each layer.
+```text
+══════════════════════════════════════════════════════════════════════════
+  Key concept: the VIP 13.107.42.14 is announced at THREE nested scopes.
+══════════════════════════════════════════════════════════════════════════
 
-┌────────────────────────────────────────────────────────────────┐ │ LINKEDIN POP (Ashburn) │ └────────────────────────────────────────────────────────────────┘ \[Edge Router AS14413\] │ dst = 13.107.42.14 ▼ \[ToR Router\] │ │ Routing table entry: │ 13.107.42.14/32 → ECMP \[ │ IPVS-1 (10.10.1.1), │ IPVS-2 (10.10.1.2), │ IPVS-3 (10.10.1.3), │ IPVS-4 (10.10.1.4) \] │ │ ECMP hash(5-tuple) → IPVS-3 │ ARP for 10.10.1.3 → MAC dd:ee:ff:11:22:33 │ Rewrite Eth dst MAC (IP unchanged!) ▼ ┌────────────┬──────────────────┬────────────┬────────────┐ │ │ │ │ │ \[IPVS-1\] \[IPVS-2\] \[IPVS-3\] ◄── \[IPVS-4\] 10.10.1.1 10.10.1.2 10.10.1.3 10.10.1.4 lo: VIP lo: VIP lo: VIP ✓ lo: VIP │ │ │ │ └─ BIRD ─────┴─ iBGP session ───┴────────────┘ announcing 13.107.42.14/32 to ToR
+  eBGP  (internet-wide)   → "AS14413 owns 13.107.42.0/24"
+  iBGP  (edge → ToR)      → "ToR aggregates /32s from IPVS pool"
+  iBGP  (IPVS → ToR)      → "I (each IPVS box) have 13.107.42.14/32"
+
+  Same IP. Different broadcast scope at each layer.
+```
+
+```text
+┌────────────────────────────────────────────────────────────────┐
+│                    LINKEDIN POP (Ashburn)                        │
+└────────────────────────────────────────────────────────────────┘
+
+                  [Edge Router AS14413]
+                            │  dst = 13.107.42.14
+                            ▼
+                   [ToR Router]
+                            │
+                            │  Routing table entry:
+                            │    13.107.42.14/32 → ECMP [
+                            │       IPVS-1 (10.10.1.1),
+                            │       IPVS-2 (10.10.1.2),
+                            │       IPVS-3 (10.10.1.3),
+                            │       IPVS-4 (10.10.1.4) ]
+                            │
+                            │  ECMP hash(5-tuple) → IPVS-3
+                            │  ARP for 10.10.1.3 → MAC dd:ee:ff:11:22:33
+                            │  Rewrite Eth dst MAC (IP unchanged!)
+                            ▼
+   ┌────────────┬──────────────────┬────────────┬────────────┐
+   │            │                  │            │            │
+[IPVS-1]    [IPVS-2]         [IPVS-3] ◄──     [IPVS-4]
+10.10.1.1   10.10.1.2        10.10.1.3        10.10.1.4
+lo: VIP     lo: VIP          lo: VIP ✓         lo: VIP
+  │            │                  │            │
+  └─ BIRD ─────┴─ iBGP session ───┴────────────┘
+             announcing 13.107.42.14/32 to ToR
+```
 
 Step 21: Edge router forwards to ToR (IP header unchanged: dst still = 13.107.42.14) Step 22: ToR looks up 13.107.42.14/32 → has 4 ECMP paths hash(73.15.92.6, 51234, 13.107.42.14, 443, TCP) mod 4 = 2 → pick IPVS-3 Step 23: ToR ARPs for IPVS-3's real IP 10.10.1.3 → gets MAC dd:ee:ff:11:22:33 → rewrites only the Ethernet destination MAC → IP header stays as dst = 13.107.42.14 → forwards frame to IPVS-3 Step 24: IPVS-3 receives the frame Eth dst = dd:ee:ff:11:22:33 ✓ (that's my MAC, accept) IP dst = 13.107.42.14 ✓ (VIP is on my loopback, accept) → IPVS connection tracking table lookup: new flow? → run scheduler (mh = Maglev consistent hash) → pick backend from pool → cache the mapping known flow? → reuse previously chosen backend → Scheduler chooses 10.0.0.42 (ATS node 7) Step 25: IPVS forwards to backend in DR mode (Direct Routing) → ARP for 10.0.0.42 → MAC 66:77:88:aa:bb:cc → rewrites ONLY Ethernet dst MAC to ATS node 7 → IP header COMPLETELY UNCHANGED (dst = 13.107.42.14) → sends frame over rack network \[IPVS real IP 10.10.1.3 never appears in any packet header — it exists only so ToR can ARP for it\]
 
@@ -88,7 +250,21 @@ Step 26: ATS node 7 (10.0.0.42) receives frame → Eth dst = my MAC ✓ → IP d
 
 🎯 PHASE H ATS handles request: cache or origin?
 
-Step 31: ATS decrypts TLS → plaintext HTTP request visible (inside ATS only) Reads: Host=linkedin.com, path=/feed/, Cookie=user session Step 32: ATS cache lookup for "/feed/": → Cookie present, user-specific → NOT cacheable → Forward to origin application tier Step 33: Internal service discovery: feed-service VIP = 10.5.0.1 (yet another VIP! announced inside DC by internal LBs via iBGP) Step 34: ATS → internal L7 LB at 10.5.0.1 → ToR switch → ARP → Ethernet rewritten → forwarded
+```text
+Step 31: ATS decrypts TLS → plaintext HTTP request visible (inside ATS only)
+          Reads: Host=linkedin.com, path=/feed/, Cookie=user session
+
+Step 32: ATS cache lookup for "/feed/":
+          → Cookie present, user-specific → NOT cacheable
+          → Forward to origin application tier
+
+Step 33: Internal service discovery:
+          feed-service VIP = 10.5.0.1
+          (yet another VIP! announced inside DC by internal LBs via iBGP)
+
+Step 34: ATS → internal L7 LB at 10.5.0.1
+          → ToR switch → ARP → Ethernet rewritten → forwarded
+```
 
 ▼
 
@@ -104,7 +280,37 @@ Step 35: Internal L7 LB (Envoy / Rest.li router) → inspects HTTP path + header
 
 📤 PHASE J Response flows back to laptop
 
-Step 39: Response: app server → internal L7 LB → ATS node 7 (Ethernet rewritten at each DC hop) Step 40: ATS node 7 → may re-encode (brotli), inject headers (X-Li-Pop) → encrypts with TLS session key → sends back via existing TCP connection → IP src = 13.107.42.14 dst = 73.15.92.6 → DSR: reply goes directly to client, bypassing IPVS Step 41: ATS → edge router BGP: best path to 73.15.92.0/24 → via Level3 → Eth rewrite → forward Step 42: Level3 core → Level3 edge → Comcast peering → each hop: BGP lookup + ARP + Eth rewrite Step 43: Comcast backbone → neighborhood head-end → home router's WAN Step 44: Home router → NAT table: 73.15.92.6:51234 ↔ 192.168.1.42:51234 → rewrite dst IP back to laptop → ARP → Eth rewrite → WiFi → laptop Step 45: Laptop NIC receives → kernel TCP reassembly → TLS decrypts payload → HTTP/2 layer reconstructs response → hands HTML body to browser
+```text
+Step 39: Response: app server → internal L7 LB → ATS node 7
+          (Ethernet rewritten at each DC hop)
+
+Step 40: ATS node 7
+          → may re-encode (brotli), inject headers (X-Li-Pop)
+          → encrypts with TLS session key
+          → sends back via existing TCP connection
+          → IP src = 13.107.42.14  dst = 73.15.92.6
+          → DSR: reply goes directly to client, bypassing IPVS
+
+Step 41: ATS → edge router
+          BGP: best path to 73.15.92.0/24 → via Level3
+          → Eth rewrite → forward
+
+Step 42: Level3 core → Level3 edge → Comcast peering
+          → each hop: BGP lookup + ARP + Eth rewrite
+
+Step 43: Comcast backbone → neighborhood head-end → home router's WAN
+
+Step 44: Home router
+          → NAT table: 73.15.92.6:51234 ↔ 192.168.1.42:51234
+          → rewrite dst IP back to laptop
+          → ARP → Eth rewrite → WiFi → laptop
+
+Step 45: Laptop NIC receives
+          → kernel TCP reassembly
+          → TLS decrypts payload
+          → HTTP/2 layer reconstructs response
+          → hands HTML body to browser
+```
 
 ▼
 
@@ -112,7 +318,26 @@ Step 39: Response: app server → internal L7 LB → ATS node 7 (Ethernet rewrit
 
 🎨 PHASE K Browser parses, renders, fetches assets
 
-Step 46: Browser parses HTML → encounters <link href>, <script src>, <img src> → for each asset URL, starts a new request: • Same origin → reuses existing TCP+TLS connection (HTTP/2 multiplexes many requests over one connection) • Different origin (static.licdn.com) → restart from PHASE A Step 47: Static assets (CSS, JS, images) → almost all cache HIT at ATS edge → returned in <10ms → never reach origin app servers Step 48: Browser executes JS → XHR/fetch calls to /voyager/api/... → each repeats PHASE G-I over the same TCP+TLS connection Step 49: Browser paints pixels on screen Step 50: ✨ User sees LinkedIn feed ✨ Total time: ~200-800ms to first byte, ~1-3s fully interactive
+```text
+Step 46: Browser parses HTML
+          → encounters <link href>, <script src>, <img src>
+          → for each asset URL, starts a new request:
+              • Same origin → reuses existing TCP+TLS connection
+                (HTTP/2 multiplexes many requests over one connection)
+              • Different origin (static.licdn.com) → restart from PHASE A
+
+Step 47: Static assets (CSS, JS, images)
+          → almost all cache HIT at ATS edge → returned in <10ms
+          → never reach origin app servers
+
+Step 48: Browser executes JS → XHR/fetch calls to /voyager/api/...
+          → each repeats PHASE G-I over the same TCP+TLS connection
+
+Step 49: Browser paints pixels on screen
+
+Step 50: ✨ User sees LinkedIn feed ✨
+          Total time: ~200-800ms to first byte, ~1-3s fully interactive
+```
 
 ▼
 
@@ -128,7 +353,14 @@ There are two main techniques, and most large companies use a hybrid of both.
 
 Remember 13.107.42.14? LinkedIn doesn't announce it from *one* POP. They announce it from **every** POP in the world, simultaneously, via eBGP to their peers and transit providers.
 
-LinkedIn Ashburn POP ──> announces 13.107.42.0/24 to US East ISPs LinkedIn San Jose POP ──> announces 13.107.42.0/24 to US West ISPs LinkedIn Dublin POP ──> announces 13.107.42.0/24 to European ISPs LinkedIn Singapore POP ──> announces 13.107.42.0/24 to APAC ISPs LinkedIn Mumbai POP ──> announces 13.107.42.0/24 to Indian ISPs ... more POPs ...
+```text
+  LinkedIn Ashburn POP       ──> announces 13.107.42.0/24 to US East ISPs
+  LinkedIn San Jose POP      ──> announces 13.107.42.0/24 to US West ISPs
+  LinkedIn Dublin POP        ──> announces 13.107.42.0/24 to European ISPs
+  LinkedIn Singapore POP     ──> announces 13.107.42.0/24 to APAC ISPs
+  LinkedIn Mumbai POP        ──> announces 13.107.42.0/24 to Indian ISPs
+  ... more POPs ...
+```
 
 Every POP says *"I own this prefix."* From the internet's perspective, the VIP is reachable from many directions. **BGP's best-path algorithm does the geographic routing for free.**
 
@@ -136,7 +368,19 @@ When a user in Mumbai sends a packet to 13.107.42.14: Their ISP (Reliance Jio AS
 
 The same IP, hitting different POPs, purely based on BGP topology. That's anycast.
 
-User in Mumbai ─────► nearest hop ─────► LinkedIn Mumbai POP │ ▼ (same VIP locally in that POP) User in Texas ─────► nearest hop ─────► LinkedIn Ashburn POP │ ▼ (same VIP locally in that POP)
+```text
+    User in Mumbai ─────► nearest hop ─────► LinkedIn Mumbai POP
+                                                    │
+                                                    ▼
+                                             (same VIP locally
+                                              in that POP)
+
+    User in Texas  ─────► nearest hop ─────► LinkedIn Ashburn POP
+                                                    │
+                                                    ▼
+                                             (same VIP locally
+                                              in that POP)
+```
 
 The "GLB" here is **BGP itself**. No centralized dispatcher. The protocol that routes your packet to the nearest advertisement *is* the global load balancer.
 
@@ -144,7 +388,13 @@ The "GLB" here is **BGP itself**. No centralized dispatcher. The protocol that r
 
 Not everyone uses pure anycast. The alternative (what Netflix and many CDNs use) is to return **different IPs to different users via GeoDNS**. Each POP gets its own unique unicast VIP.
 
-User in Mumbai asks: "linkedin.com A?" LinkedIn's DNS sees: resolver IP from India → returns 13.107.55.200 (Mumbai POP VIP) User in Texas asks: "linkedin.com A?" LinkedIn's DNS sees: resolver IP from US → returns 13.107.42.14 (Ashburn POP VIP)
+```text
+  User in Mumbai asks:   "linkedin.com A?"
+  LinkedIn's DNS sees:    resolver IP from India → returns 13.107.55.200  (Mumbai POP VIP)
+
+  User in Texas asks:    "linkedin.com A?"
+  LinkedIn's DNS sees:    resolver IP from US    → returns 13.107.42.14   (Ashburn POP VIP)
+```
 
 Each POP has its own unique VIP. DNS picks which VIP to return based on the resolver's location, then BGP just has to route the packet to that specific VIP (which is only announced from that one POP).
 
@@ -172,13 +422,53 @@ Two possible mechanisms, depending on the company:
 
 ▸ If using anycast (Google, Cloudflare):
 
-User (Mumbai, ISP = Jio AS55836) │ │ DNS lookup: linkedin.com → 13.107.42.14 │ (DNS resolver could be anywhere — returns the single anycast IP) │ ▼ User sends packet: dst = 13.107.42.14 │ ▼ Jio router's BGP table for 13.107.42.0/24: - Path A: AS55836 → AS8075 (Microsoft/LinkedIn Mumbai) AS\_PATH = \[8075\] ← shortest! - Path B: AS55836 → AS6453 (Tata) → AS8075 (Ashburn POP) AS\_PATH = \[6453, 8075\] - Path C: AS55836 → AS2914 (NTT) → AS8075 (Singapore POP) AS\_PATH = \[2914, 8075\] Jio picks Path A (direct peering with LinkedIn Mumbai, shortest AS\_PATH) │ ▼ Packet goes to LinkedIn Mumbai POP — never leaves India
+```text
+User (Mumbai, ISP = Jio AS55836)
+  │
+  │ DNS lookup: linkedin.com → 13.107.42.14
+  │ (DNS resolver could be anywhere — returns the single anycast IP)
+  │
+  ▼
+User sends packet: dst = 13.107.42.14
+  │
+  ▼
+Jio router's BGP table for 13.107.42.0/24:
+  - Path A: AS55836 → AS8075 (Microsoft/LinkedIn Mumbai)       AS_PATH = [8075]    ← shortest!
+  - Path B: AS55836 → AS6453 (Tata) → AS8075 (Ashburn POP)     AS_PATH = [6453, 8075]
+  - Path C: AS55836 → AS2914 (NTT)  → AS8075 (Singapore POP)   AS_PATH = [2914, 8075]
+
+Jio picks Path A (direct peering with LinkedIn Mumbai, shortest AS_PATH)
+  │
+  ▼
+Packet goes to LinkedIn Mumbai POP — never leaves India
+```
 
 The shortest AS\_PATH to the VIP happens to be the POP in Mumbai because LinkedIn peers with Indian ISPs at Mumbai IXPs. **Geographic proximity emerges from BGP topology naturally.**
 
 ▸ If using GeoDNS:
 
-User (Mumbai) │ │ DNS lookup: linkedin.com A? │ (query goes to Jio's DNS resolver, say 49.45.1.1) │ ▼ Jio resolver → LinkedIn authoritative DNS (Dynect) │ │ Dynect sees: resolver IP = 49.45.1.1 (Indian ISP) │ Dynect's geo-database: India → Mumbai POP │ Returns: linkedin.com = 13.107.55.200 (Mumbai VIP, unicast) │ ▼ User sends packet to 13.107.55.200 │ │ 13.107.55.200/24 is announced ONLY from Mumbai POP via BGP │ BGP routes to Mumbai naturally │ ▼ Packet arrives at Mumbai POP
+```text
+User (Mumbai)
+  │
+  │ DNS lookup: linkedin.com A?
+  │ (query goes to Jio's DNS resolver, say 49.45.1.1)
+  │
+  ▼
+Jio resolver → LinkedIn authoritative DNS (Dynect)
+  │
+  │ Dynect sees: resolver IP = 49.45.1.1 (Indian ISP)
+  │ Dynect's geo-database: India → Mumbai POP
+  │ Returns: linkedin.com = 13.107.55.200 (Mumbai VIP, unicast)
+  │
+  ▼
+User sends packet to 13.107.55.200
+  │
+  │ 13.107.55.200/24 is announced ONLY from Mumbai POP via BGP
+  │ BGP routes to Mumbai naturally
+  │
+  ▼
+Packet arrives at Mumbai POP
+```
 
 Both techniques end up with the same result: the packet lands at Mumbai. They just get there by different means.
 
@@ -203,7 +493,32 @@ There's no single machine deciding "this user goes to Mumbai, that user goes to 
 
 Now you can see the full picture: a thin global "fabric" routes you to a POP, and the heavy LB lifting happens locally inside that POP.
 
-┌───────────────────────────────────────────────────────────────┐ │ GLOBAL "GLB" │ │ (BGP anycast + GeoDNS + health monitoring) │ │ │ │ │ routes user to nearest POP │ │ │ │ └───────────────────────────┼───────────────────────────────────┘ │ ┌──────────────────┼──────────────────┐ ▼ ▼ ▼ ┌─────────┐ ┌─────────┐ ┌─────────┐ │ Mumbai │ │ Ashburn │ │ Dublin │ │ POP │ │ POP │ │ POP │ ├─────────┤ ├─────────┤ ├─────────┤ │ Edge rtr│ │ Edge rtr│ │ Edge rtr│ │ │ │ │ │ │ │ │ │ │ ToR │ │ ToR │ │ ToR │ │ │ │ │ │ │ │ │ │ │ IPVS×N │ │ IPVS×N │ │ IPVS×N │ ← local LB │ │ │ │ │ │ │ │ │ │ ATS×M │ │ ATS×M │ │ ATS×M │ ← L7 proxy / cache │ │ │ │ │ │ │ │ │ │ Apps │ │ Apps │ │ Apps │ └─────────┘ └─────────┘ └─────────┘
+```text
+┌───────────────────────────────────────────────────────────────┐
+│                    GLOBAL "GLB"                               │
+│       (BGP anycast + GeoDNS + health monitoring)              │
+│                           │                                   │
+│                 routes user to nearest POP                    │
+│                           │                                   │
+└───────────────────────────┼───────────────────────────────────┘
+                            │
+         ┌──────────────────┼──────────────────┐
+         ▼                  ▼                  ▼
+    ┌─────────┐        ┌─────────┐       ┌─────────┐
+    │ Mumbai  │        │ Ashburn │       │ Dublin  │
+    │  POP    │        │  POP    │       │  POP    │
+    ├─────────┤        ├─────────┤       ├─────────┤
+    │ Edge rtr│        │ Edge rtr│       │ Edge rtr│
+    │    │    │        │    │    │       │    │    │
+    │   ToR   │        │   ToR   │       │   ToR   │
+    │    │    │        │    │    │       │    │    │
+    │  IPVS×N │        │  IPVS×N │       │  IPVS×N │    ← local LB
+    │    │    │        │    │    │       │    │    │
+    │  ATS×M  │        │  ATS×M  │       │  ATS×M  │    ← L7 proxy / cache
+    │    │    │        │    │    │       │    │    │
+    │  Apps   │        │  Apps   │       │  Apps   │
+    └─────────┘        └─────────┘       └─────────┘
+```
 
 At the **global level**, there's no single LB — it's BGP + DNS. At the **POP level**, IPVS (or Maglev / Katran / GLB-the-product) handles the work.
 
