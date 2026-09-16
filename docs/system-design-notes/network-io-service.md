@@ -5,6 +5,14 @@ sidebar_position: 35
 sidebar_label: "Scalable network I/O service (upload / d…"
 description: "hard · high‑volume bytes · zero‑copy · backpressure · range requests · resumable"
 ---
+
+<!-- DIAGRAM:START -->
+
+## How it works
+
+<img src="/diagrams/network-io-service/sequence.svg" alt="How it works — network-io-service" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:END -->
 <header>
   
   <span class="tag">hard · high‑volume bytes · zero‑copy · backpressure · range requests · resumable</span>

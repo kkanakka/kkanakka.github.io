@@ -5,6 +5,14 @@ sidebar_position: 15
 sidebar_label: "Safeguard / classifier serving in the re…"
 description: "hard · Anthropic · tier‑0 dependency · fail‑closed · degraded modes · canaries"
 ---
+
+<!-- DIAGRAM:START -->
+
+## How it works
+
+<img src="/diagrams/infra-safeguards/sequence.svg" alt="How it works — infra-safeguards" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:END -->
 <header>
   
   <span class="tag">hard · Anthropic · tier‑0 dependency · fail‑closed · degraded modes · canaries</span>

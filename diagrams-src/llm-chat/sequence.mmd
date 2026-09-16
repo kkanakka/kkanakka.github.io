@@ -1,0 +1,20 @@
+sequenceDiagram
+    autonumber
+    participant U as User
+    participant API as Chat API
+    participant Hist as Conversation store
+    participant Inf as Inference service
+    participant GPU as GPU
+    U->>API: send a message
+    API->>Hist: append, then load the window
+    Hist-->>API: prior turns within the context budget
+    API->>Inf: prompt built from that window
+    Note over API,Inf: the model is stateless — the conversation lives in your store, not in it
+    Inf->>GPU: prefill the prompt
+    loop each token
+        GPU-->>Inf: next token
+        Inf-->>U: stream over SSE
+    end
+    Inf->>API: finished
+    API->>Hist: persist the assistant turn
+    Note over U,Inf: if the stream drops, the client resumes from the stored turn

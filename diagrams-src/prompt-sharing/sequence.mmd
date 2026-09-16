@@ -1,0 +1,18 @@
+sequenceDiagram
+    autonumber
+    participant A as Author
+    participant API as API
+    participant St as Store
+    participant V as Viewer
+    A->>API: create a prompt
+    API->>St: version 1, immutable
+    A->>API: edit
+    API->>St: version 2 — never overwrite version 1
+    Note over St: versions are immutable, so a shared link always resolves to what was shared
+    A->>API: share — link, team, or public
+    API->>St: record the visibility
+    V->>API: open the link
+    API->>St: check visibility and version
+    St-->>V: that exact version
+    V->>API: fork it
+    API->>St: new prompt, parent recorded

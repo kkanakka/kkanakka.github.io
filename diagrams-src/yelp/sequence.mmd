@@ -1,0 +1,17 @@
+sequenceDiagram
+    autonumber
+    participant U as User
+    participant API as Search API
+    participant Geo as Geospatial index
+    participant Biz as Business store
+    participant Rev as Review store
+    U->>API: businesses near me, filtered
+    API->>Geo: query the cells covering this radius
+    Note over Geo: quadtree or geohash — a bounding box, then refine by true distance
+    Geo-->>API: candidate ids
+    API->>Biz: hydrate details
+    API->>Rev: aggregate ratings, precomputed
+    Note over Rev: never average millions of reviews per request — keep a running aggregate
+    API-->>U: ranked results
+    U->>Rev: write a review
+    Rev->>Rev: update the aggregate asynchronously

@@ -1,0 +1,19 @@
+sequenceDiagram
+    autonumber
+    participant Src as Weight store
+    participant Tr as Tracker
+    participant N1 as Node A
+    participant N2 as Node B
+    participant N3 as Node C
+    Src->>Tr: publish the manifest — chunks and hashes
+    N1->>Tr: who has what?
+    Tr-->>N1: peer list
+    N1->>Src: fetch a few chunks
+    par swarm distribution
+        N1->>N2: serve the chunks it has
+        N2->>N3: forward on
+        N3->>N1: send back what N1 is missing
+    end
+    Note over N1,N3: rarest-first, so no chunk becomes the bottleneck everyone waits on
+    N1->>N1: verify each chunk hash before use
+    Note over Src: the origin serves each chunk a handful of times, not once per node

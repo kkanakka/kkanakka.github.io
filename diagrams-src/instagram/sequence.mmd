@@ -1,0 +1,21 @@
+sequenceDiagram
+    autonumber
+    participant C as Creator
+    participant API as Post API
+    participant Blob as Media store
+    participant Fan as Fan-out worker
+    participant Feed as Feed cache
+    participant F as Follower
+    C->>Blob: upload media directly
+    C->>API: create the post
+    API->>Fan: fan out to followers
+    alt ordinary account
+        Fan->>Feed: push the post id into each follower's feed
+        Note over Fan,Feed: fan-out on write — reads become a single cache lookup
+    else celebrity with millions of followers
+        Fan->>Fan: skip the push
+        Note over Fan: fan-out on write would mean millions of writes per post
+    end
+    F->>Feed: open the app
+    Feed-->>F: precomputed feed
+    F->>API: merge in the celebrities they follow, pulled at read time

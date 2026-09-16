@@ -1,0 +1,21 @@
+sequenceDiagram
+    autonumber
+    participant Fr as Frontier
+    participant Sch as Politeness scheduler
+    participant W as Fetcher
+    participant Site as Website
+    participant Ex as Parser
+    participant Seen as Seen set
+    Fr->>Sch: next URLs
+    Sch->>Sch: one queue per host, rate-limited
+    Note over Sch: politeness is per host — bursting one site gets you blocked
+    Sch->>W: a URL whose host is due
+    W->>Site: fetch, honouring robots.txt
+    Site-->>W: content
+    W->>Ex: extract links and content
+    Ex->>Seen: have we seen this URL or this content hash?
+    alt new
+        Seen->>Fr: enqueue with a priority
+    else duplicate
+        Seen-->>Ex: drop
+    end

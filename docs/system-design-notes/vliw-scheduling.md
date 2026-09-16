@@ -5,6 +5,14 @@ sidebar_position: 37
 sidebar_label: "Schedule instructions on a VLIW pipeline"
 description: "coding/compilers · list scheduling · dependency DAG · latencies · resource constraints"
 ---
+
+<!-- DIAGRAM:START -->
+
+## How it works
+
+<img src="/diagrams/vliw-scheduling/sequence.svg" alt="How it works — vliw-scheduling" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:END -->
 <header>
   
   <span class="tag">coding/compilers · list scheduling · dependency DAG · latencies · resource constraints</span>

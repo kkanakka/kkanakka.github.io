@@ -1,0 +1,17 @@
+sequenceDiagram
+    autonumber
+    participant Cl as Client
+    participant API as Metadata API
+    participant Blob as Object store
+    participant CDN as CDN
+    Cl->>Cl: chunk and hash the file
+    Cl->>API: which chunks are new?
+    API-->>Cl: only the missing hashes
+    API-->>Cl: presigned upload URLs
+    Cl->>Blob: PUT chunks directly
+    Note over Cl,Blob: bytes never pass through your application tier
+    Cl->>API: commit the version
+    Cl->>API: download a file
+    API-->>Cl: manifest plus presigned GETs
+    Cl->>CDN: fetch chunks
+    CDN-->>Cl: edge-cached

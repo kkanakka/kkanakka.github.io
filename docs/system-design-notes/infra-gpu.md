@@ -5,6 +5,14 @@ sidebar_position: 20
 sidebar_label: "GPU cluster scheduler and training check…"
 description: "hard · gang scheduling · fragmentation · async sharded checkpoints · manifest · stragglers"
 ---
+
+<!-- DIAGRAM:START -->
+
+## How it works
+
+<img src="/diagrams/infra-gpu/sequence.svg" alt="How it works — infra-gpu" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:END -->
 <header>
   
   <span class="tag">hard · gang scheduling · fragmentation · async sharded checkpoints · manifest · stragglers</span>

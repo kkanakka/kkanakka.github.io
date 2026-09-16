@@ -5,6 +5,14 @@ sidebar_position: 3
 sidebar_label: "Networking essentials, compact"
 description: "layers · TCP/UDP · HTTP · API styles · realtime · load balancing · failure handling"
 ---
+
+<!-- DIAGRAM:START -->
+
+## How it works
+
+<img src="/diagrams/networking/sequence.svg" alt="How it works — networking" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:END -->
 <header>
   
   <span class="tag">layers · TCP/UDP · HTTP · API styles · realtime · load balancing · failure handling</span>

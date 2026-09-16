@@ -5,6 +5,14 @@ sidebar_position: 10
 sidebar_label: "Yelp (local business search + reviews)"
 description: "medium · scaling reads · geospatial index · optimistic locking · \"keep it simple\" is the senior signal"
 ---
+
+<!-- DIAGRAM:START -->
+
+## How it works
+
+<img src="/diagrams/yelp/sequence.svg" alt="How it works — yelp" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:END -->
 <header>
   
   <span class="tag">medium · scaling reads · geospatial index · optimistic locking · "keep it simple" is the senior signal</span>

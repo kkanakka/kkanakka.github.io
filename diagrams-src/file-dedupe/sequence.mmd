@@ -1,0 +1,17 @@
+sequenceDiagram
+    autonumber
+    participant Sc as Scanner
+    participant FS as Filesystem
+    participant Idx as Hash index
+    Sc->>FS: walk the tree
+    FS-->>Sc: paths and sizes
+    Sc->>Sc: group by size first
+    Note over Sc: only files of identical size can be duplicates — this removes most candidates for free
+    Sc->>FS: read a small prefix of each candidate
+    Sc->>Sc: cheap prefix hash to split the group further
+    Sc->>FS: full content hash on what survives
+    Sc->>Idx: record hash to paths
+    alt hashes match
+        Sc->>FS: compare byte for byte before acting
+        Note over Sc,FS: never delete on a hash alone — and re-stat, because the file may have changed since you walked it
+    end

@@ -5,6 +5,14 @@ sidebar_position: 34
 sidebar_label: "Prompt‑sharing platform"
 description: "medium · data model · versioning · permissions · search · forks"
 ---
+
+<!-- DIAGRAM:START -->
+
+## How it works
+
+<img src="/diagrams/prompt-sharing/sequence.svg" alt="How it works — prompt-sharing" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:END -->
 <header>
   
   <span class="tag">medium · data model · versioning · permissions · search · forks</span>

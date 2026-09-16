@@ -1,0 +1,19 @@
+sequenceDiagram
+    autonumber
+    participant U as User
+    participant GW as Gateway
+    participant Inf as Inference
+    participant Tr as Tracing
+    participant SLO as SLO evaluator
+    U->>GW: request, trace id attached
+    GW->>Inf: propagate the trace
+    Inf-->>U: first token
+    Note over U,Inf: TTFT — the number the user actually feels
+    loop remaining tokens
+        Inf-->>U: token
+        Note over Inf: inter-token latency — smoothness, measured separately
+    end
+    GW->>Tr: spans for every hop
+    Tr->>SLO: percentiles per stage
+    SLO->>SLO: which stage spent the budget?
+    Note over SLO: one request SLO hides the answer — split the token path into stages

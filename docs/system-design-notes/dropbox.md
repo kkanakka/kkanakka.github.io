@@ -5,6 +5,14 @@ sidebar_position: 7
 sidebar_label: "Dropbox"
 description: "easy · handling large blobs · presigned URLs · chunking · sync"
 ---
+
+<!-- DIAGRAM:START -->
+
+## How it works
+
+<img src="/diagrams/dropbox/sequence.svg" alt="How it works — dropbox" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:END -->
 <header>
   
   <span class="tag">easy · handling large blobs · presigned URLs · chunking · sync</span>

@@ -5,6 +5,14 @@ sidebar_position: 23
 sidebar_label: "Instagram"
 description: "medium · scaling reads · fan‑out on write · celebrity problem · large blobs + CDN"
 ---
+
+<!-- DIAGRAM:START -->
+
+## How it works
+
+<img src="/diagrams/instagram/sequence.svg" alt="How it works — instagram" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:END -->
 <header>
   
   <span class="tag">medium · scaling reads · fan‑out on write · celebrity problem · large blobs + CDN</span>

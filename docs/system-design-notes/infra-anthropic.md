@@ -5,6 +5,14 @@ sidebar_position: 11
 sidebar_label: "Infra problems reported at Anthropic: ov…"
 description: "10 problems · each has its own page below · shared patterns"
 ---
+
+<!-- DIAGRAM:START -->
+
+## How it works
+
+<img src="/diagrams/infra-anthropic/sequence.svg" alt="How it works — infra-anthropic" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:END -->
 <header>
   
   <span class="tag">10 problems · each has its own page below · shared patterns</span>

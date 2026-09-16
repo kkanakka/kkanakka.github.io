@@ -1,0 +1,25 @@
+sequenceDiagram
+    autonumber
+    participant U as Buyer
+    participant Q as Virtual queue
+    participant API as Order API
+    participant Inv as Inventory
+    participant Pay as Payment
+    U->>Q: arrive at on-sale
+    Q-->>U: admitted with a signed token
+    Note over Q: the queue is the load shedder — it keeps the stampede off inventory
+    U->>API: place order with the token
+    API->>Inv: atomic decrement of remaining stock
+    alt stock claimed
+        Inv-->>API: reserved, short TTL
+        API->>Pay: charge
+        alt paid
+            Pay->>Inv: commit the sale
+            API-->>U: confirmed
+        else failed or timed out
+            Inv->>Inv: return the unit to the pool
+            API-->>U: released
+        end
+    else sold out
+        Inv-->>U: fail fast, do not queue behind a lock
+    end

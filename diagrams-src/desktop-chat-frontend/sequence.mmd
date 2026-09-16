@@ -1,0 +1,22 @@
+sequenceDiagram
+    autonumber
+    participant U as User
+    participant App as Desktop app
+    participant Loc as Local store
+    participant API as Backend
+    U->>App: type a message
+    App->>Loc: write optimistically, mark pending
+    App-->>U: shows immediately
+    App->>API: send
+    alt streaming response
+        loop tokens
+            API-->>App: token
+            App->>Loc: append to the draft turn
+            App-->>U: render incrementally
+        end
+        App->>Loc: mark the turn complete
+    else connection drops mid-stream
+        App->>Loc: keep the partial turn
+        App->>API: reconnect and resume from the last offset
+        Note over App,Loc: local state is the source of truth for what the user can see
+    end

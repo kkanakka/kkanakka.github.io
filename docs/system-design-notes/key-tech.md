@@ -5,6 +5,14 @@ sidebar_position: 2
 sidebar_label: "Key technologies, compact"
 description: "one paragraph each · what · when · must‑know · names"
 ---
+
+<!-- DIAGRAM:START -->
+
+## How it works
+
+<img src="/diagrams/key-tech/sequence.svg" alt="How it works — key-tech" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:END -->
 <header>
   
   <span class="tag">one paragraph each · what · when · must‑know · names</span>

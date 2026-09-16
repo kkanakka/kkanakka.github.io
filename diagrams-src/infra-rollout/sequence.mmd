@@ -1,0 +1,20 @@
+sequenceDiagram
+    autonumber
+    participant Op as Operator
+    participant Reg as Model registry
+    participant Rt as Router
+    participant Old as Version N
+    participant New as Version N+1
+    Op->>Reg: publish an immutable version
+    Op->>Rt: send 1% to the new one
+    Rt->>New: canary traffic
+    Rt->>Old: everything else
+    Note over Rt,Old: in-flight streams stay pinned to the version that started them
+    Rt->>Rt: compare quality and latency gates
+    alt gates pass
+        Op->>Rt: step up, then promote
+        Rt->>Old: drain — do not kill open streams
+    else gates fail
+        Op->>Rt: route all traffic back to version N
+        Note over New: the old version is still loaded, so rollback is instant
+    end

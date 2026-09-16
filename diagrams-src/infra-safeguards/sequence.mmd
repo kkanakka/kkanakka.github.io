@@ -1,0 +1,20 @@
+sequenceDiagram
+    autonumber
+    participant Req as Request
+    participant Cl as Classifier
+    participant Inf as Inference
+    participant Fb as Fallback policy
+    Req->>Cl: screen before generating
+    alt classifier healthy
+        Cl-->>Inf: verdict within its latency budget
+        Inf-->>Req: generate
+    else classifier slow or down
+        Cl--xReq: no verdict in time
+        Req->>Fb: what now?
+        alt fail closed
+            Fb-->>Req: refuse — safe, but an outage for everyone
+        else fail open
+            Fb-->>Inf: proceed unscreened — available, but unsafe
+        end
+        Note over Fb: a tier-0 dependency on the request path — decide this before it happens, not during
+    end

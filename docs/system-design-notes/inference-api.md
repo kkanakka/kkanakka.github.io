@@ -5,6 +5,14 @@ sidebar_position: 8
 sidebar_label: "High‑concurrency Inference API (batch se…"
 description: "hard · Anthropic‑style · batching · pull dispatch · response routing · capacity feedback"
 ---
+
+<!-- DIAGRAM:START -->
+
+## How it works
+
+<img src="/diagrams/inference-api/sequence.svg" alt="How it works — inference-api" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:END -->
 <header>
   
   <span class="tag">hard · Anthropic‑style · batching · pull dispatch · response routing · capacity feedback</span>

@@ -5,6 +5,14 @@ sidebar_position: 28
 sidebar_label: "Optimize HTTP requests for speed and lim…"
 description: "medium · client‑side concurrency · rate limits · batching · caching · retries"
 ---
+
+<!-- DIAGRAM:START -->
+
+## How it works
+
+<img src="/diagrams/http-optimize/sequence.svg" alt="How it works — http-optimize" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:END -->
 <header>
   
   <span class="tag">medium · client‑side concurrency · rate limits · batching · caching · retries</span>

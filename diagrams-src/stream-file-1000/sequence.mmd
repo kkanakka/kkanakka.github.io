@@ -1,0 +1,18 @@
+sequenceDiagram
+    autonumber
+    participant S as Source
+    participant A as Host 1
+    participant B as Host 2
+    participant C as Host 3
+    Note over S,C: naive: the source sends the file 1000 times and its NIC is the wall
+    S->>A: chunk 1
+    A->>B: chunk 1, while receiving chunk 2
+    S->>A: chunk 2
+    B->>C: chunk 1
+    A->>B: chunk 2
+    Note over S,C: a pipelined chain — total time approaches one transfer plus the chain depth
+    par or a tree
+        A->>B: fan out
+        A->>C: fan out
+    end
+    Note over A,C: chain gives best throughput, tree gives lowest depth — pick by link speed and host count

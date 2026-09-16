@@ -5,6 +5,14 @@ sidebar_position: 31
 sidebar_label: "Scale a batch image‑processing pipeline"
 description: "medium · queues · workers · retries · idempotency · backpressure"
 ---
+
+<!-- DIAGRAM:START -->
+
+## How it works
+
+<img src="/diagrams/image-pipeline/sequence.svg" alt="How it works — image-pipeline" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:END -->
 <header>
   
   <span class="tag">medium · queues · workers · retries · idempotency · backpressure</span>

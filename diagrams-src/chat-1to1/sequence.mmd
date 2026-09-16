@@ -1,0 +1,21 @@
+sequenceDiagram
+    autonumber
+    participant A as Sender
+    participant WA as Gateway A
+    participant PS as Pub/sub
+    participant St as Message store
+    participant WB as Gateway B
+    participant B as Recipient
+    A->>WA: send over its WebSocket
+    WA->>St: persist first, assign a sequence number
+    Note over St: persist before delivering — an undelivered message must survive
+    WA->>PS: publish to the recipient's topic
+    PS->>WB: the gateway holding B's connection
+    WB->>B: deliver
+    B-->>WB: ack
+    WB->>St: mark delivered
+    alt B is offline
+        St->>St: hold it
+        B->>WB: reconnects, asks for anything after its last sequence number
+        WB-->>B: the backlog, in order
+    end

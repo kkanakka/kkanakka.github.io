@@ -1,0 +1,17 @@
+sequenceDiagram
+    autonumber
+    participant Ag as Agent
+    participant GW as Ingest
+    participant Sh as Shard
+    participant Hot as Hot tier
+    participant Cold as Downsampled tier
+    participant Q as Query
+    Ag->>GW: pre-aggregated points
+    GW->>Sh: route by series hash
+    Sh->>Sh: reject new series past the cardinality budget
+    Note over Sh: cardinality, not volume, is what kills a metrics system
+    Sh->>Hot: Gorilla-compressed, full resolution
+    Hot->>Cold: roll up as it ages
+    Q->>Hot: recent, fine-grained
+    Q->>Cold: historical, coarse
+    Cold-->>Q: enough resolution for the pixels being drawn

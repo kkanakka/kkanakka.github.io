@@ -5,6 +5,14 @@ sidebar_position: 29
 sidebar_label: "Thread‑safe producer‑consumer buffer"
 description: "coding · mutex + condition variables · bounded queue · shutdown · fairness"
 ---
+
+<!-- DIAGRAM:START -->
+
+## How it works
+
+<img src="/diagrams/bounded-buffer/sequence.svg" alt="How it works — bounded-buffer" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:END -->
 <header>
   
   <span class="tag">coding · mutex + condition variables · bounded queue · shutdown · fairness</span>

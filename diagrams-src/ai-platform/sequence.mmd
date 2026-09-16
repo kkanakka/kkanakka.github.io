@@ -1,0 +1,24 @@
+sequenceDiagram
+    autonumber
+    participant U as User
+    participant Edge as Edge
+    participant Chat as Chat service
+    participant Safe as Safety classifier
+    participant Inf as Inference
+    participant Store as Conversation store
+    U->>Edge: prompt
+    Edge->>Chat: authenticated, quota checked
+    Chat->>Safe: screen the input
+    alt blocked
+        Safe-->>U: refused, with a reason
+    else allowed
+        Chat->>Store: load the context window
+        Chat->>Inf: generate
+        loop streaming
+            Inf-->>Safe: check the partial output
+            Safe-->>Chat: clear
+            Chat-->>U: stream the token
+        end
+        Chat->>Store: persist the turn
+    end
+    Note over Safe: the classifier is on the request path, so its latency is your latency

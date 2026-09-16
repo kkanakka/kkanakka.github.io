@@ -1,0 +1,22 @@
+sequenceDiagram
+    autonumber
+    participant Cl as Client
+    participant Ed as Edge node
+    participant Loc as Local bucket
+    participant Ct as Quota service
+    Cl->>Ed: request
+    Ed->>Loc: spend a token locally
+    alt local lease has tokens
+        Loc-->>Ed: allowed — no network hop on the hot path
+        Ed-->>Cl: served
+    else lease exhausted
+        Ed->>Ct: request a larger lease
+        alt global quota remains
+            Ct-->>Loc: new lease
+            Ed-->>Cl: served
+        else over quota
+            Ct-->>Ed: denied
+            Ed-->>Cl: 429 with Retry-After
+        end
+    end
+    Note over Loc,Ct: leases trade a little over-admission for not consulting a global counter per request

@@ -1,0 +1,18 @@
+sequenceDiagram
+    autonumber
+    participant A as Node A
+    participant B as Node B
+    participant ZK as Quorum store
+    participant Res as Shared resource
+    A->>ZK: create an ephemeral leader node
+    ZK-->>A: you are the leader, fencing token 7
+    B->>ZK: attempt the same
+    ZK-->>B: taken — watch for changes
+    A->>Res: write with token 7
+    Note over A: A now pauses — GC, or a network partition
+    ZK->>ZK: A's session expires
+    ZK-->>B: you are the leader, fencing token 8
+    B->>Res: write with token 8
+    A->>Res: resumes, writes with token 7
+    Res-->>A: rejected — 7 is older than 8
+    Note over Res: the fencing token is what makes this safe — a lock alone is not

@@ -1,0 +1,16 @@
+sequenceDiagram
+    autonumber
+    participant Src as Emitters
+    participant Ing as Ingest
+    participant Rec as Name reconciler
+    participant St as Store
+    participant Q as Query
+    Src->>Ing: metrics under inconsistent names
+    Ing->>Rec: raw name and labels
+    Rec->>Rec: map to a canonical name, keep the alias
+    Note over Rec: reconcile on ingest — rewriting history later is far more expensive
+    Rec->>St: canonical series
+    Q->>St: query by canonical name
+    St-->>Q: one series, whatever the emitter called it
+    Q->>Rec: query by an old alias
+    Rec-->>Q: resolved, so dashboards do not break during a rename

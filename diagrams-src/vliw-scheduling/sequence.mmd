@@ -1,0 +1,16 @@
+sequenceDiagram
+    autonumber
+    participant Src as Instructions
+    participant Dep as Dependence graph
+    participant List as List scheduler
+    participant Bun as Bundles
+    Src->>Dep: build edges — true, anti, and output dependences
+    Dep->>Dep: annotate each edge with its latency
+    Dep->>List: ready list — instructions whose predecessors have retired
+    loop each cycle
+        List->>List: pick by priority, usually longest path to the exit
+        List->>Bun: pack into this cycle's slots, respecting resource limits
+        Note over List,Bun: a slot that cannot be filled becomes a no-op — that is the cost of a static schedule
+    end
+    Bun-->>Src: scheduled bundles
+    Note over Dep,Bun: the hardware does no reordering, so the compiler must be right

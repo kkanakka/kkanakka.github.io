@@ -1,0 +1,22 @@
+sequenceDiagram
+    autonumber
+    participant Cl as Client
+    participant API as Job API
+    participant St as Job store
+    participant Sch as Scheduler
+    participant W as Worker
+    Cl->>API: submit a batch job
+    API->>St: materialise every execution row up front
+    Note over St: rows exist before work starts, so progress is queryable and restartable
+    Sch->>St: claim a batch atomically
+    St-->>Sch: leased executions
+    Sch->>W: dispatch
+    loop each item
+        W->>St: mark done, individually
+    end
+    alt worker dies mid-batch
+        St->>St: lease expires, items return to pending
+        Note over St,W: only the unfinished items are redone, not the whole batch
+    end
+    Cl->>API: poll progress
+    API->>St: count by state

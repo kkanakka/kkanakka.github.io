@@ -5,6 +5,14 @@ sidebar_position: 19
 sidebar_label: "Job scheduler / batch inference queue"
 description: "medium · materialized executions · atomic claim · leases · priority isolation"
 ---
+
+<!-- DIAGRAM:START -->
+
+## How it works
+
+<img src="/diagrams/infra-batch/sequence.svg" alt="How it works — infra-batch" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:END -->
 <header>
   
   <span class="tag">medium · materialized executions · atomic claim · leases · priority isolation</span>

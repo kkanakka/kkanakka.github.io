@@ -1,0 +1,22 @@
+sequenceDiagram
+    autonumber
+    participant P as Producer
+    participant M as Mutex
+    participant Buf as Buffer
+    participant C as Consumer
+    P->>M: lock
+    alt buffer full
+        P->>P: wait on notFull, releasing the lock
+        Note over P,M: wait releases the mutex — otherwise the consumer can never drain it
+    end
+    P->>Buf: push
+    P->>C: signal notEmpty
+    P->>M: unlock
+    C->>M: lock
+    alt buffer empty
+        C->>C: wait on notEmpty
+    end
+    C->>Buf: pop
+    C->>P: signal notFull
+    C->>M: unlock
+    Note over P,C: always re-check the predicate in a while loop — wakeups can be spurious

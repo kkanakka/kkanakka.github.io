@@ -5,6 +5,14 @@ sidebar_position: 13
 sidebar_label: "Multi‑region, multi‑cloud LLM inference …"
 description: "hard · Anthropic · cells · N+1 · degraded modes · GPUs don’t autoscale"
 ---
+
+<!-- DIAGRAM:START -->
+
+## How it works
+
+<img src="/diagrams/infra-multiregion/sequence.svg" alt="How it works — infra-multiregion" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:END -->
 <header>
   
   <span class="tag">hard · Anthropic · cells · N+1 · degraded modes · GPUs don’t autoscale</span>

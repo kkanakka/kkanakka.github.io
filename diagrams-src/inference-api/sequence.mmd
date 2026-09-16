@@ -1,0 +1,20 @@
+sequenceDiagram
+    autonumber
+    participant Cl as Client
+    participant GW as API gateway
+    participant Q as Request queue
+    participant W as Model worker
+    participant GPU as GPU
+    Cl->>GW: request with a token budget
+    GW->>Q: enqueue with priority
+    Note over Q,W: workers pull — a pushed request lands on a busy GPU and waits
+    W->>Q: pull when it has batch room
+    W->>GPU: add to the running batch
+    loop decode steps
+        GPU-->>W: next tokens for every sequence in the batch
+        W-->>Cl: stream each sequence's token
+    end
+    alt the batch is full
+        Q-->>Cl: queued — surface the wait, do not time out silently
+    end
+    Note over W,GPU: continuous batching keeps the GPU busy between arrivals

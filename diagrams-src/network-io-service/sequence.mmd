@@ -1,0 +1,18 @@
+sequenceDiagram
+    autonumber
+    participant Cl as Client
+    participant Ev as Event loop
+    participant K as Kernel
+    participant Disk as Storage
+    Cl->>Ev: upload stream
+    Ev->>K: readable event, non-blocking read
+    K-->>Ev: a chunk
+    Ev->>Disk: write it through, never buffer the whole object
+    Note over Ev,Disk: bounded memory per connection is what lets one process hold thousands
+    alt the client sends faster than disk accepts
+        Ev->>Cl: stop reading — TCP backpressure slows the sender
+        Note over Ev,Cl: backpressure, not an unbounded queue, is what stops the OOM
+    end
+    Cl->>Ev: download
+    Ev->>K: sendfile — disk to socket without copying through user space
+    K-->>Cl: bytes

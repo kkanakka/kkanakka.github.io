@@ -5,6 +5,14 @@ sidebar_position: 32
 sidebar_label: "Design and code a Python solution in Colab"
 description: "coding · structure · tests · maintainability · what \"senior code\" looks like in a notebook"
 ---
+
+<!-- DIAGRAM:START -->
+
+## How it works
+
+<img src="/diagrams/colab-python/sequence.svg" alt="How it works — colab-python" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:END -->
 <header>
   
   <span class="tag">coding · structure · tests · maintainability · what "senior code" looks like in a notebook</span>

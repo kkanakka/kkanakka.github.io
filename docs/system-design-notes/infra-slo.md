@@ -5,6 +5,14 @@ sidebar_position: 14
 sidebar_label: "SLOs and monitoring across the token path"
 description: "medium · Anthropic · TTFT / ITL · trace propagation · latency ledger · burn rate"
 ---
+
+<!-- DIAGRAM:START -->
+
+## How it works
+
+<img src="/diagrams/infra-slo/sequence.svg" alt="How it works — infra-slo" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:END -->
 <header>
   
   <span class="tag">medium · Anthropic · TTFT / ITL · trace propagation · latency ledger · burn rate</span>

@@ -5,6 +5,14 @@ sidebar_position: 9
 sidebar_label: "AI chat platform, end to end"
 description: "ties together ChatGPT chat + Inference API + metering + training · who does what"
 ---
+
+<!-- DIAGRAM:START -->
+
+## How it works
+
+<img src="/diagrams/ai-platform/sequence.svg" alt="How it works — ai-platform" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:END -->
 <header>
   
   <span class="tag">ties together ChatGPT chat + Inference API + metering + training · who does what</span>

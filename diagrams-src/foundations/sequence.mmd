@@ -1,0 +1,15 @@
+sequenceDiagram
+    autonumber
+    participant I as Interviewer
+    participant C as Candidate
+    participant B as Board
+    I->>C: here is the problem
+    C->>I: functional requirements — what must it do?
+    C->>I: non-functional — scale, latency, consistency, availability
+    C->>B: core entities and the API between them
+    C->>B: back-of-envelope numbers before any boxes
+    C->>B: the standard request path — client, edge, service, cache, store
+    I->>C: go deep on one part
+    C->>B: partitioning, hot keys, the read/write split
+    C->>B: what breaks first at 10x, and which rung of the ladder you climb
+    Note over C,B: requirements to numbers to design to deep dive — in that order, every time

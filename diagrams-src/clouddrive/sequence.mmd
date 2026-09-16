@@ -1,0 +1,23 @@
+sequenceDiagram
+    autonumber
+    participant U as Owner
+    participant API as API
+    participant Obj as Object store
+    participant Meta as Metadata
+    participant CDN as CDN
+    participant V as Viewer
+    U->>API: upload
+    API-->>U: presigned PUT
+    U->>Obj: upload directly
+    API->>Meta: record ownership and permissions
+    U->>API: share with a viewer
+    API->>Meta: grant access
+    V->>API: open the file
+    API->>Meta: is this viewer allowed?
+    alt permitted
+        API-->>V: short-lived signed URL
+        V->>CDN: fetch
+        CDN-->>V: bytes from the edge
+    else not permitted
+        API-->>V: denied — the check is at the metadata tier, never at the CDN
+    end

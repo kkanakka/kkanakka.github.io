@@ -5,6 +5,14 @@ sidebar_position: 21
 sidebar_label: "Strongly consistent config service / lea…"
 description: "medium · ZooKeeper · quorum · watches · sessions · fencing · last‑known‑good"
 ---
+
+<!-- DIAGRAM:START -->
+
+## How it works
+
+<img src="/diagrams/infra-config/sequence.svg" alt="How it works — infra-config" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:END -->
 <header>
   
   <span class="tag">medium · ZooKeeper · quorum · watches · sessions · fencing · last‑known‑good</span>

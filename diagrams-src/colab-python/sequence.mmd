@@ -1,0 +1,14 @@
+sequenceDiagram
+    autonumber
+    participant I as Interviewer
+    participant C as Candidate
+    participant Code as Notebook
+    I->>C: solve this, write real code
+    C->>I: confirm inputs, sizes, and edge cases
+    C->>Code: write the signature and the docstring first
+    C->>Code: smallest correct version, no cleverness
+    C->>Code: one test per edge case — empty, single, malformed
+    Code-->>C: green
+    I->>C: now make it handle a file that does not fit in memory
+    C->>Code: switch to streaming, keep the tests passing
+    Note over C,Code: readable and tested beats clever — they are reading it as code they would maintain

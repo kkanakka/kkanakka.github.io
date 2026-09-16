@@ -1,0 +1,18 @@
+sequenceDiagram
+    autonumber
+    participant B as Browser
+    participant DNS as DNS
+    participant TCP as Transport
+    participant TLS as TLS
+    participant LB as Load balancer
+    participant S as Server
+    B->>DNS: resolve
+    DNS-->>B: address
+    B->>TCP: SYN, SYN-ACK, ACK
+    Note over TCP: one round trip before a byte of your data moves
+    B->>TLS: ClientHello
+    TLS-->>B: keys agreed
+    B->>LB: HTTP request
+    LB->>S: to a healthy backend
+    S-->>B: response, congestion window growing each round trip
+    Note over B,S: latency is round trips, not bandwidth — that is why the edge matters

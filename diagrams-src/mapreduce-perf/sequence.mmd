@@ -1,0 +1,18 @@
+sequenceDiagram
+    autonumber
+    participant In as Input splits
+    participant M as Mappers
+    participant Sh as Shuffle
+    participant R as Reducers
+    participant Out as Output
+    In->>M: one split per mapper, near the data
+    Note over In,M: move compute to the data — the shuffle is the expensive part, not the read
+    M->>M: combine locally before emitting
+    Note over M: a combiner cuts shuffle volume, which is usually the whole bottleneck
+    M->>Sh: partitioned, sorted output
+    Sh->>R: fetch each partition
+    alt one key dominates
+        R-->>Sh: that reducer runs long after the others finish
+        Note over Sh,R: skew — salt the key or partition it further
+    end
+    R->>Out: write

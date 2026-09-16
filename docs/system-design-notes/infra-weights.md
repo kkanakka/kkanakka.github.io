@@ -5,6 +5,14 @@ sidebar_position: 12
 sidebar_label: "Distribute a large file (model weights) …"
 description: "hard · Anthropic · chunking · swarm · rarest‑first · per‑chunk hashes"
 ---
+
+<!-- DIAGRAM:START -->
+
+## How it works
+
+<img src="/diagrams/infra-weights/sequence.svg" alt="How it works — infra-weights" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:END -->
 <header>
   
   <span class="tag">hard · Anthropic · chunking · swarm · rarest‑first · per‑chunk hashes</span>

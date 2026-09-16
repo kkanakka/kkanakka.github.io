@@ -5,6 +5,14 @@ sidebar_position: 33
 sidebar_label: "Optimize MapReduce performance"
 description: "medium · shuffle · data locality · skew · combiners · parallelism"
 ---
+
+<!-- DIAGRAM:START -->
+
+## How it works
+
+<img src="/diagrams/mapreduce-perf/sequence.svg" alt="How it works — mapreduce-perf" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:END -->
 <header>
   
   <span class="tag">medium · shuffle · data locality · skew · combiners · parallelism</span>

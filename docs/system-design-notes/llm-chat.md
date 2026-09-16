@@ -5,6 +5,14 @@ sidebar_position: 5
 sidebar_label: "ChatGPT / Claude‑style chat"
 description: "hard · streaming · stateless model, stateful product · GPU capacity · where context lives"
 ---
+
+<!-- DIAGRAM:START -->
+
+## How it works
+
+<img src="/diagrams/llm-chat/sequence.svg" alt="How it works — llm-chat" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:END -->
 <header>
   
   <span class="tag">hard · streaming · stateless model, stateful product · GPU capacity · where context lives</span>

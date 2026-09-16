@@ -5,6 +5,14 @@ sidebar_position: 24
 sidebar_label: "Telemetry with metric‑name reconciliation"
 description: "hard · Anthropic · ingest + store + query · metric identity · aliases with evidence · provenance and correction"
 ---
+
+<!-- DIAGRAM:START -->
+
+## How it works
+
+<img src="/diagrams/telemetry/sequence.svg" alt="How it works — telemetry" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:END -->
 <header>
   
   <span class="tag">hard · Anthropic · ingest + store + query · metric identity · aliases with evidence · provenance and correction</span>

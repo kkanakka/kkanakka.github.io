@@ -5,6 +5,14 @@ sidebar_position: 30
 sidebar_label: "Global photo/video storage and sharing (…"
 description: "medium · object storage · CDN · sharing/permissions · multi‑region · dedupe"
 ---
+
+<!-- DIAGRAM:START -->
+
+## How it works
+
+<img src="/diagrams/clouddrive/sequence.svg" alt="How it works — clouddrive" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:END -->
 <header>
   
   <span class="tag">medium · object storage · CDN · sharing/permissions · multi‑region · dedupe</span>

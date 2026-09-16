@@ -5,6 +5,14 @@ sidebar_position: 26
 sidebar_label: "Stream a large file to 1000 hosts as fas…"
 description: "medium · bandwidth math · pipelined chain vs tree vs swarm · the origin is never the answer"
 ---
+
+<!-- DIAGRAM:START -->
+
+## How it works
+
+<img src="/diagrams/stream-file-1000/sequence.svg" alt="How it works — stream-file-1000" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:END -->
 <header>
   
   <span class="tag">medium · bandwidth math · pipelined chain vs tree vs swarm · the origin is never the answer</span>

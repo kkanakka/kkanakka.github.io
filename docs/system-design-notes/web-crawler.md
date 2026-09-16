@@ -5,6 +5,14 @@ sidebar_position: 25
 sidebar_label: "Concurrent web crawler"
 description: "medium · combines \"design a crawler\" + \"scale with a thread pool\" + \"locked concurrent crawler\" · frontier · politeness · dedupe · termination"
 ---
+
+<!-- DIAGRAM:START -->
+
+## How it works
+
+<img src="/diagrams/web-crawler/sequence.svg" alt="How it works — web-crawler" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:END -->
 <header>
   
   <span class="tag">medium · combines "design a crawler" + "scale with a thread pool" + "locked concurrent crawler" · frontier · politeness · dedupe · termination</span>

@@ -5,6 +5,14 @@ sidebar_position: 6
 sidebar_label: "Bit.ly (URL shortener)"
 description: "easy · scaling reads · unique id generation · 1000:1 read/write"
 ---
+
+<!-- DIAGRAM:START -->
+
+## How it works
+
+<img src="/diagrams/bitly/sequence.svg" alt="How it works — bitly" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:END -->
 <header>
   
   <span class="tag">easy · scaling reads · unique id generation · 1000:1 read/write</span>

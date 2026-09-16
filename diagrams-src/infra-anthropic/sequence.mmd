@@ -1,0 +1,13 @@
+sequenceDiagram
+    autonumber
+    participant Tok as Token path
+    participant Cap as Capacity
+    participant Rel as Reliability
+    participant Obs as Observability
+    Tok->>Cap: every request costs GPU seconds, not just CPU
+    Cap->>Cap: batch size, KV cache and sequence length set the ceiling
+    Cap->>Rel: what happens when a region or a GPU fleet is lost?
+    Rel->>Rel: cells, N+1, and a degraded mode that still answers
+    Rel->>Obs: which number tells you it is broken?
+    Obs->>Obs: TTFT and inter-token latency, not average request time
+    Note over Tok,Obs: these ten problems are the same four questions asked about different layers

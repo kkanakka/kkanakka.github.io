@@ -5,6 +5,14 @@ sidebar_position: 1
 sidebar_label: "Before any design: the checklist"
 description: "read this first · cross‑cutting concerns · building blocks"
 ---
+
+<!-- DIAGRAM:START -->
+
+## How it works
+
+<img src="/diagrams/foundations/sequence.svg" alt="How it works — foundations" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:END -->
 <header>
   
   <span class="tag">read this first · cross‑cutting concerns · building blocks</span>

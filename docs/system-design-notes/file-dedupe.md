@@ -5,6 +5,14 @@ sidebar_position: 36
 sidebar_label: "Robust file deduplication"
 description: "medium · hashing · filesystem races · corruption · hardlinks vs content store · verification"
 ---
+
+<!-- DIAGRAM:START -->
+
+## How it works
+
+<img src="/diagrams/file-dedupe/sequence.svg" alt="How it works — file-dedupe" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:END -->
 <header>
   
   <span class="tag">medium · hashing · filesystem races · corruption · hardlinks vs content store · verification</span>

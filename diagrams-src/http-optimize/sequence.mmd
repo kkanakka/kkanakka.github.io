@@ -1,0 +1,19 @@
+sequenceDiagram
+    autonumber
+    participant Cl as Client
+    participant Pool as Connection pool
+    participant Lim as Rate limiter
+    participant API as Server
+    Cl->>Pool: many requests
+    Pool->>Pool: reuse connections — a new TLS handshake per request is the usual mistake
+    Pool->>Lim: bounded concurrency
+    Note over Lim: more parallelism than the server allows just converts into 429s
+    Lim->>API: dispatch
+    alt 429 with Retry-After
+        API-->>Lim: back off
+        Lim->>Lim: honour the header, add jitter
+        Lim->>API: retry
+    else success
+        API-->>Cl: response
+    end
+    Note over Pool,API: batch where the API supports it — one request beats ten perfectly-paced ones

@@ -1,0 +1,23 @@
+sequenceDiagram
+    autonumber
+    participant U as Training job
+    participant Sch as Gang scheduler
+    participant Pool as GPU pool
+    participant W as Workers
+    participant CK as Checkpoint store
+    U->>Sch: needs 64 GPUs, all or nothing
+    Sch->>Pool: are 64 free on well-connected nodes?
+    alt enough, topology-aware
+        Pool-->>Sch: placement
+        Sch->>W: start all ranks together
+        Note over Sch,W: partial placement wastes the GPUs it did grab — gang scheduling or nothing
+    else fragmented
+        Sch->>Sch: wait, or defragment by preempting lower-priority work
+    end
+    loop training
+        W->>CK: asynchronous checkpoint
+        Note over W,CK: async, or every GPU idles while one writes
+    end
+    alt a rank fails
+        Sch->>W: restart the gang from the last checkpoint
+    end

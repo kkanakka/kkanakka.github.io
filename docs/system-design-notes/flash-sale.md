@@ -5,6 +5,14 @@ sidebar_position: 4
 sidebar_label: "Flash sale"
 description: "hard · contention · scaling writes · fairness"
 ---
+
+<!-- DIAGRAM:START -->
+
+## How it works
+
+<img src="/diagrams/flash-sale/sequence.svg" alt="How it works — flash-sale" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:END -->
 <header>
   
   <span class="tag">hard · contention · scaling writes · fairness</span>

@@ -1,0 +1,19 @@
+sequenceDiagram
+    autonumber
+    participant U as Uploader
+    participant API as API
+    participant Q as Queue
+    participant W as Worker
+    participant Obj as Object store
+    U->>Obj: upload the original
+    U->>API: register it
+    API->>Q: enqueue one job per derivative
+    W->>Q: pull a job
+    W->>Obj: read the original
+    W->>W: resize, transcode, strip metadata
+    W->>Obj: write the derivative at a deterministic key
+    Note over W,Obj: a deterministic key makes retries idempotent — reprocessing overwrites, never duplicates
+    alt the job fails
+        W->>Q: requeue with backoff
+        Note over Q: after N attempts it goes to the dead-letter queue, not round the loop forever
+    end

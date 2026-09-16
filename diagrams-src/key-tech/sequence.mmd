@@ -1,0 +1,16 @@
+sequenceDiagram
+    autonumber
+    participant Need as The requirement
+    participant Pick as Default pick
+    participant Just as Justification
+    Need->>Pick: durable relational data with transactions
+    Pick-->>Just: Postgres — until a number forces something else
+    Need->>Pick: a partitioned, replayable log
+    Pick-->>Just: Kafka — ordering per partition, consumers at their own pace
+    Need->>Pick: low-latency shared cache
+    Pick-->>Just: Redis — and say how the invalidation works
+    Need->>Pick: large immutable blobs
+    Pick-->>Just: object storage plus a CDN, never the database
+    Need->>Pick: search over text or geo
+    Pick-->>Just: Elasticsearch, fed asynchronously from the source of truth
+    Note over Pick,Just: know one box per role deeply — a confident default beats a survey

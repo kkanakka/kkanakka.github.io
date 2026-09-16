@@ -5,6 +5,14 @@ sidebar_position: 27
 sidebar_label: "Desktop AI chat frontend"
 description: "medium · cross‑platform · streaming state · offline · secure token storage"
 ---
+
+<!-- DIAGRAM:START -->
+
+## How it works
+
+<img src="/diagrams/desktop-chat-frontend/sequence.svg" alt="How it works — desktop-chat-frontend" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:END -->
 <header>
   
   <span class="tag">medium · cross‑platform · streaming state · offline · secure token storage</span>

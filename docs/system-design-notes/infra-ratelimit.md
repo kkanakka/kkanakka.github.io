@@ -5,6 +5,14 @@ sidebar_position: 17
 sidebar_label: "Distributed rate limiting and quotas for…"
 description: "medium · Anthropic · leased local buckets · reserve then settle · never fail open"
 ---
+
+<!-- DIAGRAM:START -->
+
+## How it works
+
+<img src="/diagrams/infra-ratelimit/sequence.svg" alt="How it works — infra-ratelimit" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:END -->
 <header>
   
   <span class="tag">medium · Anthropic · leased local buckets · reserve then settle · never fail open</span>

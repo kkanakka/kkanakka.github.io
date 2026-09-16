@@ -1,0 +1,19 @@
+sequenceDiagram
+    autonumber
+    participant U as Client
+    participant GSLB as Global routing
+    participant RA as Region A
+    participant RB as Region B
+    participant Cap as Capacity model
+    U->>GSLB: request
+    GSLB->>RA: nearest healthy region
+    RA-->>U: response
+    Note over Cap: every region carries N+1 — losing one must not overload the rest
+    GSLB->>RA: health probe fails
+    GSLB->>RB: shift that traffic
+    alt region B has headroom
+        RB-->>U: served, slightly higher latency
+    else capacity is short
+        RB->>RB: degrade — smaller model, shorter context, or queue
+        RB-->>U: a slower answer beats no answer
+    end

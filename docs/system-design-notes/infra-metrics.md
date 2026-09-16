@@ -5,6 +5,14 @@ sidebar_position: 18
 sidebar_label: "Metrics monitoring at 10M points/sec"
 description: "hard · cardinality · Gorilla · retention tiers · alerting failure domain"
 ---
+
+<!-- DIAGRAM:START -->
+
+## How it works
+
+<img src="/diagrams/infra-metrics/sequence.svg" alt="How it works — infra-metrics" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:END -->
 <header>
   
   <span class="tag">hard · cardinality · Gorilla · retention tiers · alerting failure domain</span>

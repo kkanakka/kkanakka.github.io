@@ -5,6 +5,14 @@ sidebar_position: 16
 sidebar_label: "Model rollout: canary, promote, roll bac…"
 description: "hard · Anthropic · immutable versions · gates · prefetch · draining"
 ---
+
+<!-- DIAGRAM:START -->
+
+## How it works
+
+<img src="/diagrams/infra-rollout/sequence.svg" alt="How it works — infra-rollout" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:END -->
 <header>
   
   <span class="tag">hard · Anthropic · immutable versions · gates · prefetch · draining</span>

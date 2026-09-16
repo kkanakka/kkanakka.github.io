@@ -5,6 +5,14 @@ sidebar_position: 22
 sidebar_label: "1‑to‑1 chat system"
 description: "medium · Anthropic · WebSockets · pub/sub routing · per‑conversation sequence · inbox + in‑flight delivery"
 ---
+
+<!-- DIAGRAM:START -->
+
+## How it works
+
+<img src="/diagrams/chat-1to1/sequence.svg" alt="How it works — chat-1to1" class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:END -->
 <header>
   
   <span class="tag">medium · Anthropic · WebSockets · pub/sub routing · per‑conversation sequence · inbox + in‑flight delivery</span>

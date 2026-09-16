@@ -1,0 +1,24 @@
+sequenceDiagram
+    autonumber
+    participant U as User
+    participant API as Shortener API
+    participant ID as ID generator
+    participant DB as URL store
+    participant Ca as Cache
+    participant V as Visitor
+    U->>API: POST long URL
+    API->>ID: next unique id
+    ID-->>API: base62 short code
+    API->>DB: store code to URL
+    API-->>U: short URL
+    V->>API: GET /abc123
+    API->>Ca: look up the code
+    alt hit
+        Ca-->>V: 302 to the original
+    else miss
+        API->>DB: read
+        DB-->>API: original URL
+        API->>Ca: populate
+        API-->>V: 302 Found
+    end
+    Note over API,V: 302 not 301 — a cached 301 means later clicks never reach you
