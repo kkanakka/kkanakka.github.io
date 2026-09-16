@@ -1,0 +1,196 @@
+---
+title: "Model rollout: canary, promote, roll back without dropping streams"
+slug: /system-design-notes/infra-rollout
+sidebar_position: 16
+sidebar_label: "Model rollout: canary, promote, roll bac…"
+description: "hard · Anthropic · immutable versions · gates · prefetch · draining"
+---
+<header>
+  
+  <span class="tag">hard · Anthropic · immutable versions · gates · prefetch · draining</span>
+</header>
+
+## Requirements {#infra-rollout-req}
+
+<div class="board">
+  <div>
+    <h4>Functional</h4>
+    <ol>
+      <li>Register a new model version and roll it out gradually per region</li>
+      <li>Gate each ramp step on automated checks</li>
+      <li>Roll back in seconds</li>
+      <li>Never drop an in‑flight stream during any of it</li>
+      <li class="out">Training; distributing the bytes (#1)</li>
+    </ol>
+  </div>
+  <div>
+    <h4>Non‑functional</h4>
+    <ol>
+      <li>Rollback ≤ 60 s from decision to 0% traffic</li>
+      <li>No client‑visible errors caused by rollout</li>
+      <li>Every response attributable to an exact version</li>
+      <li>Ramp bake time per step, e.g. 30 min at 5%, 1 h at 25%</li>
+    </ol>
+  </div>
+</div>
+
+## Entities and API {#infra-rollout-api}
+
+<p>ModelVersion (immutable: weightsHash, tokenizer, servingConfig, policyVersion, evals) · Rollout (version, region, stage, weights, gates, status) · Replica (version loaded, state: READY | DRAINING | STOPPED) · RouterWeights (model → {version: %})</p>
+<pre><code>POST /registry/versions {artifacts…}                   -&gt; version (immutable)
+POST /rollouts {version, region, plan:[1,5,25,50,100]}   -&gt; rolloutId
+POST /rollouts/:id/advance | /pause | /rollback
+PUT  /router/weights {model, region, {v41:95, v42:5}}
+POST /replicas/:id/drain                                -&gt; READY→DRAINING (health: not ready)</code></pre>
+
+## Design {#infra-rollout-design}
+
+<figure>
+<svg viewBox="0 0 980 280" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Rollout pipeline: immutable version in registry, prefetch weights to nodes, canary percentage via router, gates on burn rate and quality evals, promote by ramp, rollback by pointer flip, draining keeps in-flight streams on the old version">
+  <defs><marker id="r1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#1F4E9E"></path></marker></defs>
+  <style>.box{fill:#fff;stroke:#1B2430;stroke-width:1.5;rx:6}.tb{font-size:12px;fill:#1B2430;font-weight:600}.ts{font-size:10.5px;fill:#5B6673}.tm{font-size:10.5px;fill:#1B2430;font-family:"IBM Plex Mono",Menlo,monospace}.f{stroke:#1F4E9E;stroke-width:1.6;fill:none;marker-end:url(#r1)}</style>
+  <rect class="box" x="20" y="30" width="130" height="60"></rect><text class="tb" x="85" y="50" text-anchor="middle">Registry</text><text class="tm" x="85" y="66" text-anchor="middle">v42 (immutable)</text><text class="ts" x="85" y="82" text-anchor="middle">weights hash, evals, card</text>
+  <rect class="box" x="180" y="30" width="130" height="60"></rect><text class="tb" x="245" y="50" text-anchor="middle">Prefetch</text><text class="ts" x="245" y="66" text-anchor="middle">swarm weights to all</text><text class="ts" x="245" y="82" text-anchor="middle">nodes; warm on 1 cell</text>
+  <rect class="box" x="340" y="30" width="130" height="60"></rect><text class="tb" x="405" y="50" text-anchor="middle">Canary 1%</text><text class="ts" x="405" y="66" text-anchor="middle">router weight v41:99 v42:1</text><text class="ts" x="405" y="82" text-anchor="middle">sticky per request only</text>
+  <rect class="box" x="500" y="30" width="130" height="60" stroke="#B45309"></rect><text class="tb" x="565" y="50" text-anchor="middle">Gates</text><text class="ts" x="565" y="66" text-anchor="middle">burn rate ≤ baseline</text><text class="ts" x="565" y="82" text-anchor="middle">quality + safety evals</text>
+  <rect class="box" x="660" y="30" width="130" height="60"></rect><text class="tb" x="725" y="50" text-anchor="middle">Ramp</text><text class="ts" x="725" y="66" text-anchor="middle">5 → 25 → 50 → 100%</text><text class="ts" x="725" y="82" text-anchor="middle">bake time per step</text>
+  <rect class="box" x="820" y="30" width="140" height="60"></rect><text class="tb" x="890" y="50" text-anchor="middle">Promote</text><text class="ts" x="890" y="66" text-anchor="middle">flip "current" pointer</text><text class="ts" x="890" y="82" text-anchor="middle">keep v41 loaded (warm)</text>
+  <path class="f" d="M150 60 L178 60"></path><path class="f" d="M310 60 L338 60"></path><path class="f" d="M470 60 L498 60"></path><path class="f" d="M630 60 L658 60"></path><path class="f" d="M790 60 L818 60"></path>
+  <path class="f" d="M565 90 C 565 130, 430 130, 405 92" stroke-dasharray="4 3"></path><text class="ts" x="440" y="128">gate fails → weight v42:0, keep pods for debugging</text>
+  <rect class="box" x="20" y="160" width="450" height="105"></rect><text class="tb" x="30" y="180">Draining a replica (old version) without dropping streams</text>
+  <text class="ts" x="30" y="198">1 mark replica DRAINING: health check says "not ready" → router sends no new requests</text>
+  <text class="ts" x="30" y="212">2 in‑flight streams continue to completion on the same replica (bounded by max_tokens)</text>
+  <text class="ts" x="30" y="226">3 grace period = max stream duration + margin (e.g. 10 min); SIGTERM only after</text>
+  <text class="ts" x="30" y="240">4 if a stream must move: it can't; a request is pinned to its KV cache. Let it finish.</text>
+  <text class="ts" x="30" y="254">5 gateway keeps the client socket; replica swap is invisible to the client</text>
+  <rect class="box" x="500" y="160" width="460" height="105"></rect><text class="tb" x="510" y="180">Rollback</text>
+  <text class="ts" x="510" y="198">· pointer flip back to v41, which is still loaded (that's why you keep it warm)</text>
+  <text class="ts" x="510" y="212">· seconds, not the minutes a weight reload would take</text>
+  <text class="ts" x="510" y="226">· v42 streams in flight finish on v42; new requests go to v41</text>
+  <text class="ts" x="510" y="240">· automatic on burn‑rate gate breach; manual override always available</text>
+  <text class="ts" x="510" y="254">· never mutate a version; roll forward = new version number</text>
+</svg>
+</figure>
+
+### Flow between components
+
+<figure>
+<svg viewBox="0 0 980 678" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Model rollout flow">
+<defs><marker id="sq1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#1F4E9E"></path></marker><marker id="sq2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#6B2D6B"></path></marker><marker id="sq3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#B45309"></path></marker></defs>
+<style>.sb{fill:#fff;stroke:#1B2430;stroke-width:1.5;rx:6}.st{font-size:12px;fill:#1B2430;font-weight:600}.sl{font-size:10.5px;fill:#1B2430}.ln{stroke:#D6DDE5;stroke-width:1.5}.a1{stroke:#1F4E9E;stroke-width:1.5;fill:none;marker-end:url(#sq1)}.a2{stroke:#6B2D6B;stroke-width:1.5;fill:none;marker-end:url(#sq2);stroke-dasharray:5 4}.a3{stroke:#B45309;stroke-width:1.5;fill:none;marker-end:url(#sq3);stroke-dasharray:2 4}.nt{fill:#F6F8FA;stroke:#D6DDE5;rx:4}</style>
+<rect class="sb" x="7" y="14" width="126" height="34"></rect><text class="st" x="70" y="36" text-anchor="middle">Operator</text>
+<line class="ln" x1="70" y1="48" x2="70" y2="658"></line>
+<rect class="sb" x="147" y="14" width="126" height="34"></rect><text class="st" x="210" y="36" text-anchor="middle">Registry</text>
+<line class="ln" x1="210" y1="48" x2="210" y2="658"></line>
+<rect class="sb" x="287" y="14" width="126" height="34"></rect><text class="st" x="350" y="36" text-anchor="middle">Distribution</text>
+<line class="ln" x1="350" y1="48" x2="350" y2="658"></line>
+<rect class="sb" x="427" y="14" width="126" height="34"></rect><text class="st" x="490" y="36" text-anchor="middle">Router</text>
+<line class="ln" x1="490" y1="48" x2="490" y2="658"></line>
+<rect class="sb" x="567" y="14" width="126" height="34"></rect><text class="st" x="630" y="36" text-anchor="middle">Replicas v41</text>
+<line class="ln" x1="630" y1="48" x2="630" y2="658"></line>
+<rect class="sb" x="707" y="14" width="126" height="34"></rect><text class="st" x="770" y="36" text-anchor="middle">Replicas v42</text>
+<line class="ln" x1="770" y1="48" x2="770" y2="658"></line>
+<rect class="sb" x="847" y="14" width="126" height="34"></rect><text class="st" x="910" y="36" text-anchor="middle">Gates</text>
+<line class="ln" x1="910" y1="48" x2="910" y2="658"></line>
+<line class="a1" x1="78" y1="80" x2="202" y2="80"></line>
+<text class="sl" x="140" y="74" text-anchor="middle">register v42 (immutable)</text>
+<line class="a3" x1="218" y1="114" x2="342" y2="114"></line>
+<text class="sl" x="280" y="108" text-anchor="middle">prefetch weights to nodes</text>
+<line class="a1" x1="358" y1="148" x2="762" y2="148"></line>
+<text class="sl" x="560" y="142" text-anchor="middle">load + warm one cell</text>
+<line class="a1" x1="78" y1="182" x2="482" y2="182"></line>
+<text class="sl" x="280" y="176" text-anchor="middle">canary: v42 weight 1%</text>
+<line class="a1" x1="498" y1="216" x2="762" y2="216"></line>
+<text class="sl" x="630" y="210" text-anchor="middle">1% of new requests</text>
+<line class="a1" x1="498" y1="250" x2="622" y2="250"></line>
+<text class="sl" x="560" y="244" text-anchor="middle">99% of new requests</text>
+<rect class="nt" x="800" y="271" width="220" height="22"></rect><text class="sl" x="910" y="286" text-anchor="middle">burn rate vs v41, evals, safety canaries, capacity</text>
+<line class="a2" x1="902" y1="318" x2="78" y2="318"></line>
+<text class="sl" x="490" y="312" text-anchor="middle">pass / fail</text>
+<line class="a1" x1="78" y1="352" x2="482" y2="352"></line>
+<text class="sl" x="280" y="346" text-anchor="middle">ramp 5 → 25 → 50 → 100</text>
+<line class="a1" x1="78" y1="386" x2="202" y2="386"></line>
+<text class="sl" x="140" y="380" text-anchor="middle">promote: current = v42</text>
+<line class="a1" x1="498" y1="420" x2="622" y2="420"></line>
+<text class="sl" x="560" y="414" text-anchor="middle">DRAINING: not ready</text>
+<rect class="nt" x="520" y="441" width="220" height="22"></rect><text class="sl" x="630" y="456" text-anchor="middle">in-flight streams finish (≤ max stream)</text>
+<rect class="nt" x="520" y="475" width="220" height="22"></rect><text class="sl" x="630" y="490" text-anchor="middle">SIGTERM after grace; keep some v41 warm</text>
+<line class="a2" x1="902" y1="522" x2="78" y2="522"></line>
+<text class="sl" x="490" y="516" text-anchor="middle">breach detected</text>
+<line class="a1" x1="78" y1="556" x2="202" y2="556"></line>
+<text class="sl" x="140" y="550" text-anchor="middle">rollback: current = v41</text>
+<line class="a1" x1="78" y1="590" x2="482" y2="590"></line>
+<text class="sl" x="280" y="584" text-anchor="middle">weights v42 → 0</text>
+<rect class="nt" x="675" y="611" width="190" height="22"></rect><text class="sl" x="770" y="626" text-anchor="middle">v42 in-flight streams finish</text>
+</svg>
+<figcaption>Solid = request path · dashed = response / return · dotted = async or background.</figcaption>
+</figure>
+<ol class="order">
+  <li><b>Operator → Registry:</b> register v42 (immutable)</li>
+  <li><b>Registry → Distribution:</b> prefetch weights to nodes (async)</li>
+  <li><b>Distribution → Replicas v42:</b> load + warm one cell</li>
+  <li><b>Operator → Router:</b> canary: v42 weight 1%</li>
+  <li><b>Router → Replicas v42:</b> 1% of new requests</li>
+  <li><b>Router → Replicas v41:</b> 99% of new requests</li>
+  <li><b>Gates:</b> burn rate vs v41, evals, safety canaries, capacity</li>
+  <li><b>Gates → Operator:</b> pass / fail (response)</li>
+  <li><b>Operator → Router:</b> ramp 5 → 25 → 50 → 100</li>
+  <li><b>Operator → Registry:</b> promote: current = v42</li>
+  <li><b>Router → Replicas v41:</b> DRAINING: not ready</li>
+  <li><b>Replicas v41:</b> in-flight streams finish (≤ max stream)</li>
+  <li><b>Replicas v41:</b> SIGTERM after grace; keep some v41 warm</li>
+  <li><b>Gates → Operator:</b> breach detected (response)</li>
+  <li><b>Operator → Registry:</b> rollback: current = v41</li>
+  <li><b>Operator → Router:</b> weights v42 → 0</li>
+  <li><b>Replicas v42:</b> v42 in-flight streams finish</li>
+</ol>
+
+## How it works, step by step {#infra-rollout-flow}
+
+<ol class="order">
+  <li>Version registered; weights prefetched to every node via the distribution system; one cell loads and warms it.</li>
+  <li>Rollout starts: router weight 1% to v42 for new requests only; requests are pinned to a replica for their lifetime.</li>
+  <li>Gates evaluate continuously: burn rate vs baseline on the same slice, safety canaries, quality metrics, cell throughput.</li>
+  <li>Gate pass → advance to next percentage and bake; gate fail → weight 0, keep replicas up for debugging, alert.</li>
+  <li>At 100%, flip the registry pointer; keep v41 loaded on a subset of replicas for fast rollback.</li>
+  <li>Old replicas drain: health reports not‑ready, no new requests, in‑flight streams finish (bounded by max_tokens), then SIGTERM after grace.</li>
+  <li>Rollback = pointer flip + weights; v42 in‑flight streams complete on v42.</li>
+</ol>
+
+## Deep dives {#infra-rollout-deep}
+
+<div class="cards">
+  <div><h4>Immutability and identity</h4><ul>
+    <li>A version = weights hash + tokenizer + serving config + safety policy version. Any change is a new version. Responses carry <code>model_version</code> so incidents are attributable.</li>
+    <li>Registry pointer "current" per (model, region) is the only mutable thing; changing it is the rollout.</li></ul></div>
+  <div><h4>Gates that actually block</h4><ul>
+    <li>Burn rate on TTFT/ITL/completion compared against the baseline version on the same traffic slice.</li>
+    <li>Quality: offline eval suite before canary; online A/B metrics (refusal rate, length, user feedback) during bake.</li>
+    <li>Safety canaries (#4) must pass on the new version.</li>
+    <li>Capacity: new version may be slower per token → verify cell throughput before ramping past the +1 headroom.</li></ul></div>
+  <div><h4>Streams and connections</h4><ul>
+    <li>The client's connection terminates at the gateway, never at the replica; replicas can churn without client‑visible errors.</li>
+    <li>Router pins a request to a replica for its lifetime; "canary %" applies at request start only.</li>
+    <li>Weight prefetch is why rollout is fast; without it every ramp step is a multi‑minute load (ties to #1).</li></ul></div>
+</div>
+
+## Don't leave the room without saying {#infra-rollout-check}
+
+<ul class="checklist">
+  <li>Immutable versions; the only mutable thing is the pointer</li>
+  <li>Prefetch before flip; why weight load time otherwise dominates</li>
+  <li>Gates that block: burn rate, evals, safety canaries, capacity</li>
+  <li>Request pinning + gateway‑terminated client connections = no dropped streams</li>
+  <li>Draining semantics and grace period ≥ max stream duration</li>
+  <li>Keep previous version warm for seconds‑fast rollback</li>
+  <li>Responses carry model_version</li>
+</ul>
+
+## What each level is expected to drive {#infra-rollout-levels}
+
+<table>
+  <tbody><tr><th>Level</th><th>Unprompted</th><th>OK if guided</th></tr>
+  <tr><td>Mid</td><td>Blue/green or canary with a load balancer, manual promote, rollback by redeploy</td><td>Draining, gates</td></tr>
+  <tr><td>Senior</td><td>Immutable registry, percentage canary, automated gates, draining without dropping streams, warm rollback</td><td>Capacity gate, prefetch</td></tr>
+  <tr><td>Staff+</td><td>Gate design tied to SLOs and safety, multi‑region orchestration, rollout of dependent components (classifiers, tokenizers) together, audit and attribution</td><td>—</td></tr>
+</tbody></table>

@@ -1,0 +1,9 @@
+{
+  "label": "System Design Notes",
+  "position": 4,
+  "link": {
+    "type": "generated-index",
+    "slug": "/system-design-notes",
+    "description": "Interview-shaped system design notes: a reference checklist, then one page per problem — requirements, entities and API, the design, and the deep dives the interviewer is waiting for."
+  }
+}
