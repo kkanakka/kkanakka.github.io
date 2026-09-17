@@ -19,6 +19,23 @@ description: "hard · Anthropic · chunking · swarm · rarest‑first · per‑
   <span class="tag">hard · Anthropic · chunking · swarm · rarest‑first · per‑chunk hashes</span>
 </header>
 
+## What "weights" are, and why a tracker {#infra-weights-primer}
+
+<p>Two things trip people up before the design even starts: what exactly is being copied, and why a swarm needs a directory at all. Both answers drive every decision below.</p>
+
+<div class="cards">
+  <div><h4>What "weights" are</h4><ul>
+    <li><b>A trained model is a pile of numbers.</b> Training produces billions of learned parameters — the weights — serialized as a handful of tensor shards (safetensors / GGUF) plus the tokenizer and config. For a frontier model that is hundreds of GB, not a few hundred MB.</li>
+    <li><b>They are immutable per version.</b> Once v42 is published its bytes never change; there is no write path, no reconciliation, no conflict. That is precisely what makes them safe to chunk, hash, cache and serve peer‑to‑peer.</li>
+    <li><b>Nothing serves until the file is local.</b> A replica cannot emit a single token until the whole blob is on local NVMe and loaded into GPU HBM. So distribution sits on the critical path of every launch and every rollback — minutes here are minutes of stale model in production.</li>
+    <li><b>The size is the whole problem.</b> 500 GB × 5,000 nodes is 2.5 PB of copying. At single‑digit Gb/s of origin egress that is ~23 days, which is why the fleet cannot simply download from S3.</li></ul></div>
+  <div><h4>Why we need a tracker</h4><ul>
+    <li><b>Peers must serve peers, so someone must know who has what.</b> The moment nodes stop pulling from origin and start pulling from each other, every node needs an answer to "who currently holds chunk 4,217?" The tracker is that directory: node → chunk bitmap, refreshed by announces.</li>
+    <li><b>Rarest‑first needs global counts.</b> To avoid the swarm converging on the same popular chunks while rare ones sit on one about‑to‑reboot node, a node must know how many holders each chunk has. That count only exists if bitmaps are aggregated somewhere.</li>
+    <li><b>Locality needs topology.</b> A chunk from the same rack costs ToR bandwidth; the same chunk cross‑zone costs scarce, billed capacity. The tracker tags each node with rack/zone so peers can be ranked by distance, not just availability.</li>
+    <li><b>It is soft state, never the data path.</b> Bytes flow node ↔ node; the tracker only brokers introductions. Every node re‑announces its full bitmap every ~30 s, so a tracker that restarts rebuilds itself within one announce interval, and while it is down nodes keep transferring from the peer lists they already hold.</li></ul></div>
+</div>
+
 ## Requirements {#infra-weights-req}
 
 <div class="board">
@@ -136,24 +153,71 @@ GET  /distributions/:id/progress                     -&gt; {done, inProgress, fa
 <figcaption>Solid = request path · dashed = response / return · dotted = async or background.</figcaption>
 </figure>
 <ol class="order">
-  <li><b>Operator → Origin/S3:</b> upload weights + signed manifest</li>
-  <li><b>Operator → Tracker:</b> create distribution</li>
-  <li><b>Origin/S3 → Peer A:</b> seed first wave (rate-limited)</li>
-  <li><b>Peer A → Tracker:</b> announce bitmap</li>
-  <li><b>Node D (new) → Origin/S3:</b> fetch manifest, verify signature</li>
-  <li><b>Node D (new) → Tracker:</b> announce empty bitmap</li>
-  <li><b>Tracker → Node D (new):</b> peers + bitmaps + rack tags (response)</li>
-  <li><b>Node D (new):</b> pick rarest chunk, prefer same rack</li>
-  <li><b>Node D (new) → Peer C (same rack):</b> GET chunk 17</li>
-  <li><b>Peer C (same rack) → Node D (new):</b> bytes (response)</li>
-  <li><b>Node D (new):</b> sha256 ok → write NVMe</li>
-  <li><b>Node D (new) → Peer A:</b> GET rare chunk 902</li>
-  <li><b>Peer A → Node D (new):</b> bytes (response)</li>
-  <li><b>Node D (new) → Tracker:</b> announce updated bitmap (30 s) (async)</li>
-  <li><b>Node D (new):</b> bitmap full + merkle root ok</li>
-  <li><b>Node D (new) → Tracker:</b> complete; keep seeding (async)</li>
-  <li><b>Operator → Tracker:</b> progress query</li>
-  <li><b>Tracker → Operator:</b> done / in progress / failed (response)</li>
+  <li><b>Operator → Origin/S3:</b> upload weights + signed manifest.
+    The weights go up once as immutable object‑store blobs — v42's bytes never change after this moment.
+    The manifest is generated alongside them: chunk size, a SHA‑256 per 64 MB chunk, and a Merkle root over the whole list.
+    It is signed with the release key, so a node can trust the hash list even when the bytes themselves arrive from an untrusted peer.</li>
+  <li><b>Operator → Tracker:</b> create distribution.
+    This registers {version, manifestUrl} and opens the swarm; until it exists no node will pull anything, which is what makes publishing an explicit, auditable act.
+    The tracker allocates the per‑distribution state — the node → bitmap table — and starts accepting announces.
+    It is also the abort handle: deleting the distribution is how an operator stops 5,000 nodes at once.</li>
+  <li><b>Origin/S3 → Peer A:</b> seed first wave (rate-limited).
+    Origin serves only a handful of nodes, a few per rack, behind a hard connection cap, because its egress is the one resource that cannot be scaled by adding nodes.
+    Seeds need not each take the whole file — different seeds pull different chunk ranges, so the swarm collectively holds 100% of the file far sooner than any single node does.
+    After this wave origin is deliberately off the data path; peers carry the remaining ~99% of the bytes.</li>
+  <li><b>Peer A → Tracker:</b> announce bitmap.
+    A bitmap is one bit per chunk — 8,000 chunks is 1 KB — so "who has what" is cheap enough to ship whole rather than as deltas.
+    This first announce is what makes A discoverable; before it, no one knows A holds anything worth asking for.
+    The announce carries A's rack and zone too, which is what lets the tracker answer locality questions later.</li>
+  <li><b>Node D (new) → Origin/S3:</b> fetch manifest, verify signature.
+    The manifest is a few hundred KB, so every node can take it straight from origin without denting egress.
+    D verifies the signature before anything else: an unsigned or mismatched manifest means abort, not download.
+    From here on the manifest — not any peer, and not the tracker — is D's sole authority on what correct bytes look like.</li>
+  <li><b>Node D (new) → Tracker:</b> announce empty bitmap.
+    D announces all zeros: it is a pure leecher right now, but it joins the swarm through exactly the same call a seeder uses.
+    A node that restarted mid‑download announces its partial bitmap instead, which is the entire resume mechanism — no separate protocol, no checkpoint negotiation.
+    That works because the bitmap is persisted on local disk next to the chunks it describes.</li>
+  <li><b>Tracker → Node D (new):</b> peers + bitmaps + rack tags (response).
+    D gets a subset of peers — tens, not thousands — with their bitmaps, which is enough to compute what is rare and what is near.
+    Rack and zone tags come with it, because the real cost of a chunk depends far more on where a peer sits than on who it is.
+    This response is the reason the tracker exists: it turns "500 GB from somewhere" into a ranked list of concrete, reachable sources.</li>
+  <li><b>Node D (new):</b> pick rarest chunk, prefer same rack.
+    Rarest‑first: count holders per chunk across the peer set and fetch the lowest count first, so scarce chunks replicate before the one node holding them reboots.
+    Among the peers that do hold the chosen chunk, prefer same rack — ToR bandwidth is plentiful, cross‑zone is scarce and billed.
+    D keeps 8–16 such requests in flight rather than walking chunks one at a time, and switches to endgame mode (ask several peers for the last few chunks) at the tail.</li>
+  <li><b>Node D (new) → Peer C (same rack):</b> GET chunk 17.
+    A plain ranged HTTP GET against the peer's chunk server — no bespoke protocol, just an offset and a length.
+    Same rack means the transfer rides the top‑of‑rack switch and spends none of the cross‑zone budget.
+    C applies its own per‑peer upload cap, so serving D never starves C's own download or its serving traffic.</li>
+  <li><b>Peer C (same rack) → Node D (new):</b> bytes (response).
+    64 MB moves node‑to‑node and origin sees none of it — this substitution is what turns a 23‑day copy into a 1–2 h one.
+    If C stalls or dies mid‑stream, D simply re‑requests that chunk from another holder; only the in‑flight chunk is lost, never the download.</li>
+  <li><b>Node D (new):</b> sha256 ok → write NVMe.
+    The chunk is hashed and compared against the signed manifest before it is trusted, so a corrupt or tampered chunk can never reach the model loader.
+    A bad hash means: discard the bytes, mark that peer bad for that chunk, re‑pull elsewhere — cheap, because the blast radius is one chunk.
+    On success D sets the bit and can immediately serve chunk 17 to others; a downloader becomes an uploader from its first verified chunk, not at 100%.</li>
+  <li><b>Node D (new) → Peer A:</b> GET rare chunk 902.
+    Not every chunk has a same‑rack holder, so for rare ones D deliberately reaches across racks or zones.
+    Fetching the rare chunk early and then seeding it locally is what stops a whole rack from queueing behind one distant holder.</li>
+  <li><b>Peer A → Node D (new):</b> bytes (response).
+    Same verify‑then‑write path: where a chunk came from has no bearing on how much it is trusted.
+    Once written, chunk 902 is no longer rare inside D's rack, and D's neighbours can now source it locally instead of crossing the fabric again.</li>
+  <li><b>Node D (new) → Tracker:</b> announce updated bitmap (30 s) (async).
+    The periodic re‑announce is both progress reporting and a liveness heartbeat — a node that stops announcing simply ages out of other nodes' peer lists.
+    It is off the data path, so a slow or missing tracker delays peer discovery but never stalls transfers already in flight.
+    5,000 nodes × ~1 KB every 30 s is negligible traffic, which is why full bitmaps can be sent instead of diffs.</li>
+  <li><b>Node D (new):</b> bitmap full + merkle root ok.
+    Every chunk already passed its own hash; the Merkle root is the final check that D assembled the right chunks, in the right order, of the right version.
+    Only now is v42 considered present on this node and safe for the rollout system to load and flip traffic onto.</li>
+  <li><b>Node D (new) → Tracker:</b> complete; keep seeding (async).
+    D stays a seeder for a window after finishing, because late joiners, restarted nodes and replaced hardware still need sources.
+    Leaving the swarm the instant it finishes would push the fleet's tail back onto origin — exactly the bottleneck the whole design exists to avoid.</li>
+  <li><b>Operator → Tracker:</b> progress query.
+    The tracker already holds every node's bitmap, so progress is a fold over state it has rather than a fresh fleet‑wide poll.
+    This is what makes stragglers visible: a node stuck at 40% after an hour is a bad disk or a bad NIC, not a slow swarm.</li>
+  <li><b>Tracker → Operator:</b> done / in progress / failed (response).
+    Returns the counts plus the specific failing node IDs, which is the input to "wait", "replace the node", or "abort".
+    Abort deletes the distribution: nodes stop pulling and serving v42, and the rollout never gets the green light to flip traffic to it.</li>
 </ol>
 
 ## How it works, step by step {#infra-weights-flow}
