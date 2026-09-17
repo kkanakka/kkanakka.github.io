@@ -47,6 +47,32 @@ description: "medium · Anthropic · WebSockets · pub/sub routing · per‑conv
   </div>
 </div>
 
+
+## Scale, performance and safety targets {#ch-targets}
+
+<p>Chat is deceptive: the message rate is modest, but ten million <em>simultaneously open connections</em> is what actually shapes the design.</p>
+
+<div class="cards">
+  <div><h4>Scale</h4><ul>
+    <li><b>QPS:</b> 1B messages/day ≈ 11.5K/s average, ~35K/s at peak — unremarkable. The real number is 10M concurrent WebSockets, which is a connection‑management problem, not a throughput one.</li>
+    <li><b>Data volume:</b> ~200 bytes per message → ~200 GB/day, ~73 TB/year, growing forever because chat history is never deleted. Read receipts and delivery status add roughly one small row per message per device.</li>
+    <li><b>Growth:</b> ~2× annually in users and connections. Message storage grows monotonically, so partitioning by conversation and tiering cold history are decisions to make now rather than later.</li></ul></div>
+  <div><h4>Performance</h4><ul>
+    <li><b>Latency:</b> end‑to‑end delivery p50 &lt; 150 ms, p95 &lt; 500 ms when both parties are online; send acknowledgement to the sender p99 &lt; 200 ms; history page load p95 &lt; 300 ms; reconnect and backlog replay under 2 s.</li>
+    <li><b>Throughput:</b> a single WebSocket server holds ~100K connections, so 10M concurrent needs ~100 servers — and connection memory, not CPU, is the sizing constraint.</li></ul></div>
+  <div><h4>Safety and security</h4><ul>
+    <li><b>Abuse prevention:</b> chat is a direct channel between strangers, so spam, harassment, phishing links and scraping of user existence through presence are the real threats. A malicious client can also try to forge sequence numbers or send on someone else's behalf.</li>
+    <li><b>Rate limiting:</b> messages per minute per sender and per conversation, new‑conversation creation limits (the anti‑spam lever that matters most), connection attempts per IP, and a payload size cap.</li>
+    <li><b>Data sensitivity:</b> message content is private correspondence. Encrypt in transit and at rest, scope every read by participant, never log content, support deletion for both participants, and treat presence as opt‑in because "is this person online" leaks more than it appears to.</li></ul></div>
+  <div><h4>Availability and fault tolerance</h4><ul>
+    <li><b>Uptime target:</b> 99.9%+, with the stronger requirement that <b>no acknowledged message is ever lost</b> — a dropped connection is forgivable, a vanished message is not.</li>
+    <li><b>Degraded mode:</b> recipient offline → the message waits in their inbox and a push notification is sent. WebSocket server dies mid‑delivery → the in‑flight entry is reclaimed and redelivered, which is why at‑least‑once plus dedupe is the chosen contract. Redis pub/sub unavailable → messages are still persisted, and clients catch up by pulling on reconnect.</li></ul></div>
+  <div><h4>Also worth pinning down</h4><ul>
+    <li><b>Consistency:</b> strong ordering <em>within</em> a conversation via a per‑conversation sequence number — consistency beats speed here, because messages arriving out of order is the most visible possible bug. Across conversations, no ordering is promised and none is needed.</li>
+    <li><b>Durability:</b> a message is durable in Postgres before the sender is told it was sent; the Redis inbox is a delivery accelerator, never the system of record.</li>
+    <li><b>Compliance:</b> export and deletion covering both participants' copies, retention stated per account, and an audit path for abuse reports that does not require indexing everyone's messages.</li></ul></div>
+</div>
+
 ## Entities and API {#ch-entities}
 
 <p>User · Device (deviceId, userId, type, pushToken) · Conversation (participant_1 &lt; participant_2, unique) · Message (conversationId, senderId, clientMessageId, content, sequenceNumber) · MessageStatus (messageId, deviceId, sent|delivered) · ReadReceipt (userId, conversationId, lastReadSequence).</p>
@@ -167,27 +193,64 @@ REST
 <figcaption>Solid = request path · dashed = response / return · dotted = async or background.</figcaption>
 </figure>
 <ol class="order">
-  <li><b>WS server 2 → Redis:</b> setup: SUBSCRIBE user:B when B connects</li>
-  <li><b>User A → WS server 1:</b> send_message (client_message_id)</li>
-  <li><b>WS server 1 → Message Service:</b> forward</li>
-  <li><b>Message Service → Postgres:</b> dedupe by (conv, sender, cmid)</li>
-  <li><b>Message Service → Redis:</b> INCR seq:conv</li>
-  <li><b>Redis → Message Service:</b> seq (response)</li>
-  <li><b>Message Service → Postgres:</b> INSERT message (sync)</li>
-  <li><b>Message Service → Redis:</b> LPUSH inbox:B_device</li>
-  <li><b>Message Service → Redis:</b> PUBLISH user:B</li>
-  <li><b>Message Service → User A:</b> sent (msg_id, seq) (response)</li>
-  <li><b>Redis → WS server 2:</b> notify subscriber (async)</li>
-  <li><b>WS server 2 → Redis:</b> BRPOPLPUSH inbox → inflight</li>
-  <li><b>Redis → WS server 2:</b> message (response)</li>
-  <li><b>WS server 2 → User B:</b> new_message</li>
-  <li><b>User B → WS server 2:</b> ACK</li>
-  <li><b>WS server 2 → Redis:</b> LREM inflight; status delivered</li>
-  <li><b>WS server 2 → Redis:</b> PUBLISH user:A delivered</li>
-  <li><b>Redis → WS server 1:</b> notify (async)</li>
-  <li><b>WS server 1 → User A:</b> delivered (response)</li>
-  <li><b>User B → WS server 2:</b> read_receipt (debounced)</li>
-  <li><b>WS server 2 → Postgres:</b> hwm update if higher</li>
+  <li><b>WS server 2 → Redis:</b> setup: SUBSCRIBE user:B when B connects.
+    Routing is established at connect time: whichever server holds B's socket subscribes to B's channel, so senders never need to know where B is connected.
+    This is what keeps the fan‑out problem tractable — no service discovery, no connection registry to keep consistent, just a subscription that dies with the connection.</li>
+  <li><b>User A → WS server 1:</b> send_message (client_message_id).
+    The client generates the idempotency key, because only the client knows that a retry is the <em>same</em> message rather than a new one.
+    Without it, a send that times out after the server persisted it produces a duplicate on retry — the most common bug in chat systems.</li>
+  <li><b>WS server 1 → Message Service:</b> forward.
+    WebSocket servers stay deliberately dumb: they own sockets and nothing else, so they can be restarted and scaled without touching messaging logic.
+    All the stateful decisions happen in a service that any connection server can call.</li>
+  <li><b>Message Service → Postgres:</b> dedupe by (conv, sender, cmid).
+    A unique constraint on the triple makes retries idempotent at the database level rather than by convention.
+    Checking here — before a sequence number is assigned — means a duplicate cannot consume a sequence slot and leave a permanent gap.</li>
+  <li><b>Message Service → Redis:</b> INCR seq:conv.
+    Ordering comes from a per‑conversation counter, not from timestamps: clocks skew between servers, and two messages a millisecond apart would otherwise sort arbitrarily.
+    Per‑conversation rather than global means contention is essentially zero — one counter per two people — while still giving total order exactly where users can perceive it.
+    This single decision is what makes "ordered within a conversation" achievable without any distributed coordination.</li>
+  <li><b>Redis → Message Service:</b> seq (response).
+    The sequence number is also the pagination cursor and the read‑receipt high‑water mark, so one construct serves ordering, history and receipts.</li>
+  <li><b>Message Service → Postgres:</b> INSERT message (sync).
+    Persistence is synchronous and happens before anything is acknowledged or delivered — the durability boundary is here, and everything after it is an optimisation.
+    Messages are partitioned by conversation and sorted by sequence, so loading history is one contiguous read.</li>
+  <li><b>Message Service → Redis:</b> LPUSH inbox:B_device.
+    Every device gets its own inbox, which is what makes multi‑device work: the same message is delivered and acknowledged independently per device.
+    The inbox also handles the offline case with no special path — an offline device simply has a queue that nobody is draining yet.</li>
+  <li><b>Message Service → Redis:</b> PUBLISH user:B.
+    The publish is only a nudge saying "you have mail", not the message itself — so a missed notification costs latency rather than data.
+    Pub/sub is fire‑and‑forget, which is acceptable precisely because the durable inbox is the real delivery mechanism.</li>
+  <li><b>Message Service → User A:</b> sent (msg_id, seq) (response).
+    "Sent" means durably stored, not delivered — being precise about which of sent, delivered and read a tick represents is most of the product here.
+    The sequence number returned lets A's own UI order its view without waiting for anything else.</li>
+  <li><b>Redis → WS server 2:</b> notify subscriber (async).
+    Only the server holding B's connection is subscribed, so exactly one machine reacts — no broadcast, no fan‑out to a hundred servers.</li>
+  <li><b>WS server 2 → Redis:</b> BRPOPLPUSH inbox → inflight.
+    The message moves atomically from the inbox to an in‑flight list rather than being popped and held in memory.
+    If this server dies mid‑delivery, the message is sitting in a durable in‑flight list and a reaper returns it — losing the socket costs a redelivery, never the message.
+    This is the mechanism behind the at‑least‑once guarantee, and the reason the client's dedupe key matters on the receive side too.</li>
+  <li><b>Redis → WS server 2:</b> message (response).
+    The blocking pop means an idle server consumes nothing and reacts the instant work exists, without a polling interval to tune.</li>
+  <li><b>WS server 2 → User B:</b> new_message.
+    B receives the message with its sequence number, so the client can detect a gap and request whatever it missed rather than silently displaying an incomplete conversation.</li>
+  <li><b>User B → WS server 2:</b> ACK.
+    Delivery is confirmed by the recipient, not assumed by the sender — a socket write succeeding says nothing about whether the app received or rendered it.</li>
+  <li><b>WS server 2 → Redis:</b> LREM inflight; status delivered.
+    Only an acknowledged message leaves the in‑flight list; anything still there after a timeout is redelivered.
+    At‑least‑once plus the client's dedupe key is a deliberate choice over exactly‑once, which would need distributed transactions for a guarantee users cannot perceive.</li>
+  <li><b>WS server 2 → Redis:</b> PUBLISH user:A delivered.
+    Status flows back through the same routing mechanism as messages, so there is one delivery path to build, test and reason about rather than two.</li>
+  <li><b>Redis → WS server 1:</b> notify (async).
+    A missed status notification is cosmetic: A's tick updates on next sync, whereas a missed message would be a correctness failure — which is why they share a mechanism but not a guarantee.</li>
+  <li><b>WS server 1 → User A:</b> delivered (response).
+    The second tick appears, and its meaning is precise: B's device has it, which is different from B having read it.</li>
+  <li><b>User B → WS server 2:</b> read_receipt (debounced).
+    Receipts are debounced because scrolling through a conversation would otherwise emit one event per message — turning a read into a burst of writes.
+    Sending only the highest sequence read collapses an unbounded stream of events into one small update.</li>
+  <li><b>WS server 2 → Postgres:</b> hwm update if higher.
+    Read state is one high‑water mark per user per conversation, not a row per message — which is the difference between a few hundred million rows and tens of billions.
+    Updating only when the value increases makes the operation idempotent and safe to retry, and makes out‑of‑order receipts harmless.
+    Unread counts then become arithmetic on two sequence numbers rather than a count over messages.</li>
 </ol>
 
 ## Sending one message, step by step {#ch-flow}
@@ -277,6 +340,40 @@ REST
   <li><code>SETEX presence:{user} 60 online</code> on connect; heartbeat every 30 s refreshes; expiry = offline without any explicit event.</li>
   <li>Notify only users who have an active conversation with the person (a "presence subscribers" set), never the whole contact list.</li>
 </ul>
+
+
+## Trade-offs {#ch-tradeoffs}
+
+<table>
+  <tbody><tr><th>Decision</th><th>What we chose</th><th>What we gave up</th><th>When to flip it</th></tr>
+  <tr><td>Ordering</td><td>Per‑conversation sequence from Redis</td><td>A dependency on the counter for every send</td><td>Timestamps are free but skew between servers, so two near‑simultaneous messages sort arbitrarily — visible and unacceptable in chat</td></tr>
+  <tr><td>Delivery guarantee</td><td>At‑least‑once plus client dedupe key</td><td>Occasional duplicate delivery the client must suppress</td><td>Exactly‑once needs distributed transactions for a property users cannot perceive; at‑most‑once loses messages, which they certainly can</td></tr>
+  <tr><td>Transport</td><td>WebSockets</td><td>10M open connections to hold, and sticky routing to manage</td><td>Long polling survives hostile networks better and costs far more; SSE is one‑way and chat needs both directions</td></tr>
+  <tr><td>Routing</td><td>Redis pub/sub keyed by user</td><td>Fire‑and‑forget delivery, so notifications can be missed</td><td>Acceptable only because the durable inbox is the real mechanism; a registry of user→server is exact but must be kept consistent as connections churn</td></tr>
+  <tr><td>Queueing</td><td>Per‑device inbox plus in‑flight list</td><td>More Redis structures, and a reaper to run</td><td>A single per‑user queue is simpler but breaks multi‑device, where each device must acknowledge independently</td></tr>
+  <tr><td>Read receipts</td><td>Debounced high‑water mark</td><td>No per‑message read state</td><td>Per‑message receipts are needed for group read‑by lists; for 1:1 they multiply storage by an order of magnitude for no product gain</td></tr>
+  <tr><td>Conversation identity</td><td>Canonical <code>min(a,b)</code> with a unique constraint</td><td>Nothing meaningful</td><td>Never allow two rows for one pair — concurrent first messages will create duplicates and split the history</td></tr>
+</tbody></table>
+
+## Safety-first design {#ch-safety}
+
+<div class="cards">
+  <div><h4>An acknowledged message is never lost</h4><ul>
+    <li><b>Durable before acknowledged.</b> The sender's "sent" confirmation follows the database write, so a crash immediately after can never lose a message the user believes was delivered.</li>
+    <li><b>In‑flight lists survive a dead server.</b> Moving atomically from inbox to in‑flight means losing a socket costs a redelivery, not a message.</li>
+    <li><b>Redis is an accelerator, not the record.</b> Losing the cache entirely degrades latency and status; history and content live in Postgres.</li>
+    <li><b>Gaps are detectable.</b> Sequence numbers let a client notice it missed something and pull it, instead of silently showing an incomplete conversation.</li></ul></div>
+  <div><h4>Protecting people from each other</h4><ul>
+    <li><b>Limit new conversations, not just messages.</b> The spam lever that matters is how many strangers one account can open a conversation with per hour.</li>
+    <li><b>Presence is opt‑in.</b> "Online now" reveals daily routine; treating it as a privacy setting rather than a default is the safer starting point.</li>
+    <li><b>Authorise on the conversation, every time.</b> Membership is checked on every read and send, so a guessed conversation id yields nothing.</li>
+    <li><b>Server assigns identity and order.</b> Sender id comes from the authenticated session and sequence numbers from the server — a client can never forge either.</li></ul></div>
+  <div><h4>Private correspondence stays private</h4><ul>
+    <li><b>Never log content.</b> Operational logs carry ids, sizes and timings; a debugging pipeline must not become a searchable archive of people's messages.</li>
+    <li><b>Deletion covers both sides.</b> A message exists in two participants' views and in per‑device inboxes — a delete that misses any of those is not a delete.</li>
+    <li><b>Encrypted in transit and at rest.</b> Table stakes, and worth stating because the store is partitioned and replicated in several places.</li>
+    <li><b>Abuse reports without mass indexing.</b> Reported conversations are retrievable by participants and report id, rather than by maintaining a searchable index over everyone's messages.</li></ul></div>
+</div>
 
 ## Don't leave the room without saying {#ch-checklist}
 

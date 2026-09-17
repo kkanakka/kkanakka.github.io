@@ -45,6 +45,32 @@ description: "medium · scaling reads · fan‑out on write · celebrity problem
 </div>
 <div class="note"><b>Scale math to say early:</b> 100M posts/day ≈ 1,160/s writes. 500M DAU × 5 refreshes ≈ 2.5B feed reads/day, ~150K/s at peak. Media 100M × 2 MB ≈ 200 TB/day (~750 PB over 10 years); metadata 100M × 1 KB ≈ 100 GB/day. Reads dwarf writes by orders of magnitude.</div>
 
+
+## Scale, performance and safety targets {#ig-targets}
+
+<p>Two numbers decide this design: the read/write ratio and the follower distribution. State both early, because the celebrity problem falls straight out of the second one.</p>
+
+<div class="cards">
+  <div><h4>Scale</h4><ul>
+    <li><b>QPS:</b> 500M DAU checking feeds several times a day ≈ 100K feed reads/s at peak, against 100M posts/day ≈ 1.2K writes/s. Roughly 100:1 reads to writes, which is what makes precomputing feeds worth it.</li>
+    <li><b>Data volume:</b> 100M posts/day at ~2 MB average media ≈ 200 TB/day of originals, plus variants. Post metadata is small — ~50 GB/day — but the follow graph is ~50B edges and is the hardest thing to query.</li>
+    <li><b>Growth:</b> ~2× annually, with video growing faster than photos, so egress and transcoding cost grow faster than storage.</li></ul></div>
+  <div><h4>Performance</h4><ul>
+    <li><b>Latency:</b> feed page p95 &lt; 500 ms end to end; media visible &lt; 200 ms from a CDN edge; a post visible to followers within ~2 minutes, which is the explicit consistency budget.</li>
+    <li><b>Throughput:</b> fan‑out is the spiky part — one post by an account with 100M followers is 100M writes if done naively, which is precisely why celebrities are excluded from it.</li></ul></div>
+  <div><h4>Safety and security</h4><ul>
+    <li><b>Abuse prevention:</b> a public social graph attracts spam accounts, follow‑farming, scraping of profiles and media, and harmful content. Fan‑out itself is an amplification vector — one post reaching 100M feeds is exactly what a bad actor wants.</li>
+    <li><b>Rate limiting:</b> posts per hour per account, follow actions per day (the main anti‑spam lever), feed requests per user, and per‑IP limits on unauthenticated profile reads to blunt scraping.</li>
+    <li><b>Data sensitivity:</b> media carries EXIF location and faces — strip metadata on upload. Private accounts must be enforced on the read path rather than by hiding the UI, and blocking has to apply to feed assembly, not just to the profile page.</li></ul></div>
+  <div><h4>Availability and fault tolerance</h4><ul>
+    <li><b>Uptime target:</b> 99.99% for feed reads; availability beats consistency decisively — a feed that is two minutes stale is invisible, a feed that fails to load is the product being broken.</li>
+    <li><b>Degraded mode:</b> Redis feed cache lost → rebuild by querying recent posts of followed accounts, slower but correct, which is why the cache must be reconstructible. Fan‑out backed up → posts appear late rather than being lost, since the queue is durable. Media processing behind → show the original scaled client‑side rather than an empty tile.</li></ul></div>
+  <div><h4>Also worth pinning down</h4><ul>
+    <li><b>Consistency:</b> eventual, with a stated ~2 minute budget for a post to reach followers. The one exception is the author's own view — they must see their post immediately, which usually means merging their own recent posts at read time.</li>
+    <li><b>Durability:</b> eleven nines for media and post rows; precomputed feeds are explicitly disposable, which is what allows trimming them to 500 entries without ceremony.</li>
+    <li><b>Compliance:</b> deletion must remove the post, its media variants and its entries in every follower's precomputed feed — a delete that leaves fan‑out entries behind leaves the post visible.</li></ul></div>
+</div>
+
 ## Entities and API {#ig-entities}
 
 <p>User · Post (postId, userId, caption, mediaKey, uploadStatus, createdAt) · Media (bytes in S3) · Follow (followerId, followedId).</p>
@@ -169,29 +195,67 @@ GET  /feed?cursor=&amp;limit=                  -&gt; {posts[], nextCursor}   (cu
 <figcaption>Solid = request path · dashed = response / return · dotted = async or background.</figcaption>
 </figure>
 <ol class="order">
-  <li><b>Client → Post Service:</b> POST /posts {caption}</li>
-  <li><b>Post Service → DynamoDB:</b> PutItem uploadStatus=pending</li>
-  <li><b>Post Service → Client:</b> postId + presigned URLs (response)</li>
-  <li><b>Client → S3:</b> multipart upload</li>
-  <li><b>S3 → Post Service:</b> completion event (async)</li>
-  <li><b>Post Service → DynamoDB:</b> uploadStatus=complete</li>
-  <li><b>Post Service → Queue:</b> enqueue postId (async)</li>
-  <li><b>S3 → Queue:</b> media processing job (async)</li>
-  <li><b>Fan-out Service → Queue:</b> consume postId</li>
-  <li><b>Fan-out Service → DynamoDB:</b> query GSI followers of author</li>
-  <li><b>DynamoDB → Fan-out Service:</b> follower ids (pages) (response)</li>
-  <li><b>Fan-out Service:</b> skip if author is celebrity</li>
-  <li><b>Fan-out Service → Redis feeds:</b> ZADD feed:{follower} score=createdAt</li>
-  <li><b>Fan-out Service → Redis feeds:</b> ZREMRANGEBYRANK trim to 500</li>
-  <li><b>Client → Post Service:</b> GET /feed?cursor</li>
-  <li><b>Post Service → Redis feeds:</b> ZREVRANGEBYSCORE feed:{user}</li>
-  <li><b>Redis feeds → Post Service:</b> postIds (response)</li>
-  <li><b>Post Service → Redis feeds:</b> recent posts of followed celebrities</li>
-  <li><b>Post Service → DynamoDB:</b> BatchGetItem posts</li>
-  <li><b>DynamoDB → Post Service:</b> post rows (response)</li>
-  <li><b>Post Service → Client:</b> page + nextCursor + CDN URLs (response)</li>
-  <li><b>Client → CDN:</b> GET media variant</li>
-  <li><b>CDN → Client:</b> bytes from edge (response)</li>
+  <li><b>Client → Post Service:</b> POST /posts {caption}.
+    The post is created before the media is uploaded, which gives the client an id to attach bytes to and gives the server a durable record from the start.
+    Metadata and media travel separately because they have completely different sizes and failure modes.</li>
+  <li><b>Post Service → DynamoDB:</b> PutItem uploadStatus=pending.
+    The row exists but is explicitly incomplete, so nothing can surface a post whose media has not arrived.
+    Making "pending" a real state rather than an inference is what keeps broken tiles out of feeds.</li>
+  <li><b>Post Service → Client:</b> postId + presigned URLs (response).
+    Presigned URLs send bytes straight to object storage, so the service never proxies a 4 GB video and its capacity is unrelated to media size.
+    Each URL is scoped to one object with a short expiry, so a leaked link is nearly worthless.</li>
+  <li><b>Client → S3:</b> multipart upload.
+    Multipart makes large videos survivable on mobile networks: parts upload in parallel and a failure costs one part rather than the whole file.
+    The client can pause and resume, which matters enormously for a 4 GB upload over cellular.</li>
+  <li><b>S3 → Post Service:</b> completion event (async).
+    Completion is confirmed by storage rather than claimed by the client, so metadata can never describe bytes that are not there.</li>
+  <li><b>Post Service → DynamoDB:</b> uploadStatus=complete.
+    This flip is the post's moment of existence — before it nothing is fanned out, after it the post is real.
+    A single atomic state change is what guarantees a feed never contains an unviewable post.</li>
+  <li><b>Post Service → Queue:</b> enqueue postId (async).
+    Fan‑out is decoupled from posting, so the author's request returns in milliseconds regardless of whether they have 50 followers or 5 million.
+    A durable queue also means a fan‑out backlog delays visibility rather than losing posts.</li>
+  <li><b>S3 → Queue:</b> media processing job (async).
+    Variants and video renditions are generated once, in the background, because transcoding on the viewing path would make the 200 ms target impossible.</li>
+  <li><b>Fan-out Service → Queue:</b> consume postId.
+    Fan‑out workers scale independently of the API tier, which is what absorbs the spiky, unbounded nature of this work.</li>
+  <li><b>Fan-out Service → DynamoDB:</b> query GSI followers of author.
+    A secondary index on the follow graph answers "who follows this author" — the reverse of the query the graph is naturally stored for.
+    Followers are paged rather than loaded at once, because a large account's follower list does not fit in memory.</li>
+  <li><b>DynamoDB → Fan-out Service:</b> follower ids (pages) (response).
+    Paging keeps memory bounded and lets fan‑out for one post be parallelised across workers.</li>
+  <li><b>Fan-out Service:</b> skip if author is celebrity.
+    This is the decision the whole question turns on. Fanning out a post to 100M followers is 100M writes for one action, and the queue would never drain.
+    Above a follower threshold the author is excluded from fan‑out entirely, and their posts are merged at read time instead.
+    The hybrid — push for the ordinary case, pull for the extreme tail — is what makes both the write path and the read path affordable.</li>
+  <li><b>Fan-out Service → Redis feeds:</b> ZADD feed:{follower} score=createdAt.
+    A sorted set per user scored by timestamp gives chronological ordering and cheap range reads in one structure.
+    Writing the post id rather than the post keeps each feed tiny and means an edited post does not need every copy rewritten.</li>
+  <li><b>Fan-out Service → Redis feeds:</b> ZREMRANGEBYRANK trim to 500.
+    Feeds are capped because nobody scrolls past a few hundred entries, and an untrimmed feed grows without bound for every active user.
+    Trimming is safe precisely because the cache is reconstructible — deeper history comes from the posts table.</li>
+  <li><b>Client → Post Service:</b> GET /feed?cursor.
+    Cursor pagination rather than offsets, because new posts arriving between pages would otherwise shift every subsequent page.</li>
+  <li><b>Post Service → Redis feeds:</b> ZREVRANGEBYSCORE feed:{user}.
+    The common case is one sorted‑set range read — the precomputed feed is what turns a fan‑out‑on‑read query over thousands of accounts into a single lookup.</li>
+  <li><b>Redis feeds → Post Service:</b> postIds (response).
+    Ids only, so the feed stays small and the hydration step can batch and cache independently.</li>
+  <li><b>Post Service → Redis feeds:</b> recent posts of followed celebrities.
+    The pull half of the hybrid: posts from the handful of very large accounts a user follows are fetched at read time and merged in.
+    Because those accounts are few and their recent posts are cached once for everybody, this costs one extra cheap read rather than a fan‑out of millions.
+    Merging by timestamp restores a single chronological feed, so the split is invisible to the user.</li>
+  <li><b>Post Service → DynamoDB:</b> BatchGetItem posts.
+    Hydration is one batched read for the whole page rather than a query per post.
+    Deleted or now‑hidden posts are filtered here, which is also where blocking and privacy are enforced.</li>
+  <li><b>DynamoDB → Post Service:</b> post rows (response).
+    Post rows are the source of truth; the feed cache holds only ordering, so an edit or delete takes effect without touching millions of feeds.</li>
+  <li><b>Post Service → Client:</b> page + nextCursor + CDN URLs (response).
+    Media is returned as CDN URLs rather than bytes, so the response is small and the heavy work happens at the edge.
+    Per‑device variants mean a phone fetches a phone‑sized image rather than a 4K original.</li>
+  <li><b>Client → CDN:</b> GET media variant.
+    Media is immutable and highly shared, which is close to the ideal CDN workload — the first viewer in a region warms it for everyone after.</li>
+  <li><b>CDN → Client:</b> bytes from edge (response).
+    Serving from the edge is what meets the 200 ms target globally, and it keeps ~200 TB/day of egress off the origin entirely.</li>
 </ol>
 
 ## High‑level design, by requirement {#ig-hld}
@@ -258,6 +322,40 @@ GET  /feed?cursor=&amp;limit=                  -&gt; {posts[], nextCursor}   (cu
   <li>Storage tiering: media untouched for months → S3 Glacier; old post metadata → cheaper store. CDN → memory → SSD → HDD → tape, move cold data down.</li>
   <li>Evolution story for staff: 1M users = fan‑out on read on Postgres with indexes; 10M = add feed cache; 100M+ = fan‑out on write with celebrity carve‑out; sharding and tiering as storage grows.</li>
 </ul>
+
+
+## Trade-offs {#ig-tradeoffs}
+
+<table>
+  <tbody><tr><th>Decision</th><th>What we chose</th><th>What we gave up</th><th>When to flip it</th></tr>
+  <tr><td>Feed construction</td><td>Hybrid: fan‑out on write, pull for celebrities</td><td>Two code paths and a merge step at read time</td><td>Pure fan‑out on write dies on large accounts; pure fan‑out on read makes every feed load a query over thousands of authors</td></tr>
+  <tr><td>Celebrity threshold</td><td>A follower count above which fan‑out is skipped</td><td>A tuning knob that needs revisiting as the platform grows</td><td>No threshold means one post can generate 100M writes; too low a threshold pushes ordinary accounts onto the slower read path</td></tr>
+  <tr><td>Feed contents</td><td>Post ids, trimmed to ~500</td><td>An extra hydration round trip per page</td><td>Denormalizing post bodies into feeds makes reads faster and makes every edit or delete a fan‑out of its own</td></tr>
+  <tr><td>Media path</td><td>Presigned upload, CDN download</td><td>No server‑side inspection in line with the transfer</td><td>Proxying is required for synchronous moderation, and makes server capacity a function of video size</td></tr>
+  <tr><td>Consistency</td><td>~2 minutes for a post to reach followers</td><td>Followers may briefly miss a new post</td><td>Synchronous fan‑out would make posting as slow as the largest follower list, for a delay nobody notices</td></tr>
+  <tr><td>Feed cache</td><td>Redis, treated as disposable</td><td>A cold rebuild is slow for active users</td><td>Making feeds durable removes the rebuild path and adds a large, permanently growing store of derived data</td></tr>
+  <tr><td>Ordering</td><td>Strictly chronological</td><td>No relevance ranking or engagement optimisation</td><td>Ranking changes the read path substantially and is usually scoped out of this question deliberately</td></tr>
+</tbody></table>
+
+## Safety-first design {#ig-safety}
+
+<div class="cards">
+  <div><h4>Fan-out is an amplification vector</h4><ul>
+    <li><b>Nothing is fanned out before it is complete.</b> The upload‑complete flip gates fan‑out, so a broken or half‑uploaded post never reaches a single feed.</li>
+    <li><b>Celebrity exclusion is a safety property too.</b> Capping who can generate 100M writes bounds both cost and the blast radius of a compromised large account.</li>
+    <li><b>Deletion reaches the feeds.</b> Removing a post must purge it from every precomputed feed, or it stays visible to everyone who already received it.</li>
+    <li><b>Rate limit posting and following.</b> Follow actions per day is the single most effective anti‑spam lever on a platform like this.</li></ul></div>
+  <div><h4>Privacy is enforced on the read path</h4><ul>
+    <li><b>Check at hydration, not at fan‑out.</b> Privacy and blocking are evaluated when the page is assembled, so a change takes effect immediately rather than for future posts only.</li>
+    <li><b>Private accounts are a query filter.</b> Hiding a profile in the UI is not enforcement; the read path must exclude it.</li>
+    <li><b>Blocking applies to feed assembly.</b> A blocked user's content must not arrive through a shared or celebrity path either.</li>
+    <li><b>Strip EXIF on upload.</b> Photos carry GPS coordinates and device identifiers that users do not expect to publish with an image.</li></ul></div>
+  <div><h4>Degrade without breaking the product</h4><ul>
+    <li><b>Feeds are reconstructible.</b> Losing the cache means a slower rebuild from the posts table, never lost posts — which is what makes trimming and eviction safe.</li>
+    <li><b>The queue absorbs backlogs.</b> A fan‑out backlog delays visibility within the stated budget instead of dropping posts.</li>
+    <li><b>Authors see their own posts immediately.</b> Merging the author's recent posts at read time avoids the "did it post?" confusion that eventual fan‑out otherwise creates.</li>
+    <li><b>Missing variants degrade gracefully.</b> Show a scaled original rather than an empty tile when processing is behind.</li></ul></div>
+</div>
 
 ## Don't leave the room without saying {#ig-checklist}
 

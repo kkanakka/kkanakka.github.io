@@ -47,6 +47,32 @@ description: "hard · Anthropic · ingest + store + query · metric identity · 
 </div>
 <div class="note"><b>Identity questions to ask first:</b> is a metric identified by name alone, or by (tenant/namespace, producer, name, type, unit, label schema)? Are units declared or implied? Can the same name mean different things in different namespaces? Who owns a metric and can approve an alias? The answers decide whether resolution keys on <code>(namespace, raw_name, client_version)</code>, which is the assumption below.</div>
 
+
+## Scale, performance and safety targets {#tl-targets}
+
+<p>The page above says to <em>ask</em> for these. Here is a concrete set to propose if the interviewer leaves them open — stating numbers turns "it depends" into a design.</p>
+
+<div class="cards">
+  <div><h4>Scale</h4><ul>
+    <li><b>QPS:</b> 5M observations/s arriving as ~50K batched requests/s from ~500K clients. Query load is small by comparison — a few thousand dashboard and ad‑hoc queries per second.</li>
+    <li><b>Data volume:</b> ~20M active series (the real scaling variable), ~1 KB per batched observation on the wire, ~600 GB/day raw compressed. Raw observations are retained far longer than usual here, because re‑derivation depends on them.</li>
+    <li><b>Growth:</b> ~2× annually in clients, but naming variants grow with every shipped client version — so the alias registry grows monotonically and must be designed for thousands of mappings, not dozens.</li></ul></div>
+  <div><h4>Performance</h4><ul>
+    <li><b>Latency:</b> ingest ack p99 &lt; 200 ms (the client must not block on it); observation queryable p99 &lt; 60 s; dashboard query p95 &lt; 2 s; a re‑derivation backfill over 30 days of one metric completing within hours, not days.</li>
+    <li><b>Throughput:</b> sustain 5M observations/s through resolution and both writes, while a backfill runs concurrently — the backfill must never be able to starve live ingest.</li></ul></div>
+  <div><h4>Safety and security</h4><ul>
+    <li><b>Abuse prevention:</b> the distinctive risk is not an attacker but a wrong mapping: silently double‑counting a metric that feeds capacity planning or billing. Alongside that, a client version emitting unbounded label values is a cardinality explosion, and a compromised client key could forge observations for another tenant.</li>
+    <li><b>Rate limiting:</b> per‑tenant observation and series budgets enforced at the edge, label allowlists per metric, per‑client batch size and rate caps, and a cap on how much of the historical range one backfill may rewrite at a time.</li>
+    <li><b>Data sensitivity:</b> labels must carry no PII, enforced by allowlist rather than convention, because label values are indexed and retained for months. Tenant isolation applies on ingest, storage and query. Retention: raw ~90 days (longer than usual, to allow re‑derivation), rollups 13 months.</li></ul></div>
+  <div><h4>Availability and fault tolerance</h4><ul>
+    <li><b>Uptime target:</b> 99.9% for ingest — but clients buffer, so a short outage costs delay rather than data. Query availability matters more to users; the registry is on the resolution path and needs to be highly available or aggressively cached.</li>
+    <li><b>Degraded mode:</b> registry unreachable → resolve from a cached mapping snapshot, and quarantine rather than guess. TSDB write failing → keep writing raw, because raw is what everything can be rebuilt from. Backfill falling behind → live ingest always wins; historical correction is allowed to take longer.</li></ul></div>
+  <div><h4>Also worth pinning down</h4><ul>
+    <li><b>Consistency:</b> at‑least‑once delivery with dedupe on (client_id, batch_id, seq); aggregates are eventually consistent and explicitly re‑computable, which is the property that makes late data and corrections tractable at all.</li>
+    <li><b>Durability:</b> raw observations are the system of record and need eleven nines — every canonical series is a derived view that can be rebuilt, and that is the whole basis for reversible mappings.</li>
+    <li><b>Compliance:</b> every mapping change is an audited event with evidence, approver and a validity range, and every query result carries provenance — which is what lets someone answer "why did this number change last Tuesday?".</li></ul></div>
+</div>
+
 ## Entities and API {#tl-entities}
 
 <p>Observation (raw: namespace, raw_name, client_version, labels, type, unit?, value, ts, ingest_ts, batch_id, seq) · MetricIdentity (metric_id, canonical_name, type, unit, label_schema, owner) · Alias mapping (namespace, raw_name, version_range, → metric_id, unit_conversion?, status, evidence, approved_by, valid_from/to, mapping_version) · Series (metric_id + labels) · Rollup · MappingChangeLog.</p>
@@ -152,24 +178,64 @@ GET  /v1/registry/unresolved             -&gt; raw names seen with counts, sampl
 <figcaption>Solid = request path · dashed = response / return · dotted = async or background.</figcaption>
 </figure>
 <ol class="order">
-  <li><b>Client SDK:</b> buffer, batch, retry with backoff, drop policy</li>
-  <li><b>Client SDK → Ingest edge:</b> POST /v1/metrics (batch, client_version, namespace)</li>
-  <li><b>Ingest edge:</b> auth, schema validate, label limits, dedupe key</li>
-  <li><b>Ingest edge → Kafka:</b> append raw batch</li>
-  <li><b>Ingest edge → Client SDK:</b> 202 accepted (response)</li>
-  <li><b>Resolver/Processor → Kafka:</b> consume</li>
-  <li><b>Resolver/Processor → Registry:</b> lookup (namespace, raw_name, version) → metric_id</li>
-  <li><b>Registry → Resolver/Processor:</b> metric_id + unit + type | UNRESOLVED (response)</li>
-  <li><b>Resolver/Processor → Raw store:</b> write raw observation with provenance (raw_name, version, metric_id, mapping_version)</li>
-  <li><b>Resolver/Processor → TSDB:</b> write to canonical metric_id series (labels normalized)</li>
-  <li><b>Resolver/Processor:</b> UNRESOLVED → quarantine series metric_id=raw:&lt;name&gt;</li>
-  <li><b>Query API → Registry:</b> expand query: metric_id → include historical aliases by time range</li>
-  <li><b>Query API → TSDB:</b> query canonical + alias series</li>
-  <li><b>TSDB → Query API:</b> samples (response)</li>
-  <li><b>Query API:</b> merge with provenance; never sum an alias twice</li>
-  <li><b>Registry → Resolver/Processor:</b> mapping v2 approved (async)</li>
-  <li><b>Resolver/Processor → Raw store:</b> re-derive canonical from raw (backfill job) (async)</li>
-  <li><b>Resolver/Processor → TSDB:</b> rewrite affected range with new mapping_version (async)</li>
+  <li><b>Client SDK:</b> buffer, batch, retry with backoff, drop policy.
+    The SDK buffers in bounded memory, batches by size or time, and retries with exponential backoff and jitter — so a platform outage costs delay, not data.
+    The drop policy is explicit and measurable: on overflow, drop oldest and emit a <code>dropped_observations</code> counter, because silent loss is indistinguishable from a healthy quiet period.
+    Both client event time and server ingest time are recorded, since offline devices make late arrival normal rather than exceptional.</li>
+  <li><b>Client SDK → Ingest edge:</b> POST /v1/metrics (batch, client_version, namespace).
+    <code>client_version</code> is the single most important field on the request: it is what later lets the same raw name mean different things in different releases.
+    Namespace scopes identity, so two teams using the same metric name are not accidentally merged.</li>
+  <li><b>Ingest edge:</b> auth, schema validate, label limits, dedupe key.
+    Validation is strict and itemized — type, value shape, timestamp sanity — and rejections name the offending observation so the emitting team can fix it.
+    Label allowlists and per‑tenant cardinality budgets are enforced here, because cardinality is the scaling variable and the only cheap place to stop an explosion is at the door.
+    Dedupe on (client_id, batch_id, seq) through a short Redis window makes at‑least‑once delivery safe without demanding exactly‑once from the client.</li>
+  <li><b>Ingest edge → Kafka:</b> append raw batch.
+    The raw batch is durable before anything is interpreted, which is the foundation of the entire design: resolution is a derived step, not a gate.
+    A log here also decouples ingest from resolution, so a registry problem slows derivation without dropping data.</li>
+  <li><b>Ingest edge → Client SDK:</b> 202 accepted (response).
+    Acknowledging after the durable append but before resolution keeps the client's round trip short and independent of downstream health.
+    202 rather than 200 is honest: the data is accepted, not yet processed, and rejected items are itemized in the response.</li>
+  <li><b>Resolver/Processor → Kafka:</b> consume.
+    Resolution runs as an independent consumer, so it can be restarted, re‑run from an offset, or scaled up during a backfill without touching ingest.</li>
+  <li><b>Resolver/Processor → Registry:</b> lookup (namespace, raw_name, version) → metric_id.
+    Identity keys on the triple, not on the name — a similar name is not evidence of the same meaning, and version ranges are what make historical variants resolvable.
+    The registry is cached aggressively in the resolver, since this lookup happens millions of times a second.</li>
+  <li><b>Registry → Resolver/Processor:</b> metric_id + unit + type | UNRESOLVED (response).
+    Unit comes back with the identity so a mapping can carry a conversion — merging milliseconds into a seconds series without converting is the classic silent corruption.
+    UNRESOLVED is a first‑class answer, not an error: the system is explicitly designed to receive names it has never seen.</li>
+  <li><b>Resolver/Processor → Raw store:</b> write raw observation with provenance (raw_name, version, metric_id, mapping_version).
+    Raw is written <em>always</em>, exactly as received, and is the system of record.
+    Provenance — which raw name, which client version, which mapping version produced this — is what makes a wrong mapping reversible instead of permanent.
+    Without the raw store plus mapping_version, correcting a mapping would mean either double counting or losing history.</li>
+  <li><b>Resolver/Processor → TSDB:</b> write to canonical metric_id series (labels normalized).
+    The canonical series is a <em>derived view</em>, which is the key insight: it can be rewritten because it can be rebuilt.
+    Label normalization happens here so dashboards query one consistent schema regardless of which client version produced the data.</li>
+  <li><b>Resolver/Processor:</b> UNRESOLVED → quarantine series metric_id=raw:&lt;name&gt;.
+    Unknown names are stored under a quarantine identity rather than dropped or guessed at — data is preserved, and nothing is silently merged into the wrong metric.
+    Quarantined names surface in the registry's unresolved list with counts, sample labels and versions, which is exactly the evidence an owner needs to approve a mapping.
+    Guessing here would be the worst possible behaviour: it corrupts a metric that people trust, invisibly.</li>
+  <li><b>Query API → Registry:</b> expand query: metric_id → include historical aliases by time range.
+    A query for a metric must cover every name it has ever been emitted under, but only within each alias's validity window.
+    Time‑bounded expansion is what stops an alias approved last month from retroactively changing what a year‑old dashboard shows.</li>
+  <li><b>Query API → TSDB:</b> query canonical + alias series.
+    Series are fetched in parallel across the expanded identity set, which keeps a multi‑alias metric roughly as fast as a single one.</li>
+  <li><b>TSDB → Query API:</b> samples (response).
+    Samples arrive tagged with the series and mapping version that produced them, carrying provenance all the way to the merge step.</li>
+  <li><b>Query API:</b> merge with provenance; never sum an alias twice.
+    Deduplication on identity is essential: if a range was already re‑derived under the new mapping <em>and</em> the alias is also expanded, naive summation double counts it.
+    Results carry provenance so a user can see which raw names and mapping versions contributed — the difference between a number and a number you can defend.
+    This is where "correctness over speed" is actually paid for; it is the right trade for anything billing‑grade.</li>
+  <li><b>Registry → Resolver/Processor:</b> mapping v2 approved (async).
+    Mappings are proposed with evidence, approved by the metric's owner, and carry a validity range — governance is part of the data model, not a process around it.
+    Approval bumps a mapping version, which is what makes the change identifiable in every downstream artifact.</li>
+  <li><b>Resolver/Processor → Raw store:</b> re-derive canonical from raw (backfill job) (async).
+    Correction re‑reads raw and recomputes the canonical series, rather than patching the existing aggregates in place.
+    Re‑derivation from an immutable source is idempotent, so a backfill that fails halfway can simply be run again.
+    Backfills are throttled and bounded so historical correction can never starve live ingest.</li>
+  <li><b>Resolver/Processor → TSDB:</b> rewrite affected range with new mapping_version (async).
+    Only the affected time range and identities are rewritten, stamped with the new mapping version so queries can tell old derivation from new.
+    Every change is recorded in the mapping change log with reason and approver — so when a dashboard shifts, the answer to "why" is a query rather than an investigation.
+    And because raw is untouched, a revoked mapping is simply another re‑derivation, not a recovery project.</li>
 </ol>
 
 ## Part 1: ingest, store, query {#tl-part1}
@@ -294,6 +360,40 @@ GET  /v1/registry/unresolved             -&gt; raw names seen with counts, sampl
 <details><summary>An unknown client version submits a familiar name with a different unit?</summary><p>Don't resolve. Identity includes unit; a mismatch means a different metric until proven otherwise. Quarantine it under the raw name + version, alert the owner, and if evidence shows it's the same measurement in different units, approve an alias with an explicit unit_conversion and backfill with the conversion applied. Never auto‑convert on a guess: ms vs s is a ×1000 error in an SLO.</p></details>
 <details><summary>Query‑time alias resolution vs rewriting history?</summary><p>Query‑time when the mapping is new or contested, when reversibility matters more than query cost, when consumers are few, or when raw isn't yet complete for the range. Rewrite when the mapping is approved and stable, the metric feeds heavy dashboards, SLOs, or billing, and you need one physical series for performance and downsampling. In both cases raw is untouched; "rewrite" only ever means re‑deriving the canonical view.</p></details>
 <details><summary>Evaluating an automatic name‑matching tool without silent merges?</summary><p>Run it in shadow mode producing PENDING proposals only, never APPROVED. Score against a labeled set of known aliases and known non‑aliases (same‑name‑different‑unit traps included); measure precision first, since a false merge corrupts data while a miss just delays. Require every proposal to carry evidence the tool found (code diff, distribution match). Gate promotion on owner approval plus the soak checks. Track its precision over time and pull it if precision drops.</p></details>
+
+
+## Trade-offs {#tl-tradeoffs}
+
+<table>
+  <tbody><tr><th>Decision</th><th>What we chose</th><th>What we gave up</th><th>When to flip it</th></tr>
+  <tr><td>What is the system of record</td><td>Raw observations, with canonical series as a derived view</td><td>Substantially more storage, and a re‑derivation pipeline to operate</td><td>Store only resolved data when mappings are certain and permanent — here they are neither, and reversibility is the whole point</td></tr>
+  <tr><td>Metric identity</td><td>(namespace, raw_name, client_version) → metric_id</td><td>A registry to govern, and mappings that need owners and approvals</td><td>Name‑only identity is simpler and silently merges metrics that merely share a name, which is the failure this design exists to prevent</td></tr>
+  <tr><td>Unknown names</td><td>Quarantine under a raw identity</td><td>A pool of unresolved series that someone must triage</td><td>Dropping loses data irrecoverably; auto‑guessing corrupts a trusted metric invisibly — quarantine is the only reversible option</td></tr>
+  <tr><td>Alias approval</td><td>Owner approval with attached evidence</td><td>Mappings take days rather than minutes to land</td><td>Auto‑approving on name similarity is fast and occasionally catastrophic; a similar name is not proof of the same meaning</td></tr>
+  <tr><td>Correction mechanism</td><td>Re‑derive from raw into the affected range</td><td>Backfill cost, and a window where old and new derivations coexist</td><td>Patching aggregates in place is cheaper but not idempotent and not auditable, so a failed correction leaves unknown state</td></tr>
+  <tr><td>Query semantics</td><td>Time‑bounded alias expansion, dedupe on identity</td><td>More complex queries and a slower path than a single‑series read</td><td>Never simplify by summing everything matching — that double counts re‑derived ranges, which is exactly the bug this system must not have</td></tr>
+  <tr><td>Delivery</td><td>At‑least‑once with dedupe on (client_id, batch_id, seq)</td><td>A dedupe window to size and operate</td><td>Exactly‑once from thousands of unreliable clients is not achievable; dedupe at the edge gets the same observable result</td></tr>
+</tbody></table>
+
+## Safety-first design {#tl-safety}
+
+<div class="cards">
+  <div><h4>Never silently change a number people trust</h4><ul>
+    <li><b>Raw is immutable and always written.</b> Every canonical series is derived, so a mistaken mapping is a re‑derivation rather than permanent corruption.</li>
+    <li><b>Provenance travels with the data.</b> Raw name, client version and mapping version are attached to every observation and surfaced in query results.</li>
+    <li><b>Never sum an alias twice.</b> Merge deduplicates on identity, because the combination of alias expansion and a completed backfill is exactly where double counting hides.</li>
+    <li><b>Units are part of identity.</b> A mapping carries a conversion; merging milliseconds into a seconds series without one is silent corruption that no alert would catch.</li></ul></div>
+  <div><h4>Governance as a design element</h4><ul>
+    <li><b>Mappings need evidence and an owner's approval.</b> Similar names are a hypothesis, not a fact, and the person who owns the metric is the one who can confirm it.</li>
+    <li><b>Every change is versioned and logged.</b> Reason, approver and validity range are recorded, so "why did this dashboard shift?" is answerable by query.</li>
+    <li><b>Revocation is a first‑class operation.</b> A wrong mapping is revoked and the range re‑derived, using the same machinery as approval.</li>
+    <li><b>Validity ranges bound the damage.</b> An alias applies only within its window, so a new mapping cannot retroactively rewrite history it was never meant to cover.</li></ul></div>
+  <div><h4>Protecting the platform from its clients</h4><ul>
+    <li><b>Cardinality budgets at the edge.</b> Per‑tenant series limits and label allowlists stop one client version from taking down analytics for everyone.</li>
+    <li><b>Rejections are itemized.</b> The 202 lists what was refused and why, so a misbehaving client version is diagnosable rather than mysterious.</li>
+    <li><b>Loss is measurable.</b> The SDK emits a dropped‑observations counter, so buffer overflow shows up as a number instead of an unexplained gap.</li>
+    <li><b>Live ingest always wins.</b> Backfills are throttled and bounded, so correcting the past can never degrade the present.</li></ul></div>
+</div>
 
 ## Don't leave the room without saying {#tl-checklist}
 

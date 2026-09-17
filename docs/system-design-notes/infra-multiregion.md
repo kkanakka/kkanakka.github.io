@@ -43,6 +43,32 @@ description: "hard · Anthropic · cells · N+1 · degraded modes · GPUs don’
   </div>
 </div>
 
+
+## Scale, performance and safety targets {#infra-multiregion-targets}
+
+<p>The defining constraint here is that GPUs do not autoscale. Every number below has to be paid for in advance, which is why degraded modes are a design element rather than an admission of defeat.</p>
+
+<div class="cards">
+  <div><h4>Scale</h4><ul>
+    <li><b>QPS:</b> 100K QPS at peak spread across ~6 regions on 2 clouds, ~4 cells per region. Traffic is heavily diurnal — the peak of one region overlaps the trough of another, which is the only reason global headroom is affordable at all.</li>
+    <li><b>Data volume:</b> ~10 KB average request, responses of a few hundred tokens; the heavy state is hundreds of GB of weights per model version resident on every cell, plus local KV/prefix caches sized in TB.</li>
+    <li><b>Growth:</b> ~2× annually in requests, but GPU supply is procured months ahead — so capacity planning, not software scaling, is the binding constraint, and the design must degrade rather than burst.</li></ul></div>
+  <div><h4>Performance</h4><ul>
+    <li><b>Latency:</b> in normal mode TTFT p50 &lt; 400 ms, p95 &lt; 1.5 s; each degraded mode carries its own explicitly relaxed SLO — e.g. mode 1 allows p95 TTFT of 3 s — so "degraded" has a published meaning instead of being a vague apology.</li>
+    <li><b>Throughput:</b> each cell's capacity is measured in tokens/s, not requests/s, and differs by GPU SKU across clouds — so router weights are set from measured capacity, never from cell count.</li></ul></div>
+  <div><h4>Safety and security</h4><ul>
+    <li><b>Abuse prevention:</b> the distinctive risks are a retry storm after a region loss turning a partial outage into a total one, and failover quietly moving traffic across a residency boundary. Gradual weight shifts and residency‑aware routing are the specific defences.</li>
+    <li><b>Rate limiting:</b> per‑key limits leased globally rather than enforced per region, so a failover does not accidentally grant a customer double their quota. During shedding, limits become the tool: free tier is shed first, paid tiers protected, in a published order.</li>
+    <li><b>Data sensitivity:</b> prompts contain user PII, so residency is a hard routing constraint — EU traffic must not fail over to the US even when that means shedding instead. Regional caches and logs stay in region, and the router never carries payloads across a boundary it is not allowed to cross.</li></ul></div>
+  <div><h4>Availability and fault tolerance</h4><ul>
+    <li><b>Uptime target:</b> 99.95% per model globally (~4.4 h/year). The stronger requirement is structural: no single cell, region or cloud may be able to cause a total outage.</li>
+    <li><b>Degraded mode:</b> a published ladder, each level pre‑approved, owned, time‑boxed and audited — mode 1 sheds free tier, mode 2 caps max_tokens and disables optional features, mode 3 serves paid traffic only at relaxed SLOs. Entering a mode is a decision with a runbook; exiting requires measured recovery plus an explicit operator action.</li></ul></div>
+  <div><h4>Also worth pinning down</h4><ul>
+    <li><b>Consistency:</b> cells share no state by design. Routing policy and cell weights converge eventually within seconds; the only strongly consistent thing is the quota lease, so failover cannot double‑count usage.</li>
+    <li><b>Durability:</b> inference itself is stateless, which is what makes region failover tractable — nothing needs replicating except weights, and those are pushed everywhere ahead of time.</li>
+    <li><b>Compliance:</b> residency encoded in routing policy rather than in documentation, every mode transition audited with reason and owner, and regional logging so an EU request leaves no trace outside the EU.</li></ul></div>
+</div>
+
 ## Entities and API {#infra-multiregion-api}
 
 <p>Region · Cell (id, region, cloud, model, capacity RPS, health, weight) · ModelVersion · RoutingPolicy (residency, tier rules) · DegradedMode (level, actions, owner, maxDuration)</p>
@@ -141,25 +167,63 @@ GET  /internal/modes                     -&gt; current levels per region</code><
 <figcaption>Solid = request path · dashed = response / return · dotted = async or background.</figcaption>
 </figure>
 <ol class="order">
-  <li><b>Probes → Region A cell:</b> synthetic inference probe (every few s) (async)</li>
-  <li><b>Region A cell → Probes:</b> TTFT ok (response)</li>
-  <li><b>Probes → Global router:</b> cell weights update (async)</li>
-  <li><b>Client → Global router:</b> request</li>
-  <li><b>Global router:</b> residency + tier policy</li>
-  <li><b>Global router → Region A cell:</b> weighted pick</li>
-  <li><b>Region A cell → Client:</b> stream (response)</li>
-  <li><b>Probes → Region A cell:</b> probe fails</li>
-  <li><b>Probes → Global router:</b> weight A → 0 (async)</li>
-  <li><b>Global router → Region A cell:</b> drain: no new requests</li>
-  <li><b>Region A cell:</b> in-flight streams finish</li>
-  <li><b>Client → Global router:</b> next request</li>
-  <li><b>Global router → Region B cell:</b> route to B</li>
-  <li><b>Region B cell:</b> headroom exhausted?</li>
-  <li><b>Region B cell → Mode controller:</b> queue depth, SLIs (async)</li>
-  <li><b>Mode controller:</b> enter mode 1: shed free tier</li>
-  <li><b>Mode controller → Global router:</b> policy update (async)</li>
-  <li><b>Global router → Client:</b> 429 for free tier, stream for paid (response)</li>
-  <li><b>Mode controller:</b> measured recovery → exit mode, audited</li>
+  <li><b>Probes → Region A cell:</b> synthetic inference probe (every few s) (async).
+    Health is measured by running a real inference request, not by a TCP connect or an HTTP 200 on <code>/healthz</code>.
+    A GPU cell can accept connections perfectly while producing garbage, OOMing on real prompts, or taking 30 s to first token — all invisible to a shallow check.
+    Probes run per cell and exercise the same path customers use, which is the only way the signal means anything.</li>
+  <li><b>Region A cell → Probes:</b> TTFT ok (response).
+    The probe checks latency and correctness together, so a cell that is merely slow is distinguished from one that is wrong.
+    Results feed a rolling window rather than a single sample, so one unlucky probe does not evict a healthy cell.</li>
+  <li><b>Probes → Global router:</b> cell weights update (async).
+    Weight is measured spare capacity in tokens/s, not cell count — with different GPU SKUs across two clouds, equal‑weight routing would systematically overload the slower hardware.
+    Updates are continuous and small, so routing tracks reality rather than lurching between states.</li>
+  <li><b>Client → Global router:</b> request.
+    The client reaches the nearest edge by anycast or DNS; the routing decision itself is made centrally against current policy rather than baked into DNS, which is far too slow to fail over.</li>
+  <li><b>Global router:</b> residency + tier policy.
+    Residency is applied first and is non‑negotiable: an EU request has a permitted region set, and if none of those is healthy the answer is to shed, not to route elsewhere.
+    Tier policy comes next and decides what happens under pressure — which traffic is protected and which is shed first.
+    Encoding both in routing policy rather than in a runbook is what makes them hold during an incident, when nobody is reading documentation.</li>
+  <li><b>Global router → Region A cell:</b> weighted pick.
+    A weighted random choice among healthy cells spreads load in proportion to real capacity and avoids the herd behaviour of "always pick the least loaded".
+    Within the cell, the local router pins by prefix hash so the KV cache stays warm — stickiness is deliberately intra‑cell only, because cross‑cell stickiness would defeat the failure isolation.</li>
+  <li><b>Region A cell → Client:</b> stream (response).
+    The cell is self‑contained — router, replicas, cache, rate limiter and config — so nothing about serving this request depends on another cell being alive.</li>
+  <li><b>Probes → Region A cell:</b> probe fails.
+    Detection comes from the probe path rather than from customer errors, which is the difference between noticing in seconds and noticing on Twitter.
+    Consecutive failures are required before acting, so a transient blip does not trigger a failover that is itself disruptive.</li>
+  <li><b>Probes → Global router:</b> weight A → 0 (async).
+    Weight goes to zero rather than the cell being deleted, so recovery is a weight change and the cell can be probed continuously while out of rotation.
+    This is also the manual lever: an operator draining a cell for a deploy uses exactly the same mechanism as an automatic failure.</li>
+  <li><b>Global router → Region A cell:</b> drain: no new requests.
+    Draining stops new work but does not kill existing work — the distinction that makes failover invisible to users already mid‑stream.</li>
+  <li><b>Region A cell:</b> in-flight streams finish.
+    Only new requests move; a request that started in A finishes in A, because moving it would mean losing its KV cache and restarting generation from scratch.
+    This is why the drain window must be at least the maximum stream duration.</li>
+  <li><b>Client → Global router:</b> next request.
+    The client does nothing special — no retry logic, no failover awareness — because the routing layer absorbed the change entirely.</li>
+  <li><b>Global router → Region B cell:</b> route to B.
+    Weight shifts to survivors <em>gradually</em>, not instantly: dumping a region's full load onto a neighbour in one step is how a single‑region failure becomes a multi‑region one.
+    Only regions permitted by residency are eligible, so failover never silently violates a data boundary.</li>
+  <li><b>Region B cell:</b> headroom exhausted?
+    This is the question the whole design turns on. N+1 per region covers one cell failing; it does not cover absorbing an entire other region.
+    Either you pay for 2× capacity everywhere or you accept that a region loss means degradation — and being explicit about which is the honest engineering answer.</li>
+  <li><b>Region B cell → Mode controller:</b> queue depth, SLIs (async).
+    Queue depth is the leading indicator: it rises before latency does, giving a few seconds of warning that capacity is gone.
+    Feeding measurements to a controller rather than to a human means the response happens in seconds rather than after a page is acknowledged.</li>
+  <li><b>Mode controller:</b> enter mode 1: shed free tier.
+    Modes are pre‑approved, ordered and time‑boxed, so the choice under pressure is "which published mode", not "what should we do".
+    Shedding the free tier first is a decision made calmly in advance; making it during an incident produces worse outcomes and unhappier customers.
+    Each mode has an owner and a maximum duration, and exceeding it escalates rather than quietly persisting.</li>
+  <li><b>Mode controller → Global router:</b> policy update (async).
+    Enforcement lands in the router, which is already on every request path, so a mode takes effect fleet‑wide within seconds and needs no deploy.
+    Every transition is audited with reason and owner, because "why were we in mode 2 for three hours?" is a question that always gets asked later.</li>
+  <li><b>Global router → Client:</b> 429 for free tier, stream for paid (response).
+    Shedding is explicit and fast: a 429 with Retry‑After costs almost nothing to serve and tells the client to back off rather than hammer.
+    Protecting paid traffic at full SLO while free tier is shed is a published policy, so the behaviour is predictable rather than arbitrary.</li>
+  <li><b>Mode controller:</b> measured recovery → exit mode, audited.
+    Exit requires measured recovery — queue depth and SLIs back in range for a sustained window — plus an explicit operator action, never a timer.
+    Automatic exit invites flapping: capacity looks fine precisely because load is being shed, and restoring it instantly re‑creates the overload.
+    Game days exercise this ladder regularly, because a degraded mode first used during a real incident is a mode nobody knows how to exit.</li>
 </ol>
 
 ## How it works, step by step {#infra-multiregion-flow}
@@ -196,6 +260,40 @@ GET  /internal/modes                     -&gt; current levels per region</code><
     <li>Global router shifts weight gradually (avoid stampeding the survivor); in‑flight streams finish where they are, new requests move.</li>
     <li>Data residency: EU requests may not fail over to US; encode residency in routing policy.</li>
     <li>Quota/limits are per cell with global lease (see #6) so failover doesn't double‑count.</li></ul></div>
+</div>
+
+
+## Trade-offs {#infra-multiregion-tradeoffs}
+
+<table>
+  <tbody><tr><th>Decision</th><th>What we chose</th><th>What we gave up</th><th>When to flip it</th></tr>
+  <tr><td>Region‑loss capacity</td><td>Partial headroom plus an explicit degraded‑mode ladder</td><td>Full service during a region loss — some traffic is shed</td><td>Provision 2× everywhere when the workload is small enough that idle GPUs are affordable, or when shedding is contractually impossible</td></tr>
+  <tr><td>Failure unit</td><td>Cells: router + replicas + cache + limiter + config, no shared state</td><td>Efficiency — caches and capacity cannot be pooled across cells</td><td>Never pool at this scale; a shared cache or a shared router turns a cell failure into a region failure</td></tr>
+  <tr><td>Health signal</td><td>Synthetic inference probes</td><td>Probe cost in GPU time, and probes to maintain</td><td>TCP or HTTP checks are fine for stateless web tiers; for GPU serving they are almost content‑free</td></tr>
+  <tr><td>Failover speed</td><td>Gradual weight shift</td><td>A slightly longer window where some requests still hit a failing region</td><td>Instant cutover only when the survivor demonstrably has full headroom — otherwise it stampedes and spreads the outage</td></tr>
+  <tr><td>Stickiness</td><td>Prefix‑cache affinity within a cell only</td><td>Cache misses whenever a request moves between cells</td><td>Never make stickiness global — it couples cells and undermines the isolation the design is built on</td></tr>
+  <tr><td>Residency</td><td>Hard constraint in routing policy; shed rather than cross</td><td>Availability for that region — an EU outage cannot be absorbed by the US</td><td>Only where residency is genuinely advisory, which for user prompts it generally is not</td></tr>
+  <tr><td>Mode exit</td><td>Measured recovery plus explicit operator action</td><td>Slower return to full service than an automatic timer</td><td>Automatic exit flaps: shedding makes capacity look healthy, and restoring load instantly recreates the overload</td></tr>
+</tbody></table>
+
+## Safety-first design {#infra-multiregion-safety}
+
+<div class="cards">
+  <div><h4>No single thing can take everything down</h4><ul>
+    <li><b>Cells share nothing.</b> A bad deploy, a poisoned cache or a failing node is contained to one cell, which is also the unit of canary and of drain.</li>
+    <li><b>Two clouds, several regions.</b> Correlated failure is the thing being designed against, so the topology deliberately spans provider boundaries.</li>
+    <li><b>Weights everywhere in advance.</b> Because model weights are pre‑distributed, failover is a routing change rather than a multi‑hundred‑GB transfer.</li>
+    <li><b>Gradual shifts only.</b> Moving load in steps prevents the classic cascade where failing over kills the survivor.</li></ul></div>
+  <div><h4>Degrade on purpose, not by accident</h4><ul>
+    <li><b>A published ladder.</b> Modes are ordered, pre‑approved, owned and time‑boxed, so the incident decision is which mode to enter — not what to improvise.</li>
+    <li><b>Relaxed SLOs are written down.</b> Each mode states the latency and availability it promises, so "degraded" is a defined state rather than an apology.</li>
+    <li><b>Shed the cheapest traffic first.</b> Free tier before paid, optional features before core ones — decided calmly in advance rather than under pressure.</li>
+    <li><b>Exercised regularly.</b> Game days run the ladder in production, because a mode first used during a real incident is a mode nobody knows how to exit.</li></ul></div>
+  <div><h4>Boundaries that failover must not cross</h4><ul>
+    <li><b>Residency beats availability.</b> EU traffic is shed rather than routed to the US, and that ordering is encoded in routing policy where it cannot be forgotten mid‑incident.</li>
+    <li><b>Quota is leased globally.</b> Limits follow the customer, not the region, so a failover cannot hand someone double their quota at the worst possible moment.</li>
+    <li><b>Logs and caches stay in region.</b> The router moves requests, never payloads, across boundaries it is not permitted to cross.</li>
+    <li><b>Every mode change is audited.</b> Reason, owner and duration are recorded, because the post‑incident question is always why, and for how long.</li></ul></div>
 </div>
 
 ## Don't leave the room without saying {#infra-multiregion-check}

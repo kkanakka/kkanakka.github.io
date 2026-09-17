@@ -43,6 +43,32 @@ description: "hard · streaming · stateless model, stateful product · GPU capa
   </div>
 </div>
 
+
+## Scale, performance and safety targets {#lc-targets}
+
+<p>State these before anything else. The context‑window budget, the storage split and the streaming design are all consequences of these numbers.</p>
+
+<div class="cards">
+  <div><h4>Scale</h4><ul>
+    <li><b>QPS:</b> 100M+ users, ~10M concurrent streams at peak. Message sends are ~200K QPS; sidebar and transcript reads are perhaps 10× that, which is why the conversation list is denormalized rather than computed.</li>
+    <li><b>Data volume:</b> ~2 KB per message, tens of billions of messages retained — hundreds of TB growing continuously. A single turn's prompt can be 100K+ tokens once history is included, so bytes sent to the GPU dwarf bytes stored.</li>
+    <li><b>Growth:</b> ~2× users annually but tokens per turn growing faster as context windows expand — assume GPU demand grows ~3× a year while storage grows ~2×.</li></ul></div>
+  <div><h4>Performance</h4><ul>
+    <li><b>Latency:</b> time to first token p50 &lt; 600 ms, p95 &lt; 1 s, ceiling 3 s; inter‑token latency p95 &lt; 60 ms so text appears faster than people read. Sidebar load p95 &lt; 200 ms.</li>
+    <li><b>Throughput:</b> GPU tokens/s is the binding constraint, not web capacity. Prefix caching of the shared system prompt and routing by prefix affinity are worth double‑digit percentages of effective throughput.</li></ul></div>
+  <div><h4>Safety and security</h4><ul>
+    <li><b>Abuse prevention:</b> prompt injection through pasted content, jailbreak attempts, automated scraping of model output, and account sharing. Input and output classifiers sit on the request path, and the gateway enforces per‑user limits before any GPU work happens.</li>
+    <li><b>Rate limiting:</b> tokens/min and messages/day per user, concurrent streams per account, and a per‑IP cap for unauthenticated surfaces — e.g. 50 messages/day free, 200K tokens/min paid, 3 concurrent streams.</li>
+    <li><b>Data sensitivity:</b> the transcript <em>is</em> the sensitive data — conversations routinely contain PII, health and financial details. Encrypt at rest, scope every read by user id, keep memory facts user‑visible and editable, honour deletion across transcript, summary, memory and derived indexes, and state a retention policy (e.g. 30 days after deletion before hard removal).</li></ul></div>
+  <div><h4>Availability and fault tolerance</h4><ul>
+    <li><b>Uptime target:</b> 99.9% for sending messages; reading history should be higher, because a user who cannot reach their own transcript experiences it as data loss rather than an outage.</li>
+    <li><b>Degraded mode:</b> GPU capacity exhausted → queue with a visible wait, shed free tier first, never silently truncate context. Memory or summary workers down → fall back to last N messages verbatim, which is degraded quality, not an error. Stream dropped → resume from the buffer using <code>lastEventId</code> rather than regenerating.</li></ul></div>
+  <div><h4>Also worth pinning down</h4><ul>
+    <li><b>Consistency:</b> strong within a conversation — messages must appear in order and a send must never be lost or duplicated, which the idempotency key guarantees. The conversation list can lag a second; memory and summaries are explicitly eventually consistent.</li>
+    <li><b>Durability:</b> the transcript is the system of record and needs eleven nines; the KV cache, the hot tail in Redis and the rolling summary are all rebuildable, and losing them costs latency or quality, never correctness.</li>
+    <li><b>Compliance:</b> GDPR‑style export and deletion must cover derived data too — summaries, memory facts and embeddings are copies of user content, and a deletion that leaves them behind is not a deletion.</li></ul></div>
+</div>
+
 ## Entities and API {#lc-entities}
 
 <p>User · Conversation · Message (role: user | assistant | system, content, tokens, createdAt) · Memory (per user, distilled facts) · Attachment (blob pointer).</p>
@@ -193,24 +219,59 @@ Idempotency-Key header on the POST; client retries after a dropped stream resume
 <figcaption>Solid = request path · dashed = response / return · dotted = async or background.</figcaption>
 </figure>
 <ol class="order">
-  <li><b>Client → Gateway:</b> POST message (SSE)</li>
-  <li><b>Gateway:</b> JWT + token quota</li>
-  <li><b>Gateway → Chat Service:</b> forward + idempotency key</li>
-  <li><b>Chat Service → Conv/Memory store:</b> append user msg (tokenCount)</li>
-  <li><b>Chat Service → Conv/Memory store:</b> read summary + last N + memory</li>
-  <li><b>Conv/Memory store → Chat Service:</b> rows (response)</li>
-  <li><b>Chat Service:</b> build prompt within window budget</li>
-  <li><b>Chat Service → Inference GW:</b> prompt</li>
-  <li><b>Inference GW → GPU worker:</b> batch, dispatch</li>
-  <li><b>GPU worker → Inference GW:</b> token stream (response)</li>
-  <li><b>Inference GW → Chat Service:</b> token stream (response)</li>
-  <li><b>Chat Service:</b> output safety, buffer for resume</li>
-  <li><b>Chat Service → Client:</b> SSE deltas (response)</li>
-  <li><b>GPU worker → Inference GW:</b> done + tokens_in/out (response)</li>
-  <li><b>Chat Service → Conv/Memory store:</b> append assistant msg + usage</li>
-  <li><b>Chat Service → Client:</b> done event (response)</li>
-  <li><b>Chat Service → Kafka + workers:</b> message.created, usage.event (async)</li>
-  <li><b>Kafka + workers → Conv/Memory store:</b> summary / memory / title updates (async)</li>
+  <li><b>Client → Gateway:</b> POST message (SSE).
+    Server‑sent events rather than WebSockets: the data flows one way, SSE reconnects natively with <code>lastEventId</code>, and it survives proxies that mangle long‑lived upgrades.
+    The connection will stay open for the whole generation, so the gateway must be built for millions of idle‑but‑open sockets rather than short request/response cycles.</li>
+  <li><b>Gateway:</b> JWT + token quota.
+    Identity and quota are checked before any expensive work, so an over‑limit user costs a Redis lookup rather than a GPU slot.
+    Quota is counted in tokens, not messages, because a 100K‑token context costs far more than a one‑line question and charging per message would be wildly unfair in both directions.</li>
+  <li><b>Gateway → Chat Service:</b> forward + idempotency key.
+    The idempotency key is what makes a client retry safe: a dropped connection mid‑send must not append the user's message twice.
+    Any gateway can serve any request, because all conversation state lives in the store rather than in gateway memory.</li>
+  <li><b>Chat Service → Conv/Memory store:</b> append user msg (tokenCount).
+    The user's message is persisted before generation starts, so a failure during inference never loses what the person actually typed.
+    Token count is computed and stored at write time — this single denormalization turns context assembly into cheap arithmetic instead of re‑tokenizing the entire history on every turn.</li>
+  <li><b>Chat Service → Conv/Memory store:</b> read summary + last N + memory.
+    Three different things are fetched because they play three different roles: durable per‑user facts, a rolling summary of old turns, and the most recent messages verbatim.
+    Active conversations are served from a Redis hot tail, so a rapid back‑and‑forth does not hit the system of record on every turn.</li>
+  <li><b>Conv/Memory store → Chat Service:</b> rows (response).
+    The store is partitioned by conversation id and sorted by time, so "fetch the tail of this conversation" is one contiguous read — the single access pattern the schema is designed around.</li>
+  <li><b>Chat Service:</b> build prompt within window budget.
+    This is the heart of the product: the model is stateless, so "memory" is an illusion reconstructed from storage on every single turn.
+    The budget is arithmetic — system prompt + memory facts + summary + last N messages, trimmed to the window minus room for the reply — made cheap by the token counts saved at write time.
+    What gets dropped first is a product decision, not a technical one: older turns lose fidelity to a summary while recent turns stay verbatim, because recency is what users notice.</li>
+  <li><b>Chat Service → Inference GW:</b> prompt.
+    The whole conversation is sent every turn; nothing persists on the GPU between requests.
+    That is what makes the serving fleet stateless and freely replaceable — any replica can serve any turn of any conversation.</li>
+  <li><b>Inference GW → GPU worker:</b> batch, dispatch.
+    Requests are batched for throughput and routed by prefix affinity so a replica that already has the shared system prompt in its KV cache is preferred.
+    Prefix caching is not a micro‑optimisation here: the shared prefix is identical across millions of requests, and reusing it is worth a large fraction of effective capacity.</li>
+  <li><b>GPU worker → Inference GW:</b> token stream (response).
+    Tokens stream as they are produced rather than being collected — the user sees output within a second instead of waiting for a complete response.
+    Continuous batching admits new sequences as others finish, so one long generation does not block the whole batch behind it.</li>
+  <li><b>Inference GW → Chat Service:</b> token stream (response).
+    The stream passes through the chat service rather than going straight to the client, precisely so the next two things can happen.</li>
+  <li><b>Chat Service:</b> output safety, buffer for resume.
+    Output is classified as it streams, with a small lookahead, so unsafe content can be cut before the user sees it rather than retracted afterwards.
+    The same buffer serves resume: if the connection drops, the client reconnects with <code>lastEventId</code> and continues from that offset instead of paying for regeneration.
+    Buffering is cheap and regeneration is not, which makes this one of the highest‑value few hundred kilobytes in the system.</li>
+  <li><b>Chat Service → Client:</b> SSE deltas (response).
+    Deltas are sent as they clear safety, so perceived latency is governed by first token and inter‑token gaps rather than total generation time.
+    Each event carries an id, which is what makes resume possible at all.</li>
+  <li><b>GPU worker → Inference GW:</b> done + tokens_in/out (response).
+    Usage is reported by the worker because it is the only component that knows the true token counts, and those numbers drive both quota and billing.</li>
+  <li><b>Chat Service → Conv/Memory store:</b> append assistant msg + usage.
+    The assistant message is persisted with its token counts, keeping the transcript complete and the next turn's budget arithmetic exact.
+    A cancelled or disconnected generation still persists what was produced, so the conversation shows what actually happened rather than a gap.</li>
+  <li><b>Chat Service → Client:</b> done event (response).
+    An explicit terminal event distinguishes "finished" from "connection died", which is what lets the client decide between showing completion and attempting a resume.</li>
+  <li><b>Chat Service → Kafka + workers:</b> message.created, usage.event (async).
+    Everything that does not have to happen before the user sees their answer is pushed off the request path — titles, summaries, memory extraction and billing.
+    Publishing events rather than calling services keeps the latency‑critical path independent of how many downstream consumers exist.</li>
+  <li><b>Kafka + workers → Conv/Memory store:</b> summary / memory / title updates (async).
+    The rolling summary is regenerated when a conversation crosses a size threshold, which is what lets a 500‑turn chat keep fitting a fixed window.
+    Memory extraction distils durable facts across conversations, and keeping them user‑visible and editable is both a product feature and a privacy requirement.
+    All of this is eventually consistent by design: a title arriving a few seconds late is invisible, while doing it inline would add seconds to every first turn.</li>
 </ol>
 
 ## Request flow, one turn {#lc-flow}
@@ -323,6 +384,40 @@ Idempotency-Key header on the POST; client retries after a dropped stream resume
   <li>Rate limits in tokens, not requests, because a 100K‑token prompt costs 1000× a short one.</li>
   <li>Usage events to Kafka → billing and abuse detection off the hot path.</li>
 </ul>
+
+
+## Trade-offs {#lc-tradeoffs}
+
+<table>
+  <tbody><tr><th>Decision</th><th>What we chose</th><th>What we gave up</th><th>When to flip it</th></tr>
+  <tr><td>Where context lives</td><td>Rebuild the prompt from storage every turn</td><td>Bandwidth and prefill cost — the whole history is re‑sent each time</td><td>Session‑pinned KV cache on a replica saves prefill but couples a conversation to a machine, which breaks failover and load balancing</td></tr>
+  <tr><td>Long conversations</td><td>Rolling summary of old turns + last N verbatim</td><td>Fidelity — summarised turns lose detail the user may later reference</td><td>Retrieve specific old turns by embedding search when conversations are long and reference‑heavy; it costs a retrieval hop per turn</td></tr>
+  <tr><td>Transport</td><td>SSE</td><td>Bidirectional messaging, so interactive features need a second channel</td><td>WebSockets when the client must push mid‑generation (live collaboration, voice); SSE's native resume is worth a lot otherwise</td></tr>
+  <tr><td>Transcript store</td><td>Wide‑column partitioned by conversation id</td><td>Ad‑hoc queries and joins — analytics needs a separate pipeline</td><td>Sharded Postgres is fine at smaller scale and much easier to query; the single access pattern here makes the KV shape a clean win</td></tr>
+  <tr><td>Sidebar</td><td>Denormalized list keyed by user, sorted by updatedAt</td><td>A second write per turn, and a window where list and transcript disagree</td><td>Computing it from messages is simpler but scans; at 100M users it is not viable</td></tr>
+  <tr><td>Stream reliability</td><td>Buffer output for resume by <code>lastEventId</code></td><td>Memory per in‑flight stream, multiplied by 10M concurrent</td><td>Regenerating on reconnect is simpler but pays full GPU cost twice for the same answer</td></tr>
+  <tr><td>Post‑turn work</td><td>Async via Kafka</td><td>Titles, summaries and memory lag by seconds</td><td>Inline only when the result must be visible immediately — which for titles and summaries it is not</td></tr>
+</tbody></table>
+
+## Safety-first design {#lc-safety}
+
+<div class="cards">
+  <div><h4>Nothing unsafe reaches the screen</h4><ul>
+    <li><b>Classify input before generating.</b> The check runs concurrently with prefill so it costs no perceptible latency, but no token is released until it passes.</li>
+    <li><b>Classify output as it streams.</b> A small lookahead buffer means unsafe content is cut before display rather than retracted after — the user never sees it.</li>
+    <li><b>Treat pasted content as untrusted.</b> Text a user pastes may contain injection attempts aimed at the system prompt; it is data in the conversation, never instructions to the service.</li>
+    <li><b>Never silently truncate.</b> If context does not fit, what is dropped follows a stated policy, because quietly losing part of the conversation is a correctness failure the user cannot see.</li></ul></div>
+  <div><h4>The transcript is the sensitive asset</h4><ul>
+    <li><b>Every read is scoped by user.</b> Authorization is on the query, not on the URL, so a guessed conversation id returns nothing.</li>
+    <li><b>Deletion reaches the derivatives.</b> Summaries, memory facts and embeddings are copies of user content; deleting the transcript without them is not deletion.</li>
+    <li><b>Memory is visible and editable.</b> A user can see and remove what the system remembers about them, which makes cross‑conversation memory a feature rather than a surprise.</li>
+    <li><b>Logs hold no message content.</b> Debugging records ids, token counts and latencies, so operational data never becomes a second copy of private conversations.</li></ul></div>
+  <div><h4>Degrade in ways users can understand</h4><ul>
+    <li><b>Queue visibly under GPU pressure.</b> A shown wait is honest; a silently slower response looks like a broken product.</li>
+    <li><b>Shed free tier first, by published policy.</b> The order is decided in advance, so behaviour during a capacity crunch is predictable.</li>
+    <li><b>Resume rather than regenerate.</b> A dropped connection continues from the buffer, which protects both the user's answer and the GPU capacity everyone else is waiting for.</li>
+    <li><b>Persist partial generations.</b> A cancelled or interrupted turn still shows what was produced, so the transcript reflects what actually happened.</li></ul></div>
+</div>
 
 ## Don't leave the room without saying {#lc-checklist}
 

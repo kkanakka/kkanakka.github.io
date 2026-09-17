@@ -59,6 +59,32 @@ description: "hard · Anthropic · chunking · swarm · rarest‑first · per‑
   </div>
 </div>
 
+
+## Scale, performance and safety targets {#infra-weights-targets}
+
+<p>Say these numbers out loud before drawing anything — the swarm, the rarest‑first rule and the manifest all fall out of them.</p>
+
+<div class="cards">
+  <div><h4>Scale</h4><ul>
+    <li><b>QPS:</b> the tracker handles ~5,000 nodes announcing every 30 s ≈ 170 announce/s, plus peer‑list queries — tiny. The bytes, not the requests, are the scale problem.</li>
+    <li><b>Data volume:</b> 500 GB per version in ~8,000 chunks of 64 MB, delivered to 5,000 nodes = 2.5 PB of transfer per release; bitmaps are ~1 KB per node, so all of "who has what" is ~5 MB of state.</li>
+    <li><b>Growth:</b> model size is growing faster than fleet size — assume weights roughly 2–3× per year and node count ~2×, so plan for 5–10 PB per release within two years.</li></ul></div>
+  <div><h4>Performance</h4><ul>
+    <li><b>Latency:</b> fleet‑wide completion p50 &lt; 1 h, p99 &lt; 2 h, hard ceiling 4 h; a late‑joining single node should reach 100% in &lt; 20 min because the swarm already holds every chunk.</li>
+    <li><b>Throughput:</b> ~700 GB/s aggregate across the swarm at peak, while origin egress stays pinned under its single‑digit Gb/s cap and per‑peer upload never crowds out serving traffic.</li></ul></div>
+  <div><h4>Safety and security</h4><ul>
+    <li><b>Abuse prevention:</b> the threat is a malicious or compromised peer serving tampered weights, a node claiming chunks it does not have to attract connections, and accidental self‑DDoS of the origin at rollout time. Signed manifests, per‑chunk hashes and origin connection caps cover all three.</li>
+    <li><b>Rate limiting:</b> hard cap on concurrent origin connections (tens, not thousands), per‑peer upload cap so no node saturates its NIC, 8–16 in‑flight chunk requests per downloader, and an announce floor of ~30 s.</li>
+    <li><b>Data sensitivity:</b> weights are proprietary and often export‑controlled, not user data — no PII, but the confidentiality bar is high. Encrypt in transit between peers, authenticate peers with short‑lived fleet credentials, and delete superseded versions on a schedule.</li></ul></div>
+  <div><h4>Availability and fault tolerance</h4><ul>
+    <li><b>Uptime target:</b> tracker 99.9% is plenty because it is off the data path; origin availability matters only during the first wave. The real target is "no release blocked by distribution", measured per rollout.</li>
+    <li><b>Degraded mode:</b> tracker down → nodes keep transferring using the peer lists they already hold, and gossip fills gaps. Origin down after seeding → the swarm completes anyway. Swarm starved → fall back to slow, rate‑limited direct pulls from origin and accept a much longer completion.</li></ul></div>
+  <div><h4>Also worth pinning down</h4><ul>
+    <li><b>Durability:</b> eleven nines at origin; the swarm is a delivery mechanism, never the system of record, so any node can be wiped and refilled.</li>
+    <li><b>Consistency:</b> immutable versions make this easy — a node has v42 completely or it does not have it. Tracker state is deliberately eventually consistent and rebuilt from announces.</li>
+    <li><b>Compliance:</b> region‑pin where weights may travel, keep an audit trail of which node fetched which version, and make deletion of a revoked version verifiable across the fleet.</li></ul></div>
+</div>
+
 ## Entities and API {#infra-weights-api}
 
 <p>Distribution (version, manifest, state) · Manifest (chunkSize, chunks[{idx, sha256}], merkleRoot, signature) · Node (id, rack, zone, bitmap) · Chunk</p>
@@ -257,6 +283,40 @@ GET  /distributions/:id/progress                     -&gt; {done, inProgress, fa
     <li>Origin overload: hard cap origin connections; swarm carries the load after the first wave.</li>
     <li>Thundering herd at rollout: stagger node start times with jitter.</li>
     <li>Tools that do this: Uber Kraken, Dragonfly, Facebook's torrent‑based deploys.</li></ul></div>
+</div>
+
+
+## Trade-offs {#infra-weights-tradeoffs}
+
+<table>
+  <tbody><tr><th>Decision</th><th>What we chose</th><th>What we gave up</th><th>When to flip it</th></tr>
+  <tr><td>Topology</td><td>Swarm: every downloader is an uploader</td><td>Non‑deterministic transfer paths, harder to reason about and debug</td><td>A fixed distribution tree when the fleet is small and homogeneous and predictability matters more than tail latency</td></tr>
+  <tr><td>Chunk selection</td><td>Rarest‑first</td><td>Chunks arrive out of order, so nothing is usable until the whole file lands</td><td>Sequential when the consumer can stream the file as it arrives; here it cannot, so rarest‑first is strictly better</td></tr>
+  <tr><td>Chunk size</td><td>64 MB</td><td>Coarse retry granularity — a failure wastes up to 64 MB</td><td>Smaller chunks on lossy or long‑haul links; larger when manifest size and per‑request overhead start to dominate</td></tr>
+  <tr><td>Peer discovery</td><td>Central tracker with bitmaps</td><td>A component to run, and a soft dependency at join time</td><td>Gossip or a DHT when you cannot operate a tracker, or at a fleet size where the bitmap table stops fitting comfortably in memory</td></tr>
+  <tr><td>Integrity</td><td>Per‑chunk SHA‑256 under a signed manifest</td><td>Hashing cost on every chunk, and a signing key to manage</td><td>Never relax it — unverified bytes from an untrusted peer is the entire risk of running a swarm</td></tr>
+  <tr><td>Locality</td><td>Prefer same rack, then same zone</td><td>Rare chunks can bottleneck behind a single distant holder</td><td>Ignore topology only in small, flat networks where every link is equivalent</td></tr>
+  <tr><td>After completion</td><td>Keep seeding for a window</td><td>Disk and bandwidth held longer than strictly needed</td><td>Stop immediately only if late joiners are impossible — otherwise the tail of the fleet falls back onto origin</td></tr>
+</tbody></table>
+
+## Safety-first design {#infra-weights-safety}
+
+<div class="cards">
+  <div><h4>Never load a byte you cannot prove</h4><ul>
+    <li><b>Trust the manifest, not the peer.</b> The signature is verified before any chunk is requested, so the hash list is trustworthy even when every peer is not.</li>
+    <li><b>Verify at chunk granularity.</b> A bad hash costs one 64 MB re‑pull and a note that this peer is bad for this chunk — the blast radius of a tampered or corrupt chunk is as small as it can be.</li>
+    <li><b>Merkle root as the final gate.</b> Per‑chunk hashes prove each piece; the root proves you assembled the right pieces of the right version before anything is loaded onto a GPU.</li>
+    <li><b>Fail closed.</b> An unsigned, expired or mismatched manifest aborts the distribution rather than degrading to "download anyway".</li></ul></div>
+  <div><h4>Protecting the origin and the network</h4><ul>
+    <li><b>Hard connection cap at origin.</b> The first wave is a fixed, small number of nodes; there is no configuration in which 5,000 nodes can stampede S3.</li>
+    <li><b>Per‑peer upload caps.</b> A node serving its neighbours must never starve its own download or, worse, the inference traffic it is also serving.</li>
+    <li><b>Jitter at rollout.</b> Node start times are staggered so a fleet‑wide release does not become a synchronized thundering herd.</li>
+    <li><b>Respect the fabric.</b> Same‑rack preference and a cap on cross‑zone streams keep the expensive, shared links out of the critical path.</li></ul></div>
+  <div><h4>Operating safely</h4><ul>
+    <li><b>Abort is a first‑class operation.</b> Deleting the distribution stops 5,000 nodes from pulling and serving a version — the kill switch for a bad or revoked release.</li>
+    <li><b>Progress is visible per node.</b> Aggregated bitmaps make stragglers obvious, so a bad NIC surfaces as a slow node rather than as a mysterious rollout delay.</li>
+    <li><b>Distribution is decoupled from activation.</b> Nodes prefetch weights long before the rollout flips traffic, so a slow copy never turns into user‑visible downtime.</li>
+    <li><b>Authenticated peers only.</b> Chunk servers require short‑lived fleet credentials, so an outsider cannot join the swarm to harvest weights or poison it.</li></ul></div>
 </div>
 
 ## Don't leave the room without saying {#infra-weights-check}

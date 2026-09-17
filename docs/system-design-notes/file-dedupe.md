@@ -38,6 +38,32 @@ description: "medium · hashing · filesystem races · corruption · hardlinks v
 </div>
 <div class="note"><b>Cheap filters first:</b> group by size (free, from stat), then hash the first 64 KB, then full hash only for remaining candidates, then byte‑compare or verify before acting. Most files are unique by size alone; full‑hashing everything reads the whole disk for nothing.</div>
 
+
+## Scale, performance and safety targets {#file-dedupe-targets}
+
+<p>Dedup is an I/O‑bound scan with a destructive tail. The numbers decide the filter cascade; the safety rules decide whether anyone will ever run it twice.</p>
+
+<div class="cards">
+  <div><h4>Scale</h4><ul>
+    <li><b>Work per run:</b> 100M files across petabytes. The scan itself is ~100M <code>stat</code> calls; what matters is how few of those turn into full reads.</li>
+    <li><b>Data volume:</b> hashing everything would read petabytes. Size grouping alone typically eliminates 90%+ of files, and a 64 KB partial hash removes most of the rest — so full reads land on a few percent of the corpus.</li>
+    <li><b>Growth:</b> the tree grows continuously, which makes incremental rescans a requirement rather than an optimisation: only files whose (size, mtime, ctime) changed should ever be rehashed.</li></ul></div>
+  <div><h4>Performance</h4><ul>
+    <li><b>Latency:</b> a full scan of 100M files in hours, not days; an incremental rescan in minutes. Reclaim throughput of thousands of files/s, throttled so the scan never degrades whatever else uses that filesystem.</li>
+    <li><b>Throughput:</b> bounded by sequential read bandwidth, so the design goal is <em>bytes not read</em>. Ordering reads by inode or physical layout matters more than hash speed on spinning media; on NVMe, concurrency does.</li></ul></div>
+  <div><h4>Safety and security</h4><ul>
+    <li><b>Abuse prevention:</b> the adversary is usually the filesystem itself. Files change mid‑scan, hardlinks make one inode look like many files, symlink races can redirect a write, and special files must never be read or replaced.</li>
+    <li><b>Rate limiting:</b> I/O throttling and a concurrency cap so the tool cannot starve production workloads; a cap on files reclaimed per run so a bug has a bounded blast radius.</li>
+    <li><b>Data sensitivity:</b> the catalog records paths and hashes, which together are an inventory of everything on the system — it needs the same protection as the data. Never log file contents, and treat the hash index as sensitive metadata rather than harmless bookkeeping.</li></ul></div>
+  <div><h4>Availability and fault tolerance</h4><ul>
+    <li><b>Uptime target:</b> not a service; the requirement is that <b>no run may ever lose or corrupt a byte</b>. A dedup tool that is wrong once is a tool nobody is allowed to run again.</li>
+    <li><b>Degraded mode:</b> file changed between hash and reclaim → skip it, do not act. Filesystem does not support reflinks → fall back to hardlinks, or to reporting only. Interrupted mid‑run → the catalog is a resumable journal, and every completed action has undo information.</li></ul></div>
+  <div><h4>Also worth pinning down</h4><ul>
+    <li><b>Consistency:</b> there is no snapshot of a live filesystem, so every action re‑validates immediately before acting. The verification is the transaction; the hash is only a candidate filter.</li>
+    <li><b>Durability:</b> the catalog must survive a crash so a rescan is incremental rather than a restart, and so undo information outlives the process that created it.</li>
+    <li><b>Reversibility:</b> dry‑run by default, and every action recorded with enough information to undo it. This is the property that makes the tool usable at all — not a nice extra.</li></ul></div>
+</div>
+
 ## Interface and algorithm {#file-dedupe-api}
 
 <p>FileRecord (path, inode, dev, size, mtime, ctime, partialHash, fullHash, scannedAt) · DupGroup (hash, size, members[]) · Action (group, keeper, victims, mode: hardlink|reflink|contentstore, state, undo info) · Content store (hash → blob, refcount).</p>
@@ -148,23 +174,61 @@ undo(action): restore victim from keeper (copy) if link removed; verify hash</co
 <figcaption>Solid = request path · dashed = response / return · dotted = async or background.</figcaption>
 </figure>
 <ol class="order">
-  <li><b>Operator → Walker:</b> scan /data (exclude tmp/)</li>
-  <li><b>Walker → Filesystem:</b> stat each entry</li>
-  <li><b>Walker:</b> skip symlinks, sockets; hardlinks by (dev,inode)</li>
-  <li><b>Walker → Catalog:</b> upsert records; unchanged (size,mtime,ctime) → reuse hashes</li>
-  <li><b>Catalog → Hasher:</b> size groups &gt; 1</li>
-  <li><b>Hasher → Filesystem:</b> read 64 KB → partial hash</li>
-  <li><b>Hasher → Filesystem:</b> full SHA-256 for remaining</li>
-  <li><b>Hasher → Catalog:</b> dup groups</li>
-  <li><b>Operator → Catalog:</b> report: 1.2M groups, 8 TB reclaimable (dry run)</li>
-  <li><b>Operator → Reclaimer:</b> act --mode=reflink</li>
-  <li><b>Reclaimer → Filesystem:</b> for each victim: stat again; changed? → skip</li>
-  <li><b>Reclaimer → Filesystem:</b> byte-compare victim vs keeper (or rehash)</li>
-  <li><b>Reclaimer → Filesystem:</b> link keeper → victim.tmp; rename over victim (atomic)</li>
-  <li><b>Reclaimer → Catalog:</b> action DONE + undo info</li>
-  <li><b>Operator → Reclaimer:</b> undo action 42</li>
-  <li><b>Reclaimer → Filesystem:</b> copy keeper → victim path if needed; verify hash</li>
-  <li><b>Walker → Catalog:</b> next rescan: only changed files rehashed (async)</li>
+  <li><b>Operator → Walker:</b> scan /data (exclude tmp/).
+    Exclusions are part of the interface because some trees must never be touched — build caches, live databases, anything whose files change constantly.
+    The run is a dry run by default: reporting is safe, reclaiming is the deliberate second step.</li>
+  <li><b>Walker → Filesystem:</b> stat each entry.
+    <code>stat</code> is nearly free and yields size, inode, device, mtime and type — enough to eliminate the overwhelming majority of files before a single byte is read.
+    Reading file contents to decide whether to read file contents is the mistake this step exists to avoid.</li>
+  <li><b>Walker:</b> skip symlinks, sockets; hardlinks by (dev,inode).
+    Symlinks are skipped rather than followed, because following them walks outside the tree and can be redirected between check and use.
+    Hardlinks are identified by (device, inode): several paths sharing one inode are already deduplicated, and "reclaiming" them would free nothing while risking real damage.
+    Special files — devices, sockets, FIFOs — must never be read or replaced, and treating them as ordinary files is how a scan hangs on a FIFO.</li>
+  <li><b>Walker → Catalog:</b> upsert records; unchanged (size,mtime,ctime) → reuse hashes.
+    The catalog turns a full rescan into an incremental one — the difference between hours and minutes on a tree that mostly did not change.
+    <code>ctime</code> is included alongside <code>mtime</code> because <code>mtime</code> can be set backwards by a program, while <code>ctime</code> cannot be forged as easily.
+    This is a cache of an expensive computation, and like every cache its invalidation rule is where the bugs live.</li>
+  <li><b>Catalog → Hasher:</b> size groups &gt; 1.
+    Files with unique sizes cannot be duplicates, so they leave the pipeline having cost one <code>stat</code> each.
+    On a typical tree this eliminates 90%+ of candidates for free — the single highest‑value filter in the design.</li>
+  <li><b>Hasher → Filesystem:</b> read 64 KB → partial hash.
+    Most same‑size files differ in their first few kilobytes — different headers, different first record — so a partial hash splits groups at a fraction of the read cost.
+    64 KB is the practical balance: large enough to differentiate, small enough that reading it costs about the same as seeking to it.</li>
+  <li><b>Hasher → Filesystem:</b> full SHA-256 for remaining.
+    Only survivors of both filters are read in full, so petabytes of scanning becomes a few percent of actual reads.
+    A cryptographic hash rather than a fast one is chosen deliberately: an adversarial or unlucky collision here means deleting a file that was not a duplicate.</li>
+  <li><b>Hasher → Catalog:</b> dup groups.
+    Groups are candidates, not conclusions — the hash is evidence, and the verification before acting is what makes it a decision.</li>
+  <li><b>Operator → Catalog:</b> report: 1.2M groups, 8 TB reclaimable (dry run).
+    Reporting is the default output, and it is where the operator decides whether the savings justify touching anything.
+    Making the destructive step opt‑in rather than opt‑out is most of what makes this tool safe to adopt.</li>
+  <li><b>Operator → Reclaimer:</b> act --mode=reflink.
+    Reflinks are the best option where supported: copy‑on‑write means the files stay independent, so later modifying one does not affect the other.
+    Hardlinks save the same space but silently couple the files — editing one changes both, which is a data‑loss bug that surfaces weeks later.
+    Naming the mode explicitly forces that choice to be conscious rather than a default nobody examined.</li>
+  <li><b>Reclaimer → Filesystem:</b> for each victim: stat again; changed? → skip.
+    The hash was computed at some point in the past, and on a live filesystem the past is not evidence about the present.
+    Re‑stat immediately before acting closes most of the time‑of‑check‑to‑time‑of‑use window, and any change at all means skip rather than investigate.</li>
+  <li><b>Reclaimer → Filesystem:</b> byte-compare victim vs keeper (or rehash).
+    Before anything destructive, the files are compared directly — this is the last line of defence and it is worth the I/O.
+    It covers the hash collision case, the file‑changed‑since‑hashing case, and the catalog‑is‑stale case in one step.
+    Skipping this because "SHA‑256 collisions are impossible" is exactly the reasoning that makes a dedup tool untrustworthy.</li>
+  <li><b>Reclaimer → Filesystem:</b> link keeper → victim.tmp; rename over victim (atomic).
+    Create the replacement under a temporary name, then <code>rename</code> over the original — rename is atomic, so at no instant does the path fail to exist.
+    A delete‑then‑link sequence has a window in which the file is simply gone, and a crash inside that window is permanent data loss.
+    Operating on a file descriptor opened earlier, rather than re‑resolving the path, also closes the symlink race.</li>
+  <li><b>Reclaimer → Catalog:</b> action DONE + undo info.
+    Every action is journalled with what was replaced, by what, and how to reverse it — written before the next action begins.
+    An interrupted run is therefore resumable and reversible rather than leaving the tree in an unknown state.</li>
+  <li><b>Operator → Reclaimer:</b> undo action 42.
+    Undo is a first‑class operation, not a recovery procedure, which is what allows a cautious operator to try the tool at all.
+    It is also the honest answer to "what if you are wrong?" — a question this tool must be able to answer.</li>
+  <li><b>Reclaimer → Filesystem:</b> copy keeper → victim path if needed; verify hash.
+    Restoration copies the content back and verifies it against the recorded hash, so undo is itself verified rather than assumed.
+    Same atomic rename discipline on the way back, because the reverse operation deserves the same care as the forward one.</li>
+  <li><b>Walker → Catalog:</b> next rescan: only changed files rehashed (async).
+    Steady state is cheap: <code>stat</code> everything, rehash the few files that changed, and reuse everything else.
+    This is what turns dedup from an occasional expensive event into a routine background job — and the catalog is what makes it possible.</li>
 </ol>
 
 ## Deep dives {#file-dedupe-deep}
@@ -179,6 +243,40 @@ undo(action): restore victim from keeper (copy) if link removed; verify hash</co
 <div><h4>Hashing correctly</h4><ul><li>Use a cryptographic hash (SHA‑256/BLAKE3) so accidental collisions are impossible in practice; still verify before destructive action when data matters (byte‑compare is cheap relative to the deletion risk).</li><li>Stream hashes in chunks; parallelize across files, not within one file on spinning disks; bound concurrency per device.</li><li>Partial hash on head only can be fooled by files with identical headers (media containers); use head + tail or a middle sample.</li></ul></div>
 <div><h4>Races and filesystem semantics</h4><ul><li>TOCTOU: a file can change between hash and action. Re‑stat (size, mtime, ctime, inode) immediately before acting and compare; if changed, skip. Hold the file open and hash the same fd you act on where possible.</li><li>Existing hardlinks look like duplicates but aren't: key on (dev, inode). Cross‑device links are impossible; use copy‑to‑content‑store there.</li><li>Reflinks (Btrfs/XFS/APFS) share blocks copy‑on‑write and are safer than hardlinks (edits don't propagate). Hardlinks change semantics: an edit to one path edits all. Say which you'd use and why.</li><li>Atomicity: create link at temp name, then rename over the victim; rename is atomic on the same filesystem. Preserve metadata (mode, owner, xattrs) or document what changes.</li></ul></div>
 <div><h4>Safety and scale</h4><ul><li>Dry‑run by default; actions logged with undo info; undo restores content from keeper. Never delete without a keeper that verified.</li><li>Corruption: verify checksums on read; if keeper is corrupt, pick a different keeper; store expected hash in the catalog for later scrubbing.</li><li>Incremental: catalog keyed by path + inode with (size, mtime, ctime) so unchanged files skip hashing; use inotify/fsevents for continuous mode.</li><li>Object stores: dedupe by content hash at upload (see CloudDrive); refcount before deleting a blob.</li></ul></div></div>
+
+
+## Trade-offs {#file-dedupe-tradeoffs}
+
+<table>
+  <tbody><tr><th>Decision</th><th>What we chose</th><th>What we gave up</th><th>When to flip it</th></tr>
+  <tr><td>Candidate filtering</td><td>Size → partial hash → full hash → byte compare</td><td>Four stages of code instead of one</td><td>Hashing everything is one line and reads the entire filesystem for nothing; the cascade is the whole performance story</td></tr>
+  <tr><td>Hash choice</td><td>SHA‑256</td><td>Slower than xxHash or BLAKE by a meaningful factor</td><td>A fast hash is fine as a <em>filter</em>; as the basis for deletion it is not, unless a byte compare always follows</td></tr>
+  <tr><td>Reclaim mechanism</td><td>Reflinks where available</td><td>Filesystem support required (XFS, Btrfs, APFS)</td><td>Hardlinks work everywhere but couple the files — editing one changes both, which is a data‑loss bug waiting to happen</td></tr>
+  <tr><td>Verification</td><td>Byte compare immediately before acting</td><td>Reading both files again at reclaim time</td><td>Never skip it: it covers collisions, stale catalog entries and mid‑scan modifications in one cheap step</td></tr>
+  <tr><td>Change detection</td><td>(size, mtime, ctime) in a durable catalog</td><td>A catalog to store, protect and invalidate correctly</td><td>Rehashing everything is simpler and correct but makes every rescan a full‑filesystem read</td></tr>
+  <tr><td>Default mode</td><td>Dry run; acting is explicit</td><td>Two steps for the operator instead of one</td><td>Never default to destructive — the first run of a dedup tool should not be able to lose data</td></tr>
+  <tr><td>Concurrent modification</td><td>Skip anything that changed</td><td>Some duplicates are missed each run</td><td>Locking a live filesystem is not available; missing a duplicate costs space, acting on a changed file costs data</td></tr>
+</tbody></table>
+
+## Safety-first design {#file-dedupe-safety}
+
+<div class="cards">
+  <div><h4>The filesystem is changing under you</h4><ul>
+    <li><b>Re‑validate immediately before acting.</b> A hash computed an hour ago is a hypothesis about the past, not a fact about now.</li>
+    <li><b>Byte compare is the transaction.</b> The hash narrows candidates; the comparison is what authorises destruction.</li>
+    <li><b>Any change means skip.</b> A file modified mid‑run is left alone entirely — missing a duplicate costs disk space, acting on a changed file costs data.</li>
+    <li><b>Act on descriptors, not paths.</b> Re‑resolving a path between check and use is the symlink race; holding the descriptor closes it.</li></ul></div>
+  <div><h4>Every destructive step is reversible</h4><ul>
+    <li><b>Atomic rename, never delete‑then‑create.</b> The path always resolves to a valid file, so a crash mid‑operation cannot leave a hole.</li>
+    <li><b>Journal before you act.</b> Undo information is durable before the change, so an interrupted run is resumable and reversible rather than unknown.</li>
+    <li><b>Undo is verified too.</b> Restoration checks the recovered content against the recorded hash instead of assuming the copy worked.</li>
+    <li><b>Dry run first, always.</b> Reporting is the default; reclaiming requires an explicit mode, so the tool cannot surprise anyone on first use.</li></ul></div>
+  <div><h4>Respect what is not an ordinary file</h4><ul>
+    <li><b>Hardlinks are already deduplicated.</b> Multiple paths to one inode free nothing if "deduplicated" — recognising (device, inode) prevents pointless and risky work.</li>
+    <li><b>Never follow symlinks.</b> Following them walks outside the scanned tree and opens a redirection window between check and use.</li>
+    <li><b>Skip special files.</b> Devices, sockets and FIFOs must not be read or replaced; treating a FIFO as a regular file is how a scan hangs forever.</li>
+    <li><b>Preserve metadata.</b> Permissions, ownership and timestamps survive the replacement, or the tool has changed something the operator did not agree to.</li></ul></div>
+</div>
 
 ## Don't leave the room without saying {#file-dedupe-check}
 

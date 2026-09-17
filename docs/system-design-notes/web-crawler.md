@@ -46,6 +46,32 @@ description: "medium · combines \"design a crawler\" + \"scale with a thread po
 </div>
 <div class="note"><b>Numbers:</b> 400 pages/s × 100 KB avg ≈ 40 MB/s ≈ 3.5 TB/day raw HTML (compress ~5×). 1B URLs × ~100 B ≈ 100 GB for the visited set as exact strings; a Bloom filter with 1% false positives needs ~1.2 GB. Each fetch waits ~200–500 ms on the network, so one worker does ~2–5 pages/s; 400/s needs ~100–200 concurrent fetches, which is a thread pool or async I/O, not 200 machines.</div>
 
+
+## Scale, performance and safety targets {#cr-targets}
+
+<p>A crawler is judged on politeness and termination far more than on raw speed. These are the numbers to commit to, including the ingestion and indexing tail that makes the crawl useful.</p>
+
+<div class="cards">
+  <div><h4>Scale</h4><ul>
+    <li><b>QPS:</b> 1B documents/month ≈ 400 fetches/s average, 4,000/s at peak — but capped at ≤ 1 request/s per host, so throughput comes from breadth across millions of hosts, never from depth on one.</li>
+    <li><b>Data volume:</b> ~100 KB average page → ~40 MB/s, ~3.5 TB/day raw HTML (~700 GB compressed). The frontier holds billions of URLs; the visited set is ~100 GB as exact strings, or ~1.2 GB as a Bloom filter at 1% false positives.</li>
+    <li><b>Growth:</b> the crawlable web grows faster than any budget, so the design assumes a permanent <em>budget</em> per crawl and prioritisation rather than completeness — 2× capacity buys 2× coverage, never "done".</li></ul></div>
+  <div><h4>Performance</h4><ul>
+    <li><b>Latency:</b> per‑fetch p50 ~300 ms, p95 &lt; 2 s, hard timeout 10 s with a size cap; discovered URL to indexed document p95 &lt; 10 min. Individual latency barely matters — concurrency does, because every fetch is network‑bound.</li>
+    <li><b>Throughput:</b> one worker achieves ~2–5 pages/s while waiting on the network, so 400/s needs ~100–200 concurrent fetches. That is a thread pool or async I/O on a handful of machines, not 200 machines — a point worth making explicitly.</li></ul></div>
+  <div><h4>Safety and security</h4><ul>
+    <li><b>Abuse prevention:</b> a crawler is mostly a danger to <em>others</em> — an impolite crawler is a distributed denial of service with good intentions. Inbound, the hazards are crawler traps (infinite calendars, session‑id URLs), circular reference loops, zip bombs and enormous pages, and hostile servers that hang connections to exhaust the pool.</li>
+    <li><b>Rate limiting:</b> ≤ 1 request/s per host with <code>crawl‑delay</code> honoured when longer, a global cap per IP block so many hosts behind one address are not collectively hammered, per‑host connection limits, and a per‑crawl budget of pages and depth.</li>
+    <li><b>Data sensitivity:</b> obey robots.txt and <code>noindex</code> as policy, not as a suggestion; skip pages behind authentication; strip credentials from URLs before storing; and honour takedown by removing both the stored blob and its index entries. Retention of raw HTML should be finite and stated.</li></ul></div>
+  <div><h4>Availability and fault tolerance</h4><ul>
+    <li><b>Uptime target:</b> no user‑facing SLA — this is batch work. The real requirement is <b>resumability</b>: after a crash the crawl continues from durable frontier state, having lost minutes rather than days.</li>
+    <li><b>Degraded mode:</b> a host returning 5xx or timing out is backed off exponentially and eventually parked, never retried in a tight loop. Parser or index falling behind → keep fetching and buffer raw pages, because re‑fetching is far more expensive (and ruder) than re‑parsing. Frontier storage degraded → stop claiming new URLs and let in‑flight work drain.</li></ul></div>
+  <div><h4>Also worth pinning down</h4><ul>
+    <li><b>Consistency:</b> at‑least‑once fetching with dedupe on canonical URL and on content hash. The visited set is the only shared state needing atomic test‑and‑set; everything else tolerates duplication.</li>
+    <li><b>Durability:</b> the frontier and visited set must survive a crash, because rebuilding them means re‑crawling — which costs bandwidth and, worse, hits other people's servers again. Raw pages are durable in object storage; the index is derived and rebuildable.</li>
+    <li><b>Termination:</b> the condition is explicit — frontier empty <em>and</em> in‑flight count zero — because "the queue looks empty" is the classic way a concurrent crawler stops early while workers still hold URLs.</li></ul></div>
+</div>
+
 ## Entities and API {#cr-entities}
 
 <p>URL (canonical string, host, priority, depth, discoveredAt, lastCrawledAt, state) · Host (robots rules, crawl_delay, next_allowed_at, failures) · Page (url, contentHash, simhash, fetchedAt, status, blobKey) · Link (from → to) · CrawlJob (seeds, scope, budget).</p>
@@ -143,22 +169,60 @@ Internal worker loop:  claim() → fetch() → parse() → dedupe() → enqueue(
 <figcaption>Solid = request path · dashed = response / return · dotted = async or background.</figcaption>
 </figure>
 <ol class="order">
-  <li><b>Seeds/Scheduler → Frontier (Kafka/Redis):</b> push seed URLs (priority, depth 0)</li>
-  <li><b>Fetcher worker → Frontier (Kafka/Redis):</b> claim next URL for a host whose politeness timer expired</li>
-  <li><b>Frontier (Kafka/Redis) → Fetcher worker:</b> URL + host lease (response)</li>
-  <li><b>Fetcher worker → Robots/DNS cache:</b> robots.txt allowed? DNS?</li>
-  <li><b>Robots/DNS cache → Fetcher worker:</b> cached answer (response)</li>
-  <li><b>Fetcher worker → Web host:</b> GET (timeout, size cap, UA)</li>
-  <li><b>Web host → Fetcher worker:</b> 200 html | 3xx | 4xx/5xx (response)</li>
-  <li><b>Fetcher worker → Blob + index:</b> store raw page (content hash key)</li>
-  <li><b>Fetcher worker → Parser:</b> parse</li>
-  <li><b>Parser:</b> extract links, normalize, canonicalize</li>
-  <li><b>Parser → Dedupe (Bloom/set):</b> seen(url)? seen(content simhash)?</li>
-  <li><b>Dedupe (Bloom/set) → Parser:</b> new / seen (response)</li>
-  <li><b>Parser → Frontier (Kafka/Redis):</b> push new URLs (depth+1, priority)</li>
-  <li><b>Fetcher worker → Frontier (Kafka/Redis):</b> ack URL, set host next_allowed_at (async)</li>
-  <li><b>Fetcher worker:</b> retry with backoff on 5xx/timeout; give up after N</li>
-  <li><b>Seeds/Scheduler:</b> termination: frontier empty AND in-flight = 0</li>
+  <li><b>Seeds/Scheduler → Frontier (Kafka/Redis):</b> push seed URLs (priority, depth 0).
+    Seeds define the scope — one domain, a URL prefix, or the open web — and depth 0 starts the counter that will eventually bound the crawl.
+    The frontier is durable rather than in‑memory, because losing it means re‑crawling, which costs bandwidth and hits other people's servers a second time.</li>
+  <li><b>Fetcher worker → Frontier (Kafka/Redis):</b> claim next URL for a host whose politeness timer expired.
+    Politeness is enforced at claim time, not at fetch time — a worker is simply not given a URL for a host it is too early to visit.
+    This inverts the naive design where workers fetch and then sleep, which wastes concurrency and still risks bursts when several workers pick the same host.
+    Because hosts are partitioned across workers, per‑host ordering needs no global lock.</li>
+  <li><b>Frontier (Kafka/Redis) → Fetcher worker:</b> URL + host lease (response).
+    The claim is atomic and carries a lease, so a worker that dies does not take its URL with it — the lease expires and the URL becomes claimable again.
+    Leases are what make at‑least‑once fetching safe and crashes uninteresting.</li>
+  <li><b>Fetcher worker → Robots/DNS cache:</b> robots.txt allowed? DNS?
+    Both are cached aggressively: fetching robots.txt before every page would triple the load on every site you crawl, which is itself impolite.
+    DNS caching matters just as much — resolution is often slower than the fetch, and uncached lookups add a hidden round trip to every request.</li>
+  <li><b>Robots/DNS cache → Fetcher worker:</b> cached answer (response).
+    Robots rules are honoured as policy, including <code>crawl‑delay</code> when it is longer than the default, and a disallowed URL is dropped rather than queued for later.
+    A missing or unreachable robots.txt is treated conservatively — assume restrictive rather than open season.</li>
+  <li><b>Fetcher worker → Web host:</b> GET (timeout, size cap, UA).
+    Every request carries a hard timeout, a maximum response size and an identifying user agent with a contact URL, so site owners can see who is crawling and complain.
+    The size cap is a real defence: without it a single enormous or maliciously generated response can exhaust a worker's memory.
+    Conditional requests using <code>If‑Modified‑Since</code> or <code>ETag</code> turn most recrawls into cheap 304s.</li>
+  <li><b>Web host → Fetcher worker:</b> 200 html | 3xx | 4xx/5xx (response).
+    Redirects are followed to a bounded depth and the final URL is what gets recorded — redirect chains are a common way to create loops.
+    4xx is terminal and remembered; 5xx is transient and goes to backoff, and conflating the two either loses pages or retries dead ones forever.</li>
+  <li><b>Fetcher worker → Blob + index:</b> store raw page (content hash key).
+    Raw HTML is stored before parsing, so a parser bug or an index change is fixed by reprocessing rather than by re‑crawling the web.
+    Keying by content hash deduplicates identical bytes across URLs automatically, which matters because mirrors and syndicated content are everywhere.
+    This store is the ingestion boundary: everything downstream — parsing, indexing, embedding — reads from here, not from the network.</li>
+  <li><b>Fetcher worker → Parser:</b> parse.
+    Parsing is decoupled from fetching so that a slow or backed‑up indexing pipeline never causes the crawler to re‑hit a website.
+    It also lets the two scale independently: fetching is network‑bound, parsing is CPU‑bound.</li>
+  <li><b>Parser:</b> extract links, normalize, canonicalize.
+    Canonicalization is where most duplicate crawling is prevented: lowercase the host, drop default ports and fragments, sort or strip tracking query parameters, resolve relative links, honour <code>rel=canonical</code>.
+    Without it, <code>example.com/a</code>, <code>example.com/a?utm_source=x</code> and <code>example.com/a#top</code> are three separate crawls of one page.
+    This is also the first line of defence against traps: session ids and infinite calendar parameters are normalised away or pattern‑blocked here.</li>
+  <li><b>Parser → Dedupe (Bloom/set):</b> seen(url)? seen(content simhash)?
+    Two different questions. URL dedupe is what breaks <b>circular references</b> — A links to B, B links back to A — because the second visit is simply never enqueued.
+    Content dedupe with a simhash catches near‑duplicates that URL dedupe cannot: the same article under a thousand different URLs, or a trap generating endless slightly different pages.
+    A Bloom filter makes the URL check fit in ~1.2 GB instead of 100 GB, at the cost of occasionally skipping a page it wrongly believes it has seen — an acceptable trade, because false positives lose coverage while false negatives would break termination.</li>
+  <li><b>Dedupe (Bloom/set) → Parser:</b> new / seen (response).
+    The check must be an atomic test‑and‑set: with hundreds of concurrent workers, "check then add" as two steps lets the same URL through twice.
+    This is the one piece of genuinely shared state in the whole design, which is exactly why the concurrency round of this interview focuses on it.</li>
+  <li><b>Parser → Frontier (Kafka/Redis):</b> push new URLs (depth+1, priority).
+    Depth is incremented and checked against the crawl's limit, which bounds even a graph with cycles that dedupe somehow missed.
+    Priority makes the frontier a scheduling decision rather than a queue: important, frequently changing pages are crawled first, because the budget always runs out before the web does.</li>
+  <li><b>Fetcher worker → Frontier (Kafka/Redis):</b> ack URL, set host next_allowed_at (async).
+    The ack releases the lease, and stamping the host's next allowed time is what enforces the politeness delay for whoever claims next.
+    Doing both together means politeness state cannot drift from crawl state even if a worker dies in between.</li>
+  <li><b>Fetcher worker:</b> retry with backoff on 5xx/timeout; give up after N.
+    Exponential backoff with jitter, then parking the host entirely, is what stops a struggling site from being hammered by the very crawler that is struggling to read it.
+    A bounded retry count is also a termination requirement: unbounded retries mean a handful of dead hosts keep the crawl alive forever.</li>
+  <li><b>Seeds/Scheduler:</b> termination: frontier empty AND in-flight = 0.
+    Both conditions are required. An empty frontier alone is the classic bug — workers still holding claimed URLs are about to enqueue more links, so stopping there ends the crawl early and silently.
+    The in‑flight count must be maintained atomically with claim and ack; tracking it loosely reintroduces exactly the race it exists to prevent.
+    For an open‑web crawl the practical stop is a budget or a schedule rather than emptiness, and saying which one applies is part of answering the question.</li>
 </ol>
 
 ## Version 1: single machine, thread pool, one lock (the coding round) {#cr-single}
@@ -286,6 +350,40 @@ class Crawler:
   <li>Metrics: pages/s, frontier depth per priority, in‑flight count, per‑host error and 429 rates, dedupe hit rate, average fetch latency, worker utilization; absence alert if pages/s hits 0 with frontier non‑empty (wedged crawl).</li>
   <li>Resumability: frontier is durable, visited set persisted (Bloom snapshots + metadata store), so a restart continues instead of recrawling.</li>
 </ul>
+
+
+## Trade-offs {#cr-tradeoffs}
+
+<table>
+  <tbody><tr><th>Decision</th><th>What we chose</th><th>What we gave up</th><th>When to flip it</th></tr>
+  <tr><td>Visited set</td><td>Bloom filter over billions of URLs</td><td>~1% of pages are wrongly skipped as already seen</td><td>An exact set when coverage must be complete and 100 GB of memory (or a sharded KV store) is affordable</td></tr>
+  <tr><td>Politeness enforcement</td><td>At claim time, via a per‑host next‑allowed timestamp</td><td>Workers can idle when the frontier is dominated by a few hosts</td><td>Sleeping after fetch is simpler but wastes concurrency and still allows bursts when workers collide on one host</td></tr>
+  <tr><td>Frontier</td><td>Durable, partitioned by host</td><td>Operating a queue, and rebalancing when host partitions are skewed</td><td>An in‑memory queue is fine for a single‑machine, single‑domain crawl; at scale losing it means re‑crawling the web</td></tr>
+  <tr><td>Fetch and parse</td><td>Decoupled through blob storage</td><td>Storage cost for raw HTML, and a second pipeline stage</td><td>Parsing inline is simpler but means every parser bug or schema change requires re‑crawling — which hits other people's servers again</td></tr>
+  <tr><td>Duplicate detection</td><td>Canonical URL <em>and</em> content simhash</td><td>Simhash computation per page, plus a similarity index</td><td>URL dedupe alone is cheap but misses mirrors and traps that generate endless near‑identical pages</td></tr>
+  <tr><td>Concurrency model</td><td>~100–200 concurrent fetches on a few machines</td><td>Nothing much — fetches are network‑bound, so threads are nearly free</td><td>More machines only when bandwidth or host diversity, not CPU, is the limit; adding machines for a network‑bound crawl is a common over‑design</td></tr>
+  <tr><td>Recrawl policy</td><td>Priority by estimated change rate, with conditional requests</td><td>Complexity in estimating freshness per page</td><td>A fixed interval is simpler but wastes most of the budget re‑fetching pages that never change</td></tr>
+</tbody></table>
+
+## Safety-first design {#cr-safety}
+
+<div class="cards">
+  <div><h4>Do not become a denial of service</h4><ul>
+    <li><b>One request per second per host, always.</b> Enforced at claim time so no combination of workers can burst against a single site.</li>
+    <li><b>Limit by IP block, not just by hostname.</b> Thousands of hosts can share one server, and per‑host politeness alone still floods it.</li>
+    <li><b>Back off and park.</b> 5xx and timeouts trigger exponential backoff with jitter, then removal from the schedule — a struggling site must not be hammered by the crawler reading it.</li>
+    <li><b>Identify yourself.</b> A user agent with a contact URL, and prompt honouring of robots.txt and <code>crawl‑delay</code>, is what keeps a crawler welcome.</li></ul></div>
+  <div><h4>Surviving a hostile web</h4><ul>
+    <li><b>Cycles are handled by dedupe, not by hope.</b> Circular references terminate because the second visit is never enqueued; a depth limit bounds anything dedupe misses.</li>
+    <li><b>Traps are bounded by canonicalization and simhash.</b> Infinite calendars and session‑id URLs collapse under normalisation, and near‑duplicate detection catches the rest.</li>
+    <li><b>Hard caps on every fetch.</b> Timeout, maximum response size and redirect depth stop one hostile response from wedging a worker or exhausting memory.</li>
+    <li><b>No worker can wedge the crawl.</b> Leases expire and URLs return to the frontier, so a hung fetch costs one lease interval rather than a stalled pipeline.</li></ul></div>
+  <div><h4>Respecting what you collect</h4><ul>
+    <li><b>robots.txt and noindex are policy.</b> Treated as rules rather than hints, including for pages already stored from an earlier crawl.</li>
+    <li><b>Strip credentials, skip authenticated pages.</b> URLs with embedded tokens are sanitised before storage so the corpus does not become a credential dump.</li>
+    <li><b>Takedown reaches the derivatives.</b> Removing a page deletes the stored blob, the index entries and any embeddings derived from it.</li>
+    <li><b>Finite retention on raw HTML.</b> Keeping everything forever is a growing liability; the index is rebuildable from a bounded window.</li></ul></div>
+</div>
 
 ## Don't leave the room without saying {#cr-checklist}
 

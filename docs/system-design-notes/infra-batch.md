@@ -43,6 +43,32 @@ description: "medium · materialized executions · atomic claim · leases · pri
   </div>
 </div>
 
+
+## Scale, performance and safety targets {#infra-batch-targets}
+
+<p>Batch is a throughput system with a deadline, not a latency system. Pin these numbers first — they are what justify materialized rows, leases and priority isolation.</p>
+
+<div class="cards">
+  <div><h4>Scale</h4><ul>
+    <li><b>QPS:</b> the API itself is quiet (~100 submissions/s, a few thousand status polls/s), but the claim query runs hot — thousands of workers claiming 50 rows each, tens of thousands of row transitions per second.</li>
+    <li><b>Data volume:</b> jobs up to 1M items; thousands of concurrent jobs means 100M+ live execution rows. Average prompt ~10 KB, so a single large job is ~10 GB of input and a similar amount of output.</li>
+    <li><b>Growth:</b> roughly 2× annually in both job count and items per job — which is why the executions table must be partitionable by job_id hash before it is actually needed.</li></ul></div>
+  <div><h4>Performance</h4><ul>
+    <li><b>Latency:</b> submit ack p99 &lt; 500 ms (materialization is async); status poll p99 &lt; 100 ms because it reads a counter, not a COUNT(*); claim query p99 &lt; 50 ms — it is on every worker's hot loop.</li>
+    <li><b>Throughput:</b> complete a 1M‑item job inside the 24 h window, which is ~12 items/s sustained; the system should do far better than that when the interactive fleet is idle, and gracefully do nothing when it is not.</li></ul></div>
+  <div><h4>Safety and security</h4><ul>
+    <li><b>Abuse prevention:</b> the real threats are resource abuse rather than network attacks — a customer submitting a 100M‑item job to monopolize the fleet, a poison item retried forever, and batch traffic silently eating the interactive capacity that paying latency‑sensitive users depend on.</li>
+    <li><b>Rate limiting:</b> per‑customer caps on concurrent jobs, total in‑flight items and submissions per hour; round‑robin claiming so no single job can dominate; per‑item attempt cap of 3 so a poison prompt dies instead of looping.</li>
+    <li><b>Data sensitivity:</b> input files are customer prompts and may contain PII. Store them in customer‑scoped buckets, keep only S3 offsets in the rows (never prompt text in the database), encrypt at rest, and expire inputs and outputs on a stated retention — e.g. 30 days.</li></ul></div>
+  <div><h4>Availability and fault tolerance</h4><ul>
+    <li><b>Uptime target:</b> 99.9% for the submit/status API. The processing plane is allowed to pause entirely — a batch job that stalls for an hour and still meets its 24 h window has not violated anything.</li>
+    <li><b>Degraded mode:</b> inference gateway saturated → batch simply stops being admitted and the queue drains later. Executions DB unavailable → workers finish their leased items and stop claiming; nothing is lost because leases expire and items return to PENDING. Output assembly failing → the job stays "processing" with results already durable in S3.</li></ul></div>
+  <div><h4>Also worth pinning down</h4><ul>
+    <li><b>Durability:</b> eleven nines for inputs and results in object storage; an acknowledged submit must never be silently dropped, which is why the job row and the input file are both durable before the API returns.</li>
+    <li><b>Consistency:</b> strong for the claim — it is a conditional update and must be linearizable, or two workers process the same item. Progress counters can be eventually consistent, and at‑least‑once delivery is made safe by idempotent (job, idx) result keys.</li>
+    <li><b>Compliance:</b> per‑customer data residency for inputs and outputs, a deletion path that actually removes both, and audit records of who submitted and who downloaded each job.</li></ul></div>
+</div>
+
 ## Entities and API {#infra-batch-api}
 
 <p>Job (id, customer, inputUrl, outputUrl, state, counts) · Execution (id, jobId, idx, state PENDING|RUNNING|DONE|FAILED, owner, leaseUntil, attempts, resultKey) · Worker · Lease</p>
@@ -135,25 +161,71 @@ Worker:  claim(n) → UPDATE … SKIP LOCKED;  heartbeat(execIds);  complete(exe
 <figcaption>Solid = request path · dashed = response / return · dotted = async or background.</figcaption>
 </figure>
 <ol class="order">
-  <li><b>Customer → Batch API:</b> POST /batches (file in S3)</li>
-  <li><b>Batch API → Executions DB:</b> INSERT job</li>
-  <li><b>Batch API → Materializer:</b> materialize (async)</li>
-  <li><b>Materializer → S3:</b> stream input file</li>
-  <li><b>Materializer → Executions DB:</b> INSERT N executions PENDING (batched)</li>
-  <li><b>Worker → Executions DB:</b> UPDATE … SKIP LOCKED LIMIT 50 → RUNNING, lease 5 m</li>
-  <li><b>Executions DB → Worker:</b> claimed rows (response)</li>
-  <li><b>Worker → Inference GW:</b> inference priority=batch</li>
-  <li><b>Inference GW:</b> admit only if interactive depth low</li>
-  <li><b>Inference GW → Worker:</b> result (response)</li>
-  <li><b>Worker → S3:</b> PUT result job/idx</li>
-  <li><b>Worker → Executions DB:</b> DONE; job.done += 1</li>
-  <li><b>Worker → Executions DB:</b> heartbeat extends lease (async)</li>
-  <li><b>Executions DB:</b> reaper: expired lease → PENDING, attempts++</li>
-  <li><b>Executions DB:</b> attempts ≥ 3 → FAILED item</li>
-  <li><b>Batch API → Executions DB:</b> done+failed = total?</li>
-  <li><b>Batch API → S3:</b> assemble output file</li>
-  <li><b>Customer → Batch API:</b> GET /batches/:id</li>
-  <li><b>Batch API → Customer:</b> progress / output URL (response)</li>
+  <li><b>Customer → Batch API:</b> POST /batches (file in S3).
+    The customer uploads the input file first and submits a reference to it, so the API never streams gigabytes through a request body.
+    Submit validates cheaply — the file exists, the model is real, the customer is under quota — and returns fast; the expensive expansion happens afterwards.
+    An idempotency key on the submit stops a client retry from creating two identical million‑item jobs.</li>
+  <li><b>Batch API → Executions DB:</b> INSERT job.
+    One row records the job's identity, customer, input and output locations, state and counters — this is what a status poll reads.
+    Writing it before acknowledging is what makes the submit durable: if the API dies immediately after, the job still exists and materialization will be retried.</li>
+  <li><b>Batch API → Materializer:</b> materialize (async).
+    Expanding a file into a million rows can take minutes, so it happens off the request path and the customer sees the job in a "materializing" state.
+    Decoupling also means materialization can be retried or resumed independently without the client holding a connection open.</li>
+  <li><b>Materializer → S3:</b> stream input file.
+    The file is streamed, never loaded into memory, so a 10 GB input costs constant memory regardless of size.
+    As it streams it records byte offsets per item, which is what lets the execution row stay tiny.</li>
+  <li><b>Materializer → Executions DB:</b> INSERT N executions PENDING (batched).
+    This is the central design decision: the job is materialized into one row per item, each with its own state machine, attempt count and lease.
+    That is what makes per‑item progress, per‑item retry, partial failure and fair scheduling possible at all — a single opaque "job" has none of those properties.
+    Rows store the S3 offset rather than the prompt text, so the table stays small and the claim query stays fast; inserts are batched in thousands to keep write amplification down.</li>
+  <li><b>Worker → Executions DB:</b> UPDATE … SKIP LOCKED LIMIT 50 → RUNNING, lease 5 m.
+    A single conditional UPDATE moves rows PENDING → RUNNING while stamping owner and lease expiry — the claim is the transaction, so two workers can never hold the same item.
+    <code>SKIP LOCKED</code> is what lets thousands of workers claim concurrently without queueing behind each other on the same hot rows.
+    Claiming 50 at a time amortizes the round trip; claims are ordered round‑robin across jobs so one huge job cannot starve small ones.</li>
+  <li><b>Executions DB → Worker:</b> claimed rows (response).
+    The worker gets the item indices and input offsets — enough to fetch its own prompts directly from S3 without the database carrying payloads.
+    If fewer rows come back than requested, the worker backs off; an empty claim is the normal signal that the queue is drained.</li>
+  <li><b>Worker → Inference GW:</b> inference priority=batch.
+    Every batch call is explicitly tagged as low priority, which is the mechanism that keeps batch from cannibalizing interactive capacity.
+    The worker sends the request with a generous timeout because being slow is fine here; being dropped is also fine, since the lease will reclaim the item.</li>
+  <li><b>Inference GW:</b> admit only if interactive depth low.
+    The gateway is the arbiter: batch is admitted only while the interactive queue is shallow, and in‑flight batch work can be preempted and re‑queued when it deepens.
+    This gives near‑free utilization of idle GPUs while making the isolation guarantee concrete rather than aspirational.
+    The alternative — a separate pool — is predictable but wastes capacity, and is worth it only when batch itself carries a hard SLA.</li>
+  <li><b>Inference GW → Worker:</b> result (response).
+    A rejection here is not an error: the worker releases the item or lets the lease lapse, and it returns to PENDING for a later, quieter moment.
+    Only genuine model or input errors count against the item's attempt budget.</li>
+  <li><b>Worker → S3:</b> PUT result job/idx.
+    Results are written under a deterministic key derived from job and item index, which is what makes at‑least‑once processing safe.
+    A duplicate execution after a late heartbeat simply overwrites the same object with the same content — no duplicates ever reach the output file.
+    Writing the result before marking the row DONE means the durable artifact always exists before the state claims it does.</li>
+  <li><b>Worker → Executions DB:</b> DONE; job.done += 1.
+    The state transition and the counter increment happen together, so progress is a cheap counter read rather than a COUNT(*) over a hundred million rows.
+    The update is conditional on the worker still owning the lease, so a worker that was already reaped cannot resurrect a stale item.</li>
+  <li><b>Worker → Executions DB:</b> heartbeat extends lease (async).
+    A live worker proves it is alive by pushing its lease out; the lease is the only thing standing between a crashed worker and a permanently stuck item.
+    Heartbeats are batched across all of the worker's in‑flight items, so liveness costs one small write, not fifty.
+    Lease length is a tuning knob: too short and slow items get stolen, too long and crash recovery drags.</li>
+  <li><b>Executions DB:</b> reaper: expired lease → PENDING, attempts++.
+    The reaper is what turns worker crashes into a non‑event: any RUNNING row whose lease has passed goes back to PENDING and becomes claimable again.
+    Incrementing attempts at reclaim time is what stops an item that reliably kills its worker from cycling forever.
+    Because results are idempotent, a reclaimed item that was actually nearly finished costs duplicate work, never duplicate output.</li>
+  <li><b>Executions DB:</b> attempts ≥ 3 → FAILED item.
+    A poison item fails on its own without failing the job, which is the whole point of materializing executions.
+    The failure is recorded with the last error so the customer can see exactly which of their million inputs were bad and why.</li>
+  <li><b>Batch API → Executions DB:</b> done+failed = total?
+    Completion is detected from counters rather than by scanning rows, so the check is O(1) no matter how large the job.
+    Comparing against the total established at materialization time is also the guard against a partially materialized job being declared complete.</li>
+  <li><b>Batch API → S3:</b> assemble output file.
+    Results are concatenated in input order — customers expect line N of the output to correspond to line N of the input, which the (job, idx) keying makes trivial.
+    Assembly is itself idempotent and restartable: it reads durable objects and writes one more.
+    Failed items appear in the output with their error, rather than being silently missing.</li>
+  <li><b>Customer → Batch API:</b> GET /batches/:id.
+    Polling is the interface, so it must be cheap: one row read for state and counters, no joins, no aggregation.
+    Rate limits apply here too — a client polling every 100 ms for 24 h is its own small denial of service.</li>
+  <li><b>Batch API → Customer:</b> progress / output URL (response).
+    While running it returns done/failed/total so a client can show real progress instead of a spinner.
+    On completion it returns a pre‑signed, expiring URL scoped to that customer's output, so results are never served through a shared, long‑lived link.</li>
 </ol>
 
 ## How it works, step by step {#infra-batch-flow}
@@ -189,6 +261,39 @@ Worker:  claim(n) → UPDATE … SKIP LOCKED;  heartbeat(execIds);  complete(exe
     <li>Claims are the hot query; index on (state, priority, created_at). Partition the executions table by job_id hash when it exceeds tens of millions of live rows.</li>
     <li>Don't put the prompt text in the row; store S3 offset. Rows stay small, claims stay fast.</li>
     <li>Expose per‑job progress from a counter updated by the completion path, not by COUNT(*).</li></ul></div>
+</div>
+
+
+## Trade-offs {#infra-batch-tradeoffs}
+
+<table>
+  <tbody><tr><th>Decision</th><th>What we chose</th><th>What we gave up</th><th>When to flip it</th></tr>
+  <tr><td>Job representation</td><td>Materialize one row per item at submit</td><td>Hundreds of millions of rows to store, index and partition</td><td>Keep the job opaque only when items are few, or when per‑item progress and partial failure genuinely do not matter</td></tr>
+  <tr><td>Work distribution</td><td>Pull: workers claim with a conditional UPDATE + SKIP LOCKED</td><td>The database becomes the hot path and the scaling limit</td><td>Push through a real queue (SQS/Kafka) when claim QPS outgrows the database — at the cost of losing easy per‑item state and fair round‑robin</td></tr>
+  <tr><td>Delivery semantics</td><td>At‑least‑once plus idempotent (job, idx) result keys</td><td>Duplicate compute on rare double‑execution</td><td>Exactly‑once is not worth the distributed‑transaction cost here; idempotent writes get the same observable outcome for far less</td></tr>
+  <tr><td>Failure detection</td><td>Leases and heartbeats with a reaper</td><td>Detection latency equal to the lease, and tuning pain when item durations vary widely</td><td>Shorter leases when items are uniformly quick; per‑item adaptive leases when they are not</td></tr>
+  <tr><td>Capacity isolation</td><td>Shared GPU pool with priority=batch and preemption</td><td>No guaranteed batch throughput — a busy week for interactive means batch crawls</td><td>A dedicated batch pool when batch itself carries a contractual SLA and predictability beats utilization</td></tr>
+  <tr><td>Row contents</td><td>Store S3 offsets, not prompt text</td><td>An extra fetch per item, and a dependency on the input file staying put</td><td>Inline the payload only for tiny items where the extra read dominates</td></tr>
+  <tr><td>Progress reporting</td><td>Counters maintained by the completion path</td><td>Counters can drift and need a periodic reconciliation job</td><td>COUNT(*) is fine for small jobs; it stops being fine the moment a job has millions of rows</td></tr>
+</tbody></table>
+
+## Safety-first design {#infra-batch-safety}
+
+<div class="cards">
+  <div><h4>Interactive traffic is never collateral</h4><ul>
+    <li><b>Batch is admitted, not entitled.</b> Every request is tagged priority=batch and the gateway drops it the moment interactive queue depth rises — the isolation lives in one enforcement point, not in politeness.</li>
+    <li><b>Preemption is free.</b> Because leases return work to PENDING, cancelling in‑flight batch inference costs nothing but wasted compute; there is no partial state to unwind.</li>
+    <li><b>Backpressure, not buffering.</b> When capacity is gone, items stay in the queue rather than piling into memory or timing out noisily.</li></ul></div>
+  <div><h4>Containing bad jobs and bad items</h4><ul>
+    <li><b>Poison items fail alone.</b> Three attempts and an item is marked FAILED with its error; the other 999,999 items are unaffected, and the customer sees exactly what went wrong.</li>
+    <li><b>Round‑robin claiming.</b> Fairness is enforced where work is handed out, so one enormous job cannot starve every small one behind it.</li>
+    <li><b>Quotas at submit.</b> Concurrent jobs, in‑flight items and submission rate are all capped per customer, before any resources are committed.</li>
+    <li><b>Cancel is immediate and total.</b> Cancelling flips remaining items to CANCELLED and stops claims, so a runaway job can be stopped in one action.</li></ul></div>
+  <div><h4>Handling customer data</h4><ul>
+    <li><b>Prompts stay in object storage.</b> The database holds offsets, not content — which keeps PII out of database backups, replicas and query logs entirely.</li>
+    <li><b>Scoped, expiring access.</b> Results are handed over as short‑lived pre‑signed URLs scoped to the owning customer; there is no shared, permanent results endpoint.</li>
+    <li><b>Retention with a real delete path.</b> Inputs, per‑item results and the assembled output all expire on the same schedule, and a deletion request removes all three.</li>
+    <li><b>Never log the payload.</b> Errors record item index and error class, not prompt text, so debugging does not quietly create a second copy of customer data.</li></ul></div>
 </div>
 
 ## Don't leave the room without saying {#infra-batch-check}

@@ -38,6 +38,32 @@ description: "hard · high‑volume bytes · zero‑copy · backpressure · rang
 </div>
 <div class="note"><b>Per‑node math:</b> 100 Gb/s ≈ 12.5 GB/s. If every byte is copied kernel→user→kernel that's ~4 memory copies per byte and the CPU becomes the bottleneck. sendfile/splice (zero‑copy) and io_uring or epoll‑based async I/O keep the CPU at a few percent per 10 Gb/s.</div>
 
+
+## Scale, performance and safety targets {#network-io-service-targets}
+
+<p>This is a data‑plane question. The numbers are per node and per byte, and they are what rule out every design that touches bytes in userspace.</p>
+
+<div class="cards">
+  <div><h4>Scale</h4><ul>
+    <li><b>QPS:</b> 100K concurrent streams across the fleet, but only tens of thousands of control‑plane operations per second — the request count is small and the byte count is enormous.</li>
+    <li><b>Data volume:</b> 100 Gb/s per node ≈ 12.5 GB/s. Objects range from kilobytes to terabytes, uploaded in parts; a single node moves petabytes per day.</li>
+    <li><b>Growth:</b> object sizes and stream counts both grow ~2× annually, while NIC speeds step in generations — so per‑byte CPU cost is the thing that must stay near zero, not the number of cores.</li></ul></div>
+  <div><h4>Performance</h4><ul>
+    <li><b>Latency:</b> time to first byte p99 &lt; 100 ms including a range seek; upload part acknowledgement p99 &lt; 200 ms. Total transfer time is bandwidth‑bound and deliberately not an SLA.</li>
+    <li><b>Throughput:</b> saturate a 25–100 Gb/s NIC at a few percent CPU. Copying every byte kernel→user→kernel costs ~4 copies per byte and makes the CPU the bottleneck long before the NIC is — which is why <code>sendfile</code>/<code>splice</code> and io_uring are requirements rather than optimisations.</li></ul></div>
+  <div><h4>Safety and security</h4><ul>
+    <li><b>Abuse prevention:</b> the characteristic attacks are resource‑exhaustion by design — slowloris clients holding thousands of connections open, slow readers forcing the server to buffer, range requests crafted to defeat caching, and uploads that never complete but hold staging space.</li>
+    <li><b>Rate limiting:</b> per‑connection and per‑account bandwidth caps, a limit on concurrent streams per account, idle and total timeouts on every transfer, a cap on parts per upload and a TTL on abandoned upload sessions.</li>
+    <li><b>Data sensitivity:</b> arbitrary user objects. Encrypt at rest and in transit, authorise every range request rather than trusting a URL, checksum end to end so corruption is detected rather than served, and ensure deletion reaches staging caches and CDN edges as well as origin.</li></ul></div>
+  <div><h4>Availability and fault tolerance</h4><ul>
+    <li><b>Uptime target:</b> 99.99% for downloads. Individual node failure must be invisible — sessions are resumable, so a client reconnects and continues rather than restarting a terabyte.</li>
+    <li><b>Degraded mode:</b> NVMe staging full → flush aggressively and reject new uploads with a retryable error rather than stalling active ones. Object storage slow → serve from staging and let flushes lag. Node saturated → shed new connections at the load balancer instead of degrading every existing stream.</li></ul></div>
+  <div><h4>Also worth pinning down</h4><ul>
+    <li><b>Consistency:</b> an object becomes visible only when its manifest is committed, so a partially uploaded terabyte is never readable. Parts themselves are immutable and content‑addressed, making re‑uploads idempotent.</li>
+    <li><b>Durability:</b> eleven nines once committed to object storage; NVMe staging is explicitly a cache and never the system of record, which is what allows a staging node to be wiped without ceremony.</li>
+    <li><b>Backpressure:</b> the defining property. A slow client must consume socket buffers and nothing else — any design where a slow reader grows server memory will fall over the first time 10,000 of them arrive together.</li></ul></div>
+</div>
+
 ## Entities and API {#network-io-service-api}
 
 <p>Object (id, size, etag, parts[], storageLocations) · Upload session (id, received ranges, expiry) · Stream session (id, offset, bitrate) · Node (capacity, load) · Lease (upload → node affinity).</p>
@@ -154,24 +180,58 @@ HEAD /objects/:id                          -&gt; size, etag (for resume)</code><
 <figcaption>Solid = request path · dashed = response / return · dotted = async or background.</figcaption>
 </figure>
 <ol class="order">
-  <li><b>Client → L4 LB:</b> POST /objects/:id/uploads</li>
-  <li><b>L4 LB → I/O node:</b> route by object hash</li>
-  <li><b>I/O node → Control plane:</b> auth, quota, create session</li>
-  <li><b>Control plane → I/O node:</b> uploadId (response)</li>
-  <li><b>I/O node → Client:</b> uploadId (response)</li>
-  <li><b>Client → I/O node:</b> PUT part 1 (Content-Range, sha256)</li>
-  <li><b>I/O node:</b> stream socket → file, bounded 1 MB buffer; TCP window = backpressure</li>
-  <li><b>I/O node → NVMe staging:</b> write part</li>
-  <li><b>NVMe staging → Object storage:</b> async flush (async)</li>
-  <li><b>I/O node → Client:</b> 200 etag (response)</li>
-  <li><b>Client → I/O node:</b> PUT part 2 … resume after drop via HEAD</li>
-  <li><b>Client → I/O node:</b> complete {parts, etags}</li>
-  <li><b>I/O node → Control plane:</b> assemble manifest; mark durable</li>
-  <li><b>Client → I/O node:</b> GET Range: bytes=0-1048575</li>
-  <li><b>I/O node → NVMe staging:</b> in cache?</li>
-  <li><b>I/O node → Object storage:</b> else fetch range</li>
-  <li><b>I/O node → Client:</b> 206 via sendfile; slow client → stop reading source (response)</li>
-  <li><b>I/O node:</b> client stalls: no growth in memory, only socket buffers</li>
+  <li><b>Client → L4 LB:</b> POST /objects/:id/uploads.
+    An L4 load balancer forwards packets without terminating or inspecting the stream, so it never becomes a bottleneck for the bytes that follow.
+    An L7 proxy here would buffer and re‑emit every byte, doubling the copies on the most expensive path in the system.</li>
+  <li><b>L4 LB → I/O node:</b> route by object hash.
+    Routing by object hash gives cache affinity: parts of the same object and repeat reads of it land on the node likely to have it staged.
+    It also makes resume trivial, since a reconnecting client is steered back to the node holding its partial state.</li>
+  <li><b>I/O node → Control plane:</b> auth, quota, create session.
+    Authentication, quota and session creation happen once per transfer, not once per byte — the control plane is consulted at the boundaries and then stays out of the way.
+    This separation is what lets a slow control plane coexist with a data plane running at line rate.</li>
+  <li><b>Control plane → I/O node:</b> uploadId (response).
+    The session is durable, so a client that disconnects at 900 GB of a terabyte can resume against the same id rather than starting over.</li>
+  <li><b>I/O node → Client:</b> uploadId (response).
+    From here the client talks only to the data plane until it completes, keeping the control plane's load proportional to transfers rather than to bytes.</li>
+  <li><b>Client → I/O node:</b> PUT part 1 (Content-Range, sha256).
+    Parts make a terabyte tractable: independently retryable, uploadable in parallel, and individually verifiable.
+    The client supplies a checksum per part, so integrity is established at the boundary rather than inferred later.</li>
+  <li><b>I/O node:</b> stream socket → file, bounded 1 MB buffer; TCP window = backpressure.
+    This is the central mechanic: a small fixed buffer, and TCP's own flow control does the rest.
+    When the disk or downstream is slow, the node simply stops reading the socket; the TCP window closes and the <em>client</em> slows down — backpressure propagates without any application‑level protocol.
+    A design that buffers whatever the client sends will consume memory proportional to (clients × their speed), which is the classic way a byte‑moving service dies.</li>
+  <li><b>I/O node → NVMe staging:</b> write part.
+    Local NVMe absorbs the write at local speed, decoupling the client's upload rate from object storage's acknowledgement latency.
+    Staging is explicitly a cache, so a node can be wiped and rebuilt without data loss.</li>
+  <li><b>NVMe staging → Object storage:</b> async flush (async).
+    Flushing happens off the client's path, so durability is achieved without making the client wait for a cross‑network write.
+    The gap between staged and flushed is the window where the node matters — which is exactly why the object is not yet visible.</li>
+  <li><b>I/O node → Client:</b> 200 etag (response).
+    The ETag lets the client verify what the server stored and lets a retry be recognised as a duplicate rather than a new part.</li>
+  <li><b>Client → I/O node:</b> PUT part 2 … resume after drop via HEAD.
+    A HEAD against the session reports which parts are present, so resume needs no client‑side bookkeeping to survive a crash or a device change.
+    Because parts are immutable and content‑addressed, re‑uploading one is harmless — which makes "just retry" a safe default.</li>
+  <li><b>Client → I/O node:</b> complete {parts, etags}.
+    Completion is the client asserting the full part list, and the server verifying it against what it holds — a mismatch fails rather than producing a truncated object.</li>
+  <li><b>I/O node → Control plane:</b> assemble manifest; mark durable.
+    The manifest commit is the object's moment of existence: before it, nothing is readable; after it, the object is complete and verified.
+    Making visibility a single atomic step is what guarantees a reader can never see a half‑uploaded terabyte.</li>
+  <li><b>Client → I/O node:</b> GET Range: bytes=0-1048575.
+    Range requests are what make video seeking and resumable downloads work, and they are the normal case rather than an exception.
+    Every range is authorised on its own, so possession of a URL is never sufficient to read arbitrary offsets.</li>
+  <li><b>I/O node → NVMe staging:</b> in cache?
+    Popular objects are served from local NVMe, which is both faster and cheaper than reaching origin for every request.
+    Hash‑based routing is what makes this cache effective — the same object consistently lands on the same node.</li>
+  <li><b>I/O node → Object storage:</b> else fetch range.
+    Only the requested range is fetched, not the whole object, so seeking into the middle of a 10 GB video costs one range read.</li>
+  <li><b>I/O node → Client:</b> 206 via sendfile; slow client → stop reading source (response).
+    <code>sendfile</code>/<code>splice</code> moves bytes from page cache to socket without ever entering userspace — no copies, no application buffers, a few percent of a core per 10 Gb/s.
+    For a slow client the node simply stops pulling from the source; the data sits where it already is rather than accumulating in server memory.
+    Zero‑copy plus stop‑reading is the entire answer to "how do you serve 100K streams on one box".</li>
+  <li><b>I/O node:</b> client stalls: no growth in memory, only socket buffers.
+    The invariant worth stating explicitly: server memory is a function of connection count, never of how slow those connections are.
+    That is what makes 10,000 simultaneously stalled clients a bounded, uninteresting condition instead of an outage.
+    Idle timeouts then reclaim the connections themselves, so even the bounded cost is not held indefinitely.</li>
 </ol>
 
 ## Deep dives {#network-io-service-deep}
@@ -186,6 +246,40 @@ HEAD /objects/:id                          -&gt; size, etag (for resume)</code><
 <div><h4>Node data plane</h4><ul><li>Async I/O (epoll/io_uring), one event loop per core, no thread per connection; 100K connections is memory for sockets, not stacks.</li><li>Zero‑copy: <code>sendfile</code>/<code>splice</code> from page cache or NVMe to socket; kTLS so encryption happens in kernel; avoid userspace buffers on the hot path.</li><li>Bounded per‑connection buffers; read from the source only when the socket is writable. TCP flow control is the backpressure mechanism, so a slow client slows only its own stream.</li><li>Large NIC offloads (TSO/GRO), pinned IRQs, huge pages: mention, don't dwell.</li></ul></div>
 <div><h4>Uploads</h4><ul><li>Multipart with per‑part checksum and etag; parts land on local NVMe and flush asynchronously to durable storage; the client sees 200 only after the part is durable enough per the SLA (say which).</li><li>Resume via HEAD (what do you have?) and Content‑Range; idempotent part PUTs by (uploadId, partNumber, checksum).</li><li>Node affinity for an upload via consistent hashing on object id, with a lease so a failed node's session can be resumed elsewhere from storage.</li></ul></div>
 <div><h4>Downloads and streaming</h4><ul><li>Range requests are the whole story: seeking, parallel downloads, resume, and HLS/DASH segments are all ranged GETs. Always return Accept‑Ranges and strong ETags.</li><li>Local NVMe cache with LRU; hot objects served from page cache; cold from storage with readahead sized to bitrate.</li><li>Rate limiting per client in bytes/s (token bucket on the send side) and per node admission control on open streams; shed with 503 + Retry‑After before memory pressure.</li><li>End‑to‑end integrity: checksum trailers; client verifies.</li></ul></div></div>
+
+
+## Trade-offs {#network-io-service-tradeoffs}
+
+<table>
+  <tbody><tr><th>Decision</th><th>What we chose</th><th>What we gave up</th><th>When to flip it</th></tr>
+  <tr><td>Byte movement</td><td>Zero‑copy <code>sendfile</code>/<code>splice</code></td><td>No inspection or transformation of bytes in flight</td><td>Read into userspace only when you must transform (transcode, encrypt per request) — and accept roughly an order of magnitude more CPU per byte</td></tr>
+  <tr><td>Load balancing</td><td>L4, packets not streams</td><td>No request‑level routing, headers or retries at the LB</td><td>L7 gives richer routing and doubles the copies on the hottest path in the system</td></tr>
+  <tr><td>Backpressure</td><td>Small fixed buffer; let the TCP window do the work</td><td>No smoothing of bursty clients</td><td>Application‑level buffering helps burstiness and makes memory a function of client speed, which is exactly the failure being avoided</td></tr>
+  <tr><td>Staging</td><td>NVMe in front of object storage</td><td>Local disks to manage, and a flush pipeline</td><td>Write straight through when objects are small; at terabyte scale it makes the client wait on a cross‑network write</td></tr>
+  <tr><td>Routing</td><td>By object hash for cache affinity</td><td>Hot objects concentrate on one node</td><td>Add replication for known‑hot objects; random routing spreads load evenly and destroys the cache hit rate</td></tr>
+  <tr><td>Visibility</td><td>Manifest commit makes the object readable</td><td>An extra control‑plane round trip at the end</td><td>Never expose parts before commit — a reader would see a truncated object with no way to tell</td></tr>
+  <tr><td>Async I/O</td><td>io_uring or epoll, not thread per connection</td><td>More complex code than blocking I/O</td><td>Thread‑per‑connection is fine into the low thousands; at 100K streams the context switching alone consumes the machine</td></tr>
+</tbody></table>
+
+## Safety-first design {#network-io-service-safety}
+
+<div class="cards">
+  <div><h4>Memory must not track client behaviour</h4><ul>
+    <li><b>Bounded buffers everywhere.</b> Server memory is a function of connection count, never of how slow or bursty those connections are.</li>
+    <li><b>Slow readers cost nothing.</b> Stop reading the source and let the data stay where it already is; 10,000 stalled clients becomes a boring condition rather than an outage.</li>
+    <li><b>Timeouts on idle and total duration.</b> Slowloris only works against a server willing to wait forever.</li>
+    <li><b>Shed at the edge.</b> A saturated node refuses new connections rather than degrading every stream it already has.</li></ul></div>
+  <div><h4>Never serve something you cannot vouch for</h4><ul>
+    <li><b>Checksums end to end.</b> Verified per part on upload and on read, so corruption is detected rather than delivered.</li>
+    <li><b>Commit makes it visible.</b> A partially uploaded object is unreadable by construction, not by convention.</li>
+    <li><b>Authorise every range.</b> Each request is checked on its own, so a URL can never be edited into reading a different object or offset.</li>
+    <li><b>Staging is never the record.</b> A wiped node loses cache, not data, which makes replacing hardware routine.</li></ul></div>
+  <div><h4>Long transfers survive real networks</h4><ul>
+    <li><b>Resume without client bookkeeping.</b> A HEAD reports which parts exist, so a client that crashed can continue from a different device.</li>
+    <li><b>Immutable, content‑addressed parts.</b> Re‑uploading is idempotent, which makes "just retry" a safe default for a terabyte transfer.</li>
+    <li><b>Reclaim abandoned sessions.</b> Uploads that stop halfway expire on a TTL so staging space is not held hostage.</li>
+    <li><b>Node failure is invisible.</b> Sessions are durable and routable, so a client reconnects and continues instead of restarting.</li></ul></div>
+</div>
 
 ## Don't leave the room without saying {#network-io-service-check}
 

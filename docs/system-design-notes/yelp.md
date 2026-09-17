@@ -45,6 +45,32 @@ description: "medium · scaling reads · geospatial index · optimistic locking 
 </div>
 <div class="note"><b>Size it early:</b> 10M businesses × ~100 reviews × ~1 KB ≈ 1 TB. 100M DAU at 1000:1 → ~100K reviews/day ≈ 1 write/s. One Postgres with replicas handles both; no sharding, no queue.</div>
 
+
+## Scale, performance and safety targets {#yp-targets}
+
+<p>The senior signal in this question is recognising how small the data actually is. Do the arithmetic out loud — it is what licenses a simple design and frees the time for search.</p>
+
+<div class="cards">
+  <div><h4>Scale</h4><ul>
+    <li><b>QPS:</b> 100M DAU doing a few searches each ≈ 10K–20K QPS of reads at peak, against perhaps 10–50 review writes/s. A 1000:1 ratio, and the writes are trivial in absolute terms.</li>
+    <li><b>Data volume:</b> 10M businesses at ~1 KB ≈ 10 GB, plus maybe 100M reviews at ~1 KB ≈ 100 GB. The entire dataset fits on a single machine, and the business table fits in RAM.</li>
+    <li><b>Growth:</b> businesses grow slowly — a few percent a year — while reviews grow steadily. Nothing here needs sharding for years, and saying so is more valuable than designing a shard key nobody needs.</li></ul></div>
+  <div><h4>Performance</h4><ul>
+    <li><b>Latency:</b> search p95 &lt; 500 ms, p99 &lt; 1 s; business page p95 &lt; 200 ms; review submission p95 &lt; 300 ms. Index freshness after an edit within ~10 s.</li>
+    <li><b>Throughput:</b> a single Postgres primary with read replicas covers all of it comfortably. The search index exists for geospatial and full‑text query shape, not because the data is too big.</li></ul></div>
+  <div><h4>Safety and security</h4><ul>
+    <li><b>Abuse prevention:</b> review platforms are attacked through content, not load — fake positive reviews from business owners, review bombing by competitors, sockpuppet accounts, and scraping of the whole business corpus.</li>
+    <li><b>Rate limiting:</b> one review per user per business enforced in the schema, reviews per user per day, per‑IP search limits to blunt scraping, and velocity checks on a business suddenly receiving an unusual burst of reviews.</li>
+    <li><b>Data sensitivity:</b> reviews are public and attributable, which makes them a harassment surface. Store the author identity, allow deletion, do not expose precise user location in search requests, and keep moderation decisions auditable.</li></ul></div>
+  <div><h4>Availability and fault tolerance</h4><ul>
+    <li><b>Uptime target:</b> 99.9%, availability well ahead of consistency. A review appearing a few seconds late is invisible; search failing is the product being down.</li>
+    <li><b>Degraded mode:</b> search index unavailable → fall back to database queries by category and bounding box, slower but correct. Replica lag → a user may not immediately see their own review, so read their own writes from the primary. Write path degraded → reads continue entirely unaffected, since they share almost nothing.</li></ul></div>
+  <div><h4>Also worth pinning down</h4><ul>
+    <li><b>Consistency:</b> eventual for search results and average ratings; <b>strong for the one‑review‑per‑user constraint</b>, which is a unique key rather than an application check. The running average uses optimistic concurrency — update where the count still matches, retry on zero rows.</li>
+    <li><b>Durability:</b> reviews are user‑generated content that cannot be recreated, so they get full durability; the search index is entirely rebuildable from Postgres.</li>
+    <li><b>Simplicity:</b> worth stating as an explicit target. The dataset fits on one box, so the correct answer is one relational database plus one index — and recognising that is the thing being assessed.</li></ul></div>
+</div>
+
 ## Entities and API {#yp-entities}
 
 <p>Business (id, name, description, lat/long, address, category, avgRating, numRatings, locationNames[]) · User · Review (userId, businessId, rating, text) · Location (name, type, polygon).</p>
@@ -147,24 +173,49 @@ POST /businesses/:id/reviews  {rating, text?}      -&gt; Review   (userId from J
 <figcaption>Solid = request path · dashed = response / return · dotted = async or background.</figcaption>
 </figure>
 <ol class="order">
-  <li><b>Client → API Gateway:</b> GET /businesses?query&amp;location&amp;category</li>
-  <li><b>API Gateway → Business Service:</b> route</li>
-  <li><b>Business Service:</b> name → location_names slug</li>
-  <li><b>Business Service → Elasticsearch:</b> geo/keyword + text query</li>
-  <li><b>Elasticsearch → Business Service:</b> ranked ids + partials (response)</li>
-  <li><b>Business Service → Client:</b> results with avgRating (response)</li>
-  <li><b>Client → API Gateway:</b> GET /businesses/:id</li>
-  <li><b>API Gateway → Business Service:</b> route</li>
-  <li><b>Business Service → Postgres:</b> SELECT business + reviews (replica)</li>
-  <li><b>Postgres → Business Service:</b> rows (response)</li>
-  <li><b>Business Service → Client:</b> business page (response)</li>
-  <li><b>Client → API Gateway:</b> POST /businesses/:id/reviews</li>
-  <li><b>API Gateway → Review Service:</b> route</li>
-  <li><b>Review Service → Postgres:</b> BEGIN; INSERT review; UPDATE avg WHERE num_ratings=:n; COMMIT</li>
-  <li><b>Postgres → Review Service:</b> ok | 409 duplicate | 0 rows → retry (response)</li>
-  <li><b>Review Service → Client:</b> review created (response)</li>
-  <li><b>Postgres → CDC:</b> WAL change (async)</li>
-  <li><b>CDC → Elasticsearch:</b> index business doc (async)</li>
+  <li><b>Client → API Gateway:</b> GET /businesses?query&amp;location&amp;category.
+    Search is the dominant operation by three orders of magnitude, so it gets the design attention and the latency budget.
+    Three filter dimensions — text, geography and category — is what makes a plain relational query awkward and an index worth having.</li>
+  <li><b>API Gateway → Business Service:</b> route.
+    Read and write paths are separated so the review path can be transactional and careful while the search path is cached and fast.</li>
+  <li><b>Business Service:</b> name → location_names slug.
+    Human place names are normalised to canonical identifiers before querying, so "SF", "San Francisco" and "san francisco" all resolve to one thing.
+    Doing this before the index rather than inside it keeps the index simple and the normalisation testable on its own.</li>
+  <li><b>Business Service → Elasticsearch:</b> geo/keyword + text query.
+    One query combines a geospatial filter, category keywords and full‑text matching — the combination is the reason for a search engine, not the data volume.
+    Geospatial indexing (geohash or R‑tree) is what makes "within 5 km" a bounded lookup instead of a distance calculation over 10M rows.
+    Precomputed average rating lives on the document so results can be ranked and displayed without a second lookup.</li>
+  <li><b>Elasticsearch → Business Service:</b> ranked ids + partials (response).
+    Enough fields are returned to render a result card directly, so the common path needs no round trip back to Postgres.
+    The index is eventually consistent and explicitly not the source of truth — an edit that has not propagated yet shows stale text, which is acceptable here in a way that stale permissions would not be.</li>
+  <li><b>Business Service → Client:</b> results with avgRating (response).
+    The average comes from a maintained column rather than an aggregate over reviews — computing <code>AVG()</code> per result would make every search a fan‑out over the review table.</li>
+  <li><b>Client → API Gateway:</b> GET /businesses/:id.
+    The detail page is a simple keyed read, and it is the second most common operation after search.</li>
+  <li><b>API Gateway → Business Service:</b> route.
+    Same service, different query shape; there is no reason to split further at this size.</li>
+  <li><b>Business Service → Postgres:</b> SELECT business + reviews (replica).
+    Replicas absorb the read traffic; a few seconds of replication lag is invisible for a business page.
+    Reviews are paginated by cursor, because a popular business can have tens of thousands.</li>
+  <li><b>Postgres → Business Service:</b> rows (response).
+    Postgres is the source of truth for everything; the index is derived and rebuildable, which is what makes the eventual consistency above safe.</li>
+  <li><b>Business Service → Client:</b> business page (response).
+    Cached briefly with a short TTL, since business details change rarely and the page is requested constantly.</li>
+  <li><b>Client → API Gateway:</b> POST /businesses/:id/reviews.
+    The write path is rare — tens per second — which is exactly why it can afford to be strict and transactional.</li>
+  <li><b>API Gateway → Review Service:</b> route.
+    A separate service for writes keeps the transactional logic in one place and keeps it off the read path entirely.</li>
+  <li><b>Review Service → Postgres:</b> BEGIN; INSERT review; UPDATE avg WHERE num_ratings=:n; COMMIT.
+    Two things happen in one transaction: the review is inserted, and the running average is updated with an optimistic check on the count.
+    The <code>WHERE num_ratings = :n</code> clause is the optimistic lock — if another review landed concurrently, zero rows update and the transaction retries with fresh values.
+    Pessimistic locking would serialise every review for a popular business; optimistic concurrency costs a rare retry instead, which is the right trade when conflicts are uncommon.</li>
+  <li><b>Postgres → Review Service:</b> ok | 409 duplicate | 0 rows → retry (response).
+    The one‑review‑per‑user rule is a unique constraint on (user, business), not an application check — a check‑then‑insert has a race that a database constraint simply does not.
+    Three distinct outcomes get three distinct handlings: success, a genuine duplicate the user should be told about, and a concurrency conflict the server retries silently.
+    Maintaining a running average rather than recomputing it is what keeps this write cheap and the read path free of aggregation.</li>
+  <li><b>Review Service → Client:</b> review created (response).
+    The author is served from the primary for a short window afterwards, so they see their own review immediately rather than waiting on replica lag.
+    Index update happens asynchronously, so the new average appears in search within seconds — which is well inside what anyone notices.</li>
 </ol>
 <div class="note"><b>Service split rule:</b> split when functionality is unrelated or the read/write patterns differ enough to need independent scaling. Search and view are both read‑heavy → one Business Service. Reviews are rare writes → separate Review Service. Same database for both is fine at this size; "one DB per microservice" is a preference, not a law.</div>
 
@@ -271,6 +322,40 @@ COMMIT;</code></pre>
   <li>ES cluster with a few shards and replicas for search throughput.</li>
   <li>No sharding of Postgres: 1 TB and 1 write/s don't justify it. Say so.</li>
 </ul>
+
+
+## Trade-offs {#yp-tradeoffs}
+
+<table>
+  <tbody><tr><th>Decision</th><th>What we chose</th><th>What we gave up</th><th>When to flip it</th></tr>
+  <tr><td>Overall architecture</td><td>One Postgres plus one search index</td><td>The appearance of scale — no sharding, no exotic stores</td><td>The data is 110 GB; proposing a distributed architecture here signals you did not do the arithmetic, which is the actual test</td></tr>
+  <tr><td>Average rating</td><td>Maintained column updated in the write transaction</td><td>A column that can drift if a write path bypasses it</td><td>Computing <code>AVG()</code> per query is always correct and turns every search into an aggregation over the review table</td></tr>
+  <tr><td>Concurrency</td><td>Optimistic: update where the count matches, retry on conflict</td><td>Occasional retries under a burst of reviews</td><td>Pessimistic locking serialises every review for a popular business; a separate counter table trades accuracy for throughput</td></tr>
+  <tr><td>One review per user</td><td>Unique constraint in the schema</td><td>A 409 the application must translate into a sensible message</td><td>An application‑level check has a race condition that a constraint does not — never rely on check‑then‑insert</td></tr>
+  <tr><td>Search</td><td>Elasticsearch fed asynchronously from Postgres</td><td>A second system, and results that lag by seconds</td><td>PostGIS plus full‑text search in Postgres is entirely viable at this size and removes a component — worth naming as the simpler option</td></tr>
+  <tr><td>Consistency</td><td>Eventual for search and ratings</td><td>A new review is briefly absent from search results</td><td>Synchronous index updates would put an external system inside the write transaction, which is a much worse failure mode</td></tr>
+  <tr><td>Read‑your‑writes</td><td>Pin the author to the primary briefly</td><td>A little extra primary load</td><td>Serving the author from a replica means they may not see their own review, which reads as a bug every time</td></tr>
+</tbody></table>
+
+## Safety-first design {#yp-safety}
+
+<div class="cards">
+  <div><h4>Let the database enforce the rules</h4><ul>
+    <li><b>Unique constraint, not an application check.</b> One review per user per business is a schema guarantee; check‑then‑insert has a race that will eventually be exploited or hit by accident.</li>
+    <li><b>Optimistic locking on the aggregate.</b> Updating where the count still matches means concurrent reviews cannot silently produce a wrong average.</li>
+    <li><b>One transaction for both writes.</b> The review and the rating update commit together, so the average can never reflect a review that does not exist.</li>
+    <li><b>Handle all three outcomes.</b> Success, duplicate and conflict are different things and conflating them produces either lost reviews or confusing errors.</li></ul></div>
+  <div><h4>The attack is content, not load</h4><ul>
+    <li><b>Velocity checks per business.</b> A sudden burst of reviews on one business is the signature of both astroturfing and review bombing.</li>
+    <li><b>Account age and history matter.</b> Weighting or holding reviews from brand‑new accounts is the cheapest effective defence against sockpuppets.</li>
+    <li><b>Rate limit search, not just writes.</b> The business corpus is valuable and scrapable; per‑IP limits on unauthenticated search are the practical protection.</li>
+    <li><b>Keep moderation auditable.</b> Removing a review is a consequential act, so who removed it and why should be recorded.</li></ul></div>
+  <div><h4>Stay boring on purpose</h4><ul>
+    <li><b>Do the arithmetic first.</b> 10M businesses is 10 GB; recognising that the data fits on one machine is the senior signal this question is designed to elicit.</li>
+    <li><b>The index is rebuildable.</b> Postgres is the source of truth, so a corrupted or lost index is a reindex rather than an incident.</li>
+    <li><b>Reads and writes fail independently.</b> They share almost nothing, so a problem in the review path leaves search entirely unaffected.</li>
+    <li><b>Degrade to the database.</b> With the index down, category and bounding‑box queries in Postgres still answer most searches — slower, but correct.</li></ul></div>
+</div>
 
 ## Don't leave the room without saying {#yp-checklist}
 

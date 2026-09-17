@@ -43,6 +43,32 @@ description: "hard · cardinality · Gorilla · retention tiers · alerting fail
   </div>
 </div>
 
+
+## Scale, performance and safety targets {#infra-metrics-targets}
+
+<p>State these first, because the headline number is a decoy: 10M points/sec is easy, and cardinality is what actually decides whether this system stands up.</p>
+
+<div class="cards">
+  <div><h4>Scale</h4><ul>
+    <li><b>QPS:</b> 10M samples/s sustained with 3× burst headroom, arriving as batched writes from ~100K agents scraping every 15 s — so only a few hundred thousand HTTP requests/s, not 10M.</li>
+    <li><b>Data volume:</b> ~50M active series is the number that matters; at ~1.4 bytes/point compressed that is ~14 MB/s, ~1.2 TB/day raw, ~2.4 TB for a 2‑day raw window. Query load is modest: thousands of dashboard and rule queries per second.</li>
+    <li><b>Growth:</b> 2× annually in fleet size but cardinality grows superlinearly as teams add labels — assume 3× series growth per year and make per‑tenant budgets the thing that holds the line.</li></ul></div>
+  <div><h4>Performance</h4><ul>
+    <li><b>Latency:</b> ingest‑to‑queryable p99 &lt; 30 s; dashboard query p95 &lt; 2 s over 24 h of a single series set, p99 &lt; 10 s; alert evaluation every 15–60 s with p99 evaluation time well under the interval.</li>
+    <li><b>Throughput:</b> sustain 10M points/s while compacting and serving queries concurrently — ingest must never be paused by compaction, and a heavy query must never stall ingest.</li></ul></div>
+  <div><h4>Safety and security</h4><ul>
+    <li><b>Abuse prevention:</b> the attacker here is usually a colleague. A label containing a user id, a request path with parameters, or a retry loop emitting a fresh series per attempt is a cardinality explosion that can take down monitoring for everyone — precisely when it is most needed.</li>
+    <li><b>Rate limiting:</b> per‑tenant active‑series budgets (e.g. 1M series per team) enforced at ingest, label allowlists per metric, a cap on samples/s per agent, and query limits on series touched and bytes scanned so one dashboard cannot exhaust the read path.</li>
+    <li><b>Data sensitivity:</b> metrics should carry no PII — that is a design rule, not a hope, because label values are indexed, replicated and retained for months. Enforce it with allowlists; push high‑cardinality identifiers into exemplars and traces instead. Retention: 2 days raw, 30 days at 5 min, 13 months at 1 h.</li></ul></div>
+  <div><h4>Availability and fault tolerance</h4><ul>
+    <li><b>Uptime target:</b> 99.9% for ingest and query, but <b>alerting is held to a higher bar than the system it monitors</b> — it must keep working during exactly the incidents that degrade everything else.</li>
+    <li><b>Degraded mode:</b> TSDB down → alert evaluators keep firing from their own independent store; compactor down → raw data accumulates and queries stay correct but slower; Kafka backed up → agents buffer locally and drop oldest, and an absence alert catches the gap. Dropping samples is acceptable; failing silently is not.</li></ul></div>
+  <div><h4>Also worth pinning down</h4><ul>
+    <li><b>Consistency:</b> eventual and best‑effort. Monitoring data is allowed to be slightly lossy and slightly late; a missing sample is a gap on a graph, not a corrupted record.</li>
+    <li><b>Durability:</b> deliberately weak — a few seconds of samples may be lost on a node failure, and that is the right trade for ingest throughput. Alert <em>state</em> is the exception and must survive an evaluator restart so a firing alert does not silently reset.</li>
+    <li><b>Compliance:</b> tenant isolation on both read and write paths, and a retention policy that actually deletes — months of label data is a real surface if PII ever leaks into it.</li></ul></div>
+</div>
+
 ## Entities and API {#infra-metrics-api}
 
 <p>Series (metric name + label set → seriesId) · Sample (ts, value) · Block (2 h chunk, compressed) · Rollup (5 m / 1 h aggregates incl. histogram buckets) · AlertRule · Tenant (series budget)</p>
@@ -129,22 +155,64 @@ Alerting:        rules evaluated every 15–60 s against the evaluator’s own r
 <figcaption>Solid = request path · dashed = response / return · dotted = async or background.</figcaption>
 </figure>
 <ol class="order">
-  <li><b>Agent → Ingest:</b> write batch</li>
-  <li><b>Ingest:</b> label allowlist, series budget</li>
-  <li><b>Ingest:</b> over budget → reject new series</li>
-  <li><b>Ingest:</b> hash series → shard</li>
-  <li><b>Ingest → Kafka:</b> append</li>
-  <li><b>TSDB shard → Kafka:</b> consume shard partition</li>
-  <li><b>TSDB shard:</b> head block, Gorilla compress</li>
-  <li><b>TSDB shard:</b> flush 2 h blocks to SSD</li>
-  <li><b>Compactor → TSDB shard:</b> read raw</li>
-  <li><b>Compactor:</b> 5 m / 1 h rollups + histograms</li>
-  <li><b>Compactor → TSDB shard:</b> write rollups; expire raw after 2 d</li>
-  <li><b>Alert evaluator → Kafka:</b> consume independently</li>
-  <li><b>Alert evaluator:</b> own 2 h store; eval rules</li>
-  <li><b>Alert evaluator:</b> absence check per series</li>
-  <li><b>Alert evaluator → Pager:</b> fire</li>
-  <li><b>Alert evaluator → Pager:</b> heartbeat (dead-man) (async)</li>
+  <li><b>Agent → Ingest:</b> write batch.
+    Agents scrape locally every 15 s and ship compressed protobuf batches, so 10M points/s becomes a manageable few hundred thousand requests/s.
+    Batching is also what makes back‑pressure survivable: an agent that cannot deliver buffers locally and drops oldest rather than blocking the process it is monitoring.
+    Where per‑instance detail is not needed, the agent pre‑aggregates before sending — the cheapest cardinality reduction is the one that never leaves the host.</li>
+  <li><b>Ingest:</b> label allowlist, series budget.
+    Every incoming series is checked against an allowlist of permitted label names for that metric, which is how a stray <code>user_id</code> or a parameterised URL path is caught at the door.
+    This is the single most important control in the system: cardinality, not sample rate, is what kills a metrics platform.
+    Enforcing at ingest rather than at query time means the damage is prevented, not merely observed later.</li>
+  <li><b>Ingest:</b> over budget → reject new series.
+    When a tenant exceeds its active‑series budget, new series are rejected while existing ones keep flowing — so a team that explodes its cardinality loses its new labels, not its existing dashboards.
+    The rejection is reported back to the emitting team explicitly; a silent drop just produces a mysterious gap and an incident later.
+    Rejecting rather than throttling is deliberate: the resource being protected is the index, and one tenant must never be able to degrade another's monitoring.</li>
+  <li><b>Ingest:</b> hash series → shard.
+    Series are hashed by their full label set so every sample of one series always lands on the same shard, which keeps a time range for a series contiguous and cheap to read.
+    Sharding by series rather than by time means ingest scales horizontally and no shard becomes a hot "now" partition.</li>
+  <li><b>Ingest → Kafka:</b> append.
+    A durable log between ingest and storage decouples the two: TSDB shards can restart, compact or fall behind without agents noticing or samples being lost.
+    It is also what makes multiple independent consumers possible — the property the alerting design depends on entirely.
+    Partitions align with shards so ordering per series is preserved without any coordination.</li>
+  <li><b>TSDB shard → Kafka:</b> consume shard partition.
+    Each shard owns its partitions and tracks its own offset, so a restart resumes exactly where it left off rather than losing or duplicating a window.
+    Consumption lag is a first‑class metric: it is the earliest signal that storage is falling behind ingest.</li>
+  <li><b>TSDB shard:</b> head block, Gorilla compress.
+    Recent samples live in an in‑memory head block, which is where almost all queries and every alert rule actually read from.
+    Gorilla compression exploits the shape of the data: timestamps arrive at regular intervals so deltas‑of‑deltas are usually zero, and consecutive float values XOR to mostly shared bits.
+    The result is ~1.37 bytes per point instead of 16 — a 10× reduction that is why 10M points/s fits on ordinary SSDs.</li>
+  <li><b>TSDB shard:</b> flush 2 h blocks to SSD.
+    Blocks are immutable once written, which makes them trivially cacheable, replicable and safe to compact in the background.
+    Each block carries its own inverted index from label pairs to series ids, so a query narrows to matching series before touching any samples.
+    Two hours is a balance: small enough to bound memory and recovery time, large enough that compression works and the index is amortised.</li>
+  <li><b>Compactor → TSDB shard:</b> read raw.
+    Compaction runs out of band so it never competes with the ingest path for the write lock.
+    It reads immutable blocks only, which means it needs no coordination with the shard still accepting writes.</li>
+  <li><b>Compactor:</b> 5 m / 1 h rollups + histograms.
+    Rollups keep sum, count, min and max — not just an average — because an average of averages is wrong and a lost count makes rates uncomputable.
+    Histogram buckets are preserved rather than pre‑computed percentiles, which is what lets <code>histogram_quantile(0.95, …)</code> still work on a 13‑month‑old window.
+    This is the detail people miss: downsampling that discards buckets quietly destroys every percentile query over old data.</li>
+  <li><b>Compactor → TSDB shard:</b> write rollups; expire raw after 2 d.
+    Retention tiers make the cost curve flat: raw for 2 days for incident debugging, 5‑minute for a month, 1‑hour for a year.
+    Expiry is dropping whole immutable blocks, so reclaiming space is a metadata operation rather than a compaction of live data.</li>
+  <li><b>Alert evaluator → Kafka:</b> consume independently.
+    This is the most important arrow in the diagram: evaluators read the log directly, as their own consumer group, and never go through the TSDB query path.
+    Monitoring that depends on the system it monitors fails exactly when it is needed, and a shared query path means one bad dashboard query can delay every alert.
+    Independent consumption costs a second copy of recent data and buys alerting that survives a storage outage.</li>
+  <li><b>Alert evaluator:</b> own 2 h store; eval rules.
+    A small local window is all rules need, so the evaluator's storage is simple, fast and entirely self‑contained.
+    Rules are evaluated on rollups where the window allows it, so an hour‑long rule does not rescan raw samples every minute.
+    Alert state — pending, firing, resolved — is persisted so a restart does not silently reset a firing alert or re‑page for one already acknowledged.</li>
+  <li><b>Alert evaluator:</b> absence check per series.
+    Threshold alerts only fire on data that arrives; the dangerous failures are the ones where data stops — an agent died, the pipeline stalled, a whole rack went dark.
+    Absence rules invert the logic and alert on the gap, which is what catches a silent failure instead of a quiet dashboard.</li>
+  <li><b>Alert evaluator → Pager:</b> fire.
+    Notification is deliberately last and deliberately simple, with deduplication and grouping so one bad deploy produces one page and not four hundred.
+    The pager is an external dependency on purpose: the last hop out of the failure domain should not be something this platform operates.</li>
+  <li><b>Alert evaluator → Pager:</b> heartbeat (dead-man) (async).
+    The evaluator continuously proves it is alive to an external service; if the heartbeat stops, that service pages.
+    This closes the last hole — everything above detects problems in other systems, and only the dead‑man switch detects a total failure of the monitoring system itself.
+    Without it, the worst outage in the system is also the quietest.</li>
 </ol>
 
 ## How it works, step by step {#infra-metrics-flow}
@@ -180,6 +248,40 @@ Alerting:        rules evaluated every 15–60 s against the evaluator’s own r
     <li>Absence alerts catch the silent failure (agent died, pipeline stalled).</li>
     <li>Dead‑man switch: the alerter emits a heartbeat to an external pager; missing heartbeat pages.</li>
     <li>Evaluate on rollups where possible; rules over 1 h windows shouldn't scan raw.</li></ul></div>
+</div>
+
+
+## Trade-offs {#infra-metrics-tradeoffs}
+
+<table>
+  <tbody><tr><th>Decision</th><th>What we chose</th><th>What we gave up</th><th>When to flip it</th></tr>
+  <tr><td>Cardinality policy</td><td>Reject new series over a tenant budget</td><td>Teams lose new labels mid‑incident, which is a painful moment to discover a budget</td><td>Never silently drop instead — a missing series looks identical to a healthy one, and that ambiguity causes worse incidents than a loud rejection</td></tr>
+  <tr><td>Sharding key</td><td>Hash of the full series label set</td><td>A single enormous series cannot be split, and rebalancing means moving series</td><td>Shard by time only for append‑heavy archival use cases; here it would make "now" a hot partition for every query</td></tr>
+  <tr><td>Alerting data path</td><td>Independent consumers with their own store</td><td>A second copy of recent data and a second system to operate</td><td>Never share the query path — alerting that depends on the TSDB goes blind during exactly the outages it exists to catch</td></tr>
+  <tr><td>Retention</td><td>Tiered rollups that preserve histogram buckets</td><td>Storage and compaction cost, plus resolution loss on old data</td><td>Keep raw longer only if you routinely debug month‑old incidents at second resolution; drop buckets never — percentiles over old data die with them</td></tr>
+  <tr><td>Durability</td><td>Best‑effort; a few seconds of samples may be lost</td><td>Exactness — you cannot bill or audit from these numbers</td><td>Use a durable, exactly‑once pipeline when metrics feed billing; for observability it is the wrong trade at 10M points/s</td></tr>
+  <tr><td>High‑cardinality detail</td><td>Exemplars pointing at traces</td><td>An extra system to query when you need the specific request</td><td>Putting the identifier in a label is always tempting and always ends in a cardinality incident</td></tr>
+  <tr><td>Pre‑aggregation</td><td>On the agent, before the network</td><td>Per‑instance detail is gone and cannot be recovered later</td><td>Keep per‑instance series for a small set of metrics where a single bad host matters; aggregate the long tail</td></tr>
+</tbody></table>
+
+## Safety-first design {#infra-metrics-safety}
+
+<div class="cards">
+  <div><h4>Monitoring must outlive what it monitors</h4><ul>
+    <li><b>Separate failure domain for alerting.</b> Evaluators consume the log directly with their own storage, so a TSDB, compactor or query‑path outage does not blind the pager.</li>
+    <li><b>Dead‑man switch.</b> A heartbeat to an external service means a total failure of this platform still pages someone — the one failure mode nothing internal can detect.</li>
+    <li><b>Absence alerts as standard.</b> Rules on missing data catch dead agents and stalled pipelines; threshold rules alone are silent precisely when things stop.</li>
+    <li><b>Alert state survives restarts.</b> Firing and acknowledged states are persisted, so a redeploy neither re‑pages nor silently forgets an active incident.</li></ul></div>
+  <div><h4>One tenant must never blind another</h4><ul>
+    <li><b>Series budgets at ingest.</b> Enforced per tenant before anything is indexed, so a cardinality explosion is contained to the team that caused it.</li>
+    <li><b>Label allowlists.</b> Permitted label names are declared per metric, which stops user ids and parameterised paths from becoming millions of series.</li>
+    <li><b>Query limits too.</b> Caps on series touched and bytes scanned mean one runaway dashboard cannot exhaust the read path for everyone else.</li>
+    <li><b>Feedback, not silence.</b> Rejections are reported back to the emitting team with the offending metric named, so the fix happens upstream.</li></ul></div>
+  <div><h4>Keep sensitive data out by construction</h4><ul>
+    <li><b>Labels are indexed and kept for a year.</b> That makes them the worst place in the stack for anything identifying, so the allowlist enforces the rule rather than documenting it.</li>
+    <li><b>Exemplars carry the detail.</b> A trace id attached to a sample gives the specific request without creating a series, keeping the sensitive identifier in the traces system where retention is short.</li>
+    <li><b>Tenant isolation on read and write.</b> Queries are scoped to the caller's tenant, so cross‑tenant label values are never visible even when series names collide.</li>
+    <li><b>Retention that deletes.</b> Tiers expire by dropping immutable blocks, so "we deleted it" is a fact about storage rather than a policy statement.</li></ul></div>
 </div>
 
 ## Don't leave the room without saying {#infra-metrics-check}

@@ -40,6 +40,32 @@ description: "medium · object storage · CDN · sharing/permissions · multi‑
 </div>
 <div class="note"><b>Numbers:</b> 3 PB/day originals → 1 EB/year; derivatives (thumbs, HLS renditions) add ~30%. Metadata 1B/day × 500 B = 500 GB/day. Reads: each user views ~100 thumbs/day → 50B thumb requests/day ≈ 600K/s, all from CDN.</div>
 
+
+## Scale, performance and safety targets {#clouddrive-targets}
+
+<p>An exabyte a year of other people's photographs. The scale sets the storage design; the sharing model sets almost everything else.</p>
+
+<div class="cards">
+  <div><h4>Scale</h4><ul>
+    <li><b>QPS:</b> 1B uploads/day ≈ 12K/s average with 3× peaks; reads dominate at ~600K thumbnail requests/s, essentially all served by the CDN. Metadata reads for library browsing run ~100K QPS.</li>
+    <li><b>Data volume:</b> ~3 MB average → 3 PB/day of originals, ~1 EB/year, with derivatives (thumbnails, display sizes, HLS renditions) adding ~30%. Metadata is ~500 GB/day at 500 bytes per item.</li>
+    <li><b>Growth:</b> ~2× annually, and video is growing faster than photos — so derivative generation and egress grow faster than raw storage, which is where the cost actually lands.</li></ul></div>
+  <div><h4>Performance</h4><ul>
+    <li><b>Latency:</b> thumbnail grid fully loaded p95 &lt; 300 ms worldwide; video start to first frame &lt; 1 s; sharing changes visible within seconds; upload resume negotiation p95 &lt; 200 ms.</li>
+    <li><b>Throughput:</b> uploads saturate the device's uplink through parallel parts; downloads are entirely CDN‑served, so origin sees only cache misses and derivative generation.</li></ul></div>
+  <div><h4>Safety and security</h4><ul>
+    <li><b>Abuse prevention:</b> the recurring risks are a share link escaping its intended audience, guessable tokens, revocation that does not actually revoke because a CDN URL is still valid, and the service being used to host and distribute illegal content.</li>
+    <li><b>Rate limiting:</b> per‑user upload bandwidth and item count, per‑IP limits on redeeming share links (to blunt token scanning), a cap on active shares per item, and quota enforced at upload rather than discovered later.</li>
+    <li><b>Data sensitivity:</b> photos are among the most personal data there is, carrying EXIF GPS, faces and timestamps. Encrypt at rest, strip or protect location metadata on shared copies, make link shares unguessable and revocable, honour trash‑then‑delete across originals, derivatives, metadata and CDN, and keep residency per home region.</li></ul></div>
+  <div><h4>Availability and fault tolerance</h4><ul>
+    <li><b>Uptime target:</b> 99.99% for browsing and viewing; availability beats consistency for the library, but durability is absolute — a lost photo is unrecoverable and unforgivable in a way that an outage is not.</li>
+    <li><b>Degraded mode:</b> derivative pipeline behind → serve the original scaled client‑side, or show a placeholder, rather than failing the grid. CDN miss storm → rate‑limit origin fetches and serve lower resolutions. Sharing service degraded → fail closed on new share resolution while owners keep full access to their own library.</li></ul></div>
+  <div><h4>Also worth pinning down</h4><ul>
+    <li><b>Consistency:</b> eventual for library views and derivative readiness; <b>strong for permissions</b> — a revoked share must stop working immediately, which is why access is re‑checked on the resolution path rather than baked into a long‑lived URL.</li>
+    <li><b>Durability:</b> eleven nines for originals, cross‑region replicated. Derivatives are regenerable, so they get a cheaper tier — a distinction worth stating, since it is most of the cost model.</li>
+    <li><b>Compliance:</b> data residency by home region, deletion that reaches every derivative and edge cache, and an export path that returns originals rather than re‑encoded copies.</li></ul></div>
+</div>
+
 ## Entities and API {#clouddrive-api}
 
 <p>User (homeRegion, quota) · MediaItem (id, ownerId, contentHash, sizes[], takenAt, uploadedAt, state) · Album (id, ownerId, items[]) · Share (subjectId, grantee: user|link, role, expiresAt, token) · Blob (region, key, hash).</p>
@@ -175,25 +201,61 @@ GET  /s/:token                                -&gt; shared view (checks expiry/p
 <figcaption>Solid = request path · dashed = response / return · dotted = async or background.</figcaption>
 </figure>
 <ol class="order">
-  <li><b>Owner device:</b> sha256 file; chunk</li>
-  <li><b>Owner device → Upload svc:</b> POST /uploads {hash}</li>
-  <li><b>Upload svc → Metadata DB:</b> hash exists for this user? quota?</li>
-  <li><b>Upload svc → Owner device:</b> dedupe hit → link existing | presigned parts (response)</li>
-  <li><b>Owner device → Object store:</b> PUT parts</li>
-  <li><b>Owner device → Upload svc:</b> complete</li>
-  <li><b>Upload svc → Object store:</b> CompleteMultipartUpload</li>
-  <li><b>Object store → Processing:</b> event (async)</li>
-  <li><b>Processing → Object store:</b> write thumbs, display, HLS to derivatives (all regions)</li>
-  <li><b>Processing → Metadata DB:</b> item ready with sizes[]</li>
-  <li><b>Owner device → Sharing svc:</b> POST /shares link, expires 7d</li>
-  <li><b>Sharing svc → Metadata DB:</b> store share token</li>
-  <li><b>Viewer → Sharing svc:</b> GET /s/:token</li>
-  <li><b>Sharing svc → Metadata DB:</b> valid? not revoked?</li>
-  <li><b>Sharing svc → Viewer:</b> gallery with signed CDN URLs (5 min) (response)</li>
-  <li><b>Viewer → CDN:</b> GET thumb</li>
-  <li><b>CDN → Viewer:</b> edge hit / origin from nearest derivative region (response)</li>
-  <li><b>Owner device → Sharing svc:</b> revoke</li>
-  <li><b>Sharing svc:</b> ACL cache invalidate; tokens stop signing</li>
+  <li><b>Owner device:</b> sha256 file; chunk.
+    Hashing on the device, before any upload, is what makes deduplication and resume possible — the client can ask "do you already have this?" before spending bandwidth.
+    Chunking at the same time means a dropped connection costs one chunk rather than a 4 GB video.</li>
+  <li><b>Owner device → Upload svc:</b> POST /uploads {hash}.
+    The request is tiny and carries the fingerprint, not the file, so the control plane's load is proportional to uploads rather than to bytes.</li>
+  <li><b>Upload svc → Metadata DB:</b> hash exists for this user? quota?
+    Dedupe is scoped to the user deliberately: cross‑user deduplication saves far more space but leaks information — a stranger could learn you hold a specific file by observing an instant upload.
+    Quota is checked here, before bytes move, so a user learns they are out of space immediately rather than after a long upload fails.</li>
+  <li><b>Upload svc → Owner device:</b> dedupe hit → link existing | presigned parts (response).
+    A dedupe hit turns a multi‑gigabyte upload into a metadata row — re‑uploading a video you already have is instant.
+    Otherwise the device receives presigned URLs scoped to one object and a short expiry, so bytes go straight to storage.</li>
+  <li><b>Owner device → Object store:</b> PUT parts.
+    Bytes never pass through the service, which is why a handful of API servers can front an exabyte of storage.
+    Parts upload in parallel to saturate the uplink and are individually retryable on a flaky mobile connection.</li>
+  <li><b>Owner device → Upload svc:</b> complete.
+    The client asserts the part list; the server verifies it against what storage actually holds, so a truncated upload fails rather than producing a corrupt item.</li>
+  <li><b>Upload svc → Object store:</b> CompleteMultipartUpload.
+    Assembly happens inside storage — no server ever holds the whole file — and a missing or mismatched part fails the completion outright.</li>
+  <li><b>Object store → Processing:</b> event (async).
+    Derivative generation is triggered by a storage event rather than by the client, so it happens exactly once and survives the client disconnecting immediately after upload.</li>
+  <li><b>Processing → Object store:</b> write thumbs, display, HLS to derivatives (all regions).
+    Several sizes plus HLS renditions are generated once and replicated, because generating on demand would put transcoding on the viewing path.
+    Derivatives are ~30% more storage but they are what make a worldwide 300 ms grid and a 1 s video start achievable.
+    They are also regenerable, so they live on a cheaper, less redundant tier than originals — a distinction that is most of the cost model.</li>
+  <li><b>Processing → Metadata DB:</b> item ready with sizes[].
+    The item becomes visible only when its derivatives exist, so the library never shows a tile that cannot render.
+    Recording available sizes lets each device request the resolution it actually needs instead of downloading an original to display a thumbnail.</li>
+  <li><b>Owner device → Sharing svc:</b> POST /shares link, expires 7d.
+    Sharing is a separate service because its correctness requirements differ from everything else here: permissions must be strongly consistent while the library can be eventual.
+    Expiry is a first‑class field rather than an afterthought — most shares should not outlive the reason they were created.</li>
+  <li><b>Sharing svc → Metadata DB:</b> store share token.
+    The token is high‑entropy and unguessable, because a share link is a bearer credential: whoever holds it can view.
+    Storing it server‑side rather than signing a self‑contained token is what makes instant revocation possible at all.</li>
+  <li><b>Viewer → Sharing svc:</b> GET /s/:token.
+    The viewer may be unauthenticated, so this path is the entire security boundary for shared content.
+    It is also the most attacked endpoint in the system, which is why it is rate‑limited per IP against token scanning.</li>
+  <li><b>Sharing svc → Metadata DB:</b> valid? not revoked?
+    Validity is checked against the database on every single resolution — never cached in a way that could outlive a revocation.
+    Expiry, revocation, password and item deletion are all evaluated here, in the one place that can enforce them.</li>
+  <li><b>Sharing svc → Viewer:</b> gallery with signed CDN URLs (5 min) (response).
+    Short‑lived signed URLs are what make revocation meaningful: the longest a revoked viewer can still fetch is the remaining life of an already‑issued URL.
+    Five minutes is the deliberate balance — long enough to load a gallery, short enough that a leaked URL is nearly worthless.
+    Issuing long‑lived URLs would make possession equal permission and quietly break every revocation in the product.</li>
+  <li><b>Viewer → CDN:</b> GET thumb.
+    Thumbnails are the overwhelming majority of requests, and they are small, immutable and highly cacheable — an almost ideal CDN workload.
+    The signature is validated at the edge, so an expired or forged URL never reaches origin.</li>
+  <li><b>CDN → Viewer:</b> edge hit / origin from nearest derivative region (response).
+    Shared content is viewed repeatedly by many people, so the first viewer warms the edge for everyone after them.
+    Falling back to the nearest derivative region rather than a single origin is what keeps the 300 ms target worldwide rather than only near home.</li>
+  <li><b>Owner device → Sharing svc:</b> revoke.
+    Revocation is a single action on the token, not a hunt for who might have the link — which is precisely why the token is stored rather than self‑signed.</li>
+  <li><b>Sharing svc:</b> ACL cache invalidate; tokens stop signing.
+    Invalidation is explicit and immediate: no new URLs are signed, and the ACL cache is purged rather than left to expire.
+    The residual exposure is bounded by the 5‑minute URL lifetime, and that number is exactly what "revocation takes effect within seconds" means in practice.
+    Saying that bound out loud — rather than claiming instant revocation — is the honest answer.</li>
 </ol>
 
 ## Deep dives {#clouddrive-deep}
@@ -208,6 +270,40 @@ GET  /s/:token                                -&gt; shared view (checks expiry/p
 <div><h4>Storage layout</h4><ul><li>Originals: home region only, 11‑nines object store, lifecycle to cold after N days without access; content hash as key gives per‑user dedupe (same photo from two devices) and cross‑user dedupe if privacy allows (say the caveat).</li><li>Derivatives: small, replicated to every region; that's what browsing hits. 95% of views never touch the original.</li><li>Metadata sharded by ownerId; timeline query = one partition range on takenAt; album = list of item ids.</li></ul></div>
 <div><h4>Sharing and permissions</h4><ul><li>ACL rows per (subject, grantee); link shares are random 128‑bit tokens with optional expiry/password, stored server‑side so they can be revoked (a signed URL alone can't be revoked).</li><li>Every media URL is short‑lived and signed after an ACL check; revocation = stop issuing + short TTL, plus CDN purge for the paranoid case.</li><li>Album share inherits to items; changing membership re‑evaluates; cache ACL decisions per (viewer, subject) for seconds.</li></ul></div>
 <div><h4>Delivery and scale</h4><ul><li>CDN with signed URLs, device‑aware variants, prefetch next page of thumbs; video via HLS with adaptive bitrate.</li><li>Upload: presigned multipart, resume by part, client dedupe check before sending bytes saves the majority of duplicate uploads.</li><li>Trash: soft delete with 30‑day retention; hard delete purges originals, derivatives, CDN, and share tokens (privacy law).</li><li>Residency: home region chosen at signup; originals and metadata stay; derivatives replicate only where allowed.</li></ul></div></div>
+
+
+## Trade-offs {#clouddrive-tradeoffs}
+
+<table>
+  <tbody><tr><th>Decision</th><th>What we chose</th><th>What we gave up</th><th>When to flip it</th></tr>
+  <tr><td>Derivatives</td><td>Pre‑generate several sizes plus HLS</td><td>~30% extra storage and a processing pipeline</td><td>On‑demand transcoding saves storage but puts encoding on the viewing path — fatal for a 300 ms grid</td></tr>
+  <tr><td>Deduplication</td><td>Per user, by content hash</td><td>Far less space saved than global dedupe</td><td>Cross‑user dedupe is a genuine privacy leak: an instant upload reveals that someone else already holds that exact file</td></tr>
+  <tr><td>Share tokens</td><td>Stored server‑side, resolved on every view</td><td>A database lookup on the hottest unauthenticated path</td><td>Self‑signed tokens need no lookup and cannot be revoked before they expire, which breaks the product's core promise</td></tr>
+  <tr><td>URL lifetime</td><td>Signed CDN URLs valid 5 minutes</td><td>Revocation is "within minutes", not instant</td><td>Shorter hurts large galleries; longer widens the window in which a revoked viewer still has access</td></tr>
+  <tr><td>Storage tiers</td><td>Originals at eleven nines, derivatives cheaper</td><td>Regenerating derivatives after a loss</td><td>Uniform durability is simpler and roughly doubles the cost of the 30% that is fully reproducible</td></tr>
+  <tr><td>Consistency</td><td>Eventual for the library, strong for permissions</td><td>Two consistency models to reason about</td><td>Never make permissions eventual — a revoked share that works for another minute is a privacy incident, while a photo appearing a second late is invisible</td></tr>
+  <tr><td>Residency</td><td>Home region per user, derivatives replicated</td><td>Cross‑region replication cost and complexity</td><td>A single global region is far simpler and fails both latency targets and residency requirements</td></tr>
+</tbody></table>
+
+## Safety-first design {#clouddrive-safety}
+
+<div class="cards">
+  <div><h4>Revocation must actually revoke</h4><ul>
+    <li><b>Tokens are stored, not self‑signed.</b> Every view resolves against the database, which is the only way a share can be killed before it expires.</li>
+    <li><b>Short‑lived signed URLs.</b> The residual exposure after revocation is bounded by minutes, and that bound is stated rather than hand‑waved.</li>
+    <li><b>Invalidate, do not wait.</b> Revocation purges the ACL cache immediately instead of letting a TTL expire in its own time.</li>
+    <li><b>Shares expire by default.</b> Most links should not outlive their reason; making expiry a first‑class field rather than an option is the safer default.</li></ul></div>
+  <div><h4>Photos carry more than pixels</h4><ul>
+    <li><b>Strip location from shared copies.</b> EXIF GPS in a shared photo publishes a home address; derivatives for sharing should not carry it.</li>
+    <li><b>Dedupe within a user only.</b> Global deduplication would let an instant upload confirm that someone else holds a specific file.</li>
+    <li><b>Residency by home region.</b> Originals stay where the user's data is meant to live, and the routing layer enforces it rather than documenting it.</li>
+    <li><b>Deletion reaches everything.</b> Trash, then originals, derivatives at every size, metadata and CDN caches — anything missed means the photo is still retrievable.</li></ul></div>
+  <div><h4>Durability is the one thing you cannot apologise for</h4><ul>
+    <li><b>Eleven nines on originals.</b> An outage is recoverable; a lost photo is not, and users experience the two completely differently.</li>
+    <li><b>Verify before the item exists.</b> Completion checks every part, so a truncated upload fails instead of becoming a corrupt memory.</li>
+    <li><b>Derivatives are disposable by design.</b> Anything regenerable gets a cheaper tier, which keeps the expensive guarantee focused where it matters.</li>
+    <li><b>Trash before delete.</b> A restore window exists because the most common cause of photo loss is the user, not the storage.</li></ul></div>
+</div>
 
 ## Don't leave the room without saying {#clouddrive-check}
 

@@ -44,6 +44,32 @@ description: "hard · contention · scaling writes · fairness"
 </div>
 <div class="trap"><b>Most‑missed point:</b> the reservation step. Payment goes through a third party and takes seconds; you cannot hold a DB transaction open that long. Reserve first (take the unit off the table), settle money after. Arrive here yourself, don't wait to be led.</div>
 
+
+## Scale, performance and safety targets {#fs-targets}
+
+<p>The defining number is not the total traffic — it is how compressed in time it is. 10M users in 10 seconds is a different system from 10M users in a day.</p>
+
+<div class="cards">
+  <div><h4>Scale</h4><ul>
+    <li><b>QPS:</b> ~10M users arriving within the first few seconds — a burst of 1M+ QPS against a steady‑state baseline of nearly nothing. Only ~10,000 of those requests can possibly succeed, so the design is mostly about rejecting 99.9% of traffic cheaply.</li>
+    <li><b>Data volume:</b> tiny. 10,000 units, 10,000 reservations, 10,000 purchases — kilobytes of data that matters, surrounded by millions of requests that must never touch it.</li>
+    <li><b>Growth:</b> sale size grows with popularity, and traffic grows superlinearly with it — a drop twice as hyped draws far more than twice the load, so the waiting room must scale independently of the inventory.</li></ul></div>
+  <div><h4>Performance</h4><ul>
+    <li><b>Latency:</b> waiting‑room join p99 &lt; 200 ms (it must absorb the stampede); reservation p99 &lt; 500 ms once admitted; payment is seconds and explicitly off the critical section. Reservation TTL of ~10 minutes bounds how long a unit is held.</li>
+    <li><b>Throughput:</b> the database only ever sees admitted traffic — a few hundred reservation attempts per second — because the waiting room converts a 1M QPS spike into a controlled trickle. That conversion is the entire architecture.</li></ul></div>
+  <div><h4>Safety and security</h4><ul>
+    <li><b>Abuse prevention:</b> flash sales attract bots more than people. The threats are scripted clients hitting the endpoint before the queue, one buyer taking hundreds of units through many accounts, scalper farms, and simple DDoS from the crowd itself.</li>
+    <li><b>Rate limiting:</b> one reservation in flight per user, a per‑account unit cap, per‑IP and per‑device limits on waiting‑room joins, and signed single‑use admission tokens so the reservation endpoint cannot be called without passing through the queue.</li>
+    <li><b>Data sensitivity:</b> card details never touch the service — the client talks to the payment provider directly with a client secret, which keeps the system out of PCI scope. Store the payment intent id, never a card number, and keep addresses under normal PII handling with a stated retention.</li></ul></div>
+  <div><h4>Availability and fault tolerance</h4><ul>
+    <li><b>Uptime target:</b> 99.9% overall, but the sale window itself is effectively four nines — being down for five minutes at noon is the same as not holding the sale. Correctness beats availability: refusing to sell is recoverable, overselling is not.</li>
+    <li><b>Degraded mode:</b> payment provider slow or down → reservations still succeed and are held; only settlement waits, and the TTL protects the inventory. Redis waiting room lost → it is rebuildable queue state, so the sale pauses briefly rather than overselling, because ownership lives in Postgres. Database saturated → shed at the waiting room, never by accepting reservations that cannot be honoured.</li></ul></div>
+  <div><h4>Also worth pinning down</h4><ul>
+    <li><b>Consistency:</b> strong and transactional where a unit changes hands — <code>SELECT … FOR UPDATE SKIP LOCKED</code> plus an insert in one transaction. Everything else (queue position, units‑left display) is eventual and allowed to be approximate.</li>
+    <li><b>Durability:</b> a reservation and a purchase must survive any crash; the waiting‑room queue need not, and deliberately holds nothing that cannot be reconstructed.</li>
+    <li><b>Fairness:</b> worth stating as an explicit requirement — everyone present at the start gets a fair shot. Randomising the cohort at open, then serving FIFO, prevents both "fastest network wins" and "whoever retried hardest wins".</li></ul></div>
+</div>
+
 ## Entities and API {#fs-entities}
 
 <p>Product · Reservation · Purchase · User. Three endpoints, one per requirement:</p>
@@ -263,29 +289,67 @@ GET  /purchases/:purchaseId                     -&gt; poll until Stripe webhook 
 <figcaption>Solid = request path · dashed = response / return · dotted = async or background.</figcaption>
 </figure>
 <ol class="order">
-  <li><b>Client → API Gateway:</b> GET /products/:id (before noon)</li>
-  <li><b>API Gateway → Sale Service:</b> read product</li>
-  <li><b>Sale Service → Postgres:</b> SELECT product</li>
-  <li><b>Postgres → Sale Service:</b> row (response)</li>
-  <li><b>Sale Service → Client:</b> product + sale window (response)</li>
-  <li><b>Client → Waiting Room:</b> join waiting room, hold until noon</li>
-  <li><b>Waiting Room:</b> noon: randomize cohort, then FIFO</li>
-  <li><b>Waiting Room → Client:</b> signed admission token (response)</li>
-  <li><b>Client → API Gateway:</b> POST /reservations + token</li>
-  <li><b>API Gateway → Sale Service:</b> verify token, forward</li>
-  <li><b>Sale Service → Postgres:</b> BEGIN; SELECT unit FOR UPDATE SKIP LOCKED; INSERT reservation; COMMIT</li>
-  <li><b>Postgres → Sale Service:</b> reservation row (response)</li>
-  <li><b>Sale Service → Client:</b> reservation (expiresAt) (response)</li>
-  <li><b>Client → Sale Service:</b> POST /reservations/:id/purchases</li>
-  <li><b>Sale Service → Stripe:</b> create PaymentIntent</li>
-  <li><b>Stripe → Sale Service:</b> client secret (response)</li>
-  <li><b>Sale Service → Client:</b> client secret (response)</li>
-  <li><b>Client → Stripe:</b> submit card, confirm</li>
-  <li><b>Stripe → Sale Service:</b> webhook: succeeded (async)</li>
-  <li><b>Sale Service → Postgres:</b> purchase=COMPLETE, reservation=PURCHASED</li>
-  <li><b>Client → Sale Service:</b> poll GET /purchases/:id</li>
-  <li><b>Sale Service → Client:</b> COMPLETE (response)</li>
-  <li><b>Sale Service → Postgres:</b> expiry worker: release lapsed units (async)</li>
+  <li><b>Client → API Gateway:</b> GET /products/:id (before noon).
+    Pre‑sale reads are pure cache: the product page is identical for everyone and should never reach the database.
+    Getting this right matters because the pre‑noon browse traffic is itself substantial, and it must not consume the capacity the sale needs.</li>
+  <li><b>API Gateway → Sale Service:</b> read product.
+    Read and write paths are separated from the start; the read path scales with a CDN, the write path scales by admitting fewer people.</li>
+  <li><b>Sale Service → Postgres:</b> SELECT product.
+    A single cheap read, cached aggressively with a short TTL. The units‑left figure shown here is deliberately approximate — displaying an exact live count would put every browsing user on the contended path.</li>
+  <li><b>Postgres → Sale Service:</b> row (response).
+    Postgres is the system of record for everything that decides ownership; Redis will only ever hold state that can be thrown away.</li>
+  <li><b>Sale Service → Client:</b> product + sale window (response).
+    Returning the sale window lets clients synchronise to server time rather than local clocks, which removes one reason for people to start hammering early.</li>
+  <li><b>Client → Waiting Room:</b> join waiting room, hold until noon.
+    This is the component that makes the whole design work: a cheap, horizontally scalable holding pen that absorbs 10M arrivals without any of them touching the database.
+    Joining costs one Redis write and a held connection — no transactions, no locks, no inventory involvement.
+    A visible queue position also changes behaviour: users who can see they are 400,000th stop refreshing, which removes the retry storm that would otherwise be the real load.</li>
+  <li><b>Waiting Room:</b> noon: randomize cohort, then FIFO.
+    Everyone present at the open is shuffled before being ordered, which is the fairness decision. Pure FIFO would reward the fastest network and the most aggressive bot, not the earliest genuine user.
+    After the shuffle, FIFO is honest and explainable — position only improves as people ahead are served.
+    Admission is then released at a rate the database can actually sustain, converting a 1M QPS spike into a few hundred controlled attempts per second.</li>
+  <li><b>Waiting Room → Client:</b> signed admission token (response).
+    The token is signed, short‑lived and single‑use, which is what stops anyone from skipping the queue by calling the reservation endpoint directly.
+    Without it the waiting room would be advisory, and a scripted client would simply ignore it.</li>
+  <li><b>Client → API Gateway:</b> POST /reservations + token.
+    Only admitted users reach this endpoint, so it sees a manageable trickle rather than the crowd.</li>
+  <li><b>API Gateway → Sale Service:</b> verify token, forward.
+    Verification is a signature check with no state lookup, so rejecting a forged or reused token costs almost nothing — important, because that is the path bots will hit hardest.</li>
+  <li><b>Sale Service → Postgres:</b> BEGIN; SELECT unit FOR UPDATE SKIP LOCKED; INSERT reservation; COMMIT.
+    This is the critical section, and it is deliberately tiny: claim a row, write a reservation, commit — milliseconds, no external calls.
+    <code>FOR UPDATE SKIP LOCKED</code> is what lets many concurrent buyers claim <em>different</em> units in parallel instead of serialising behind one lock on a counter.
+    Decrementing a units‑left integer would be the obvious approach and is exactly wrong: it makes one row the bottleneck for the entire sale and turns contention into deadlocks.</li>
+  <li><b>Postgres → Sale Service:</b> reservation row (response).
+    The unit is now off the table with a TTL attached. Correctness is established here, before any money is involved — which is the insight the whole design is built around.</li>
+  <li><b>Sale Service → Client:</b> reservation (expiresAt) (response).
+    The user is told exactly how long they have, so the deadline is honest rather than a surprise.
+    The TTL is the mechanism that stops abandoned checkouts from permanently consuming inventory.</li>
+  <li><b>Client → Sale Service:</b> POST /reservations/:id/purchases.
+    Payment is a separate step precisely because it is slow and involves a third party — and no database transaction can be held open across it.
+    This separation is the single most‑missed point in the question: reserve first, settle money afterwards.</li>
+  <li><b>Sale Service → Stripe:</b> create PaymentIntent.
+    The intent is created server‑side and tied to the reservation, so a payment can never be associated with a unit the user does not hold.
+    Idempotency keys make a client retry safe rather than double‑charging.</li>
+  <li><b>Stripe → Sale Service:</b> client secret (response).
+    Only a secret is returned; card details never pass through this service, which keeps it out of PCI scope entirely.</li>
+  <li><b>Sale Service → Client:</b> client secret (response).
+    The client will talk to the payment provider directly from here, so the service is not in the path of the slowest, least reliable step.</li>
+  <li><b>Client → Stripe:</b> submit card, confirm.
+    This can take seconds, involve 3‑D Secure, or fail — all of which is fine, because the unit is already reserved and the service is not waiting on it.</li>
+  <li><b>Stripe → Sale Service:</b> webhook: succeeded (async).
+    The webhook is the authoritative signal, not the client's claim of success — a client can lie, close the tab, or lose its connection.
+    Webhooks must be verified, idempotent and replay‑safe, because they arrive at least once and occasionally out of order.</li>
+  <li><b>Sale Service → Postgres:</b> purchase=COMPLETE, reservation=PURCHASED.
+    The state transition is conditional on the reservation still being valid, so a payment arriving after expiry is refunded rather than silently overselling a unit already released.
+    This is the point at which ownership becomes permanent.</li>
+  <li><b>Client → Sale Service:</b> poll GET /purchases/:id.
+    Polling rather than holding a connection means the client survives the webhook arriving late, and the server holds no per‑user state while waiting.</li>
+  <li><b>Sale Service → Client:</b> COMPLETE (response).
+    The user learns the outcome from the server's record of the webhook, so the confirmation reflects settled money rather than an optimistic client‑side guess.</li>
+  <li><b>Sale Service → Postgres:</b> expiry worker: release lapsed units (async).
+    Reservations that pass their TTL without payment return to the pool, which is what prevents abandoned carts from permanently destroying inventory.
+    Release must be atomic and conditional so it cannot race a payment landing at the same moment — the classic double‑sell in this design.
+    Released units go back through the waiting room rather than being first‑come‑first‑served, keeping the fairness property intact to the end of the sale.</li>
 </ol>
 <div class="legend">
   <span class="l-blue">request / DB path</span>
@@ -371,6 +435,40 @@ COMMIT;</code></pre>
   <summary>What if node A/B/C is saturated?</summary>
   <p>Diagnose first. Uniform load: add a node and migrate slots live (<code>ASK</code>/<code>MOVED</code>), or send reads to replicas. Hot key: resharding does nothing, one key lives on one node. Split it yourself (<code>inventory:shoe:0..9</code>, 1,000 units each, client picks at random), cut traffic upstream with the waiting room, or cache reads app‑side.</p>
 </details>
+
+
+## Trade-offs {#fs-tradeoffs}
+
+<table>
+  <tbody><tr><th>Decision</th><th>What we chose</th><th>What we gave up</th><th>When to flip it</th></tr>
+  <tr><td>Inventory model</td><td>One row per unit, claimed with <code>FOR UPDATE SKIP LOCKED</code></td><td>10,000 rows instead of one integer, and a row‑per‑unit schema</td><td>A counter is simpler but serialises the entire sale behind one row; only viable when concurrency is low</td></tr>
+  <tr><td>Order of operations</td><td>Reserve first, pay second</td><td>Units can be held by people who never pay, for the length of the TTL</td><td>Charging first avoids abandoned holds but means holding a transaction across a third‑party call — which is not possible at this concurrency</td></tr>
+  <tr><td>Load absorption</td><td>Waiting room in front of everything</td><td>A component to build, and users experience a queue</td><td>Rate limiting alone is simpler but turns the sale into a retry storm where the most aggressive client wins</td></tr>
+  <tr><td>Fairness</td><td>Randomise the cohort at open, then FIFO</td><td>Users who genuinely arrived first do not get priority</td><td>Pure FIFO feels fairer but rewards the fastest network and the best bot, not the earliest person</td></tr>
+  <tr><td>Redis's role</td><td>Queue state only; ownership lives in Postgres</td><td>An extra hop, and no inventory speedup from Redis</td><td>Never hold inventory in Redis: losing it would oversell, and "we lost the queue" is recoverable while "we sold 200 extra units" is not</td></tr>
+  <tr><td>Payment confirmation</td><td>Trust the webhook, not the client</td><td>Webhook plumbing, idempotency and a polling endpoint</td><td>Never trust the client's success claim — it is the easiest thing in the flow to forge</td></tr>
+  <tr><td>Units‑left display</td><td>Approximate, cached</td><td>Users may see a number that is briefly wrong</td><td>An exact live count puts every browsing user on the contended path, which is the one thing the design cannot afford</td></tr>
+</tbody></table>
+
+## Safety-first design {#fs-safety}
+
+<div class="cards">
+  <div><h4>Never oversell, even while failing</h4><ul>
+    <li><b>Ownership is transactional.</b> A unit changes hands inside one short database transaction; nothing outside Postgres is ever authoritative about who holds what.</li>
+    <li><b>Redis holds only disposable state.</b> Losing the waiting room pauses the sale; it cannot cause a double sale, because inventory was never there.</li>
+    <li><b>Expiry and payment cannot race.</b> Releasing a lapsed reservation and completing a payment are both conditional updates, so exactly one wins.</li>
+    <li><b>Late payments are refunded, not honoured.</b> A webhook arriving after expiry refunds rather than reviving a unit that has already been resold.</li></ul></div>
+  <div><h4>The crowd is mostly bots</h4><ul>
+    <li><b>Signed, single‑use admission tokens.</b> The reservation endpoint cannot be reached without passing through the queue, so scripting past it does not work.</li>
+    <li><b>Limits per account, device and IP.</b> One reservation in flight per user and a hard unit cap blunt the scalper farm that would otherwise take the whole drop.</li>
+    <li><b>Rejection is cheap.</b> Token verification is a signature check with no state lookup, so the path bots hammer hardest costs the least to serve.</li>
+    <li><b>Queue position calms the storm.</b> Showing users where they stand removes the incentive to refresh, which is where most of the accidental load comes from.</li></ul></div>
+  <div><h4>Stay out of the blast radius of money</h4><ul>
+    <li><b>Card data never touches the service.</b> The client talks to the payment provider directly with a client secret, keeping the system out of PCI scope.</li>
+    <li><b>The slow dependency is off the critical section.</b> Payment takes seconds and can fail; because the unit is already reserved, none of that threatens correctness.</li>
+    <li><b>Idempotency everywhere money moves.</b> Payment intents and webhooks are keyed so retries and duplicate deliveries cannot double‑charge or double‑fulfil.</li>
+    <li><b>Refusing to sell beats selling wrong.</b> Under extreme load the system sheds at the waiting room rather than accepting reservations it cannot honour.</li></ul></div>
+</div>
 
 ## Don't leave the room without saying {#fs-checklist}
 

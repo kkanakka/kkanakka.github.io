@@ -35,6 +35,32 @@ description: "ties together ChatGPT chat + Inference API + metering + training �
   <tr><td>Training job</td><td>Offline run that produces a new model version from curated data.</td><td>Training plane, separate cluster</td></tr>
 </tbody></table>
 
+
+## Scale, performance and safety targets {#ap-targets}
+
+<p>A platform map is only useful if the planes are sized. These are the numbers each plane is designed against — and they differ by orders of magnitude, which is exactly why they are separate planes.</p>
+
+<div class="cards">
+  <div><h4>Scale</h4><ul>
+    <li><b>QPS:</b> serving plane ~200K turns/s at peak with ~10M concurrent streams; metering ingests one usage event per inference, so the same ~200K events/s; training plane runs tens of jobs at a time, measured in job‑days rather than QPS.</li>
+    <li><b>Data volume:</b> tens of billions of messages at ~2 KB each (hundreds of TB) in the data plane; a usage ledger of ~17B rows/day; training reads curated subsets in the TB range per run.</li>
+    <li><b>Growth:</b> ~2× users annually, ~3× tokens per turn as windows grow. Serving demand therefore outruns storage growth, which is why capacity planning lives with the inference plane and not with the database.</li></ul></div>
+  <div><h4>Performance</h4><ul>
+    <li><b>Latency:</b> time to first token p50 &lt; 600 ms, p95 &lt; 1 s; sidebar and history reads p95 &lt; 200 ms; metering counters visible to the gateway within ~5 s; async workers (title, summary, memory) within ~30 s.</li>
+    <li><b>Throughput:</b> GPU tokens/s is the binding constraint everywhere. Side jobs run on a small‑model pool precisely so the large model serves only user turns.</li></ul></div>
+  <div><h4>Safety and security</h4><ul>
+    <li><b>Abuse prevention:</b> prompt injection via pasted content, jailbreaks, scraping of model output, and quota evasion through many accounts. Safety classifiers sit on the input and output of every turn; the gateway enforces limits before any GPU work.</li>
+    <li><b>Rate limiting:</b> tokens/min and messages/day per user by tier, concurrent streams per account, per‑org ceilings, and a global brake tied to healthy GPU capacity — enforced at the edge from live Redis counters.</li>
+    <li><b>Data sensitivity:</b> transcripts are the most sensitive asset and cross plane boundaries only under strict rules — training reads <em>opt‑in only</em>, de‑identified, filtered data, and never reads the serving store directly. Memory facts are user‑visible and editable; deletion must reach transcripts, summaries, memory and embeddings alike.</li></ul></div>
+  <div><h4>Availability and fault tolerance</h4><ul>
+    <li><b>Uptime target:</b> 99.9% for sending a turn; history reads held higher, because being unable to reach your own transcript feels like data loss. The training plane has no availability target at all — it is batch work that restarts from checkpoints.</li>
+    <li><b>Degraded mode:</b> GPU capacity lost → shed free tier, queue visibly, never silently truncate context. Metering lagging → the gateway enforces on slightly stale counters, which grants a marginally larger window rather than blocking users. Async workers down → fall back to last‑N‑turns context, which is degraded quality rather than an error.</li></ul></div>
+  <div><h4>Also worth pinning down</h4><ul>
+    <li><b>Consistency:</b> strong within a conversation (ordering, no duplicate sends, guaranteed by idempotency keys); eventual for summaries, memory, titles and usage counters. Billing is the exception: the durable ledger uses idempotent upserts keyed by request id.</li>
+    <li><b>Durability:</b> eleven nines for transcripts and the usage ledger. Redis counters, stream buffers, KV caches and rolling summaries are all rebuildable — losing them costs latency or quality, never correctness.</li>
+    <li><b>Compliance:</b> opt‑in gating for training data, de‑identification before the pipeline, export and deletion that cover derived artifacts, and a nightly reconciliation between the ledger, Redis and inference‑side logs so billing is auditable.</li></ul></div>
+</div>
+
 ## Platform map {#ap-diagram}
 
 <!-- DIAGRAM:architecture:START -->
@@ -169,25 +195,66 @@ description: "ties together ChatGPT chat + Inference API + metering + training �
 <figcaption>Solid = request path · dashed = response / return · dotted = async or background.</figcaption>
 </figure>
 <ol class="order">
-  <li><b>Client → Gateway:</b> message</li>
-  <li><b>Gateway:</b> quota check (Redis usage counters)</li>
-  <li><b>Gateway → Chat Service:</b> forward</li>
-  <li><b>Chat Service → Data plane:</b> persist turn; read summary, memory, tail</li>
-  <li><b>Data plane → Chat Service:</b> context inputs (response)</li>
-  <li><b>Chat Service:</b> Context Builder trims to window</li>
-  <li><b>Chat Service → Inference GW:</b> prompt</li>
-  <li><b>Inference GW:</b> queue, batch, pull dispatch, reaper</li>
-  <li><b>Inference GW → Chat Service:</b> token stream + usage (response)</li>
-  <li><b>Chat Service → Client:</b> SSE (response)</li>
-  <li><b>Chat Service → Data plane:</b> persist assistant msg</li>
-  <li><b>Chat Service → Kafka:</b> usage.event, message.created (async)</li>
-  <li><b>Kafka → Metering:</b> aggregate tokens (async)</li>
-  <li><b>Metering → Gateway:</b> live counters → Redis (async)</li>
-  <li><b>Metering:</b> ledger → billing, warehouse</li>
-  <li><b>Kafka → Data plane:</b> workers: summary, memory, title (async)</li>
-  <li><b>Data plane → Training:</b> opt-in transcripts → data pipeline (async)</li>
-  <li><b>Training:</b> train, eval, register version</li>
-  <li><b>Training → Inference GW:</b> canary rollout of new version (async)</li>
+  <li><b>Client → Gateway:</b> message.
+    One entry point for every product surface, so authentication, quota and safety are enforced in one place rather than re‑implemented per client.
+    The gateway is stateless apart from the open stream, which is what lets any instance serve any user.</li>
+  <li><b>Gateway:</b> quota check (Redis usage counters).
+    Enforcement reads live counters maintained by the metering plane — cheap, local to the region, and checked before any GPU work is committed.
+    The counters may be a few seconds stale, and that is deliberate: the failure mode is a user getting slightly more than their quota, never a working user being blocked by a lagging pipeline.</li>
+  <li><b>Gateway → Chat Service:</b> forward.
+    Beyond this point the request is trusted to be authenticated and within quota, so no downstream service repeats those checks.</li>
+  <li><b>Chat Service → Data plane:</b> persist turn; read summary, memory, tail.
+    The user's message is durable before generation starts, so an inference failure never loses what they typed.
+    The same round trip fetches the three inputs the context builder needs — rolling summary, per‑user memory facts, and the recent tail — with active conversations served from a hot cache.</li>
+  <li><b>Data plane → Chat Service:</b> context inputs (response).
+    These are three different kinds of state with three different consistency requirements: the tail is strongly consistent, the summary and memory are explicitly eventual.
+    Treating them uniformly would either make every turn slow or make the transcript unreliable.</li>
+  <li><b>Chat Service:</b> Context Builder trims to window.
+    Budget = window − reserved output; then system prompt, memory facts, rolling summary, and turns newest‑first until the budget is spent.
+    Because token counts were stored at write time, this is arithmetic rather than re‑tokenizing the whole history — the difference between milliseconds and seconds on every turn.
+    What gets dropped is a product decision: old turns degrade into a summary while recent turns stay verbatim, because recency is what users notice.</li>
+  <li><b>Chat Service → Inference GW:</b> prompt.
+    The model is stateless, so the entire context is sent every time; nothing about the conversation lives on a GPU between requests.
+    That is what makes the serving fleet freely replaceable and the whole platform horizontally scalable.</li>
+  <li><b>Inference GW:</b> queue, batch, pull dispatch, reaper.
+    The inference plane has its own queues per model and tier, forms batches for GPU efficiency, and lets idle workers pull rather than pushing to them.
+    A reaper requeues anything claimed but not finished, which is what makes worker crashes a non‑event instead of a lost turn.
+    Keeping this as a separate plane means the chat service never has to know about GPU capacity, batching or scheduling.</li>
+  <li><b>Inference GW → Chat Service:</b> token stream + usage (response).
+    Usage counts come back from the worker because it is the only component that knows the true token totals — the gateway sees the prompt but not the output, and a stream can be stopped early.
+    Count at the source, enforce at the edge: that split is what keeps billing accurate and rate limiting fast.</li>
+  <li><b>Chat Service → Client:</b> SSE (response).
+    Tokens are relayed as they clear output safety, with a small buffer that also serves stream resume after a dropped connection.
+    Perceived quality is governed by first token and inter‑token gaps, not by total generation time.</li>
+  <li><b>Chat Service → Data plane:</b> persist assistant msg.
+    The reply is stored with its token counts, keeping the transcript complete and the next turn's budget arithmetic exact.
+    Partial generations are persisted too, so a cancelled turn shows what actually happened rather than a gap.</li>
+  <li><b>Chat Service → Kafka:</b> usage.event, message.created (async).
+    From the user's point of view the turn is already over; everything after this is decoupled by a log rather than by synchronous calls.
+    Events carry a request id so every consumer can be idempotent, which is what makes at‑least‑once delivery safe here.
+    Publishing rather than calling means adding a new consumer never touches the latency‑critical path.</li>
+  <li><b>Kafka → Metering:</b> aggregate tokens (async).
+    Metering is the only consumer that turns raw events into both an enforcement signal and a billing record — two outputs with very different requirements from one input.</li>
+  <li><b>Metering → Gateway:</b> live counters → Redis (async).
+    <code>INCRBY</code> with a TTL per window gives the gateway something fast to check on the next turn.
+    Losing these counters on a Redis failover means a user gets a slightly larger window, which is an acceptable, bounded error — and precisely why billing does not read them.</li>
+  <li><b>Metering:</b> ledger → billing, warehouse.
+    The durable ledger is keyed by (user, model, day) with idempotent upserts, so replaying a Kafka partition cannot double‑bill anyone.
+    A nightly reconciliation compares ledger totals against Redis and inference‑side logs, and drift is alerted — because "the bill is wrong" is discovered by customers otherwise.</li>
+  <li><b>Kafka → Data plane:</b> workers: summary, memory, title (async).
+    Summaries, memory extraction and titles all run on a small‑model pool, so the expensive model serves only user turns.
+    Jobs are idempotent, which is what lets Kafka simply rebalance a partition when a worker dies instead of needing a bespoke recovery path.
+    All of this is eventually consistent by design: a title arriving seconds late is invisible, while doing it inline would add seconds to every first turn.</li>
+  <li><b>Data plane → Training:</b> opt-in transcripts → data pipeline (async).
+    This is the most carefully controlled arrow on the diagram: only opt‑in data, de‑identified, deduplicated, quality‑ and safety‑filtered before it leaves the data plane.
+    Training reads an export, never the serving store, so no training job can add load to or take a lock on the path serving live users.</li>
+  <li><b>Training:</b> train, eval, register version.
+    Jobs run on a physically separate cluster, checkpointing to object storage so preemption costs minutes rather than days.
+    Evals are a hard gate — benchmarks, safety suites and regression against current production must pass before a version is registered at all.</li>
+  <li><b>Training → Inference GW:</b> canary rollout of new version (async).
+    Promotion is a registry pointer plus a routing weight, so a new version starts at 1% and ramps only while gates hold.
+    Replicas load weights from object storage, which is why scale‑out is measured in minutes and why prefetching before the flip matters.
+    The separation rule holds throughout: training reads data, serving reads models, and neither writes into the other's store.</li>
 </ol>
 
 ## Who does what, one turn at a time {#ap-who}
@@ -240,6 +307,40 @@ description: "ties together ChatGPT chat + Inference API + metering + training �
   <tr><td>Summary/memory jobs</td><td>Worker died mid‑job</td><td>Kafka rebalances the partition; job is idempotent so re‑run is safe</td></tr>
   <tr><td>Training checkpoints</td><td>Node preempted</td><td>Scheduler restarts from last checkpoint</td></tr>
 </tbody></table>
+
+
+## Trade-offs {#ap-tradeoffs}
+
+<table>
+  <tbody><tr><th>Decision</th><th>What we chose</th><th>What we gave up</th><th>When to flip it</th></tr>
+  <tr><td>Plane separation</td><td>Serving, data, metering and training as independent planes</td><td>More systems, more interfaces, more operational surface</td><td>Collapse them only at small scale; here a training job that could lock the serving store is an outage waiting to happen</td></tr>
+  <tr><td>Where tokens are counted</td><td>At the GPU, emitted as events</td><td>Counts arrive asynchronously, so enforcement runs slightly stale</td><td>Counting at the gateway is immediate but wrong — it cannot see output length or an early stop</td></tr>
+  <tr><td>Enforcement data</td><td>Redis counters for limits, durable ledger for billing</td><td>Two representations of the same quantity to reconcile</td><td>Never bill from Redis: it is lossy by design, and that is exactly what makes it fast enough for the edge</td></tr>
+  <tr><td>Post‑turn work</td><td>Async via Kafka on a small‑model pool</td><td>Summaries, memory and titles lag by seconds</td><td>Inline only where the result must be visible immediately; using the large model here would spend serving capacity on background chores</td></tr>
+  <tr><td>Context handling</td><td>Rebuild every turn from stored rows</td><td>Prefill cost — the whole history is re‑sent each time</td><td>Session‑pinned KV cache saves prefill but pins a conversation to a replica, breaking failover and load balancing</td></tr>
+  <tr><td>Training data path</td><td>Opt‑in export, de‑identified and filtered</td><td>A much smaller and slower‑moving dataset than "everything"</td><td>Never widen it silently — the consent boundary is the design, not a policy layered on top</td></tr>
+  <tr><td>Recovery model</td><td>Reapers wherever work can be claimed</td><td>Detection latency equal to the timeout, plus reapers to operate</td><td>Acceptable everywhere here; the alternative is stuck work that only surfaces as a user complaint</td></tr>
+</tbody></table>
+
+## Safety-first design {#ap-safety}
+
+<div class="cards">
+  <div><h4>Every turn passes through safety</h4><ul>
+    <li><b>Input and output both classified.</b> A benign prompt can still produce a harmful completion, so the model's own tokens are treated as untrusted.</li>
+    <li><b>Buffer before display.</b> Output safety runs with a small lookahead so unsafe content is cut before the user sees it rather than retracted afterwards.</li>
+    <li><b>Pasted content is data, not instructions.</b> Injection attempts arriving inside a conversation must never be able to reach the system prompt's authority.</li>
+    <li><b>Evals gate every model version.</b> Safety suites and regression against production are a hard gate before a version can be registered, let alone routed to.</li></ul></div>
+  <div><h4>Planes contain each other's failures</h4><ul>
+    <li><b>Training never touches serving.</b> It reads an export and writes to a registry; no training job can add load to or lock the store that serves live users.</li>
+    <li><b>Inference is its own plane.</b> Queues, batching, dispatch and capacity feedback live there, so the chat service degrades gracefully instead of hanging when GPUs are scarce.</li>
+    <li><b>Metering lag cannot block users.</b> Stale counters grant a slightly larger window rather than failing requests — the error is bounded and in the right direction.</li>
+    <li><b>Reapers everywhere work can be claimed.</b> In‑flight lists, stream buffers, pending socket maps and training checkpoints all have a defined recovery, so abandoned work never sits silently.</li></ul></div>
+  <div><h4>User data crosses boundaries only with consent</h4><ul>
+    <li><b>Opt‑in, de‑identified, filtered.</b> Three separate gates before a transcript can become training data, applied in the data plane rather than trusted to the consumer.</li>
+    <li><b>Memory is visible and editable.</b> Users can see and remove what the platform remembers about them across conversations.</li>
+    <li><b>Deletion reaches derivatives.</b> Summaries, memory facts and embeddings are copies of user content; a deletion that leaves them behind is not a deletion.</li>
+    <li><b>Events carry identifiers, not content.</b> Usage events hold user id, model and token counts — so the metering and billing pipelines never become a second copy of private conversations.</li></ul></div>
+</div>
 
 ## Don't leave the room without saying {#ap-checklist}
 

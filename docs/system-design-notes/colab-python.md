@@ -39,6 +39,32 @@ description: "coding · structure · tests · maintainability · what \"senior c
 </div>
 <div class="note"><b>Notebook traps:</b> cells run out of order leave stale globals; a function that works only because a cell above defined a variable is a bug. Keep logic in functions with explicit parameters, and restart‑and‑run‑all before you say "done".</div>
 
+
+## Scale, performance and safety targets {#colab-python-targets}
+
+<p>Even a notebook exercise has budgets, and stating them is itself part of what is being assessed — the interviewer is watching whether you size the problem before coding it.</p>
+
+<div class="cards">
+  <div><h4>Scale</h4><ul>
+    <li><b>Input size:</b> ask before writing anything. A thousand rows and a hundred million rows are different programs — one can hold everything in a dict, the other must stream.</li>
+    <li><b>Data volume:</b> if the data does not fit comfortably in memory, say so and stream: generators, chunked reads, and aggregation as you go rather than building a list first.</li>
+    <li><b>Growth:</b> "what if this is 100× bigger?" is the standard follow‑up, so structure the code so the answer is swapping one function rather than rewriting the solution.</li></ul></div>
+  <div><h4>Performance</h4><ul>
+    <li><b>Complexity:</b> state it out loud — O(n) with a dict rather than O(n²) with nested loops, and name the memory cost alongside the time cost. Being able to say the complexity matters more than shaving constants.</li>
+    <li><b>Throughput:</b> vectorise with pandas or numpy when the data is numeric and large, stream when it is not, and measure before optimising. A profiler beats intuition even at this scale.</li></ul></div>
+  <div><h4>Safety and security</h4><ul>
+    <li><b>Input validation:</b> the "adversary" is malformed data — empty files, missing columns, duplicate keys, wrong encodings, unexpected nulls. Validate at the boundary and fail with a clear error rather than producing a confidently wrong number.</li>
+    <li><b>Bounded work:</b> guard against pathological inputs: cap what a single record can consume, avoid unbounded recursion, and never build an in‑memory structure proportional to something the input controls without saying so.</li>
+    <li><b>Data sensitivity:</b> if the dataset looks like real user data, do not print it wholesale into cell output — notebook outputs are saved with the file and shared. Print shapes, counts and samples rather than everything.</li></ul></div>
+  <div><h4>Availability and fault tolerance</h4><ul>
+    <li><b>Reproducibility:</b> the equivalent requirement here is that <b>restart‑and‑run‑all works</b>. Code that only runs because a cell above happened to execute earlier is broken, whatever the output currently shows.</li>
+    <li><b>Degraded mode:</b> malformed rows are skipped and counted rather than crashing the run; the count is reported at the end. Silent skipping is worse than crashing, because it produces a plausible wrong answer nobody questions.</li></ul></div>
+  <div><h4>Also worth pinning down</h4><ul>
+    <li><b>Determinism:</b> seed anything random, avoid relying on dict or set iteration order for output, and pin behaviour that varies by platform — an interviewer re‑running your notebook should get your numbers.</li>
+    <li><b>Correctness evidence:</b> tests are the deliverable, not decoration. A few asserts covering happy path, empty input, and one nasty edge case demonstrate more than any amount of explanation.</li>
+    <li><b>Production delta:</b> be ready to name what changes outside a notebook — packaging, logging, error handling, configuration, CI — because "what would you change for production?" is always asked.</li></ul></div>
+</div>
+
 ## Structure to lay out in the first five minutes {#colab-python-api}
 
 <p>Cell 1 imports + config · Cell 2 data model (dataclasses / typed dicts) · Cell 3 pure functions (parse, transform, compute) · Cell 4 I/O wrappers · Cell 5 tests (pytest‑style or asserts) · Cell 6 main() run on the real input · Final cell: notes on complexity, limits, next steps.</p>
@@ -165,16 +191,40 @@ def main(path: str, k: int = 10):
 <figcaption>Solid = request path · dashed = response / return · dotted = async or background.</figcaption>
 </figure>
 <ol class="order">
-  <li><b>You → Interviewer:</b> restate task, inputs, outputs, scale, edge cases</li>
-  <li><b>Interviewer → You:</b> clarifications (response)</li>
-  <li><b>You → Notebook:</b> skeleton cells with function signatures + TODOs</li>
-  <li><b>You → Notebook:</b> happy-path core function</li>
-  <li><b>You → Notebook:</b> 2–3 asserts, run</li>
-  <li><b>You → Notebook:</b> edge cases: empty, malformed, duplicates, huge</li>
-  <li><b>You → Notebook:</b> I/O wrapper + main; restart &amp; run all</li>
-  <li><b>You → Interviewer:</b> walk through: complexity, limits, prod changes</li>
-  <li><b>Interviewer → You:</b> follow-ups: scale ×100? new field? (response)</li>
-  <li><b>You → Notebook:</b> small change shows the structure holds</li>
+  <li><b>You → Interviewer:</b> restate task, inputs, outputs, scale, edge cases.
+    Restating the problem in your own words catches a misunderstanding in thirty seconds rather than twenty minutes, and it is the cheapest possible insurance.
+    Asking for scale up front is not pedantry: it determines whether the solution holds data in memory or streams it, and that decision is hard to reverse later.
+    Naming the edge cases you intend to handle sets the contract for what "done" means.</li>
+  <li><b>Interviewer → You:</b> clarifications (response).
+    The answers are constraints, so write them down in a markdown cell — it makes assumptions visible and gives you something to check against at the end.
+    Anything left ambiguous should be stated as an explicit assumption rather than silently chosen.</li>
+  <li><b>You → Notebook:</b> skeleton cells with function signatures + TODOs.
+    Laying out the decomposition before writing any body is the single strongest signal of seniority in this exercise — it shows the shape of the solution immediately.
+    It also lets the interviewer redirect you before you have invested in the wrong structure.
+    Typed signatures and one‑line docstrings here cost seconds and make everything afterwards read as deliberate rather than improvised.</li>
+  <li><b>You → Notebook:</b> happy-path core function.
+    Solve the central case first and get something running end to end; a working simple version beats a half‑finished sophisticated one every time.
+    Keep logic in functions with explicit parameters rather than reaching for globals — notebook globals are the main source of code that works only by accident.</li>
+  <li><b>You → Notebook:</b> 2–3 asserts, run.
+    Tests come early, not at the end, because they are what let you refactor confidently for the rest of the session.
+    Plain asserts are enough in a notebook; the point is demonstrable correctness, not a framework.</li>
+  <li><b>You → Notebook:</b> edge cases: empty, malformed, duplicates, huge.
+    These four cover most of what interviewers actually probe, and handling them explicitly is usually where the difference between candidates shows.
+    Each should have a stated behaviour — skip and count, raise with a clear message, or deduplicate by a named rule — rather than whatever the code happens to do.
+    Silently producing a wrong answer for malformed input is worse than crashing, and saying that out loud is worth points on its own.</li>
+  <li><b>You → Notebook:</b> I/O wrapper + main; restart &amp; run all.
+    Separating pure logic from I/O makes the core testable without files and swappable when the input format changes.
+    Restart‑and‑run‑all is non‑negotiable: it is the only proof that the notebook works for anyone other than you, in the state you are leaving it.</li>
+  <li><b>You → Interviewer:</b> walk through: complexity, limits, prod changes.
+    Say the complexity in time and memory, name the input size at which the approach breaks, and name what you would change outside a notebook.
+    Volunteering the limitations is far stronger than having them extracted — it shows you know where the edges are rather than hoping nobody looks.</li>
+  <li><b>Interviewer → You:</b> follow-ups: scale ×100? new field? (response).
+    Both questions are really one question: is the structure you chose extensible, or did it only fit the example?
+    The answer should be a specific change — swap the loader for a streaming one, add a field to one dataclass — not a rewrite.</li>
+  <li><b>You → Notebook:</b> small change shows the structure holds.
+    Actually making the change, in a minute, demonstrates the decomposition rather than asserting it.
+    This is the payoff for the skeleton you wrote in step three, and it is why that step is worth the time it costs.
+    Finish by re‑running the tests, so the change is shown to be correct and not merely typed.</li>
 </ol>
 
 ## Deep dives {#colab-python-deep}
@@ -189,6 +239,40 @@ def main(path: str, k: int = 10):
 <div><h4>Structure</h4><ul><li>Separate pure logic from I/O; test the pure part with in‑memory data.</li><li>Small functions with one job; names that say what, docstrings that say why or the invariant.</li><li>Types on public functions; dataclasses for records instead of dict soup.</li><li>Constants and config at the top; no magic numbers in the middle of loops.</li></ul></div>
 <div><h4>Correctness and tests</h4><ul><li>Write the first test before the second feature; asserts in a cell count.</li><li>Edge cases named aloud: empty input, one element, duplicates, malformed rows, unicode, huge values, ties in top‑k.</li><li>Deterministic: fixed seeds, sorted outputs where order matters.</li><li>Errors: validate at the edge, fail loudly with context, log skipped records with counts.</li></ul></div>
 <div><h4>Performance and maintainability</h4><ul><li>State complexity; use generators/streaming for large files; pandas/numpy for columnar work with a note on memory.</li><li>Avoid notebook global state; functions take parameters; restart‑and‑run‑all is the acceptance test.</li><li>Say what you'd do for production: package, CLI/argparse, pytest, type checking, CI, observability.</li><li>Leave a final cell with assumptions, limits, and next steps.</li></ul></div></div>
+
+
+## Trade-offs {#colab-python-tradeoffs}
+
+<table>
+  <tbody><tr><th>Decision</th><th>What we chose</th><th>What we gave up</th><th>When to flip it</th></tr>
+  <tr><td>Order of work</td><td>Skeleton and signatures before any implementation</td><td>A few minutes before anything runs</td><td>Diving straight into code feels faster and makes the structure impossible to change once you are invested in it</td></tr>
+  <tr><td>Tests</td><td>A few asserts, written early</td><td>Time that could have gone into features</td><td>Testing at the end means refactoring without a safety net for the whole session, which is when mistakes happen</td></tr>
+  <tr><td>Data handling</td><td>Stream when large, load when small — after asking</td><td>Streaming code is slightly more complex</td><td>Loading everything is simpler and correct at small scale; the point is to have asked rather than to have assumed</td></tr>
+  <tr><td>State</td><td>Functions with explicit parameters, no cell globals</td><td>Slightly more typing than using a variable from above</td><td>Never rely on cell order — a function that works only because an earlier cell ran is a bug that survives until someone else opens the notebook</td></tr>
+  <tr><td>Error handling</td><td>Skip malformed rows and report the count</td><td>The run does not stop at the first bad record</td><td>Raising immediately is right when any bad record invalidates the result; silent skipping is never right</td></tr>
+  <tr><td>Optimisation</td><td>Correct first, profile, then optimise</td><td>The obvious fast version is not written first</td><td>Optimise up front only when the complexity class is clearly wrong — an O(n²) loop on a large input does not need a profiler</td></tr>
+  <tr><td>Types and docstrings</td><td>Where they add meaning</td><td>A little time, and some visual noise</td><td>Skipping them entirely is faster and makes the code read as a draft rather than as something someone else could maintain</td></tr>
+</tbody></table>
+
+## Safety-first design {#colab-python-safety}
+
+<div class="cards">
+  <div><h4>Notebooks lie about what works</h4><ul>
+    <li><b>Restart and run all before saying done.</b> Output in a cell proves only that it worked once, in an order you may not be able to reproduce.</li>
+    <li><b>No hidden state.</b> Logic lives in functions with explicit parameters; a function depending on a global set three cells up is a bug waiting to be discovered by someone else.</li>
+    <li><b>Deterministic by default.</b> Seed randomness, do not depend on set ordering, and pin anything platform‑dependent, so the interviewer's re‑run matches yours.</li>
+    <li><b>One entry point.</b> A clear <code>main</code> makes it obvious how the thing is meant to be run, rather than requiring a tour of the notebook.</li></ul></div>
+  <div><h4>Never produce a confident wrong answer</h4><ul>
+    <li><b>Validate at the boundary.</b> Check structure and types once, on input, rather than defending against bad data in every function downstream.</li>
+    <li><b>Count what you skip.</b> Dropping malformed records is fine; dropping them silently turns a data problem into a wrong number nobody questions.</li>
+    <li><b>Fail with a useful message.</b> "Missing column 'user_id' in row 402" is actionable; a <code>KeyError</code> from deep inside a helper is not.</li>
+    <li><b>State the complexity and the limit.</b> Knowing where the approach breaks is part of the answer, and volunteering it is stronger than being asked.</li></ul></div>
+  <div><h4>Leave it usable by someone else</h4><ul>
+    <li><b>Small functions, honest names.</b> The person reading this next has none of your context, and the notebook is the only explanation they get.</li>
+    <li><b>Separate logic from I/O.</b> Pure functions are testable without files and survive a change of input format.</li>
+    <li><b>Do not dump data into outputs.</b> Notebook output is saved and shared; print shapes and samples, not the whole dataset, especially if it looks like real user data.</li>
+    <li><b>Say what production would change.</b> Packaging, logging, configuration, error handling and CI — naming them shows you know a notebook is not the destination.</li></ul></div>
+</div>
 
 ## Don't leave the room without saying {#colab-python-check}
 

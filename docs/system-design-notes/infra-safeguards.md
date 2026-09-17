@@ -43,6 +43,32 @@ description: "hard · Anthropic · tier‑0 dependency · fail‑closed · degra
   </div>
 </div>
 
+
+## Scale, performance and safety targets {#infra-safeguards-targets}
+
+<p>This is the one component where the safety numbers <em>are</em> the requirements. State them first — every latency trick below exists so that safety never has to be traded for speed.</p>
+
+<div class="cards">
+  <div><h4>Scale</h4><ul>
+    <li><b>QPS:</b> 100K QPS of input classification — one per request — plus far more output calls: a sliding window every ~8 tokens over a 400‑token average response is ~50 stream classifications per request, so several million classifier calls/s at peak.</li>
+    <li><b>Data volume:</b> ~10 KB average prompt in, a decision record of a few hundred bytes out. Decisions are the durable artifact: ~100K/s audit records, retained long enough to investigate any incident.</li>
+    <li><b>Growth:</b> request volume ~2× annually and context length faster still, so input classification cost grows superlinearly — assume the classifier fleet must grow faster than the serving fleet.</li></ul></div>
+  <div><h4>Performance</h4><ul>
+    <li><b>Latency:</b> ≤ 30 ms added to TTFT p99 — achieved by running input classification concurrently with prefill so its cost hides underneath. Stream classification ≤ a few ms per window, and the 8‑token lookahead buffer is the only user‑visible delay.</li>
+    <li><b>Throughput:</b> several million classifications/s sustained, on dedicated capacity sized N+1 independently of the main fleet, so a serving‑side capacity crunch can never squeeze the safety path.</li></ul></div>
+  <div><h4>Safety and security</h4><ul>
+    <li><b>Abuse prevention:</b> the whole component is the defence — prompt injection, jailbreak attempts, staged multi‑turn attacks, and content that only becomes harmful several hundred tokens in. The subtler threat is an attacker inducing classifier timeouts to force a degraded mode, which is why timeout must never mean allow.</li>
+    <li><b>Rate limiting:</b> the classifier path is deliberately exempt from ordinary rate limits — throttling safety checks is never the right answer. Limits are applied to the <em>user</em> upstream instead; the safety fleet gets its own reserved capacity and admission control.</li>
+    <li><b>Data sensitivity:</b> classifiers see every prompt and every response, making this the most PII‑dense service in the stack. Decisions log scores, actions and versions — not content; any content sampled for evaluation is separately consented, access‑controlled and short‑retention.</li></ul></div>
+  <div><h4>Availability and fault tolerance</h4><ul>
+    <li><b>Uptime target:</b> tier‑0 — availability must be <em>at least</em> the main model's four nines, in an independent failure domain with its own cells, so that a serving outage and a safety outage cannot share a cause.</li>
+    <li><b>Degraded mode:</b> fail closed, always. On timeout: retry once on another cell within budget, then enter a named, pre‑approved degraded mode — a cheaper classifier, or outright blocking — each with a maximum duration that pages a human when exceeded. There is no configuration in which unavailability means allow.</li></ul></div>
+  <div><h4>Also worth pinning down</h4><ul>
+    <li><b>Consistency:</b> strong for policy and classifier versions — a decision must be attributable to an exact pair, and two cells applying different policies is an incident. Decision caching is keyed by (prompt hash, policy version) so a policy change invalidates the cache automatically.</li>
+    <li><b>Durability:</b> every decision record is durable and auditable; losing them means losing the ability to explain what happened, which is often the actual requirement in a safety incident.</li>
+    <li><b>Compliance:</b> versioned policy, immutable audit trail, and a measurable correctness SLI — "must‑block canaries blocked 100% of the time" — because uptime alone does not prove a safety system is working.</li></ul></div>
+</div>
+
 ## Entities and API {#infra-safeguards-api}
 
 <p>ClassifierVersion · PolicyVersion · Decision (requestId, stage, scores, action, versions, ts) · DegradedMode · Canary (prompt, expectedAction, cadence)</p>
@@ -150,24 +176,64 @@ GET  /internal/canaries/results                            -&gt; {blockedRate, a
 <figcaption>Solid = request path · dashed = response / return · dotted = async or background.</figcaption>
 </figure>
 <ol class="order">
-  <li><b>Client → Gateway:</b> prompt</li>
-  <li><b>Gateway → Input classifier:</b> classify input (30 ms budget)</li>
-  <li><b>Gateway → Serving:</b> prefill concurrently</li>
-  <li><b>Input classifier → Gateway:</b> allow / block / flag (response)</li>
-  <li><b>Gateway:</b> block → policy message, stop</li>
-  <li><b>Gateway → Serving:</b> allow → start decode</li>
-  <li><b>Serving → Gateway:</b> tokens (response)</li>
-  <li><b>Gateway:</b> hold 8-token lookahead</li>
-  <li><b>Gateway → Output classifier:</b> sliding window classify</li>
-  <li><b>Output classifier → Gateway:</b> ok / cut (response)</li>
-  <li><b>Gateway → Client:</b> tokens released (response)</li>
-  <li><b>Gateway → Output classifier:</b> final full-text pass</li>
-  <li><b>Output classifier → Gateway:</b> ok (response)</li>
-  <li><b>Gateway → Client:</b> done (response)</li>
-  <li><b>Input classifier → Gateway:</b> timeout / error (response)</li>
-  <li><b>Gateway:</b> retry once → approved degraded mode; never allow-by-default</li>
-  <li><b>Canary runner → Gateway:</b> must-block synthetic prompt (per minute, per cell) (async)</li>
-  <li><b>Gateway → Canary runner:</b> blocked? else page + drain cell (response)</li>
+  <li><b>Client → Gateway:</b> prompt.
+    The gateway is the enforcement point, not the model — putting the check here means no serving path, experimental or otherwise, can bypass it.
+    Everything downstream is treated as untrusted from a safety perspective, including the model's own output.</li>
+  <li><b>Gateway → Input classifier:</b> classify input (30 ms budget).
+    The classifier runs on its own tier‑0 fleet with separate cells and its own N+1 capacity, so a serving outage cannot take safety down with it.
+    The budget is explicit and enforced: a classifier that takes longer is a timeout, and a timeout has a defined, safe meaning.</li>
+  <li><b>Gateway → Serving:</b> prefill concurrently.
+    Prefill starts in parallel with classification rather than after it, which is the trick that hides 30 ms of safety latency entirely under work that had to happen anyway.
+    Crucially, only prefill is speculative — no token may leave until the classifier has spoken, so concurrency buys latency without weakening the gate.
+    If the verdict is block, the prefill work is simply discarded; wasted GPU cycles are a cheap price for a hidden safety check.</li>
+  <li><b>Input classifier → Gateway:</b> allow / block / flag (response).
+    Three outcomes, not two: flag allows the request while marking it for review, which is what keeps false positives from becoming a blunt instrument.
+    The response carries scores and the classifier and policy versions, so the decision is reproducible months later.</li>
+  <li><b>Gateway:</b> block → policy message, stop.
+    A blocked request returns an explanatory policy message rather than a generic error, so legitimate users understand what happened.
+    Nothing is generated and nothing is billed — blocking before decode means a blocked request costs no GPU time, which also makes the path cheap under attack.</li>
+  <li><b>Gateway → Serving:</b> allow → start decode.
+    Decode begins only on an explicit allow; the gate is affirmative, never a default.
+    For repeated prompts a decision cache keyed by (prompt hash, policy version) short‑circuits this — and including the policy version means a policy change invalidates every cached decision automatically.</li>
+  <li><b>Serving → Gateway:</b> tokens (response).
+    Tokens flow to the gateway, not to the client, because the gateway must be able to stop the stream mid‑flight.
+    Input classification alone is not enough: a benign prompt can still produce a harmful completion, so the output is treated as untrusted too.</li>
+  <li><b>Gateway:</b> hold 8-token lookahead.
+    The gateway buffers a small number of tokens before releasing them, which is what makes cutting possible <em>before</em> the user sees anything.
+    Eight tokens is the deliberate balance: enough context for the window classifier to judge, small enough that the delay is imperceptible.
+    Without a buffer, output classification can only apologise after the fact — the harmful text has already been displayed.</li>
+  <li><b>Gateway → Output classifier:</b> sliding window classify.
+    Classification runs over a sliding window rather than per token, because harm is a property of a passage, not of a single token.
+    Windows overlap so content that only becomes problematic across a boundary is still caught.
+    This is the expensive part of the design — tens of calls per response — and why the safety fleet is sized larger than intuition suggests.</li>
+  <li><b>Output classifier → Gateway:</b> ok / cut (response).
+    A cut stops the stream immediately, replaces the partial response with a policy message, and logs the decision with the offset at which it triggered.
+    Tokens already generated but not yet released are discarded rather than flushed — the buffer is what makes that possible.</li>
+  <li><b>Gateway → Client:</b> tokens released (response).
+    Only classified tokens reach the user, so the guarantee "never emit blocked content" holds at the byte level rather than as a best effort.
+    Steady‑state cost to the user is one buffer's worth of delay, paid once at the start of the stream.</li>
+  <li><b>Gateway → Output classifier:</b> final full-text pass.
+    The complete response is classified as a whole, because a document can be harmful in aggregate while every window looked innocuous.
+    This catches the slow‑build cases that sliding windows structurally cannot see.</li>
+  <li><b>Output classifier → Gateway:</b> ok (response).
+    A late block here means the response is retracted and the decision recorded; it is rarer but it is the reason the final pass exists at all.</li>
+  <li><b>Gateway → Client:</b> done (response).
+    The response is marked complete only after the final pass returns — completion is a safety state, not just a streaming state.</li>
+  <li><b>Input classifier → Gateway:</b> timeout / error (response).
+    This is the interesting path, and the one most designs get wrong. A timeout is a statement about the classifier, not about the content.
+    An attacker who can induce timeouts — with pathological inputs or by loading the fleet — would otherwise have found a bypass.</li>
+  <li><b>Gateway:</b> retry once → approved degraded mode; never allow-by-default.
+    First a single retry on a different cell, inside the remaining budget, because most failures are local and transient.
+    If that fails, the system enters a <em>named</em> degraded mode chosen offline in advance — a cheaper classifier, or blocking outright — never an improvised decision under pressure.
+    Each mode has a maximum duration; exceeding it pages a human, so degradation can never quietly become the permanent state.</li>
+  <li><b>Canary runner → Gateway:</b> must-block synthetic prompt (per minute, per cell) (async).
+    Synthetic prompts with known‑correct verdicts run through the real production path every minute, per cell — not against a test endpoint.
+    Uptime does not prove correctness: a classifier that returns allow for everything is perfectly healthy by every ordinary metric.
+    Must‑allow canaries run too, because a classifier blocking everything is also broken, just in the direction nobody alarms on.</li>
+  <li><b>Gateway → Canary runner:</b> blocked? else page + drain cell (response).
+    A missed must‑block canary drains the cell automatically and pages immediately — the response is mechanical because the failure is severe.
+    Canary block rate is tracked as an SLI with burn‑rate alerting, which makes "is safety actually working?" a number rather than an assumption.
+    New classifier versions shadow‑score real traffic without acting, and their canary agreement is a hard gate before promotion.</li>
 </ol>
 
 ## How it works, step by step {#infra-safeguards-flow}
@@ -203,6 +269,40 @@ GET  /internal/canaries/results                            -&gt; {blockedRate, a
     <li>Canaries are the SLO for correctness, not just uptime: "blocked‑rate of must‑block canaries = 100%" is an SLI with a burn‑rate alert.</li>
     <li>Shadow‑deploy a new classifier version: score everything, block nothing, compare decisions before promotion.</li>
     <li>Audit log every decision with the version that made it, so a policy regression can be traced to a rollout.</li></ul></div>
+</div>
+
+
+## Trade-offs {#infra-safeguards-tradeoffs}
+
+<table>
+  <tbody><tr><th>Decision</th><th>What we chose</th><th>What we gave up</th><th>When to flip it</th></tr>
+  <tr><td>Failure semantics</td><td>Fail closed into a named, time‑boxed degraded mode</td><td>Availability — a classifier outage becomes a user‑visible outage</td><td>Never fail open. If availability during classifier outages is critical, buy it with more independent capacity, not with a weaker default</td></tr>
+  <tr><td>Input latency</td><td>Classify concurrently with prefill</td><td>GPU work wasted on requests that end up blocked</td><td>Sequential classification only if prefill is extremely expensive and block rates are high; the wasted compute is usually the cheaper side</td></tr>
+  <tr><td>Output checking</td><td>Sliding window plus an 8‑token lookahead buffer</td><td>A small fixed delay on every stream, and tens of classifier calls per response</td><td>A larger buffer gives the classifier more context and better decisions at the cost of perceived responsiveness — tune, but never to zero</td></tr>
+  <tr><td>Final pass</td><td>Classify the full text at completion</td><td>A late block means retracting a response the user was already reading</td><td>Drop it only if window classification provably covers aggregate harm — it usually does not</td></tr>
+  <tr><td>Failure domain</td><td>Own cells, own capacity, no shared dependencies</td><td>Duplicated infrastructure and cost</td><td>Never share with the serving fleet — a correlated failure is precisely the scenario where safety must still hold</td></tr>
+  <tr><td>Caching</td><td>Cache decisions by (prompt hash, policy version)</td><td>Memory, plus a cache that must invalidate correctly on policy change</td><td>Including the policy version in the key is what makes this safe; caching on prompt hash alone would serve stale verdicts after a policy update</td></tr>
+  <tr><td>False positives</td><td>Three outcomes — allow, flag, block</td><td>Flagged content still reaches users, so review capacity is needed</td><td>Collapse to binary only where the harm is severe enough that over‑blocking is clearly preferable</td></tr>
+</tbody></table>
+
+## Safety-first design {#infra-safeguards-safety}
+
+<div class="cards">
+  <div><h4>Unavailable never means allowed</h4><ul>
+    <li><b>Timeout is not a verdict.</b> A classifier that did not answer has said nothing about the content, and the system treats it that way — conflating the two is the single most dangerous bug available here.</li>
+    <li><b>Degraded modes are chosen in advance.</b> Each is named, approved offline, ordered by severity and time‑boxed, so nobody improvises a safety decision during an incident.</li>
+    <li><b>Circuit breakers open to a mode, not to "allow".</b> The standard resilience pattern is inverted deliberately, because the usual failure‑open default is unacceptable here.</li>
+    <li><b>Degradation pages.</b> Exceeding a mode's maximum duration wakes a human, so a temporary compromise cannot silently become permanent.</li></ul></div>
+  <div><h4>Nothing harmful reaches the screen</h4><ul>
+    <li><b>The gateway holds the tokens.</b> Output flows to the gateway, never straight to the client, so a stream can be cut before anything is displayed.</li>
+    <li><b>Buffer first, release second.</b> The lookahead buffer is what turns "we detected it" into "they never saw it".</li>
+    <li><b>Check the output, not just the input.</b> A benign prompt can produce harmful output, so the model's own tokens are treated as untrusted.</li>
+    <li><b>Whole‑response pass at the end.</b> Some harm is only visible in aggregate, which no sliding window can catch.</li></ul></div>
+  <div><h4>Prove it, continuously</h4><ul>
+    <li><b>Canaries are a correctness SLI.</b> Must‑block prompts run through the real path every minute per cell; 100% blocked is an SLO with burn‑rate alerting, because uptime says nothing about whether decisions are right.</li>
+    <li><b>Must‑allow canaries too.</b> A classifier blocking everything is equally broken and would otherwise look perfectly healthy.</li>
+    <li><b>Shadow before promote.</b> New classifier versions score real traffic without acting, and their agreement with canaries gates the rollout.</li>
+    <li><b>Audit every decision with its versions.</b> Scores, action, classifier and policy version — enough to trace a regression to a specific rollout, and never the content itself.</li></ul></div>
 </div>
 
 ## Don't leave the room without saying {#infra-safeguards-check}

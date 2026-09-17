@@ -40,6 +40,32 @@ description: "medium · cross‑platform · streaming state · offline · secure
 </div>
 <div class="note"><b>Stack choice to justify:</b> Electron/Tauri (web UI, one codebase, larger footprint) vs native per platform (best feel, 3× cost). Default: Tauri or Electron with a shared TypeScript core; the interview is about state, streaming and sync, not widgets.</div>
 
+
+## Scale, performance and safety targets {#desktop-chat-frontend-targets}
+
+<p>Client‑side scale is per install, not per fleet — but the numbers are just as binding, because there is no autoscaling on someone's laptop.</p>
+
+<div class="cards">
+  <div><h4>Scale</h4><ul>
+    <li><b>QPS:</b> per install, a few sends per minute but 30–60 UI updates per second while a reply streams. The throughput problem is render frequency, not network requests.</li>
+    <li><b>Data volume:</b> 10K conversations and ~500K messages locally — hundreds of MB in SQLite. A single long conversation can hold thousands of messages, which is why the list must be virtualised rather than rendered.</li>
+    <li><b>Growth:</b> local history only grows, so pagination, indexing and an archive policy are requirements from the start; a design that loads everything at launch gets slower every week the user keeps using it.</li></ul></div>
+  <div><h4>Performance</h4><ul>
+    <li><b>Latency:</b> first token visible &lt; 1 s after the backend's first token; cold start &lt; 2 s with 10K conversations; keystroke to echo &lt; 16 ms; conversation switch &lt; 100 ms from local storage.</li>
+    <li><b>Throughput:</b> token deltas batched into ~16 ms frames — a re‑render per token at 50 tokens/s makes the whole UI stutter, and the fix is coalescing rather than a faster renderer.</li></ul></div>
+  <div><h4>Safety and security</h4><ul>
+    <li><b>Abuse prevention:</b> the desktop threat model is local: another process reading tokens off disk, a malicious attachment, injected content in a rendered reply, and an auto‑update channel that could ship anything.</li>
+    <li><b>Rate limiting:</b> client‑side send throttling and bounded outbox retries with backoff, so a reconnect after an offline hour does not fire a hundred queued requests at once.</li>
+    <li><b>Data sensitivity:</b> the local database is a full copy of the user's conversations sitting on a device that may be shared or stolen. Tokens go in the OS keychain and never in a config file; the database is encrypted at rest; rendered model output is sanitised, never executed; sign‑out wipes local state rather than just forgetting the token.</li></ul></div>
+  <div><h4>Availability and fault tolerance</h4><ul>
+    <li><b>Uptime target:</b> the app must be useful with no network at all — reading history and composing must work offline, because a chat client that is blank without connectivity feels broken rather than disconnected.</li>
+    <li><b>Degraded mode:</b> offline → sends queue in a durable outbox and flush on reconnect. Stream drops mid‑reply → reconnect with <code>Last-Event-ID</code> and replay the missed deltas rather than regenerating. Backend errors → the message stays in the outbox marked failed, with a retry the user can trigger.</li></ul></div>
+  <div><h4>Also worth pinning down</h4><ul>
+    <li><b>Consistency:</b> local SQLite is the UI's source of truth and the server is the source of truth for history; they reconcile on sync. Optimistic rendering plus a client‑generated id is what makes the UI instant without risking duplicates.</li>
+    <li><b>Durability:</b> the outbox and streamed content are checkpointed continuously, so a crash mid‑reply loses seconds rather than the whole answer.</li>
+    <li><b>Updates:</b> auto‑update with signature verification and a rollback path — shipping a bad build to every desktop is the one failure that cannot be fixed server‑side.</li></ul></div>
+</div>
+
 ## Entities and API {#desktop-chat-frontend-api}
 
 <p>Conversation · Message (id, clientMessageId, role, status: pending|streaming|done|failed, content, createdAt) · Attachment (local path, uploadStatus, remoteKey) · Draft · SyncCursor (per conversation) · Session (token in keychain).</p>
@@ -164,23 +190,56 @@ Local: SQLite (conversations, messages, drafts, outbox, sync cursors); keychain 
 <figcaption>Solid = request path · dashed = response / return · dotted = async or background.</figcaption>
 </figure>
 <ol class="order">
-  <li><b>UI → State store:</b> send(text) → clientMessageId</li>
-  <li><b>State store → SQLite:</b> insert user msg pending; add to outbox</li>
-  <li><b>State store → UI:</b> render optimistic message (response)</li>
-  <li><b>Outbox → Backend:</b> POST message (idempotent)</li>
-  <li><b>Backend → Outbox:</b> 202 + messageId (response)</li>
-  <li><b>Outbox → Streaming client:</b> open SSE stream</li>
-  <li><b>Backend → Streaming client:</b> deltas (response)</li>
-  <li><b>Streaming client → State store:</b> batched tokens every 16 ms</li>
-  <li><b>State store → UI:</b> append to assistant bubble (response)</li>
-  <li><b>State store → SQLite:</b> checkpoint content periodically</li>
-  <li><b>Streaming client:</b> network drop → reconnect with Last-Event-ID</li>
-  <li><b>Backend → Streaming client:</b> missed deltas replayed (response)</li>
-  <li><b>Backend → Streaming client:</b> done (response)</li>
-  <li><b>State store → SQLite:</b> mark done; outbox remove</li>
-  <li><b>UI → State store:</b> stop clicked</li>
-  <li><b>State store → Backend:</b> POST stop</li>
-  <li><b>Outbox → Backend:</b> offline: retry on reconnect; sync pull (async)</li>
+  <li><b>UI → State store:</b> send(text) → clientMessageId.
+    The id is generated on the client because only the client knows that a retry is the same message rather than a new one.
+    Generating it before anything touches the network is what makes the whole send path idempotent end to end.</li>
+  <li><b>State store → SQLite:</b> insert user msg pending; add to outbox.
+    The message is durable locally before any request is made, so closing the laptop mid‑send does not lose what the user typed.
+    The outbox is the offline story and the retry story in one structure — a durable queue of intent that survives restarts.</li>
+  <li><b>State store → UI:</b> render optimistic message (response).
+    The message appears immediately rather than after a round trip, because a chat UI that waits on the network feels broken even when it is working.
+    It renders in a pending state, so the optimism is visible and a later failure is not a surprise.</li>
+  <li><b>Outbox → Backend:</b> POST message (idempotent).
+    Sending carries the client id, so a retry after an ambiguous timeout is recognised rather than duplicated.
+    The outbox drains in order with backoff, which is what stops a reconnect after an offline hour from firing every queued send at once.</li>
+  <li><b>Backend → Outbox:</b> 202 + messageId (response).
+    The server id is recorded alongside the client id, giving a stable mapping for reconciliation during a later sync.</li>
+  <li><b>Outbox → Streaming client:</b> open SSE stream.
+    SSE rather than WebSockets: the data flows one way, it reconnects natively with <code>Last-Event-ID</code>, and it survives corporate proxies that mangle upgrades.
+    That built‑in resume is the single feature that makes flaky networks tolerable here.</li>
+  <li><b>Backend → Streaming client:</b> deltas (response).
+    Each delta carries an event id, which is what allows a reconnect to say exactly where it left off rather than starting the reply again.</li>
+  <li><b>Streaming client → State store:</b> batched tokens every 16 ms.
+    Tokens are coalesced into one frame's worth of updates rather than dispatched individually.
+    At 50 tokens/s a re‑render per token means 50 layout passes a second competing with the user's typing — the app stutters and feels slow while doing exactly what was asked.
+    Batching to the frame budget is the difference between smooth streaming and a UI that fights itself.</li>
+  <li><b>State store → UI:</b> append to assistant bubble (response).
+    Only the growing bubble re‑renders; the conversation list and everything else stay untouched, which keeps the cost constant regardless of history length.
+    Long conversations are virtualised so rendering cost depends on the viewport rather than on the number of messages.</li>
+  <li><b>State store → SQLite:</b> checkpoint content periodically.
+    Partial replies are persisted as they arrive, so a crash or a quit mid‑stream loses seconds rather than a long answer.
+    Periodic rather than per‑token, because writing to disk on every token would reintroduce the cost that batching just removed.</li>
+  <li><b>Streaming client:</b> network drop → reconnect with Last-Event-ID.
+    Reconnection is automatic and invisible: the client already knows the last event it processed, so it asks to continue rather than to restart.
+    Restarting would regenerate the answer, costing the user their partial reply and the backend a full inference.</li>
+  <li><b>Backend → Streaming client:</b> missed deltas replayed (response).
+    The server's buffer covers the gap, so a drop mid‑reply is repaired rather than surfaced as an error.
+    This requires the backend to buffer output — a client‑side design decision that constrains the server contract, and worth naming as such.</li>
+  <li><b>Backend → Streaming client:</b> done (response).
+    An explicit terminal event distinguishes a finished reply from a dropped connection, which is what lets the client choose between completing and resuming.</li>
+  <li><b>State store → SQLite:</b> mark done; outbox remove.
+    The outbox entry is removed only after the reply is complete and persisted, so any interruption before that leaves work that will be retried.
+    Removing earlier would create a window where a crash loses the message with no record that it was ever sent.</li>
+  <li><b>UI → State store:</b> stop clicked.
+    Stop is a first‑class action because a long wrong answer is a common and frustrating outcome; it must feel instant.
+    The UI stops rendering immediately rather than waiting for the server to confirm.</li>
+  <li><b>State store → Backend:</b> POST stop.
+    Telling the server matters for cost and capacity — an abandoned stream still consumes GPU time if nobody says to stop.
+    Whatever was generated before the stop is kept and persisted, so the transcript reflects what actually happened.</li>
+  <li><b>Outbox → Backend:</b> offline: retry on reconnect; sync pull (async).
+    On reconnect the client both pushes queued sends and pulls anything that changed elsewhere, reconciling by id so nothing is duplicated.
+    Push and pull together are what make multi‑device work: the outbox covers what this device did, the sync covers what every other device did.
+    Ordering matters — flush the outbox first, then pull, so the user's own pending messages do not appear to vanish and reappear.</li>
 </ol>
 
 ## Deep dives {#desktop-chat-frontend-deep}
@@ -195,6 +254,40 @@ Local: SQLite (conversations, messages, drafts, outbox, sync cursors); keychain 
 <div><h4>State and streaming</h4><ul><li>One immutable store (Redux/Zustand‑style); every network event becomes an action; UI is a pure function of state, which makes replay/debugging trivial.</li><li>Token batching: coalesce SSE deltas into one UI update per animation frame; unthrottled updates freeze the renderer at 50+ tokens/s.</li><li>Virtualized list; long conversations paged from SQLite, not held in memory.</li></ul></div>
 <div><h4>Reliability</h4><ul><li>Idempotent sends via clientMessageId so a retry after a lost 202 doesn't duplicate.</li><li>Stream resume with Last‑Event‑ID from the server buffer; if the buffer is gone, refetch the final message rather than regenerate.</li><li>Outbox pattern for offline: sends persist locally, drain in order on reconnect, surface failures inline.</li><li>Sync: pull changes since cursor per conversation; server is truth; local unsent drafts survive.</li></ul></div>
 <div><h4>Security and platform</h4><ul><li>Refresh token in keychain (Keychain/DPAPI/Secret Service); access token in memory; SQLite encrypted (SQLCipher) with a key from the keychain.</li><li>Renderer sandboxed; no Node APIs exposed to UI; IPC allowlist; CSP; external links opened by the OS.</li><li>Auto‑update: signed, staged by percentage, health check on launch, one‑click rollback; crash reporting without message content.</li><li>Accessibility, IME input, high‑DPI, and OS notifications are the platform "gotchas" to mention.</li></ul></div></div>
+
+
+## Trade-offs {#desktop-chat-frontend-tradeoffs}
+
+<table>
+  <tbody><tr><th>Decision</th><th>What we chose</th><th>What we gave up</th><th>When to flip it</th></tr>
+  <tr><td>Local storage</td><td>SQLite as the UI's source of truth</td><td>A local database to migrate, index and encrypt</td><td>Fetching from the server on every view is simpler and makes the app useless offline and slow on every conversation switch</td></tr>
+  <tr><td>Send model</td><td>Optimistic render plus a durable outbox</td><td>Failures must be surfaced and reconciled in the UI</td><td>Waiting for the server is simpler and makes the app feel broken on any slow network</td></tr>
+  <tr><td>Transport</td><td>SSE with <code>Last-Event-ID</code></td><td>No client‑to‑server streaming on the same channel</td><td>WebSockets when the client must push mid‑generation; SSE's native resume is worth a lot for a flaky desktop network</td></tr>
+  <tr><td>Render cadence</td><td>Batch deltas into ~16 ms frames</td><td>Tokens appear in small groups rather than individually</td><td>Per‑token rendering looks smoother in theory and stutters in practice once the conversation is long</td></tr>
+  <tr><td>Stream recovery</td><td>Resume from the server's buffer</td><td>The backend must buffer output per stream</td><td>Regenerating is simpler and pays full inference cost twice while losing the user's partial reply</td></tr>
+  <tr><td>Secret storage</td><td>OS keychain</td><td>Platform‑specific code on three operating systems</td><td>Never store tokens in a config file — any process running as the user can read it</td></tr>
+  <tr><td>History loading</td><td>Paginate and virtualise</td><td>More complex list handling</td><td>Loading everything is fine at a hundred conversations and gets slower every week the user keeps using the app</td></tr>
+</tbody></table>
+
+## Safety-first design {#desktop-chat-frontend-safety}
+
+<div class="cards">
+  <div><h4>The device is part of the threat model</h4><ul>
+    <li><b>Tokens in the OS keychain.</b> Never a config file or local storage — any process running as the user can read those, and they end up in backups.</li>
+    <li><b>Encrypt the local database.</b> It is a full copy of the user's conversations on a device that can be shared, lost or stolen.</li>
+    <li><b>Sign‑out wipes.</b> Clearing the token while leaving the history behind is not signing out in any way the user would recognise.</li>
+    <li><b>Verify every update.</b> Auto‑update is a code‑execution channel; signature verification and a rollback path are what stop it from becoming one for someone else.</li></ul></div>
+  <div><h4>Model output is untrusted input</h4><ul>
+    <li><b>Sanitise before rendering.</b> Replies are rendered as text and markdown, never executed — a desktop shell makes injected content far more dangerous than in a browser tab.</li>
+    <li><b>Attachments are inspected, not trusted.</b> Type and size are validated locally before upload, and previews are rendered in a constrained way.</li>
+    <li><b>Constrain the renderer.</b> No remote code execution from content, no arbitrary local file access from a rendered reply.</li>
+    <li><b>Pasted content is data.</b> What the user pastes is part of the conversation, not an instruction to the app.</li></ul></div>
+  <div><h4>Never lose what the user typed</h4><ul>
+    <li><b>Durable before sent.</b> The message is in SQLite and the outbox before any request, so closing the lid mid‑send loses nothing.</li>
+    <li><b>Idempotent by construction.</b> A client‑generated id makes every retry safe, which is what allows aggressive retrying on a bad network.</li>
+    <li><b>Checkpoint partial replies.</b> A crash during a long answer costs seconds, not the whole response.</li>
+    <li><b>Remove from the outbox last.</b> The entry disappears only once the reply is complete and persisted, so every interruption leaves work that will be retried.</li></ul></div>
+</div>
 
 ## Don't leave the room without saying {#desktop-chat-frontend-check}
 

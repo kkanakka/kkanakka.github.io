@@ -39,6 +39,32 @@ description: "medium · client‑side concurrency · rate limits · batching · 
 </div>
 <div class="note"><b>Little's law:</b> concurrency = throughput × latency. At 10 req/s allowed and 200 ms latency you only need 2 in flight; 50 workers just queue on the limiter. Size the pool from the limit, not from CPU.</div>
 
+
+## Scale, performance and safety targets {#http-optimize-targets}
+
+<p>This is the rate‑limiting problem from the client's side. The numbers are what stop you from over‑engineering a worker pool that will only ever queue on the limiter.</p>
+
+<div class="cards">
+  <div><h4>Scale</h4><ul>
+    <li><b>QPS:</b> whatever the server allows and not one request more — e.g. 600 req/min (10/s) with 10 concurrent. The job itself may be 10K to 10M requests, so the work is large but the permitted rate is small and fixed.</li>
+    <li><b>Data volume:</b> at 10M requests × ~10 KB responses that is ~100 GB to process, which must stream rather than accumulate — memory has to be bounded regardless of N.</li>
+    <li><b>Growth:</b> the request count grows with the dataset while the rate limit does not, so total runtime scales linearly and the only real levers are caching and batching, not concurrency.</li></ul></div>
+  <div><h4>Performance</h4><ul>
+    <li><b>Latency:</b> per‑request p95 of a few hundred milliseconds with keep‑alive and HTTP/2; the job's completion time is N ÷ allowed rate, so individual latency barely matters once concurrency is sized correctly.</li>
+    <li><b>Throughput:</b> Little's law sets the pool size — concurrency = throughput × latency. At 10 req/s and 200 ms that is <b>2</b> in flight. Fifty workers would simply queue on the limiter while burning memory and connections.</li></ul></div>
+  <div><h4>Safety and security</h4><ul>
+    <li><b>Abuse prevention:</b> here <em>you</em> are the potential abuser. Exceeding limits gets the key throttled and then banned; retrying aggressively into a struggling server turns their incident into an outage; ignoring <code>Retry‑After</code> is what escalates a 429 into a block.</li>
+    <li><b>Rate limiting:</b> a local token bucket per key, learned and corrected from the server's own <code>x-ratelimit-*</code> headers, plus a concurrency cap. Treat the server's limit as a ceiling to stay under, never a target to hit exactly.</li>
+    <li><b>Data sensitivity:</b> responses may contain customer data; the cache is a durable copy of it, so it needs the same protection and retention as any other store. Never log full URLs with tokens in query strings, and never write response bodies to debug logs.</li></ul></div>
+  <div><h4>Availability and fault tolerance</h4><ul>
+    <li><b>Uptime target:</b> not a service — the requirement is that a job of 10M requests survives crashes, restarts and rate‑limit changes, and resumes without redoing completed work.</li>
+    <li><b>Degraded mode:</b> 429 → pause that key for exactly <code>Retry‑After</code> and requeue, never retry immediately. 5xx or timeout → exponential backoff with jitter and a bounded attempt count. Server down entirely → the job pauses and resumes from its checkpoint rather than failing.</li></ul></div>
+  <div><h4>Also worth pinning down</h4><ul>
+    <li><b>Consistency:</b> retries must be safe. GETs are naturally idempotent; writes need an idempotency key, or a retried timeout creates a duplicate resource the caller never intended.</li>
+    <li><b>Durability:</b> a checkpoint of completed request ids, so a crash at 9M of 10M costs minutes rather than the whole run.</li>
+    <li><b>Efficiency:</b> the cheapest request is the one never sent. Deduplicating identical requests and using conditional requests to turn repeats into 304s often cuts the job more than any concurrency tuning can.</li></ul></div>
+</div>
+
 ## Entities and API {#http-optimize-api}
 
 <p>Request (id, method, url, body, idempotencyKey, attempts, state) · RateBudget (per key: tokens, refill, concurrent cap, learned from headers) · Cache (ETag/Last‑Modified) · Checkpoint (done ids).</p>
@@ -152,22 +178,56 @@ Headers read: X-RateLimit-Remaining, X-RateLimit-Reset, Retry-After; write: If-N
 <figcaption>Solid = request path · dashed = response / return · dotted = async or background.</figcaption>
 </figure>
 <ol class="order">
-  <li><b>Caller → Queue:</b> submit 1M requests (streamed)</li>
-  <li><b>Queue:</b> dedupe key = method+url+body hash</li>
-  <li><b>Queue → Cache:</b> GET? cached fresh?</li>
-  <li><b>Cache → Queue:</b> hit → return (response)</li>
-  <li><b>Queue → Limiter:</b> acquire(key)</li>
-  <li><b>Limiter:</b> wait for token + inflight slot</li>
-  <li><b>Limiter → Worker:</b> go</li>
-  <li><b>Worker → API:</b> request (keep-alive, gzip, If-None-Match)</li>
-  <li><b>API → Worker:</b> 200 / 304 / 429 / 5xx (response)</li>
-  <li><b>Worker → Limiter:</b> release; update budget from headers</li>
-  <li><b>Worker → Cache:</b> store ETag/body</li>
-  <li><b>Worker:</b> 429 → limiter pauses key until Retry-After; requeue</li>
-  <li><b>Worker:</b> 5xx/timeout → backoff+jitter, attempts++</li>
-  <li><b>Worker → Checkpoint:</b> done id</li>
-  <li><b>Worker → Caller:</b> result (response)</li>
-  <li><b>Checkpoint → Caller:</b> resume after crash from done set (async)</li>
+  <li><b>Caller → Queue:</b> submit 1M requests (streamed).
+    Requests are streamed in rather than materialised as a list, so memory is bounded by the in‑flight window rather than by N.
+    A 10M‑request job and a 10K‑request job then use the same amount of memory, which is what makes the client usable at both ends of the range.</li>
+  <li><b>Queue:</b> dedupe key = method+url+body hash.
+    Real workloads contain far more duplicate requests than people expect — the same entity referenced from many records.
+    Collapsing them before they reach the limiter is free throughput: a deduplicated request costs nothing and consumes no rate budget.</li>
+  <li><b>Queue → Cache:</b> GET? cached fresh?
+    Only safe methods are cache‑eligible, and freshness follows the server's own cache headers rather than a guess.
+    The cheapest possible request is one never sent, so the cache is consulted before the limiter rather than after.</li>
+  <li><b>Cache → Queue:</b> hit → return (response).
+    A hit skips the rate limiter entirely, which matters because the limiter — not the network — is the bottleneck for the whole job.
+    Every cache hit is effectively an increase in the allowed rate.</li>
+  <li><b>Queue → Limiter:</b> acquire(key).
+    Limits are per API key, so the limiter is keyed the same way; a job spanning several keys can run them in parallel at full rate each.
+    Acquiring before dispatch means the client never depends on a 429 to discover it went too fast.</li>
+  <li><b>Limiter:</b> wait for token + inflight slot.
+    Two independent constraints must both be satisfied: a rate limit (requests per minute) and a concurrency limit (simultaneous requests).
+    Satisfying only one is the common bug — 10 requests per second is compatible with 50 in flight, and the server will reject the second condition even though the first is met.
+    Waiting here rather than spinning is what keeps the client at the ceiling without ever crossing it.</li>
+  <li><b>Limiter → Worker:</b> go.
+    Because the limiter governs the rate, the worker pool exists only to cover latency — sized from Little's law, not from CPU count.
+    A pool much larger than throughput × latency adds queueing and connections without adding a single request per second.</li>
+  <li><b>Worker → API:</b> request (keep-alive, gzip, If-None-Match).
+    Keep‑alive avoids a TCP and TLS handshake per request, which at small payloads is most of the latency; HTTP/2 goes further by multiplexing over one connection.
+    <code>If‑None‑Match</code> turns an unchanged resource into a 304 with no body — cheaper on the network and, on many APIs, cheaper against the quota too.
+    These three flags typically matter more than any amount of concurrency tuning.</li>
+  <li><b>API → Worker:</b> 200 / 304 / 429 / 5xx (response).
+    Four outcomes with four different handlings, and conflating them is where clients get banned: 304 is a success, 429 is a pacing instruction, 5xx is transient, 4xx is usually permanent.</li>
+  <li><b>Worker → Limiter:</b> release; update budget from headers.
+    The server's <code>x-ratelimit-remaining</code> and reset headers are authoritative; the local bucket is only a model and is corrected from them after every response.
+    This feedback loop is what allows the client to track a limit that changes — by tier, by endpoint, or dynamically under server load — without being reconfigured.</li>
+  <li><b>Worker → Cache:</b> store ETag/body.
+    Storing the ETag alongside the body is what makes the <em>next</em> run cheap: unchanged resources come back as 304s.
+    For a job that re‑runs daily over a mostly static corpus, this is the difference between hours and minutes.</li>
+  <li><b>Worker:</b> 429 → limiter pauses key until Retry-After; requeue.
+    A 429 pauses the whole key, not just this request — continuing to send while throttled is precisely what escalates a rate limit into a ban.
+    <code>Retry‑After</code> is obeyed exactly rather than approximated, because the server has told you when it will accept traffic again.
+    The request is requeued rather than failed, so a burst of 429s costs time and nothing else.</li>
+  <li><b>Worker:</b> 5xx/timeout → backoff+jitter, attempts++.
+    Exponential backoff prevents a struggling server from being hammered; jitter prevents thousands of queued requests from retrying in lockstep and re‑creating the spike.
+    A bounded attempt count stops a permanently failing request from consuming a slot forever.
+    Timeouts must be treated as unknown outcomes, not failures — the request may well have succeeded, which is exactly why writes need an idempotency key.</li>
+  <li><b>Worker → Checkpoint:</b> done id.
+    Completed ids are recorded durably, turning a crash at 9M of 10M into a few minutes of lost work rather than a full re‑run.
+    Checkpointing ids rather than results keeps it small and cheap enough to write continuously.</li>
+  <li><b>Worker → Caller:</b> result (response).
+    Results stream back as they complete rather than being collected, so the caller can begin processing immediately and memory stays bounded.</li>
+  <li><b>Checkpoint → Caller:</b> resume after crash from done set (async).
+    Resume is subtraction: skip everything in the done set and run the remainder, which works precisely because requests are deduplicated and identified up front.
+    This also makes the job safely re‑runnable — running it twice does the outstanding work once, which is the property that lets someone actually operate it.</li>
 </ol>
 
 ## Deep dives {#http-optimize-deep}
@@ -182,6 +242,40 @@ Headers read: X-RateLimit-Remaining, X-RateLimit-Reset, Retry-After; write: If-N
 <div><h4>Fewer bytes, fewer round trips</h4><ul><li>Keep‑alive and HTTP/2 multiplexing: one TLS handshake, many streams; avoids the 1–2 RTT per request that dominates small calls.</li><li>Batch endpoints when available; otherwise coalesce identical in‑flight requests (single‑flight).</li><li>Compression, minimal fields (<code>?fields=</code>), conditional GETs with ETags so unchanged data costs a 304.</li><li>Pipelining order: cheap cached checks first, expensive calls last.</li></ul></div>
 <div><h4>Staying inside the limit</h4><ul><li>Local token bucket seeded from documented limits and corrected from response headers; treat the server as truth.</li><li>Concurrency cap separate from rate: many APIs limit both.</li><li>On 429: stop the whole key, not just the request; honor Retry‑After; add jitter so many clients don't resume in lockstep.</li><li>Priority queue so important work isn't starved by bulk; per‑tenant fairness if multiple keys.</li></ul></div>
 <div><h4>Correctness</h4><ul><li>Retry only idempotent requests, or send an Idempotency‑Key for POSTs; cap attempts; DLQ the rest.</li><li>Timeouts on connect and read; cancel on shutdown; bounded queue so 10M inputs don't sit in RAM.</li><li>Checkpoint done ids (or offsets) so a crash resumes instead of restarting and re‑spending budget.</li><li>Metrics: achieved rps vs allowed, 429 rate, p95 latency, cache hit rate, retries; stop if 429 rate climbs.</li></ul></div></div>
+
+
+## Trade-offs {#http-optimize-tradeoffs}
+
+<table>
+  <tbody><tr><th>Decision</th><th>What we chose</th><th>What we gave up</th><th>When to flip it</th></tr>
+  <tr><td>Pacing</td><td>Local token bucket, corrected from response headers</td><td>Complexity, and a model that can briefly disagree with the server</td><td>Reacting only to 429s is simpler and gets keys throttled or banned — discovering a limit by violating it is not a strategy</td></tr>
+  <tr><td>Pool size</td><td>Little's law: throughput × latency</td><td>Feels too small; adding workers is the instinct</td><td>Larger pools only help if the limit is concurrency rather than rate; otherwise they queue on the limiter and waste connections</td></tr>
+  <tr><td>Caching</td><td>ETag/Last‑Modified with conditional requests</td><td>A cache to store, secure and invalidate</td><td>Skip only for one‑shot jobs over volatile data; for repeated runs it is the single biggest win available</td></tr>
+  <tr><td>Deduplication</td><td>Collapse identical requests before the limiter</td><td>A dedupe index proportional to distinct requests</td><td>Real workloads contain far more duplicates than expected, and a deduplicated request costs no rate budget at all</td></tr>
+  <tr><td>Retries</td><td>Exponential backoff with jitter, bounded attempts</td><td>Some transient failures give up early</td><td>Immediate retries turn a struggling server into a failing one and are the fastest route to being blocked</td></tr>
+  <tr><td>Write safety</td><td>Idempotency keys on all non‑GET requests</td><td>The server must support them</td><td>Without them a timeout is unresolvable — you cannot know whether to retry, and both choices are wrong some of the time</td></tr>
+  <tr><td>Progress</td><td>Checkpoint completed ids</td><td>A durable store and continuous small writes</td><td>Restarting from zero is acceptable only for short jobs; at 10M requests a crash without a checkpoint is a day lost</td></tr>
+</tbody></table>
+
+## Safety-first design {#http-optimize-safety}
+
+<div class="cards">
+  <div><h4>Be a good client of someone else's service</h4><ul>
+    <li><b>Stay under the ceiling, do not ride it.</b> The published limit is a boundary to keep clear of, not a throughput target to hit precisely.</li>
+    <li><b>Obey <code>Retry‑After</code> exactly.</b> The server has told you when it will accept traffic; sending sooner is what escalates a 429 into a ban.</li>
+    <li><b>Pause the key, not just the request.</b> Continuing to send other requests on a throttled key defeats the purpose of backing off at all.</li>
+    <li><b>Jitter every retry.</b> Without it, a thousand queued requests retry in lockstep and reproduce the exact spike that caused the problem.</li></ul></div>
+  <div><h4>Retries must not create duplicates</h4><ul>
+    <li><b>A timeout is an unknown, not a failure.</b> The request may have succeeded; treating it as failed and retrying blindly is how duplicate resources appear.</li>
+    <li><b>Idempotency keys on every write.</b> They convert an ambiguous outcome into a safe retry, which is the only way to make a long write‑heavy job reliable.</li>
+    <li><b>Bound the attempts.</b> A permanently failing request must eventually be reported rather than occupying a slot indefinitely.</li>
+    <li><b>Distinguish 4xx from 5xx.</b> Retrying a 400 forever is pure waste and looks like an attack from the server's side.</li></ul></div>
+  <div><h4>Long jobs must survive themselves</h4><ul>
+    <li><b>Bounded memory regardless of N.</b> Streaming in and streaming out means a 10M‑request job uses the same memory as a 10K one.</li>
+    <li><b>Checkpoint continuously.</b> Resume is subtraction from the done set, which also makes the job safe to re‑run.</li>
+    <li><b>Track the server's truth.</b> Budgets are corrected from response headers, so a limit that changes mid‑run is absorbed rather than violated.</li>
+    <li><b>Protect the cache like data.</b> It holds real responses, so it inherits the retention, encryption and access rules of whatever it cached.</li></ul></div>
+</div>
 
 ## Don't leave the room without saying {#http-optimize-check}
 

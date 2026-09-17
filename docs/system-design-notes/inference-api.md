@@ -49,6 +49,32 @@ Per GPU:     1000 / 75 ≈ 13.3 batches/s × 32 = ~426 RPS
 Latency:     2 (LB) + 1 + 5 (gateway) + ~20 (queue) + 1 + 4 (claim) + 50 (GPU) + 8 (return) ≈ 90–130 ms</code></pre>
 <div class="note"><b>Why 70%, said properly:</b> this is a queueing system. Wait time grows like 1/(1−ρ); at ρ=0.7 a small spike adds milliseconds, at ρ=0.95 the same spike adds seconds. The 30% you "waste" is the time it takes autoscaling to provision a GPU (minutes, because the model has to load). You buy that time with idle capacity or you buy it with 429s.</div>
 
+
+## Scale, performance and safety targets {#ia-targets}
+
+<p>The capacity arithmetic above is half the story. These are the rest of the numbers to commit to before drawing a box.</p>
+
+<div class="cards">
+  <div><h4>Scale</h4><ul>
+    <li><b>QPS:</b> 1K RPS today, 10K RPS within a year, peaks at 3× — so design for ~30K RPS worst case. Batching turns that into ~940 batches/s, which is the number the GPU pool is actually sized against.</li>
+    <li><b>Data volume:</b> ~10 KB average prompt and a similar response; at 10K RPS that is ~200 MB/s through the queue layer, plus one audit row per request — ~860M rows/day for billing and support.</li>
+    <li><b>Growth:</b> 10× in a year is the stated plan, so nothing may be sized for today: Redis must be shardable, gateways stateless, and the GPU pool expandable without a redesign.</li></ul></div>
+  <div><h4>Performance</h4><ul>
+    <li><b>Latency:</b> p50 &lt; 150 ms, p95 &lt; 500 ms end to end, hard ceiling p99 &lt; 1 s before the client gives up. The budget breaks down as ~90–130 ms of real work, which leaves room for roughly 20–40 ms of batching wait and nothing else.</li>
+    <li><b>Throughput:</b> ~426 RPS per GPU at batch 32, held at 70–80% utilization deliberately — because wait time grows like 1/(1−ρ), and the headroom you "waste" is what buys the minutes a new GPU takes to load the model.</li></ul></div>
+  <div><h4>Safety and security</h4><ul>
+    <li><b>Abuse prevention:</b> the exposed surface is a public synchronous API, so the threats are credential sharing, scraping through many keys, slowloris‑style connection exhaustion, and oversized prompts used to blow up per‑request cost. Auth at the edge, hard payload caps and connection limits per key cover these.</li>
+    <li><b>Rate limiting:</b> tier‑aware and capacity‑aware — e.g. 100 req/min free, 1,000 req/min paid, 10,000 req/min enterprise per key, plus a per‑org ceiling and a global brake that tightens every limit when healthy GPU count drops.</li>
+    <li><b>Data sensitivity:</b> prompts are user content and may carry PII. They live in Redis only for the seconds they are queued, are never written to application logs, and the audit row stores identifiers, token counts and latency — not text. Retention: 30 days for audit, immediate expiry for queue entries.</li></ul></div>
+  <div><h4>Availability and fault tolerance</h4><ul>
+    <li><b>Uptime target:</b> 99.9% (~8.8 h/year), which is what makes "a dying gateway drops its own sockets and the client retries" an acceptable failure mode rather than a design flaw.</li>
+    <li><b>Degraded mode:</b> GPU capacity lost → the rate limiter tightens automatically and free tier is shed first, so paid traffic keeps its SLO. Redis pub/sub message lost → the pending‑request reaper turns it into a 504 rather than a hang. Queue depth beyond the latency budget → reject at the edge with 429 instead of accepting work that will time out anyway.</li></ul></div>
+  <div><h4>Also worth pinning down</h4><ul>
+    <li><b>Consistency:</b> the only thing needing atomicity is the claim — <code>RPOPLPUSH</code> and <code>BLPOP</code> are chosen precisely because they are atomic, so a crashed batcher cannot lose a request and two workers cannot take the same batch.</li>
+    <li><b>Durability:</b> deliberately weak. An in‑flight request may be lost if its gateway dies, and that is accepted at 99.9%; the alternative is durable GPU output keyed by request id so a retry is served from a buffer instead of re‑running inference.</li>
+    <li><b>Compliance:</b> every request is attributable to a key, a tier and a model version for billing and support, and the audit trail must survive without ever containing the prompt itself.</li></ul></div>
+</div>
+
 ## Architecture {#ia-diagram}
 
 <!-- DIAGRAM:architecture:START -->
@@ -153,23 +179,59 @@ Latency:     2 (LB) + 1 + 5 (gateway) + ~20 (queue) + 1 + 4 (claim) + 50 (GPU) +
 <figcaption>Solid = request path · dashed = response / return · dotted = async or background.</figcaption>
 </figure>
 <ol class="order">
-  <li><b>Client → Gateway:</b> POST /v1/inference</li>
-  <li><b>Gateway:</b> auth, tier, dynamic rate limit</li>
-  <li><b>Gateway → Redis queues:</b> LPUSH queue:{tier} (gateway_id stamped)</li>
-  <li><b>Gateway:</b> hold socket; pending[request_id]</li>
-  <li><b>Batcher → Redis queues:</b> RPOPLPUSH → inflight (priority order)</li>
-  <li><b>Redis queues → Batcher:</b> requests (response)</li>
-  <li><b>Batcher:</b> 32 collected or 40 ms</li>
-  <li><b>Batcher → batch_queue:</b> LPUSH batch</li>
-  <li><b>GPU worker → batch_queue:</b> BLPOP batch</li>
-  <li><b>batch_queue → GPU worker:</b> batch (response)</li>
-  <li><b>GPU worker:</b> run inference ~50 ms</li>
-  <li><b>GPU worker → Redis pub/sub:</b> PUBLISH responses:{gateway_id} per request</li>
-  <li><b>Redis pub/sub → Gateway:</b> response event (response)</li>
-  <li><b>Gateway:</b> resolve pending by request_id</li>
-  <li><b>Gateway → Client:</b> HTTP response (response)</li>
-  <li><b>Batcher → Redis queues:</b> trim inflight on ack (async)</li>
-  <li><b>GPU worker:</b> heartbeat → healthy_gpu_count</li>
+  <li><b>Client → Gateway:</b> POST /v1/inference.
+    The public contract is fixed and synchronous: the client opens a connection and waits for the answer on it.
+    Everything interesting in this design follows from that one constraint — the socket is held by exactly one process, and only that process can answer it.</li>
+  <li><b>Gateway:</b> auth, tier, dynamic rate limit.
+    Authentication, tier resolution and limiting all happen before any expensive resource is touched, so a rejected request costs a Redis lookup and nothing more.
+    The limiter is capacity‑aware, not just tier‑aware: when healthy GPU count drops, limits tighten automatically instead of letting the queue absorb an overload it cannot clear.
+    Rejecting early is what keeps an abusive or oversized client from becoming a latency problem for everyone else.</li>
+  <li><b>Gateway → Redis queues:</b> LPUSH queue:{tier} (gateway_id stamped).
+    Separate queues per tier make priority a property of where work sits rather than a sort at dequeue time, which is far cheaper at 10K RPS.
+    Stamping <code>gateway_id</code> at enqueue is the central trick of the whole design: the result must come back to this specific process, and this is the only moment its identity is known.</li>
+  <li><b>Gateway:</b> hold socket; pending[request_id].
+    The connection stays open and the request is parked in an in‑memory map from request id to the waiting future — sync on the outside, fully async on the inside.
+    A timeout is set at the same moment, so a request can never wait forever for a result that will never arrive.
+    A mirror record in Redis with a matching TTL makes the pending request visible for observability and reaping.</li>
+  <li><b>Batcher → Redis queues:</b> RPOPLPUSH → inflight (priority order).
+    <code>RPOPLPUSH</code> moves the request atomically to an inflight list, so a batcher that crashes mid‑drain leaves work recoverable instead of lost.
+    Queues are drained enterprise → paid → free, but with weighted rather than strict priority (roughly 60/30/10) so free tier does not starve under sustained paid load.</li>
+  <li><b>Redis queues → Batcher:</b> requests (response).
+    The batcher accumulates requests in memory; nothing is committed to a GPU until the batch is formed, which is what keeps the dial between latency and throughput in one place.</li>
+  <li><b>Batcher:</b> 32 collected or 40 ms.
+    Send when full or when time is up — under load batches fill instantly and latency is bounded by the GPU; under light load the timeout bounds latency and utilization drops, which costs nothing because there is nothing to utilize.
+    Both numbers come from the SLA: 500 ms p95 minus ~50 ms of inference and ~40 ms of overhead leaves the batching wait as the only remaining slack.
+    Adaptive batching makes the timeout a function of queue depth — there is no point waiting 40 ms when 32 requests are already queued.</li>
+  <li><b>Batcher → batch_queue:</b> LPUSH batch.
+    The formed batch goes onto a single shared queue rather than being addressed to a particular GPU, which is what makes the next step free of coordination.</li>
+  <li><b>GPU worker → batch_queue:</b> BLPOP batch.
+    Workers pull; nothing pushes to them. The queue itself becomes the scheduler — whoever is idle takes the next batch, atomically, with no view of global load to go stale.
+    Push dispatch would need a fresh picture of every GPU's load, and multiple batchers acting on the same stale picture all choose the same "least loaded" worker and stampede it.
+    Pull also makes retry trivial: a failed batch is simply pushed back and picked up by a different worker.</li>
+  <li><b>batch_queue → GPU worker:</b> batch (response).
+    The blocking pop means idle workers consume nothing while waiting and start work the instant it exists — no polling interval to tune.</li>
+  <li><b>GPU worker:</b> run inference ~50 ms.
+    This is the only step doing real work; everything around it exists to keep this expensive resource busy without letting queueing eat the latency budget.
+    For an LLM the "50 ms per batch" is a simplification — variable output lengths cause head‑of‑line blocking, which is why real serving uses continuous batching that admits new sequences each decode step.</li>
+  <li><b>GPU worker → Redis pub/sub:</b> PUBLISH responses:{gateway_id} per request.
+    One batch contains requests from many gateways, so results are published per request to the owning gateway's channel rather than returned to a single caller.
+    This is where the stamped <code>gateway_id</code> pays off: response routing is a channel name, needing no lookup and no coordination.
+    Pub/sub is chosen for latency and is explicitly fire‑and‑forget; a Redis stream would give at‑least‑once at higher cost, and the reaper is what makes the cheaper choice safe.</li>
+  <li><b>Redis pub/sub → Gateway:</b> response event (response).
+    Only the gateway holding the socket is subscribed to that channel, so exactly one process receives each result.
+    A momentarily disconnected subscriber misses the message — an accepted risk, converted by the timeout into a clean 504 rather than a hang.</li>
+  <li><b>Gateway:</b> resolve pending by request_id.
+    The gateway looks the request id up in its pending map and completes the waiting future; a result for an unknown id is discarded, which is exactly what happens after a client has already timed out.</li>
+  <li><b>Gateway → Client:</b> HTTP response (response).
+    The answer goes back on the original connection, which never closed — from the client's point of view this was a simple synchronous call the whole time.
+    The pending entry is deleted immediately, because a leaked entry is a leaked socket and at 10K RPS that is minutes from an outage.</li>
+  <li><b>Batcher → Redis queues:</b> trim inflight on ack (async).
+    Acknowledged requests are removed from the inflight list; anything left behind is evidence of a crashed batcher and is re‑queued.
+    Doing this asynchronously keeps the bookkeeping off the latency path while still bounding how long an orphaned request can sit.</li>
+  <li><b>GPU worker:</b> heartbeat → healthy_gpu_count.
+    The registry exists for capacity feedback and dashboards, not for dispatch — dispatch is already solved by the pull queue.
+    Healthy GPU count feeds straight back into the rate limiter, so losing capacity tightens admission within seconds instead of silently growing the queue.
+    That feedback loop is what turns a capacity loss into visible 429s rather than an invisible slide past the p95 target.</li>
 </ol>
 
 ## One request, step by step {#ia-flow}
@@ -304,6 +366,27 @@ Latency:     2 (LB) + 1 + 5 (gateway) + ~20 (queue) + 1 + 4 (claim) + 50 (GPU) +
   <tr><td>S3</td><td>Conditional write with <code>If-Match: etag</code> / <code>If-None-Match: *</code></td><td>Useful for checkpoint or manifest files in the training plane.</td></tr>
 </tbody></table>
 <div class="note"><b>Interview line:</b> "Pops from the queue are atomic so claiming needs no lock; the only read‑modify‑write is the request's status transition, and I guard that with a conditional update on status/version so a reaper‑requeued duplicate can't overwrite a finished result. Any store with a conditional write does this; I'd use Postgres's <code>WHERE version=?</code> or DynamoDB's condition expression."</div>
+
+
+## Safety-first design {#ia-safety}
+
+<div class="cards">
+  <div><h4>Shed load before the queue does it for you</h4><ul>
+    <li><b>Reject at the edge, cheaply.</b> Auth, tier and limits are checked before a request touches Redis or a GPU, so an abusive client costs one lookup rather than a GPU slot.</li>
+    <li><b>Limits follow capacity.</b> When healthy GPU count drops, the limiter tightens automatically — the alternative is accepting work that is guaranteed to breach the latency budget.</li>
+    <li><b>Free tier is shed first.</b> The shedding order is decided in advance and published, so behaviour under pressure is predictable rather than improvised.</li>
+    <li><b>Headroom is a safety feature.</b> Running at 70% is not waste: at ρ=0.95 the same spike that costs milliseconds at 0.7 costs seconds, and a GPU takes minutes to load a model.</li></ul></div>
+  <div><h4>Never hang, never leak</h4><ul>
+    <li><b>Every pending request has a timeout.</b> A lost pub/sub message becomes a 504, not a socket held open forever — which at 10K RPS is the difference between an error and an outage.</li>
+    <li><b>Atomic moves, not reads‑then‑writes.</b> <code>RPOPLPUSH</code> and <code>BLPOP</code> mean a crashed batcher or worker cannot lose a request or hand the same batch to two GPUs.</li>
+    <li><b>Inflight lists are reaped.</b> Orphaned entries from a dead batcher are re‑queued rather than quietly disappearing.</li>
+    <li><b>Gateways are stateless apart from their sockets.</b> Losing one loses only its own in‑flight requests, and the client's retry lands somewhere healthy.</li></ul></div>
+  <div><h4>Handling prompts responsibly</h4><ul>
+    <li><b>Queued prompts are transient.</b> They live in Redis for the seconds they are queued and expire with the request — the hot path stores no user content durably.</li>
+    <li><b>Audit rows hold metadata only.</b> Key, tier, model version, token counts and latency; never the prompt, so billing and support data is not a second copy of user content.</li>
+    <li><b>Hard payload caps.</b> A maximum prompt size bounds both per‑request cost and the memory a single caller can occupy in the queue layer.</li>
+    <li><b>Errors name the limit.</b> A 429 says which limit was hit and when to retry, which prevents the retry storms that a bare rejection reliably causes.</li></ul></div>
+</div>
 
 ## Don't leave the room without saying {#ia-checklist}
 

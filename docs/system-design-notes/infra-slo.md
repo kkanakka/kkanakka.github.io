@@ -43,6 +43,32 @@ description: "medium · Anthropic · TTFT / ITL · trace propagation · latency 
   </div>
 </div>
 
+
+## Scale, performance and safety targets {#infra-slo-targets}
+
+<p>An SLO design is only as good as the numbers it commits to. These are the ones to state before defining a single SLI.</p>
+
+<div class="cards">
+  <div><h4>Scale</h4><ul>
+    <li><b>QPS:</b> 100K QPS at peak on the token path, each request producing one ledger record and a handful of histogram observations — so ~1M metric observations/s, plus 1–10% of requests sampled into full traces.</li>
+    <li><b>Data volume:</b> ledger records at ~500 bytes × 100K/s ≈ 50 MB/s of structured logs; traces at 5% sampling with ~10 spans each ≈ 50K spans/s. Labels are the constraint: model × tier × region × cell × context bucket must stay a bounded product.</li>
+    <li><b>Growth:</b> request volume ~2× annually, but average context length is growing faster — assume tokens per request 3× a year, which makes context bucketing more important over time, not less.</li></ul></div>
+  <div><h4>Performance</h4><ul>
+    <li><b>Latency:</b> the SLO targets themselves — e.g. TTFT p50 &lt; 400 ms, p95 &lt; 1.5 s, p99 &lt; 3 s for short contexts; ITL p50 &lt; 30 ms, p95 &lt; 60 ms; alert detection within 5 minutes of a real regression.</li>
+    <li><b>Throughput:</b> instrumentation overhead must stay under 1% of request latency, so the ledger is appended in memory and emitted asynchronously — measurement that costs latency corrupts the thing it measures.</li></ul></div>
+  <div><h4>Safety and security</h4><ul>
+    <li><b>Abuse prevention:</b> the risks here are self‑inflicted. A trace id or customer id promoted to a metric label is a cardinality explosion; an unbounded context bucket does the same; and a noisy alert rule that pages hundreds of times trains people to ignore the pager, which is its own outage.</li>
+    <li><b>Rate limiting:</b> trace sampling capped at 1–10% with a per‑cell ceiling, bounded label sets enforced at ingest, alert deduplication and grouping so one bad rollout is one page, and rate limits on the diagnostics API support tools call.</li>
+    <li><b>Data sensitivity:</b> the ledger travels back to the customer, so it must contain timings and nothing else — no prompt content, no internal hostnames, no model internals. Traces may reference a request id but never the payload; retain traces ~7 days, ledgers ~30 days, aggregated SLIs ~13 months.</li></ul></div>
+  <div><h4>Availability and fault tolerance</h4><ul>
+    <li><b>Uptime target:</b> the SLO for the token path is four nines (~52 min/year); the alerting path that watches it must be more available than that, because it matters most during the incidents that break everything else.</li>
+    <li><b>Degraded mode:</b> metrics pipeline down → serving continues unaffected, because instrumentation is fire‑and‑forget and never blocks a response. Traces unavailable → ledgers still answer "which hop regressed". Alert evaluator degraded → the dead‑man switch and synthetic probes still page.</li></ul></div>
+  <div><h4>Also worth pinning down</h4><ul>
+    <li><b>Consistency:</b> eventual. SLI data can be seconds late and slightly lossy; what it cannot be is biased — dropping slow requests preferentially would make every percentile a lie.</li>
+    <li><b>Durability:</b> weak for metrics, stronger for the error budget ledger — budget consumption drives release decisions, so it needs to be reconstructible and auditable rather than merely graphable.</li>
+    <li><b>Compliance:</b> per‑request diagnostics shared with customers must be scoped to their own requests, and the error‑budget policy needs to be written down: what happens to rollouts when the budget is spent is an organisational commitment, not a dashboard.</li></ul></div>
+</div>
+
 ## Entities and API {#infra-slo-api}
 
 <p>Trace (traceId, spans[]) · LatencyLedger (per‑hop ms, returned with response) · SLI series (ttft, itl, completion, availability × labels) · SLO (target, window) · ErrorBudget · Alert (burn rate, windows)</p>
@@ -144,24 +170,58 @@ Metrics emitted per request (labels: model, tier, region, cell, ctx_bucket):
 <figcaption>Solid = request path · dashed = response / return · dotted = async or background.</figcaption>
 </figure>
 <ol class="order">
-  <li><b>SDK → Gateway:</b> request + traceparent, t0</li>
-  <li><b>Gateway:</b> root span, ledger gw=3</li>
-  <li><b>Gateway → Router:</b> forward</li>
-  <li><b>Router:</b> queue wait 22 ms</li>
-  <li><b>Router → Serving:</b> dispatch</li>
-  <li><b>Serving → GPU:</b> prefill 180 ms</li>
-  <li><b>GPU → Serving:</b> first token (response)</li>
-  <li><b>Serving → Gateway:</b> first token (response)</li>
-  <li><b>Gateway:</b> TTFT = now − t0</li>
-  <li><b>Gateway → SDK:</b> stream (response)</li>
-  <li><b>GPU → Serving:</b> decode tokens (response)</li>
-  <li><b>Gateway:</b> ITL = median gap</li>
-  <li><b>Gateway → SDK:</b> final event + x-latency-ledger (response)</li>
-  <li><b>Gateway → Metrics:</b> ttft/itl histograms, ctx bucket labels (async)</li>
-  <li><b>Metrics → Alert evaluator:</b> own 2 h store via Kafka (async)</li>
-  <li><b>Alert evaluator:</b> burn rate 1h/5m, 6h/30m</li>
-  <li><b>Alert evaluator:</b> absence rule per cell</li>
-  <li><b>Alert evaluator → SDK:</b> page / ticket (async)</li>
+  <li><b>SDK → Gateway:</b> request + traceparent, t0.
+    The clock starts in the client, because that is where the user actually waits — a server‑side timer silently excludes network time and client‑side stalls.
+    A W3C <code>traceparent</code> generated here means every downstream hop can attach itself to one trace without inventing its own correlation scheme.</li>
+  <li><b>Gateway:</b> root span, ledger gw=3.
+    The gateway opens the root span and starts a latency ledger — a small, structured per‑hop timing record that will travel with the request and come back to the caller.
+    Ledger and trace are deliberately separate: traces are sampled at a few percent, the ledger is recorded for 100% of requests because it is cheap and structured.
+    That combination gives complete per‑hop attribution without the cost of tracing everything.</li>
+  <li><b>Gateway → Router:</b> forward.
+    Context propagates by header, so each hop adds a child span rather than starting a new trace; a broken propagation here is the usual reason traces mysteriously stop halfway.</li>
+  <li><b>Router:</b> queue wait 22 ms.
+    Queue time is recorded as its own hop rather than folded into service time, because the two have completely different remedies — more capacity versus faster code.
+    In practice queue wait is the first thing to blow up under load, so isolating it makes saturation obvious in a single query.</li>
+  <li><b>Router → Serving:</b> dispatch.
+    The span records which cell and replica were chosen, so a regression isolated to one cell or one model version is visible without a separate investigation.</li>
+  <li><b>Serving → GPU:</b> prefill 180 ms.
+    Prefill is where context length turns into latency, and it scales with input tokens — which is exactly why SLIs must be bucketed by context length.
+    Recording it separately from decode is what lets you say "long‑context users got slower" rather than "p95 went up".</li>
+  <li><b>GPU → Serving:</b> first token (response).
+    The first token is the moment the user stops waiting and starts reading, which is why it gets its own metric rather than being part of a total.</li>
+  <li><b>Serving → Gateway:</b> first token (response).
+    Each hop stamps its own arrival time, so the ledger reconstructs where the time actually went without needing clock synchronisation across machines — only durations within a hop are compared.</li>
+  <li><b>Gateway:</b> TTFT = now − t0.
+    Time to first token is the responsiveness SLI, measured at the edge so it includes queueing, routing and prefill as the user experiences them.
+    Total request latency is deliberately <em>not</em> the SLI: it grows with output length, so a long answer would look like an outage.</li>
+  <li><b>Gateway → SDK:</b> stream (response).
+    Streaming starts immediately; from here the user's experience is governed by the gaps between tokens rather than by any single number.</li>
+  <li><b>GPU → Serving:</b> decode tokens (response).
+    Per‑token timestamps are recorded as the stream proceeds, which makes the distribution of gaps available rather than just an average.
+    A stall halfway through a response is invisible in a mean and obvious in a p95 of inter‑token latency.</li>
+  <li><b>Gateway:</b> ITL = median gap.
+    Inter‑token latency is the "speed" SLI — how fast the text appears once it starts — and together with TTFT it fully describes a streaming experience.
+    Using the median gap per request, then taking percentiles across requests, avoids one pathological pause dominating a request's own number.</li>
+  <li><b>Gateway → SDK:</b> final event + x-latency-ledger (response).
+    Returning the ledger to the client is what turns a support ticket from "it felt slow" into a per‑hop breakdown the customer can paste in.
+    It contains timings only — no prompt content, no internal topology — because it crosses a trust boundary.</li>
+  <li><b>Gateway → Metrics:</b> ttft/itl histograms, ctx bucket labels (async).
+    Emission is asynchronous and fire‑and‑forget, so instrumentation can never add latency to or fail a customer request.
+    Histograms rather than pre‑computed percentiles are emitted, because percentiles cannot be averaged across cells or re‑aggregated over time.
+    The context bucket label is the crucial one: without it, a handful of 200K‑token requests poisons the p95 that everyone else is judged by.</li>
+  <li><b>Metrics → Alert evaluator:</b> own 2 h store via Kafka (async).
+    The evaluator consumes the stream independently and keeps its own short window, so it does not depend on the query path or the long‑term store.
+    Alerting that runs through the same infrastructure it is watching goes blind during exactly the incidents that matter.</li>
+  <li><b>Alert evaluator:</b> burn rate 1h/5m, 6h/30m.
+    Alerts fire on how fast the error budget is being consumed, not on a static threshold — a 2% error rate for five minutes and for five hours are completely different events.
+    Paired windows are what make this both fast and quiet: the long window establishes that the burn is real, the short one confirms it is still happening right now.
+    Fast burn pages immediately; slow burn opens a ticket, because not every budget problem is worth waking someone.</li>
+  <li><b>Alert evaluator:</b> absence rule per cell.
+    A cell that stops reporting looks exactly like a healthy cell to every threshold rule, so absence is checked explicitly per cell and per model.
+    Synthetic probes emit the same SLIs continuously, which means the series never legitimately goes empty and an absence alert is unambiguous.</li>
+  <li><b>Alert evaluator → SDK:</b> page / ticket (async).
+    Routing depends on burn rate: fast burn pages a human, slow burn files a ticket, and both carry the ledger breakdown and exemplar traces so the first question — which hop? — is already answered.
+    Deduplication and grouping keep one bad rollout to one page; an alerting system that cries wolf is worse than none, because people stop reading it.</li>
 </ol>
 
 ## How it works, step by step {#infra-slo-flow}
@@ -196,6 +256,40 @@ Metrics emitted per request (labels: model, tier, region, cell, ctx_bucket):
     <li>Absence alert: if TTFT series stops reporting for a cell, page (silent failure is the worst failure).</li>
     <li>Synthetic probes per cell/model emit the same SLIs so you see regressions before customers.</li>
     <li>Alert evaluation in a separate failure domain from the serving stack (see #7).</li></ul></div>
+</div>
+
+
+## Trade-offs {#infra-slo-tradeoffs}
+
+<table>
+  <tbody><tr><th>Decision</th><th>What we chose</th><th>What we gave up</th><th>When to flip it</th></tr>
+  <tr><td>What to measure</td><td>TTFT, ITL and completion</td><td>The simplicity of one "latency" number that everyone already understands</td><td>Total latency is fine for non‑streaming APIs; for streams it scales with output length and makes long answers look like outages</td></tr>
+  <tr><td>Where to measure</td><td>At the edge (SDK/gateway), attributed by ledger</td><td>Edge numbers include client network conditions you cannot fix</td><td>Server‑side only when you are tuning a specific hop; never for the customer‑facing SLO, which must reflect what the user waited for</td></tr>
+  <tr><td>Slicing</td><td>Bucket by context length</td><td>More series, and per‑bucket targets to agree and maintain</td><td>Skip bucketing only if context lengths are uniform — otherwise a few long‑context users set the p95 for everyone</td></tr>
+  <tr><td>Trace coverage</td><td>1–10% sampled traces, 100% ledgers</td><td>The specific slow request may not have a trace</td><td>Raise sampling during an incident or for a specific customer; 100% tracing at 100K QPS costs more than it returns</td></tr>
+  <tr><td>Alerting rule</td><td>Multi‑window burn rate</td><td>Harder to explain than "page if p95 &gt; 2 s"</td><td>Static thresholds are acceptable for a small service; at scale they either page constantly or miss slow burns entirely</td></tr>
+  <tr><td>Alert domain</td><td>Evaluators independent of the serving and query stack</td><td>Duplicate infrastructure to run and keep in sync</td><td>Never share it — the correlated failure is the whole point, and a shared dependency means silence during the worst incidents</td></tr>
+  <tr><td>Customer diagnostics</td><td>Return the per‑hop ledger to the client</td><td>Exposes some internal structure and a support surface to maintain</td><td>Withhold it only where the hop names themselves are sensitive; the support cost saved is usually far larger</td></tr>
+</tbody></table>
+
+## Safety-first design {#infra-slo-safety}
+
+<div class="cards">
+  <div><h4>Measurement that cannot hurt the thing measured</h4><ul>
+    <li><b>Fire‑and‑forget emission.</b> Metrics and ledgers are written asynchronously with bounded buffers, so a metrics outage can never fail or slow a customer request.</li>
+    <li><b>Under 1% overhead, enforced.</b> Instrumentation cost is itself measured, because a tracing system that adds 50 ms has changed the latency it reports.</li>
+    <li><b>Never bias the sample.</b> Sampling is decided at the start of a request, not at the end — dropping slow requests because they timed out would quietly make every percentile a lie.</li>
+    <li><b>Bounded labels.</b> The label set is a fixed product of model, tier, region, cell and context bucket; ids never become labels, and exemplars carry the per‑request detail instead.</li></ul></div>
+  <div><h4>Alerts people still trust at 3am</h4><ul>
+    <li><b>Burn rate, not thresholds.</b> Paging is tied to how fast the error budget is being spent, so severity matches consequence rather than a line on a graph.</li>
+    <li><b>Fast burn pages, slow burn tickets.</b> Two different problems get two different responses, which is what keeps the pager meaningful.</li>
+    <li><b>One incident, one page.</b> Deduplication and grouping mean a bad rollout does not produce four hundred notifications and a reflex to silence them.</li>
+    <li><b>Every page carries its evidence.</b> The ledger breakdown and exemplar traces ship with the alert, so the responder starts at "which hop" rather than at "is this real".</li></ul></div>
+  <div><h4>Silence is the failure you must design for</h4><ul>
+    <li><b>Absence rules per cell and model.</b> A cell that stops emitting is indistinguishable from a healthy one to a threshold rule — so the gap itself is alerted on.</li>
+    <li><b>Synthetic probes always running.</b> Continuous probes per cell mean the SLI series is never legitimately empty, which makes absence unambiguous.</li>
+    <li><b>Dead‑man switch outside the stack.</b> The evaluator proves liveness to an external service, so a total failure of monitoring still reaches a human.</li>
+    <li><b>Ledgers carry timings only.</b> What crosses back to the customer is durations and request ids — never prompt content, never internal hostnames.</li></ul></div>
 </div>
 
 ## Don't leave the room without saying {#infra-slo-check}

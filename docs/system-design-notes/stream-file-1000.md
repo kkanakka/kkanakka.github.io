@@ -44,6 +44,32 @@ description: "medium · bandwidth math · pipelined chain vs tree vs swarm · th
 </div>
 <div class="note"><b>Clarify:</b> F and B (say 100 GB, 10 Gb/s = 1.25 GB/s → 80 s to send once). Are hosts symmetric? Same datacenter or WAN? Is multicast available (almost never in cloud)? Is the file already in object storage that can serve many readers? Can hosts talk to each other?</div>
 
+
+## Scale, performance and safety targets {#sf-targets}
+
+<p>This question is won or lost on arithmetic. State the numbers, then let them eliminate the topologies that cannot work.</p>
+
+<div class="cards">
+  <div><h4>Scale</h4><ul>
+    <li><b>QPS:</b> essentially one operation — but it moves F × 1000 bytes. At F = 500 GB that is 500 TB of transfer, which is why "how many requests" is the wrong question and "how many bytes cross which link" is the right one.</li>
+    <li><b>Data volume:</b> 500 GB in ~8,000 chunks of 64 MB, delivered to 1,000 hosts. Control traffic — manifests, progress, chunk hashes — is a few MB total and never the constraint.</li>
+    <li><b>Growth:</b> both F and host count grow, and the naive origin‑fan‑out time grows as their product — which is precisely why the topology, not the bandwidth purchase, is the answer.</li></ul></div>
+  <div><h4>Performance</h4><ul>
+    <li><b>Latency:</b> the metric is wall‑clock to the <em>last</em> host, not the first. Direct fan‑out is F×n/B — at 10 Gb/s and 500 TB, about 5 days. A pipelined chain is ≈ F/B + n·c/B, roughly 7 minutes plus a small per‑hop term: three orders of magnitude, from topology alone.</li>
+    <li><b>Throughput:</b> every host must saturate both its inbound and outbound link simultaneously, since forwarding while receiving is the entire trick. Rack uplinks, not host NICs, are usually the real ceiling.</li></ul></div>
+  <div><h4>Safety and security</h4><ul>
+    <li><b>Abuse prevention:</b> the threats are structural rather than adversarial — a saturated origin, a rack uplink congested to the point of harming unrelated traffic, and a compromised host in the chain serving altered bytes to everyone downstream of it.</li>
+    <li><b>Rate limiting:</b> a hard cap on origin connections, per‑host send rate limits so forwarding never starves the host's own workload, and a cap on cross‑rack streams to protect shared uplinks.</li>
+    <li><b>Data sensitivity:</b> the payload is usually proprietary — model weights or a build artifact. Authenticate every peer, encrypt in transit, and sign the manifest so a relay host cannot substitute content it is merely forwarding.</li></ul></div>
+  <div><h4>Availability and fault tolerance</h4><ul>
+    <li><b>Uptime target:</b> not a service — the requirement is that a single slow or dead host cannot restart or stall the transfer. With 1,000 hosts, at least one failing mid‑transfer is the expected case, not the exception.</li>
+    <li><b>Degraded mode:</b> a stalled relay is spliced out and its downstream re‑parented within seconds. Origin lost after seeding → the chain completes anyway. A host that misses the window rejoins at the tail and pulls from any peer that already has the data.</li></ul></div>
+  <div><h4>Also worth pinning down</h4><ul>
+    <li><b>Consistency:</b> trivially strong, because the artifact is immutable — every host either has the verified file or does not. There is nothing to reconcile, which is what makes aggressive peer‑to‑peer forwarding safe here.</li>
+    <li><b>Durability:</b> the origin holds the only copy that must survive; every host copy is reproducible, so a wiped host simply re‑pulls.</li>
+    <li><b>Integrity:</b> per‑chunk hashes under a signed manifest plus a final root hash. With bytes passing through up to 1,000 intermediaries, verifying at every hop is not optional — one corrupt relay would otherwise poison everything behind it.</li></ul></div>
+</div>
+
 ## Entities and API {#sf-entities}
 
 <p>Transfer (id, manifest, topology, state) · Manifest (chunkSize, chunks[{idx, sha256}], rootHash, signature) · Host (id, rack, measured bw, upstream, downstream[], bitmap) · Chunk.</p>
@@ -148,23 +174,58 @@ GET  /transfers/:id/status      -&gt; {done, slowest, stalled[]}</code></pre>
 <figcaption>Solid = request path · dashed = response / return · dotted = async or background.</figcaption>
 </figure>
 <ol class="order">
-  <li><b>Coordinator:</b> compute chain/tree order by rack + measured bandwidth</li>
-  <li><b>Coordinator → Origin:</b> start: manifest (chunk size, hashes, root)</li>
-  <li><b>Coordinator → Host 1:</b> your upstream = origin; downstream = host 2</li>
-  <li><b>Coordinator → Host 2:</b> upstream = host 1; downstream = host 3</li>
-  <li><b>Origin → Host 1:</b> chunk 1</li>
-  <li><b>Host 1:</b> verify hash, write NVMe, keep in RAM ring buffer</li>
-  <li><b>Host 1 → Host 2:</b> chunk 1 (forward immediately)</li>
-  <li><b>Origin → Host 1:</b> chunk 2</li>
-  <li><b>Host 1 → Host 2:</b> chunk 2</li>
-  <li><b>Host 2 → Host k…1000:</b> chunk 1 …</li>
-  <li><b>Host k…1000:</b> each host: receive, verify, forward, write, all concurrent</li>
-  <li><b>Host 2 → Coordinator:</b> progress: chunks received (every 5 s) (async)</li>
-  <li><b>Coordinator:</b> host 2 stalled? (no progress in T)</li>
-  <li><b>Coordinator → Repair path:</b> splice: host 3 pulls from host 1 (or swarm peer) (async)</li>
-  <li><b>Repair path → Coordinator:</b> host 2 marked bad; reinserted at tail later (response)</li>
-  <li><b>Host k…1000 → Coordinator:</b> all chunks + root hash ok → done (async)</li>
-  <li><b>Coordinator:</b> done when all 1000 report; total ≈ F/B + n·c/B</li>
+  <li><b>Coordinator:</b> compute chain/tree order by rack + measured bandwidth.
+    Order is computed from topology and measured throughput, not from a host list — neighbours within a rack are connected by a top‑of‑rack switch, while crossing racks consumes a shared uplink.
+    Slow hosts are placed near the tail so they cannot become a bottleneck that every host behind them inherits.
+    This planning step is cheap and is worth more than any transfer optimisation that follows.</li>
+  <li><b>Coordinator → Origin:</b> start: manifest (chunk size, hashes, root).
+    The manifest is computed once and signed: a hash per 64 MB chunk plus a Merkle root over all of them.
+    Per‑chunk hashes are what allow verification to happen as bytes stream, rather than only after a 500 GB file has fully landed.</li>
+  <li><b>Coordinator → Host 1:</b> your upstream = origin; downstream = host 2.
+    Each host is told only its immediate neighbours, so there is no global state for a host to hold or get wrong.
+    Purely local knowledge is also what makes repair cheap: fixing a break means rewriting two pointers, not recomputing a plan.</li>
+  <li><b>Coordinator → Host 2:</b> upstream = host 1; downstream = host 3.
+    The same instruction shape for every host means one code path, and a chain that can be re‑spliced anywhere without special cases.</li>
+  <li><b>Origin → Host 1:</b> chunk 1.
+    The origin sends the file <em>once</em>, to one host. Its total upload is F, not F×1000 — which is the single decision that turns 5 days into minutes.
+    Any design where the origin's egress scales with host count has already lost, regardless of how it is tuned.</li>
+  <li><b>Host 1:</b> verify hash, write NVMe, keep in RAM ring buffer.
+    Verification happens before forwarding, so a corrupt chunk stops at the first host instead of propagating down 999 hops.
+    The RAM ring buffer is what makes this streaming rather than store‑and‑forward: bytes leave for the next host while later chunks are still arriving, and the disk write happens in parallel.
+    Waiting for the full file before forwarding would multiply total time by the number of hops — this buffer is the difference between a pipeline and a relay race.</li>
+  <li><b>Host 1 → Host 2:</b> chunk 1 (forward immediately).
+    Forwarding starts after one chunk, not one file, so the pipeline fills in seconds and every host is transmitting almost immediately.
+    This is precisely why the word "stream" in the question is a hint rather than decoration.</li>
+  <li><b>Origin → Host 1:</b> chunk 2.
+    Host 1 is now receiving and sending simultaneously, saturating both directions of its link — full‑duplex use is what keeps the steady‑state rate equal to B rather than B/2.</li>
+  <li><b>Host 1 → Host 2:</b> chunk 2.
+    In steady state every host in the chain is doing exactly this, so aggregate throughput is n×B while the origin contributes only B.</li>
+  <li><b>Host 2 → Host k…1000:</b> chunk 1 …
+    The pipeline fills hop by hop; host k starts receiving after roughly k chunk‑times, which is the small additive n·c/B term.
+    Because c (chunk size) is tiny relative to F, that fill cost is minutes at worst — the chain is nearly as fast as a single copy.</li>
+  <li><b>Host k…1000:</b> each host: receive, verify, forward, write, all concurrent.
+    Every host runs identical logic with no role distinction, so there is no special "root" or "leaf" code to maintain.
+    Verifying at every hop means corruption is localised to one link rather than inherited by an entire subtree.</li>
+  <li><b>Host 2 → Coordinator:</b> progress: chunks received (every 5 s) (async).
+    Progress reporting is off the data path, so a slow or unavailable coordinator delays repair rather than stopping the transfer.
+    Per‑host progress is also the only way stragglers become visible before they become the reason the transfer is late.</li>
+  <li><b>Coordinator:</b> host 2 stalled? (no progress in T).
+    With 1,000 hosts, a failure mid‑transfer is expected, so stall detection is a normal control loop rather than an exception handler.
+    The timeout is seconds: in a chain, one stalled host stops everything downstream of it, so detection latency is directly transfer latency.</li>
+  <li><b>Coordinator → Repair path:</b> splice: host 3 pulls from host 1 (or swarm peer) (async).
+    Repair is a local rewiring — host 3's upstream becomes host 1 — and the chain closes over the failure in seconds.
+    Host 3 resumes from its last verified chunk, so nothing already transferred is repeated.
+    This is the chain's main weakness made survivable, and it is exactly the weakness a swarm avoids structurally by having many sources.</li>
+  <li><b>Repair path → Coordinator:</b> host 2 marked bad; reinserted at tail later (response).
+    A recovered host rejoins at the tail, where being slow costs nobody else anything.
+    Never re‑inserting it mid‑chain is deliberate: a host that failed once is the last thing you want between 998 hosts and their data.</li>
+  <li><b>Host k…1000 → Coordinator:</b> all chunks + root hash ok → done (async).
+    Per‑chunk hashes proved each piece; the root hash proves the host assembled the right pieces of the right file.
+    Only then does a host count as complete, so "done" means verified rather than merely finished.</li>
+  <li><b>Coordinator:</b> done when all 1000 report; total ≈ F/B + n·c/B.
+    The formula is the answer to the question: one file‑time to push F once, plus a small pipeline‑fill term proportional to hops and chunk size.
+    Compare aloud with direct fan‑out (F·n/B, days) and a k‑ary tree (F/B · log_k n, better but still multiplicative) to show why pipelining wins.
+    Say the trade‑off too: a chain is optimal and fragile, a tree is robust and slower, a swarm is fastest under churn and hardest to reason about.</li>
 </ol>
 
 ## Deep dives {#sf-deepdives}
@@ -223,6 +284,40 @@ GET  /transfers/:id/status      -&gt; {done, slowest, stalled[]}</code></pre>
   <li>IP multicast would make this one send, but it's unavailable in most cloud networks and unreliable; mention and move on.</li>
   <li>If the file is in object storage that scales (S3, GCS), 1000 parallel range readers can be fast, but you pay 1000×F egress and hit per‑prefix throughput limits; still worth it as the seed for the first few hosts.</li>
 </ul>
+
+
+## Trade-offs {#sf-tradeoffs}
+
+<table>
+  <tbody><tr><th>Decision</th><th>What we chose</th><th>What we gave up</th><th>When to flip it</th></tr>
+  <tr><td>Topology</td><td>Pipelined chain</td><td>Fragility — one stalled host blocks everything behind it</td><td>A tree when host failure is frequent and repair latency is worse than the extra hops; a swarm when churn is constant</td></tr>
+  <tr><td>Forwarding</td><td>Stream: forward each chunk on arrival</td><td>RAM for a ring buffer, and verification on the hot path</td><td>Store‑and‑forward is simpler but multiplies total time by the number of hops — it turns minutes into hours</td></tr>
+  <tr><td>Origin's role</td><td>Send the file exactly once</td><td>No fallback if the single seed path fails early</td><td>Seed two or three hosts for redundancy; seeding all of them is the design that takes five days</td></tr>
+  <tr><td>Chunk size</td><td>64 MB</td><td>Coarse retry granularity, and a larger pipeline‑fill term</td><td>Smaller chunks fill the pipeline faster and cost more per‑chunk overhead; the fill term is n·c/B, so c matters most when n is large</td></tr>
+  <tr><td>Failure handling</td><td>Splice out and re‑parent</td><td>A coordinator that must detect stalls quickly</td><td>A swarm needs no splicing because every host has many potential sources — the structural answer to the same problem</td></tr>
+  <tr><td>Verification</td><td>Per chunk at every hop</td><td>Hashing cost on every host, on the critical path</td><td>Never skip it — with up to 1,000 intermediaries, one corrupt relay would otherwise poison every host behind it</td></tr>
+  <tr><td>Ordering</td><td>Sequential chunks along the chain</td><td>No opportunistic fetching of whatever is available</td><td>Rarest‑first is better under churn, but needs a swarm and a tracker; in a chain, order is already optimal</td></tr>
+</tbody></table>
+
+## Safety-first design {#sf-safety}
+
+<div class="cards">
+  <div><h4>Verify before you forward</h4><ul>
+    <li><b>Hash every chunk at every hop.</b> A relay that passes on bytes it has not verified poisons everything downstream of it.</li>
+    <li><b>Signed manifest.</b> The hash list is trustworthy even though the hosts relaying it are not necessarily so.</li>
+    <li><b>Root hash before "done".</b> Chunk hashes prove the pieces; only the root proves you assembled the right file.</li>
+    <li><b>Authenticate peers.</b> Every host both receives from and sends to another machine, so mutual authentication is what stops an outsider from injecting itself into the chain.</li></ul></div>
+  <div><h4>Never take out the network you run on</h4><ul>
+    <li><b>Origin sends the file once.</b> There is no configuration in which 1,000 hosts can stampede the origin, because none of them ever talk to it.</li>
+    <li><b>Respect rack uplinks.</b> Chain order follows topology so most transfers stay within a rack and shared uplinks are crossed a bounded number of times.</li>
+    <li><b>Cap forwarding rate.</b> A host relaying at full line rate can starve whatever else it is running; the transfer must not damage the service.</li>
+    <li><b>Abort is available.</b> The coordinator can stop the whole transfer in one action, which matters when a distribution is discovered to be wrong.</li></ul></div>
+  <div><h4>Assume hosts will fail mid-transfer</h4><ul>
+    <li><b>Detect in seconds.</b> In a chain, detection latency is transfer latency for everyone downstream — so stall timeouts are tight and progress is continuous.</li>
+    <li><b>Repair locally.</b> Splicing rewrites two pointers; nothing is recomputed, and nothing already transferred is repeated.</li>
+    <li><b>Resume, never restart.</b> Hosts continue from their last verified chunk, so a failure costs one chunk rather than a file.</li>
+    <li><b>Failed hosts rejoin at the tail.</b> A host that stalled once is never put back between everyone else and their data.</li></ul></div>
+</div>
 
 ## Don't leave the room without saying {#sf-checklist}
 

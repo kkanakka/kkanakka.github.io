@@ -40,6 +40,32 @@ description: "medium · queues · workers · retries · idempotency · backpress
 </div>
 <div class="note"><b>Sizing:</b> a resize takes ~200 ms of CPU; 1K/s peak = 200 CPU‑s per second ≈ 200 cores. With 8‑core workers that's 25 machines at peak and ~3 at average; the queue absorbs the difference.</div>
 
+
+## Scale, performance and safety targets {#image-pipeline-targets}
+
+<p>Two workloads share one pipeline: latency‑sensitive uploads and enormous backfills. Almost every decision below exists to stop the second from starving the first.</p>
+
+<div class="cards">
+  <div><h4>Scale</h4><ul>
+    <li><b>QPS:</b> 10M images/day ≈ 115/s average with 1K/s peaks, plus backfills of 100M images that arrive as one burst. Each image fans out into 4–5 steps, so the queue sees ~5K messages/s at peak.</li>
+    <li><b>Data volume:</b> ~3 MB average original, ~30 TB/day ingested; outputs (several sizes plus thumbnails) add roughly 50% more. Status rows are small but numerous — ~50M step rows/day.</li>
+    <li><b>Growth:</b> ~2× annually in volume, and output variants grow with the product — each new size is a full reprocess of the corpus, which is why output keys must be versioned from day one.</li></ul></div>
+  <div><h4>Performance</h4><ul>
+    <li><b>Latency:</b> upload jobs p95 &lt; 60 s end to end, p99 &lt; 3 min; backfill is explicitly best‑effort with no latency target at all. Stating that difference is what justifies separate priorities.</li>
+    <li><b>Throughput:</b> a resize is ~200 ms of CPU, so 1K/s peak is ~200 cores — about 25 eight‑core workers at peak and 3 at average. The queue absorbs the difference, and workers scale to zero overnight.</li></ul></div>
+  <div><h4>Safety and security</h4><ul>
+    <li><b>Abuse prevention:</b> image decoders are a classic attack surface — decompression bombs that expand to gigabytes, malformed files that crash or hang the decoder, and deeply nested formats. Uploaded content may also be illegal or harmful, which is why moderation scoring is a pipeline step rather than an afterthought.</li>
+    <li><b>Rate limiting:</b> per‑tenant job submission caps, a dimension and pixel‑count limit checked <em>before</em> decode, a memory cap per worker, and a hard timeout per step so one image cannot occupy a worker indefinitely.</li>
+    <li><b>Data sensitivity:</b> user photos carry EXIF location and faces. Strip metadata unless explicitly retained, scope output buckets per tenant, never log image bytes, and make deletion remove originals, every derived variant and the status rows together.</li></ul></div>
+  <div><h4>Availability and fault tolerance</h4><ul>
+    <li><b>Uptime target:</b> 99.9% for job submission; processing may lag without being "down". The real requirement is that <b>no accepted job is silently dropped</b> — it either completes or lands in the DLQ where someone can see it.</li>
+    <li><b>Degraded mode:</b> workers saturated → the queue grows and backfill priority is shed first, protecting upload latency. A poison image fails three times and moves to the DLQ rather than blocking the queue. Object store degraded → jobs retry with backoff; nothing is lost because the queue holds them.</li></ul></div>
+  <div><h4>Also worth pinning down</h4><ul>
+    <li><b>Consistency:</b> at‑least‑once delivery with exactly‑once <em>effect</em>. Output keys are a pure function of (image, operation, version), so a duplicate execution overwrites identical bytes and changes nothing observable.</li>
+    <li><b>Durability:</b> originals are the system of record at eleven nines; every derived output is reproducible, which is what makes reprocessing a new variant a routine batch job rather than a migration.</li>
+    <li><b>Compliance:</b> deletion that reaches derivatives, per‑tenant isolation on both input and output buckets, and an auditable record of moderation decisions without retaining the content those decisions were about.</li></ul></div>
+</div>
+
 ## Entities and API {#image-pipeline-api}
 
 <p>Job (id, imageKey, ops[], priority, state, attempts) · Step (jobId, name, state, outputKey) · Output (key = f(imageKey, op, version)) · DLQ entry.</p>
@@ -158,25 +184,60 @@ Queue message: {jobId, step, attempt, imageKey, params, dedupeKey}</code></pre>
 <figcaption>Solid = request path · dashed = response / return · dotted = async or background.</figcaption>
 </figure>
 <ol class="order">
-  <li><b>Upload event → Job API:</b> POST /jobs {imageKey, ops}</li>
-  <li><b>Job API:</b> dedupeKey = hash(imageKey, ops, version)</li>
-  <li><b>Job API → Status store:</b> job CREATED (unique dedupeKey)</li>
-  <li><b>Job API → Queue:</b> enqueue decode step</li>
-  <li><b>Job API → Upload event:</b> 202 jobId (response)</li>
-  <li><b>Worker → Queue:</b> receive (visibility timeout 5 m)</li>
-  <li><b>Worker → Object store:</b> GET original</li>
-  <li><b>Worker:</b> decode; validate; size limits</li>
-  <li><b>Worker → Queue:</b> enqueue resize, score (fan-out)</li>
-  <li><b>Worker → Queue:</b> ack decode</li>
-  <li><b>Worker → Queue:</b> receive resize</li>
-  <li><b>Worker:</b> resize in memory</li>
-  <li><b>Worker → Object store:</b> PUT out/{hash}/resize512/v3 (if-none-match)</li>
-  <li><b>Worker → Status store:</b> step DONE</li>
-  <li><b>Worker → Queue:</b> ack</li>
-  <li><b>Worker:</b> crash before ack → message reappears; PUT is idempotent</li>
-  <li><b>Worker:</b> corrupt image → attempts++ with backoff</li>
-  <li><b>Queue → DLQ:</b> attempts ≥ 3 → DLQ (async)</li>
-  <li><b>Status store → Job API:</b> all steps DONE → job DONE; notify (async)</li>
+  <li><b>Upload event → Job API:</b> POST /jobs {imageKey, ops}.
+    Jobs reference an image already in object storage rather than carrying bytes, so the API stays small and fast regardless of image size.
+    Operations are declared per job, which is what allows a later reprocess to request only the new variant instead of redoing everything.</li>
+  <li><b>Job API:</b> dedupeKey = hash(imageKey, ops, version).
+    The key is a pure function of what the work <em>is</em>, so submitting the same job twice — a retried upload event, a re‑run backfill — collapses into one.
+    Including the version means a code change deliberately produces a different key and therefore new outputs, rather than silently reusing stale ones.</li>
+  <li><b>Job API → Status store:</b> job CREATED (unique dedupeKey).
+    A unique constraint enforces deduplication at the database rather than by convention, so concurrent duplicate submissions cannot both win.
+    Creating the record before enqueuing means an accepted job always has a durable trace, even if the enqueue fails and has to be retried.</li>
+  <li><b>Job API → Queue:</b> enqueue decode step.
+    Only the first step is enqueued; later steps are created by the steps before them, so the DAG unfolds as it executes rather than being materialised up front.
+    That keeps fan‑out proportional to what actually runs when a step fails or is skipped.</li>
+  <li><b>Job API → Upload event:</b> 202 jobId (response).
+    Accepted, not completed — and saying so honestly is what allows the pipeline to absorb a 1K/s spike into a queue instead of into the caller's timeout.</li>
+  <li><b>Worker → Queue:</b> receive (visibility timeout 5 m).
+    The visibility timeout is the lease: a worker that dies simply stops extending it, and the message reappears for someone else.
+    Five minutes is chosen from the slowest realistic step — too short and slow jobs get processed twice concurrently, too long and crash recovery drags.</li>
+  <li><b>Worker → Object store:</b> GET original.
+    The original is fetched per step rather than passed between steps, keeping messages small and steps independently retryable.
+    Steps that need it stream rather than buffer, so a large image does not become a worker memory spike.</li>
+  <li><b>Worker:</b> decode; validate; size limits.
+    Validation happens <em>before</em> full decode: dimensions and pixel count are checked from the header, because a decompression bomb is a small file that expands to gigabytes.
+    Hard limits on memory and wall‑clock per step mean a malicious or malformed image costs one failed step rather than a wedged worker.
+    Image decoding is one of the most exploited surfaces in any pipeline, so this step is a security boundary, not a formality.</li>
+  <li><b>Worker → Queue:</b> enqueue resize, score (fan-out).
+    Independent steps become independent messages, so they run in parallel and fail in isolation — a moderation service outage does not stop thumbnails from being produced.
+    Fan‑out is enqueued before the parent is acked, so the children always exist before the parent disappears.</li>
+  <li><b>Worker → Queue:</b> ack decode.
+    Acking last is the whole discipline: work is durable, children are enqueued, and only then is the parent message released.</li>
+  <li><b>Worker → Queue:</b> receive resize.
+    Any worker can take any step; there is no affinity, so the pool is homogeneous and scales purely on queue depth.</li>
+  <li><b>Worker:</b> resize in memory.
+    Held in memory rather than round‑tripping to disk, because at 200 ms of CPU per image an extra I/O round trip is a significant fraction of the step.</li>
+  <li><b>Worker → Object store:</b> PUT out/{hash}/resize512/v3 (if-none-match).
+    The output key is derived from the content hash, the operation and the version — the same inputs always produce the same key.
+    That is what converts at‑least‑once execution into exactly‑once <em>effect</em>: a duplicate run writes identical bytes to the same place.
+    The conditional put avoids paying for a write that would change nothing, and makes the whole pipeline safe to re‑run over any subset.</li>
+  <li><b>Worker → Status store:</b> step DONE.
+    Status is updated after the durable output exists, so the record never claims something that is not there.
+    Per‑step status is what makes partial progress visible and lets a reprocess skip completed work.</li>
+  <li><b>Worker → Queue:</b> ack.
+    Ack after the side effect, always — acking first turns any subsequent crash into silently lost work.</li>
+  <li><b>Worker:</b> crash before ack → message reappears; PUT is idempotent.
+    The failure path costs duplicated compute and nothing else, which is exactly the trade the idempotent key was chosen to enable.
+    Designing for at‑least‑once and making effects idempotent is far cheaper than chasing exactly‑once delivery.</li>
+  <li><b>Worker:</b> corrupt image → attempts++ with backoff.
+    Attempts are counted per step so one bad operation does not condemn the whole job, and backoff prevents a poison message from consuming the pool in a tight loop.
+    Transient failures (a slow object store) and permanent ones (an unreadable file) both funnel here, and the attempt budget resolves them without needing to tell them apart.</li>
+  <li><b>Queue → DLQ:</b> attempts ≥ 3 → DLQ (async).
+    After three attempts the message leaves the main queue entirely — the single most important property of the pipeline is that one bad image cannot block the other ten million.
+    The DLQ is a work queue for humans, not a wastebasket: it is monitored, and a rising DLQ rate is an alert in its own right.</li>
+  <li><b>Status store → Job API:</b> all steps DONE → job DONE; notify (async).
+    Completion is derived from step records rather than tracked separately, so it cannot disagree with reality.
+    Notification is the last thing to happen and is itself retried, because a completed job nobody hears about is indistinguishable from a lost one.</li>
 </ol>
 
 ## Deep dives {#image-pipeline-deep}
@@ -191,6 +252,40 @@ Queue message: {jobId, step, attempt, imageKey, params, dedupeKey}</code></pre>
 <div><h4>Idempotency, the whole game</h4><ul><li>Output key is a pure function of (content hash, op, params, code version). Re‑running writes the same key; use conditional PUT so a duplicate is a no‑op.</li><li>Ack the queue message only after the output write and status update; at‑least‑once delivery + idempotent effect = exactly‑once result.</li><li>Job dedupe key at submit prevents double jobs from retried uploads.</li></ul></div>
 <div><h4>Failure handling</h4><ul><li>Visibility timeout ≥ worst‑case step time; heartbeat to extend for big images.</li><li>Retries with backoff per message; attempts in the message; DLQ after N with the error; replay tool.</li><li>Poison detection: size/dimension limits before decode, decode in a subprocess with memory/time limits so one bomb image can't kill the worker.</li><li>Partial DAG failure: steps are independent; job state is the aggregate; reprocess targets only missing outputs.</li></ul></div>
 <div><h4>Throughput and cost</h4><ul><li>Separate queues per step and per priority so a 100M backfill never delays uploads; workers pull uploads first.</li><li>Autoscale on queue depth and oldest‑message age, not CPU; scale to zero when idle.</li><li>CPU‑bound: process‑based workers (not threads in Python), one per core, streaming decode to bound memory.</li><li>Metrics: throughput per step, p95 latency by priority, retry and DLQ rates, backlog age; alert on backlog age, not size.</li></ul></div></div>
+
+
+## Trade-offs {#image-pipeline-tradeoffs}
+
+<table>
+  <tbody><tr><th>Decision</th><th>What we chose</th><th>What we gave up</th><th>When to flip it</th></tr>
+  <tr><td>Delivery semantics</td><td>At‑least‑once with content‑addressed outputs</td><td>Duplicate compute on retries</td><td>Exactly‑once delivery costs distributed transactions for an outcome idempotent writes already provide</td></tr>
+  <tr><td>DAG execution</td><td>One queue message per step, fanned out as it runs</td><td>More messages, and job completion must be derived from step records</td><td>A single message carrying the whole DAG is simpler but makes one failed step re‑run everything before it</td></tr>
+  <tr><td>Output naming</td><td>Key = f(content hash, operation, version)</td><td>A version bump reprocesses the entire corpus</td><td>That is the point — mutable keys make it impossible to tell which code produced which output</td></tr>
+  <tr><td>Failure isolation</td><td>Bounded attempts, then DLQ</td><td>Failed images need a human to look at the DLQ</td><td>Unbounded retries let one poison image consume the worker pool forever</td></tr>
+  <tr><td>Priority</td><td>Separate lanes for uploads and backfill</td><td>Two queues to size and monitor</td><td>A single queue is simpler until a 100M‑image backfill puts every upload behind it</td></tr>
+  <tr><td>Worker model</td><td>Homogeneous workers, any step</td><td>No specialisation — GPU steps get the same pool as CPU ones</td><td>Split pools when steps have genuinely different hardware needs, at the cost of separate scaling decisions</td></tr>
+  <tr><td>Scaling</td><td>Autoscale on queue depth, down to zero</td><td>Cold‑start latency on the first job after an idle period</td><td>Keep a warm floor when p95 latency matters more than overnight cost</td></tr>
+</tbody></table>
+
+## Safety-first design {#image-pipeline-safety}
+
+<div class="cards">
+  <div><h4>Decoders are an attack surface</h4><ul>
+    <li><b>Check dimensions before decoding.</b> A decompression bomb is a small file that expands to gigabytes; the header tells you that before the decoder does.</li>
+    <li><b>Hard memory and time limits per step.</b> A malformed image costs one failed step rather than a wedged worker or an out‑of‑memory kill.</li>
+    <li><b>Isolate the decode.</b> Running untrusted image parsing in a constrained sandbox limits what a decoder exploit can reach.</li>
+    <li><b>Moderation is a pipeline step.</b> Scoring content is part of processing, not something bolted on after the outputs are already public.</li></ul></div>
+  <div><h4>No accepted job disappears</h4><ul>
+    <li><b>Durable before acknowledged.</b> The job row exists before the API returns 202, so an accepted job always has a trace.</li>
+    <li><b>Ack after the side effect.</b> Output written, status updated, children enqueued — then ack. Any other order loses work on a crash.</li>
+    <li><b>Poison messages leave the queue.</b> Three attempts and it moves to the DLQ, so one bad image cannot block ten million good ones.</li>
+    <li><b>The DLQ is monitored.</b> It is a queue of work for humans; an unwatched DLQ is just a slower way of dropping jobs.</li></ul></div>
+  <div><h4>User photos need careful handling</h4><ul>
+    <li><b>Strip metadata by default.</b> EXIF carries GPS coordinates and device identifiers that users do not expect to publish with a thumbnail.</li>
+    <li><b>Tenant‑scoped buckets.</b> Inputs and outputs are isolated per tenant, so a key collision or a path bug cannot cross an account boundary.</li>
+    <li><b>Deletion reaches derivatives.</b> Original, every variant, thumbnails and status rows — a delete that leaves a thumbnail behind has not deleted the photo.</li>
+    <li><b>Never log the bytes.</b> Errors record keys, sizes and error classes; a debug pipeline must not become a second copy of user photos.</li></ul></div>
+</div>
 
 ## Don't leave the room without saying {#image-pipeline-check}
 

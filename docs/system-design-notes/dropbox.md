@@ -46,6 +46,32 @@ description: "easy · handling large blobs · presigned URLs · chunking · sync
 </div>
 <div class="note"><b>CAP answer:</b> you only pick consistency when every read must see the latest write or the system breaks (trading, inventory). A file appearing in the US two seconds after a German upload is fine, so availability wins.</div>
 
+
+## Scale, performance and safety targets {#db-targets}
+
+<p>The asymmetry here is extreme: a tiny amount of metadata governing an enormous amount of data. Stating both sets of numbers is what makes "bytes never touch my servers" an obvious conclusion rather than a trick.</p>
+
+<div class="cards">
+  <div><h4>Scale</h4><ul>
+    <li><b>QPS:</b> ~50K metadata QPS (list, share, poll for changes) against ~5K uploads/s and ~50K downloads/s — but every one of those file transfers goes to S3 or the CDN, so the services themselves stay small.</li>
+    <li><b>Data volume:</b> exabytes in object storage, files up to 50 GB each, chunked at 5–10 MB so a 50 GB file is ~5,000 parts. Metadata is a few KB per file — billions of rows, but only terabytes.</li>
+    <li><b>Growth:</b> ~2× stored bytes annually with metadata growing at the same rate in rows but far slower in size, which is why the two scale independently and use different stores.</li></ul></div>
+  <div><h4>Performance</h4><ul>
+    <li><b>Latency:</b> metadata operations p95 &lt; 150 ms; time to first byte on download p95 &lt; 200 ms from a CDN edge; sync notification of a change to another device p95 &lt; 5 s. Upload duration is bandwidth‑bound and explicitly not an SLA.</li>
+    <li><b>Throughput:</b> per‑file upload should saturate the client's uplink by running 4–8 parts in parallel; aggregate throughput is S3's problem by design, which is the entire point of presigned URLs.</li></ul></div>
+  <div><h4>Safety and security</h4><ul>
+    <li><b>Abuse prevention:</b> the sharp edges are a presigned URL leaking and becoming a public download link, storage abuse (using the service as a free CDN or to distribute malware), and share links that spread beyond their intended audience.</li>
+    <li><b>Rate limiting:</b> per‑user upload and download bandwidth caps, limits on presigned URLs issued per minute, a cap on share links per file, and per‑IP limits on redeeming link shares to blunt scraping of leaked links.</li>
+    <li><b>Data sensitivity:</b> files are arbitrary user content — the most sensitive data class there is. Encrypt at rest and in transit, scope every presigned URL to one object and one short expiry, never log URLs, check ACLs on every download rather than trusting URL possession, and make deletion remove blobs, chunks, metadata and share rows alike.</li></ul></div>
+  <div><h4>Availability and fault tolerance</h4><ul>
+    <li><b>Uptime target:</b> 99.99% for download and metadata; availability beats consistency decisively, since a file appearing on another device two seconds later is invisible while a failed download is not.</li>
+    <li><b>Degraded mode:</b> notifier down → clients fall back to polling <code>/changes?since=</code>, which is slower but complete, and is why that endpoint exists at all. CDN cold or unavailable → serve directly from S3 at higher latency. Metadata DB degraded → downloads of already‑known files continue; new uploads pause.</li></ul></div>
+  <div><h4>Also worth pinning down</h4><ul>
+    <li><b>Consistency:</b> eventual across devices by design. The one strongly consistent moment is the metadata flip to <code>uploaded</code>, which must happen only after S3 confirms completion — otherwise a device syncs a file that does not exist yet.</li>
+    <li><b>Durability:</b> eleven nines for file bytes; user files cannot be regenerated from anything, which is why they live in object storage rather than anywhere clever.</li>
+    <li><b>Compliance:</b> residency per account where required, a deletion path that reaches every copy including CDN caches, and an audit trail of shares and downloads that records who and when without indexing file contents.</li></ul></div>
+</div>
+
 ## Entities and API {#db-entities}
 
 <p>File (bytes) · FileMetadata (name, size, mimeType, uploadedBy, status, s3Key, chunks[]) · User · SharedFiles (userId, fileId).</p>
@@ -175,28 +201,67 @@ User comes from the JWT, never the body.</code></pre>
 <figcaption>Solid = request path · dashed = response / return · dotted = async or background.</figcaption>
 </figure>
 <ol class="order">
-  <li><b>Uploader → File Service:</b> POST /files {fingerprint}</li>
-  <li><b>File Service → Metadata DB:</b> exists? resume if uploading</li>
-  <li><b>Metadata DB → File Service:</b> metadata (response)</li>
-  <li><b>File Service → S3:</b> CreateMultipartUpload</li>
-  <li><b>File Service:</b> sign one URL per part</li>
-  <li><b>File Service → Metadata DB:</b> INSERT status=uploading, chunks[]</li>
-  <li><b>File Service → Uploader:</b> uploadId + part URLs (response)</li>
-  <li><b>Uploader → S3:</b> PUT parts in parallel</li>
-  <li><b>Uploader → File Service:</b> PATCH chunk n done (etag)</li>
-  <li><b>File Service → Metadata DB:</b> mark chunk uploaded</li>
-  <li><b>File Service → S3:</b> CompleteMultipartUpload</li>
-  <li><b>S3 → File Service:</b> completion event (async)</li>
-  <li><b>File Service → Metadata DB:</b> status=uploaded</li>
-  <li><b>File Service → Notifier:</b> file changed (async)</li>
-  <li><b>Notifier → Downloader:</b> push over WebSocket/SSE (async)</li>
-  <li><b>Downloader → File Service:</b> GET /files/:id</li>
-  <li><b>File Service → Metadata DB:</b> ACL check</li>
-  <li><b>File Service → Downloader:</b> CDN signed URL (5 min) (response)</li>
-  <li><b>Downloader → CDN:</b> GET signed URL</li>
-  <li><b>CDN → S3:</b> miss → fetch</li>
-  <li><b>CDN → Downloader:</b> bytes from edge (response)</li>
-  <li><b>Downloader → File Service:</b> periodic GET /changes?since (fallback) (async)</li>
+  <li><b>Uploader → File Service:</b> POST /files {fingerprint}.
+    The client sends a fingerprint of the file — a hash of the content — before sending any bytes at all.
+    That one field enables two big wins: deduplication against an identical file already stored, and resumption of an upload interrupted earlier.
+    The user identity comes from the JWT, never from the request body, so a client cannot upload on someone else's behalf.</li>
+  <li><b>File Service → Metadata DB:</b> exists? resume if uploading.
+    If the fingerprint already exists and is complete, the "upload" becomes a metadata row pointing at existing bytes — a 50 GB upload finishing instantly.
+    If a previous attempt is still <code>uploading</code>, the recorded chunk list tells the client exactly which parts to resend, which is the entire resume mechanism.</li>
+  <li><b>Metadata DB → File Service:</b> metadata (response).
+    Metadata and bytes live in different stores because they have nothing in common: kilobytes versus gigabytes, queried constantly versus streamed once.</li>
+  <li><b>File Service → S3:</b> CreateMultipartUpload.
+    Multipart is what makes a 50 GB file tractable: parts upload in parallel, a failed part costs one chunk rather than the whole transfer, and the client can pause and resume.
+    The upload id returned here is the handle that ties every subsequent part to one logical file.</li>
+  <li><b>File Service:</b> sign one URL per part.
+    Each presigned URL grants permission to write exactly one part of exactly one object for a short window — a capability, not an account credential.
+    This is the pivotal decision of the whole design: bytes flow directly from client to S3, so the service never proxies a gigabyte and its capacity is unrelated to file sizes.
+    Routing bytes through the service instead would make every upload consume server bandwidth, memory and connection time for minutes at a stretch.</li>
+  <li><b>File Service → Metadata DB:</b> INSERT status=uploading, chunks[].
+    The file exists in metadata before any bytes arrive, but explicitly marked incomplete — so it is invisible to downloads and to sync while it is still being written.
+    The chunk list is the durable record of progress that makes resume possible across client restarts and even across devices.</li>
+  <li><b>File Service → Uploader:</b> uploadId + part URLs (response).
+    The client now has everything it needs and will not talk to the service again until parts complete, keeping the service off the slow path.
+    URLs are short‑lived, so a leaked one expires quickly; long‑lived signed URLs are effectively public links.</li>
+  <li><b>Uploader → S3:</b> PUT parts in parallel.
+    Four to eight parts in flight typically saturates a consumer uplink; more adds overhead without speed.
+    Each part is independently retryable, which is what turns a flaky connection from a failed upload into a slower one.</li>
+  <li><b>Uploader → File Service:</b> PATCH chunk n done (etag).
+    The ETag is S3's proof that the part arrived intact, so the service records confirmed progress rather than the client's optimistic claim.
+    These small calls are the only traffic the service sees during a multi‑gigabyte upload.</li>
+  <li><b>File Service → Metadata DB:</b> mark chunk uploaded.
+    Progress is durable, so a client that dies at 90% resumes at 90% — on any device, since the state lives server‑side.</li>
+  <li><b>File Service → S3:</b> CompleteMultipartUpload.
+    S3 assembles the parts into one object and verifies the ETags; if a part is missing or corrupt, completion fails and the file never becomes visible.
+    Assembly happens inside the storage layer, so no server ever holds the whole file.</li>
+  <li><b>S3 → File Service:</b> completion event (async).
+    The authoritative confirmation comes from storage, not from the client — trusting the client here is how you end up with metadata describing an object that does not exist.</li>
+  <li><b>File Service → Metadata DB:</b> status=uploaded.
+    This flip is the file's moment of existence: before it, downloads and sync ignore the row; after it, the file is real everywhere.
+    Making completion a single atomic state change is what keeps a partially uploaded file from ever being served.</li>
+  <li><b>File Service → Notifier:</b> file changed (async).
+    Sync is event‑driven rather than poll‑driven, because polling every device every few seconds costs far more than pushing to the few that care.</li>
+  <li><b>Notifier → Downloader:</b> push over WebSocket/SSE (async).
+    Connected devices learn within seconds; the push carries only the fact that something changed, so the receiving device then does a normal authorised fetch.
+    Notifications are a latency optimisation, never a source of truth — which is what makes the polling fallback both safe and sufficient.</li>
+  <li><b>Downloader → File Service:</b> GET /files/:id.
+    Downloads always start at the service, even though the bytes will not come from it, because this is where permission is decided.</li>
+  <li><b>File Service → Metadata DB:</b> ACL check.
+    Authorization happens on every single download rather than being baked into a URL the user keeps — possession of a link must never be the same as having permission.
+    A revoked share therefore takes effect on the next request, not whenever some cached URL happens to expire.</li>
+  <li><b>File Service → Downloader:</b> CDN signed URL (5 min) (response).
+    Five minutes is long enough to start a download and short enough that a leaked URL is nearly worthless.
+    The URL is scoped to one object, so it cannot be edited into a path traversal across someone else's files.</li>
+  <li><b>Downloader → CDN:</b> GET signed URL.
+    The CDN validates the signature at the edge, so an expired or forged URL is rejected without ever reaching the origin.</li>
+  <li><b>CDN → S3:</b> miss → fetch.
+    Only the first request for a given file in a given region pays the origin round trip; shared files — the ones downloaded most — are served from the edge thereafter.</li>
+  <li><b>CDN → Downloader:</b> bytes from edge (response).
+    Range requests make downloads resumable in the same way uploads are, and the edge's proximity is what delivers a sub‑200 ms time to first byte globally.</li>
+  <li><b>Downloader → File Service:</b> periodic GET /changes?since (fallback) (async).
+    Push delivery is best‑effort: devices sleep, connections drop, notifications are missed.
+    A cursor‑based change feed lets a device that has been offline for a week catch up with one query, and lets any device verify it has missed nothing.
+    Push for latency, poll for correctness — the combination is what makes sync reliable rather than merely fast.</li>
 </ol>
 
 ## High‑level design, by requirement {#db-hld}
@@ -266,6 +331,40 @@ User comes from the JWT, never the body.</code></pre>
   <li>ACL = SharedFiles; File Service checks it before signing any URL.</li>
   <li>Signed URLs are <b>bearer tokens</b>: anyone holding an unexpired one can download. Keep expiry short (~5 min); for higher security bind to IP or require auth cookies alongside. CDN validates signature + expiry with the registered public key and serves or denies at the edge.</li>
 </ul>
+
+
+## Trade-offs {#db-tradeoffs}
+
+<table>
+  <tbody><tr><th>Decision</th><th>What we chose</th><th>What we gave up</th><th>When to flip it</th></tr>
+  <tr><td>Byte path</td><td>Direct client ↔ S3 via presigned URLs</td><td>No server‑side inspection, transformation or scanning in line</td><td>Proxy through the service only for small files needing transformation; at 50 GB it would make server capacity a function of file size</td></tr>
+  <tr><td>Large files</td><td>Multipart chunks of 5–10 MB</td><td>Thousands of parts to track, and a completion step that can fail</td><td>Single‑shot upload is fine under a few hundred MB; beyond that a dropped connection at 90% is unacceptable</td></tr>
+  <tr><td>Sync mechanism</td><td>Push notifications plus a polling change feed</td><td>Two mechanisms to build and keep consistent</td><td>Polling alone is simple but either slow or expensive; push alone silently misses devices that were asleep</td></tr>
+  <tr><td>Consistency</td><td>Eventual across devices; strong only on the completion flip</td><td>A device can briefly show a stale view</td><td>Strong consistency would mean coordinating every device on every write, for a property nobody would notice</td></tr>
+  <tr><td>Authorization</td><td>Checked on every download, then a short‑lived URL</td><td>An extra round trip before every download</td><td>Never bake permission into a long‑lived URL — possession would become permission, and revocation would stop working</td></tr>
+  <tr><td>Deduplication</td><td>Fingerprint at file level</td><td>Near‑identical files store twice; cross‑user dedupe leaks existence information</td><td>Chunk‑level dedupe saves far more for versioned files but is markedly more complex and has real privacy implications</td></tr>
+  <tr><td>Delivery</td><td>CDN in front of object storage</td><td>Cache invalidation on delete, and cost for rarely shared files</td><td>Serve straight from S3 when files are mostly private and downloaded once — the CDN earns its keep on shared content</td></tr>
+</tbody></table>
+
+## Safety-first design {#db-safety}
+
+<div class="cards">
+  <div><h4>A signed URL is a capability, not a door</h4><ul>
+    <li><b>Scoped to one object, one operation.</b> A part URL can write exactly one part; a download URL can read exactly one file — neither can be edited into access to anything else.</li>
+    <li><b>Minutes, not days.</b> Short expiry means a URL that leaks through a log, a screenshot or a shared link is worthless almost immediately.</li>
+    <li><b>Permission is re‑checked, always.</b> Every download starts with an ACL check at the service, so revoking a share takes effect on the next request rather than whenever a cached URL expires.</li>
+    <li><b>Never log the URL.</b> Signed URLs in access logs turn an observability system into a set of live credentials.</li></ul></div>
+  <div><h4>Nothing is visible until it is whole</h4><ul>
+    <li><b>Uploading files are invisible.</b> The metadata row exists but is marked incomplete, so sync and downloads never see a half‑written file.</li>
+    <li><b>Storage confirms, not the client.</b> The completion flip happens on S3's event and ETag verification, so metadata can never describe bytes that are not there.</li>
+    <li><b>Resume rather than restart.</b> Durable per‑chunk progress means a failure at 90% costs one chunk, which is what makes 50 GB files usable on real networks.</li>
+    <li><b>Deletion reaches every copy.</b> Blobs, chunks, metadata, share rows and CDN caches — a delete that leaves any of them behind is not a delete.</li></ul></div>
+  <div><h4>Sync that cannot silently lose a file</h4><ul>
+    <li><b>Push for speed, poll for truth.</b> Notifications are best‑effort; the cursor‑based change feed is the mechanism that guarantees a device eventually converges.</li>
+    <li><b>Catch‑up is one query.</b> A device offline for a week asks for everything since its cursor rather than reconciling file by file.</li>
+    <li><b>Notifications carry no content.</b> They say what changed, and the device then fetches through the normal authorised path — so a stray notification leaks nothing.</li>
+    <li><b>Availability over consistency, deliberately.</b> A few seconds of lag is invisible; a failed download is not, and the design is tuned for the failure users actually feel.</li></ul></div>
+</div>
 
 ## Don't leave the room without saying {#db-checklist}
 
