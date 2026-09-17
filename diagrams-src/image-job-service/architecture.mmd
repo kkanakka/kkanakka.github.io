@@ -1,0 +1,13 @@
+%% section: Design
+%% caption: Architecture
+flowchart TB
+    SUB["POST /jobs"] --> PEND["PENDING"]
+    PEND -->|"claim: conditional UPDATE + SKIP LOCKED"| RUN["RUNNING · owner + leaseUntil"]
+    RUN -->|"complete WHERE owner=me"| DONE["DONE"]
+    RUN -->|"lease expired"| PEND
+    RUN -->|"attempts ≥ 3"| FAIL["FAILED · error kept"]
+    PEND -->|"cancel"| CAN["CANCELLED"]
+    RUN -->|"cancel"| CAN
+    W["Workers · scale on queue depth"] --- RUN
+    RP["Reaper"] --- RUN
+    OUT[("Output key = f(job, op, version) — idempotent")] --- DONE

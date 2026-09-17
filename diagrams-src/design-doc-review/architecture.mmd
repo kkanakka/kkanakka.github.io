@@ -1,0 +1,21 @@
+%% section: Design
+%% caption: Architecture
+flowchart TB
+    DOC["Design document"] --> INTENT["Pass 1 · read for intent only"]
+    INTENT --> NUM{"Requirements as numbers?"}
+    NUM -->|"no"| F0["Top finding — nothing else can be evaluated"]
+    NUM -->|"yes"| CHK["Run the checklist, not a linear read"]
+    CHK --> C1["Data model · source of truth vs derived"]
+    CHK --> C2["Dependencies · slow / down / partial"]
+    CHK --> C3["Overload · shed, queue, or collapse"]
+    CHK --> C4["Data lifecycle · copies, retention, deletion"]
+    CHK --> C5["Operability · monitor, roll back, debug"]
+    CHK --> C6["Migration · incremental and reversible?"]
+    C1 --> RANK["Rank by blast radius × reversibility"]
+    C2 --> RANK
+    C3 --> RANK
+    C4 --> RANK
+    C5 --> RANK
+    C6 --> RANK
+    RANK --> CUT["Cut to 5–10 findings"]
+    CUT --> OUT["BLOCKING / SHOULD-FIX / CONSIDER / QUESTION"]

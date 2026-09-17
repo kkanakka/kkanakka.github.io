@@ -1,0 +1,15 @@
+sequenceDiagram
+    autonumber
+    participant R as Reviewer
+    participant D as Document
+    participant A as Author
+    R->>D: read once for intent, noting nothing
+    Note over R,D: if you cannot state the central bet in a sentence, that is finding one
+    R->>D: are the requirements numbers, or adjectives?
+    R->>D: run the checklist — absence is invisible to a linear read
+    R->>D: for each dependency — slow? down? partial?
+    R->>D: what happens above capacity, and was it chosen?
+    R->>D: where does sensitive data live, and how does deletion reach every copy?
+    R->>R: rank by blast radius × reversibility, then cut to 5–10
+    R->>A: claim + failing scenario + alternative with its cost
+    A-->>R: disagreement — which means the document needs a sentence

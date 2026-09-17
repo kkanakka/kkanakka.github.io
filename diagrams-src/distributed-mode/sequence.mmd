@@ -1,0 +1,15 @@
+sequenceDiagram
+    autonumber
+    participant Co as Coordinator
+    participant W as Workers (x1000)
+    Note over Co,W: mode — two rounds, exact
+    Co->>W: scan your own partition
+    W-->>Co: top-m local values with counts, plus the partition total
+    Co->>Co: bound each candidate's global count — prune anything that cannot win
+    Co->>W: broadcast the surviving candidate set
+    W-->>Co: exact count of every candidate over the full partition
+    Co->>Co: sum, argmax, deterministic tie-break
+    Note over Co,W: median — binary search the value domain, not the items
+    Co->>W: pivot or bucket boundaries
+    W-->>Co: count(< pivot), count(== pivot)
+    Co->>Co: recurse into the side containing k

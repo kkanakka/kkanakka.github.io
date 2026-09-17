@@ -1,0 +1,15 @@
+%% section: Design
+%% caption: Architecture
+flowchart TB
+    SPIKE["p95: 100 ms → 2000 ms"] --> D1{"Did p50 move too?"}
+    D1 -->|"no — subset"| SUB["Slice by tenant, endpoint, version, region"]
+    D1 -->|"yes — systemic"| SYS["Dependency, resource ceiling, or a deploy"]
+    SUB --> LED["Per-hop latency ledger"]
+    SYS --> LED
+    LED --> D2{"Do the hops sum to the total?"}
+    D2 -->|"no — missing time"| QUE["Queueing: 1/(1−ρ)"]
+    D2 -->|"yes"| DEP["The hop that grew"]
+    QUE --> MIT["Mitigate: shed, roll back, add capacity"]
+    DEP --> MIT
+    MIT --> FIX["Rank fixes by measured milliseconds"]
+    FIX --> MON["Add the alert that would have fired"]

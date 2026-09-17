@@ -1,0 +1,20 @@
+sequenceDiagram
+    autonumber
+    participant C as Client
+    participant S as Search service
+    participant E as Embedding tier
+    participant A as ANN index
+    participant B as BM25 index
+    C->>S: query, k=10, filters
+    S->>S: cache lookup keyed by query + filter + model version
+    S->>E: embed the query (batched)
+    E-->>S: vector
+    par run both retrievers together
+        S->>A: vector search, k*3, filters applied during traversal
+        S->>B: lexical search, k*3
+    end
+    A-->>S: candidates with distances
+    B-->>S: candidates with BM25 scores
+    Note over S: the two score scales are not comparable — fuse by rank
+    S->>S: reciprocal rank fusion to one top-k
+    S-->>C: hits with both component scores, and the mode used

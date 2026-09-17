@@ -1,0 +1,19 @@
+sequenceDiagram
+    autonumber
+    participant C as Client
+    participant Q as Coordinator
+    participant S as Shards (x100)
+    participant L as LLM rerank
+    C->>Q: search query, k=20
+    Q->>Q: parse, plan, reject pathological shapes
+    Q->>S: scatter with an absolute deadline
+    Note over Q,S: hedge to a second replica past the shard p95
+    S-->>Q: per-shard top-k with globally comparable scores
+    Q->>Q: at the deadline, merge whatever arrived
+    alt budget remains
+        Q->>L: top-50 candidates
+        L-->>Q: reordered top-k
+    else LLM tier saturated
+        Note over Q,L: shed, not queue — keyword ranking stands on its own
+    end
+    Q-->>C: hits, cursor, index version, partial flag

@@ -1,0 +1,13 @@
+%% section: Design
+%% caption: Architecture
+flowchart TB
+    ED["Editor · virtualised, delta autosave"] --> API["Prompt service"]
+    ED -->|"bodies > 256 KB, presigned"| BLOB[("Object store · content-addressed bodies")]
+    API --> DB[("Metadata · Prompt head → immutable PromptVersions")]
+    RUN["Run service"] --> EST["Estimate tokens · check budget"]
+    EST --> SAFE["Input safety"]
+    SAFE --> MODEL["Model API · pinned version"]
+    MODEL --> OUT[("Run output blob")]
+    RUN --> DB
+    DB --> CMP["Compare runs · prompt diff + settings diff + output diff"]
+    OUT --> CMP

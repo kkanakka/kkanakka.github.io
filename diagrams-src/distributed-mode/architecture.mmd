@@ -1,0 +1,15 @@
+%% section: Design
+%% caption: Architecture
+flowchart TB
+    N["Naive: ship everything · 1T items ≈ 8 TB"] -.->|"rejected"| X["Too much communication"]
+    P1[("Partition 1")] --> L1["Local frequency table, capped"]
+    P2[("Partition 2")] --> L2["Local frequency table, capped"]
+    PN[("Partition N")] --> LN["Local frequency table, capped"]
+    L1 --> TOP["Top-m per worker"]
+    L2 --> TOP
+    LN --> TOP
+    TOP --> PR["Prune by exact upper bound"]
+    PR --> CAND["Small candidate set"]
+    CAND --> EX["Round 2: exact count everywhere"]
+    EX --> MODE["Exact mode ≈ 1 MB exchanged"]
+    CNT["count(< pivot), count(== pivot)"] --> MED["Exact median ≈ 3 bucketed rounds"]

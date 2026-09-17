@@ -1,0 +1,17 @@
+%% section: Design
+%% caption: Architecture
+flowchart TB
+    C["Client"] --> Q["Query coordinator · deadline owner"]
+    Q --> S1["Shard 1 · 3 replicas"]
+    Q --> S2["Shard 2 · 3 replicas"]
+    Q --> SN["Shard 100 · 3 replicas"]
+    S1 --> M["Merge to global top-k"]
+    S2 --> M
+    SN --> M
+    M -->|"budget remains"| L["LLM rerank · batched, sheds under load"]
+    M -->|"no budget"| R["Response"]
+    L --> R
+    DOC[("Document store · source of truth")] --> IX["Indexer · immutable segments"]
+    IX --> S1
+    IX --> S2
+    IX --> SN

@@ -1,0 +1,16 @@
+%% section: Design
+%% caption: Architecture
+flowchart TB
+    G["get(key)"] --> MAP["Hash map · key → node"]
+    P["put(key, value)"] --> MAP
+    MAP --> LIST["Doubly linked list · MRU head, LRU tail"]
+    LIST --> EV["Evict tail when over capacity"]
+    P --> WAL[("WAL · append-only, seq + crc")]
+    EV --> WAL
+    WAL --> FS{"fsync policy"}
+    FS -->|"per write"| D1["Nothing lost · ~1 ms"]
+    FS -->|"group commit"| D2["≤ one interval lost · memory speed"]
+    COMP["Compactor"] --> SNAP[("Snapshot · contents in LRU order")]
+    SNAP --> TRUNC["Truncate WAL below snapshot seq"]
+    SNAP --> REC["Recovery: load + replay tail"]
+    WAL --> REC

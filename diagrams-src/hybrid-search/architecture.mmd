@@ -1,0 +1,15 @@
+%% section: Design
+%% caption: Architecture
+flowchart TB
+    C["Client"] --> S["Search service · 50 ms budget"]
+    S --> QC[("Query cache · keyed by model version")]
+    S --> E["Embedding tier · GPU, batched"]
+    E --> A["HNSW index · efSearch is the recall dial"]
+    S --> B["BM25 inverted index"]
+    A --> F["Fusion · RRF by rank"]
+    B --> F
+    F --> H["Hydrate top-k"]
+    H --> C
+    D[("Documents")] --> EB["Offline batch embedding"]
+    EB --> A
+    D --> B

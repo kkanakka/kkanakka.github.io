@@ -1,9 +1,9 @@
 {
   "label": "System Design Notes",
-  "position": 4,
+  "position": 4.5,
   "link": {
     "type": "generated-index",
     "slug": "/system-design-notes",
-    "description": "Interview-shaped system design notes: a reference checklist, then one page per problem — requirements, entities and API, the design, and the deep dives the interviewer is waiting for."
+    "description": "Classic interview-shaped system design notes — a reference checklist, then one page per problem: requirements, the numbers to commit to, entities and API, an explained flow between components, deep dives, trade-offs and safety. Anthropic-sourced questions live in the AIRE section."
   }
 }

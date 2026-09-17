@@ -1,0 +1,19 @@
+sequenceDiagram
+    autonumber
+    participant C as Client
+    participant A as Job API
+    participant D as Database
+    participant W as Worker
+    participant Rp as Reaper
+    C->>A: POST /jobs {imageRef, ops, idempotencyKey}
+    A->>D: INSERT job state=PENDING (unique on idempotency key)
+    A-->>C: 202 jobId
+    W->>D: claim — one conditional UPDATE, FOR UPDATE SKIP LOCKED
+    D-->>W: RUNNING with owner and leaseUntil
+    Note over W,D: ownership is a lease, not a lock — it expires without anyone alive
+    W->>W: validate the header before decoding, hard memory and time caps
+    W->>D: heartbeat, guarded by owner AND state
+    W->>D: complete WHERE owner=me AND state=RUNNING
+    Note over W,D: zero rows updated means ownership was lost — discard the work
+    Rp->>D: expired lease → back to PENDING, attempts already incremented
+    Rp->>D: attempts ≥ 3 → FAILED with the last error

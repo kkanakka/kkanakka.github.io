@@ -1,0 +1,9 @@
+{
+  "label": "AIRE — Anthropic Questions",
+  "position": 4,
+  "link": {
+    "type": "generated-index",
+    "slug": "/aire",
+    "description": "Anthropic interview questions, one page per problem: requirements, the numbers to commit to, entities and API, an explained flow between components, deep dives, trade-offs, and the safety-first design the interviewer is waiting for."
+  }
+}

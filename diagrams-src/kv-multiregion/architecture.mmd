@@ -1,0 +1,13 @@
+%% section: Design
+%% caption: Architecture
+flowchart TB
+    U1["Users · US"] --> E1["US edge"]
+    U2["Users · EU"] --> E2["EU edge"]
+    E1 --> C1[("US cache · ~95% hit rate = the capacity plan")]
+    E2 --> C2[("EU cache")]
+    C1 --> S1[("US store · consistent hashing, virtual nodes")]
+    C2 --> S2[("EU store")]
+    S1 <-->|"async replication · ordered per key"| S2
+    S1 -.->|"invalidate on apply"| C2
+    S2 -.->|"invalidate on apply"| C1
+    NOTE["150 ms cross-region RTT vs a 100 ms p95 budget → reads never leave the region"]

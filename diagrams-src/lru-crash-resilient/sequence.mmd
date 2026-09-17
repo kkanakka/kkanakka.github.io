@@ -1,0 +1,17 @@
+sequenceDiagram
+    autonumber
+    participant App as Caller
+    participant C as Cache (map + list)
+    participant W as WAL
+    participant S as Snapshot
+    App->>C: get(key)
+    C->>C: move node to head — a read mutates state
+    Note over C,W: recency order is deliberately not durable
+    C-->>App: value (no disk write)
+    App->>C: put(key, value)
+    C->>W: append {seq, PUT, key, value, crc}
+    Note over W: fsync policy is the durability guarantee
+    C-->>App: ack after the buffered append
+    S->>S: periodic snapshot in LRU order, atomic rename
+    S->>W: truncate below the snapshot seq
+    Note over C,S: recovery = newest valid snapshot + WAL tail, stop at the first bad CRC

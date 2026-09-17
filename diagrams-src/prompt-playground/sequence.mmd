@@ -1,0 +1,19 @@
+sequenceDiagram
+    autonumber
+    participant Ed as Editor
+    participant P as Prompt service
+    participant O as Object store
+    participant R as Run service
+    participant M as Model API
+    Ed->>Ed: edits applied locally — no network on a keystroke
+    Ed->>P: debounced draft autosave (delta, not the whole body)
+    Ed->>O: large bodies go direct via a presigned URL
+    Ed->>P: commit a version
+    P->>P: immutable PromptVersion {bodyRef, hash, size}
+    Ed->>R: run {promptVersionId, settings, model}
+    R->>R: estimate tokens and cost, check budget before spending
+    R->>O: stream the body by ref, verify the hash
+    R->>M: run against the pinned model version
+    M-->>R: token stream
+    R-->>Ed: SSE deltas, buffered so a drop resumes rather than re-bills
+    R->>O: persist output, record real usage and cost

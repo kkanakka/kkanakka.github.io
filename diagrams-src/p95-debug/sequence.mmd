@@ -1,0 +1,17 @@
+sequenceDiagram
+    autonumber
+    participant A as Alert
+    participant R as Responder
+    participant M as Metrics
+    participant T as Traces
+    participant X as Mitigation
+    A->>R: p95 burn-rate alert with ledger and exemplars
+    R->>M: compare p50 vs p95 vs p99
+    Note over R,M: subset or systemic — this one comparison splits the problem
+    R->>M: correlate the inflection point with deploys, flags, config
+    R->>M: bisect the stack by per-hop ledger
+    R->>M: bisect the traffic by tenant, endpoint, version, region
+    R->>M: check saturation — queue depth, pool waiters
+    R->>T: pull exemplars from the slow bucket, not random samples
+    R->>X: mitigate before root cause — roll back, shed, add capacity
+    R->>R: rank fixes by measured milliseconds recovered
