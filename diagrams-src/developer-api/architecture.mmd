@@ -1,16 +1,29 @@
 %% section: Design
-%% caption: Architecture
+%% caption: Architecture — identity, limits, metering and the streaming contract
 flowchart TB
-    C["Developer client"] --> E["Edge · TLS, millions of open streams"]
-    E --> A[("Auth cache · hashed keys, leased")]
-    E --> L[("Limiter · key / workspace / org / global")]
-    E --> S["API service · version validation, idempotency"]
-    S --> SAFE["Input safety"]
-    SAFE --> I["Inference fleet · batching and GPUs"]
-    I --> S
-    I --> M["Metering · counts from the source"]
-    M --> L
-    M --> LED[("Billing ledger · durable, reconciled")]
-    M --> CNT[("Live counters · fast, approximate")]
-    REV["Key revocation"] -.->|"push invalidation, seconds"| A
-    SUP["Support by request id · metadata only, never payloads"] --- S
+    C["<b>Developer client</b><br/>SDK · retries with<br/>idempotency-key<br/>anthropic-version header"]
+    E["<b>Edge</b><br/>TLS terminate<br/>millions of open streams<br/>resolves identity once"]
+    AC[("<b>Auth cache</b> (local, leased)<br/>sha256(key) → org, workspace<br/>scopes, tier, limits<br/>push-invalidated on revoke")]
+    LB[("<b>Local token buckets</b><br/>key · workspace · org · global<br/>reserve = prompt + max_tokens<br/>decision in µs, no I/O")]
+    S["<b>API service</b><br/>validate vs dated version<br/>idempotency short-circuit<br/>error taxonomy"]
+    SF["<b>Safety</b><br/>input classify,<br/>concurrent with prefill<br/>output classify on stream"]
+    I["<b>Inference fleet</b><br/>admission · pool choice<br/>prefix-cache routing<br/>continuous batching"]
+    M["<b>Metering</b><br/>counts from the source<br/>idempotent on request_id"]
+    PG[("<b>Postgres</b><br/>orgs, workspaces<br/>api_keys (hash, scopes, prefix)<br/>tier defaults + overrides")]
+    RD[("<b>Redis</b><br/>quota:{key}:{window}<br/>Lua lease, atomic<br/>seeded from config")]
+    LED[("<b>Usage ledger</b><br/>upsert (org, model, day)<br/>durable · reconciled nightly<br/>invoices read this")]
+
+    C -->|"1 POST /v1/messages"| E
+    E -->|"2 resolve key"| AC
+    E -->|"3 check 4 layers"| LB
+    E -->|"429 + Retry-After<br/>names which limit"| C
+    E -->|"4 forward w/ identity"| S
+    S --> SF
+    SF -->|"5 admitted"| I
+    I -->|"6 SSE deltas, per-event id"| C
+    I -.->|"7 usage event (async)"| M
+    M -.->|"8 refresh counters"| RD
+    M -.->|"9 durable upsert"| LED
+    PG -.->|"config, 60s TTL"| AC
+    PG -.->|"quota passed as Lua arg"| LB
+    RD -.->|"lease ~5s"| LB
