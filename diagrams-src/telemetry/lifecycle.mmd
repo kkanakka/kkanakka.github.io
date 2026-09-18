@@ -1,0 +1,18 @@
+%% section: Part 2: reconcile naming variants
+%% caption: The alias lifecycle — detection to revocation, reversible at every step
+flowchart TB
+    UNK["Unresolved name → quarantine"] --> Q["Review queue · counts, versions, labels, distribution"]
+    Q --> PROP["PENDING proposal · scope, raw_name, version range, metric_id"]
+    PROP --> EV{"Evidence?"}
+    EV -->|"code diff · same type, unit, labels · distributions match"| APR["Owner approves · proposer may not"]
+    EV -->|"name merely looks similar"| REJ["Not evidence — stays quarantined"]
+    APR --> SHD["Shadow · resolve in parallel, act on nothing"]
+    SHD --> QT["Query-time resolution · canonical storage untouched"]
+    QT --> SOAK{"Soak checks"}
+    SOAK -->|"step change · x1000 ratio · per-device duplicates"| REV["REVOKE · re-derive from raw"]
+    SOAK -->|"clean"| BF["Backfill canonical under a new mapping_version"]
+    BF --> PUB["Change log · provenance flag · notify affected consumers"]
+    PUB --> MIG["New SDK emits the canonical name; alias kept forever"]
+    REV --> Q
+    RAW[("Raw store · never modified — this is what makes revocation possible")] -.-> BF
+    RAW -.-> REV
