@@ -20,6 +20,48 @@ description: "hard · Anthropic · ingest + store + query · metric identity · 
 </header>
 <p>Deployed clients emit metric observations; the platform stores them and serves analysis. The twist: older client versions emit the same intended metric under different names, not all clients can be upgraded, and a similar name is not proof of the same meaning. The design has to keep raw truth, resolve names through a governed registry, and be able to undo a wrong mapping without double counting.</p>
 
+## What this problem actually is {#tl-what}
+
+<p>Before any architecture, it is worth being concrete about the words in the question, because the whole design follows from what they mean.</p>
+
+<div class="cards">
+  <div><h4>"Deployed clients"</h4><ul>
+    <li><b>Software you shipped that runs somewhere you do not control:</b> a mobile app on a million phones, an SDK embedded in customers' servers, an agent on VMs, a desktop app, an IoT device.</li>
+    <li><b>The defining property is that you cannot upgrade them on demand.</b> Someone is still running the version you shipped eighteen months ago, and may never update. The prompt states this explicitly, and it is what rules out any solution involving a flag day.</li>
+    <li><b>So every client version in the wild is a permanent part of the input.</b> Old names are not a migration to finish; they are traffic you will receive forever.</li></ul></div>
+  <div><h4>"Metric observations"</h4><ul>
+    <li><b>Numbers the client reports about itself</b> — not user data. Request latency, error counts, cache hit rate, upload duration, queue depth, tokens used, battery level.</li>
+    <li><b>One observation looks like</b> <code>{name: "request_latency_ms", value: 143, ts: …, labels: {region: "us-east", endpoint: "/v1/chat"}}</code>.</li>
+    <li><b>You collect them to answer "is the fleet healthy?"</b> — dashboards, alerts, capacity planning, and sometimes billing, which is why correctness matters more than it first appears.</li></ul></div>
+  <div><h4>"Different naming variants"</h4><ul>
+    <li><b>The same measurement, renamed across releases.</b> Instrumentation gets refactored, teams adopt a naming convention, someone fixes a typo — and each shipped version is stuck with whatever name it had.</li>
+    <li><b>So one real quantity arrives under several strings at once,</b> from several client populations, all live simultaneously.</li>
+    <li><b>And sometimes two similar names are <em>not</em> the same thing</b> — different units, different type, or measuring a different span. That ambiguity is the heart of the question.</li></ul></div>
+</div>
+
+### A concrete example {#tl-example}
+
+<p>Your SDK measures how long a request takes. Over three years it shipped under three names, and all three client populations are live right now:</p>
+
+<table>
+  <tbody><tr><th>Client version</th><th>Metric name emitted</th><th>Type</th><th>Unit</th><th>Share of fleet</th></tr>
+  <tr><td>v1.x (2023)</td><td><code>request_latency_ms</code></td><td>histogram</td><td>milliseconds</td><td>30%</td></tr>
+  <tr><td>v2.x (2024)</td><td><code>http_request_duration_ms</code></td><td>histogram</td><td>milliseconds</td><td>45%</td></tr>
+  <tr><td>v3.x (2025)</td><td><code>http.request.duration</code></td><td>histogram</td><td><b>seconds</b></td><td>25%</td></tr>
+</tbody></table>
+
+<p>Two failures are available, and they point in opposite directions:</p>
+
+<ul>
+  <li><b>Do not merge them</b> → the "request latency" dashboard shows only v3 clients. You are looking at a quarter of the fleet and nothing tells you so. An incident affecting v1 devices is invisible.</li>
+  <li><b>Merge all three naively</b> → v3's <em>seconds</em> are averaged with v1 and v2's <em>milliseconds</em>. A p99 of 800 ms and a p99 of 0.8 s land in the same bucket 1000× apart, the percentile becomes meaningless, and the chart looks better than ever. Nothing errors.</li>
+  <li><b>Correct</b> → v1 and v2 are a genuine alias pair and merge cleanly. v3 measures the same thing but in a different unit, so it merges <em>only</em> with a declared conversion. If it had also been a different type, or measured a different span, it would not merge at all.</li>
+</ul>
+
+<div class="trap"><b>The question in one sentence:</b> merge what is genuinely the same, refuse to merge what merely looks the same — for data arriving now <em>and</em> for the years of history already stored — and be able to undo a merge you later discover was wrong, without double counting and without losing the original.</div>
+
+<p>Everything below follows from that: raw observations are kept untouched as the source of truth (so a wrong merge is reversible), names resolve to a stable identity through a registry that requires evidence and an owner's approval (so merges are deliberate), and every stored aggregate records the mapping version it was computed under (so a number that changes can be explained).</p>
+
 ## Requirements and clarifying questions {#tl-requirements}
 
 <div class="board">
