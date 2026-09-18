@@ -45,7 +45,10 @@ description: "hard · Anthropic · chunking · swarm · rarest‑first · per‑
       <li>Publish a new weights version (hundreds of GB) and have every node in a fleet obtain an identical, verified copy</li>
       <li>Nodes can join late, restart mid‑download, and resume</li>
       <li>Operators can see progress per node and abort/rollback a distribution</li>
-      <li class="out">Serving the weights, choosing when to flip traffic (rollout system)</li>
+      <li>Distinguish nodes with unknown, reserved, available and insufficient capacity</li>
+      <li>A worker becomes routable only after verify → load → warm → functional probe</li>
+      <li>Route by attested version; never send traffic to a partially loaded instance</li>
+      <li class="out">Training the weights; choosing the ramp schedule (see the rollout page)</li>
     </ol>
   </div>
   <div>
@@ -258,6 +261,141 @@ GET  /distributions/:id/progress                     -&gt; {done, inProgress, fa
   <li>Progress endpoint aggregates bitmaps; abort deletes the distribution and nodes stop serving that version.</li>
 </ol>
 
+## Two state machines, not one {#infra-weights-states}
+
+<p>The single most useful framing for this problem: <b>publication and readiness are separate state machines that must not be conflated.</b> One is about an artifact existing; the other is about a particular process being able to serve it. Most wrong answers here collapse them, and the result is traffic routed at a worker that has the bytes on disk but has not loaded them.</p>
+
+<div class="board">
+  <div>
+    <h4>Publication — about the artifact</h4>
+    <ol>
+      <li><b>DRAFT</b> — bytes uploading to origin, manifest being built</li>
+      <li><b>PUBLISHED</b> — manifest signed, immutable, fetchable; nothing serves it yet</li>
+      <li><b>PROMOTED</b> — this version is the intended target for some or all of the fleet</li>
+      <li><b>DEPRECATED</b> — still resident for rollback, no longer a target</li>
+      <li><b>REVOKED</b> — must not be served; workers evict on sight</li>
+    </ol>
+  </div>
+  <div>
+    <h4>Readiness — about one worker</h4>
+    <ol>
+      <li><b>UNKNOWN</b> — capacity not yet reported; ineligible for admission</li>
+      <li><b>RESERVED</b> — disk reserved for version V, nothing downloaded</li>
+      <li><b>FETCHING</b> — shards arriving, bitmap partial</li>
+      <li><b>VERIFIED</b> — all shards present, per‑chunk hashes and Merkle root pass</li>
+      <li><b>LOADING</b> — reading from disk into GPU memory</li>
+      <li><b>WARMING</b> — loaded, running warm‑up passes, not yet routable</li>
+      <li><b>READY(V)</b> — functional probe passed; may receive traffic for exactly V</li>
+      <li><b>DRAINING</b> / <b>FAILED</b> — finishing in‑flight work, or unhealthy</li>
+    </ol>
+  </div>
+</div>
+<div class="note"><b>Why separation matters:</b> a version can be PROMOTED while only 3% of workers are READY for it — that is a normal, healthy rollout. Conversely a worker can be READY(v41) while v42 is PROMOTED, which is exactly what makes rollback instant. The router only ever asks the readiness question, never the publication one, and the answer is <em>attested per worker per version</em> rather than inferred from a deployment.</div>
+
+## Capacity discovery and admission {#infra-weights-capacity}
+
+<p>The prompt calls out "nodes with unknown capacity", and it is a sharper problem than it sounds: the dangerous state is not "full", it is <b>"we do not know"</b>. A scheduler that treats unknown as available will fill a disk mid‑transfer and fail 300 GB in.</p>
+
+<table>
+  <tbody><tr><th>Node state</th><th>Meaning</th><th>Admission decision</th></tr>
+  <tr><td><b>UNKNOWN</b></td><td>No capacity report, or the report is older than the staleness threshold</td><td><b>Ineligible.</b> Never admit — an unknown is not an optimistic available. Probe it, and alarm if it stays unknown.</td></tr>
+  <tr><td><b>AVAILABLE</b></td><td>Fresh report showing free bytes ≥ artifact size + headroom</td><td>Admit; immediately move the claimed bytes to RESERVED so two rollouts cannot both count them</td></tr>
+  <tr><td><b>RESERVED</b></td><td>Space committed to an in‑flight download</td><td>Not available to anyone else. Reservation carries a lease so a crashed download releases it.</td></tr>
+  <tr><td><b>INSUFFICIENT</b></td><td>Fresh report, not enough room even after evicting deprecated versions</td><td>Reject with a reason. Do not start and hope — a partial download wastes bandwidth and still fails.</td></tr>
+  <tr><td><b>EVICTABLE</b></td><td>Would be sufficient if N deprecated versions were garbage collected</td><td>Admit conditionally: GC first, verify the free space, then reserve</td></tr>
+</tbody></table>
+
+<ul>
+  <li><b>Reserve before fetching, always.</b> Disk reservation is the same idea as reserving inventory before taking payment: commit the scarce resource first, then do the slow thing.</li>
+  <li><b>Reservations are leased.</b> A worker that dies mid‑download would otherwise hold its reservation forever; expiry returns the space with no cleanup protocol.</li>
+  <li><b>Capacity is reported, not assumed.</b> Free bytes, resident versions with sizes, and a timestamp — the timestamp is what makes staleness detectable.</li>
+  <li><b>Headroom is mandatory.</b> Reserve artifact size plus room for the activation step; a disk at 100% cannot even write a symlink, which turns a successful download into a failed activation.</li>
+</ul>
+
+## The worker's local lifecycle {#infra-weights-local}
+
+<p>Everything from "space reserved" to "serving traffic", including the two crash points the prompt names: after some shards, and after loading but before becoming routable.</p>
+
+<ol class="order">
+  <li><b>Reserve disk for version V.</b>
+    Free space is checked against the manifest's total size plus headroom, and the reservation is recorded durably so it survives a restart.
+    Garbage collection of deprecated versions runs first if needed — but never of a version that is still READY or still within the rollback window.</li>
+  <li><b>Fetch shards in parallel into a staging directory.</b>
+    Downloads land in <code>staging/V/</code>, never in the path the loader reads from, which is what makes a partial download invisible to everything else.
+    Each chunk is verified against the signed manifest as it arrives, so corruption is caught at 64 MB granularity rather than after 300 GB.
+    The bitmap of completed chunks is persisted after each one — this is the entire crash‑resume mechanism, and it costs one small write per chunk.</li>
+  <li><b>Crash during fetch → resume from the bitmap.</b>
+    On restart the worker re‑reads its persisted bitmap, discards any chunk that was mid‑write (detectable because its hash fails), and requests only what is missing.
+    A 300 GB transfer interrupted at 90% resumes at 90%, which at this scale is the difference between minutes and hours.
+    The reservation is still held, so the space it was using has not been handed to someone else in the meantime.</li>
+  <li><b>Verify the whole artifact.</b>
+    Every chunk hash passed individually; now the Merkle root proves the chunks are the right chunks of the right version, and the signature proves the manifest itself is authentic.
+    <b>A checksum failure is not a retry‑forever condition.</b> Retry the specific chunk from a different source a bounded number of times; if it keeps failing, mark the worker FAILED and alarm — repeated corruption usually means bad hardware, and re‑pulling forever hides a dying disk or NIC.</li>
+  <li><b>Activate atomically.</b>
+    Move or hard‑link <code>staging/V/</code> to <code>versions/V/</code> and flip a single symlink or write a single marker file — one atomic filesystem operation.
+    Atomicity is what guarantees there is no instant at which the loader can observe a half‑present version, and it is what makes crash‑at‑activation harmless: either the marker exists and the version is complete, or it does not and the version simply is not there.</li>
+  <li><b>Load into GPU memory.</b>
+    This is a separate, slow step — tens of seconds to minutes — and it is where the second crash point lives: bytes on disk, nothing in HBM.
+    <b>Disk presence must never imply readiness.</b> A worker that crashed here restarts, finds the artifact verified on disk, and loads again without re‑downloading a byte.</li>
+  <li><b>Warm up.</b>
+    Run a few representative inferences to populate kernels, memory pools and caches, because a cold replica's first requests are dramatically slower.
+    Without warming, the rollout's own mechanics look like a latency regression and a healthy version gets rolled back.</li>
+  <li><b>Pass a functional probe, then attest READY(V).</b>
+    The probe runs a real inference with a known input and checks the output is sane — not a TCP connect, not a process‑alive check.
+    This is what distinguishes "the weights are loaded" from "the model actually computes": a truncated or wrong‑version load can present as a perfectly healthy process producing garbage.
+    The worker then attests <b>READY for exactly V</b>, and that attestation — not the deployment's intent — is what the router consumes.</li>
+  <li><b>Garbage collect under policy.</b>
+    Keep the current version, the previous one for rollback, and anything else still READY; evict beyond that, oldest deprecated first.
+    GC never touches a version inside the rollback window, because reclaiming 300 GB you need back in ninety seconds is a self‑inflicted outage.
+    A REVOKED version is evicted immediately regardless of policy.</li>
+</ol>
+
+## Routing by attested version {#infra-weights-routing}
+
+<ul>
+  <li><b>The router asks workers, not deployments.</b> Routing tables are built from <code>READY(V)</code> attestations, so a worker that has not finished loading is simply absent from the table — there is no window in which intent outruns reality.</li>
+  <li><b>Requests carry the version they were routed to,</b> and the worker rejects any request for a version it is not READY for. Belt and braces: a stale routing table then causes a cheap rejection and retry rather than an inference against the wrong model.</li>
+  <li><b>Responses report the version that served them,</b> which makes every result attributable and is what allows a quality regression to be traced to a specific rollout.</li>
+  <li><b>Mixed versions are normal, not exceptional.</b> During any rollout both v41 and v42 are serving, and the split is a routing weight rather than a deployment state.</li>
+  <li><b>Affinity is per request, not per session</b> — a request is pinned to its version for its lifetime so a streamed response cannot be half‑generated by two models, but the next request is free to land anywhere. Session‑level pinning would couple a conversation to a version and make draining take as long as the longest session.</li>
+  <li><b>Rollback is a routing change plus a pointer flip,</b> which is fast only because the previous version is still resident and still READY. That is precisely why GC policy is a rollback‑safety property and not a disk‑hygiene one.</li>
+</ul>
+
+## Worked example: v42 to 5,000 workers {#infra-weights-example}
+
+<p>One concrete trace, with numbers, from publish to serving. Artifact 500 GB, 8,000 chunks of 64 MB, fleet of 5,000 GPU workers across 4 regions.</p>
+
+<ol class="order">
+  <li><b>T+0 · Publish.</b> The release job uploads 500 GB to origin and builds the manifest: 8,000 chunk hashes, a Merkle root, chunk size, total size. It signs the manifest with the release key. Version <code>v42</code> is now <b>PUBLISHED</b>. Nothing is serving it and no worker has heard of it.</li>
+  <li><b>T+1m · Admission sweep.</b> The controller asks all 5,000 workers for capacity. 4,600 report fresh numbers with ≥ 600 GB free → <b>AVAILABLE</b>. 300 report 400 GB free but hold a deprecated v39 → <b>EVICTABLE</b>. 60 report insufficient even after GC → <b>INSUFFICIENT</b>, rejected with a reason. 40 do not answer → <b>UNKNOWN</b>, excluded and alarmed. <em>The 40 unknowns are the ones that would have silently failed at 90% under a naive scheduler.</em></li>
+  <li><b>T+2m · Reserve.</b> The 300 evictable workers GC v39, re‑report, and join. 4,900 workers now hold a leased disk reservation for 500 GB + headroom. The reservation is durable, so a restart does not lose the claim.</li>
+  <li><b>T+3m · Seed the first wave.</b> Origin serves <b>40 workers</b> — 10 per region — under a hard connection cap, each pulling a different chunk range. Origin's total upload is roughly one copy of the file, not 5,000. <em>This is the decision that makes the whole thing possible: 2.5 PB of naive fan‑out at 10 Gb/s would be 23 days.</em></li>
+  <li><b>T+6m · Swarm.</b> Seeds announce their bitmaps to the tracker. Remaining workers ask "who has what", pick the rarest chunk they lack, prefer a same‑rack peer, and pull 8–16 chunks in parallel. Each chunk is hashed on arrival; the bitmap is persisted after each one.</li>
+  <li><b>T+9m · A worker crashes at 90%.</b> Worker <code>gpu‑1847</code> dies holding 7,200 of 8,000 chunks. On restart it reads its bitmap, discards one chunk whose hash fails (it was mid‑write), and requests the remaining 801. It resumes at 90% rather than 0%, and its reservation was never released because the lease had not yet expired.</li>
+  <li><b>T+11m · A checksum keeps failing.</b> Worker <code>gpu‑2231</code> fails chunk 4,412's hash from three different peers. That is not a network problem — it is this machine. It is marked <b>FAILED</b>, drained from the rollout, and flagged for hardware inspection. <em>Retrying forever here would have hidden a dying NIC behind a "slow rollout".</em></li>
+  <li><b>T+14m · Verify and activate.</b> The bulk of the fleet has all 8,000 chunks. Each verifies the Merkle root against the signed manifest, then hard‑links <code>staging/v42/</code> into <code>versions/v42/</code> and flips one symlink — atomic. A crash at this instant leaves either "no v42" or "complete v42", never something in between.</li>
+  <li><b>T+15m · Load and warm.</b> Workers read 500 GB from local NVMe into GPU HBM (~90 s), then run 20 warm‑up inferences. They are <b>not routable</b> yet. <em>This is the crash point the prompt names: bytes on disk, nothing in memory. A worker that dies here restarts and re‑loads without re‑downloading anything.</em></li>
+  <li><b>T+17m · Functional probe.</b> Each worker runs a real inference with a pinned input and compares the output against an expected fingerprint. 4,880 pass and attest <b>READY(v42)</b>. 20 produce wrong output despite a clean checksum — a loader bug on a specific GPU model — and are held back. <em>A liveness check would have passed all 4,900.</em></li>
+  <li><b>T+18m · Canary.</b> The router — reading attestations, not deployment intent — sends <b>1%</b> of traffic to READY(v42) workers. The other 99% continues to READY(v41) workers, which are still loaded because GC policy protected them. Requests carry their target version; responses report the version that served them.</li>
+  <li><b>T+48m · Ramp.</b> Gates hold across latency, quality, safety probes and measured throughput, so the weight goes 1 → 5 → 25 → 50 → 100%, baking at each step. Both versions serve throughout; the split is a routing weight, and each request is pinned to one version for its lifetime.</li>
+  <li><b>T+2h · Promote and retain.</b> <code>v42</code> becomes <b>PROMOTED</b>; <code>v41</code> becomes <b>DEPRECATED</b> but stays resident and READY on a subset of workers. <em>That retention is the rollback plan — evicting v41 now would turn a 90‑second rollback into a 20‑minute re‑download.</em></li>
+  <li><b>T+3h · Rollback drill.</b> A quality regression appears. The router shifts weight to v41 within seconds; no download, no reload, because v41 never left memory on those workers. v42's in‑flight requests finish on v42 unless the regression is a safety issue, in which case they are cut.</li>
+</ol>
+
+<div class="trap"><b>The thundering herd, and why it did not happen here.</b> 5,000 workers all learning about v42 at T+0 and all pulling from origin would be 2.5 PB against a single‑digit Gb/s pipe. Four things prevented it: a hard cap of 40 origin connections; jittered start times so the fleet does not act in lockstep; the swarm carrying ~99% of the bytes peer‑to‑peer; and admission control that staged workers in waves rather than releasing all of them at once. Remove any one and the rollout becomes a self‑inflicted outage on the origin.</div>
+
+## Follow-ups {#infra-weights-followups}
+
+<details><summary>How do you prevent a thundering herd when a new version is promoted?</summary><p>Four layers, all needed. <b>Hard connection cap at origin</b> — a fixed small number of seeds, so there is no configuration in which 5,000 workers can stampede object storage. <b>Jittered start times</b> so the fleet does not act in lockstep on a single control‑plane broadcast. <b>Swarm distribution</b> so ~99% of bytes come from peers, making the origin's load independent of fleet size. <b>Staged admission</b> — the controller releases workers in waves rather than all at once, which also keeps per‑rack uplinks from saturating. Note that promotion and distribution are deliberately decoupled: weights are prefetched <em>before</em> the flip, so promotion is a routing change against already‑resident bytes and generates almost no traffic at all.</p></details>
+
+<details><summary>What evidence distinguishes slow network transfer from slow disk or model loading?</summary><p>Instrument the phases separately and the answer is immediate, because they are different states with different metrics. <b>Network:</b> bytes/s per peer, chunks in flight, peer switch rate, retransmits — slow network shows low throughput with idle disk and idle GPU. <b>Disk:</b> write latency (<code>await</code>), queue depth, throughput against the device's rated speed — slow disk shows network delivering fine while the chunk‑complete rate lags behind bytes received. <b>Model load:</b> time from VERIFIED to LOADING‑complete, with disk read throughput during it — this phase has zero network activity by definition, so any time spent here is unambiguous. The single most useful signal is <b>per‑phase duration against a baseline</b>: a worker taking 90 s to load when the fleet median is 30 s is a disk or GPU problem, not a distribution problem. Report the phase histogram per worker, and stuck detection becomes "no state transition in T" rather than a guess.</p></details>
+
+<details><summary>How does a worker resume safely after a crash midway through one shard?</summary><p>The persisted chunk bitmap is the answer, plus the rule that downloads land in a staging directory. On restart: read the bitmap, re‑verify the hash of the most recent chunk (the one that may have been mid‑write) and discard it if it fails, then request only the missing chunks. Nothing partially written is ever visible to the loader because activation is a single atomic operation against a separate directory. The disk reservation is still held under its lease, so the space was not reassigned. And because chunks are content‑addressed and immutable, re‑fetching one is idempotent — there is no "resume offset" negotiation, just a set difference. The crash‑after‑load case is handled by the same principle in reverse: the artifact is VERIFIED on disk, so the worker re‑loads into GPU memory without re‑downloading a byte, and does not become routable until the functional probe passes again.</p></details>
+
+<details><summary>Can old and new model versions serve simultaneously, and how is request affinity handled?</summary><p>Yes — mixed versions are the normal state during any rollout, not an exceptional one. The router builds its table from <code>READY(V)</code> attestations and splits traffic by weight. Affinity is <b>per request, not per session</b>: a request is pinned to its version for its entire lifetime so a streamed response cannot be half‑generated by two models, but the next request from the same user may land on a different version. Session‑level pinning is deliberately avoided because it couples a conversation to a version, makes draining take as long as the longest session, and skews canary metrics by correlating them with user identity. Every request carries its target version and every response reports the version that served it, so metrics can be sliced by version and a regression is attributable. Workers reject requests for versions they are not READY for, which makes a stale routing table a cheap retry rather than an inference against the wrong model.</p></details>
+
+<details><summary>What happens when a node's reported free capacity is missing or stale?</summary><p>It is <b>UNKNOWN</b>, and unknown is <em>not</em> a synonym for available — that conflation is the bug this question is probing for. An unknown node is ineligible for admission: it is not given a reservation, not counted toward rollout capacity, and is alarmed on if it stays unknown past a threshold. The controller probes it actively rather than waiting for a report. Treating unknown as available means filling a disk mid‑transfer and failing 300 GB in, wasting bandwidth and leaving a stuck deployment. Reports carry a timestamp precisely so staleness is detectable, and the staleness threshold should be well under the rollout's own timescale. If a large share of the fleet goes unknown at once, that is itself the alert — it usually means the reporting path broke, not that the disks vanished, and continuing a rollout blind against 40% of the fleet is worse than pausing it.</p></details>
+
 ## Deep dives {#infra-weights-deep}
 
 <!-- DIAGRAM:deep-dive:START -->
@@ -297,6 +435,10 @@ GET  /distributions/:id/progress                     -&gt; {done, inProgress, fa
   <tr><td>Integrity</td><td>Per‑chunk SHA‑256 under a signed manifest</td><td>Hashing cost on every chunk, and a signing key to manage</td><td>Never relax it — unverified bytes from an untrusted peer is the entire risk of running a swarm</td></tr>
   <tr><td>Locality</td><td>Prefer same rack, then same zone</td><td>Rare chunks can bottleneck behind a single distant holder</td><td>Ignore topology only in small, flat networks where every link is equivalent</td></tr>
   <tr><td>After completion</td><td>Keep seeding for a window</td><td>Disk and bandwidth held longer than strictly needed</td><td>Stop immediately only if late joiners are impossible — otherwise the tail of the fleet falls back onto origin</td></tr>
+  <tr><td>Readiness signal</td><td>Functional probe running a real inference</td><td>Probe cost in GPU time, and an expected‑output fingerprint to maintain</td><td>A liveness or process check is cheaper and passes a worker that loaded the wrong version and produces garbage</td></tr>
+  <tr><td>Unknown capacity</td><td>Ineligible for admission</td><td>Fleet coverage — unknown nodes sit out the rollout</td><td>Treating unknown as available fills a disk mid‑transfer and fails 300 GB in; optimism is never the right default for a scarce resource</td></tr>
+  <tr><td>Old version retention</td><td>Keep the previous version resident and READY</td><td>Hundreds of GB of disk held per worker</td><td>Evict immediately only when rollback is genuinely not required — otherwise a 90‑second rollback becomes a 20‑minute re‑download</td></tr>
+  <tr><td>Request affinity</td><td>Pin per request, not per session</td><td>Consecutive requests from one user may hit different versions</td><td>Session pinning keeps a user on one version and makes draining as slow as the longest session while skewing canary metrics by user</td></tr>
 </tbody></table>
 
 ## Safety-first design {#infra-weights-safety}
@@ -329,6 +471,13 @@ GET  /distributions/:id/progress                     -&gt; {done, inProgress, fa
   <li>Resume from bitmap; late joiners; keep seeding after done</li>
   <li>Tree vs swarm trade‑off and why swarm handles stragglers</li>
   <li>Tracker is soft state; gossip fallback</li>
+  <li><b>Publication and readiness are separate state machines</b> — an artifact existing is not a worker serving it</li>
+  <li>Unknown capacity is ineligible, never optimistically available; reserve disk before fetching</li>
+  <li>Staging directory + atomic activation, so a crash leaves complete or absent, never partial</li>
+  <li>Disk presence never implies readiness: verify → load → warm → functional probe → attest READY(V)</li>
+  <li>Route from attestations, not deployment intent; requests carry a version and workers reject mismatches</li>
+  <li>Keep the previous version resident — GC policy is a rollback‑safety property</li>
+  <li>Repeated checksum failure on one node is hardware, not network: fail it, don't retry forever</li>
 </ul>
 
 ## What each level is expected to drive {#infra-weights-levels}

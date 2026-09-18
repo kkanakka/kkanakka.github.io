@@ -373,6 +373,68 @@ GET  /v1/registry/unresolved             -&gt; raw names seen with counts, sampl
 
 <div class="note"><b>How the choices move with the requirements:</b> higher <em>throughput</em> pushes partitioning and pre‑aggregation on the client, and eventually a sampling policy. Tighter <em>freshness</em> shrinks the late‑arrival window and pushes rollups closer to ingest, at the cost of re‑computation when late data lands. Stricter <em>reliability</em> (billing‑grade) forces exactly‑once through the log with per‑batch idempotency keys and a reconciliation job. Heavier <em>historical query</em> load pushes more rollup tiers and longer raw retention, which in turn is what keeps mapping corrections possible further back in time.</div>
 
+## Worked example: one observation, end to end {#tl-example-flow}
+
+<p>Follow a single number from a phone in Berlin to a chart, then follow what happens when it turns out to be the wrong kind of number. Concrete values throughout.</p>
+
+<ol class="order">
+  <li><b>T+0 · The client measures something.</b>
+    A phone running SDK <code>v2.4.1</code> finishes an API call in 143 ms and records
+    <code>{name: "http_request_duration_ms", value: 143, ts: 09:14:02.331, labels: {region: "eu-central", endpoint: "/v1/chat", status: "200"}}</code>.
+    It goes into a bounded in‑memory buffer. Nothing is sent yet — sending one observation per measurement would be 5M requests/s across the fleet.</li>
+  <li><b>T+12s · The SDK batches and sends.</b>
+    The buffer reaches 2,000 observations, so it compresses and POSTs them with <code>client_version=2.4.1</code>, <code>namespace=mobile-app</code>, <code>batch_id=b‑8841</code>, and a per‑observation <code>seq</code>.
+    <em>The phone had been on the underground for 6 minutes, so this batch also carries observations timestamped 09:08.</em> Both client event time and server ingest time are recorded — the gap is how late data is detected rather than silently mis‑bucketed.</li>
+  <li><b>T+12s · Ingest edge validates.</b>
+    Auth passes. Type is <code>histogram</code>, the value shape matches, the timestamp is within the 7‑day late window, the unit <code>ms</code> is declared explicitly.
+    Labels are checked against the allowlist for this metric: <code>region</code>, <code>endpoint</code>, <code>status</code> are permitted. <em>Had the client added <code>user_id</code>, that observation would be rejected with an itemized error — one label like that is millions of new series.</em>
+    Dedupe on <code>(client_id, b‑8841, seq)</code> against a short Redis window: this batch is a retry of one sent 4 s ago that timed out, so 1,847 of the 2,000 are dropped as duplicates and 153 are new.</li>
+  <li><b>T+12s · Append to the log, return 202.</b>
+    The raw batch is appended to Kafka, partitioned by <code>(namespace, name hash)</code>. <b>Nothing has been resolved yet</b> — this is the ordering decision the whole design rests on. The edge returns <code>202 Accepted</code>: durable, not yet processed.</li>
+  <li><b>T+13s · The resolver looks up identity.</b>
+    It asks the registry for <code>(mobile-app, "http_request_duration_ms", 2.4.1)</code> and gets back <code>metric_id = m_9f22</code>, declared unit <code>ms</code>, type <code>histogram</code>, mapping_version 6.
+    <em>Note the key is the triple, not the name.</em> The same string from <code>namespace=backend</code>, or from client version 3.0, could resolve somewhere entirely different.</li>
+  <li><b>T+13s · Write raw, with provenance.</b>
+    The observation is written to the raw store exactly as sent, plus <code>raw_name="http_request_duration_ms"</code>, <code>client_version=2.4.1</code>, <code>metric_id=m_9f22</code>, <code>mapping_version=6</code>, <code>ingest_ts</code>.
+    <b>This row is never modified again.</b> It is what makes everything later reversible.</li>
+  <li><b>T+13s · Write the canonical series.</b>
+    The TSDB gets a sample on series <code>m_9f22{region="eu-central", endpoint="/v1/chat", status="200"}</code>. No unit conversion — the declared unit already matches the metric's. Rollups at 1m/5m/1h will pick it up, keeping sum, count, min, max and histogram buckets.</li>
+  <li><b>T+45s · A dashboard queries it.</b>
+    The chart asks for <code>m_9f22</code>, p99, last 24 h. The query API expands <code>m_9f22</code> through the registry into its aliases with their validity ranges, fetches the matching series, merges, and returns the result with a provenance note: <em>"contributed by http_request_duration_ms (v2.0–v2.9) and request_latency_ms (v1.x, until 2024‑11‑03)"</em>.
+    The dashboard references <code>m_9f22</code>, never a raw name — which is why the rename in v2.0 never broke it.</li>
+</ol>
+
+<h4>Now the interesting half — a new client version shows up</h4>
+
+<ol class="order">
+  <li><b>Day 1 · An unknown name arrives.</b>
+    SDK <code>v3.0.0</code> ships and emits <code>http.request.duration</code>, value <code>0.143</code>, unit <code>s</code>.
+    The registry has no entry for <code>(mobile-app, "http.request.duration", 3.0.0)</code>, so the resolver writes it to raw with <code>metric_id = UNRESOLVED</code> and puts it in a quarantine series <code>raw:mobile-app/http.request.duration</code>.
+    <b>It is not dropped and it is not guessed at.</b> The dashboard for <code>m_9f22</code> does not move, because quarantined data contributes to no canonical metric.</li>
+  <li><b>Day 1 · The review queue surfaces it.</b>
+    The entry shows: 2.1M observations/day, client versions [3.0.0], labels <code>region/endpoint/status</code>, declared unit <code>s</code>, type <code>histogram</code>, and a distribution sketch with median 0.143.
+    <em>A human immediately sees the trap: the name looks like a rename of <code>http_request_duration_ms</code>, but the unit is seconds and the values are 1000× smaller.</em></li>
+  <li><b>Day 2 · Proposal with evidence.</b>
+    Someone proposes: <code>(mobile-app, "http.request.duration", [3.0.0, ∞)) → m_9f22</code> <b>with <code>unit_conversion: s → ms (×1000)</code></b>.
+    Evidence attached: the v3.0.0 client diff showing the same instrumentation point renamed and its unit changed; same type; same label schema; and a distribution comparison showing v2.9 and v3.0 medians match to within 2% <em>after</em> conversion.
+    Status <code>PENDING</code>. Nothing has changed for any consumer.</li>
+  <li><b>Day 3 · Owner approves.</b>
+    The team owning <code>m_9f22</code> approves; the proposer could not approve their own. <code>mapping_version</code> → 7, <code>valid_from</code> = the date v3.0.0 first appeared.</li>
+  <li><b>Day 3–10 · Shadow, then query‑time, then soak.</b>
+    First a shadow series nobody queries. Then the alias goes live as a <em>query‑time expansion</em> — canonical storage is untouched, so revoking is one registry write.
+    Soak checks run: no step change at the boundary (✓ after conversion), no ×1000 ratio between the series (✓ the conversion handles it), no per‑device duplicates (✓ a device runs one version).
+    <em>Had the conversion been omitted, check two would have caught a 1000× discrepancy before any consumer saw it.</em></li>
+  <li><b>Day 10 · Backfill.</b>
+    Canonical history is re‑derived from raw for the alias's range under mapping_version 7, with the conversion applied. Raw is untouched. The affected range is flagged <em>"recomputed under v7"</em> so a chart that shifts has an explanation.</li>
+  <li><b>Day 40 · It turns out to be wrong.</b>
+    Someone notices v3.0's metric excludes TLS handshake time — it measures a different span, so it was never the same metric.
+    Revoke: status <code>REVOKED</code>, <code>valid_to = now</code>, reason recorded. The resolver stops applying it immediately; new v3.0 data returns to quarantine.
+    <code>mapping_version</code> → 8, and the backfill re‑derives the affected range from raw — <b>which still holds the original names</b>, because raw was never modified. Then <code>http.request.duration</code> gets its own <code>metric_id</code>, and the quarantined plus historical rows are mapped to it, so the data is recovered rather than discarded.
+    The audit trail says who approved it, on what evidence, and which dashboards were affected.</li>
+</ol>
+
+<div class="trap"><b>What the raw store bought you.</b> Every correction above was possible because raw observations were written exactly as sent, before any resolution, and never modified. Had the edge resolved names before the durable log, the original <code>http.request.duration</code> observations would have been stored as <code>m_9f22</code> samples with the conversion already applied — and on day 40 there would be no way to separate them back out. <b>Resolve after the log, never before it.</b></div>
+
 ## Part 2: reconcile naming variants {#tl-part2}
 
 <!-- DIAGRAM:lifecycle:START -->

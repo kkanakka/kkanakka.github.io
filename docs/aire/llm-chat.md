@@ -286,6 +286,63 @@ Idempotency-Key header on the POST; client retries after a dropped stream resume
   <li>Workers pick up the event: generate a title on first turn, refresh the rolling summary when the conversation crosses a size threshold, extract durable facts into memory, record billing.</li>
 </ol>
 
+## Worked example: turn 47 of a long conversation {#lc-example}
+
+<p>The abstract version of this design is easy to nod along to and hard to reproduce under pressure. Here is one concrete turn with real numbers, in a conversation that is long enough for the interesting parts to bite.</p>
+
+<p><b>Setup:</b> user has a 46‑turn conversation about debugging a Kubernetes cluster. Total history if sent verbatim: ~38,000 tokens. Model window: 32,000 tokens. They type <em>"so what should I check first?"</em> — 8 tokens.</p>
+
+<ol class="order">
+  <li><b>T+0ms · Client opens the stream.</b>
+    <code>POST /conversations/c_7d31/messages</code> with <code>Accept: text/event-stream</code> and an idempotency key <code>cm_a91f</code> generated client‑side.
+    <em>The key matters because the next step is a write:</em> if the connection drops and the client retries, that key is what stops the message being appended twice.</li>
+  <li><b>T+3ms · Gateway checks identity and quota.</b>
+    JWT valid; Redis counters say this user has used 48,000 of 200,000 tokens this minute and 34 of 200 messages today. Admitted.
+    <em>Quota is counted in tokens, not messages,</em> because this turn will cost ~12,000 tokens of prefill while a one‑line question in a fresh chat costs 50 — charging per message would be wildly unfair in both directions.</li>
+  <li><b>T+8ms · Persist the user message.</b>
+    The chat service appends <code>{role: user, content: "so what should I check first?", tokens: 8}</code> to the conversation store, keyed by <code>c_7d31</code>, sorted by time.
+    <b>Durable before generation starts.</b> If inference fails at T+900ms, what the user typed is not lost.
+    Token count is computed and stored <em>now</em> — this one denormalization is what makes step 5 arithmetic instead of re‑tokenizing 38,000 tokens on every turn.</li>
+  <li><b>T+12ms · Read the three context inputs.</b>
+    From the hot tail in Redis (this conversation is active): the last 12 messages verbatim, ~6,400 tokens.
+    From the conversation row: the rolling summary of turns 1–34, ~800 tokens.
+    From the memory store: 4 durable facts about this user, ~120 tokens. <em>e.g. "prefers concise answers", "works in Go".</em></li>
+  <li><b>T+14ms · Build the prompt within budget.</b>
+    Budget = 32,000 window − 4,000 reserved for the reply = <b>28,000 tokens</b>.
+    Assemble: system prompt (600) + memory facts (120) + rolling summary (800) + recent messages newest‑first until the budget is spent.
+    That fits 21 messages (~11,200 tokens) — <b>turns 1–25 are simply not included</b>, they are represented only by the summary.
+    <em>This is the whole illusion: the model is stateless and "remembers" nothing. The chat service reconstructs a plausible memory from storage on every single turn.</em>
+    Total prompt: ~12,720 tokens. Cost of building it: a few hundred microseconds of integer addition, because every token count was stored at write time.</li>
+  <li><b>T+15ms · Send to the inference gateway.</b>
+    The <em>entire</em> 12,720‑token prompt goes over the wire. Nothing about this conversation lives on any GPU between turns — which is exactly why any replica can serve any turn and the serving fleet is freely replaceable.</li>
+  <li><b>T+18ms · Batch and route by prefix.</b>
+    The gateway routes to a replica that already has the shared system prompt (600 tokens, identical across millions of requests) in its KV cache. That prefix cache hit saves real prefill work.
+    Continuous batching admits this sequence alongside others already decoding, so one long generation does not block the batch behind it.</li>
+  <li><b>T+18ms → T+520ms · Prefill.</b>
+    The GPU processes 12,720 input tokens. <b>This is where context length becomes latency</b> — prefill scales with input size, which is why SLIs are bucketed by context length. A 200‑token prompt would have been ~40ms here.
+    Concurrently, the input safety classifier runs; it finishes at T+190ms, well before the first token, so its cost is entirely hidden.</li>
+  <li><b>T+540ms · First token.</b>
+    <b>TTFT = 540ms.</b> This is the number the user experiences as responsiveness, and the reason total latency is a bad SLI: this reply will run 380 tokens and take 12 seconds, which says nothing about whether the product felt fast.</li>
+  <li><b>T+540ms → T+11.9s · Stream, with an 8-token buffer.</b>
+    Tokens arrive at ~32/s (ITL ≈ 31ms). The chat service holds an 8‑token lookahead and runs the output classifier on a sliding window before releasing anything.
+    <b>The buffer is what makes cutting possible rather than apologising:</b> if the classifier flags content at token 200, tokens 193–200 have not been shown, so the user never sees them.
+    Each SSE event carries an id. The full text is buffered as it goes.</li>
+  <li><b>T+6.2s · The user's train enters a tunnel.</b>
+    Connection drops at token 190. The client reconnects 4 seconds later with <code>Last-Event-ID: 190</code>; the service replays from its buffer and streaming continues at token 191.
+    <em>Without that buffer this costs a full regeneration — 12 seconds of the user's time and a second full GPU bill for an answer that was already computed.</em></li>
+  <li><b>T+11.9s · Done.</b>
+    Worker reports <code>tokens_in: 12,720, tokens_out: 380</code>. The assistant message is persisted with its token counts, so turn 48's budget arithmetic is exact. A <code>done</code> event is sent — explicitly distinguishable from a dropped connection, which is what lets the client choose between completing and resuming.</li>
+  <li><b>T+11.9s · Emit events and return.</b>
+    <code>message.created</code> and <code>usage.event</code> go to Kafka. The turn is over from the user's point of view; everything after this is decoupled.</li>
+  <li><b>T+14s · Async workers do the rest.</b>
+    The metering consumer increments Redis counters (which the gateway will read on turn 48) and appends to the durable billing ledger keyed by request id, so a partition replay cannot double‑bill.
+    The conversation crossed the summary threshold at turn 45, so a <em>small</em> model regenerates the rolling summary to now cover turns 1–40 — on a small‑model pool, so the large model serves only user turns.
+    A memory‑extraction worker notices "I'm on EKS, not GKE" from turn 46 and proposes a new durable fact, user‑visible and editable.
+    <em>All of this is seconds late and nobody notices. Doing it inline would have added seconds to the turn.</em></li>
+</ol>
+
+<div class="trap"><b>What turn 47 shows that turn 2 does not.</b> At turn 2 the whole history fits and every design is equivalent. At turn 47 three things bite at once: history exceeds the window so <b>trimming policy becomes a product decision</b> (old turns degrade to a summary, recent ones stay verbatim, because recency is what users notice); prefill is 13× the cost of decode's first token so <b>context length is the latency driver</b>; and the summary that makes it fit was generated asynchronously by a different, smaller model. If you can narrate turn 47 you have explained the design — turn 2 explains nothing.</div>
+
 ## Where is the "chat" actually stored? {#lc-storage}
 
 <table>
