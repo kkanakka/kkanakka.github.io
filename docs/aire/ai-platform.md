@@ -1,7 +1,7 @@
 ---
 title: "AI chat platform, end to end"
 slug: /aire/ai-platform
-sidebar_position: 29
+sidebar_position: 30
 sidebar_label: "AI chat platform, end to end"
 description: "ties together ChatGPT chat + Inference API + metering + training · who does what"
 ---

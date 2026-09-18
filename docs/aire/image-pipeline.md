@@ -1,7 +1,7 @@
 ---
 title: "Scale a batch image‑processing pipeline"
 slug: /aire/image-pipeline
-sidebar_position: 11
+sidebar_position: 12
 sidebar_label: "Scale a batch image‑processing pipeline"
 description: "medium · queues · workers · retries · idempotency · backpressure"
 ---

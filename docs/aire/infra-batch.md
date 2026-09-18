@@ -1,7 +1,7 @@
 ---
 title: "Job scheduler / batch inference queue"
 slug: /aire/infra-batch
-sidebar_position: 35
+sidebar_position: 36
 sidebar_label: "Job scheduler / batch inference queue"
 description: "medium · materialized executions · atomic claim · leases · priority isolation"
 ---

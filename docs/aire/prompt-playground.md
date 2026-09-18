@@ -1,7 +1,7 @@
 ---
 title: "Prompt playground for very large prompts"
 slug: /aire/prompt-playground
-sidebar_position: 19
+sidebar_position: 20
 sidebar_label: "Prompt playground for very large prompts"
 description: "hard · Anthropic · versioned prompts · very large payloads · runs and comparison · safe execution"
 ---

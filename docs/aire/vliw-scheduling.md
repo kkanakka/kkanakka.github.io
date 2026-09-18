@@ -1,7 +1,7 @@
 ---
 title: "Schedule instructions on a VLIW pipeline"
 slug: /aire/vliw-scheduling
-sidebar_position: 38
+sidebar_position: 39
 sidebar_label: "Schedule instructions on a VLIW pipeline"
 description: "coding/compilers · list scheduling · dependency DAG · latencies · resource constraints"
 ---

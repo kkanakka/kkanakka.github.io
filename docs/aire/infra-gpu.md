@@ -1,7 +1,7 @@
 ---
 title: "GPU cluster scheduler and training checkpointing at thousands of GPUs"
 slug: /aire/infra-gpu
-sidebar_position: 36
+sidebar_position: 37
 sidebar_label: "GPU cluster scheduler and training check…"
 description: "hard · gang scheduling · fragmentation · async sharded checkpoints · manifest · stragglers"
 ---

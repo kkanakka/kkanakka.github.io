@@ -1,7 +1,7 @@
 ---
 title: "Prompt‑sharing platform"
 slug: /aire/prompt-sharing
-sidebar_position: 12
+sidebar_position: 13
 sidebar_label: "Prompt‑sharing platform"
 description: "medium · data model · versioning · permissions · search · forks"
 ---

@@ -1,7 +1,7 @@
 ---
 title: "Review and improve a flawed design document"
 slug: /aire/design-doc-review
-sidebar_position: 23
+sidebar_position: 24
 sidebar_label: "Review and improve a flawed design docum…"
 description: "hard · Anthropic · senior+ · find the unsafe assumptions · rank by blast radius · write the review"
 ---

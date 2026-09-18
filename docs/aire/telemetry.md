@@ -1,7 +1,7 @@
 ---
 title: "Telemetry with metric‑name reconciliation"
 slug: /aire/telemetry
-sidebar_position: 16
+sidebar_position: 17
 sidebar_label: "Telemetry with metric‑name reconciliation"
 description: "hard · Anthropic · ingest + store + query · metric identity · aliases with evidence · provenance and correction"
 ---

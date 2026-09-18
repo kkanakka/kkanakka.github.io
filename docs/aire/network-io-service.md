@@ -1,7 +1,7 @@
 ---
 title: "Scalable network I/O service (upload / download / streaming)"
 slug: /aire/network-io-service
-sidebar_position: 13
+sidebar_position: 14
 sidebar_label: "Scalable network I/O service (upload / d…"
 description: "hard · high‑volume bytes · zero‑copy · backpressure · range requests · resumable"
 ---

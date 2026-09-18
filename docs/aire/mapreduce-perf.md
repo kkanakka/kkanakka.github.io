@@ -1,7 +1,7 @@
 ---
 title: "Optimize MapReduce performance"
 slug: /aire/mapreduce-perf
-sidebar_position: 9
+sidebar_position: 10
 sidebar_label: "Optimize MapReduce performance"
 description: "medium · shuffle · data locality · skew · combiners · parallelism"
 ---

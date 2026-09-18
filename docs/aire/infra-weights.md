@@ -1,7 +1,7 @@
 ---
 title: "Distribute a large file (model weights) to thousands of machines"
 slug: /aire/infra-weights
-sidebar_position: 18
+sidebar_position: 19
 sidebar_label: "Distribute a large file (model weights) …"
 description: "hard · Anthropic · chunking · swarm · rarest‑first · per‑chunk hashes"
 ---

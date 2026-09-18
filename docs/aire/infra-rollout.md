@@ -1,7 +1,7 @@
 ---
 title: "Model rollout: canary, promote, roll back without dropping streams"
 slug: /aire/infra-rollout
-sidebar_position: 33
+sidebar_position: 34
 sidebar_label: "Model rollout: canary, promote, roll bac…"
 description: "hard · Anthropic · immutable versions · gates · prefetch · draining"
 ---
