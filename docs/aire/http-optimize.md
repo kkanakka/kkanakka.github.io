@@ -1,7 +1,7 @@
 ---
 title: "Optimize HTTP requests for speed and limits"
 slug: /aire/http-optimize
-sidebar_position: 7
+sidebar_position: 9
 sidebar_label: "Optimize HTTP requests for speed and lim…"
 description: "medium · client‑side concurrency · rate limits · batching · caching · retries"
 ---

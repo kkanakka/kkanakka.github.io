@@ -1,7 +1,7 @@
 ---
 title: "Design and code a Python solution in Colab"
 slug: /aire/colab-python
-sidebar_position: 15
+sidebar_position: 17
 sidebar_label: "Design and code a Python solution in Colab"
 description: "coding · structure · tests · maintainability · what \"senior code\" looks like in a notebook"
 ---

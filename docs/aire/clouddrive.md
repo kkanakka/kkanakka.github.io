@@ -1,7 +1,7 @@
 ---
 title: "Global photo/video storage and sharing (CloudDrive)"
 slug: /aire/clouddrive
-sidebar_position: 6
+sidebar_position: 8
 sidebar_label: "Global photo/video storage and sharing (…"
 description: "medium · object storage · CDN · sharing/permissions · multi‑region · dedupe"
 ---

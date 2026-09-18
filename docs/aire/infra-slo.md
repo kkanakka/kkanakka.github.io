@@ -1,7 +1,7 @@
 ---
 title: "SLOs and monitoring across the token path"
 slug: /aire/infra-slo
-sidebar_position: 33
+sidebar_position: 35
 sidebar_label: "SLOs and monitoring across the token path"
 description: "medium · Anthropic · TTFT / ITL · trace propagation · latency ledger · burn rate"
 ---

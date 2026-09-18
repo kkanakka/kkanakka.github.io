@@ -1,7 +1,7 @@
 ---
 title: "High‑concurrency Inference API (batch service in front of GPUs)"
 slug: /aire/inference-api
-sidebar_position: 4
+sidebar_position: 6
 sidebar_label: "High‑concurrency Inference API (batch se…"
 description: "hard · Anthropic‑style · batching · pull dispatch · response routing · capacity feedback"
 ---

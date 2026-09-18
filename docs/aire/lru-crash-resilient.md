@@ -1,7 +1,7 @@
 ---
 title: "Crash-resilient LRU cache"
 slug: /aire/lru-crash-resilient
-sidebar_position: 25
+sidebar_position: 27
 sidebar_label: "Crash-resilient LRU cache"
 description: "hard · Anthropic · O(1) get/put · durability without losing O(1) · WAL · snapshot + replay"
 ---

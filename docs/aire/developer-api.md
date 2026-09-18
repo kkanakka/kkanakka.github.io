@@ -1,7 +1,7 @@
 ---
 title: "Developer API platform: secure, efficient access to the models"
 slug: /aire/developer-api
-sidebar_position: 5
+sidebar_position: 7
 sidebar_label: "Developer API platform: secure, efficien…"
 description: "hard · Anthropic · keys and scoping · quotas · streaming contract · idempotency · versioning"
 ---

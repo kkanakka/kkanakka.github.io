@@ -1,7 +1,7 @@
 ---
 title: "Strongly consistent config service / leader election with fencing tokens"
 slug: /aire/infra-config
-sidebar_position: 38
+sidebar_position: 40
 sidebar_label: "Strongly consistent config service / lea…"
 description: "medium · ZooKeeper · quorum · watches · sessions · fencing · last‑known‑good"
 ---

@@ -1,7 +1,7 @@
 ---
 title: "Robust file deduplication"
 slug: /aire/file-dedupe
-sidebar_position: 16
+sidebar_position: 18
 sidebar_label: "Robust file deduplication"
 description: "medium · hashing · filesystem races · corruption · hardlinks vs content store · verification"
 ---

@@ -1,7 +1,7 @@
 ---
 title: "Exact distributed median and mode without shipping the data"
 slug: /aire/distributed-mode
-sidebar_position: 21
+sidebar_position: 23
 sidebar_label: "Exact distributed median and mode withou…"
 description: "hard · Anthropic · communication complexity · counting vs quantiles · two-pass exactness"
 ---

@@ -1,7 +1,7 @@
 ---
 title: "Debug a p95 latency spike from 100 ms to 2 s"
 slug: /aire/p95-debug
-sidebar_position: 41
+sidebar_position: 43
 sidebar_label: "Debug a p95 latency spike from 100 ms to…"
 description: "hard · Anthropic · bisect the stack · USE/RED · queueing · prioritize by measured cost"
 ---

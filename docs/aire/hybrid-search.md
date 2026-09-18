@@ -1,7 +1,7 @@
 ---
 title: "Hybrid search: text + semantic top-k under 50 ms"
 slug: /aire/hybrid-search
-sidebar_position: 40
+sidebar_position: 42
 sidebar_label: "Hybrid search: text + semantic top-k und…"
 description: "hard · Anthropic · BM25 + ANN · HNSW · fusion · 10M documents · 50 ms budget"
 ---

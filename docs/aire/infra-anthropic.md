@@ -1,7 +1,7 @@
 ---
 title: "Infra problems reported at Anthropic: overview"
 slug: /aire/infra-anthropic
-sidebar_position: 31
+sidebar_position: 33
 sidebar_label: "Infra problems reported at Anthropic: ov…"
 description: "10 problems · each has its own page below · shared patterns"
 ---

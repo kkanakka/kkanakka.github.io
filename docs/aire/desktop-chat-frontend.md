@@ -1,7 +1,7 @@
 ---
 title: "Desktop AI chat frontend"
 slug: /aire/desktop-chat-frontend
-sidebar_position: 29
+sidebar_position: 31
 sidebar_label: "Desktop AI chat frontend"
 description: "medium · cross‑platform · streaming state · offline · secure token storage"
 ---
