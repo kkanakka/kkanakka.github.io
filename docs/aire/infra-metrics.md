@@ -1,7 +1,7 @@
 ---
 title: "Metrics monitoring at 10M points/sec"
 slug: /aire/infra-metrics
-sidebar_position: 18
+sidebar_position: 34
 sidebar_label: "Metrics monitoring at 10M points/sec"
 description: "hard · cardinality · Gorilla · retention tiers · alerting failure domain"
 ---

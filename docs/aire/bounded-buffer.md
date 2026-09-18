@@ -1,7 +1,7 @@
 ---
 title: "Thread‑safe producer‑consumer buffer"
 slug: /aire/bounded-buffer
-sidebar_position: 29
+sidebar_position: 10
 sidebar_label: "Thread‑safe producer‑consumer buffer"
 description: "coding · mutex + condition variables · bounded queue · shutdown · fairness"
 ---

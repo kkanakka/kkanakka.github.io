@@ -1,7 +1,7 @@
 ---
 title: "Multi‑region, multi‑cloud LLM inference serving with failover"
 slug: /aire/infra-multiregion
-sidebar_position: 13
+sidebar_position: 31
 sidebar_label: "Multi‑region, multi‑cloud LLM inference …"
 description: "hard · Anthropic · cells · N+1 · degraded modes · GPUs don’t autoscale"
 ---

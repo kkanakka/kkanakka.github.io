@@ -1,7 +1,7 @@
 ---
 title: "Distributed search at a billion documents and a million QPS"
 slug: /aire/distributed-search
-sidebar_position: 40
+sidebar_position: 2
 sidebar_label: "Distributed search at a billion document…"
 description: "hard · Anthropic · sharded inverted index · scatter-gather · tail latency · LLM reranking at 10K rps"
 ---

@@ -1,7 +1,7 @@
 ---
 title: "Multi-region key-value service at 50K QPS, p95 < 100 ms"
 slug: /aire/kv-multiregion
-sidebar_position: 47
+sidebar_position: 27
 sidebar_label: "Multi-region key-value service at 50K QP…"
 description: "hard · Anthropic · read-heavy KV · consistent hashing · cache stampedes · cross-region replication"
 ---

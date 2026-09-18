@@ -1,7 +1,7 @@
 ---
 title: "Concurrent image-processing job service: one worker to many"
 slug: /aire/image-job-service
-sidebar_position: 46
+sidebar_position: 17
 sidebar_label: "Concurrent image-processing job service:…"
 description: "hard · Anthropic · state machine · leases and ownership · idempotency · safe evolution"
 ---

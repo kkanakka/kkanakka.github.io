@@ -1,0 +1,16 @@
+%% section: Design
+%% caption: Architecture
+flowchart TB
+    C["Developer client"] --> E["Edge · TLS, millions of open streams"]
+    E --> A[("Auth cache · hashed keys, leased")]
+    E --> L[("Limiter · key / workspace / org / global")]
+    E --> S["API service · version validation, idempotency"]
+    S --> SAFE["Input safety"]
+    SAFE --> I["Inference fleet · batching and GPUs"]
+    I --> S
+    I --> M["Metering · counts from the source"]
+    M --> L
+    M --> LED[("Billing ledger · durable, reconciled")]
+    M --> CNT[("Live counters · fast, approximate")]
+    REV["Key revocation"] -.->|"push invalidation, seconds"| A
+    SUP["Support by request id · metadata only, never payloads"] --- S

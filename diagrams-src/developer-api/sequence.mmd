@@ -1,0 +1,26 @@
+sequenceDiagram
+    autonumber
+    participant C as Developer client
+    participant E as Edge
+    participant A as Auth
+    participant L as Limiter
+    participant S as API service
+    participant I as Inference
+    participant M as Metering
+    C->>E: POST /v1/messages + bearer key + version header
+    E->>A: resolve hashed key from a leased local cache
+    A-->>E: org, workspace, scopes, tier
+    E->>L: check key, workspace, org and global budgets
+    Note over E,L: reserve prompt + max_tokens — the upper bound
+    alt over limit
+        E-->>C: 429 with Retry-After and which limit was hit
+    else admitted
+        E->>S: forward with resolved identity
+        S->>S: validate against the requested version, then idempotency key
+        S->>I: submit
+        I-->>S: token stream
+        S-->>C: SSE events under a versioned schema, then usage + stop reason
+        I->>M: usage counted at the source (async)
+        M->>L: refresh live counters
+        M->>M: durable idempotent ledger for billing
+    end

@@ -1,7 +1,7 @@
 ---
 title: "Safeguard / classifier serving in the request path"
 slug: /aire/infra-safeguards
-sidebar_position: 15
+sidebar_position: 26
 sidebar_label: "Safeguard / classifier serving in the re…"
 description: "hard · Anthropic · tier‑0 dependency · fail‑closed · degraded modes · canaries"
 ---

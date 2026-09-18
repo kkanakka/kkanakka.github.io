@@ -1,7 +1,7 @@
 ---
 title: "1‑to‑1 chat system"
 slug: /aire/chat-1to1
-sidebar_position: 22
+sidebar_position: 8
 sidebar_label: "1‑to‑1 chat system"
 description: "medium · Anthropic · WebSockets · pub/sub routing · per‑conversation sequence · inbox + in‑flight delivery"
 ---

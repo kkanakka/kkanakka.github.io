@@ -1,7 +1,7 @@
 ---
 title: "Distributed rate limiting and quotas for the API"
 slug: /aire/infra-ratelimit
-sidebar_position: 17
+sidebar_position: 22
 sidebar_label: "Distributed rate limiting and quotas for…"
 description: "medium · Anthropic · leased local buckets · reserve then settle · never fail open"
 ---

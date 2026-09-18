@@ -1,7 +1,7 @@
 ---
 title: "Concurrent web crawler"
 slug: /aire/web-crawler
-sidebar_position: 25
+sidebar_position: 7
 sidebar_label: "Concurrent web crawler"
 description: "medium · combines \"design a crawler\" + \"scale with a thread pool\" + \"locked concurrent crawler\" · frontier · politeness · dedupe · termination"
 ---

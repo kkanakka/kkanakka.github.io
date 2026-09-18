@@ -1,7 +1,7 @@
 ---
 title: "ChatGPT / Claude‑style chat"
 slug: /aire/llm-chat
-sidebar_position: 5
+sidebar_position: 1
 sidebar_label: "ChatGPT / Claude‑style chat"
 description: "hard · streaming · stateless model, stateful product · GPU capacity · where context lives"
 ---

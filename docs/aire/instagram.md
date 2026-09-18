@@ -1,7 +1,7 @@
 ---
 title: "Instagram"
 slug: /aire/instagram
-sidebar_position: 23
+sidebar_position: 25
 sidebar_label: "Instagram"
 description: "medium · scaling reads · fan‑out on write · celebrity problem · large blobs + CDN"
 ---
