@@ -66,7 +66,7 @@ for (const page of fs.readdirSync(SRC)) {
     '    classDef n fill:#ffffff,stroke:#111111,stroke-width:1.6px;',
     `    class ${[...nodes].join(',')} n;`,
     solid.length ? `    linkStyle ${solid.join(',')} stroke:#2f4fd0,stroke-width:1.6px;` : '',
-    dashed.length ? `    linkStyle ${dashed.join(',')} stroke:#7a2f6d,stroke-width:1.6px;` : '',
+    dashed.length ? `    linkStyle ${dashed.join(',')} stroke:#c2410c,stroke-width:1.6px;` : '',
     '',
   ].filter((l) => l !== '').join('\n');
 
