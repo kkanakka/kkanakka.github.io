@@ -16,7 +16,99 @@ description: "reference · the ~20 ideas that recombine across all 40 designs ·
 
 <p>Each entry below is: <b>what it is · when to reach for it · what software · where it shows up here</b>. Read it the morning of an interview, not the night before — it is a set of triggers, not a script.</p>
 
-<div class="note"><b>The ten reflexes.</b> If you remember nothing else: (1) ask for numbers, then do the arithmetic out loud · (2) reads ≫ writes → cache and denormalize · (3) work is claimed and can be abandoned → lease + heartbeat + reaper · (4) at‑least‑once + idempotent writes, never exactly‑once · (5) anything rolled out → immutable versions + one mutable pointer · (6) fan‑out → the tail is max(N), so hedge and set deadlines · (7) above capacity → shed, never queue unboundedly · (8) a cache hit rate <em>is</em> the capacity plan · (9) derived views must be rebuildable from a system of record · (10) name the failure mode and the abuse vector before they ask.</div>
+<div class="note"><b>The ten reflexes</b> are the whole point of this page — each is a <em>trigger</em> you can recognise in a question, not a fact to recall. They are worked through with examples immediately below, then the rest of the page is reference material behind them.</div>
+
+## The ten reflexes, with examples {#cc-reflexes}
+
+<p>Each one is: <b>the trigger</b> (what in the question fires it) · <b>the move</b> (what you do) · <b>an example</b> (from a real page, with numbers). If you can run these ten, you can derive most of the forty designs without having memorised any of them.</p>
+
+<h4>1 · Ask for the numbers, then do the arithmetic out loud</h4>
+<ul>
+  <li><b>Trigger:</b> always. It is the first thing you do in every question, before drawing a single box.</li>
+  <li><b>The move:</b> get QPS, data size, latency target and growth. Then multiply them <em>aloud</em> — the derivation is the answer, not the conclusion.</li>
+  <li><b>Example</b> (<a href="/docs/aire/infra-weights">infra-weights</a>): "500 GB × 5,000 workers = 2.5 PB. At 10 Gb/s of origin egress that's 2.5 PB ÷ 1.25 GB/s ≈ 23 days. So the origin physically cannot serve every worker — peers must serve peers." <b>That sentence <em>is</em> the design</b>; the swarm falls out of it. A candidate who says "use BitTorrent" without the arithmetic cannot answer "what if it were 50 workers?" — where the obvious answer is just download it from origin.</li>
+  <li><b>Counter-example</b> (<a href="/docs/system-design-notes/yelp">yelp</a>): "10M businesses × 1 KB = 10 GB. That fits in RAM on one machine." The arithmetic here <em>licenses a simple design</em>, and recognising that is the senior signal — proposing sharding for 10 GB says you did not do the sum.</li>
+</ul>
+
+<h4>2 · Reads ≫ writes → cache and denormalize</h4>
+<ul>
+  <li><b>Trigger:</b> the read/write ratio is above ~10:1. Say the ratio out loud early; it tells you where to spend the entire design budget.</li>
+  <li><b>The move:</b> put a cache on the read path, precompute what reads need, and accept staleness deliberately.</li>
+  <li><b>Example</b> (<a href="/docs/system-design-notes/bitly">bitly</a>): 1000:1 — ~10K redirects/s against ~10 creates/s. So the design is <em>entirely</em> about the read path: cache first, and because link popularity follows a power law a modest cache reaches 95%+ hits, keeping the database at a few thousand QPS instead of fifty thousand.</li>
+  <li><b>Denormalization example</b> (<a href="/docs/system-design-notes/yelp">yelp</a>): store a maintained <code>avg_rating</code> column updated in the write transaction. Computing <code>AVG()</code> per result would turn every search into an aggregation over the review table — paying on the 1000 side of a 1000:1 ratio to save work on the 1 side.</li>
+  <li><b>And</b> (<a href="/docs/aire/instagram">instagram</a>): the feed is precomputed into per-user lists at write time, so a feed load is one sorted-set read instead of a query across thousands of followed accounts.</li>
+</ul>
+
+<h4>3 · Work is claimed and can be abandoned → lease + heartbeat + reaper</h4>
+<ul>
+  <li><b>Trigger:</b> a worker takes an item and might die holding it. Any queue, any job system, any distributed download.</li>
+  <li><b>The move:</b> atomic claim stamping owner + expiry · heartbeat to extend · reaper to reclaim. <b>A lease, not a lock.</b></li>
+  <li><b>Example</b> (<a href="/docs/aire/image-job-service">image-job-service</a>): one <code>UPDATE … FOR UPDATE SKIP LOCKED</code> moves PENDING → RUNNING while stamping <code>owner</code> and <code>lease_until = now() + 5 min</code>. Worker crashes at minute 2 → nothing happens for 3 minutes, then the reaper returns it to PENDING. <b>No failure detector, no worker registry, no cleanup protocol</b> — expiry does the entire job.</li>
+  <li><b>Why not a lock:</b> a lock needs a live holder to release it, so a crashed holder wedges the item until a human intervenes. That distinction is the answer the interviewer is listening for.</li>
+  <li><b>Same pattern, different clothes:</b> <a href="/docs/aire/infra-weights">infra-weights</a> leases <em>disk reservations</em> so a dead download releases its 500 GB; <a href="/docs/aire/infra-ratelimit">infra-ratelimit</a> leases <em>budget</em> so a dead gateway's quota returns in seconds; <a href="/docs/aire/web-crawler">web-crawler</a> leases <em>URLs</em> from the frontier.</li>
+</ul>
+
+<h4>4 · At-least-once + idempotent writes, never exactly-once</h4>
+<ul>
+  <li><b>Trigger:</b> anything that retries — which is everything crossing a network.</li>
+  <li><b>The move:</b> accept duplicate <em>execution</em>, make the <em>effect</em> idempotent. Then say why: exactly-once delivery needs distributed transactions for an outcome nobody can observe.</li>
+  <li><b>Example</b> (<a href="/docs/aire/image-pipeline">image-pipeline</a>): the output key is <code>f(imageKey, operation, version)</code> — a pure function of the work. A duplicated job writes identical bytes to the same object key and changes nothing observable. Cost of a retry: wasted CPU. Cost of chasing exactly-once: a distributed transaction on every job.</li>
+  <li><b>Client-side example</b> (<a href="/docs/aire/chat-1to1">chat-1to1</a>): the <em>client</em> generates <code>client_message_id</code>, because only the client knows a retry is the <b>same</b> message rather than a new one. A unique constraint on <code>(conversation, sender, cmid)</code> enforces it at the database rather than by convention.</li>
+  <li><b>The sentence to have ready:</b> "A timeout is an unknown, not a failure — the request may have succeeded. Without an idempotency key, both retrying and not retrying are wrong some of the time." (<a href="/docs/aire/http-optimize">http-optimize</a>)</li>
+</ul>
+
+<h4>5 · Anything rolled out → immutable versions + one mutable pointer</h4>
+<ul>
+  <li><b>Trigger:</b> something gets deployed, published, promoted or edited, and you might need to go back.</li>
+  <li><b>The move:</b> make artifacts immutable and content-addressed; make exactly one thing mutable — the pointer that says which version is current.</li>
+  <li><b>Example</b> (<a href="/docs/aire/infra-rollout">infra-rollout</a>): a version is weights hash + tokenizer + serving config + safety policy + eval results, bundled and frozen. Any change produces a <em>new</em> version. The only mutable thing in the system is the registry pointer, so <b>rollback is a pointer flip plus a routing weight</b> — the same well-exercised code path as promotion, not a special emergency procedure.</li>
+  <li><b>Product example</b> (<a href="/docs/aire/prompt-sharing">prompt-sharing</a>): <code>Prompt</code> is a mutable head pointing at immutable <code>PromptVersion</code>s. Rollback = a new version copying an old one, so history is linear and complete rather than destroyed.</li>
+  <li><b>Why it keeps paying off:</b> immutability makes caching trivial (the bytes never change), attribution possible ("which version produced this?"), and correction reversible.</li>
+</ul>
+
+<h4>6 · Fan-out → the tail is max(N), so hedge and set deadlines</h4>
+<ul>
+  <li><b>Trigger:</b> one request becomes many parallel requests and you wait for all of them.</li>
+  <li><b>The move:</b> reason about the <em>maximum</em>, not the average. Hedge slow requests to a second replica; propagate absolute deadlines; return partial results.</li>
+  <li><b>Example</b> (<a href="/docs/aire/distributed-search">distributed-search</a>): 100 shards, each with a perfectly respectable p99 of 100 ms. Probability a query touches <em>no</em> slow shard = 0.99¹⁰⁰ ≈ 0.37. So <b>~63% of queries contain at least one 100 ms shard</b> — a per-shard p99 has become the common case for the query. Fix: re-issue to a second replica once a shard passes its p95, costing a few percent extra load and removing most of the tail.</li>
+  <li><b>The companion move:</b> an absolute deadline set at the coordinator and passed to every hop, so no downstream call can extend the query's budget. At the deadline, merge whatever arrived and flag the response partial — for search, slightly worse recall beats no answer.</li>
+</ul>
+
+<h4>7 · Above capacity → shed, never queue unboundedly</h4>
+<ul>
+  <li><b>Trigger:</b> demand can exceed capacity — which it can, in every system.</li>
+  <li><b>The move:</b> reject explicitly and cheaply, in an order decided in advance. An unbounded queue converts a capacity problem into a latency problem and then into a crash.</li>
+  <li><b>Example</b> (<a href="/docs/aire/inference-api">inference-api</a>): the rate limiter is <em>capacity-aware</em> — when healthy GPU count drops, limits tighten automatically and free tier is shed first, so paid traffic keeps its SLO. Accepting work that is guaranteed to breach the latency budget helps nobody.</li>
+  <li><b>Example</b> (<a href="/docs/aire/infra-multiregion">infra-multiregion</a>): a published mode ladder — mode 1 sheds free tier, mode 2 caps max_tokens, mode 3 serves paid only at relaxed SLOs. Each mode is pre-approved, owned and time-boxed, so the incident decision is "which published mode", not "what should we do".</li>
+  <li><b>The primitive version</b> (<a href="/docs/aire/bounded-buffer">bounded-buffer</a>): the capacity bound <em>is</em> the back-pressure. Blocking a fast producer is how memory pressure is prevented; growing the queue to avoid blocking converts a stall into an out-of-memory crash.</li>
+  <li><b>Say this:</b> "Every system has a behaviour above capacity. The only question is whether you chose it — by omission, the default is collapse."</li>
+</ul>
+
+<h4>8 · A cache hit rate <em>is</em> the capacity plan</h4>
+<ul>
+  <li><b>Trigger:</b> you just said "we'll put a cache in front" and moved on. Stop — you have implicitly sized everything behind it.</li>
+  <li><b>The move:</b> state the hit rate, derive the backend load from it, and then treat <em>losing</em> the cache as a named incident class.</li>
+  <li><b>Example</b> (<a href="/docs/aire/kv-multiregion">kv-multiregion</a>): 47K reads/s at a 95% hit rate means the store sees ~600 reads/s per region — trivially served. But that also means <b>anything that empties the cache is an instant 20× overload</b>. So cold start is not an edge case: it is the dominant risk, and it is why failover shifts traffic <em>gradually</em> rather than all at once into a cold neighbour.</li>
+  <li><b>The three defences that follow:</b> single-flight (one fetch per key regardless of how many callers wait), soft TTL with background refresh (no latency cliff at expiry), and jitter (keys populated together must not expire together — otherwise you manufacture your own stampede).</li>
+</ul>
+
+<h4>9 · Derived views must be rebuildable from a system of record</h4>
+<ul>
+  <li><b>Trigger:</b> you have more than one store, or you are about to transform data on the way in.</li>
+  <li><b>The move:</b> name which store is authoritative and immutable; make everything else a derived view that can be thrown away and recomputed.</li>
+  <li><b>Example</b> (<a href="/docs/aire/telemetry">telemetry</a>): raw observations are written <em>exactly as sent</em>, before any name resolution, and never modified. The canonical metric series is derived. <b>That single ordering is what makes a wrong metric mapping reversible</b> — revoke the alias, bump the mapping version, re-derive from raw. Resolve names <em>before</em> the durable log instead and the original data is gone forever; on the day you discover the mapping was wrong there is nothing to recover from.</li>
+  <li><b>Same shape elsewhere:</b> <a href="/docs/aire/distributed-search">distributed-search</a> (document store authoritative, index rebuildable — so a corrupt segment is a reindex, not data loss); <a href="/docs/aire/instagram">instagram</a> (posts authoritative, precomputed feeds disposable — which is what makes trimming to 500 entries safe); <a href="/docs/aire/lru-crash-resilient">lru-crash-resilient</a> (WAL + snapshot rebuild the cache; a miss is always correct).</li>
+</ul>
+
+<h4>10 · Name the failure mode and the abuse vector before they ask</h4>
+<ul>
+  <li><b>Trigger:</b> you have just described a happy path. Volunteer what breaks it — extracted answers score far lower than offered ones.</li>
+  <li><b>The move:</b> for each dependency ask <em>slow / down / partial</em>, and ask who benefits from abusing this and what bounds them.</li>
+  <li><b>Abuse example</b> (<a href="/docs/aire/web-crawler">web-crawler</a>): "The main risk here is that <em>we</em> are the attacker — an impolite crawler is a distributed denial of service with good intentions. One request per second per host, enforced at claim time so no combination of workers can burst, plus a cap per IP block because thousands of hosts share one server."</li>
+  <li><b>Abuse example</b> (<a href="/docs/aire/developer-api">developer-api</a>): "Assume every key leaks — into public repos, CI logs, screenshots. So design for revocation rather than prevention: hashed storage, a recognisable <code>sk-ant-</code> prefix so scanners catch it, scoping at issue time to bound the damage before anything happens, and push invalidation so revocation takes seconds rather than a TTL."</li>
+  <li><b>Abuse example</b> (<a href="/docs/aire/infra-metrics">infra-metrics</a>): "The attacker here is usually a colleague — a label containing a user id is a cardinality explosion that takes down monitoring for everyone, precisely when it is most needed."</li>
+  <li><b>Failure example</b> (<a href="/docs/aire/infra-safeguards">infra-safeguards</a>): "A classifier timeout is a statement about the classifier, not about the content — so it can never mean 'allow'. Otherwise an attacker who can induce timeouts has found a bypass."</li>
+</ul>
 
 ## 1. Transport: how bytes reach the client {#cc-transport}
 
