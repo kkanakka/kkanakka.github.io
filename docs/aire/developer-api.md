@@ -123,7 +123,8 @@ GET  /v1/models                                    -&gt; available models and th
   <li><b>API service → Inference:</b> submit to the serving fleet.
     Everything about batching, GPU scheduling and capacity lives behind this boundary; the platform's job is to have decided <em>whether</em> this request should exist before it consumes a GPU slot.</li>
   <li><b>Inference → API service:</b> token stream (response).
-    Streaming is the default because a multi‑second generation behind a single response would hold a connection with no feedback and time out in every intermediate proxy.</li>
+    Streaming is the default because a multi‑second generation behind a single response would hold a connection with no feedback and time out in every intermediate proxy.
+    Events carry ids so a client can resume with <code>Last-Event-ID</code> — but because this is a POST endpoint, <code>EventSource</code> is unavailable and the SDK drives that reconnect loop itself, which is part of what the official SDKs are for.</li>
   <li><b>API service → Client:</b> SSE events with a stable schema (response).
     Event types and their fields are part of the versioned contract, so a client parsing them today keeps working for years — adding a new optional field is safe, changing an existing one is not.
     Errors mid‑stream are a terminal event carrying a type and the request id, never a dropped connection, because a truncated stream is indistinguishable from a network failure and forces the caller to guess.</li>
@@ -184,7 +185,7 @@ GET  /v1/models                                    -&gt; available models and th
   <tr><td>Retry safety</td><td>Idempotency keys on every non‑idempotent call</td><td>A store of recent results and a TTL to operate</td><td>Without it, an ambiguous timeout on an expensive call is unresolvable — both retrying and not retrying are wrong some of the time</td></tr>
   <tr><td>Payload logging</td><td>Never; structured metadata against a request id instead</td><td>Debugging without the actual prompt is harder</td><td>Logging payloads makes support easy and makes zero‑retention impossible — and a log pipeline becomes a second copy of every customer's data</td></tr>
   <tr><td>Failure posture</td><td>Fail closed on auth, conservative on limits</td><td>An auth outage becomes a customer outage</td><td>Never fail open on authentication; for limits, the conservative middle avoids both an unlimited key and a self‑inflicted outage</td></tr>
-  <tr><td>Streaming</td><td>SSE with a versioned event schema</td><td>A second contract surface to keep compatible</td><td>Buffering the whole response is simpler and times out in intermediate proxies on any long generation</td></tr>
+  <tr><td>Streaming</td><td>SSE with a versioned event schema and per‑event ids</td><td>A second contract surface to keep compatible</td><td>Buffering the whole response is simpler and times out in intermediate proxies on any long generation</td></tr>
 </tbody></table>
 
 ## Safety-first design {#da-safety}
