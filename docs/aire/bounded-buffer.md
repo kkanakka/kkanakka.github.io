@@ -111,7 +111,7 @@ class BoundedBuffer:
 
 <!-- DIAGRAM:architecture:START -->
 
-<img src="/diagrams/bounded-buffer/architecture.svg" alt="Architecture" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/bounded-buffer/architecture.svg" alt="One mutex guards every field, so no thread can check a predicate and then sleep through the notification. The bound is the back-pressure." class="doc-diagram doc-diagram-seq" />
 
 <!-- DIAGRAM:architecture:END -->
 

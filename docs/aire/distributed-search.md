@@ -84,7 +84,7 @@ Internal:
 
 <!-- DIAGRAM:architecture:START -->
 
-<img src="/diagrams/distributed-search/architecture.svg" alt="Architecture" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/distributed-search/architecture.svg" alt="Architecture — scatter-gather, tail control, optional rerank" class="doc-diagram doc-diagram-seq" />
 
 <!-- DIAGRAM:architecture:END -->
 

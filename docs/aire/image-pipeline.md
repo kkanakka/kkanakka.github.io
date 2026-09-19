@@ -78,7 +78,7 @@ Queue message: {jobId, step, attempt, imageKey, params, dedupeKey}</code></pre>
 
 <!-- DIAGRAM:architecture:START -->
 
-<img src="/diagrams/image-pipeline/architecture.svg" alt="Architecture" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/image-pipeline/architecture.svg" alt="Output key is a pure function of the work, so a duplicated run overwrites identical bytes. At-least-once delivery, exactly-once effect." class="doc-diagram doc-diagram-seq" />
 
 <!-- DIAGRAM:architecture:END -->
 

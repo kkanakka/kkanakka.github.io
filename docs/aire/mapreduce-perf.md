@@ -74,7 +74,7 @@ Levers:  combiner · map-side join / broadcast small side · partitioner for ske
 
 <!-- DIAGRAM:architecture:START -->
 
-<img src="/diagrams/mapreduce-perf/architecture.svg" alt="Architecture" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/mapreduce-perf/architecture.svg" alt="Profile first. The typical slow job is 60% shuffle and 5% compute, so optimising the compute first is the classic wasted week." class="doc-diagram doc-diagram-seq" />
 
 <!-- DIAGRAM:architecture:END -->
 

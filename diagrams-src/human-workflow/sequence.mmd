@@ -1,0 +1,26 @@
+sequenceDiagram
+    autonumber
+    participant W as Worker
+    participant API as Claim API
+    participant DB as Task store
+    participant RE as Reaper
+    participant REV as Review
+    W->>API: give me work
+    API->>DB: one conditional UPDATE, SKIP LOCKED
+    Note over API,DB: server chooses — workers never browse, or the hard tasks rot
+    DB-->>W: task + lease (owner, lease_until)
+    loop while the tab is open
+        W->>DB: heartbeat extends the lease
+        W->>DB: autosave partial answer
+    end
+    alt worker abandons
+        RE->>DB: lease expired → AVAILABLE, attempts++
+        Note over RE,DB: no presence service, no failure detector
+        W->>DB: late submit
+        DB-->>W: rejected — "reassigned while you were away"
+    else worker submits
+        W->>DB: submit WHERE owner=me AND state=CLAIMED
+        DB->>REV: if the batch policy requires review
+        REV-->>DB: approve → COMPLETED, or reject with feedback
+    end
+    Note over DB: attempts exhausted escalates to a supervisor — the task is ambiguous, not the workers

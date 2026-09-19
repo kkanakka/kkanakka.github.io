@@ -1,0 +1,30 @@
+sequenceDiagram
+    autonumber
+    participant OP as Operator
+    participant API as Job API
+    participant SCH as Scheduler
+    participant BUD as Budget
+    participant K8S as Kubernetes
+    participant M as Machine
+    OP->>API: submit selector + reason + ticket
+    API->>API: resolve against live inventory
+    API-->>OP: dry run — count, blast radius, what it would refuse
+    OP->>API: start, echoing the expected count
+    Note over API,SCH: count mismatch aborts rather than rebooting a different set
+    SCH->>BUD: reserve(service, machine) — atomic
+    alt below the floor
+        BUD-->>SCH: DENIED — defer to a later wave
+    else granted
+        SCH->>K8S: cordon, then drain honouring PDBs
+        alt drain blocked
+            K8S-->>SCH: PDB refuses — mark BLOCKED, uncordon, move on
+            Note over SCH,K8S: never force-delete pods to hit a schedule
+        else drained
+            SCH->>M: reboot(token, deadline)
+            M-->>SCH: re-registers with new version
+            SCH->>M: health check, then a functional probe
+            SCH->>K8S: uncordon
+            SCH->>BUD: release — only after verification
+        end
+    end
+    Note over SCH: between waves, re-read fleet health — any failure halts for a human

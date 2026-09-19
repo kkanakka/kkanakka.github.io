@@ -76,7 +76,7 @@ Headers read: X-RateLimit-Remaining, X-RateLimit-Reset, Retry-After; write: If-N
 
 <!-- DIAGRAM:architecture:START -->
 
-<img src="/diagrams/http-optimize/architecture.svg" alt="Architecture" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/http-optimize/architecture.svg" alt="The cheapest request is the one never sent. Pool size comes from Little's law, not CPU count." class="doc-diagram doc-diagram-seq" />
 
 <!-- DIAGRAM:architecture:END -->
 

@@ -88,7 +88,7 @@ GET  /v1/models                                    -&gt; available models and th
 
 <!-- DIAGRAM:architecture:START -->
 
-<img src="/diagrams/developer-api/architecture.svg" alt="Architecture" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/developer-api/architecture.svg" alt="Architecture — identity, limits, metering, streaming contract" class="doc-diagram doc-diagram-seq" />
 
 <!-- DIAGRAM:architecture:END -->
 

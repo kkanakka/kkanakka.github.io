@@ -1,0 +1,28 @@
+sequenceDiagram
+    autonumber
+    participant S as Scheduler
+    participant R1 as Checker eu
+    participant R2 as Checker us
+    participant R3 as Checker ap
+    participant EV as Evaluator
+    participant AL as Alerting
+    S->>R1: check monitor 42
+    S->>R2: check monitor 42
+    S->>R3: check monitor 42
+    R1-->>EV: timeout
+    R2-->>EV: 200 in 120ms
+    R3-->>EV: 200 in 140ms
+    Note over EV: 1 of 3 failing is that region, not the customer — no alert
+    S->>R1: next interval
+    S->>R2: next interval
+    S->>R3: next interval
+    R1-->>EV: connection refused
+    R2-->>EV: connection refused
+    R3-->>EV: connection refused
+    EV->>EV: quorum reached, but this is failure 1 of N
+    Note over EV: one blip is noise, two in a row is a pattern
+    EV->>EV: second consecutive quorum failure → DOWN
+    EV->>EV: in a maintenance window? then suppress and exclude from uptime
+    EV->>AL: incident opened
+    AL->>AL: dedupe and group — 400 monitors down is one page
+    AL-->>S: notify with regions, error and since-when — resolution follows

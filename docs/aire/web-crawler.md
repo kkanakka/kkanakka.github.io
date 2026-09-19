@@ -83,7 +83,7 @@ Internal worker loop:  claim() → fetch() → parse() → dedupe() → enqueue(
 
 <!-- DIAGRAM:architecture:START -->
 
-<img src="/diagrams/web-crawler/architecture.svg" alt="Architecture" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/web-crawler/architecture.svg" alt="Politeness is enforced at claim time, so no combination of workers can burst one host. The frontier is a stateful table, not a queue." class="doc-diagram doc-diagram-seq" />
 
 <!-- DIAGRAM:architecture:END -->
 

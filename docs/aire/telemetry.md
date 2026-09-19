@@ -146,7 +146,7 @@ GET  /v1/registry/unresolved             -&gt; raw names seen with counts, sampl
 
 <!-- DIAGRAM:architecture:START -->
 
-<img src="/diagrams/telemetry/architecture.svg" alt="Architecture" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/telemetry/architecture.svg" alt="Raw store is the system of record and is never rewritten. Canonical series are a derived view under a mapping_version, so a wrong alias is fixed by re-deriving, not by guessing." class="doc-diagram doc-diagram-seq" />
 
 <!-- DIAGRAM:architecture:END -->
 

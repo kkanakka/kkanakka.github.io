@@ -79,7 +79,7 @@ Latency:     2 (LB) + 1 + 5 (gateway) + ~20 (queue) + 1 + 4 (claim) + 50 (GPU) +
 
 <!-- DIAGRAM:architecture:START -->
 
-<img src="/diagrams/inference-api/architecture.svg" alt="Architecture" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/inference-api/architecture.svg" alt="Architecture — sync outside, async inside" class="doc-diagram doc-diagram-seq" />
 
 <!-- DIAGRAM:architecture:END -->
 

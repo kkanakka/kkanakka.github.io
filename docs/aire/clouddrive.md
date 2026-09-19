@@ -80,7 +80,7 @@ GET  /s/:token                                -&gt; shared view (checks expiry/p
 
 <!-- DIAGRAM:architecture:START -->
 
-<img src="/diagrams/clouddrive/architecture.svg" alt="Architecture" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/clouddrive/architecture.svg" alt="Bytes go direct to storage; the service only signs, authorises and records. Originals get eleven nines, derivatives are regenerable and live cheaper." class="doc-diagram doc-diagram-seq" />
 
 <!-- DIAGRAM:architecture:END -->
 

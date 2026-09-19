@@ -94,7 +94,7 @@ REST
 
 <!-- DIAGRAM:architecture:START -->
 
-<img src="/diagrams/chat-1to1/architecture.svg" alt="Architecture" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/chat-1to1/architecture.svg" alt="Architecture — sockets, ordering, durable inbox, delivery receipts" class="doc-diagram doc-diagram-seq" />
 
 <!-- DIAGRAM:architecture:END -->
 

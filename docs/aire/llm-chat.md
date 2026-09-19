@@ -139,7 +139,7 @@ retry: 3000            # server tells the client how long to wait before reconne
 
 <!-- DIAGRAM:architecture:START -->
 
-<img src="/diagrams/llm-chat/architecture.svg" alt="Architecture" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/llm-chat/architecture.svg" alt="Architecture — stateless model, stateful product" class="doc-diagram doc-diagram-seq" />
 
 <!-- DIAGRAM:architecture:END -->
 

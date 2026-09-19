@@ -77,7 +77,7 @@ HEAD /objects/:id                          -&gt; size, etag (for resume)</code><
 
 <!-- DIAGRAM:architecture:START -->
 
-<img src="/diagrams/network-io-service/architecture.svg" alt="Architecture" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/network-io-service/architecture.svg" alt="Server memory is a function of connection count, never of how slow those connections are. Zero-copy plus stop-reading is the whole answer." class="doc-diagram doc-diagram-seq" />
 
 <!-- DIAGRAM:architecture:END -->
 

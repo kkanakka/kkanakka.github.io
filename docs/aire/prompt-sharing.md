@@ -80,7 +80,7 @@ POST /prompts/:id/reactions {type}</code></pre>
 
 <!-- DIAGRAM:architecture:START -->
 
-<img src="/diagrams/prompt-sharing/architecture.svg" alt="Architecture" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/prompt-sharing/architecture.svg" alt="The index is a fast candidate generator, never the authority on access. Pre-filter for speed, recheck for correctness." class="doc-diagram doc-diagram-seq" />
 
 <!-- DIAGRAM:architecture:END -->
 
