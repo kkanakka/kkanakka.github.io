@@ -24,6 +24,7 @@ description: "S5 · Debugging a p99 latency spike (CPU flat)"
 <p>The two distributions compared in <em>Run it</em>, and the phase ledger from a single instrumented request.</p>
 
 <img src="/diagrams/arcoding-state/s5.svg" alt="Two latency distributions with their percentiles and tail ratios, and one request's phase ledger." class="doc-diagram doc-diagram-seq" />
+
 <h4>Open with the shape of the symptom</h4>
 <p>Tail-up-average-flat means a <em>minority</em> of requests wait on something: queueing, head-of-line blocking, a stall — not a uniform per-request cost increase (that would move the average). Saying this in the first 30 seconds reframes the whole search and signals seniority.</p>
 <h4>The hypothesis ladder (each with its cheap test)</h4>
@@ -38,6 +39,27 @@ description: "S5 · Debugging a p99 latency spike (CPU flat)"
 </table></div>
 <h4>The measurement you add if it doesn't exist</h4>
 
+<h4>Process wrapper (say this too)</h4>
+<p>Confirm the deploy is the trigger (overlay deploy markers on the latency graph); if user impact is real, <strong>roll back first and diagnose from the canary</strong> — root cause is not a prerequisite for mitigation; then bisect the deploy's changes on a canary replica with production traffic mirrored. Close with the prevention: event-loop lag and pool-wait metrics on the default dashboard, p99 SLO burn alert, and a lint/CI rule banning sync clients in async code paths.</p>
+<!-- ============================ QUESTION BANK ============================ -->
+
+<h4>Runnable diagnostics for each rung of the ladder</h4>
+<p>The ladder above is the reasoning. This is the code you would actually paste into a canary — every block is self-contained, cheap enough to leave running, and answers exactly one hypothesis.</p>
+
+<p><strong>0 · First, confirm it really is a subset.</strong> This decides everything after it, and it is one query, not a profiler.</p>
+
+<p><strong>1 · Blocking call in the event loop.</strong> The monitor above detects it; this catches it <em>in the act</em> and names the offending function, which is what you actually need to fix it.</p>
+
+<p><strong>2 · Connection-pool exhaustion.</strong> The signature is that <em>wait</em> time grows while <em>service</em> time stays flat — so measure them separately, or the two are indistinguishable.</p>
+
+<p><strong>3 · Retry amplification.</strong> The tell is arithmetic: your p99 lands suspiciously close to a multiple of the downstream timeout.</p>
+
+<p><strong>5 · GC pauses.</strong> Measure the pause itself rather than inferring it from collection counts.</p>
+
+<p><strong>The instrumentation that would have made all of this unnecessary</strong> — a per-hop ledger on 100% of requests. It is small, structured, and turns "the service is slow" into "the database span went 8 ms to 1,400 ms".</p>
+
+<p class="covers">The complete program — save it as <code>s5_latency_tools.py</code> and run <code>python s5_latency_tools.py</code>.</p>
+
 ```python
 import asyncio, time
 
@@ -49,20 +71,7 @@ async def loop_lag_monitor(report, interval=0.5):
         await asyncio.sleep(interval)
         lag = time.perf_counter() - t0 - interval
         report("event_loop_lag_seconds", max(lag, 0.0))
-```
 
-<h4>Process wrapper (say this too)</h4>
-<p>Confirm the deploy is the trigger (overlay deploy markers on the latency graph); if user impact is real, <strong>roll back first and diagnose from the canary</strong> — root cause is not a prerequisite for mitigation; then bisect the deploy's changes on a canary replica with production traffic mirrored. Close with the prevention: event-loop lag and pool-wait metrics on the default dashboard, p99 SLO burn alert, and a lint/CI rule banning sync clients in async code paths.</p>
-<div class="adm info"><div class="adm-title">⏱️ Complexity &amp; efficiency</div><p><strong>This one’s efficiency is about <em>diagnosis</em> cost, not code:</strong> the ladder is ordered by prior probability &times; cheapness of the test, so expected time-to-cause is minimized — check the deploy diff (seconds) before profiling (minutes) before adding instrumentation (a deploy). The loop-lag monitor itself is O(1) work every 500 ms — negligible overhead for permanently closing your biggest blind spot. The meta-point interviewers grade: mitigation (rollback) is O(minutes) and independent of diagnosis, so it comes first when users are burning.</p></div>
-<!-- ============================ QUESTION BANK ============================ -->
-
-
-<h4>Runnable diagnostics for each rung of the ladder</h4>
-<p>The ladder above is the reasoning. This is the code you would actually paste into a canary — every block is self-contained, cheap enough to leave running, and answers exactly one hypothesis.</p>
-
-<p><strong>0 · First, confirm it really is a subset.</strong> This decides everything after it, and it is one query, not a profiler.</p>
-
-```python
 import statistics
 
 def shape_of_the_spike(latencies_ms):
@@ -91,11 +100,7 @@ def shape_of_the_spike(latencies_ms):
         # A healthy service is usually 3-5x. Past ~10x a subset is stalling.
         "verdict": "subset stalling" if tail_ratio > 10 else "uniform shift",
     }
-```
 
-<p><strong>1 · Blocking call in the event loop.</strong> The monitor above detects it; this catches it <em>in the act</em> and names the offending function, which is what you actually need to fix it.</p>
-
-```python
 import asyncio, logging
 
 def arm_slow_callback_detector(threshold_s=0.1):
@@ -120,11 +125,7 @@ def arm_slow_callback_detector(threshold_s=0.1):
 # Correct:  async with httpx.AsyncClient() as c: r = await c.get(url)
 # Or, when no async client exists, push it off the loop entirely:
 #       r = await asyncio.to_thread(requests.get, url)
-```
 
-<p><strong>2 · Connection-pool exhaustion.</strong> The signature is that <em>wait</em> time grows while <em>service</em> time stays flat — so measure them separately, or the two are indistinguishable.</p>
-
-```python
 import time, contextlib
 
 @contextlib.asynccontextmanager
@@ -148,11 +149,7 @@ async def timed_pool_acquire(pool, report):
 # Reading it: pool_wait ~= your added tail latency AND pool_in_use pinned at
 # max => exhaustion. If wait is ~0 and query_seconds grew, the dependency
 # really did get slower and you are one rung down the ladder.
-```
 
-<p><strong>3 · Retry amplification.</strong> The tell is arithmetic: your p99 lands suspiciously close to a multiple of the downstream timeout.</p>
-
-```python
 def looks_like_retry_amplification(our_p99_ms, dep_timeout_ms, max_attempts):
     """A dependency that got slightly slower becomes a cliff once retries
     multiply it. Retries need all three of: backoff, jitter, and a budget —
@@ -171,11 +168,7 @@ def looks_like_retry_amplification(our_p99_ms, dep_timeout_ms, max_attempts):
 
 # Also check request rate: if RPS to the dependency rose while your inbound
 # RPS did not, the extra traffic is your own retries.
-```
 
-<p><strong>5 · GC pauses.</strong> Measure the pause itself rather than inferring it from collection counts.</p>
-
-```python
 import gc, time
 
 def arm_gc_pause_monitor(report, threshold_s=0.05):
@@ -198,11 +191,7 @@ def arm_gc_pause_monitor(report, threshold_s=0.05):
 # If gen-2 pauses line up with the p99 delta: the fix is fewer long-lived
 # objects, or gc.freeze() after startup to keep the permanent heap out of
 # every subsequent collection.
-```
 
-<p><strong>The instrumentation that would have made all of this unnecessary</strong> — a per-hop ledger on 100% of requests. It is small, structured, and turns "the service is slow" into "the database span went 8 ms to 1,400 ms".</p>
-
-```python
 import time, contextlib
 
 class LatencyLedger:
@@ -257,21 +246,8 @@ class LatencyLedger:
 # with led.phase("auth"):   ...
 # with led.phase("db"):     ...
 # log.info("request", extra=led.finish())
-```
 
-<div class="adm tip"><div class="adm-title">💡 What they probe</div>
-<ul>
-<li><strong>Do you measure before you profile?</strong> Reaching for a profiler first is the common wrong move — a 10× p99 with a flat mean is almost never CPU inside your own code.</li>
-<li><strong>Do you separate wait from service time?</strong> Conflating them is why pool exhaustion gets misdiagnosed as a slow dependency, every time.</li>
-<li><strong>Do you know that unaccounted time is a finding?</strong> If the hops do not sum to the total, the remainder is queueing — and queueing is the single most common cause of this exact symptom.</li>
-<li><strong>Do you mitigate before diagnosing?</strong> Rollback does not require root cause, and it is also evidence: if reverting fixes it, the search space collapsed to one change.</li>
-</ul></div>
 
-### Run it
-
-<p class="covers">Append this to the code above, save as <code>s5_latency_tools.py</code>, then run <code>python s5_latency_tools.py</code>. This drives three of the tools above — <code>shape_of_the_spike</code>, <code>looks_like_retry_amplification</code> and <code>LatencyLedger</code>.</p>
-
-```python
 if __name__ == "__main__":
     import random, time
 
@@ -332,5 +308,15 @@ uniform shift  mean=   65.2  p50=  65.2  p99=   79.5  tail=  1.2x  -> uniform sh
 
   the 0.1s 'unaccounted' is the queue wait — a finding, not noise
 ```
+
+<div class="adm info"><div class="adm-title">⏱️ Complexity &amp; efficiency</div><p><strong>This one’s efficiency is about <em>diagnosis</em> cost, not code:</strong> the ladder is ordered by prior probability &times; cheapness of the test, so expected time-to-cause is minimized — check the deploy diff (seconds) before profiling (minutes) before adding instrumentation (a deploy). The loop-lag monitor itself is O(1) work every 500 ms — negligible overhead for permanently closing your biggest blind spot. The meta-point interviewers grade: mitigation (rollback) is O(minutes) and independent of diagnosis, so it comes first when users are burning.</p></div>
+
+<div class="adm tip"><div class="adm-title">💡 What they probe</div>
+<ul>
+<li><strong>Do you measure before you profile?</strong> Reaching for a profiler first is the common wrong move — a 10× p99 with a flat mean is almost never CPU inside your own code.</li>
+<li><strong>Do you separate wait from service time?</strong> Conflating them is why pool exhaustion gets misdiagnosed as a slow dependency, every time.</li>
+<li><strong>Do you know that unaccounted time is a finding?</strong> If the hops do not sum to the total, the remainder is queueing — and queueing is the single most common cause of this exact symptom.</li>
+<li><strong>Do you mitigate before diagnosing?</strong> Rollback does not require root cause, and it is also evidence: if reverting fixes it, the search space collapsed to one change.</li>
+</ul></div>
 
 </div>

@@ -23,7 +23,13 @@ description: "B13 · Path resolution with symbolic links"
 <p>One resolution walked step by step — the <code>/data/current/model.bin</code> case from <em>Run it</em>.</p>
 
 <img src="/diagrams/arcoding-state/b13.svg" alt="A symlink resolution walked step by step, showing the resolved path and the pending stack at each stage." class="doc-diagram doc-diagram-seq" />
-<h4>Warm-up (do this first): simplify a path — no links</h4>
+
+<h4>Full version — component-wise symlink resolution with loop detection</h4>
+<p>The key insight: you cannot textually simplify first and then substitute links. A symlink can appear <em>mid-path</em>, its target can be relative, contain <code>..</code>, or contain further links — so resolution must proceed one component at a time against the <em>resolved-so-far</em> prefix.</p>
+
+<p>Worked trace (narrate one like this in the interview): <code>links = {"/a/b": "/x", "/x/c": "../y"}</code>, resolve <code>"/a/b/c/d"</code> → consume <code>a</code>,<code>b</code> → <code>/a/b</code> is a link → restart with <code>x</code>, pending <code>c,d</code> → consume <code>c</code> → <code>/x/c</code> is a link to <code>../y</code> → pop <code>c</code>, push <code>..</code>,<code>y</code> → <code>..</code> pops <code>x</code> → consume <code>y</code>,<code>d</code> → <strong><code>/y/d</code></strong>.</p>
+
+<p class="covers">The complete program — save it as <code>b13_resolve_path.py</code> and run <code>python b13_resolve_path.py</code>.</p>
 
 ```python
 def simplify(path: str) -> str:
@@ -45,12 +51,7 @@ def simplify(path: str) -> str:
         else:
             out.append(comp)
     return "/" + "/".join(out)
-```
 
-<h4>Full version — component-wise symlink resolution with loop detection</h4>
-<p>The key insight: you cannot textually simplify first and then substitute links. A symlink can appear <em>mid-path</em>, its target can be relative, contain <code>..</code>, or contain further links — so resolution must proceed one component at a time against the <em>resolved-so-far</em> prefix.</p>
-
-```python
 class SymlinkLoopError(RuntimeError):
     pass
 
@@ -92,23 +93,8 @@ def resolve(path: str, links: dict[str, str], *, max_hops: int = 64) -> str:
             pending.extend([c for c in target.split("/") if c][::-1])
 
     return "/" + "/".join(out)
-```
 
-<p>Worked trace (narrate one like this in the interview): <code>links = {"/a/b": "/x", "/x/c": "../y"}</code>, resolve <code>"/a/b/c/d"</code> → consume <code>a</code>,<code>b</code> → <code>/a/b</code> is a link → restart with <code>x</code>, pending <code>c,d</code> → consume <code>c</code> → <code>/x/c</code> is a link to <code>../y</code> → pop <code>c</code>, push <code>..</code>,<code>y</code> → <code>..</code> pops <code>x</code> → consume <code>y</code>,<code>d</code> → <strong><code>/y/d</code></strong>.</p>
-<div class="adm tip"><div class="adm-title">💡 What they probe</div>
-<ul>
-<li><strong>Why component-wise:</strong> give the counterexample — with <code>/a/b → /x</code>, the path <code>/a/b/../c</code> is <code>/x/../c = /c</code>, but textual simplification first gives <code>/a/c</code>. This single example justifies the whole design.</li>
-<li><strong>Loop defense:</strong> a hop cap is what kernels use (ELOOP at ~40); a visited-set of link paths also works for pure cycles but the cap is simpler and covers more. Know both.</li>
-<li><strong>.. above root</strong> is a no-op, not an error (POSIX). State it.</li>
-<li><strong>Hierarchical file store variant:</strong> same walk, but each component is looked up in a node tree (dirs as dicts) — resolution and storage compose cleanly if the resolver is its own function.</li>
-</ul></div>
-<div class="adm info"><div class="adm-title">⏱️ Complexity &amp; efficiency</div><p><strong>Time:</strong> O(components processed), where the hop cap bounds expansion: at most <code>max_hops</code> link substitutions, each injecting O(len(target)) components — so worst case O(|path| + max_hops &times; max_target_len), i.e., effectively linear with a safety ceiling. <strong>Space:</strong> O(resolved path + pending components).</p><p><strong>How efficient is it?</strong> Linear is optimal (every component must be looked at), and the hop cap is what keeps the worst case <em>defined</em> at all — without it, self-referential links make resolution non-terminating. Dict lookups make each link check O(1); the interesting cost is semantic, not asymptotic: resolving against the resolved-so-far prefix is what buys correctness for mid-path links, at zero extra complexity.</p></div>
 
-### Run it
-
-<p class="covers">Append this to the code above, save as <code>b13_resolve_path.py</code>, then run <code>python b13_resolve_path.py</code>.</p>
-
-```python
 if __name__ == "__main__":
     print("--- simplify (no links) ---")
     for p in ("/a/./b/../c", "/../", "/home//foo/", "/a/b/c/../../.."):
@@ -149,5 +135,15 @@ if __name__ == "__main__":
 --- ELOOP: a cycle is caught, not hung ---
 SymlinkLoopError: too many symlinks resolving '/a'
 ```
+
+<div class="adm tip"><div class="adm-title">💡 What they probe</div>
+<ul>
+<li><strong>Why component-wise:</strong> give the counterexample — with <code>/a/b → /x</code>, the path <code>/a/b/../c</code> is <code>/x/../c = /c</code>, but textual simplification first gives <code>/a/c</code>. This single example justifies the whole design.</li>
+<li><strong>Loop defense:</strong> a hop cap is what kernels use (ELOOP at ~40); a visited-set of link paths also works for pure cycles but the cap is simpler and covers more. Know both.</li>
+<li><strong>.. above root</strong> is a no-op, not an error (POSIX). State it.</li>
+<li><strong>Hierarchical file store variant:</strong> same walk, but each component is looked up in a node tree (dirs as dicts) — resolution and storage compose cleanly if the resolver is its own function.</li>
+</ul></div>
+
+<div class="adm info"><div class="adm-title">⏱️ Complexity &amp; efficiency</div><p><strong>Time:</strong> O(components processed), where the hop cap bounds expansion: at most <code>max_hops</code> link substitutions, each injecting O(len(target)) components — so worst case O(|path| + max_hops &times; max_target_len), i.e., effectively linear with a safety ceiling. <strong>Space:</strong> O(resolved path + pending components).</p><p><strong>How efficient is it?</strong> Linear is optimal (every component must be looked at), and the hop cap is what keeps the worst case <em>defined</em> at all — without it, self-referential links make resolution non-terminating. Dict lookups make each link check O(1); the interesting cost is semantic, not asymptotic: resolving against the resolved-so-far prefix is what buys correctness for mid-path links, at zero extra complexity.</p></div>
 
 </div>

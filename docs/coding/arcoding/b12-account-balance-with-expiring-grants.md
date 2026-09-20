@@ -25,8 +25,11 @@ description: "B12 · Account balance with expiring grants"
 <p>The heap after the two grants in <em>Run it</em>, and what spending 120 does to it.</p>
 
 <img src="/diagrams/arcoding-state/b12.svg" alt="A two-entry min-heap of grants ordered by expiry, with the running total beside it." class="doc-diagram doc-diagram-seq" />
+
 <h4>Why soonest-expiring-first is not just convention</h4>
 <p>It's the greedy that <em>maximizes future spendable balance</em>: any other order preserves credit that dies sooner at the expense of credit that lives longer — strictly dominated. An exchange argument proves it in one sentence; give that sentence.</p>
+
+<p class="covers">The complete program — save it as <code>b12_credit_account.py</code> and run <code>python b12_credit_account.py</code>.</p>
 
 ```python
 import heapq
@@ -96,22 +99,8 @@ class CreditAccount:
             if cell[0] == 0:
                 heapq.heappop(self._h)
         return True
-```
 
-<div class="adm tip"><div class="adm-title">💡 What they probe</div>
-<ul>
-<li><strong>Amortized costs:</strong> every grant is pushed once and popped once, so spend/prune are amortized O(log n); <code>balance</code> is O(expired backlog), O(1) steady-state thanks to the running total. Say "amortized" and why.</li>
-<li><strong>Boundary semantics:</strong> is a grant usable <em>at</em> its expiry instant? (Code above: no — <code>expiry &lt;= now</code> is dead.) Confirm before coding; it's a guaranteed hidden test.</li>
-<li><strong>The mutable-cell trick</strong> (one-element list inside the heap tuple) lets partial consumption avoid pop-modify-push; if it feels too clever, a small dataclass with <code>&lt;</code> defined is the tidier equivalent.</li>
-<li><strong>Extensions:</strong> partial spend (spend what's available, return amount spent), <code>refund</code> (needs per-spend provenance — a log of (grant_seq, amount) per spend), and per-source grant reporting.</li>
-</ul></div>
-<div class="adm info"><div class="adm-title">⏱️ Complexity &amp; efficiency</div><p><strong>Time:</strong> <code>grant</code> O(log n); <code>spend</code> amortized O(log n) per grant it touches — each grant is pushed once and popped once over its lifetime, so total work across all operations is O(G log G) for G grants regardless of how spends are sized; <code>balance</code> O(1) steady-state thanks to the running total (O(expired backlog) worst case after idle periods). <strong>Space:</strong> O(live grants).</p><p><strong>How efficient is it?</strong> Optimal for expiry-ordered consumption: some ordered structure over expiries is required, and a heap is the cheapest one that only ever needs the minimum. The running-total trick is the efficiency lesson to say out loud — it converts the obvious O(n) balance scan into O(1) by maintaining the invariant at write time.</p></div>
 
-### Run it
-
-<p class="covers">Append this to the code above, save as <code>b12_credit_account.py</code>, then run <code>python b12_credit_account.py</code>.</p>
-
-```python
 if __name__ == "__main__":
     acct = CreditAccount()
     acct.grant(100, expiry=10)          # expires first
@@ -151,5 +140,15 @@ balance unchanged    : 50
 --- guards ---
 ValueError: amount must be positive
 ```
+
+<div class="adm tip"><div class="adm-title">💡 What they probe</div>
+<ul>
+<li><strong>Amortized costs:</strong> every grant is pushed once and popped once, so spend/prune are amortized O(log n); <code>balance</code> is O(expired backlog), O(1) steady-state thanks to the running total. Say "amortized" and why.</li>
+<li><strong>Boundary semantics:</strong> is a grant usable <em>at</em> its expiry instant? (Code above: no — <code>expiry &lt;= now</code> is dead.) Confirm before coding; it's a guaranteed hidden test.</li>
+<li><strong>The mutable-cell trick</strong> (one-element list inside the heap tuple) lets partial consumption avoid pop-modify-push; if it feels too clever, a small dataclass with <code>&lt;</code> defined is the tidier equivalent.</li>
+<li><strong>Extensions:</strong> partial spend (spend what's available, return amount spent), <code>refund</code> (needs per-spend provenance — a log of (grant_seq, amount) per spend), and per-source grant reporting.</li>
+</ul></div>
+
+<div class="adm info"><div class="adm-title">⏱️ Complexity &amp; efficiency</div><p><strong>Time:</strong> <code>grant</code> O(log n); <code>spend</code> amortized O(log n) per grant it touches — each grant is pushed once and popped once over its lifetime, so total work across all operations is O(G log G) for G grants regardless of how spends are sized; <code>balance</code> O(1) steady-state thanks to the running total (O(expired backlog) worst case after idle periods). <strong>Space:</strong> O(live grants).</p><p><strong>How efficient is it?</strong> Optimal for expiry-ordered consumption: some ordered structure over expiries is required, and a heap is the cheapest one that only ever needs the minimum. The running-total trick is the efficiency lesson to say out loud — it converts the obvious O(n) balance scan into O(1) by maintaining the invariant at write time.</p></div>
 
 </div>

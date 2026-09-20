@@ -23,7 +23,13 @@ description: "B6 · Web crawler: single-threaded → multithreaded → async"
 <p>The frontier and the seen set round by round, over the fake site used in <em>Run it</em>.</p>
 
 <img src="/diagrams/arcoding-state/b6.svg" alt="The frontier and seen set at each round of the crawl, with the off-host link and the duplicate both rejected." class="doc-diagram doc-diagram-seq" />
-<h4>Level 1 — single-threaded, correct hostname filter</h4>
+
+<p>Two workable shapes; know both and justify your pick:</p>
+<p><strong>(a) Frontier rounds</strong> — trivially correct termination, slight loss of parallelism at round edges:</p>
+
+<p><strong>(b) Shared queue + in-flight counter</strong> — full parallelism; termination is the hard part (queue empty ≠ done while any worker may still add URLs). <code>queue.Queue.task_done()/join()</code> solves exactly this:</p>
+
+<p class="covers">The complete program — save it as <code>b6_crawler.py</code> and run <code>python b6_crawler.py</code>.</p>
 
 ```python
 from urllib.parse import urlparse
@@ -59,13 +65,7 @@ def crawl(start_url, get_links):
                 seen.add(nxt)
                 stack.append(nxt)
     return list(seen)
-```
 
-<h4>Level 2 — multithreaded (I/O-bound ⇒ threads help despite the GIL)</h4>
-<p>Two workable shapes; know both and justify your pick:</p>
-<p><strong>(a) Frontier rounds</strong> — trivially correct termination, slight loss of parallelism at round edges:</p>
-
-```python
 import threading
 from concurrent.futures import ThreadPoolExecutor
 
@@ -99,11 +99,7 @@ def crawl_mt(start_url, get_links, workers=8):
         while frontier:
             frontier = [u for batch in ex.map(visit, frontier) for u in batch]
     return list(seen)
-```
 
-<p><strong>(b) Shared queue + in-flight counter</strong> — full parallelism; termination is the hard part (queue empty ≠ done while any worker may still add URLs). <code>queue.Queue.task_done()/join()</code> solves exactly this:</p>
-
-```python
 import queue
 
 
@@ -148,11 +144,7 @@ def crawl_q(start_url, get_links, workers=8):
         q.put(None)                                   # release the workers
     q.join()
     return list(seen)
-```
 
-<h4>Level 3 — asyncio with politeness (rate limit + timeout + retry)</h4>
-
-```python
 import asyncio
 
 
@@ -195,22 +187,8 @@ async def crawl_async(start_url, aget_links, *, concurrency=20,
                     nxt.append(u)
         frontier = nxt
     return list(seen)
-```
 
-<div class="adm tip"><div class="adm-title">💡 What they probe</div>
-<ul>
-<li><strong>The race:</strong> mark seen <em>before</em> fetching, inside the lock. Check-then-fetch-then-add lets two threads fetch the same URL — the specific bug this question exists to catch.</li>
-<li><strong>Termination reasoning</strong> for the shared-queue version — explain why <code>join()</code> works: every <code>put</code> is eventually matched by a <code>task_done</code>, and puts only happen from tasks already counted.</li>
-<li><strong>Hostname vs domain:</strong> <code>news.example.com</code> ≠ <code>example.com</code> under "same host"; under "same domain" reuse the label-boundary matcher from <a href="/docs/coding/arcoding/s4-url-parsing-domain-match-counting">S4</a>. Ask which.</li>
-<li><strong>Production follow-ups:</strong> robots.txt, per-host token bucket, max depth/pages, URL normalization (fragments, trailing slashes, http/https duplicates), and cycle safety (the seen-set is the cycle guard).</li>
-</ul></div>
-<div class="adm info"><div class="adm-title">⏱️ Complexity &amp; efficiency</div><p><strong>Time:</strong> O(V + E) — each page fetched once (V), each link examined once (E); the seen-set makes cycles free. <strong>Space:</strong> O(V) for seen + frontier. <strong>Speedup:</strong> with W workers on I/O-bound fetches, wall time ≈ sequential/W until you saturate bandwidth, the target site, or politeness limits — the frontier-round version loses a little parallelism at round boundaries (stragglers), which the shared-queue version avoids at the cost of the harder termination argument.</p><p><strong>How efficient is it?</strong> Asymptotically optimal (every reachable page must be fetched once). The real-world constraint is politeness, not CPU: per-host rate limiting deliberately caps throughput — efficiency here means maximizing pages/sec <em>within</em> that cap, which is what the semaphore/concurrency knob tunes.</p></div>
 
-### Run it
-
-<p class="covers">Append this to the code above, save as <code>b6_crawler.py</code>, then run <code>python b6_crawler.py</code>. All four crawlers run against the same in-memory fake site, so the comparison is exact.</p>
-
-```python
 # A fake site: 4 same-host pages, one off-host link, one cycle back to /
 SITE = {
     "http://ex.com/":  ["http://ex.com/a", "http://ex.com/b",
@@ -269,5 +247,15 @@ off-host dropped: True
 --- a flaky page must not sink the async crawl ---
 still crawled   : ['http://ex.com/', 'http://ex.com/a', 'http://ex.com/b', 'http://ex.com/c']
 ```
+
+<div class="adm tip"><div class="adm-title">💡 What they probe</div>
+<ul>
+<li><strong>The race:</strong> mark seen <em>before</em> fetching, inside the lock. Check-then-fetch-then-add lets two threads fetch the same URL — the specific bug this question exists to catch.</li>
+<li><strong>Termination reasoning</strong> for the shared-queue version — explain why <code>join()</code> works: every <code>put</code> is eventually matched by a <code>task_done</code>, and puts only happen from tasks already counted.</li>
+<li><strong>Hostname vs domain:</strong> <code>news.example.com</code> ≠ <code>example.com</code> under "same host"; under "same domain" reuse the label-boundary matcher from <a href="/docs/coding/arcoding/s4-url-parsing-domain-match-counting">S4</a>. Ask which.</li>
+<li><strong>Production follow-ups:</strong> robots.txt, per-host token bucket, max depth/pages, URL normalization (fragments, trailing slashes, http/https duplicates), and cycle safety (the seen-set is the cycle guard).</li>
+</ul></div>
+
+<div class="adm info"><div class="adm-title">⏱️ Complexity &amp; efficiency</div><p><strong>Time:</strong> O(V + E) — each page fetched once (V), each link examined once (E); the seen-set makes cycles free. <strong>Space:</strong> O(V) for seen + frontier. <strong>Speedup:</strong> with W workers on I/O-bound fetches, wall time ≈ sequential/W until you saturate bandwidth, the target site, or politeness limits — the frontier-round version loses a little parallelism at round boundaries (stragglers), which the shared-queue version avoids at the cost of the harder termination argument.</p><p><strong>How efficient is it?</strong> Asymptotically optimal (every reachable page must be fetched once). The real-world constraint is politeness, not CPU: per-host rate limiting deliberately caps throughput — efficiency here means maximizing pages/sec <em>within</em> that cap, which is what the semaphore/concurrency knob tunes.</p></div>
 
 </div>

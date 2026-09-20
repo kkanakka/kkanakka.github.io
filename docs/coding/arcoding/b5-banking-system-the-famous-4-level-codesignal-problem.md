@@ -30,12 +30,15 @@ description: "B5 · Banking system — the famous 4-level CodeSignal problem"
 <p>The bank's structures after the Level 1–3 operations in <em>Run it</em>, just before the merge.</p>
 
 <img src="/diagrams/arcoding-state/b5.svg" alt="The balances, outgoing totals, cashback heap and per-account history after several operations." class="doc-diagram doc-diagram-seq" />
+
 <h4>The architecture that survives all four levels</h4>
 <ul>
 <li><strong>Settle-then-act:</strong> a single <code>_settle(now)</code> that applies all scheduled effects due ≤ now, called first by every public method. Without it, L3 leaks cashback into some code paths and not others.</li>
 <li><strong>Record-on-change:</strong> append <code>(t, new_balance)</code> to per-account history on every mutation. L4's historical query becomes one binary search instead of a rewrite.</li>
 <li><strong>Alias map for merges:</strong> resolve <code>acct → canonical</code> at the top of every method; merged accounts never physically move their history.</li>
 </ul>
+
+<p class="covers">The complete program — save it as <code>b5_bank.py</code> and run <code>python b5_bank.py</code>.</p>
 
 ```python
 import bisect
@@ -231,22 +234,8 @@ class Bank:
             return None
         i = bisect.bisect_right(h, (time_at, float("inf")))
         return h[i - 1][1] if i else None
-```
 
-<div class="adm tip"><div class="adm-title">💡 What they probe</div>
-<ul>
-<li><strong>Cashback recorded at due time:</strong> a <code>balance_at</code> between payment and payout must NOT include the cashback — that's why <code>_settle</code> records at <code>due</code>, and why settling lazily (on next operation) still yields correct history. This interaction between L3 and L4 is where candidates lose the level.</li>
-<li><strong>Integer money:</strong> basis points + floor division; never floats. State the rounding rule.</li>
-<li><strong>Tie rules are always tested:</strong> heap seq for same-due-time ordering; alphabetical for equal spend. Read the spec's exact rule; don't assume.</li>
-<li><strong>Scheduled payments variant:</strong> some versions add <code>schedule_payment / cancel_payment</code> — same heap plus a cancelled-id set checked on pop (lazy deletion), and skip-if-insufficient-at-due-time semantics.</li>
-</ul></div>
-<div class="adm info"><div class="adm-title">⏱️ Complexity &amp; efficiency</div><p><strong>Time:</strong> every operation is O(log s) amortized for settling (each scheduled cashback pushed once, popped once) plus O(1) for the op itself; <code>top_spenders</code> O(a log a) over a accounts; <code>balance_at</code> O(log h) bisect over that account’s history; <code>merge</code> O(1) via aliasing (history is never copied). <strong>Space:</strong> O(total mutations) for histories — the price of L4’s time-travel queries.</p><p><strong>How efficient is it?</strong> The two deliberate trades to narrate: histories cost memory but turn historical balance into a binary search instead of a replay; and alias-based merge is O(1) at merge time but adds an O(chain) canonicalization per op (path-compress the alias map if chains get long — the union-find trick). If <code>top_spenders</code> is hot, maintain a running top-k heap for O(log k) updates instead of re-sorting.</p></div>
 
-### Run it
-
-<p class="covers">Append this to the code above, save as <code>b5_bank.py</code>, then run <code>python b5_bank.py</code>.</p>
-
-```python
 if __name__ == "__main__":
     bank = Bank()
     T0 = 1
@@ -312,5 +301,15 @@ acc2 pre-merge      : 1700
 acc2 post-merge     : 1520
 unknown account     : None
 ```
+
+<div class="adm tip"><div class="adm-title">💡 What they probe</div>
+<ul>
+<li><strong>Cashback recorded at due time:</strong> a <code>balance_at</code> between payment and payout must NOT include the cashback — that's why <code>_settle</code> records at <code>due</code>, and why settling lazily (on next operation) still yields correct history. This interaction between L3 and L4 is where candidates lose the level.</li>
+<li><strong>Integer money:</strong> basis points + floor division; never floats. State the rounding rule.</li>
+<li><strong>Tie rules are always tested:</strong> heap seq for same-due-time ordering; alphabetical for equal spend. Read the spec's exact rule; don't assume.</li>
+<li><strong>Scheduled payments variant:</strong> some versions add <code>schedule_payment / cancel_payment</code> — same heap plus a cancelled-id set checked on pop (lazy deletion), and skip-if-insufficient-at-due-time semantics.</li>
+</ul></div>
+
+<div class="adm info"><div class="adm-title">⏱️ Complexity &amp; efficiency</div><p><strong>Time:</strong> every operation is O(log s) amortized for settling (each scheduled cashback pushed once, popped once) plus O(1) for the op itself; <code>top_spenders</code> O(a log a) over a accounts; <code>balance_at</code> O(log h) bisect over that account’s history; <code>merge</code> O(1) via aliasing (history is never copied). <strong>Space:</strong> O(total mutations) for histories — the price of L4’s time-travel queries.</p><p><strong>How efficient is it?</strong> The two deliberate trades to narrate: histories cost memory but turn historical balance into a binary search instead of a replay; and alias-based merge is O(1) at merge time but adds an O(chain) canonicalization per op (path-compress the alias map if chains get long — the union-find trick). If <code>top_spenders</code> is hot, maintain a running top-k heap for O(log k) updates instead of re-sorting.</p></div>
 
 </div>

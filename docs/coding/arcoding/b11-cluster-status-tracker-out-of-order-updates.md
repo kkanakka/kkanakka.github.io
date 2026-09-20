@@ -26,6 +26,8 @@ description: "B11 · Cluster status tracker (out-of-order updates)"
 
 <img src="/diagrams/arcoding-state/b11.svg" alt="The latest-record dict, the maintained counter, and the sorted per-node history including a timestamp tie." class="doc-diagram doc-diagram-seq" />
 
+<p class="covers">The complete program — save it as <code>b11_cluster_tracker.py</code> and run <code>python b11_cluster_tracker.py</code>.</p>
+
 ```python
 import bisect
 from collections import Counter
@@ -119,22 +121,8 @@ class ClusterTracker:
             return None
         i = bisect.bisect_right(h, (ts, chr(0x10FFFF)))
         return h[i - 1][1] if i else None
-```
 
-<div class="adm tip"><div class="adm-title">💡 What they probe</div>
-<ul>
-<li><strong>Incremental counts:</strong> <code>count(status)</code> must be O(1) — decrement old, increment new on each accepted update. Recounting the fleet per query fails at scale, and the interviewer will state a fleet size to check you noticed.</li>
-<li><strong>The tie rule:</strong> equal timestamps from two sources is a real distributed-systems ambiguity — pick a rule, state it, and mention the production fix (a tiebreaker like source id, or hybrid logical clocks).</li>
-<li><strong>Connect to the job:</strong> this is a control plane's node-health map; stale-update rejection is exactly why monotonic per-source sequence numbers exist. One sentence of that framing is worth a lot in an SRE loop.</li>
-<li><strong>Costs:</strong> update O(1) (O(log n) with history), status O(1), count O(1), nodes_in O(n log n).</li>
-</ul></div>
-<div class="adm info"><div class="adm-title">⏱️ Complexity &amp; efficiency</div><p><strong>Time:</strong> <code>update</code> O(1) (O(log h) with history via <code>insort</code> — or O(1) append if updates are mostly in order, sorting lazily); <code>status</code> and <code>count</code> O(1); <code>nodes_in</code> O(n log n); <code>status_at</code> O(log h). <strong>Space:</strong> O(nodes) without history, O(total updates) with it.</p><p><strong>How efficient is it?</strong> The design decision that matters is maintaining counts <em>incrementally</em>: at a 100k-node fleet with dashboards polling <code>count()</code> every second, the O(n) recount version does 100k&times; more work per query — this is exactly the kind of read-heavy control-plane workload where you pay O(1) at write time to make reads free.</p></div>
 
-### Run it
-
-<p class="covers">Append this to the code above, save as <code>b11_cluster_tracker.py</code>, then run <code>python b11_cluster_tracker.py</code>.</p>
-
-```python
 if __name__ == "__main__":
     t = ClusterTracker(keep_history=True)
 
@@ -184,5 +172,15 @@ n1 at t=30 : healthy
 ```
 
 <p>Note the tie at <code>ts=30</code>: <code>update</code> keeps the first write (status <code>down</code>), while <code>status_at</code> returns <code>healthy</code> — <code>bisect</code> lands on the last of two equal-timestamp history entries. If ties are possible in your input, make the two paths agree before you are asked about it.</p>
+
+<div class="adm tip"><div class="adm-title">💡 What they probe</div>
+<ul>
+<li><strong>Incremental counts:</strong> <code>count(status)</code> must be O(1) — decrement old, increment new on each accepted update. Recounting the fleet per query fails at scale, and the interviewer will state a fleet size to check you noticed.</li>
+<li><strong>The tie rule:</strong> equal timestamps from two sources is a real distributed-systems ambiguity — pick a rule, state it, and mention the production fix (a tiebreaker like source id, or hybrid logical clocks).</li>
+<li><strong>Connect to the job:</strong> this is a control plane's node-health map; stale-update rejection is exactly why monotonic per-source sequence numbers exist. One sentence of that framing is worth a lot in an SRE loop.</li>
+<li><strong>Costs:</strong> update O(1) (O(log n) with history), status O(1), count O(1), nodes_in O(n log n).</li>
+</ul></div>
+
+<div class="adm info"><div class="adm-title">⏱️ Complexity &amp; efficiency</div><p><strong>Time:</strong> <code>update</code> O(1) (O(log h) with history via <code>insort</code> — or O(1) append if updates are mostly in order, sorting lazily); <code>status</code> and <code>count</code> O(1); <code>nodes_in</code> O(n log n); <code>status_at</code> O(log h). <strong>Space:</strong> O(nodes) without history, O(total updates) with it.</p><p><strong>How efficient is it?</strong> The design decision that matters is maintaining counts <em>incrementally</em>: at a 100k-node fleet with dashboards polling <code>count()</code> every second, the O(n) recount version does 100k&times; more work per query — this is exactly the kind of read-heavy control-plane workload where you pay O(1) at write time to make reads free.</p></div>
 
 </div>

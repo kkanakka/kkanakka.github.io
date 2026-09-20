@@ -25,6 +25,7 @@ description: "S3 · Reliable streaming ingestion worker (asyncio)"
 <p>The counters after the twelve messages in <em>Run it</em>, where one handler raises and one hangs past its timeout.</p>
 
 <img src="/diagrams/arcoding-state/s3.svg" alt="The ingestor's counters after a run with one failing and one hanging message, plus the dead-letter sink." class="doc-diagram doc-diagram-seq" />
+
 <h4>The five properties to name before coding</h4>
 <ol>
 <li><strong>Backpressure:</strong> a bounded queue — when workers fall behind, <code>put()</code> blocks the reader instead of buffering unboundedly. An unbounded buffer doesn't fix overload, it hides it until OOM.</li>
@@ -33,7 +34,8 @@ description: "S3 · Reliable streaming ingestion worker (asyncio)"
 <li><strong>Dead-lettering:</strong> after max retries, persist and move on. Silent drops are the unforgivable bug; a poison message must not block the stream (head-of-line).</li>
 <li><strong>Delivery semantics:</strong> ack-after-process = at-least-once ⇒ the handler must be idempotent. Say this sentence out loud; it's the highest-value sentence in the interview.</li>
 </ol>
-<h4>Full solution</h4>
+
+<p class="covers">The complete program — save it as <code>s3_ingestor.py</code> and run <code>python s3_ingestor.py</code>.</p>
 
 ```python
 import asyncio
@@ -174,22 +176,8 @@ class Ingestor:
         stalled = time.monotonic() - s.last_success_ts > 30
         return {"ok": not stalled, "queue_depth": s.queue_depth,
                 "in_flight": s.in_flight, "dead_lettered": s.dead_lettered}
-```
 
-<div class="adm tip"><div class="adm-title">💡 What they probe</div>
-<ul>
-<li><strong>Where's the loss window?</strong> A message pulled off the queue and lost on process crash — that's why real systems ack to the <em>broker</em> after handling (Kafka offsets, SQS delete-after). Map your <code>task_done()</code> to that.</li>
-<li><strong>What do you alert on?</strong> Queue depth (leading), dead-letter rate (lagging), time-since-last-success (liveness of the whole pipeline — catches "reader wedged" that per-message metrics miss).</li>
-<li><strong>Ordering:</strong> concurrent workers reorder messages. If per-key ordering matters, shard by key → one queue per shard, one worker per shard (Kafka-partition semantics). Raise it before they do.</li>
-<li><strong>Why the breaker:</strong> retries against a dying dependency are load — the breaker converts a retry storm into a pause. Tie it to real cascading-failure incidents.</li>
-</ul></div>
-<div class="adm info"><div class="adm-title">⏱️ Complexity &amp; efficiency</div><p><strong>Time:</strong> O(1) framework overhead per message (queue put/get, stats) plus the handler itself; retries add at most <code>max_retries</code> handler calls for failing messages. <strong>Space:</strong> bounded by design — O(queue_size + workers) messages in memory, ever; that bound IS the backpressure mechanism.</p><p><strong>How efficient is it?</strong> Steady-state throughput ≈ workers / avg_handler_latency, so capacity is one tunable. The circuit breaker keeps efficiency honest under failure: without it, a dying downstream receives retry-multiplied load (the retry storm); with it, wasted work during an outage collapses to periodic probes.</p></div>
 
-### Run it
-
-<p class="covers">Append this to the code above, save as <code>s3_ingestor.py</code>, then run <code>python s3_ingestor.py</code>.</p>
-
-```python
 if __name__ == "__main__":
     async def demo():
         processed, dead = [], []
@@ -253,5 +241,15 @@ after 10 failures: False
 after cooldown   : True
 after a success  : True | failure count: 0
 ```
+
+<div class="adm tip"><div class="adm-title">💡 What they probe</div>
+<ul>
+<li><strong>Where's the loss window?</strong> A message pulled off the queue and lost on process crash — that's why real systems ack to the <em>broker</em> after handling (Kafka offsets, SQS delete-after). Map your <code>task_done()</code> to that.</li>
+<li><strong>What do you alert on?</strong> Queue depth (leading), dead-letter rate (lagging), time-since-last-success (liveness of the whole pipeline — catches "reader wedged" that per-message metrics miss).</li>
+<li><strong>Ordering:</strong> concurrent workers reorder messages. If per-key ordering matters, shard by key → one queue per shard, one worker per shard (Kafka-partition semantics). Raise it before they do.</li>
+<li><strong>Why the breaker:</strong> retries against a dying dependency are load — the breaker converts a retry storm into a pause. Tie it to real cascading-failure incidents.</li>
+</ul></div>
+
+<div class="adm info"><div class="adm-title">⏱️ Complexity &amp; efficiency</div><p><strong>Time:</strong> O(1) framework overhead per message (queue put/get, stats) plus the handler itself; retries add at most <code>max_retries</code> handler calls for failing messages. <strong>Space:</strong> bounded by design — O(queue_size + workers) messages in memory, ever; that bound IS the backpressure mechanism.</p><p><strong>How efficient is it?</strong> Steady-state throughput ≈ workers / avg_handler_latency, so capacity is one tunable. The circuit breaker keeps efficiency honest under failure: without it, a dying downstream receives retry-multiplied load (the retry storm); with it, wasted work during an outage collapses to periodic probes.</p></div>
 
 </div>

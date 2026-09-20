@@ -25,8 +25,15 @@ description: "B1 · Stack samples → trace events"
 <p>The state mid-run, using the samples from <em>Run it</em> below — the one list carried between samples, and what the arrival of the fourth one emits.</p>
 
 <img src="/diagrams/arcoding-state/b1.svg" alt="The previous stack, and the events the fourth sample causes." class="doc-diagram doc-diagram-seq" />
+
 <h4>The one idea: longest common prefix</h4>
 <p>Between consecutive samples, the LCP of the two stacks is exactly the set of frames that survived. Everything in the old stack below the LCP ended (close leaf-first); everything in the new stack below the LCP started (open root-first). Positional comparison is what makes recursion correct for free: <code>[a,b,a]</code> → <code>[a,b]</code> has LCP length 2, so only the inner <code>a</code> closes.</p>
+
+<p>Same LCP core, but pair each start with its end and emit <code>(name, start_t, end_t, depth)</code>:</p>
+
+<p>The depth-1 special case: a sequence of <code>(t, state)</code> becomes intervals wherever the state changes — pure run-length encoding. If you see the general solution, this one is three lines of the same loop; recognizing the family relationship out loud is the win.</p>
+
+<p class="covers">The complete program — save it as <code>b1_stack_samples.py</code> and run <code>python b1_stack_samples.py</code>.</p>
 
 ```python
 def samples_to_trace(samples):
@@ -72,12 +79,7 @@ def samples_to_trace(samples):
     for name in reversed(prev):
         events.append((prev_t, "end", name))
     return events
-```
 
-<h4>Variant A — interval output ("Convert Samples into Event Intervals")</h4>
-<p>Same LCP core, but pair each start with its end and emit <code>(name, start_t, end_t, depth)</code>:</p>
-
-```python
 def samples_to_intervals(samples):
     """Same input, but emit (name, start, end, depth) intervals instead of events.
 
@@ -101,24 +103,8 @@ def samples_to_intervals(samples):
         name, start = open_frames.pop()
         intervals.append((name, start, prev_t, len(open_frames)))
     return intervals
-```
 
-<h4>Variant B — state stream RLE ("Convert State Stream to Events")</h4>
-<p>The depth-1 special case: a sequence of <code>(t, state)</code> becomes intervals wherever the state changes — pure run-length encoding. If you see the general solution, this one is three lines of the same loop; recognizing the family relationship out loud is the win.</p>
-<div class="adm tip"><div class="adm-title">💡 What they probe</div>
-<ul>
-<li><strong>Ordering at a shared timestamp:</strong> ends before starts — otherwise a consumer sees two frames "open" at the same depth. Tested every time.</li>
-<li><strong>Streaming version</strong> ("Convert <em>Streaming</em> Call-Stack Samples"): the algorithm is already online — it holds only the previous stack, O(depth) state. Package it as a generator/class with <code>feed(sample)</code> and <code>finish()</code> and say the memory bound.</li>
-<li><strong>Semantics of the last sample:</strong> does the final sample's stack end <em>at</em> its timestamp or extend one sampling interval? Ask; both conventions appear in variants.</li>
-<li><strong>Complexity:</strong> O(total stack frames) time, O(max depth) space — optimal, since every frame must be touched once.</li>
-</ul></div>
-<div class="adm info"><div class="adm-title">⏱️ Complexity &amp; efficiency</div><p><strong>Time:</strong> O(total stack frames across all samples). Each frame is compared once in an LCP, opened once, and closed once. <strong>Space:</strong> O(max stack depth) beyond the output — the algorithm is naturally streaming/online.</p><p><strong>How efficient is it?</strong> Provably optimal: every input frame must be examined at least once, and every emitted event corresponds to a real frame change, so output size is Θ(changes). There is no asymptotically better algorithm — say that, then spend saved time on edge cases (shared-timestamp ordering, recursion, the final flush).</p></div>
 
-### Run it
-
-<p class="covers">Append this to the code above, save as <code>b1_stack_samples.py</code>, then run <code>python b1_stack_samples.py</code>.</p>
-
-```python
 if __name__ == "__main__":
     samples = [
         (0, ["main"]),
@@ -164,5 +150,15 @@ if __name__ == "__main__":
 --- non-increasing timestamps are rejected ---
 ValueError: timestamps must be strictly increasing
 ```
+
+<div class="adm tip"><div class="adm-title">💡 What they probe</div>
+<ul>
+<li><strong>Ordering at a shared timestamp:</strong> ends before starts — otherwise a consumer sees two frames "open" at the same depth. Tested every time.</li>
+<li><strong>Streaming version</strong> ("Convert <em>Streaming</em> Call-Stack Samples"): the algorithm is already online — it holds only the previous stack, O(depth) state. Package it as a generator/class with <code>feed(sample)</code> and <code>finish()</code> and say the memory bound.</li>
+<li><strong>Semantics of the last sample:</strong> does the final sample's stack end <em>at</em> its timestamp or extend one sampling interval? Ask; both conventions appear in variants.</li>
+<li><strong>Complexity:</strong> O(total stack frames) time, O(max depth) space — optimal, since every frame must be touched once.</li>
+</ul></div>
+
+<div class="adm info"><div class="adm-title">⏱️ Complexity &amp; efficiency</div><p><strong>Time:</strong> O(total stack frames across all samples). Each frame is compared once in an LCP, opened once, and closed once. <strong>Space:</strong> O(max stack depth) beyond the output — the algorithm is naturally streaming/online.</p><p><strong>How efficient is it?</strong> Provably optimal: every input frame must be examined at least once, and every emitted event corresponds to a real frame change, so output size is Θ(changes). There is no asymptotically better algorithm — say that, then spend saved time on edge cases (shared-timestamp ordering, recursion, the final flush).</p></div>
 
 </div>

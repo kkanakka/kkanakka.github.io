@@ -23,8 +23,13 @@ description: "B7 · File deduplication at scale"
 <p>The three dicts the funnel builds for the seven files created in <em>Run it</em> — and where each non-duplicate drops out.</p>
 
 <img src="/diagrams/arcoding-state/b7.svg" alt="The three grouping dicts the funnel builds, showing which files leave at each stage." class="doc-diagram doc-diagram-seq" />
+
 <h4>The expected answer: a three-stage funnel</h4>
 <p>Never hash everything. Each stage is strictly cheaper than the next and eliminates most candidates: <strong>size</strong> (free, from metadata) → <strong>head hash</strong> (first 4 KB) → <strong>full streaming hash</strong>. State the cost model: total ≈ one <code>stat</code> per file + 4 KB per size-collided file + full read only for genuine near-duplicates.</p>
+
+<p>Different question: dedup at the block level across versions of files. Fixed-size chunking breaks on insertion (every later block shifts → all hashes change); <strong>content-defined chunking</strong> (a rolling hash like Rabin fingerprints declares a chunk boundary whenever <code>hash &amp; mask == 0</code>, giving ~power-of-two average chunk sizes) realigns after edits so only touched chunks re-store. Choose SHA-256 for chunk identity, mention the collision probability is ≪ hardware error rates, and index chunks in a content-addressed store.</p>
+
+<p class="covers">The complete program — save it as <code>b7_dedup.py</code> and run <code>python b7_dedup.py</code>.</p>
 
 ```python
 import hashlib
@@ -114,11 +119,7 @@ def duplicate_groups(root, follow_symlinks=False):
                     continue
             groups.extend(g for g in by_full.values() if len(g) > 1)
     return groups
-```
 
-<h4>The toy-input variant (parse directory-description strings)</h4>
-
-```python
 def duplicates_from_records(records):
     """records like: 'root/a 1.txt(abc) 2.txt(def)' — group by content.
 
@@ -135,24 +136,8 @@ def duplicates_from_records(records):
             name, content = entry.split("(", 1)
             by_content[content.rstrip(")")].append(f"{root}/{name}")
     return [g for g in by_content.values() if len(g) > 1]
-```
 
-<h4>The design variant — chunking for a dedup <em>storage</em> system</h4>
-<p>Different question: dedup at the block level across versions of files. Fixed-size chunking breaks on insertion (every later block shifts → all hashes change); <strong>content-defined chunking</strong> (a rolling hash like Rabin fingerprints declares a chunk boundary whenever <code>hash &amp; mask == 0</code>, giving ~power-of-two average chunk sizes) realigns after edits so only touched chunks re-store. Choose SHA-256 for chunk identity, mention the collision probability is ≪ hardware error rates, and index chunks in a content-addressed store.</p>
-<div class="adm tip"><div class="adm-title">💡 What they probe</div>
-<ul>
-<li><strong>Streaming discipline:</strong> "never load whole files" is in the problem text — a <code>f.read()</code> without a chunk size fails a 100 GB test file.</li>
-<li><strong>Filesystem edge cases:</strong> permission errors and files vanishing mid-walk (catch <code>OSError</code>, keep going); symlink loops (don't follow by default); hard links (same inode = same file, not a duplicate — check <code>st_ino</code>/<code>st_dev</code> if asked); empty files (policy call, state it).</li>
-<li><strong>Removal variant:</strong> which copy survives? Deterministic rule (shortest path / oldest mtime), and replace deleted copies with hard links if the FS supports it — offering the hard-link trick is a standout moment.</li>
-<li><strong>Parallelizing:</strong> hashing is I/O-bound on spinning disks (thread pool fine) but CPU-visible on NVMe (process pool per stage-3 group). Knowing that the bottleneck depends on the medium is the senior answer.</li>
-</ul></div>
-<div class="adm info"><div class="adm-title">⏱️ Complexity &amp; efficiency</div><p><strong>Time:</strong> O(files) stats + one 4 KB read per size-collided file + full streaming read only for head-hash-collided candidates. Total I/O ≈ bytes of true near-duplicates — for typical trees a tiny fraction of total bytes. <strong>Space:</strong> O(files) for the grouping maps; O(1) per hash thanks to chunked reading.</p><p><strong>How efficient is it?</strong> Near-optimal: genuine duplicates must be fully read (or byte-compared) to be confirmed, and the funnel ensures almost nothing else is read at all — unique-size files cost one <code>stat</code>. The naive hash-everything approach reads 100% of bytes; the funnel typically reads a few percent. That ratio is the answer to "why the three stages."</p></div>
 
-### Run it
-
-<p class="covers">Append this to the code above, save as <code>b7_dedup.py</code>, then run <code>python b7_dedup.py</code>.</p>
-
-```python
 if __name__ == "__main__":
     import shutil, tempfile
 
@@ -217,5 +202,15 @@ first 16 hex of a.txt sha256         : 68cd07733b3b9792
    ['root/a/1.txt', 'root/c/3.txt']
    ['root/a/2.txt', 'root/c/d/4.txt']
 ```
+
+<div class="adm tip"><div class="adm-title">💡 What they probe</div>
+<ul>
+<li><strong>Streaming discipline:</strong> "never load whole files" is in the problem text — a <code>f.read()</code> without a chunk size fails a 100 GB test file.</li>
+<li><strong>Filesystem edge cases:</strong> permission errors and files vanishing mid-walk (catch <code>OSError</code>, keep going); symlink loops (don't follow by default); hard links (same inode = same file, not a duplicate — check <code>st_ino</code>/<code>st_dev</code> if asked); empty files (policy call, state it).</li>
+<li><strong>Removal variant:</strong> which copy survives? Deterministic rule (shortest path / oldest mtime), and replace deleted copies with hard links if the FS supports it — offering the hard-link trick is a standout moment.</li>
+<li><strong>Parallelizing:</strong> hashing is I/O-bound on spinning disks (thread pool fine) but CPU-visible on NVMe (process pool per stage-3 group). Knowing that the bottleneck depends on the medium is the senior answer.</li>
+</ul></div>
+
+<div class="adm info"><div class="adm-title">⏱️ Complexity &amp; efficiency</div><p><strong>Time:</strong> O(files) stats + one 4 KB read per size-collided file + full streaming read only for head-hash-collided candidates. Total I/O ≈ bytes of true near-duplicates — for typical trees a tiny fraction of total bytes. <strong>Space:</strong> O(files) for the grouping maps; O(1) per hash thanks to chunked reading.</p><p><strong>How efficient is it?</strong> Near-optimal: genuine duplicates must be fully read (or byte-compared) to be confirmed, and the funnel ensures almost nothing else is read at all — unique-size files cost one <code>stat</code>. The naive hash-everything approach reads 100% of bytes; the funnel typically reads a few percent. That ratio is the answer to "why the three stages."</p></div>
 
 </div>

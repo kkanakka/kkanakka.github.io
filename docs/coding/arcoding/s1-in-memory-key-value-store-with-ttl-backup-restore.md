@@ -31,13 +31,17 @@ description: "S1 · In-memory key-value store with TTL + backup/restore"
 <p>The store at <code>now = 109</code> from <em>Run it</em>, and what backup and restore do to the TTLs.</p>
 
 <img src="/diagrams/arcoding-state/s1.svg" alt="The value-and-expiry dict beside the expiry heap, and what backup stores instead of absolute times." class="doc-diagram doc-diagram-seq" />
+
 <h4>Design decisions before typing</h4>
 <ul>
 <li>Store <strong>absolute expiry timestamps</strong>, never countdowns — every question about "is this alive at time t" becomes one comparison, and backup/restore becomes arithmetic.</li>
 <li>Centralize liveness in one <code>_live()</code> helper. The classic failure is re-implementing the expiry check slightly differently in <code>get</code>, <code>scan</code>, and <code>backup</code> — one of them will disagree under a test.</li>
 <li>Expire <strong>lazily</strong> first (delete on touch); add a heap for eager expiry only when asked. Lazy is 10 lines and correct; eager is an optimization with an invalidation subtlety (overwritten keys leave stale heap entries).</li>
 </ul>
-<h4>Full solution (all levels + follow-ups)</h4>
+
+<p>Some reports describe the store as two-level: <code>set(key, field, value)</code>, <code>get(key, field)</code>, <code>delete(key, field)</code>, with TTLs per field and <code>scan(key)</code> returning "field(value)" strings sorted by field. Same skeleton — the dict becomes <code>key → {field → (value, expiry)}</code>, <code>_live</code> takes <code>(key, field)</code>, and an outer key is "absent" when its field dict is empty after expiry. If you built L1 with the centralized-liveness pattern, this refactor is 10 minutes; if you scattered expiry checks, it's a rewrite — which is precisely what the level structure is testing.</p>
+
+<p class="covers">The complete program — save it as <code>s1_kvstore.py</code> and run <code>python s1_kvstore.py</code>.</p>
 
 ```python
 import heapq
@@ -190,24 +194,8 @@ class KVStore:
                     exp = now + remaining
                     self._d[k] = (v, exp)
                     heapq.heappush(self._heap, (exp, k))
-```
 
-<h4>Nested variant (key → field → value)</h4>
-<p>Some reports describe the store as two-level: <code>set(key, field, value)</code>, <code>get(key, field)</code>, <code>delete(key, field)</code>, with TTLs per field and <code>scan(key)</code> returning "field(value)" strings sorted by field. Same skeleton — the dict becomes <code>key → {field → (value, expiry)}</code>, <code>_live</code> takes <code>(key, field)</code>, and an outer key is "absent" when its field dict is empty after expiry. If you built L1 with the centralized-liveness pattern, this refactor is 10 minutes; if you scattered expiry checks, it's a rewrite — which is precisely what the level structure is testing.</p>
-<div class="adm tip"><div class="adm-title">💡 What they probe</div>
-<ul>
-<li><strong>Complexity:</strong> get/set O(1) amortized; scan O(n log n) for the sort (offer a sorted container or trie if scan must be O(matches)); eager purge amortized O(log n) per expiring key.</li>
-<li><strong>The stale-heap-entry trap:</strong> if key X gets a new TTL, the old heap entry must not delete the new record — hence re-checking <code>rec[1] == exp</code> on pop. Say this unprompted.</li>
-<li><strong>Backup semantics:</strong> "remaining TTL" vs "absolute expiry" is the whole point of L4 — restate it before coding, in one sentence, and confirm.</li>
-<li><strong>Locking:</strong> one <code>RLock</code> around every public method is the right first answer (correct, simple). Sharding the keyspace across N locks is the scaling answer; per-key locks are over-engineering here.</li>
-</ul></div>
-<div class="adm info"><div class="adm-title">⏱️ Complexity &amp; efficiency</div><p><strong>Time:</strong> <code>get/set/delete</code> O(1) average (dict); <code>set_with_ttl</code> O(log n) for the heap push; <code>scan</code> O(n + m log m) — filter all n keys, sort the m matches; <code>backup/restore</code> O(n log n). Eager purge is <strong>amortized</strong> O(log n) per expiring key: each TTL write is pushed once and popped once, ever. <strong>Space:</strong> O(live keys + pending heap entries) — stale heap entries are bounded by total TTL writes and cleaned on pop.</p><p><strong>How efficient is it?</strong> Optimal for the operations as specified. The only improvable piece is <code>scan</code>: a trie or sorted-key structure makes it O(matches) instead of O(all keys), worth mentioning if scans dominate. Lazy + eager expiry combined means no background timer thread and no unbounded memory — the two failure modes the follow-ups hunt for.</p></div>
 
-### Run it
-
-<p class="covers">Append this to the code above, save as <code>s1_kvstore.py</code>, then run <code>python s1_kvstore.py</code>.</p>
-
-```python
 if __name__ == "__main__":
     kv = KVStore()
 
@@ -278,5 +266,15 @@ b @1030 : None
 c @9999 : carol
 t=150  a=None     b=None    c='carol'
 ```
+
+<div class="adm tip"><div class="adm-title">💡 What they probe</div>
+<ul>
+<li><strong>Complexity:</strong> get/set O(1) amortized; scan O(n log n) for the sort (offer a sorted container or trie if scan must be O(matches)); eager purge amortized O(log n) per expiring key.</li>
+<li><strong>The stale-heap-entry trap:</strong> if key X gets a new TTL, the old heap entry must not delete the new record — hence re-checking <code>rec[1] == exp</code> on pop. Say this unprompted.</li>
+<li><strong>Backup semantics:</strong> "remaining TTL" vs "absolute expiry" is the whole point of L4 — restate it before coding, in one sentence, and confirm.</li>
+<li><strong>Locking:</strong> one <code>RLock</code> around every public method is the right first answer (correct, simple). Sharding the keyspace across N locks is the scaling answer; per-key locks are over-engineering here.</li>
+</ul></div>
+
+<div class="adm info"><div class="adm-title">⏱️ Complexity &amp; efficiency</div><p><strong>Time:</strong> <code>get/set/delete</code> O(1) average (dict); <code>set_with_ttl</code> O(log n) for the heap push; <code>scan</code> O(n + m log m) — filter all n keys, sort the m matches; <code>backup/restore</code> O(n log n). Eager purge is <strong>amortized</strong> O(log n) per expiring key: each TTL write is pushed once and popped once, ever. <strong>Space:</strong> O(live keys + pending heap entries) — stale heap entries are bounded by total TTL writes and cleaned on pop.</p><p><strong>How efficient is it?</strong> Optimal for the operations as specified. The only improvable piece is <code>scan</code>: a trie or sorted-key structure makes it O(matches) instead of O(all keys), worth mentioning if scans dominate. Lazy + eager expiry combined means no background timer thread and no unbounded memory — the two failure modes the follow-ups hunt for.</p></div>
 
 </div>

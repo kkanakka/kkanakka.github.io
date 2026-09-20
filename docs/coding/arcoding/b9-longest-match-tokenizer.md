@@ -25,7 +25,10 @@ description: "B9 · Longest-match tokenizer"
 <p>The tokens produced by <code>'tokenizer rize'</code> in <em>Run it</em>, and the two decisions that shaped them.</p>
 
 <img src="/diagrams/arcoding-state/b9.svg" alt="The list of token tuples produced for a sample input, with the longest-match and unknown-run decisions marked." class="doc-diagram doc-diagram-seq" />
-<h4>Version 1 — direct (correct first)</h4>
+
+<p>The direct version does O(max_len) slices per position — fine until the vocab has one very long token. A trie walks characters once per position and remembers the <em>last</em> accepting depth:</p>
+
+<p class="covers">The complete program — save it as <code>b9_tokenizer.py</code> and run <code>python b9_tokenizer.py</code>.</p>
 
 ```python
 def tokenize(text, vocab, *, unk_id=-1, coalesce_unknown=True):
@@ -63,12 +66,7 @@ def tokenize(text, vocab, *, unk_id=-1, coalesce_unknown=True):
             i += 1
     flush_unknown()
     return out
-```
 
-<h4>Version 2 — trie (the optimization they'll ask for)</h4>
-<p>The direct version does O(max_len) slices per position — fine until the vocab has one very long token. A trie walks characters once per position and remembers the <em>last</em> accepting depth:</p>
-
-```python
 class TrieTokenizer:
     def __init__(self, vocab):
         self.root = {}
@@ -113,22 +111,8 @@ class TrieTokenizer:
                 i += 1
         flush()
         return out
-```
 
-<div class="adm tip"><div class="adm-title">💡 What they probe</div>
-<ul>
-<li><strong>The remember-last-accept detail:</strong> the trie walk may pass <em>through</em> shorter tokens (vocab <code>{"in", "inte", "internal"}</code>, text <code>"inter"</code> → must emit <code>inte</code>, not fail at the dead end after <code>inter</code>). This is the actual test in the hard version.</li>
-<li><strong>Greedy ≠ optimal:</strong> vocab <code>{"ab", "bc", "a"}</code>, text <code>"abc"</code> → greedy gives <code>ab</code> + unknown <code>c</code>; <code>a</code>+<code>bc</code> covers everything. State that the spec mandates greedy, and that minimal-token or maximal-coverage segmentation would be DP over positions — knowing where greedy breaks is the differentiator.</li>
-<li><strong>Round-trip invariant:</strong> concatenating consumed texts must equal the input exactly — offer it as your property test.</li>
-<li><strong>Bridge to BPE:</strong> real LLM tokenizers (BPE) merge by learned rank, not longest-match — one sentence contrasting them shows domain awareness.</li>
-</ul></div>
-<div class="adm info"><div class="adm-title">⏱️ Complexity &amp; efficiency</div><p><strong>Time:</strong> naive version O(n &times; L<sub>max</sub>) worst case (n positions, up to L<sub>max</sub> slice probes each, plus O(L) hashing per slice); trie version walks each starting position once down a shared path — worst case still O(n &times; L<sub>max</sub>) on adversarial input, but typical cost is O(n + matched characters), with no slice allocations and no repeated hashing. <strong>Space:</strong> trie O(total vocab characters).</p><p><strong>How efficient is it?</strong> For the greedy-longest-match spec, the trie is the practical optimum. The theory footnote worth one sentence: Aho–Corasick gives O(n) matching over <em>all</em> patterns simultaneously via failure links, but changes the matching discipline — overkill here, and knowing why it doesn’t apply cleanly to longest-match greedy is the senior answer.</p></div>
 
-### Run it
-
-<p class="covers">Append this to the code above, save as <code>b9_tokenizer.py</code>, then run <code>python b9_tokenizer.py</code>.</p>
-
-```python
 if __name__ == "__main__":
     vocab = {"token": 1, "tok": 2, "##en": 3, "ize": 4, "r": 5, "i": 6, "z": 7}
     text = "tokenizer rize"
@@ -153,5 +137,15 @@ no coalescing: [(2, 'tok'), (-1, '?'), (-1, '?')]
 empty vocab  : [(-1, 'abc')]
 empty text   : []
 ```
+
+<div class="adm tip"><div class="adm-title">💡 What they probe</div>
+<ul>
+<li><strong>The remember-last-accept detail:</strong> the trie walk may pass <em>through</em> shorter tokens (vocab <code>{"in", "inte", "internal"}</code>, text <code>"inter"</code> → must emit <code>inte</code>, not fail at the dead end after <code>inter</code>). This is the actual test in the hard version.</li>
+<li><strong>Greedy ≠ optimal:</strong> vocab <code>{"ab", "bc", "a"}</code>, text <code>"abc"</code> → greedy gives <code>ab</code> + unknown <code>c</code>; <code>a</code>+<code>bc</code> covers everything. State that the spec mandates greedy, and that minimal-token or maximal-coverage segmentation would be DP over positions — knowing where greedy breaks is the differentiator.</li>
+<li><strong>Round-trip invariant:</strong> concatenating consumed texts must equal the input exactly — offer it as your property test.</li>
+<li><strong>Bridge to BPE:</strong> real LLM tokenizers (BPE) merge by learned rank, not longest-match — one sentence contrasting them shows domain awareness.</li>
+</ul></div>
+
+<div class="adm info"><div class="adm-title">⏱️ Complexity &amp; efficiency</div><p><strong>Time:</strong> naive version O(n &times; L<sub>max</sub>) worst case (n positions, up to L<sub>max</sub> slice probes each, plus O(L) hashing per slice); trie version walks each starting position once down a shared path — worst case still O(n &times; L<sub>max</sub>) on adversarial input, but typical cost is O(n + matched characters), with no slice allocations and no repeated hashing. <strong>Space:</strong> trie O(total vocab characters).</p><p><strong>How efficient is it?</strong> For the greedy-longest-match spec, the trie is the practical optimum. The theory footnote worth one sentence: Aho–Corasick gives O(n) matching over <em>all</em> patterns simultaneously via failure links, but changes the matching discipline — overkill here, and knowing why it doesn’t apply cleanly to longest-match greedy is the senior answer.</p></div>
 
 </div>

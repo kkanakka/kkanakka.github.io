@@ -23,7 +23,12 @@ description: "B8 · Parallel image processing pipeline"
 <p>What comes back from the batch in <em>Run it</em>, plus the trie built for the three named pipelines.</p>
 
 <img src="/diagrams/arcoding-state/b8.svg" alt="The per-job results map with one error entry, and the pipeline trie sharing a common prefix." class="doc-diagram doc-diagram-seq" />
-<h4>Core version — process pool with per-job isolation</h4>
+
+<p>With m images × n pipelines, pipelines often share prefixes (<code>[resize, gray, blur]</code> and <code>[resize, gray, sharpen]</code> share two ops). Build a trie of ops and DFS it per image, so each shared prefix is computed once:</p>
+
+<p>Cost drops from Σ|pipeline| ops per image to |trie nodes| per image. Note the purity requirement out loud — this only works because each op returns a new image (hence <code>op_thumbnail</code> copying first); an in-place op would corrupt sibling branches.</p>
+
+<p class="covers">The complete program — save it as <code>b8_image_pipeline.py</code> and run <code>python b8_image_pipeline.py</code>.</p>
 
 ```python
 import os
@@ -83,12 +88,7 @@ def run_batch(paths, pipeline, out_dir, workers=None):
             path, err = fut.result()
             results[path] = err
     return results                          # per-job status map
-```
 
-<h4>The m×n variant — share pipeline prefixes</h4>
-<p>With m images × n pipelines, pipelines often share prefixes (<code>[resize, gray, blur]</code> and <code>[resize, gray, sharpen]</code> share two ops). Build a trie of ops and DFS it per image, so each shared prefix is computed once:</p>
-
-```python
 def build_pipeline_trie(pipelines):
     """pipelines: {name: [op, ...]} -> nested trie:
     node = {'children': {op: node}, 'outputs': [pipeline_names ending here]}
@@ -121,23 +121,8 @@ def apply_trie(image_path, trie, out_dir):
                 dfs(child, OPS[op](img))   # ops are pure: img not mutated
         dfs(trie, im)
     return image_path, results
-```
 
-<p>Cost drops from Σ|pipeline| ops per image to |trie nodes| per image. Note the purity requirement out loud — this only works because each op returns a new image (hence <code>op_thumbnail</code> copying first); an in-place op would corrupt sibling branches.</p>
-<div class="adm tip"><div class="adm-title">💡 What they probe</div>
-<ul>
-<li><strong>Processes, not threads — and why:</strong> pixel transforms are CPU-bound Python/Pillow work; the GIL serializes threads. (Nuance if pushed: many Pillow ops release the GIL internally, so threads aren't useless — but processes are the safe default answer, and measuring beats asserting.)</li>
-<li><strong>Picklability:</strong> process pools pickle tasks — pass <em>paths</em> and op <em>names</em>, not Image objects or lambdas. This is why <code>OPS</code> maps names to module-level functions.</li>
-<li><strong>The thumbnail trap:</strong> <code>Image.thumbnail()</code> mutates and returns <code>None</code> — chaining it breaks. Catching this shows real Pillow familiarity.</li>
-<li><strong>Per-job error isolation</strong> is in the reported grading ("per-job error handling"): a results map with an error string per failed input, batch always completes.</li>
-</ul></div>
-<div class="adm info"><div class="adm-title">⏱️ Complexity &amp; efficiency</div><p><strong>Time:</strong> O(total pixels &times; ops) of unavoidable transform work; with P processes on CPU-bound transforms, wall time ≈ sequential/P until disk decode/encode saturates. The trie version cuts the m&times;n variant from Σ|pipeline| ops per image to |trie nodes| per image — shared prefixes computed once.</p><p><strong>How efficient is it?</strong> The parallelism is embarrassingly clean (no shared state between jobs), so scaling is near-linear in cores; overheads to name are process startup and pickling of paths (tiny). The trie optimization is the algorithmic win: for pipelines like 10 variants of one base transform chain, it approaches a 10&times; reduction in compute.</p></div>
 
-### Run it
-
-<p class="covers">Append this to the code above, save as <code>b8_image_pipeline.py</code>, then run <code>python b8_image_pipeline.py</code>. Needs Pillow (<code>pip install pillow</code>); the images are generated into a temp directory, so it runs anywhere.</p>
-
-```python
 if __name__ == "__main__":
     import shutil, tempfile
 
@@ -196,5 +181,15 @@ img0 after pipeline: L (128, 96)
 grayscale is a shared prefix of 2 pipelines: ['blur', 'thumbnail']
 variants produced: ['gray_blur', 'gray_thumb', 'thumb']
 ```
+
+<div class="adm tip"><div class="adm-title">💡 What they probe</div>
+<ul>
+<li><strong>Processes, not threads — and why:</strong> pixel transforms are CPU-bound Python/Pillow work; the GIL serializes threads. (Nuance if pushed: many Pillow ops release the GIL internally, so threads aren't useless — but processes are the safe default answer, and measuring beats asserting.)</li>
+<li><strong>Picklability:</strong> process pools pickle tasks — pass <em>paths</em> and op <em>names</em>, not Image objects or lambdas. This is why <code>OPS</code> maps names to module-level functions.</li>
+<li><strong>The thumbnail trap:</strong> <code>Image.thumbnail()</code> mutates and returns <code>None</code> — chaining it breaks. Catching this shows real Pillow familiarity.</li>
+<li><strong>Per-job error isolation</strong> is in the reported grading ("per-job error handling"): a results map with an error string per failed input, batch always completes.</li>
+</ul></div>
+
+<div class="adm info"><div class="adm-title">⏱️ Complexity &amp; efficiency</div><p><strong>Time:</strong> O(total pixels &times; ops) of unavoidable transform work; with P processes on CPU-bound transforms, wall time ≈ sequential/P until disk decode/encode saturates. The trie version cuts the m&times;n variant from Σ|pipeline| ops per image to |trie nodes| per image — shared prefixes computed once.</p><p><strong>How efficient is it?</strong> The parallelism is embarrassingly clean (no shared state between jobs), so scaling is near-linear in cores; overheads to name are process startup and pickling of paths (tiny). The trie optimization is the algorithmic win: for pipelines like 10 variants of one base transform chain, it approaches a 10&times; reduction in compute.</p></div>
 
 </div>

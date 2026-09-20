@@ -25,8 +25,11 @@ description: "B2 · Exclusive time & slowest function from START–END logs"
 <p>The stack at the instant <code>load</code> starts, from the four events used in <em>Run it</em> — and the third number in each frame that makes exclusive time possible.</p>
 
 <img src="/diagrams/arcoding-state/b2.svg" alt="The frame stack and the exclusive-time table at the moment load starts." class="doc-diagram doc-diagram-seq" />
+
 <h4>Two clocks per frame</h4>
 <p>Each open frame carries <code>entry_t</code> (for wall time → slowest call) and <code>last_resume_t</code> (for exclusive time). START pauses the caller's exclusive clock; END credits the popped frame and resumes the caller's clock. That separation is the entire problem.</p>
+
+<p class="covers">The complete program — save it as <code>b2_exclusive_time.py</code> and run <code>python b2_exclusive_time.py</code>.</p>
 
 ```python
 from collections import defaultdict
@@ -96,22 +99,8 @@ def stack_at(call_log, T):
     """
     frames = [(d, n) for n, s, e, d in call_log if s <= T < e]
     return [n for d, n in sorted(frames)]
-```
 
-<div class="adm tip"><div class="adm-title">💡 What they probe</div>
-<ul>
-<li><strong>The timestamp convention</strong> — instantaneous END vs inclusive-last-unit — changes every answer by ±1. Asking before coding is itself graded.</li>
-<li><strong>Malformed input:</strong> END on empty stack, name mismatch, time going backwards, unterminated frames at EOF. The reported variants explicitly test these; raising precise errors beats silently "fixing" the log.</li>
-<li><strong>Invariant to state:</strong> at every instant exactly one function (the stack top) accrues exclusive time, so Σ exclusive = total elapsed span — offer it as your self-check.</li>
-<li><strong>"Slowest" ambiguity:</strong> slowest single <em>call</em> vs largest <em>total</em> (Σ wall per name) vs largest exclusive — three different answers; confirm which.</li>
-</ul></div>
-<div class="adm info"><div class="adm-title">⏱️ Complexity &amp; efficiency</div><p><strong>Time:</strong> O(#events), single pass — each event does O(1) stack work and O(1) dict updates. <strong>Space:</strong> O(max call depth) for the stack + O(distinct functions) for totals + O(#calls) only if you keep the call log for time-T queries; <code>stack_at</code> as written is O(#calls) per query (an interval tree makes it O(log n + matches) if queried often).</p><p><strong>How efficient is it?</strong> Optimal for the pass itself. The built-in self-check is free: Σ exclusive times must equal the total elapsed span, because exactly one frame (the top) accrues at any instant — offer it as a validation step.</p></div>
 
-### Run it
-
-<p class="covers">Append this to the code above, save as <code>b2_exclusive_time.py</code>, then run <code>python b2_exclusive_time.py</code>.</p>
-
-```python
 if __name__ == "__main__":
     # main runs 0-2, calls load (2-5 inclusive), resumes 6
     events = [
@@ -157,5 +146,15 @@ LogError: END 'a' with empty stack at 1
 LogError: END 'b' but 'a' is on top
 LogError: unterminated calls: ['a']
 ```
+
+<div class="adm tip"><div class="adm-title">💡 What they probe</div>
+<ul>
+<li><strong>The timestamp convention</strong> — instantaneous END vs inclusive-last-unit — changes every answer by ±1. Asking before coding is itself graded.</li>
+<li><strong>Malformed input:</strong> END on empty stack, name mismatch, time going backwards, unterminated frames at EOF. The reported variants explicitly test these; raising precise errors beats silently "fixing" the log.</li>
+<li><strong>Invariant to state:</strong> at every instant exactly one function (the stack top) accrues exclusive time, so Σ exclusive = total elapsed span — offer it as your self-check.</li>
+<li><strong>"Slowest" ambiguity:</strong> slowest single <em>call</em> vs largest <em>total</em> (Σ wall per name) vs largest exclusive — three different answers; confirm which.</li>
+</ul></div>
+
+<div class="adm info"><div class="adm-title">⏱️ Complexity &amp; efficiency</div><p><strong>Time:</strong> O(#events), single pass — each event does O(1) stack work and O(1) dict updates. <strong>Space:</strong> O(max call depth) for the stack + O(distinct functions) for totals + O(#calls) only if you keep the call log for time-T queries; <code>stack_at</code> as written is O(#calls) per query (an interval tree makes it O(log n + matches) if queried often).</p><p><strong>How efficient is it?</strong> Optimal for the pass itself. The built-in self-check is free: Σ exclusive times must equal the total elapsed span, because exactly one frame (the top) accrues at any instant — offer it as a validation step.</p></div>
 
 </div>

@@ -29,9 +29,43 @@ description: "S2 · Token-bucket rate limiter → distributed"
 <p>The whole of the limiter's state after the requests in <em>Run it</em> — two numbers per key, and nothing else.</p>
 
 <img src="/diagrams/arcoding-state/s2.svg" alt="The limiter's entire state: a token count and a timestamp per key." class="doc-diagram doc-diagram-seq" />
+
 <h4>Why token bucket (say this first)</h4>
 <p>Fixed windows allow 2× bursts at boundaries; sliding-window logs are exact but O(requests) memory; sliding-window <em>counters</em> approximate well; token bucket gives smooth rate + configurable burst in O(1) state per key — the standard choice for API gateways. Naming the alternatives and choosing is worth more than the code.</p>
-<h4>Levels 1–2</h4>
+
+<p>Sharpen L2 if asked about lock contention at high QPS: shard into N buckets of state, each with its own lock, chosen by <code>hash(key) % N</code> — contention drops N× with zero semantic change. Note the <code>cost</code> parameter: for an LLM API you rate-limit <em>tokens</em>, not requests, so a request costs its estimated token count — an on-theme observation.</p>
+<p>Walk the three designs, then implement the centralized one:</p>
+<ol>
+<li><strong>Static split</strong> (each replica gets global/N): zero coordination, but wrong under skewed routing — one hot replica rejects while others sit idle.</li>
+<li><strong>Centralized state in Redis</strong>: exact, one network hop on the hot path. The refill-and-take must be atomic — a GET/compute/SET from Python has a race between replicas — so it lives in a Lua script (or Redis functions):</li>
+</ol>
+
+```lua
+-- rate_limit.lua  KEYS[1]=bucket  ARGV: rate, burst, now_ms, cost
+local s      = redis.call('HMGET', KEYS[1], 'tokens', 'ts')
+local rate   = tonumber(ARGV[1])
+local burst  = tonumber(ARGV[2])
+local now    = tonumber(ARGV[3])
+local cost   = tonumber(ARGV[4])
+local tokens = tonumber(s[1]) or burst
+local ts     = tonumber(s[2]) or now
+if now < ts then now = ts end
+tokens = math.min(burst, tokens + (now - ts) * rate / 1000.0)
+local allowed = 0
+if tokens >= cost then
+  tokens = tokens - cost
+  allowed = 1
+end
+redis.call('HMSET', KEYS[1], 'tokens', tokens, 'ts', now)
+redis.call('PEXPIRE', KEYS[1], 60000)   -- idle buckets self-clean
+return allowed
+```
+
+<ol start="3">
+<li><strong>Hybrid quota distribution</strong>: local buckets, refilled by an async distributor that reapportions the global rate by observed per-replica demand every ~1 s. No hot-path network hop; accuracy is eventual (bounded overshoot ≈ one sync interval of burst). This is what you'd actually build at very high QPS — say so, and say why you'd still start with Redis (simpler, exact, and one hop is fine until proven otherwise).</li>
+</ol>
+
+<p class="covers">The complete program — save it as <code>s2_token_bucket.py</code> and run <code>python s2_token_bucket.py</code>.</p>
 
 ```python
 import threading
@@ -69,39 +103,7 @@ class TokenBucket:
                 return True
             self._state[key] = [tokens, now]
             return False
-```
 
-<p>Sharpen L2 if asked about lock contention at high QPS: shard into N buckets of state, each with its own lock, chosen by <code>hash(key) % N</code> — contention drops N× with zero semantic change. Note the <code>cost</code> parameter: for an LLM API you rate-limit <em>tokens</em>, not requests, so a request costs its estimated token count — an on-theme observation.</p>
-<h4>Level 3 — the distributed version</h4>
-<p>Walk the three designs, then implement the centralized one:</p>
-<ol>
-<li><strong>Static split</strong> (each replica gets global/N): zero coordination, but wrong under skewed routing — one hot replica rejects while others sit idle.</li>
-<li><strong>Centralized state in Redis</strong>: exact, one network hop on the hot path. The refill-and-take must be atomic — a GET/compute/SET from Python has a race between replicas — so it lives in a Lua script (or Redis functions):</li>
-</ol>
-
-```lua
--- rate_limit.lua  KEYS[1]=bucket  ARGV: rate, burst, now_ms, cost
-local s      = redis.call('HMGET', KEYS[1], 'tokens', 'ts')
-local rate   = tonumber(ARGV[1])
-local burst  = tonumber(ARGV[2])
-local now    = tonumber(ARGV[3])
-local cost   = tonumber(ARGV[4])
-local tokens = tonumber(s[1]) or burst
-local ts     = tonumber(s[2]) or now
-if now < ts then now = ts end
-tokens = math.min(burst, tokens + (now - ts) * rate / 1000.0)
-local allowed = 0
-if tokens >= cost then
-  tokens = tokens - cost
-  allowed = 1
-end
-redis.call('HMSET', KEYS[1], 'tokens', tokens, 'ts', now)
-redis.call('PEXPIRE', KEYS[1], 60000)   -- idle buckets self-clean
-return allowed
-```
-
-
-```python
 import time
 
 class DistributedLimiter:
@@ -122,24 +124,8 @@ class DistributedLimiter:
             # FAIL OPEN, bounded: don't take the API down because the
             # limiter died — but don't allow unlimited traffic either.
             return self.fallback.allow(key, now_ms / 1000.0, cost)
-```
 
-<ol start="3">
-<li><strong>Hybrid quota distribution</strong>: local buckets, refilled by an async distributor that reapportions the global rate by observed per-replica demand every ~1 s. No hot-path network hop; accuracy is eventual (bounded overshoot ≈ one sync interval of burst). This is what you'd actually build at very high QPS — say so, and say why you'd still start with Redis (simpler, exact, and one hop is fine until proven otherwise).</li>
-</ol>
-<div class="adm tip"><div class="adm-title">💡 What they probe</div>
-<ul>
-<li><strong>Fail open vs closed is a reliability decision, not a default.</strong> For a paid inference API: fail open with a conservative local fallback (availability &gt; perfect enforcement), but fail <em>closed</em> for abuse-tier keys. Being able to argue both directions is the point.</li>
-<li><strong>Atomicity:</strong> identify the read-modify-write race across replicas before they ask; that's why the Lua script exists.</li>
-<li><strong>Response semantics:</strong> return <code>429</code> with <code>Retry-After</code> computed from the token deficit — clients that back off correctly are part of the design.</li>
-</ul></div>
-<div class="adm info"><div class="adm-title">⏱️ Complexity &amp; efficiency</div><p><strong>Time:</strong> <code>allow()</code> is O(1) per call — the lazy-refill formula recomputes tokens from elapsed time instead of ticking a timer, so cost is independent of how long the bucket sat idle. <strong>Space:</strong> O(1) per active key; Redis keys self-expire via PEXPIRE, so idle keys cost nothing forever.</p><p><strong>How efficient is it?</strong> The distributed version adds exactly one round-trip per request (the Lua script is O(1) server-side); at very high QPS that RTT becomes the bottleneck, which is when the hybrid local-bucket + async-quota design wins — zero hot-path hops at the price of ~one sync interval of over-admission. Lock contention in-process is solved by sharding state across N locks: contention drops N&times; with no semantic change.</p></div>
 
-### Run it
-
-<p class="covers">Append this to the code above, save as <code>s2_token_bucket.py</code>, then run <code>python s2_token_bucket.py</code>. This exercises the in-process bucket; the Redis variant needs a live Redis and <code>rate_limit.lua</code>.</p>
-
-```python
 if __name__ == "__main__":
     # 5 tokens/sec, bucket holds 3 -> a burst of 3, then one per 200 ms
     tb = TokenBucket(rate=5.0, burst=3.0)
@@ -197,5 +183,14 @@ t=10 : True
 t=9  : True
 t=9  : False
 ```
+
+<div class="adm tip"><div class="adm-title">💡 What they probe</div>
+<ul>
+<li><strong>Fail open vs closed is a reliability decision, not a default.</strong> For a paid inference API: fail open with a conservative local fallback (availability &gt; perfect enforcement), but fail <em>closed</em> for abuse-tier keys. Being able to argue both directions is the point.</li>
+<li><strong>Atomicity:</strong> identify the read-modify-write race across replicas before they ask; that's why the Lua script exists.</li>
+<li><strong>Response semantics:</strong> return <code>429</code> with <code>Retry-After</code> computed from the token deficit — clients that back off correctly are part of the design.</li>
+</ul></div>
+
+<div class="adm info"><div class="adm-title">⏱️ Complexity &amp; efficiency</div><p><strong>Time:</strong> <code>allow()</code> is O(1) per call — the lazy-refill formula recomputes tokens from elapsed time instead of ticking a timer, so cost is independent of how long the bucket sat idle. <strong>Space:</strong> O(1) per active key; Redis keys self-expire via PEXPIRE, so idle keys cost nothing forever.</p><p><strong>How efficient is it?</strong> The distributed version adds exactly one round-trip per request (the Lua script is O(1) server-side); at very high QPS that RTT becomes the bottleneck, which is when the hybrid local-bucket + async-quota design wins — zero hot-path hops at the price of ~one sync interval of over-admission. Lock contention in-process is solved by sharding state across N locks: contention drops N&times; with no semantic change.</p></div>
 
 </div>

@@ -25,11 +25,14 @@ description: "B14 · Streaming token usage cost calculator"
 <p>The output counter as the six chunks from <em>Run it</em> arrive — including the late one that must not roll it backwards.</p>
 
 <img src="/diagrams/arcoding-state/b14.svg" alt="The output token counter as six streaming chunks arrive, including a late chunk carrying a smaller value." class="doc-diagram doc-diagram-seq" />
+
 <h4>The two traps, named up front</h4>
 <ol>
 <li><strong>Float money.</strong> <code>0.000003 * 1_234_567</code> in binary floating point accumulates error across billions of requests; billing does not tolerate "approximately". Use <code>Decimal</code>, constructed from <em>strings</em> (constructing from a float imports the float's error).</li>
 <li><strong>Cumulative vs incremental confusion.</strong> Summing counters that are already cumulative double-bills; taking the max of counters that are incremental under-bills. Normalize explicitly per field, and let a final authoritative record win.</li>
 </ol>
+
+<p class="covers">The complete program — save it as <code>b14_usage_cost.py</code> and run <code>python b14_usage_cost.py</code>.</p>
 
 ```python
 from decimal import Decimal, ROUND_HALF_UP
@@ -93,22 +96,8 @@ class UsageAccumulator:
             total += Decimal(count) * price / mtok
         # one explicit rounding step, at the END, with a stated rule:
         return total.quantize(Decimal("0.000001"), rounding=ROUND_HALF_UP)
-```
 
-<div class="adm tip"><div class="adm-title">💡 What they probe</div>
-<ul>
-<li><strong>Round once, at the end, with a named rule.</strong> Rounding per-chunk or per-field accumulates bias; <code>ROUND_HALF_UP</code> vs banker's rounding changes revenue at scale — the point is that you <em>chose</em> and can defend it.</li>
-<li><strong>Robustness:</strong> chunks may duplicate, arrive with partial usage, or restate earlier counters — the max-for-cumulative rule plus final-overwrite handles all three; negative counts are rejected loudly.</li>
-<li><strong>If deltas are truly incremental</strong> (spec variant): sum them but make ingestion idempotent (chunk ids + a seen-set), because at-least-once delivery + summation = double billing. Saying that sentence connects the toy to real metering pipelines.</li>
-<li><strong>Property test to offer:</strong> replaying any prefix of chunks never yields a higher cost than the full stream; final-chunk totals always equal the computed totals.</li>
-</ul></div>
-<div class="adm info"><div class="adm-title">⏱️ Complexity &amp; efficiency</div><p><strong>Time:</strong> O(#chunks) with O(1) work per chunk; <code>cost()</code> is O(#fields). <strong>Space:</strong> O(1) — only running totals, no chunk buffering, so it streams over arbitrarily long generations.</p><p><strong>How efficient is it?</strong> Computationally trivial by design — the efficiency story here is <em>correctness at scale</em>: Decimal arithmetic costs a few times more than float per operation (still nanoseconds, irrelevant next to a network chunk), and buys exactness across billions of requests where float error compounds into real money. Single-rounding-at-the-end also minimizes accumulated rounding bias — a policy choice, not a performance one, and worth framing that way.</p></div>
 
-### Run it
-
-<p class="covers">Append this to the code above, save as <code>b14_usage_cost.py</code>, then run <code>python b14_usage_cost.py</code>.</p>
-
-```python
 if __name__ == "__main__":
     PRICES = {"input_tokens": "3.00",        # $ per million
               "output_tokens": "15.00",
@@ -160,5 +149,15 @@ float arithmetic drift: False
 --- negative counts are rejected ---
 ValueError: negative token count for output_tokens
 ```
+
+<div class="adm tip"><div class="adm-title">💡 What they probe</div>
+<ul>
+<li><strong>Round once, at the end, with a named rule.</strong> Rounding per-chunk or per-field accumulates bias; <code>ROUND_HALF_UP</code> vs banker's rounding changes revenue at scale — the point is that you <em>chose</em> and can defend it.</li>
+<li><strong>Robustness:</strong> chunks may duplicate, arrive with partial usage, or restate earlier counters — the max-for-cumulative rule plus final-overwrite handles all three; negative counts are rejected loudly.</li>
+<li><strong>If deltas are truly incremental</strong> (spec variant): sum them but make ingestion idempotent (chunk ids + a seen-set), because at-least-once delivery + summation = double billing. Saying that sentence connects the toy to real metering pipelines.</li>
+<li><strong>Property test to offer:</strong> replaying any prefix of chunks never yields a higher cost than the full stream; final-chunk totals always equal the computed totals.</li>
+</ul></div>
+
+<div class="adm info"><div class="adm-title">⏱️ Complexity &amp; efficiency</div><p><strong>Time:</strong> O(#chunks) with O(1) work per chunk; <code>cost()</code> is O(#fields). <strong>Space:</strong> O(1) — only running totals, no chunk buffering, so it streams over arbitrarily long generations.</p><p><strong>How efficient is it?</strong> Computationally trivial by design — the efficiency story here is <em>correctness at scale</em>: Decimal arithmetic costs a few times more than float per operation (still nanoseconds, irrelevant next to a network chunk), and buys exactness across billions of requests where float error compounds into real money. Single-rounding-at-the-end also minimizes accumulated rounding bias — a policy choice, not a performance one, and worth framing that way.</p></div>
 
 </div>

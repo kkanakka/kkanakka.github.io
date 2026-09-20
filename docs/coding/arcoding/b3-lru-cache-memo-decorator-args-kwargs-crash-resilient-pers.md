@@ -23,8 +23,10 @@ description: "B3 · LRU cache → memo decorator (args/kwargs) → crash-resilie
 <p>The cache after the four operations at the top of <em>Run it</em>, showing why <code>b</code> and not <code>a</code> was the one evicted.</p>
 
 <img src="/diagrams/arcoding-state/b3.svg" alt="The map and the linked list of a two-entry LRU cache that has just evicted a key." class="doc-diagram doc-diagram-seq" />
-<h4>Level 1 — the O(1) structure, hand-rolled</h4>
+
 <p>Lead with <code>OrderedDict</code> for speed, but the interviewer may ask for the underlying structure — hash map + doubly linked list with sentinel nodes (sentinels remove every null-check special case):</p>
+
+<p class="covers">The complete program — save it as <code>b3_lru_memo.py</code> and run <code>python b3_lru_memo.py</code>.</p>
 
 ```python
 class _Node:
@@ -95,11 +97,7 @@ class LRUCache:
         node = _Node(key, val)
         self.map[key] = node
         self._push_front(node)
-```
 
-<h4>Levels 2–3 — memoization decorator with kwargs, thread safety, atomic persistence</h4>
-
-```python
 import functools
 import json
 import os
@@ -177,22 +175,8 @@ def lru_memo(maxsize=128, path=None):
         wrapper.cache_clear = lambda: (store.clear(), flush_locked())
         return wrapper
     return deco
-```
 
-<div class="adm tip"><div class="adm-title">💡 What they probe</div>
-<ul>
-<li><strong>Key determinism</strong> is the core of the kwargs level: unsorted kwargs, or keys built with <code>str(args)</code> (collides <code>(1,)</code> vs <code>("1",)</code> — json distinguishes them) fail hidden tests. Also name the unhashable-arg problem: lists/dicts as args need canonicalization, which json gives you.</li>
-<li><strong>"Crash-resilient" = atomic rename</strong>, not "call flush a lot." Truncate-then-write leaves an empty file if you die mid-write; temp+<code>os.replace</code> cannot.</li>
-<li><strong>Computing outside the lock</strong> trades a thundering-herd risk (two threads compute the same miss) for no lock-held user code. Name the tradeoff; per-key locks or futures-in-cache is the fix if they push (that's what a request-coalescing cache does).</li>
-<li><strong>Flush cost:</strong> O(cache) per miss; batch (flush every N mutations / on interval / atexit) is the production answer — offer it.</li>
-</ul></div>
-<div class="adm info"><div class="adm-title">⏱️ Complexity &amp; efficiency</div><p><strong>Time:</strong> <code>get/put</code> O(1) — the hash map finds the node, the linked list (or OrderedDict) splices in O(1). The memo wrapper adds O(size of args) per call for key serialization. Persistence as written is O(cache size) per <em>miss</em> — the honest inefficiency; batching flushes (every N mutations, on interval, atexit) amortizes it to near-zero.</p><p><strong>How efficient is it?</strong> O(1) per operation is optimal for LRU semantics, and both implementations (DLL and OrderedDict) achieve it — the DLL just proves you know why. Space is O(capacity) entries plus serialized keys; note aloud that JSON keys cost memory proportional to argument size, so huge-argument functions want hashed keys (with the collision caveat).</p></div>
 
-### Run it
-
-<p class="covers">Append this to the code above, save as <code>b3_lru_memo.py</code>, then run <code>python b3_lru_memo.py</code>.</p>
-
-```python
 if __name__ == "__main__":
     print("--- LRU eviction order ---")
     c = LRUCache(2)
@@ -241,13 +225,23 @@ get a, get c : 1 3
 12px
 12px
 12px
-underlying calls: []
-hits / misses   : 3 / 0
+underlying calls: [(3, 4, 'px'), (3, 4, 'px')]
+hits / misses   : 1 / 2
 
 --- persistence survives a fresh decorator (same file) ---
 from disk       : 12px
 hits / misses   : 1 / 0
 cache file size : 55 bytes
 ```
+
+<div class="adm tip"><div class="adm-title">💡 What they probe</div>
+<ul>
+<li><strong>Key determinism</strong> is the core of the kwargs level: unsorted kwargs, or keys built with <code>str(args)</code> (collides <code>(1,)</code> vs <code>("1",)</code> — json distinguishes them) fail hidden tests. Also name the unhashable-arg problem: lists/dicts as args need canonicalization, which json gives you.</li>
+<li><strong>"Crash-resilient" = atomic rename</strong>, not "call flush a lot." Truncate-then-write leaves an empty file if you die mid-write; temp+<code>os.replace</code> cannot.</li>
+<li><strong>Computing outside the lock</strong> trades a thundering-herd risk (two threads compute the same miss) for no lock-held user code. Name the tradeoff; per-key locks or futures-in-cache is the fix if they push (that's what a request-coalescing cache does).</li>
+<li><strong>Flush cost:</strong> O(cache) per miss; batch (flush every N mutations / on interval / atexit) is the production answer — offer it.</li>
+</ul></div>
+
+<div class="adm info"><div class="adm-title">⏱️ Complexity &amp; efficiency</div><p><strong>Time:</strong> <code>get/put</code> O(1) — the hash map finds the node, the linked list (or OrderedDict) splices in O(1). The memo wrapper adds O(size of args) per call for key serialization. Persistence as written is O(cache size) per <em>miss</em> — the honest inefficiency; batching flushes (every N mutations, on interval, atexit) amortizes it to near-zero.</p><p><strong>How efficient is it?</strong> O(1) per operation is optimal for LRU semantics, and both implementations (DLL and OrderedDict) achieve it — the DLL just proves you know why. Space is O(capacity) entries plus serialized keys; note aloud that JSON keys cost memory proportional to argument size, so huge-argument functions want hashed keys (with the collision caveat).</p></div>
 
 </div>

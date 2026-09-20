@@ -23,8 +23,13 @@ description: "S4 · URL parsing / domain match counting"
 <p>Every URL from the five documents in <em>Run it</em>, sorted into what matched and what was correctly refused.</p>
 
 <img src="/diagrams/arcoding-state/s4.svg" alt="Every extracted URL sorted into matches and rejections after host normalisation." class="doc-diagram doc-diagram-seq" />
-<h4>Level 1 — extraction + correct domain matching</h4>
+
 <p>The correctness core is the matcher: <code>api.example.com</code> matches <code>example.com</code>, but <code>badexample.com</code> must not — compare on label boundaries, never with a raw substring test.</p>
+
+<p>Justify the choices: fetching is I/O-bound → asyncio, not threads-per-request; the semaphore is the politeness/capacity knob; error counts are a first-class output (an SRE answer reports what it failed to fetch, not just what matched).</p>
+<p>Classic map-reduce shape: shard documents across workers; each worker emits partial <code>Counter</code>s; reduce by summation. The three things to say: workers are <strong>stateless and idempotent</strong> (a retried shard must not double-count — process shards exactly-once by recording shard completion, or make output keyed by shard id and overwrite); <strong>combine locally</strong> before shuffling so a hot domain doesn't melt one reducer; and per-domain counting is <em>associative</em>, which is what makes the whole thing embarrassingly parallel. If they push on "count per domain for all domains": emit <code>(registrable_domain, 1)</code> pairs and note that extracting the registrable domain properly needs the Public Suffix List (<code>co.uk</code> is not a registrable domain) — knowing that footnote is a strong signal.</p>
+
+<p class="covers">The complete program — save it as <code>s4_domain_count.py</code> and run <code>python s4_domain_count.py</code>.</p>
 
 ```python
 import re
@@ -93,11 +98,7 @@ def count_domain(docs: list[str], domain: str) -> int:
             if host and host_matches(host, domain):
                 n += 1
     return n
-```
 
-<h4>Follow-up 1 — make it asynchronous (the docs are URLs to fetch)</h4>
-
-```python
 import asyncio
 import aiohttp
 
@@ -126,18 +127,8 @@ async def count_domain_async(page_urls, domain, *, concurrency=100, timeout=10):
     async with aiohttp.ClientSession() as session:
         await asyncio.gather(*(fetch_and_count(session, u) for u in page_urls))
     return counts
-```
 
-<p>Justify the choices: fetching is I/O-bound → asyncio, not threads-per-request; the semaphore is the politeness/capacity knob; error counts are a first-class output (an SRE answer reports what it failed to fetch, not just what matched).</p>
-<h4>Follow-up 2 — scale to billions of documents</h4>
-<p>Classic map-reduce shape: shard documents across workers; each worker emits partial <code>Counter</code>s; reduce by summation. The three things to say: workers are <strong>stateless and idempotent</strong> (a retried shard must not double-count — process shards exactly-once by recording shard completion, or make output keyed by shard id and overwrite); <strong>combine locally</strong> before shuffling so a hot domain doesn't melt one reducer; and per-domain counting is <em>associative</em>, which is what makes the whole thing embarrassingly parallel. If they push on "count per domain for all domains": emit <code>(registrable_domain, 1)</code> pairs and note that extracting the registrable domain properly needs the Public Suffix List (<code>co.uk</code> is not a registrable domain) — knowing that footnote is a strong signal.</p>
-<div class="adm info"><div class="adm-title">⏱️ Complexity &amp; efficiency</div><p><strong>Time:</strong> extraction is O(total text) — the regex is a single linear scan; matching is O(len(domain)) per URL via <code>endswith</code>. The async fetcher’s throughput is concurrency-bound: ≈ semaphore_size / avg_fetch_latency pages/sec, with parsing effectively free next to network time. <strong>Space:</strong> O(URLs per doc) transiently; counters are O(distinct domains).</p><p><strong>How efficient is it?</strong> Linear and streamable — nothing needs the full corpus in memory, which is exactly why the map-reduce scale-up is trivial: per-domain counting is associative, local pre-aggregation shrinks the shuffle, and adding workers scales throughput linearly until network or the hottest reducer saturates.</p></div>
 
-### Run it
-
-<p class="covers">Append this to the code above, save as <code>s4_domain_count.py</code>, then run <code>python s4_domain_count.py</code>. This exercises the synchronous path; the <code>aiohttp</code> variant needs network access.</p>
-
-```python
 if __name__ == "__main__":
     docs = [
         "See https://docs.example.com/guide and http://example.com.",
@@ -190,5 +181,7 @@ if __name__ == "__main__":
 count_domain(example.com): 4
 count_domain(evil.net)   : 1
 ```
+
+<div class="adm info"><div class="adm-title">⏱️ Complexity &amp; efficiency</div><p><strong>Time:</strong> extraction is O(total text) — the regex is a single linear scan; matching is O(len(domain)) per URL via <code>endswith</code>. The async fetcher’s throughput is concurrency-bound: ≈ semaphore_size / avg_fetch_latency pages/sec, with parsing effectively free next to network time. <strong>Space:</strong> O(URLs per doc) transiently; counters are O(distinct domains).</p><p><strong>How efficient is it?</strong> Linear and streamable — nothing needs the full corpus in memory, which is exactly why the map-reduce scale-up is trivial: per-domain counting is associative, local pre-aggregation shrinks the shuffle, and adding workers scales throughput linearly until network or the hottest reducer saturates.</p></div>
 
 </div>

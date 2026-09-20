@@ -23,8 +23,12 @@ description: "B4 · In-memory DB: versioned/time-based reads + nested transactio
 <p>The two keys written in <em>Run it</em>, as they actually sit in memory, and what two different historical reads find.</p>
 
 <img src="/diagrams/arcoding-state/b4.svg" alt="Two keys stored as parallel sorted lists of timestamps and values, with a tombstone and a TTL." class="doc-diagram doc-diagram-seq" />
-<h4>Part 1 — time-based/versioned store with TTL, tombstones, historical reads</h4>
+
 <p>The "versioned DB" variant merges three ideas: append-only version lists per key, deletes as <em>tombstone versions</em> (so history is preserved), and TTL applied per write. Every read is then one binary search.</p>
+
+<p>The elegant consequence to point out: <strong>expiry never mutates history</strong>. A version simply stops being visible for reads at <code>t ≥ expiry</code>, but a historical read at an earlier t still sees it — deletion-by-non-visibility, the same trick MVCC databases use.</p>
+
+<p class="covers">The complete program — save it as <code>b4_versioned_kv.py</code> and run <code>python b4_versioned_kv.py</code>.</p>
 
 ```python
 import bisect
@@ -113,12 +117,7 @@ class VersionedKV:
         """
         return sorted(k for k in self._d
                       if k.startswith(prefix) and self.get(k, t) is not None)
-```
 
-<p>The elegant consequence to point out: <strong>expiry never mutates history</strong>. A version simply stops being visible for reads at <code>t ≥ expiry</code>, but a historical read at an earlier t still sees it — deletion-by-non-visibility, the same trick MVCC databases use.</p>
-<h4>Part 2 — nested transactions over a committed base</h4>
-
-```python
 class TxKV:
     """begin/commit/rollback nest arbitrarily. Reads see the newest layer;
     commit merges ONE level down (into the parent tx, not the base)."""
@@ -222,22 +221,8 @@ class TxKV:
         parent = self.layers[-1] if self.layers else self.base
         parent.update(top)                  # tombstones merge down too
         return True
-```
 
-<div class="adm tip"><div class="adm-title">💡 What they probe</div>
-<ul>
-<li><strong>The tombstone question is the whole transaction exercise.</strong> Walk the failing case: base has <code>x=1</code>; <code>begin; delete(x)</code> — with <code>del</code> the read falls through to base and resurrects <code>x</code>. Then: after <code>commit</code>, tombstones must keep shadowing in the parent (only compact them when merging into base, if at all).</li>
-<li><strong>Costs:</strong> get O(depth), set/rollback O(1), commit O(size of top layer). The overlay design makes <em>rollback</em> free — which is the common case worth optimizing, and worth saying.</li>
-<li><strong>Version-list appends must be monotonic</strong> per key — validate and raise; the "deterministic behavior" phrasing in the listing means they test out-of-order writes.</li>
-<li><strong>Bridge to the job:</strong> layered reads = memtable-over-SSTable; tombstones + compaction = LSM trees; historical reads = MVCC. One sentence connecting these lands well.</li>
-</ul></div>
-<div class="adm info"><div class="adm-title">⏱️ Complexity &amp; efficiency</div><p><strong>Time (versioned store):</strong> <code>set/delete</code> O(1) amortized append; <code>get</code> O(log v) binary search over that key’s v versions; <code>scan</code> O(keys &times; log v). <strong>Time (transactions):</strong> <code>set/delete</code> O(1), <code>get</code> O(tx depth), <code>rollback</code> O(1), <code>commit</code> O(size of top layer). <strong>Space:</strong> full history is retained by design — O(total writes).</p><p><strong>How efficient is it?</strong> The append-only + bisect layout makes historical reads as cheap as current reads — the MVCC trade: pay memory for history, get O(log v) time travel. Rollback being O(1) is the right optimization target (aborts are common; commits of huge transactions are rare), and worth stating as a deliberate choice.</p></div>
 
-### Run it
-
-<p class="covers">Append this to the code above, save as <code>b4_versioned_kv.py</code>, then run <code>python b4_versioned_kv.py</code>.</p>
-
-```python
 if __name__ == "__main__":
     kv = VersionedKV()
     kv.set("user:1", "alice", t=10)
@@ -299,5 +284,15 @@ after rollback  : a = 2
 after commit    : a = 2 | b = 9
 commit with no open tx: False
 ```
+
+<div class="adm tip"><div class="adm-title">💡 What they probe</div>
+<ul>
+<li><strong>The tombstone question is the whole transaction exercise.</strong> Walk the failing case: base has <code>x=1</code>; <code>begin; delete(x)</code> — with <code>del</code> the read falls through to base and resurrects <code>x</code>. Then: after <code>commit</code>, tombstones must keep shadowing in the parent (only compact them when merging into base, if at all).</li>
+<li><strong>Costs:</strong> get O(depth), set/rollback O(1), commit O(size of top layer). The overlay design makes <em>rollback</em> free — which is the common case worth optimizing, and worth saying.</li>
+<li><strong>Version-list appends must be monotonic</strong> per key — validate and raise; the "deterministic behavior" phrasing in the listing means they test out-of-order writes.</li>
+<li><strong>Bridge to the job:</strong> layered reads = memtable-over-SSTable; tombstones + compaction = LSM trees; historical reads = MVCC. One sentence connecting these lands well.</li>
+</ul></div>
+
+<div class="adm info"><div class="adm-title">⏱️ Complexity &amp; efficiency</div><p><strong>Time (versioned store):</strong> <code>set/delete</code> O(1) amortized append; <code>get</code> O(log v) binary search over that key’s v versions; <code>scan</code> O(keys &times; log v). <strong>Time (transactions):</strong> <code>set/delete</code> O(1), <code>get</code> O(tx depth), <code>rollback</code> O(1), <code>commit</code> O(size of top layer). <strong>Space:</strong> full history is retained by design — O(total writes).</p><p><strong>How efficient is it?</strong> The append-only + bisect layout makes historical reads as cheap as current reads — the MVCC trade: pay memory for history, get O(log v) time travel. Rollback being O(1) is the right optimization target (aborts are common; commits of huge transactions are rare), and worth stating as a deliberate choice.</p></div>
 
 </div>
