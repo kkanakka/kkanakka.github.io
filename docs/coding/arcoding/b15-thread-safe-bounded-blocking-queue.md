@@ -82,4 +82,83 @@ class BlockingQueue:
 </ul></div>
 <div class="adm info"><div class="adm-title">⏱️ Complexity &amp; efficiency</div><p><strong>Time:</strong> <code>put/get</code> O(1) of actual work (deque append/popleft) plus blocking time, which is workload, not cost; <code>notify</code> wakes exactly one waiter — O(1) — versus <code>notify_all</code>’s O(waiters) thundering herd, which is why close() is the only place it’s used. <strong>Space:</strong> O(capacity).</p><p><strong>How efficient is it?</strong> Optimal for a lock-based queue; the single shared lock serializes operations, which is fine up to very high throughput. The scaling follow-up answer: two locks (one per end) à la Michael–Scott, or lock-free queues — name them, then say you’d measure before reaching for either, because the lock is rarely the bottleneck next to the work items represent.</p></div>
 
+### Run it
+
+<p class="covers">Append this to the code above, save as <code>b15_blocking_queue.py</code>, then run <code>python b15_blocking_queue.py</code>.</p>
+
+```python
+if __name__ == "__main__":
+    import threading
+
+    q = BlockingQueue(capacity=2)
+    consumed, lock = [], threading.Lock()
+
+    def consumer(cid):
+        while True:
+            try:
+                item = q.get(timeout=2.0)
+            except QueueClosed:
+                return                       # drained AND closed: clean exit
+            with lock:
+                consumed.append(item)
+
+    threads = [threading.Thread(target=consumer, args=(i,)) for i in range(3)]
+    for t in threads:
+        t.start()
+
+    for i in range(10):
+        q.put(i)                             # blocks whenever 2 are pending
+    q.close()
+    for t in threads:
+        t.join()
+
+    print("capacity        :", q.cap)
+    print("items consumed  :", len(consumed))
+    print("nothing lost    :", sorted(consumed) == list(range(10)))
+    print("all threads done:", not any(t.is_alive() for t in threads))
+
+    print("\n--- put() on a full queue times out instead of hanging ---")
+    q2 = BlockingQueue(capacity=1)
+    print("put 'a'         :", q2.put("a", timeout=0.1))
+    print("put 'b' (full)  :", q2.put("b", timeout=0.1))
+
+    print("\n--- get() on an empty queue times out ---")
+    try:
+        BlockingQueue(2).get(timeout=0.1)
+    except TimeoutError:
+        print("TimeoutError raised")
+
+    print("\n--- put() after close is refused ---")
+    q2.close()
+    try:
+        q2.put("c")
+    except QueueClosed:
+        print("QueueClosed raised")
+
+    try:
+        BlockingQueue(0)
+    except ValueError as e:
+        print("ValueError:", e)
+```
+
+<p><strong>Output</strong></p>
+
+```text
+capacity        : 2
+items consumed  : 10
+nothing lost    : True
+all threads done: True
+
+--- put() on a full queue times out instead of hanging ---
+put 'a'         : True
+put 'b' (full)  : False
+
+--- get() on an empty queue times out ---
+TimeoutError raised
+
+--- put() after close is refused ---
+QueueClosed raised
+ValueError: capacity must be positive
+```
+
 </div>

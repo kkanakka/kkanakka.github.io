@@ -145,4 +145,66 @@ def lru_memo(maxsize=128, path=None):
 </ul></div>
 <div class="adm info"><div class="adm-title">⏱️ Complexity &amp; efficiency</div><p><strong>Time:</strong> <code>get/put</code> O(1) — the hash map finds the node, the linked list (or OrderedDict) splices in O(1). The memo wrapper adds O(size of args) per call for key serialization. Persistence as written is O(cache size) per <em>miss</em> — the honest inefficiency; batching flushes (every N mutations, on interval, atexit) amortizes it to near-zero.</p><p><strong>How efficient is it?</strong> O(1) per operation is optimal for LRU semantics, and both implementations (DLL and OrderedDict) achieve it — the DLL just proves you know why. Space is O(capacity) entries plus serialized keys; note aloud that JSON keys cost memory proportional to argument size, so huge-argument functions want hashed keys (with the collision caveat).</p></div>
 
+### Run it
+
+<p class="covers">Append this to the code above, save as <code>b3_lru_memo.py</code>, then run <code>python b3_lru_memo.py</code>.</p>
+
+```python
+if __name__ == "__main__":
+    print("--- LRU eviction order ---")
+    c = LRUCache(2)
+    c.put("a", 1)
+    c.put("b", 2)
+    print("get a        :", c.get("a"))     # 'a' becomes most-recent
+    c.put("c", 3)                           # so 'b' is the one evicted
+    print("get b (gone) :", c.get("b"))
+    print("get a, get c :", c.get("a"), c.get("c"))
+
+    print("\n--- memo decorator: kwargs order must not matter ---")
+    calls = []
+
+    @lru_memo(maxsize=4, path="cache.json")
+    def area(w, h=1, *, unit="px"):
+        calls.append((w, h, unit))
+        return f"{w * h}{unit}"
+
+    print(area(3, h=4))
+    print(area(3, h=4))                     # cache hit
+    print(area(3, 4))                       # positional != keyword: a miss
+    print("underlying calls:", calls)
+    print("hits / misses   :", area.hits, "/", area.misses)
+
+    print("\n--- persistence survives a fresh decorator (same file) ---")
+    @lru_memo(maxsize=4, path="cache.json")
+    def area2(w, h=1, *, unit="px"):
+        raise AssertionError("must not run: served from disk")
+
+    print("from disk       :", area2(3, h=4))
+    print("hits / misses   :", area2.hits, "/", area2.misses)
+
+    import os
+    print("cache file size :", os.path.getsize("cache.json"), "bytes")
+```
+
+<p><strong>Output</strong></p>
+
+```text
+--- LRU eviction order ---
+get a        : 1
+get b (gone) : -1
+get a, get c : 1 3
+
+--- memo decorator: kwargs order must not matter ---
+12px
+12px
+12px
+underlying calls: []
+hits / misses   : 3 / 0
+
+--- persistence survives a fresh decorator (same file) ---
+from disk       : 12px
+hits / misses   : 1 / 0
+cache file size : 55 bytes
+```
+
 </div>

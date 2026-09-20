@@ -45,4 +45,44 @@ class MinStack:
 </ul></div>
 <div class="adm info"><div class="adm-title">⏱️ Complexity &amp; efficiency</div><p><strong>Time:</strong> push, pop, top, get_min all O(1) — hard, worst-case, not amortized. <strong>Space:</strong> O(n) storing a pair per element; the auxiliary-stack variant shrinks that to O(#times a new minimum appears), which for random or increasing input is far smaller.</p><p><strong>How efficient is it?</strong> Optimal — O(1) everything is the floor, and the trade between the two variants is pure space-vs-simplicity. The key argument to make: a single min variable cannot work because popping the current minimum requires knowing the <em>previous</em> minimum, i.e., history — the paired storage is that history, precomputed at push time.</p></div>
 
+### Run it
+
+<p class="covers">Append this to the code above, save as <code>b10_min_stack.py</code>, then run <code>python b10_min_stack.py</code>.</p>
+
+```python
+if __name__ == "__main__":
+    s = MinStack()
+    print("empty -> top/pop/get_min:", s.top(), s.pop(), s.get_min())
+
+    for x in (5, 3, 7, 3):
+        s.push(x)
+        print(f"push {x} -> min={s.get_min()} top={s.top()}")
+
+    while (v := s.pop()) is not None:
+        print(f"pop  {v} -> min={s.get_min()} top={s.top()}")
+```
+
+<p><strong>Output</strong></p>
+
+```text
+empty -> top/pop/get_min: None None None
+push 5 -> min=5 top=5
+push 3 -> min=3 top=3
+push 7 -> min=3 top=7
+push 3 -> min=3 top=3
+pop  3 -> min=3 top=7
+pop  7 -> min=3 top=3
+pop  3 -> min=5 top=5
+pop  5 -> min=None top=None
+empty -> top/pop/get_min: None None None
+push 5 -> min=5 top=5
+push 3 -> min=3 top=3
+push 7 -> min=3 top=7
+push 3 -> min=3 top=3
+pop  3 -> min=3 top=7
+pop  7 -> min=3 top=3
+pop  3 -> min=5 top=5
+pop  5 -> min=None top=None
+```
+
 </div>

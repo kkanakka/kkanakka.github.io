@@ -156,4 +156,68 @@ async def crawl_async(start_url, aget_links, *, concurrency=20,
 </ul></div>
 <div class="adm info"><div class="adm-title">⏱️ Complexity &amp; efficiency</div><p><strong>Time:</strong> O(V + E) — each page fetched once (V), each link examined once (E); the seen-set makes cycles free. <strong>Space:</strong> O(V) for seen + frontier. <strong>Speedup:</strong> with W workers on I/O-bound fetches, wall time ≈ sequential/W until you saturate bandwidth, the target site, or politeness limits — the frontier-round version loses a little parallelism at round boundaries (stragglers), which the shared-queue version avoids at the cost of the harder termination argument.</p><p><strong>How efficient is it?</strong> Asymptotically optimal (every reachable page must be fetched once). The real-world constraint is politeness, not CPU: per-host rate limiting deliberately caps throughput — efficiency here means maximizing pages/sec <em>within</em> that cap, which is what the semaphore/concurrency knob tunes.</p></div>
 
+### Run it
+
+<p class="covers">Append this to the code above, save as <code>b6_crawler.py</code>, then run <code>python b6_crawler.py</code>. All four crawlers run against the same in-memory fake site, so the comparison is exact.</p>
+
+```python
+# A fake site: 4 same-host pages, one off-host link, one cycle back to /
+SITE = {
+    "http://ex.com/":  ["http://ex.com/a", "http://ex.com/b",
+                        "http://other.com/x"],           # off-host: skipped
+    "http://ex.com/a": ["http://ex.com/c", "http://ex.com/"],   # cycle
+    "http://ex.com/b": ["http://ex.com/c"],                     # diamond
+    "http://ex.com/c": [],
+}
+
+
+def get_links(url):
+    return SITE.get(url, [])
+
+
+async def aget_links(url):
+    await asyncio.sleep(0.01)              # pretend it is a network call
+    return SITE.get(url, [])
+
+
+if __name__ == "__main__":
+    start = "http://ex.com/"
+
+    single = sorted(crawl(start, get_links))
+    threaded = sorted(crawl_mt(start, get_links, workers=4))
+    queued = sorted(crawl_q(start, get_links, workers=4))
+    asyncd = sorted(asyncio.run(crawl_async(start, aget_links, concurrency=4)))
+
+    for name, urls in (("single-threaded", single), ("thread pool", threaded),
+                       ("worker queue", queued), ("asyncio", asyncd)):
+        print(f"{name:<16}: {urls}")
+
+    print("\nall four agree  :", single == threaded == queued == asyncd)
+    print("off-host dropped:", "http://other.com/x" not in single)
+
+    print("\n--- a flaky page must not sink the async crawl ---")
+    async def flaky(url):
+        if url == "http://ex.com/b":
+            raise ConnectionError("boom")     # retried, then skipped
+        return SITE.get(url, [])
+
+    got = asyncio.run(crawl_async(start, flaky, max_retries=1))
+    print("still crawled   :", sorted(got))
+```
+
+<p><strong>Output</strong></p>
+
+```text
+single-threaded : ['http://ex.com/', 'http://ex.com/a', 'http://ex.com/b', 'http://ex.com/c']
+thread pool     : ['http://ex.com/', 'http://ex.com/a', 'http://ex.com/b', 'http://ex.com/c']
+worker queue    : ['http://ex.com/', 'http://ex.com/a', 'http://ex.com/b', 'http://ex.com/c']
+asyncio         : ['http://ex.com/', 'http://ex.com/a', 'http://ex.com/b', 'http://ex.com/c']
+
+all four agree  : True
+off-host dropped: True
+
+--- a flaky page must not sink the async crawl ---
+still crawled   : ['http://ex.com/', 'http://ex.com/a', 'http://ex.com/b', 'http://ex.com/c']
+```
+
 </div>

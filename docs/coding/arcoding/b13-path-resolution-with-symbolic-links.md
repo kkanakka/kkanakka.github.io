@@ -79,4 +79,50 @@ def resolve(path: str, links: dict[str, str], *, max_hops: int = 64) -> str:
 </ul></div>
 <div class="adm info"><div class="adm-title">⏱️ Complexity &amp; efficiency</div><p><strong>Time:</strong> O(components processed), where the hop cap bounds expansion: at most <code>max_hops</code> link substitutions, each injecting O(len(target)) components — so worst case O(|path| + max_hops &times; max_target_len), i.e., effectively linear with a safety ceiling. <strong>Space:</strong> O(resolved path + pending components).</p><p><strong>How efficient is it?</strong> Linear is optimal (every component must be looked at), and the hop cap is what keeps the worst case <em>defined</em> at all — without it, self-referential links make resolution non-terminating. Dict lookups make each link check O(1); the interesting cost is semantic, not asymptotic: resolving against the resolved-so-far prefix is what buys correctness for mid-path links, at zero extra complexity.</p></div>
 
+### Run it
+
+<p class="covers">Append this to the code above, save as <code>b13_resolve_path.py</code>, then run <code>python b13_resolve_path.py</code>.</p>
+
+```python
+if __name__ == "__main__":
+    print("--- simplify (no links) ---")
+    for p in ("/a/./b/../c", "/../", "/home//foo/", "/a/b/c/../../.."):
+        print(f"{p:<18} -> {simplify(p)}")
+
+    links = {
+        "/bin":          "/usr/bin",        # absolute target: restart at root
+        "/usr/bin/py":   "python3.13",      # relative target: sibling
+        "/data/current": "../releases/v7",  # relative with ..
+    }
+
+    print("\n--- resolve (with symlinks) ---")
+    for p in ("/bin/py", "/data/current/model.bin", "/usr/bin/../lib"):
+        print(f"{p:<26} -> {resolve(p, links)}")
+
+    print("\n--- ELOOP: a cycle is caught, not hung ---")
+    cyclic = {"/a": "/b", "/b": "/a"}
+    try:
+        resolve("/a", cyclic, max_hops=8)
+    except SymlinkLoopError as e:
+        print("SymlinkLoopError:", e)
+```
+
+<p><strong>Output</strong></p>
+
+```text
+--- simplify (no links) ---
+/a/./b/../c        -> /a/c
+/../               -> /
+/home//foo/        -> /home/foo
+/a/b/c/../../..    -> /
+
+--- resolve (with symlinks) ---
+/bin/py                    -> /usr/bin/python3.13
+/data/current/model.bin    -> /releases/v7/model.bin
+/usr/bin/../lib            -> /usr/lib
+
+--- ELOOP: a cycle is caught, not hung ---
+SymlinkLoopError: too many symlinks resolving '/a'
+```
+
 </div>

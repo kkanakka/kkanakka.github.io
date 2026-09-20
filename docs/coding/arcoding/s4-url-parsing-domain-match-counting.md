@@ -90,4 +90,62 @@ async def count_domain_async(page_urls, domain, *, concurrency=100, timeout=10):
 <p>Classic map-reduce shape: shard documents across workers; each worker emits partial <code>Counter</code>s; reduce by summation. The three things to say: workers are <strong>stateless and idempotent</strong> (a retried shard must not double-count — process shards exactly-once by recording shard completion, or make output keyed by shard id and overwrite); <strong>combine locally</strong> before shuffling so a hot domain doesn't melt one reducer; and per-domain counting is <em>associative</em>, which is what makes the whole thing embarrassingly parallel. If they push on "count per domain for all domains": emit <code>(registrable_domain, 1)</code> pairs and note that extracting the registrable domain properly needs the Public Suffix List (<code>co.uk</code> is not a registrable domain) — knowing that footnote is a strong signal.</p>
 <div class="adm info"><div class="adm-title">⏱️ Complexity &amp; efficiency</div><p><strong>Time:</strong> extraction is O(total text) — the regex is a single linear scan; matching is O(len(domain)) per URL via <code>endswith</code>. The async fetcher’s throughput is concurrency-bound: ≈ semaphore_size / avg_fetch_latency pages/sec, with parsing effectively free next to network time. <strong>Space:</strong> O(URLs per doc) transiently; counters are O(distinct domains).</p><p><strong>How efficient is it?</strong> Linear and streamable — nothing needs the full corpus in memory, which is exactly why the map-reduce scale-up is trivial: per-domain counting is associative, local pre-aggregation shrinks the shuffle, and adding workers scales throughput linearly until network or the hottest reducer saturates.</p></div>
 
+### Run it
+
+<p class="covers">Append this to the code above, save as <code>s4_domain_count.py</code>, then run <code>python s4_domain_count.py</code>. This exercises the synchronous path; the <code>aiohttp</code> variant needs network access.</p>
+
+```python
+if __name__ == "__main__":
+    docs = [
+        "See https://docs.example.com/guide and http://example.com.",
+        "Mirror at https://EXAMPLE.COM:8443/x, plus https://notexample.com/y",
+        "Creds in the URL: https://user:pw@api.example.com/v1 (works)",
+        "A near-miss: https://example.com.evil.net/phish",
+        "No links here at all.",
+    ]
+
+    print("--- extraction ---")
+    for d in docs:
+        print(" ", extract_urls(d))
+
+    print("\n--- host normalisation ---")
+    for u in ["https://EXAMPLE.COM:8443/x", "https://user:pw@api.example.com/v1",
+              "https://example.com./", "https://example.com.evil.net/phish"]:
+        print(f"  {u:<42} -> {normalize_host(u)}")
+
+    print("\n--- suffix matching: subdomains yes, look-alikes no ---")
+    for h in ["example.com", "api.example.com", "notexample.com",
+              "example.com.evil.net"]:
+        print(f"  {h:<22} {host_matches(h, 'example.com')}")
+
+    print("\ncount_domain(example.com):", count_domain(docs, "example.com"))
+    print("count_domain(evil.net)   :", count_domain(docs, "evil.net"))
+```
+
+<p><strong>Output</strong></p>
+
+```text
+--- extraction ---
+  ['https://docs.example.com/guide', 'http://example.com']
+  ['https://EXAMPLE.COM:8443/x', 'https://notexample.com/y']
+  ['https://user:pw@api.example.com/v1']
+  ['https://example.com.evil.net/phish']
+  []
+
+--- host normalisation ---
+  https://EXAMPLE.COM:8443/x                 -> example.com
+  https://user:pw@api.example.com/v1         -> api.example.com
+  https://example.com./                      -> example.com
+  https://example.com.evil.net/phish         -> example.com.evil.net
+
+--- suffix matching: subdomains yes, look-alikes no ---
+  example.com            True
+  api.example.com        True
+  notexample.com         False
+  example.com.evil.net   False
+
+count_domain(example.com): 4
+count_domain(evil.net)   : 1
+```
+
 </div>

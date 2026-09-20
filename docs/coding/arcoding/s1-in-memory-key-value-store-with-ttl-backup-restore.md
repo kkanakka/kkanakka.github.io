@@ -131,4 +131,80 @@ class KVStore:
 </ul></div>
 <div class="adm info"><div class="adm-title">⏱️ Complexity &amp; efficiency</div><p><strong>Time:</strong> <code>get/set/delete</code> O(1) average (dict); <code>set_with_ttl</code> O(log n) for the heap push; <code>scan</code> O(n + m log m) — filter all n keys, sort the m matches; <code>backup/restore</code> O(n log n). Eager purge is <strong>amortized</strong> O(log n) per expiring key: each TTL write is pushed once and popped once, ever. <strong>Space:</strong> O(live keys + pending heap entries) — stale heap entries are bounded by total TTL writes and cleaned on pop.</p><p><strong>How efficient is it?</strong> Optimal for the operations as specified. The only improvable piece is <code>scan</code>: a trie or sorted-key structure makes it O(matches) instead of O(all keys), worth mentioning if scans dominate. Lazy + eager expiry combined means no background timer thread and no unbounded memory — the two failure modes the follow-ups hunt for.</p></div>
 
+### Run it
+
+<p class="covers">Append this to the code above, save as <code>s1_kvstore.py</code>, then run <code>python s1_kvstore.py</code>.</p>
+
+```python
+if __name__ == "__main__":
+    kv = KVStore()
+
+    print("--- Level 1: set / get / delete ---")
+    kv.set("region", "us-east-1", now=0)
+    print("get region   :", kv.get("region", now=0))
+    print("delete region:", kv.delete("region", now=0))
+    print("get after del:", kv.get("region", now=0))
+    print("delete again :", kv.delete("region", now=0))
+
+    print("\n--- Level 2: TTL (now only ever moves forward) ---")
+    kv.set_with_ttl("session:a", "alice", ttl=10, now=100)   # expires at 110
+    kv.set_with_ttl("session:b", "bob",   ttl=50, now=100)   # expires at 150
+    kv.set("session:c", "carol", now=100)                    # no TTL: immortal
+
+    def snapshot(t):
+        print(f"t={t:<4} a={kv.get('session:a', t)!r:<8} "
+              f"b={kv.get('session:b', t)!r:<7} c={kv.get('session:c', t)!r}")
+
+    snapshot(100)
+    snapshot(109)
+    print("scan @109:", kv.scan("session:", 109))
+
+    snapshot(110)                                            # a's lease is up
+    print("scan @120:", kv.scan("session:", 120))
+
+    try:
+        kv.set_with_ttl("x", "y", ttl=0, now=120)
+    except ValueError as e:
+        print("ValueError:", e)
+
+    print("\n--- Level 4: backup stores REMAINING ttl, not absolute expiry ---")
+    snap = kv.backup(now=120)                                # b has 30 left
+    print("snapshot:", snap)
+
+    restored = KVStore()
+    restored.restore(now=1000, backup=snap)                  # restored far later
+    print("b @1000 :", restored.get("session:b", 1000))      # 30s from restore
+    print("b @1029 :", restored.get("session:b", 1029))
+    print("b @1030 :", restored.get("session:b", 1030))
+    print("c @9999 :", restored.get("session:c", 9999))
+
+    snapshot(150)                                            # original store
+```
+
+<p><strong>Output</strong></p>
+
+```text
+--- Level 1: set / get / delete ---
+get region   : us-east-1
+delete region: True
+get after del: None
+delete again : False
+
+--- Level 2: TTL (now only ever moves forward) ---
+t=100  a='alice'  b='bob'   c='carol'
+t=109  a='alice'  b='bob'   c='carol'
+scan @109: ['session:a', 'session:b', 'session:c']
+t=110  a=None     b='bob'   c='carol'
+scan @120: ['session:b', 'session:c']
+ValueError: ttl must be positive
+
+--- Level 4: backup stores REMAINING ttl, not absolute expiry ---
+snapshot: {'session:b': ('bob', 30), 'session:c': ('carol', None)}
+b @1000 : bob
+b @1029 : bob
+b @1030 : None
+c @9999 : carol
+t=150  a=None     b=None    c='carol'
+```
+
 </div>

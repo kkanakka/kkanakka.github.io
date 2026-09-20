@@ -96,4 +96,34 @@ class TrieTokenizer:
 </ul></div>
 <div class="adm info"><div class="adm-title">⏱️ Complexity &amp; efficiency</div><p><strong>Time:</strong> naive version O(n &times; L<sub>max</sub>) worst case (n positions, up to L<sub>max</sub> slice probes each, plus O(L) hashing per slice); trie version walks each starting position once down a shared path — worst case still O(n &times; L<sub>max</sub>) on adversarial input, but typical cost is O(n + matched characters), with no slice allocations and no repeated hashing. <strong>Space:</strong> trie O(total vocab characters).</p><p><strong>How efficient is it?</strong> For the greedy-longest-match spec, the trie is the practical optimum. The theory footnote worth one sentence: Aho–Corasick gives O(n) matching over <em>all</em> patterns simultaneously via failure links, but changes the matching discipline — overkill here, and knowing why it doesn’t apply cleanly to longest-match greedy is the senior answer.</p></div>
 
+### Run it
+
+<p class="covers">Append this to the code above, save as <code>b9_tokenizer.py</code>, then run <code>python b9_tokenizer.py</code>.</p>
+
+```python
+if __name__ == "__main__":
+    vocab = {"token": 1, "tok": 2, "##en": 3, "ize": 4, "r": 5, "i": 6, "z": 7}
+    text = "tokenizer rize"
+
+    print("scan    :", tokenize(text, vocab))
+    print("trie    :", TrieTokenizer(vocab).tokenize(text))
+    print("agree   :", tokenize(text, vocab) == TrieTokenizer(vocab).tokenize(text))
+
+    print("\nno coalescing:", tokenize("tok??", vocab, coalesce_unknown=False))
+    print("empty vocab  :", tokenize("abc", {}))
+    print("empty text   :", tokenize("", vocab))
+```
+
+<p><strong>Output</strong></p>
+
+```text
+scan    : [(1, 'token'), (4, 'ize'), (5, 'r'), (-1, ' '), (5, 'r'), (4, 'ize')]
+trie    : [(1, 'token'), (4, 'ize'), (5, 'r'), (-1, ' '), (5, 'r'), (4, 'ize')]
+agree   : True
+
+no coalescing: [(2, 'tok'), (-1, '?'), (-1, '?')]
+empty vocab  : [(-1, 'abc')]
+empty text   : []
+```
+
 </div>

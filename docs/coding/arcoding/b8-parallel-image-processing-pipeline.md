@@ -102,4 +102,68 @@ def apply_trie(image_path, trie, out_dir):
 </ul></div>
 <div class="adm info"><div class="adm-title">⏱️ Complexity &amp; efficiency</div><p><strong>Time:</strong> O(total pixels &times; ops) of unavoidable transform work; with P processes on CPU-bound transforms, wall time ≈ sequential/P until disk decode/encode saturates. The trie version cuts the m&times;n variant from Σ|pipeline| ops per image to |trie nodes| per image — shared prefixes computed once.</p><p><strong>How efficient is it?</strong> The parallelism is embarrassingly clean (no shared state between jobs), so scaling is near-linear in cores; overheads to name are process startup and pickling of paths (tiny). The trie optimization is the algorithmic win: for pipelines like 10 variants of one base transform chain, it approaches a 10&times; reduction in compute.</p></div>
 
+### Run it
+
+<p class="covers">Append this to the code above, save as <code>b8_image_pipeline.py</code>, then run <code>python b8_image_pipeline.py</code>. Needs Pillow (<code>pip install pillow</code>); the images are generated into a temp directory, so it runs anywhere.</p>
+
+```python
+if __name__ == "__main__":
+    import shutil, tempfile
+
+    work = tempfile.mkdtemp()
+    src, out = os.path.join(work, "in"), os.path.join(work, "out")
+    os.makedirs(src)
+    try:
+        for i, colour in enumerate(("red", "green", "blue")):
+            Image.new("RGB", (400, 300), colour).save(
+                os.path.join(src, f"img{i}.png"))
+        with open(os.path.join(src, "corrupt.png"), "wb") as f:
+            f.write(b"not actually a PNG")          # must not kill the batch
+
+        paths = sorted(os.path.join(src, n) for n in os.listdir(src))
+        results = run_batch(paths, ["grayscale", "thumbnail"], out, workers=2)
+
+        print("--- per-job status (None = success) ---")
+        for p in sorted(results):
+            print(f"  {os.path.basename(p):<13} {results[p]}")
+
+        ok = [p for p, e in results.items() if e is None]
+        print(f"\n{len(ok)}/{len(results)} succeeded; one bad file did not "
+              f"abort the batch")
+        print("outputs written:", sorted(os.listdir(out)))
+        with Image.open(os.path.join(out, "img0.png")) as im:
+            print("img0 after pipeline:", im.mode, im.size)   # 'L', <=128px
+
+        print("\n--- trie: shared prefixes computed once ---")
+        pipelines = {"thumb": ["thumbnail"],
+                     "gray_thumb": ["grayscale", "thumbnail"],
+                     "gray_blur": ["grayscale", "blur"]}
+        trie = build_pipeline_trie(pipelines)
+        print("grayscale is a shared prefix of 2 pipelines:",
+              sorted(trie["children"]["grayscale"]["children"]))
+
+        _, res = apply_trie(os.path.join(src, "img0.png"), trie, out)
+        print("variants produced:", sorted(res))
+    finally:
+        shutil.rmtree(work)
+```
+
+<p><strong>Output</strong></p>
+
+```text
+--- per-job status (None = success) ---
+  corrupt.png   UnidentifiedImageError: cannot identify image file '/tmp/batch/in/corrupt.png'
+  img0.png      None
+  img1.png      None
+  img2.png      None
+
+3/4 succeeded; one bad file did not abort the batch
+outputs written: ['img0.png', 'img1.png', 'img2.png']
+img0 after pipeline: L (128, 96)
+
+--- trie: shared prefixes computed once ---
+grayscale is a shared prefix of 2 pipelines: ['blur', 'thumbnail']
+variants produced: ['gray_blur', 'gray_thumb', 'thumb']
+```
+
 </div>

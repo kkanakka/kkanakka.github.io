@@ -75,4 +75,61 @@ class UsageAccumulator:
 </ul></div>
 <div class="adm info"><div class="adm-title">⏱️ Complexity &amp; efficiency</div><p><strong>Time:</strong> O(#chunks) with O(1) work per chunk; <code>cost()</code> is O(#fields). <strong>Space:</strong> O(1) — only running totals, no chunk buffering, so it streams over arbitrarily long generations.</p><p><strong>How efficient is it?</strong> Computationally trivial by design — the efficiency story here is <em>correctness at scale</em>: Decimal arithmetic costs a few times more than float per operation (still nanoseconds, irrelevant next to a network chunk), and buys exactness across billions of requests where float error compounds into real money. Single-rounding-at-the-end also minimizes accumulated rounding bias — a policy choice, not a performance one, and worth framing that way.</p></div>
 
+### Run it
+
+<p class="covers">Append this to the code above, save as <code>b14_usage_cost.py</code>, then run <code>python b14_usage_cost.py</code>.</p>
+
+```python
+if __name__ == "__main__":
+    PRICES = {"input_tokens": "3.00",        # $ per million
+              "output_tokens": "15.00",
+              "cache_read_tokens": "0.30"}
+
+    stream = [
+        {"usage": {"input_tokens": 1200, "cache_read_tokens": 8000}},
+        {"usage": {"output_tokens": 50}},
+        {"usage": {"output_tokens": 120}},
+        {"usage": {"output_tokens": 90}},      # late duplicate: must not regress
+        {"usage": {"output_tokens": 300}},
+        {"usage": {"input_tokens": 1200, "output_tokens": 305,
+                   "cache_read_tokens": 8000}, "is_final": True},
+    ]
+
+    acc = UsageAccumulator()
+    for i, chunk in enumerate(stream):
+        acc.feed(chunk)
+        print(f"chunk {i}: totals={acc.totals}")
+
+    print("\nfinalized:", acc.finalized)
+    print("cost     : $", acc.cost(PRICES), sep="")
+
+    # float would drift here; Decimal does not
+    print("\nfloat arithmetic drift:", 0.1 + 0.2 == 0.3)
+
+    print("\n--- negative counts are rejected ---")
+    try:
+        UsageAccumulator().feed({"usage": {"output_tokens": -5}})
+    except ValueError as e:
+        print("ValueError:", e)
+```
+
+<p><strong>Output</strong></p>
+
+```text
+chunk 0: totals={'input_tokens': 1200, 'output_tokens': 0, 'cache_read_tokens': 8000}
+chunk 1: totals={'input_tokens': 1200, 'output_tokens': 50, 'cache_read_tokens': 8000}
+chunk 2: totals={'input_tokens': 1200, 'output_tokens': 120, 'cache_read_tokens': 8000}
+chunk 3: totals={'input_tokens': 1200, 'output_tokens': 120, 'cache_read_tokens': 8000}
+chunk 4: totals={'input_tokens': 1200, 'output_tokens': 300, 'cache_read_tokens': 8000}
+chunk 5: totals={'input_tokens': 1200, 'output_tokens': 305, 'cache_read_tokens': 8000}
+
+finalized: True
+cost     : $0.010575
+
+float arithmetic drift: False
+
+--- negative counts are rejected ---
+ValueError: negative token count for output_tokens
+```
+
 </div>

@@ -122,4 +122,71 @@ class TxKV:
 </ul></div>
 <div class="adm info"><div class="adm-title">⏱️ Complexity &amp; efficiency</div><p><strong>Time (versioned store):</strong> <code>set/delete</code> O(1) amortized append; <code>get</code> O(log v) binary search over that key’s v versions; <code>scan</code> O(keys &times; log v). <strong>Time (transactions):</strong> <code>set/delete</code> O(1), <code>get</code> O(tx depth), <code>rollback</code> O(1), <code>commit</code> O(size of top layer). <strong>Space:</strong> full history is retained by design — O(total writes).</p><p><strong>How efficient is it?</strong> The append-only + bisect layout makes historical reads as cheap as current reads — the MVCC trade: pay memory for history, get O(log v) time travel. Rollback being O(1) is the right optimization target (aborts are common; commits of huge transactions are rare), and worth stating as a deliberate choice.</p></div>
 
+### Run it
+
+<p class="covers">Append this to the code above, save as <code>b4_versioned_kv.py</code>, then run <code>python b4_versioned_kv.py</code>.</p>
+
+```python
+if __name__ == "__main__":
+    kv = VersionedKV()
+    kv.set("user:1", "alice", t=10)
+    kv.set("user:1", "alice2", t=20)
+    kv.set("user:2", "bob", t=15, ttl=10)      # expires at t=25
+    kv.delete("user:1", t=30)
+
+    print("--- historical reads ---")
+    for t in (5, 10, 20, 24, 25, 30):
+        print(f"t={t:<3} user:1={kv.get('user:1', t)!r:<9} user:2={kv.get('user:2', t)!r}")
+
+    print("\nscan('user:', t=20):", kv.scan("user:", 20))
+    print("scan('user:', t=30):", kv.scan("user:", 30))
+
+    try:
+        kv.set("user:1", "x", t=1)             # out-of-order write
+    except ValueError as e:
+        print("\nValueError:", e)
+
+    print("\n--- nested transactions ---")
+    db = TxKV()
+    db.set("a", 1)
+    db.begin()
+    db.set("a", 2)
+    db.set("b", 9)
+    print("inside tx1      : a =", db.get("a"), "| b =", db.get("b"))
+
+    db.begin()
+    db.delete("a")                             # tombstone shadows lower layers
+    print("inside tx2      : a =", db.get("a", default="<deleted>"))
+    db.rollback()
+    print("after rollback  : a =", db.get("a"))
+
+    db.commit()
+    print("after commit    : a =", db.get("a"), "| b =", db.get("b"))
+    print("commit with no open tx:", db.commit())
+```
+
+<p><strong>Output</strong></p>
+
+```text
+--- historical reads ---
+t=5   user:1=None      user:2=None
+t=10  user:1='alice'   user:2=None
+t=20  user:1='alice2'  user:2='bob'
+t=24  user:1='alice2'  user:2='bob'
+t=25  user:1='alice2'  user:2=None
+t=30  user:1=None      user:2=None
+
+scan('user:', t=20): ['user:1', 'user:2']
+scan('user:', t=30): []
+
+ValueError: writes must have increasing timestamps
+
+--- nested transactions ---
+inside tx1      : a = 2 | b = 9
+inside tx2      : a = <deleted>
+after rollback  : a = 2
+after commit    : a = 2 | b = 9
+commit with no open tx: False
+```
+
 </div>

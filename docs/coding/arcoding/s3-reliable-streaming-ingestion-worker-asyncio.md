@@ -145,4 +145,73 @@ class Ingestor:
 </ul></div>
 <div class="adm info"><div class="adm-title">⏱️ Complexity &amp; efficiency</div><p><strong>Time:</strong> O(1) framework overhead per message (queue put/get, stats) plus the handler itself; retries add at most <code>max_retries</code> handler calls for failing messages. <strong>Space:</strong> bounded by design — O(queue_size + workers) messages in memory, ever; that bound IS the backpressure mechanism.</p><p><strong>How efficient is it?</strong> Steady-state throughput ≈ workers / avg_handler_latency, so capacity is one tunable. The circuit breaker keeps efficiency honest under failure: without it, a dying downstream receives retry-multiplied load (the retry storm); with it, wasted work during an outage collapses to periodic probes.</p></div>
 
+### Run it
+
+<p class="covers">Append this to the code above, save as <code>s3_ingestor.py</code>, then run <code>python s3_ingestor.py</code>.</p>
+
+```python
+if __name__ == "__main__":
+    async def demo():
+        processed, dead = [], []
+
+        async def source():
+            for i in range(12):
+                yield {"id": i}
+
+        async def handler(msg):
+            if msg["id"] == 4:
+                raise RuntimeError("downstream returned 500")
+            if msg["id"] == 7:
+                await asyncio.sleep(10)          # exceeds handler_timeout
+            processed.append(msg["id"])
+
+        async def dead_letter(msg):
+            dead.append(msg["id"])               # persisted, never dropped
+
+        ing = Ingestor(source(), handler, dead_letter, workers=4,
+                       queue_size=4, handler_timeout=0.2, max_retries=2)
+        await ing.run()
+
+        print("processed     :", sorted(processed))
+        print("dead-lettered :", sorted(dead))
+        print("stats.ok      :", ing.stats.ok)
+        print("stats.retried :", ing.stats.retried, "(2 attempts x 2 bad msgs)")
+        print("stats.failed  :", ing.stats.failed)
+        print("queue drained :", ing.q.empty())
+        print("health        :", ing.health())
+
+    asyncio.run(demo())
+
+    print("\n--- circuit breaker opens after 10 consecutive failures ---")
+    cb = CircuitBreaker(threshold=10, cooldown=0.3)
+    for i in range(9):
+        cb.record(False)
+    print("after 9 failures :", cb.allow())
+    cb.record(False)
+    print("after 10 failures:", cb.allow())      # tripped: shed load
+
+    time.sleep(0.35)
+    print("after cooldown   :", cb.allow())      # half-open: one probe
+    cb.record(True)
+    print("after a success  :", cb.allow(), "| failure count:", cb.failures)
+```
+
+<p><strong>Output</strong></p>
+
+```text
+processed     : [0, 1, 2, 3, 5, 6, 8, 9, 10, 11]
+dead-lettered : [4, 7]
+stats.ok      : 10
+stats.retried : 4 (2 attempts x 2 bad msgs)
+stats.failed  : 2
+queue drained : True
+health        : {'ok': True, 'queue_depth': 0, 'in_flight': 0, 'dead_lettered': 2}
+
+--- circuit breaker opens after 10 consecutive failures ---
+after 9 failures : True
+after 10 failures: False
+after cooldown   : True
+after a success  : True | failure count: 0
+```
+
 </div>

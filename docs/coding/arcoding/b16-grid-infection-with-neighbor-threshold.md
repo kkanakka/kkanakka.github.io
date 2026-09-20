@@ -58,4 +58,60 @@ def infection_times(grid, k):
 <div class="adm info"><div class="adm-title">⏱️ Complexity &amp; efficiency</div><p><strong>Time:</strong> O(R &times; C) — every cell joins a frontier at most once and does O(1) work per neighbor (≤ 4 increments contributed, ever). The naive re-scan simulation is O(R &times; C &times; rounds), and rounds can be Θ(R + C) on snake-shaped fronts — so the incremental version is up to a linear-factor win, which is the entire point of “Efficiently” in the title. <strong>Space:</strong> O(R &times; C) for times + counters + frontiers.</p><p><strong>How efficient is it?</strong> Optimal — every cell’s answer must be produced, so Ω(R &times; C) is the floor and this meets it. The amortization argument is the thing to articulate: work is charged to <em>infection events</em> (each cell infects once) rather than to rounds, which is why the round count vanishes from the bound.</p></div>
 <!-- ============================ SYSTEM DESIGN ============================ -->
 
+### Run it
+
+<p class="covers">Append this to the code above, save as <code>b16_infection.py</code>, then run <code>python b16_infection.py</code>.</p>
+
+```python
+def show(times):
+    for row in times:
+        print(" ".join(f"{v:>2}" for v in row))
+
+
+if __name__ == "__main__":
+    grid = [
+        [1, 0, 0, 0],
+        [0, 0, 0, 0],
+        [0, 0, 0, 1],
+        [0, 0, 0, 0],
+    ]
+
+    print("k=1 (plain BFS — one infected neighbour is enough)")
+    show(infection_times(grid, k=1))
+
+    print("\nk=2 (needs two infected neighbours: corners stay clean)")
+    show(infection_times(grid, k=2))
+
+    print("\nk=2, four corners seeded — edges fall at round 1, centre at 2")
+    show(infection_times([[1, 0, 1], [0, 0, 0], [1, 0, 1]], k=2))
+
+    print("\nno seeds at all -> every cell is -1")
+    show(infection_times([[0, 0], [0, 0]], k=1))
+```
+
+<p><strong>Output</strong></p>
+
+```text
+k=1 (plain BFS — one infected neighbour is enough)
+ 0  1  2  2
+ 1  2  2  1
+ 2  2  1  0
+ 3  3  2  1
+
+k=2 (needs two infected neighbours: corners stay clean)
+ 0 -1 -1 -1
+-1 -1 -1 -1
+-1 -1 -1  0
+-1 -1 -1 -1
+
+k=2, four corners seeded — edges fall at round 1, centre at 2
+ 0  1  0
+ 1  2  1
+ 0  1  0
+
+no seeds at all -> every cell is -1
+-1 -1
+-1 -1
+```
+
 </div>

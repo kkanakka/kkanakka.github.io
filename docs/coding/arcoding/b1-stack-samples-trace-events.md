@@ -89,4 +89,55 @@ def samples_to_intervals(samples):
 </ul></div>
 <div class="adm info"><div class="adm-title">⏱️ Complexity &amp; efficiency</div><p><strong>Time:</strong> O(total stack frames across all samples). Each frame is compared once in an LCP, opened once, and closed once. <strong>Space:</strong> O(max stack depth) beyond the output — the algorithm is naturally streaming/online.</p><p><strong>How efficient is it?</strong> Provably optimal: every input frame must be examined at least once, and every emitted event corresponds to a real frame change, so output size is Θ(changes). There is no asymptotically better algorithm — say that, then spend saved time on edge cases (shared-timestamp ordering, recursion, the final flush).</p></div>
 
+### Run it
+
+<p class="covers">Append this to the code above, save as <code>b1_stack_samples.py</code>, then run <code>python b1_stack_samples.py</code>.</p>
+
+```python
+if __name__ == "__main__":
+    samples = [
+        (0, ["main"]),
+        (1, ["main", "load_config"]),
+        (2, ["main", "load_config", "parse"]),
+        (5, ["main", "render"]),
+    ]
+
+    print("--- trace events ---")
+    for t, kind, name in samples_to_trace(samples):
+        print(f"{t:>3}  {kind:<5} {name}")
+
+    print("\n--- intervals (name, start, end, depth) ---")
+    for row in samples_to_intervals(samples):
+        print(row)
+
+    print("\n--- non-increasing timestamps are rejected ---")
+    try:
+        samples_to_trace([(1, ["a"]), (1, ["b"])])
+    except ValueError as e:
+        print("ValueError:", e)
+```
+
+<p><strong>Output</strong></p>
+
+```text
+--- trace events ---
+  0  start main
+  1  start load_config
+  2  start parse
+  5  end   parse
+  5  end   load_config
+  5  start render
+  5  end   render
+  5  end   main
+
+--- intervals (name, start, end, depth) ---
+('parse', 2, 5, 2)
+('load_config', 1, 5, 1)
+('render', 5, 5, 1)
+('main', 0, 5, 0)
+
+--- non-increasing timestamps are rejected ---
+ValueError: timestamps must be strictly increasing
+```
+
 </div>

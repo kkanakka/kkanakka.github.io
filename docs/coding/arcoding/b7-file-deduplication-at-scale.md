@@ -110,4 +110,74 @@ def duplicates_from_records(records):
 </ul></div>
 <div class="adm info"><div class="adm-title">⏱️ Complexity &amp; efficiency</div><p><strong>Time:</strong> O(files) stats + one 4 KB read per size-collided file + full streaming read only for head-hash-collided candidates. Total I/O ≈ bytes of true near-duplicates — for typical trees a tiny fraction of total bytes. <strong>Space:</strong> O(files) for the grouping maps; O(1) per hash thanks to chunked reading.</p><p><strong>How efficient is it?</strong> Near-optimal: genuine duplicates must be fully read (or byte-compared) to be confirmed, and the funnel ensures almost nothing else is read at all — unique-size files cost one <code>stat</code>. The naive hash-everything approach reads 100% of bytes; the funnel typically reads a few percent. That ratio is the answer to "why the three stages."</p></div>
 
+### Run it
+
+<p class="covers">Append this to the code above, save as <code>b7_dedup.py</code>, then run <code>python b7_dedup.py</code>.</p>
+
+```python
+if __name__ == "__main__":
+    import shutil, tempfile
+
+    root = tempfile.mkdtemp()
+    try:
+        os.makedirs(os.path.join(root, "nested"))
+        files = {
+            "a.txt":         b"hello world" * 100,   # dup group 1
+            "b.txt":         b"hello world" * 100,
+            "nested/c.txt":  b"hello world" * 100,
+            "d.txt":         b"different payload",   # unique
+            "e.bin":         b"x" * 4096 + b"AAA",   # same first 4 KB...
+            "f.bin":         b"x" * 4096 + b"BBB",   # ...different tails
+            "empty.txt":     b"",                    # policy: skipped
+        }
+        for name, blob in files.items():
+            with open(os.path.join(root, name), "wb") as f:
+                f.write(blob)
+
+        groups = duplicate_groups(root)
+        rel = sorted(sorted(os.path.relpath(p, root) for p in g) for g in groups)
+        print("duplicate groups:")
+        for g in rel:
+            print("  ", g)
+
+        print("\ne.bin/f.bin: same size AND same first 4 KB, so only the")
+        print("full hash separates them ->",
+              not any("e.bin" in g for g in rel))
+        print("empty file skipped by policy         :",
+              not any("empty.txt" in g for g in rel))
+        print("byte-for-byte confirmation           :",
+              identical(os.path.join(root, "a.txt"), os.path.join(root, "b.txt")))
+        print("first 16 hex of a.txt sha256         :",
+              digest(os.path.join(root, "a.txt"))[:16])
+    finally:
+        shutil.rmtree(root)
+
+    print("\n--- the interview variant: parse records, no filesystem ---")
+    records = [
+        "root/a 1.txt(abcd) 2.txt(efgh)",
+        "root/c 3.txt(abcd)",
+        "root/c/d 4.txt(efgh)",
+        "root 4.txt(ijkl)",
+    ]
+    for g in duplicates_from_records(records):
+        print("  ", g)
+```
+
+<p><strong>Output</strong></p>
+
+```text
+duplicate groups:
+   ['a.txt', 'b.txt', 'nested/c.txt']
+
+e.bin/f.bin: same size AND same first 4 KB, so only the
+full hash separates them -> True
+empty file skipped by policy         : True
+byte-for-byte confirmation           : True
+first 16 hex of a.txt sha256         : 68cd07733b3b9792
+
+--- the interview variant: parse records, no filesystem ---
+   ['root/a/1.txt', 'root/c/3.txt']
+   ['root/a/2.txt', 'root/c/d/4.txt']
+```
+
 </div>

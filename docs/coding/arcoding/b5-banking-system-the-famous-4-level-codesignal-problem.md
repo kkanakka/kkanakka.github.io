@@ -154,4 +154,75 @@ class Bank:
 </ul></div>
 <div class="adm info"><div class="adm-title">⏱️ Complexity &amp; efficiency</div><p><strong>Time:</strong> every operation is O(log s) amortized for settling (each scheduled cashback pushed once, popped once) plus O(1) for the op itself; <code>top_spenders</code> O(a log a) over a accounts; <code>balance_at</code> O(log h) bisect over that account’s history; <code>merge</code> O(1) via aliasing (history is never copied). <strong>Space:</strong> O(total mutations) for histories — the price of L4’s time-travel queries.</p><p><strong>How efficient is it?</strong> The two deliberate trades to narrate: histories cost memory but turn historical balance into a binary search instead of a replay; and alias-based merge is O(1) at merge time but adds an O(chain) canonicalization per op (path-compress the alias map if chains get long — the union-find trick). If <code>top_spenders</code> is hot, maintain a running top-k heap for O(log k) updates instead of re-sorting.</p></div>
 
+### Run it
+
+<p class="covers">Append this to the code above, save as <code>b5_bank.py</code>, then run <code>python b5_bank.py</code>.</p>
+
+```python
+if __name__ == "__main__":
+    bank = Bank()
+    T0 = 1
+
+    print("create acc1     :", bank.create("acc1", T0))
+    print("create acc2     :", bank.create("acc2", T0))
+    print("create acc1 again:", bank.create("acc1", T0))       # duplicate
+
+    print("\n--- Level 1: deposit / transfer ---")
+    print("deposit  acc1 2000:", bank.deposit("acc1", 2000, T0 + 1))
+    print("deposit  acc2  500:", bank.deposit("acc2", 500,  T0 + 2))
+    print("transfer 1200 ->  :", bank.transfer("acc1", "acc2", 1200, T0 + 3))
+    print("transfer too much :", bank.transfer("acc1", "acc2", 99999, T0 + 4))
+    print("transfer to self  :", bank.transfer("acc1", "acc1", 10, T0 + 5))
+
+    print("\n--- Level 2: top spenders (ties broken by name) ---")
+    print(bank.top_spenders(3, T0 + 6))
+
+    print("\n--- Level 3: pay() with 2% cashback 24h later ---")
+    print("pay acc2 1000     :", bank.pay("acc2", 1000, T0 + 10))
+    print("balance before due:", bank.deposit("acc2", 0, T0 + 11))
+    due = T0 + 10 + MS_DAY
+    print("balance after due :", bank.deposit("acc2", 0, due))   # +20 cashback
+
+    print("\n--- Level 4: merge + historical balance ---")
+    print("merge acc2 into acc1:", bank.merge("acc1", "acc2", due + 1))
+    print("acc1 balance now    :", bank.deposit("acc1", 0, due + 2))
+    print("deposit via acc2    :", bank.deposit("acc2", 0, due + 3))  # routed to acc1
+    print("acc1 as of T0+2     :", bank.balance_at("acc1", T0 + 2, due + 4))
+    print("acc2 pre-merge      :", bank.balance_at("acc2", T0 + 3, due + 4))
+    print("acc2 post-merge     :", bank.balance_at("acc2", due + 2, due + 4))
+    print("unknown account     :", bank.balance_at("nope", 0, due + 4))
+```
+
+<p><strong>Output</strong></p>
+
+```text
+create acc1     : True
+create acc2     : True
+create acc1 again: False
+
+--- Level 1: deposit / transfer ---
+deposit  acc1 2000: 2000
+deposit  acc2  500: 500
+transfer 1200 ->  : 800
+transfer too much : None
+transfer to self  : None
+
+--- Level 2: top spenders (ties broken by name) ---
+['acc1(1200)']
+
+--- Level 3: pay() with 2% cashback 24h later ---
+pay acc2 1000     : 700
+balance before due: 700
+balance after due : 720
+
+--- Level 4: merge + historical balance ---
+merge acc2 into acc1: True
+acc1 balance now    : 1520
+deposit via acc2    : 1520
+acc1 as of T0+2     : 2000
+acc2 pre-merge      : 1700
+acc2 post-merge     : 1520
+unknown account     : None
+```
+
 </div>

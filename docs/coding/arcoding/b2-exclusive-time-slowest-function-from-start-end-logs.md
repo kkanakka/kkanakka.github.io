@@ -42,13 +42,9 @@ def profile(events, *, end_inclusive=False):
         prev_t = t
         if kind == "START":
             if stack:
-                stack[-1][2] = t   # caller's exclusive clock pauses here...
-                excl[stack[-1][0]] += t - stack[-1][2] if False else 0
-            # (pause = credit up to t, then reset resume marker)
-            if stack:
-                top = stack[-1]
-                excl[top[0]] += t - top[2]
-                top[2] = t
+                top = stack[-1]                # caller's exclusive clock pauses:
+                excl[top[0]] += t - top[2]     # credit it up to now...
+                top[2] = t                     # ...then reset its resume marker
             stack.append([name, t, t])
         elif kind == "END":
             if not stack:
@@ -86,5 +82,56 @@ def stack_at(call_log, T):
 <li><strong>"Slowest" ambiguity:</strong> slowest single <em>call</em> vs largest <em>total</em> (Σ wall per name) vs largest exclusive — three different answers; confirm which.</li>
 </ul></div>
 <div class="adm info"><div class="adm-title">⏱️ Complexity &amp; efficiency</div><p><strong>Time:</strong> O(#events), single pass — each event does O(1) stack work and O(1) dict updates. <strong>Space:</strong> O(max call depth) for the stack + O(distinct functions) for totals + O(#calls) only if you keep the call log for time-T queries; <code>stack_at</code> as written is O(#calls) per query (an interval tree makes it O(log n + matches) if queried often).</p><p><strong>How efficient is it?</strong> Optimal for the pass itself. The built-in self-check is free: Σ exclusive times must equal the total elapsed span, because exactly one frame (the top) accrues at any instant — offer it as a validation step.</p></div>
+
+### Run it
+
+<p class="covers">Append this to the code above, save as <code>b2_exclusive_time.py</code>, then run <code>python b2_exclusive_time.py</code>.</p>
+
+```python
+if __name__ == "__main__":
+    # main runs 0-2, calls load (2-5 inclusive), resumes 6
+    events = [
+        ("main", "START", 0),
+        ("load", "START", 2),
+        ("load", "END",   5),
+        ("main", "END",   6),
+    ]
+
+    excl, slowest, call_log = profile(events, end_inclusive=True)
+    print("exclusive times :", excl)          # LeetCode-636 convention
+    print("slowest by wall :", slowest)
+    print("call log        :", call_log)
+    print("stack at t=3    :", stack_at(call_log, 3))
+    print("stack at t=6    :", stack_at(call_log, 6))
+
+    excl2, _, _ = profile(events)             # end_inclusive=False
+    print("\nhalf-open convention:", excl2)
+
+    print("\n--- malformed logs are rejected, not silently averaged ---")
+    for bad in ([("a", "END", 1)],
+                [("a", "START", 0), ("b", "END", 1)],
+                [("a", "START", 0)]):
+        try:
+            profile(bad)
+        except LogError as e:
+            print("LogError:", e)
+```
+
+<p><strong>Output</strong></p>
+
+```text
+exclusive times : {'main': 3, 'load': 4}
+slowest by wall : ('main', 7)
+call log        : [('load', 2, 6, 1), ('main', 0, 7, 0)]
+stack at t=3    : ['main', 'load']
+stack at t=6    : ['main']
+
+half-open convention: {'main': 3, 'load': 3}
+
+--- malformed logs are rejected, not silently averaged ---
+LogError: END 'a' with empty stack at 1
+LogError: END 'b' but 'a' is on top
+LogError: unterminated calls: ['a']
+```
 
 </div>

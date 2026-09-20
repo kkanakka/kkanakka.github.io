@@ -230,4 +230,70 @@ class LatencyLedger:
 <li><strong>Do you mitigate before diagnosing?</strong> Rollback does not require root cause, and it is also evidence: if reverting fixes it, the search space collapsed to one change.</li>
 </ul></div>
 
+### Run it
+
+<p class="covers">Append this to the code above, save as <code>s5_latency_tools.py</code>, then run <code>python s5_latency_tools.py</code>. This drives three of the tools above — <code>shape_of_the_spike</code>, <code>looks_like_retry_amplification</code> and <code>LatencyLedger</code>.</p>
+
+```python
+if __name__ == "__main__":
+    import random, time
+
+    random.seed(7)
+    base = [random.gauss(40, 6) for _ in range(1000)]
+
+    # (a) a uniform shift: every request pays the same extra cost
+    uniform = [x + 25 for x in base]
+    # (b) a stalling subset: 2% of requests wait on something
+    stalling = base[:980] + [x + 900 for x in base[980:]]
+
+    for name, xs in (("baseline", base), ("uniform shift", uniform),
+                     ("2% stalling", stalling)):
+        s = shape_of_the_spike(xs)
+        print(f"{name:<14} mean={s['mean']:7.1f}  p50={s['p50']:6.1f}  "
+              f"p99={s['p99']:7.1f}  tail={s['tail_ratio']:5.1f}x  "
+              f"-> {s['verdict']}")
+
+    print("\n--- is the p99 just retries x a dependency timeout? ---")
+    for p99 in (980, 2050, 3100, 640):
+        print(f"  p99={p99:<5} ->",
+              looks_like_retry_amplification(p99, dep_timeout_ms=1000,
+                                             max_attempts=3) or "no clean multiple")
+
+    print("\n--- where did one request's time actually go? ---")
+    led = LatencyLedger()
+    time.sleep(0.10)                       # queued before any phase started
+    with led.phase("auth"):
+        time.sleep(0.10)
+    with led.phase("db"):
+        time.sleep(0.20)
+    with led.phase("db"):                  # a retry: accumulates, not overwrites
+        time.sleep(0.10)
+    phases = led.finish()
+    for k in ("auth", "db", "unaccounted", "total"):
+        print(f"  {k:<12} {phases[k]:.1f}s")
+    print("\n  the 0.1s 'unaccounted' is the queue wait — a finding, not noise")
+```
+
+<p><strong>Output</strong></p>
+
+```text
+baseline       mean=   40.2  p50=  40.2  p99=   54.5  tail=  1.4x  -> uniform shift
+uniform shift  mean=   65.2  p50=  65.2  p99=   79.5  tail=  1.2x  -> uniform shift
+2% stalling    mean=   58.2  p50=  40.5  p99=  939.9  tail= 23.2x  -> subset stalling
+
+--- is the p99 just retries x a dependency timeout? ---
+  p99=980   -> p99 ~= 1 x dependency timeout — retry storm
+  p99=2050  -> p99 ~= 2 x dependency timeout — retry storm
+  p99=3100  -> p99 ~= 3 x dependency timeout — retry storm
+  p99=640   -> no clean multiple
+
+--- where did one request's time actually go? ---
+  auth         0.1s
+  db           0.3s
+  unaccounted  0.1s
+  total        0.5s
+
+  the 0.1s 'unaccounted' is the queue wait — a finding, not noise
+```
+
 </div>

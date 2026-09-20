@@ -112,4 +112,67 @@ class DistributedLimiter:
 </ul></div>
 <div class="adm info"><div class="adm-title">⏱️ Complexity &amp; efficiency</div><p><strong>Time:</strong> <code>allow()</code> is O(1) per call — the lazy-refill formula recomputes tokens from elapsed time instead of ticking a timer, so cost is independent of how long the bucket sat idle. <strong>Space:</strong> O(1) per active key; Redis keys self-expire via PEXPIRE, so idle keys cost nothing forever.</p><p><strong>How efficient is it?</strong> The distributed version adds exactly one round-trip per request (the Lua script is O(1) server-side); at very high QPS that RTT becomes the bottleneck, which is when the hybrid local-bucket + async-quota design wins — zero hot-path hops at the price of ~one sync interval of over-admission. Lock contention in-process is solved by sharding state across N locks: contention drops N&times; with no semantic change.</p></div>
 
+### Run it
+
+<p class="covers">Append this to the code above, save as <code>s2_token_bucket.py</code>, then run <code>python s2_token_bucket.py</code>. This exercises the in-process bucket; the Redis variant needs a live Redis and <code>rate_limit.lua</code>.</p>
+
+```python
+if __name__ == "__main__":
+    # 5 tokens/sec, bucket holds 3 -> a burst of 3, then one per 200 ms
+    tb = TokenBucket(rate=5.0, burst=3.0)
+
+    print("--- burst then throttle (same key) ---")
+    for i in range(5):
+        print(f"t=0.00 req {i}: {tb.allow('user:1', now=0.0)}")
+
+    print("\n--- refill is computed from elapsed time, no timer thread ---")
+    for t in (0.1, 0.2, 0.4, 1.0):
+        print(f"t={t:<4}: {tb.allow('user:1', now=t)}")
+
+    print("\n--- keys are independent ---")
+    print("user:2 first req:", tb.allow("user:2", now=0.4))
+
+    print("\n--- cost > 1 for expensive calls ---")
+    tb2 = TokenBucket(rate=1.0, burst=10.0)
+    print("cost=8 :", tb2.allow("k", now=0.0, cost=8))
+    print("cost=8 :", tb2.allow("k", now=0.0, cost=8))   # only 2 left
+    print("cost=2 :", tb2.allow("k", now=0.0, cost=2))
+
+    print("\n--- a clock that jumps backwards cannot mint tokens ---")
+    tb3 = TokenBucket(rate=1.0, burst=2.0)
+    print("t=10 :", tb3.allow("k", now=10.0))
+    print("t=9  :", tb3.allow("k", now=9.0))             # skew clamped
+    print("t=9  :", tb3.allow("k", now=9.0))
+```
+
+<p><strong>Output</strong></p>
+
+```text
+--- burst then throttle (same key) ---
+t=0.00 req 0: True
+t=0.00 req 1: True
+t=0.00 req 2: True
+t=0.00 req 3: False
+t=0.00 req 4: False
+
+--- refill is computed from elapsed time, no timer thread ---
+t=0.1 : False
+t=0.2 : True
+t=0.4 : True
+t=1.0 : True
+
+--- keys are independent ---
+user:2 first req: True
+
+--- cost > 1 for expensive calls ---
+cost=8 : True
+cost=8 : False
+cost=2 : True
+
+--- a clock that jumps backwards cannot mint tokens ---
+t=10 : True
+t=9  : True
+t=9  : False
+```
+
 </div>
