@@ -1,7 +1,7 @@
 ---
 title: "Canary Deployment Controller"
-slug: /nalsd/nalsd-canary-controller
-sidebar_position: 9
+slug: /cw/canary-controller
+sidebar_position: 4
 sidebar_label: "Canary Deployment Controller"
 description: "Canary Deployment Controller"
 ---
@@ -10,7 +10,7 @@ description: "Canary Deployment Controller"
 
 ## How it works
 
-<img src="/diagrams/nalsd-canary-controller/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/canary-controller/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
 <!-- DIAGRAM:sequence:END -->
 
@@ -180,9 +180,15 @@ Compared to others Cheapest doc in the series — $29K/mo vs $851K (monitoring),
 
 ## 3 · Architecture
 
+<!-- DIAGRAM:architecture:START -->
+
+<img src="/diagrams/canary-controller/architecture.svg" alt="The controller only ever moves a routing weight. Both versions serve throughout, so halting costs nothing and needs no recovery." class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:architecture:END -->
+
 ### 3.1 — Full architecture diagram
 
-<img src="/diagrams/nalsd-canary-controller/1.svg" alt="nalsd-canary-controller diagram 1" class="doc-diagram" />
+<img src="/diagrams/canary-controller/1.svg" alt="nalsd-canary-controller diagram 1" class="doc-diagram" />
 
 Fig 1 · The complete canary controller. Numbered circles correspond to the step-by-step flow in §3.2. CI/CD triggers deploy → controller plans stages → traffic splitter routes percentage → metrics collected → decision engine evaluates → promote / hold / rollback → feedback loop adjusts traffic split.
 

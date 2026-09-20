@@ -1,7 +1,7 @@
 ---
 title: "Kubernetes Autoscaler"
-slug: /linkedin/linkedin-kubernetes-autoscaler
-sidebar_position: 7
+slug: /cw/kubernetes-autoscaler
+sidebar_position: 6
 sidebar_label: "Kubernetes Autoscaler"
 description: "Kubernetes Autoscaler"
 ---
@@ -10,7 +10,7 @@ description: "Kubernetes Autoscaler"
 
 ## How it works
 
-<img src="/diagrams/linkedin-kubernetes-autoscaler/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/kubernetes-autoscaler/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
 <!-- DIAGRAM:sequence:END -->
 
@@ -89,9 +89,15 @@ A **"Mission-Critical SLO-Aware Autoscaling Platform"** that keeps LinkedIn serv
 
 ## Page 2 — Architecture & Feedback Control Implementation
 
+<!-- DIAGRAM:architecture:START -->
+
+<img src="/diagrams/kubernetes-autoscaler/architecture.svg" alt="Scale on a signal that leads user pain, not one that trails it. Scaling up is cheap and reversible, scaling down is not, so the two directions get different rules." class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:architecture:END -->
+
 ### System Architecture Overview
 
-<img src="/diagrams/linkedin-kubernetes-autoscaler/1.svg" alt="linkedin-kubernetes-autoscaler diagram 1" class="doc-diagram" />
+<img src="/diagrams/kubernetes-autoscaler/1.svg" alt="linkedin-kubernetes-autoscaler diagram 1" class="doc-diagram" />
 
 ### SLO-Driven Control Law Implementation
 

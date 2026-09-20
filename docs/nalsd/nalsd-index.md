@@ -30,7 +30,7 @@ Metrics Alerting SLOs Time-Series Anomaly Detection
 
 Read the design →
 
-](/docs/nalsd/nalsd-monitoring-platform)[
+](/docs/cw/monitoring-platform)[
 
 📜
 
@@ -86,7 +86,7 @@ Canary Progressive Rollout Rollback Traffic Shifting Metrics
 
 Read the design →
 
-](/docs/nalsd/nalsd-canary-controller)[
+](/docs/cw/canary-controller)[
 
 🧠
 

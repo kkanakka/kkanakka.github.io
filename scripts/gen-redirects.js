@@ -18,7 +18,8 @@ const OUT = path.join(ROOT, 'static');
 const map = new Map();
 for (const [file, meta] of Object.entries(TAX.pages)) {
   const base = path.basename(file, '.html');
-  const to = `/docs/${meta.section}/${base}`;
+  // a page that moved section can override its new basename with meta.slug
+  const to = `/docs/${meta.section}/${meta.slug || base}`;
   map.set(`${base}.html`, to);
   if (file.includes('/')) map.set(file, to);
 }

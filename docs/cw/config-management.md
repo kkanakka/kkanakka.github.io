@@ -1,7 +1,7 @@
 ---
 title: "Config Management"
-slug: /linkedin/linkedin-config-management
-sidebar_position: 5
+slug: /cw/config-management
+sidebar_position: 7
 sidebar_label: "Config Management"
 description: "Config Management"
 ---
@@ -10,7 +10,7 @@ description: "Config Management"
 
 ## How it works
 
-<img src="/diagrams/linkedin-config-management/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/config-management/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
 <!-- DIAGRAM:sequence:END -->
 
@@ -89,9 +89,15 @@ A **"Reliability-as-Configuration System"** that manages configuration for Linke
 
 ## Page 2 — Architecture & LinkedIn Integration
 
+<!-- DIAGRAM:architecture:START -->
+
+<img src="/diagrams/config-management/architecture.svg" alt="Clients cache last-known-good and never block startup on the config service. Stale beats down, and a bad value is one revert away." class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:architecture:END -->
+
 ### System Architecture Overview
 
-<img src="/diagrams/linkedin-config-management/1.svg" alt="linkedin-config-management diagram 1" class="doc-diagram" />
+<img src="/diagrams/config-management/1.svg" alt="linkedin-config-management diagram 1" class="doc-diagram" />
 
 ### Architecture Component Details
 

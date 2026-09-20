@@ -172,9 +172,10 @@
       "title": "NALSD Overview"
     },
     "nalsd-monitoring-platform.html": {
-      "section": "nalsd",
+      "section": "cw",
       "position": 2,
-      "title": "Monitoring & Alerting Platform"
+      "title": "Monitoring & Alerting Platform",
+      "slug": "monitoring-platform"
     },
     "nalsd-logging-pipeline.html": {
       "section": "nalsd",
@@ -207,9 +208,10 @@
       "title": "SLO Error Budget Tracker"
     },
     "nalsd-canary-controller.html": {
-      "section": "nalsd",
+      "section": "cw",
       "position": 9,
-      "title": "Canary Deployment Controller"
+      "title": "Canary Deployment Controller",
+      "slug": "canary-controller"
     },
     "nalsd-incident-response.html": {
       "section": "nalsd",
@@ -307,9 +309,10 @@
       "title": "Build Artifact Cache"
     },
     "linkedin-config-management.html": {
-      "section": "linkedin",
+      "section": "cw",
       "position": 5,
-      "title": "Config Management"
+      "title": "Config Management",
+      "slug": "config-management"
     },
     "linkedin-metrics-aggregator.html": {
       "section": "linkedin",
@@ -317,9 +320,10 @@
       "title": "Realtime Metrics Aggregator"
     },
     "linkedin-kubernetes-autoscaler.html": {
-      "section": "linkedin",
+      "section": "cw",
       "position": 7,
-      "title": "Kubernetes Autoscaler"
+      "title": "Kubernetes Autoscaler",
+      "slug": "kubernetes-autoscaler"
     },
     "linkedin-capacity-planner.html": {
       "section": "linkedin",

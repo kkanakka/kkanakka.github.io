@@ -1,7 +1,7 @@
 ---
 title: "Monitoring & Alerting Platform"
-slug: /nalsd/nalsd-monitoring-platform
-sidebar_position: 2
+slug: /cw/monitoring-platform
+sidebar_position: 5
 sidebar_label: "Monitoring & Alerting Platform"
 description: "Monitoring & Alerting Platform"
 ---
@@ -10,7 +10,7 @@ description: "Monitoring & Alerting Platform"
 
 ## How it works
 
-<img src="/diagrams/nalsd-monitoring-platform/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
+<img src="/diagrams/monitoring-platform/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
 
 <!-- DIAGRAM:sequence:END -->
 
@@ -205,9 +205,15 @@ Cost lever 3-year RIs cut compute by ~62%. Egress is the irreducible cost — ad
 
 ## 3 · Architecture [#](#arch) {#arch}
 
+<!-- DIAGRAM:architecture:START -->
+
+<img src="/diagrams/monitoring-platform/architecture.svg" alt="Alert evaluation sits in its own failure domain with its own data path, because monitoring that depends on the system it watches goes blind during the incidents that matter." class="doc-diagram doc-diagram-seq" />
+
+<!-- DIAGRAM:architecture:END -->
+
 ### 3.1 — End-to-end data flow
 
-<img src="/diagrams/nalsd-monitoring-platform/1.svg" alt="nalsd-monitoring-platform diagram 1" class="doc-diagram" />
+<img src="/diagrams/monitoring-platform/1.svg" alt="nalsd-monitoring-platform diagram 1" class="doc-diagram" />
 
 Fig 1 · End-to-end signal flow. Producers (LinkedIn services) emit telemetry; edge agents pre-aggregate; gateway authenticates and shards; Kafka durably buffers; processors evaluate; alerts page on-call.
 
@@ -303,13 +309,13 @@ The key design insight Most of the 20-second wall time is *intentional* waiting 
 
 ### 3.3 — Multi-region topology (active-active)
 
-<img src="/diagrams/nalsd-monitoring-platform/2.svg" alt="nalsd-monitoring-platform diagram 2" class="doc-diagram" />
+<img src="/diagrams/monitoring-platform/2.svg" alt="nalsd-monitoring-platform diagram 2" class="doc-diagram" />
 
 Fig 2 · Five-region active-active layout. Traffic is weighted by user population; brokers cross-replicate via MM2 with 10 s RPO.
 
 ### 3.4 — Alert evaluation pipeline (close-up)
 
-<img src="/diagrams/nalsd-monitoring-platform/3.svg" alt="nalsd-monitoring-platform diagram 3" class="doc-diagram" />
+<img src="/diagrams/monitoring-platform/3.svg" alt="nalsd-monitoring-platform diagram 3" class="doc-diagram" />
 
 Fig 3 · The 7 stages of alert evaluation, each with an explicit latency budget. Sum is 20 s; remaining 10 s is reserved as queue/scheduler headroom.
 

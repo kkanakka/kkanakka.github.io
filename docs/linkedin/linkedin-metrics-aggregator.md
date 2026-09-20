@@ -24,7 +24,7 @@ Real-time Processing
 
 SLO Alerting
 
-[Home](/) [Design Framework](/docs/foundations/sre-design-framework) [SRE Systems](/docs/sre/sre-sysdesign) [Config Management](/docs/linkedin/linkedin-config-management)
+[Home](/) [Design Framework](/docs/foundations/sre-design-framework) [SRE Systems](/docs/sre/sre-sysdesign) [Config Management](/docs/cw/config-management)
 
 ## Page 1 — System Overview & Observability Reliability Philosophy
 

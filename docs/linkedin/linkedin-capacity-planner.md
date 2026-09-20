@@ -24,7 +24,7 @@ Error Budgets
 
 Automated Procurement
 
-[Home](/) [Design Framework](/docs/foundations/sre-design-framework) [SRE Systems](/docs/sre/sre-sysdesign) [K8s Autoscaler](/docs/linkedin/linkedin-kubernetes-autoscaler)
+[Home](/) [Design Framework](/docs/foundations/sre-design-framework) [SRE Systems](/docs/sre/sre-sysdesign) [K8s Autoscaler](/docs/cw/kubernetes-autoscaler)
 
 ## Page 1 — System Overview & Capacity Planning Philosophy
 

@@ -1,0 +1,29 @@
+sequenceDiagram
+    autonumber
+    participant D as Developer
+    participant CI as CI
+    participant G as Env repo
+    participant R as Reconciler
+    participant A as Admission
+    participant P as Progressive delivery
+    D->>CI: merge to main
+    CI->>CI: hermetic build, test once, one immutable image
+    CI->>CI: push by digest, sign, attach provenance and SBOM
+    CI->>G: promotion commit — image: repo@sha256:abc
+    Note over CI,G: CI proposes. It holds no cluster credentials.
+    R->>G: pull desired state
+    R->>A: apply the difference
+    A->>A: signed? no :latest? limits set?
+    alt policy violated
+        A-->>R: refused — the backstop that does not trust the pipeline
+    else admitted
+        A->>P: roll out
+        loop 5% then 25% then 50% then 100%
+            P->>P: shift traffic, then bake
+            P->>P: compare against previous version, same slice
+            alt gate fails or signal missing
+                P->>P: halt, revert this stage — old pods still running
+            end
+        end
+    end
+    Note over G,R: rollback is a git revert plus reconcile, and needs no rebuild
