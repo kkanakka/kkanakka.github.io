@@ -19,6 +19,12 @@ description: "S3 · Reliable streaming ingestion worker (asyncio)"
 <img src="/diagrams/arcoding/s3.svg" alt="A bounded queue applies backpressure between the source and a pool of workers, each handler running under a timeout with retries, a circuit breaker, a dead-letter path, and an ack in finally." class="doc-diagram doc-diagram-seq" />
 
 <p>The bounded queue <em>is</em> the backpressure — when it fills, the producer blocks and the upstream naturally slows. Each handler runs under a timeout so one slow call cannot pin a worker forever, retries use exponential backoff <strong>with jitter</strong> so failures do not resynchronise into a thundering herd, and anything that exhausts its attempts is dead-lettered rather than dropped. The circuit breaker stops retry pressure from finishing off a downstream that is already struggling, and the ack sits in a <code>finally</code> so it happens on every path.</p>
+
+### What it looks like in memory
+
+<p>The counters after the twelve messages in <em>Run it</em>, where one handler raises and one hangs past its timeout.</p>
+
+<img src="/diagrams/arcoding-state/s3.svg" alt="The ingestor's counters after a run with one failing and one hanging message, plus the dead-letter sink." class="doc-diagram doc-diagram-seq" />
 <h4>The five properties to name before coding</h4>
 <ol>
 <li><strong>Backpressure:</strong> a bounded queue — when workers fall behind, <code>put()</code> blocks the reader instead of buffering unboundedly. An unbounded buffer doesn't fix overload, it hides it until OOM.</li>

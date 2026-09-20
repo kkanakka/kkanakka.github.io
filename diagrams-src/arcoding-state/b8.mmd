@@ -1,0 +1,11 @@
+---
+config:
+  flowchart:
+    wrappingWidth: 360
+---
+flowchart TB
+    R["the results map that comes back<br/>(None means success)"] --> M["img0.png → None<br/>img1.png → None<br/>img2.png → None<br/>corrupt.png → 'UnidentifiedImageError: …'"]:::good
+    M --> N["three files were written; the failure is DATA<br/>in the map, not an exception that ended the run"]
+    T["the pipeline trie, for three named pipelines"] --> TR["root<br/>├─ thumbnail → outputs ['thumb']<br/>└─ grayscale<br/>      ├─ thumbnail → outputs ['gray_thumb']<br/>      └─ blur → outputs ['gray_blur']"]
+    TR --> SH["'grayscale' is computed ONCE and shared<br/>by the two pipelines that start with it"]:::good
+    classDef good fill:#dafbe1,stroke:#1a7f37

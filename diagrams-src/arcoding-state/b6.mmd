@@ -1,0 +1,13 @@
+---
+config:
+  flowchart:
+    wrappingWidth: 340
+---
+flowchart TB
+    R0["round 0<br/>frontier ['http://ex.com/']<br/>seen {'/'}"] --> R1["round 1<br/>frontier ['/a', '/b']<br/>seen {'/', '/a', '/b'}"]
+    R1 --> R2["round 2<br/>frontier ['/c']<br/>seen {'/', '/a', '/b', '/c'}"]
+    R2 --> R3["round 3<br/>frontier [] → the loop ends"]:::good
+    R1 -.-> D1["'/other.com/x' never entered seen — wrong host"]:::warn
+    R2 -.-> D2["'/c' was reached from BOTH /a and /b,<br/>but only the first one to take the lock added it"]:::warn
+    classDef good fill:#dafbe1,stroke:#1a7f37
+    classDef warn fill:#fff8e6,stroke:#d4a72c

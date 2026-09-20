@@ -1,0 +1,13 @@
+---
+config:
+  flowchart:
+    wrappingWidth: 340
+---
+flowchart TB
+    T["after seven updates, two of which were stale"]
+    T --> L["latest — one record per node<br/>n1 → (30, 'down')<br/>n2 → (30, 'down')<br/>n3 → (5, 'healthy')"]
+    T --> C["counts — maintained on write<br/>'down' → 2<br/>'healthy' → 1"]:::good
+    T --> H["history['n1'] — kept sorted by insort<br/>(10, 'healthy') · (20, 'degraded')<br/>(30, 'down') · (30, 'healthy')"]:::warn
+    H -.-> W["both ts=30 entries are here, so status_at(30)<br/>answers 'healthy' while latest says 'down' —<br/>the tie rule must match in both paths"]:::warn
+    classDef good fill:#dafbe1,stroke:#1a7f37
+    classDef warn fill:#fff8e6,stroke:#d4a72c

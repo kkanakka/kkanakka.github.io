@@ -1,0 +1,16 @@
+---
+config:
+  flowchart:
+    wrappingWidth: 300
+---
+flowchart TB
+    T["totals, as six chunks stream in"]
+    subgraph P["output_tokens, chunk by chunk"]
+        direction LR
+        C1["chunk 1<br/>50"] --- C2["chunk 2<br/>120"] --- C3["chunk 3<br/>90 → kept 120"] --- C4["chunk 4<br/>300"] --- C5["final<br/>305"]
+    end
+    T --> P
+    P --> N["chunk 3 arrived late carrying a SMALLER number.<br/>max() ignored it; a plain assignment would have<br/>rolled the total backwards from 120 to 90."]:::warn
+    P --> F["final totals — input 1200, output 305, cache 8000<br/>cost = Decimal('0.010575'), rounded once"]:::good
+    classDef good fill:#dafbe1,stroke:#1a7f37
+    classDef warn fill:#fff8e6,stroke:#d4a72c

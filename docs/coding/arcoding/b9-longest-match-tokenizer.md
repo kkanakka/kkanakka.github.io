@@ -19,6 +19,12 @@ description: "B9 · Longest-match tokenizer"
 <img src="/diagrams/arcoding/b9.svg" alt="At each cursor position the tokenizer tries the longest candidate piece first and walks down; if no length matches, the for/else branch buffers one unknown character and advances." class="doc-diagram doc-diagram-seq" />
 
 <p>Greedy longest-match: at each position, try the longest piece that could fit and walk down until one is in the vocabulary. Python's <code>for/else</code> is a natural fit — the <code>else</code> branch means <strong>no length matched</strong>, so you buffer one character as unknown and move on. Consecutive unknowns are flushed as a single token rather than one per character. The trie variant does the same walk in one pass, remembering the last accepting node instead of re-slicing the string for every candidate length.</p>
+
+### What it looks like in memory
+
+<p>The tokens produced by <code>'tokenizer rize'</code> in <em>Run it</em>, and the two decisions that shaped them.</p>
+
+<img src="/diagrams/arcoding-state/b9.svg" alt="The list of token tuples produced for a sample input, with the longest-match and unknown-run decisions marked." class="doc-diagram doc-diagram-seq" />
 <h4>Version 1 — direct (correct first)</h4>
 
 ```python

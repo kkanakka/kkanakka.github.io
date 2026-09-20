@@ -17,6 +17,12 @@ description: "B8 · Parallel image processing pipeline"
 <img src="/diagrams/arcoding/b8.svg" alt="Image paths are distributed to worker processes, each wrapping its whole open-process-save sequence in a try/except so a failure returns an error entry instead of killing the batch." class="doc-diagram doc-diagram-seq" />
 
 <p>Image work is CPU-bound, so this is the one problem in the set that wants <strong>processes rather than threads</strong> — the GIL would serialise threads here. Each worker wraps its entire open → transform → save sequence in one try/except and returns <code>(path, error_or_None)</code>, so a single corrupt file produces an error entry rather than taking down the run. This is the boundary where a broad <code>except Exception</code> is the right call, and saying <em>why</em> is part of the answer.</p>
+
+### What it looks like in memory
+
+<p>What comes back from the batch in <em>Run it</em>, plus the trie built for the three named pipelines.</p>
+
+<img src="/diagrams/arcoding-state/b8.svg" alt="The per-job results map with one error entry, and the pipeline trie sharing a common prefix." class="doc-diagram doc-diagram-seq" />
 <h4>Core version — process pool with per-job isolation</h4>
 
 ```python

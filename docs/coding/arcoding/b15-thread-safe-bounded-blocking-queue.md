@@ -18,6 +18,12 @@ description: "B15 · Thread-safe bounded blocking queue"
 
 <p>Both conditions must share <strong>one lock</strong>, or a thread could check a predicate and then sleep through the very notification it was waiting for. Each wait sits in a <code>while</code> loop, never an <code>if</code>: a wake-up is a hint that something changed, not a guarantee that it is still true by the time you re-acquire the lock. <code>close()</code> notifies both conditions, which gives a clean shutdown — consumers drain what remains and then see the closed state, and blocked producers are released rather than hanging forever.</p>
 
+### What it looks like in memory
+
+<p>The queue mid-run, with the producer and two consumers parked in their respective waiting rooms.</p>
+
+<img src="/diagrams/arcoding-state/b15.svg" alt="A full two-slot queue with a producer parked on not-full and two consumers parked on not-empty." class="doc-diagram doc-diagram-seq" />
+
 ```python
 import threading
 import time

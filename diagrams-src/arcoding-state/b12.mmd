@@ -1,0 +1,15 @@
+---
+config:
+  flowchart:
+    wrappingWidth: 320
+---
+flowchart TB
+    T["after grant(100, expiry 10) and grant(50, expiry 20)"]
+    subgraph H["_h — a min-heap of (expiry, seq, [remaining])"]
+        direction LR
+        E1["(10, 1, [100])<br/>← top: dies soonest"] --- E2["(20, 2, [50])"]
+    end
+    T --> H
+    H --> TOT["_total = 150, kept alongside so<br/>balance() never walks the heap"]:::good
+    H --> SP["spend(120): takes all 100 from the top and pops it,<br/>then 20 from the next, whose cell becomes [30].<br/>The amount is mutated IN PLACE — no re-push,<br/>because only expiry takes part in the ordering."]:::good
+    classDef good fill:#dafbe1,stroke:#1a7f37

@@ -19,6 +19,12 @@ description: "B12 · Account balance with expiring grants"
 <img src="/diagrams/arcoding/b12.svg" alt="Grants live in a min-heap keyed by expiry; every query first prunes everything expired, and spending draws from the soonest-expiring grant by mutating its cell in place." class="doc-diagram doc-diagram-seq" />
 
 <p>A min-heap keyed by <code>(expiry, seq)</code> keeps <strong>the grant that dies soonest on top</strong>, which is both the one to expire and the one to spend first. Every query prunes before answering, so the cost is proportional to what actually expired rather than to how many grants exist. Spending mutates the amount inside the heap entry in place — a one-element list — so a partial spend needs no re-push and the heap ordering is untouched, because only the expiry participates in comparisons.</p>
+
+### What it looks like in memory
+
+<p>The heap after the two grants in <em>Run it</em>, and what spending 120 does to it.</p>
+
+<img src="/diagrams/arcoding-state/b12.svg" alt="A two-entry min-heap of grants ordered by expiry, with the running total beside it." class="doc-diagram doc-diagram-seq" />
 <h4>Why soonest-expiring-first is not just convention</h4>
 <p>It's the greedy that <em>maximizes future spendable balance</em>: any other order preserves credit that dies sooner at the expense of credit that lives longer — strictly dominated. An exchange argument proves it in one sentence; give that sentence.</p>
 

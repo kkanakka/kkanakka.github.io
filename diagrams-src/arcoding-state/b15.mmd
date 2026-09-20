@@ -1,0 +1,18 @@
+---
+config:
+  flowchart:
+    wrappingWidth: 320
+---
+flowchart TB
+    T["capacity 2, one producer, three consumers"]
+    subgraph Q["q — a deque, never longer than cap"]
+        direction LR
+        I1["item 4<br/>← next out"] --- I2["item 5"]
+    end
+    T --> Q
+    Q --> NF["not_full: the producer is parked here,<br/>because len(q) == cap"]:::warn
+    Q --> NE["not_empty: two consumers are parked here,<br/>waiting for something to arrive"]:::warn
+    NF --> L["both waiting rooms hang off the SAME lock,<br/>so a notify can never slip past a waiter<br/>that is between its check and its sleep"]:::good
+    NE --> L
+    classDef good fill:#dafbe1,stroke:#1a7f37
+    classDef warn fill:#fff8e6,stroke:#d4a72c

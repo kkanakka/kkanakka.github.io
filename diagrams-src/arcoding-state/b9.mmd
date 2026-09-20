@@ -1,0 +1,16 @@
+---
+config:
+  flowchart:
+    wrappingWidth: 300
+---
+flowchart TB
+    T["tokenizing 'tokenizer rize' with vocab<br/>token=1 tok=2 ize=4 r=5 i=6 z=7"]
+    subgraph O["out — one tuple per emitted token"]
+        direction LR
+        O1["(1, 'token')"] --- O2["(4, 'ize')"] --- O3["(5, 'r')"] --- O4["(-1, ' ')"] --- O5["(5, 'r')"] --- O6["(4, 'ize')"]
+    end
+    T --> O
+    O --> N1["'token' beat 'tok' — the LONGEST match wins<br/>at each position, which is why 'tok' never appears"]:::good
+    O --> N2["the space matched nothing, so it sits in unk_run<br/>and is flushed as ONE (-1, ' ') token"]:::warn
+    classDef good fill:#dafbe1,stroke:#1a7f37
+    classDef warn fill:#fff8e6,stroke:#d4a72c

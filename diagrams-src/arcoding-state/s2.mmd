@@ -1,0 +1,13 @@
+---
+config:
+  flowchart:
+    wrappingWidth: 360
+---
+flowchart TB
+    T["rate 5/s, burst 3 — the ENTIRE state is two numbers per key"]
+    T --> S["_state<br/>'user:1' → [tokens 0.0, last 0.0]<br/>'user:2' → [tokens 2.0, last 0.4]"]
+    S --> A["at t = 0 the third request emptied user:1's bucket;<br/>the fourth and fifth were rejected"]:::warn
+    S --> B["at t = 0.2, elapsed 0.2 × rate 5 = exactly 1 token,<br/>so the next request passes — no timer ever ran"]:::good
+    B --> C["nothing stores a history of requests, which is why<br/>this scales to millions of keys"]:::good
+    classDef good fill:#dafbe1,stroke:#1a7f37
+    classDef warn fill:#fff8e6,stroke:#d4a72c

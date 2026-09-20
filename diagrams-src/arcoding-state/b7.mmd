@@ -1,0 +1,13 @@
+---
+config:
+  flowchart:
+    wrappingWidth: 360
+---
+flowchart TB
+    S1["by_size<br/>1100 → a.txt, b.txt, nested/c.txt<br/>17 → d.txt<br/>4099 → e.bin, f.bin"] --> S2["by_head (first 4 KB)<br/>'3f1a…' → a.txt, b.txt, nested/c.txt<br/>'9c22…' → e.bin, f.bin"]
+    S1 -.-> X1["d.txt left here — alone at its size,<br/>so it was never opened"]:::warn
+    S2 --> S3["by_full (whole file)<br/>'68cd…' → a.txt, b.txt, nested/c.txt<br/>'a41e…' → e.bin<br/>'77b0…' → f.bin"]
+    S3 --> OUT["only groups of 2+ survive:<br/>[a.txt, b.txt, nested/c.txt]"]:::good
+    S3 -.-> X2["e.bin and f.bin shared a size AND a first 4 KB —<br/>only the full hash separated them"]:::warn
+    classDef good fill:#dafbe1,stroke:#1a7f37
+    classDef warn fill:#fff8e6,stroke:#d4a72c

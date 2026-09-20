@@ -20,6 +20,12 @@ description: "B11 · Cluster status tracker (out-of-order updates)"
 
 <p>Updates arrive out of order, so the rule is <strong>last-writer-wins by timestamp</strong>, not by arrival: compare against the stored timestamp and drop anything staler. The status counts are maintained <em>on write</em> — decrement the old, increment the new — so <code>count()</code> never has to scan the cluster. Ties at equal timestamps need a stated rule (here, first write wins); either choice is defensible, but it must be deterministic and consistent everywhere.</p>
 
+### What it looks like in memory
+
+<p>The three structures after the seven updates in <em>Run it</em> — including the tie the two read paths disagree about.</p>
+
+<img src="/diagrams/arcoding-state/b11.svg" alt="The latest-record dict, the maintained counter, and the sorted per-node history including a timestamp tie." class="doc-diagram doc-diagram-seq" />
+
 ```python
 import bisect
 from collections import Counter

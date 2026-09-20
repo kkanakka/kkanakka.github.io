@@ -23,6 +23,12 @@ description: "S2 · Token-bucket rate limiter → distributed"
 <img src="/diagrams/arcoding/s2.svg" alt="Each key stores a token count and a timestamp; a request refills tokens from elapsed time, caps at the burst size, and either spends or rejects while clamping a backwards clock." class="doc-diagram doc-diagram-seq" />
 
 <p>Tokens are refilled <strong>lazily, from the clock</strong>, at the moment of the request — so there is no background timer thread and the state per key is just two numbers. The cap at <code>burst</code> is what bounds how much credit can accumulate while a key is idle. A backwards clock is clamped forward, because otherwise an NTP correction could mint free tokens. The distributed version moves exactly this arithmetic into a Lua script so that the read-modify-write is atomic inside Redis.</p>
+
+### What it looks like in memory
+
+<p>The whole of the limiter's state after the requests in <em>Run it</em> — two numbers per key, and nothing else.</p>
+
+<img src="/diagrams/arcoding-state/s2.svg" alt="The limiter's entire state: a token count and a timestamp per key." class="doc-diagram doc-diagram-seq" />
 <h4>Why token bucket (say this first)</h4>
 <p>Fixed windows allow 2× bursts at boundaries; sliding-window logs are exact but O(requests) memory; sliding-window <em>counters</em> approximate well; token bucket gives smooth rate + configurable burst in O(1) state per key — the standard choice for API gateways. Naming the alternatives and choosing is worth more than the code.</p>
 <h4>Levels 1–2</h4>

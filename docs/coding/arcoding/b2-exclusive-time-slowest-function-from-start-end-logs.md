@@ -19,6 +19,12 @@ description: "B2 · Exclusive time & slowest function from START–END logs"
 <img src="/diagrams/arcoding/b2.svg" alt="A START pauses the caller by crediting it up to t and resetting its resume marker before pushing the new frame; an END pops, credits the elapsed time since the last resume, and restarts the caller's clock." class="doc-diagram doc-diagram-seq" />
 
 <p>Each stack frame carries three numbers: the name, when it was entered, and <strong>when its own clock last resumed</strong>. A START pauses the caller — credit it up to now, then reset its marker — before pushing the new frame; an END credits the popped frame from its last resume and restarts the caller. That third number is the whole trick: without it you cannot separate a function's own time from time spent inside its callees. Exclusive time comes from the resume marker, wall time from the entry timestamp.</p>
+
+### What it looks like in memory
+
+<p>The stack at the instant <code>load</code> starts, from the four events used in <em>Run it</em> — and the third number in each frame that makes exclusive time possible.</p>
+
+<img src="/diagrams/arcoding-state/b2.svg" alt="The frame stack and the exclusive-time table at the moment load starts." class="doc-diagram doc-diagram-seq" />
 <h4>Two clocks per frame</h4>
 <p>Each open frame carries <code>entry_t</code> (for wall time → slowest call) and <code>last_resume_t</code> (for exclusive time). START pauses the caller's exclusive clock; END credits the popped frame and resumes the caller's clock. That separation is the entire problem.</p>
 

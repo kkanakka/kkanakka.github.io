@@ -1,0 +1,13 @@
+---
+config:
+  flowchart:
+    wrappingWidth: 700
+---
+flowchart TB
+    T["resolving '/data/current/model.bin', where /data/current → '../releases/v7'"]
+    T --> S1["out ['data', 'current'] · pending ['model.bin'] — '/data/current' IS a link, so hops = 1"]
+    S1 --> S2["a relative target, so pop the link component back off: out ['data'] · pending ['model.bin', '..', 'releases', 'v7']"]:::warn
+    S2 --> S3["'..' now pops 'data' from the RESOLVED path, leaving out [] — then releases, v7 and model.bin are consumed"]
+    S3 --> S4["out ['releases', 'v7', 'model.bin'] → '/releases/v7/model.bin'"]:::good
+    classDef good fill:#dafbe1,stroke:#1a7f37
+    classDef warn fill:#fff8e6,stroke:#d4a72c

@@ -1,0 +1,18 @@
+---
+config:
+  flowchart:
+    wrappingWidth: 300
+---
+flowchart TB
+    subgraph K1["key 'user:1' — parallel lists, sorted by t"]
+        direction LR
+        A1["ts 10<br/>'alice'"] --- A2["ts 20<br/>'alice2'"] --- A3["ts 30<br/>TOMBSTONE"]
+    end
+    subgraph K2["key 'user:2' — one write, carrying a TTL"]
+        direction LR
+        B1["ts 15<br/>'bob', expires at 25"]
+    end
+    K1 --> Q["get('user:1', 24)<br/>bisect_right(ts, 24) = 2 → vals[1] → 'alice2'"]:::good
+    K2 --> R["get('user:2', 25)<br/>finds vals[0], but 25 &gt;= expiry → None"]:::warn
+    classDef good fill:#dafbe1,stroke:#1a7f37
+    classDef warn fill:#fff8e6,stroke:#d4a72c

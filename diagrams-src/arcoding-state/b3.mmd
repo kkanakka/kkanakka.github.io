@@ -1,0 +1,18 @@
+---
+config:
+  flowchart:
+    wrappingWidth: 340
+---
+flowchart TB
+    T["LRUCache(2) after: put a, put b, get a, put c"]
+    subgraph M["map — key to node"]
+        direction LR
+        MA["'a' → node"] --- MC["'c' → node"]
+    end
+    subgraph L["the linked list carries the ORDER"]
+        direction LR
+        H["head<br/>sentinel"] --> C["key 'c'<br/>val 3"] --> A["key 'a'<br/>val 1"] --> TL["tail<br/>sentinel"]
+    end
+    T --> M --> L
+    L --> W["'b' was evicted: get a had moved 'a' off the tail,<br/>so 'b' was the node sitting at tail.prev"]:::warn
+    classDef warn fill:#fff8e6,stroke:#d4a72c

@@ -1,0 +1,14 @@
+---
+config:
+  flowchart:
+    wrappingWidth: 380
+---
+flowchart TB
+    T["the instant after ('load', START, 2)"] --> S
+    subgraph S["stack — each frame is [name, entry, resume]"]
+        direction LR
+        F0["['main', 0, 2]<br/>entered at 0<br/>clock resumed at 2"] --- F1["['load', 2, 2]<br/>entered at 2<br/>clock resumed at 2"]
+    end
+    S --> X["excl so far — main was credited 2 − 0 = 2<br/>when it paused to call load:<br/>main → 2"]:::good
+    X --> Y["at ('load', END, 5) with end_inclusive:<br/>load → 6 − 2 = 4, then main resumes at 6<br/>and finally collects 7 − 6 = 1, reaching 3"]
+    classDef good fill:#dafbe1,stroke:#1a7f37

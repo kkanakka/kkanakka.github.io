@@ -18,6 +18,12 @@ description: "S5 · Debugging a p99 latency spike (CPU flat)"
 <img src="/diagrams/arcoding/s5.svg" alt="Diagnosis starts by computing the tail-to-median ratio to decide whether a subset is stalling or every request shifted, then walks a hypothesis ladder cheapest-test-first and adds a per-request phase ledger." class="doc-diagram doc-diagram-seq" />
 
 <p>Before touching any hypothesis, compute the <strong>shape</strong>: tail up with the average flat means a minority of requests are waiting on something, while everything moving together means a uniform per-request cost. Those two findings lead down completely different paths, so saying which one you have — in the first thirty seconds — reframes the whole search. Then walk the ladder cheapest test first, and if the data to distinguish the hypotheses does not exist, the answer is to add it: a per-request phase ledger whose unaccounted gap is precisely the time spent queued before any phase began.</p>
+
+### What it looks like in memory
+
+<p>The two distributions compared in <em>Run it</em>, and the phase ledger from a single instrumented request.</p>
+
+<img src="/diagrams/arcoding-state/s5.svg" alt="Two latency distributions with their percentiles and tail ratios, and one request's phase ledger." class="doc-diagram doc-diagram-seq" />
 <h4>Open with the shape of the symptom</h4>
 <p>Tail-up-average-flat means a <em>minority</em> of requests wait on something: queueing, head-of-line blocking, a stall — not a uniform per-request cost increase (that would move the average). Saying this in the first 30 seconds reframes the whole search and signals seniority.</p>
 <h4>The hypothesis ladder (each with its cheap test)</h4>

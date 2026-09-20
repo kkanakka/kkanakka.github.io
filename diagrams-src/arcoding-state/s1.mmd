@@ -1,0 +1,13 @@
+---
+config:
+  flowchart:
+    wrappingWidth: 340
+---
+flowchart TB
+    T["at now = 109, after three sets"]
+    T --> D["_d — value and absolute expiry<br/>'session:a' → ('alice', 110)<br/>'session:b' → ('bob', 150)<br/>'session:c' → ('carol', None)"]
+    T --> H["_heap — expiry-ordered index<br/>(110, 'session:a')<br/>(150, 'session:b')"]:::good
+    D --> B["backup(120) stores what is LEFT, not when it ends<br/>'session:b' → ('bob', 30)<br/>'session:c' → ('carol', None)"]:::good
+    B --> R["restore at now = 1000 re-anchors it:<br/>'session:b' expires at 1030, not at 150"]:::warn
+    classDef good fill:#dafbe1,stroke:#1a7f37
+    classDef warn fill:#fff8e6,stroke:#d4a72c

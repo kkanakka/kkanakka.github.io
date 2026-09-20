@@ -18,6 +18,12 @@ description: "B10 · Min stack — O(1) minimum query"
 
 <p>Store a <em>pair</em> per cell: the value, and the minimum of the stack at the moment it was pushed. Popping then needs no recomputation at all — <strong>the new top already carries the previous minimum</strong>. A single running-minimum variable cannot work, because popping the current minimum leaves you with no way to recover the next-smallest without scanning. The paired storage is that history, computed once at push time.</p>
 
+### What it looks like in memory
+
+<p>The stack after the four pushes in <em>Run it</em>, with the minimum each cell carries alongside its value.</p>
+
+<img src="/diagrams/arcoding-state/b10.svg" alt="A four-cell stack where each cell stores a value and the minimum at the time it was pushed." class="doc-diagram doc-diagram-seq" />
+
 ```python
 class MinStack:
     """Every element is stored with the minimum of the stack AT THE TIME it

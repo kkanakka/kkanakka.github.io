@@ -1,0 +1,23 @@
+---
+config:
+  flowchart:
+    wrappingWidth: 260
+---
+flowchart TB
+    T["k = 2, the four corners infected at round 0"]
+    subgraph TI["times — the answer grid"]
+        direction TB
+        R1["0 · 1 · 0"]
+        R2["1 · 2 · 1"]
+        R3["0 · 1 · 0"]
+    end
+    subgraph NB["infected_nbrs — the tallies that got them there"]
+        direction TB
+        S1["— · 2 · —"]
+        S2["2 · 4 · 2"]
+        S3["— · 2 · —"]
+    end
+    T --> TI
+    T --> NB
+    TI --> W["the centre needed TWO rounds: at round 1 its tally<br/>was still 0, because none of its four neighbours<br/>were infected yet. The tally persists, so the<br/>edges falling at round 1 tip it at round 2."]:::good
+    classDef good fill:#dafbe1,stroke:#1a7f37

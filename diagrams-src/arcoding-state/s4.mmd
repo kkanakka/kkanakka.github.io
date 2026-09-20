@@ -1,0 +1,13 @@
+---
+config:
+  flowchart:
+    wrappingWidth: 420
+---
+flowchart TB
+    T["counting example.com across five documents"]
+    T --> E["extracted → normalised host"]
+    E --> M["docs.example.com ✓ · example.com ✓<br/>example.com (from EXAMPLE.COM:8443) ✓<br/>api.example.com (from user:pw@…) ✓"]:::good
+    E --> N["notexample.com ✗ — no leading dot before the domain<br/>example.com.evil.net ✗ — the domain is a PREFIX here,<br/>not a suffix"]:::warn
+    M --> C["count_domain(docs, 'example.com') = 4"]:::good
+    classDef good fill:#dafbe1,stroke:#1a7f37
+    classDef warn fill:#fff8e6,stroke:#d4a72c

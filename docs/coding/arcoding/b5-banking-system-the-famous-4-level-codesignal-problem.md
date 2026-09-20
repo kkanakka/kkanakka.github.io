@@ -24,6 +24,12 @@ description: "B5 · Banking system — the famous 4-level CodeSignal problem"
 <img src="/diagrams/arcoding/b5.svg" alt="Every operation first drains the due cashback heap, then resolves merge aliases, then applies and records a balance point that later historical queries binary-search." class="doc-diagram doc-diagram-seq" />
 
 <p>Three mechanisms stack, and the order matters. <strong>Every single operation starts by settling</strong> the cashback heap up to the current time — skip that in one method and the balances silently diverge. Merged accounts are handled by an alias chain rather than by rewriting history, so an old account still resolves to its survivor. And each mutation appends a <code>(time, balance)</code> point, which turns the historical query into a <code>bisect</code> over a list you were already building.</p>
+
+### What it looks like in memory
+
+<p>The bank's structures after the Level 1–3 operations in <em>Run it</em>, just before the merge.</p>
+
+<img src="/diagrams/arcoding-state/b5.svg" alt="The balances, outgoing totals, cashback heap and per-account history after several operations." class="doc-diagram doc-diagram-seq" />
 <h4>The architecture that survives all four levels</h4>
 <ul>
 <li><strong>Settle-then-act:</strong> a single <code>_settle(now)</code> that applies all scheduled effects due ≤ now, called first by every public method. Without it, L3 leaks cashback into some code paths and not others.</li>
