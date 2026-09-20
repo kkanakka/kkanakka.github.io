@@ -1,0 +1,9 @@
+{
+  "label": "ARCODING",
+  "position": 4,
+  "link": {
+    "type": "generated-index",
+    "slug": "/coding/arcoding",
+    "description": "Level-by-level Python solutions to the reported Anthropic coding question families, with a Python-basics session first, plus inference system design, SRE incident scenarios and the values round."
+  }
+}
