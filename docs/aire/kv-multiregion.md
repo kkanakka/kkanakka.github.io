@@ -14,8 +14,6 @@ description: "hard · Anthropic · read-heavy KV · consistent hashing · cache 
 
 <!-- DIAGRAM:sequence:END -->
 
-## How it works
-
 <header>
   
   <span class="tag">hard · Anthropic · read‑heavy KV · consistent hashing · cache stampedes · cross‑region replication</span>

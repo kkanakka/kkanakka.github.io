@@ -14,8 +14,6 @@ description: "hard · multi-region quorum · false positives · check scheduling
 
 <!-- DIAGRAM:sequence:END -->
 
-## How it works
-
 <header>
   
   <span class="tag">hard · multi-region quorum · false positives · check scheduling · alert storms · who watches the watcher</span>

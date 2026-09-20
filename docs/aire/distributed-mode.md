@@ -14,8 +14,6 @@ description: "hard · Anthropic · communication complexity · counting vs quant
 
 <!-- DIAGRAM:sequence:END -->
 
-## How it works
-
 <header>
   
   <span class="tag">hard · Anthropic · communication complexity · counting vs quantiles · two‑pass exactness</span>

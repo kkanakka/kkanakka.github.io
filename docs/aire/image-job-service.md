@@ -14,8 +14,6 @@ description: "hard · Anthropic · state machine · leases and ownership · idem
 
 <!-- DIAGRAM:sequence:END -->
 
-## How it works
-
 <header>
   
   <span class="tag">hard · Anthropic · state machine · leases and ownership · idempotency · safe evolution</span>

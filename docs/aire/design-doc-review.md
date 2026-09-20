@@ -14,8 +14,6 @@ description: "hard · Anthropic · senior+ · find the unsafe assumptions · ran
 
 <!-- DIAGRAM:sequence:END -->
 
-## How it works
-
 <header>
   
   <span class="tag">hard · Anthropic · senior+ · find the unsafe assumptions · rank by blast radius · write the review</span>

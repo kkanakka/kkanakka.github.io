@@ -6,14 +6,6 @@ sidebar_label: "Overview"
 description: "Anthropic — Inference Reliability / SRE"
 ---
 
-<!-- DIAGRAM:sequence:START -->
-
-## How it works
-
-<img src="/diagrams/overview/sequence.svg" alt="How it works" class="doc-diagram doc-diagram-seq" />
-
-<!-- DIAGRAM:sequence:END -->
-
 <div class="arcoding">
 
 <p class="lede">Detailed, level-by-level Python solutions to every reported Anthropic coding question family — with a Python-basics session first — plus inference-specific system design, SRE incident scenarios, and the values round.</p>

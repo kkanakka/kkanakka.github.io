@@ -14,8 +14,6 @@ description: "hard · disruption budget · waves · drain and verify · halt on 
 
 <!-- DIAGRAM:sequence:END -->
 
-## How it works
-
 <header>
   
   <span class="tag">hard · disruption budget · waves · drain and verify · halt on anomaly · two state machines</span>

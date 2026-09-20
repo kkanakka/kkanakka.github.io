@@ -14,8 +14,6 @@ description: "hard · immutable artifacts · GitOps reconciliation · progressiv
 
 <!-- DIAGRAM:sequence:END -->
 
-## How it works
-
 <header>
   
   <span class="tag">hard · immutable artifacts · GitOps reconciliation · progressive delivery · gates that block · rollback in seconds</span>

@@ -14,8 +14,6 @@ description: "hard · Anthropic · sharded inverted index · scatter-gather · t
 
 <!-- DIAGRAM:sequence:END -->
 
-## How it works
-
 <header>
   
   <span class="tag">hard · Anthropic · sharded inverted index · scatter‑gather · tail latency · LLM reranking at 10K rps</span>

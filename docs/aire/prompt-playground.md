@@ -14,8 +14,6 @@ description: "hard · Anthropic · versioned prompts · very large payloads · r
 
 <!-- DIAGRAM:sequence:END -->
 
-## How it works
-
 <header>
   
   <span class="tag">hard · Anthropic · versioned prompts · very large payloads · runs and comparison · safe execution</span>

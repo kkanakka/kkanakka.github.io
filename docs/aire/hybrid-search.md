@@ -14,8 +14,6 @@ description: "hard · Anthropic · BM25 + ANN · HNSW · fusion · 10M documents
 
 <!-- DIAGRAM:sequence:END -->
 
-## How it works
-
 <header>
   
   <span class="tag">hard · Anthropic · BM25 + ANN · HNSW · fusion · 10M documents · 50 ms budget</span>

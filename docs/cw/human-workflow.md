@@ -14,8 +14,6 @@ description: "hard · task state machine · claim and lease · skill routing · 
 
 <!-- DIAGRAM:sequence:END -->
 
-## How it works
-
 <header>
   
   <span class="tag">hard · task state machine · claim and lease · skill routing · timeouts and escalation · quality review</span>

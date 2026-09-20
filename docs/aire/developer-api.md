@@ -14,8 +14,6 @@ description: "hard · Anthropic · keys and scoping · quotas · streaming contr
 
 <!-- DIAGRAM:sequence:END -->
 
-## How it works
-
 <header>
   
   <span class="tag">hard · Anthropic · keys and scoping · quotas · streaming contract · idempotency · versioning</span>

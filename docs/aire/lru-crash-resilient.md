@@ -14,8 +14,6 @@ description: "hard · Anthropic · O(1) get/put · durability without losing O(1
 
 <!-- DIAGRAM:sequence:END -->
 
-## How it works
-
 <header>
   
   <span class="tag">hard · Anthropic · O(1) get/put · durability without losing O(1) · WAL · snapshot + replay</span>

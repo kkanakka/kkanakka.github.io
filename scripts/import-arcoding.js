@@ -79,7 +79,15 @@ const slugify = (s) =>
    .replace(/^-|-$/g, '').slice(0, 60);
 
 fs.mkdirSync(OUT, { recursive: true });
-for (const f of fs.readdirSync(OUT)) if (f.endsWith('.md')) fs.unlinkSync(path.join(OUT, f));
+// Only remove what a previous run generated. Pages hand-written alongside the
+// import (the extra problem families) must survive a re-import.
+const MANIFEST = path.join(OUT, '.generated.json');
+if (fs.existsSync(MANIFEST)) {
+  for (const f of JSON.parse(fs.readFileSync(MANIFEST, 'utf8'))) {
+    const p = path.join(OUT, f);
+    if (fs.existsSync(p)) fs.unlinkSync(p);
+  }
+}
 
 fs.writeFileSync(
   path.join(OUT, '_category_.json'),
@@ -166,6 +174,11 @@ ${links}
 
 </div>
 `)
+);
+
+fs.writeFileSync(
+  MANIFEST,
+  JSON.stringify([...pages.map((s) => `${s}.md`), 'overview.md'], null, 2) + '\n'
 );
 
 console.log(`wrote ${pages.length + 1} pages into docs/coding/arcoding/`);

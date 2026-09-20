@@ -14,8 +14,6 @@ description: "hard · Anthropic · bisect the stack · USE/RED · queueing · pr
 
 <!-- DIAGRAM:sequence:END -->
 
-## How it works
-
 <header>
   
   <span class="tag">hard · Anthropic · bisect the stack · USE/RED · queueing · prioritize by measured cost</span>
