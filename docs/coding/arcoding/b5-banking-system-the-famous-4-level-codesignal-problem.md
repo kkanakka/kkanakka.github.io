@@ -77,6 +77,15 @@ class Bank:
 
     # ---- Level 1 -----------------------------------------------------------
     def create(self, acct, t):
+        """Open an account; False if it already exists.
+
+        Example:
+            >>> b = Bank()
+            >>> b.create('a', 1)
+            True
+            >>> b.create('a', 1)
+            False
+        """
         self._settle(t)
         if self._canon(acct) in self.bal or acct in self.alias:
             return False
@@ -85,6 +94,16 @@ class Bank:
         return True
 
     def deposit(self, acct, amount, t):
+        """Add to a balance and return it; None if the account is unknown.
+
+        Example:
+            >>> b = Bank()
+            >>> b.create('a', 1)
+            True
+            >>> b.deposit('a', 500, 2)
+            500
+            >>> b.deposit('x', 5, 3)   # -> None
+        """
         self._settle(t)
         a = self._canon(acct)
         if a not in self.bal:
@@ -94,6 +113,17 @@ class Bank:
         return self.bal[a]
 
     def transfer(self, src, dst, amount, t):
+        """Move funds between accounts; None on unknown account or insufficient funds.
+
+        Example:
+            >>> b = Bank()
+            >>> b.create('a', 1); b.create('b', 1)
+            >>> b.deposit('a', 500, 2)
+            500
+            >>> b.transfer('a', 'b', 200, 3)
+            300
+            >>> b.transfer('a', 'b', 9999, 4)   # -> None
+        """
         self._settle(t)
         s, d = self._canon(src), self._canon(dst)
         if s == d or s not in self.bal or d not in self.bal:
@@ -109,12 +139,33 @@ class Bank:
 
     # ---- Level 2 -----------------------------------------------------------
     def top_spenders(self, n, t):
+        """The n accounts with the highest outgoing totals, ties broken by name.
+
+        Example:
+            >>> b = Bank()
+            >>> b.create('a', 1); b.create('b', 1)
+            >>> b.deposit('a', 500, 2); b.deposit('b', 500, 2)
+            >>> b.transfer('a', 'b', 300, 3); b.transfer('b', 'a', 100, 4)
+            >>> b.top_spenders(2, 5)
+            ['a(300)', 'b(100)']
+        """
         self._settle(t)
         ranked = sorted(self.out.items(), key=lambda kv: (-kv[1], kv[0]))
         return [f"{a}({v})" for a, v in ranked[:n]]
 
     # ---- Level 3 -----------------------------------------------------------
     def pay(self, acct, amount, t):
+        """Spend from an account; schedules 2% cashback 24h later. Returns the new balance.
+
+        Example:
+            >>> b = Bank()
+            >>> b.create('a', 1)
+            True
+            >>> b.deposit('a', 1000, 2)
+            1000
+            >>> b.pay('a', 1000, 3)
+            0
+        """
         self._settle(t)
         a = self._canon(acct)
         if a not in self.bal or self.bal[a] < amount:
@@ -129,6 +180,17 @@ class Bank:
 
     # ---- Level 4 -----------------------------------------------------------
     def merge(self, a1, a2, t):
+        """Fold a2 into a1; a2's later operations resolve to a1. False on bad input.
+
+        Example:
+            >>> b = Bank()
+            >>> b.create('a', 1); b.create('b', 1)
+            >>> b.deposit('a', 100, 2); b.deposit('b', 50, 2)
+            >>> b.merge('a', 'b', 3)
+            True
+            >>> b.deposit('a', 0, 4)
+            150
+        """
         self._settle(t)
         a1, a2 = self._canon(a1), self._canon(a2)
         if a1 == a2 or a1 not in self.bal or a2 not in self.bal:
@@ -143,7 +205,21 @@ class Bank:
         return True
 
     def balance_at(self, acct, time_at, now):
-        """Balance of `acct` as of time_at (query issued at `now`)."""
+        """Balance of `acct` as of time_at (query issued at `now`).
+
+        Example:
+            >>> b = Bank()
+            >>> b.create('a', 1)
+            True
+            >>> b.deposit('a', 500, 5)
+            500
+            >>> b.deposit('a', 200, 10)
+            700
+            >>> b.balance_at('a', 7, now=20)
+            500
+            >>> b.balance_at('a', 12, now=20)
+            700
+        """
         self._settle(now)
         # If acct was merged and the query is AFTER the merge, the account
         # lives on inside its parent; before the merge, use its own history.

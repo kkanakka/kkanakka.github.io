@@ -72,23 +72,59 @@ class KVStore:
 
     # ---- Level 1 ----------------------------------------------------------
     def set(self, key, value, now=0):
+        """Store a key with no expiry.
+
+        Example:
+            >>> kv = KVStore()
+            >>> kv.set('region', 'us-east-1', now=0)
+            >>> kv.get('region', now=0)
+            'us-east-1'
+        """
         with self._lock:
             self._purge(now)
             self._d[key] = (value, None)
 
     def get(self, key, now=0):
+        """Value for key at time now, or None if absent or expired.
+
+        Example:
+            >>> kv = KVStore()
+            >>> kv.set('k', 'v', now=0)
+            >>> kv.get('k', now=0)
+            'v'
+            >>> kv.get('missing', now=0)   # -> None
+        """
         with self._lock:
             self._purge(now)
             rec = self._live(key, now)
             return rec[0] if rec else None
 
     def delete(self, key, now=0):
+        """Remove a key; returns whether it existed.
+
+        Example:
+            >>> kv = KVStore()
+            >>> kv.set('k', 'v', now=0)
+            >>> kv.delete('k', now=0)
+            True
+            >>> kv.delete('k', now=0)
+            False
+        """
         with self._lock:
             self._purge(now)
             return self._d.pop(key, None) is not None
 
     # ---- Level 2 ----------------------------------------------------------
     def set_with_ttl(self, key, value, ttl, now):
+        """Store a key that expires ttl after now.
+
+        Example:
+            >>> kv = KVStore()
+            >>> kv.set_with_ttl('s', 'v', ttl=10, now=100)
+            >>> kv.get('s', now=105)
+            'v'
+            >>> kv.get('s', now=110)   # -> None
+        """
         if ttl <= 0:
             raise ValueError("ttl must be positive")
         with self._lock:
@@ -99,6 +135,14 @@ class KVStore:
 
     # ---- Level 3 ----------------------------------------------------------
     def scan(self, prefix, now):
+        """Sorted live keys with the given prefix at time now.
+
+        Example:
+            >>> kv = KVStore()
+            >>> kv.set('a:1', 'x', now=0); kv.set('a:2', 'y', now=0)
+            >>> kv.scan('a:', now=0)
+            ['a:1', 'a:2']
+        """
         with self._lock:
             self._purge(now)
             # list() because _live may delete while we iterate
@@ -107,7 +151,14 @@ class KVStore:
 
     # ---- Level 4 ----------------------------------------------------------
     def backup(self, now):
-        """Snapshot of live records; TTLs stored as REMAINING time."""
+        """Snapshot of live records; TTLs stored as REMAINING time.
+
+        Example:
+            >>> kv = KVStore()
+            >>> kv.set_with_ttl('s', 'v', ttl=50, now=100)
+            >>> kv.backup(now=120)
+            {'s': ('v', 30)}
+        """
         with self._lock:
             self._purge(now)
             out = {}
@@ -119,7 +170,16 @@ class KVStore:
             return out
 
     def restore(self, now, backup):
-        """Remaining TTLs re-anchored at restore time."""
+        """Remaining TTLs re-anchored at restore time.
+
+        Example:
+            >>> kv = KVStore()
+            >>> snap = {'s': ('v', 30)}
+            >>> kv.restore(now=1000, backup=snap)
+            >>> kv.get('s', now=1029)
+            'v'
+            >>> kv.get('s', now=1030)   # -> None
+        """
         with self._lock:
             self._d = {}
             self._heap = []

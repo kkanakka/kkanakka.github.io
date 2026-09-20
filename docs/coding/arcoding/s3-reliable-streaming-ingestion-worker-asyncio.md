@@ -62,6 +62,16 @@ class CircuitBreaker:
         self.opened_at = None
 
     def allow(self):
+        """Whether a call may proceed; False while the breaker is open.
+
+        Example:
+            >>> cb = CircuitBreaker(threshold=2, cooldown=5)
+            >>> cb.allow()
+            True
+            >>> cb.record(False); cb.record(False)
+            >>> cb.allow()
+            False
+        """
         if self.opened_at is None:
             return True
         if time.monotonic() - self.opened_at >= self.cooldown:
@@ -69,6 +79,17 @@ class CircuitBreaker:
         return False
 
     def record(self, success):
+        """Feed the breaker a result; a success closes it, failures may open it.
+
+        Example:
+            >>> cb = CircuitBreaker(threshold=2, cooldown=5)
+            >>> cb.record(False); cb.record(False)
+            >>> cb.allow()
+            False
+            >>> cb.record(True)
+            >>> cb.allow()
+            True
+        """
         if success:
             self.failures, self.opened_at = 0, None
         else:
@@ -142,6 +163,13 @@ class Ingestor:
             await asyncio.gather(*tasks, return_exceptions=True)
 
     def health(self):
+        """Example.
+
+        Example:
+            # after a run where id 4 raised and id 7 timed out:
+            ing.health()
+            {'ok': True, 'queue_depth': 0, 'in_flight': 0, 'dead_lettered': 2}
+        """
         s = self.stats
         stalled = time.monotonic() - s.last_success_ts > 30
         return {"ok": not stalled, "queue_depth": s.queue_depth,

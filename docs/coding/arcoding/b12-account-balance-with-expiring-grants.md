@@ -44,6 +44,15 @@ class CreditAccount:
             self._total -= heapq.heappop(self._h)[2][0]
 
     def grant(self, amount, expiry):
+        """Add a credit grant that expires at the given time.
+
+        Example:
+            >>> acc = CreditAccount()
+            >>> acc.grant(100, expiry=10)
+            >>> acc.grant(50, expiry=20)
+            >>> acc.balance(now=0)
+            150
+        """
         if amount <= 0:
             raise ValueError("amount must be positive")
         self._seq += 1
@@ -51,11 +60,30 @@ class CreditAccount:
         self._total += amount
 
     def balance(self, now) -> int:
+        """Live balance at time now, after dropping anything expired.
+
+        Example:
+            >>> acc = CreditAccount()
+            >>> acc.grant(100, expiry=10)
+            >>> acc.balance(now=0)
+            100
+            >>> acc.balance(now=10)
+            0
+        """
         self._prune(now)
         return self._total
 
     def spend(self, amount, now) -> bool:
-        """All-or-nothing. Consumes from the soonest-expiring grant first."""
+        """All-or-nothing. Consumes from the soonest-expiring grant first.
+
+        Example:
+            >>> acc = CreditAccount()
+            >>> acc.grant(100, expiry=10); acc.grant(50, expiry=20)
+            >>> acc.spend(120, now=0)
+            True
+            >>> acc.balance(now=0)
+            30
+        """
         self._prune(now)
         if amount <= 0 or amount > self._total:
             return False

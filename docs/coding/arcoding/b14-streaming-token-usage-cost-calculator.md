@@ -50,6 +50,16 @@ class UsageAccumulator:
         self.finalized = False
 
     def feed(self, chunk: dict):
+        """Example.
+
+        Example:
+            >>> acc = UsageAccumulator()
+            >>> acc.feed({'usage': {'output_tokens': 50}})
+            >>> acc.feed({'usage': {'output_tokens': 120}})
+            >>> acc.feed({'usage': {'output_tokens': 90}})
+            >>> acc.totals['output_tokens']
+            120
+        """
         usage = chunk.get("usage") or {}
         final = bool(chunk.get("is_final"))
         for k in self.CUMULATIVE:
@@ -68,7 +78,14 @@ class UsageAccumulator:
     def cost(self, prices: dict[str, str]) -> Decimal:
         """prices: per-MILLION-token price strings, e.g.
         {'input_tokens': '3.00', 'output_tokens': '15.00',
-         'cache_read_tokens': '0.30'}"""
+         'cache_read_tokens': '0.30'}
+
+        Example:
+            >>> acc = UsageAccumulator()
+            >>> acc.feed({'usage': {'input_tokens': 1000, 'output_tokens': 500}, 'is_final': True})
+            >>> acc.cost({'input_tokens': '3.00', 'output_tokens': '15.00', 'cache_read_tokens': '0.30'})
+            Decimal('0.010500')
+        """
         mtok = Decimal(1_000_000)
         total = Decimal(0)
         for field, count in self.totals.items():

@@ -27,7 +27,14 @@ description: "B13 · Path resolution with symbolic links"
 
 ```python
 def simplify(path: str) -> str:
-    """/a/./b/../c -> /a/c   — the LC-71 core everyone should nail fast."""
+    """/a/./b/../c -> /a/c   — the LC-71 core everyone should nail fast.
+
+    Example:
+        >>> simplify('/a/./b/../c')
+        '/a/c'
+        >>> simplify('/../')
+        '/'
+    """
     out = []
     for comp in path.split("/"):
         if comp in ("", "."):
@@ -52,7 +59,13 @@ def resolve(path: str, links: dict[str, str], *, max_hops: int = 64) -> str:
     """links: absolute resolved path -> target (absolute or relative).
     Kernel-style behavior: component-wise walk; ELOOP-equivalent after
     max_hops link traversals (a hop cap catches both direct cycles and
-    growing 'a -> a/b' style traps that a visited-set can miss)."""
+    growing 'a -> a/b' style traps that a visited-set can miss).
+
+    Example:
+        >>> links = {'/bin': '/usr/bin', '/usr/bin/py': 'python3'}
+        >>> resolve('/bin/py', links)
+        '/usr/bin/python3'
+    """
     pending = [c for c in path.split("/") if c][::-1]   # reversed work stack
     out: list[str] = []
     hops = 0

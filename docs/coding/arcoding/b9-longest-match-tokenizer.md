@@ -29,6 +29,15 @@ description: "B9 · Longest-match tokenizer"
 
 ```python
 def tokenize(text, vocab, *, unk_id=-1, coalesce_unknown=True):
+    """Greedy longest-match tokenizer: (id, piece) tuples; unknown runs get unk_id.
+
+    Example:
+        >>> vocab = {'to': 1, 'ken': 2, 'token': 3}
+        >>> tokenize('token!', vocab)
+        [(3, 'token'), (-1, '!')]
+        >>> tokenize('tok', vocab)
+        [(1, 'to'), (-1, 'k')]
+    """
     max_len = max(map(len, vocab), default=0)
     out, unk_run = [], []
     i = 0
@@ -70,6 +79,13 @@ class TrieTokenizer:
             node["$"] = tid                       # terminal marker
 
     def tokenize(self, text, *, unk_id=-1, coalesce_unknown=True):
+        """Same result as the flat tokenizer, but one trie walk instead of re-slicing.
+
+        Example:
+            >>> tk = TrieTokenizer({'to': 1, 'ken': 2, 'token': 3})
+            >>> tk.tokenize('token!')
+            [(3, 'token'), (-1, '!')]
+        """
         out, unk_run, i, n = [], [], 0, len(text)
 
         def flush():

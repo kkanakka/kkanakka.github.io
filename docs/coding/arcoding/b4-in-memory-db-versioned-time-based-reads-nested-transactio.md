@@ -46,6 +46,17 @@ class VersionedKV:
         return self._d.setdefault(key, ([], []))
 
     def set(self, key, value, t, ttl=None):
+        """Write a version at time t (t must increase per key); ttl expires it later.
+
+        Example:
+            >>> kv = VersionedKV()
+            >>> kv.set('x', 'a', t=10)
+            >>> kv.set('x', 'b', t=20)
+            >>> kv.get('x', 15)
+            'a'
+            >>> kv.get('x', 20)
+            'b'
+        """
         ts, vs = self._versions(key)
         if ts and t <= ts[-1]:
             raise ValueError("writes must have increasing timestamps")
@@ -53,11 +64,30 @@ class VersionedKV:
         vs.append((value, None if ttl is None else t + ttl))
 
     def delete(self, key, t):
+        """Write a tombstone version so reads at or after t see nothing.
+
+        Example:
+            >>> kv = VersionedKV()
+            >>> kv.set('x', 'a', t=10)
+            >>> kv.delete('x', t=20)
+            >>> kv.get('x', 15)
+            'a'
+            >>> kv.get('x', 25)   # -> None
+        """
         ts, vs = self._versions(key)
         ts.append(t)
         vs.append((_TOMBSTONE, None))
 
     def get(self, key, t):
+        """Value visible at time t (newest write at or before t), or None.
+
+        Example:
+            >>> kv = VersionedKV()
+            >>> kv.set('x', 'a', t=10, ttl=5)
+            >>> kv.get('x', 12)
+            'a'
+            >>> kv.get('x', 16)   # -> None
+        """
         rec = self._d.get(key)
         if not rec:
             return None
@@ -73,6 +103,14 @@ class VersionedKV:
         return value
 
     def scan(self, prefix, t):
+        """Sorted keys with the given prefix that are live at time t.
+
+        Example:
+            >>> kv = VersionedKV()
+            >>> kv.set('u:1', 'a', t=1); kv.set('u:2', 'b', t=1)
+            >>> kv.scan('u:', 5)
+            ['u:1', 'u:2']
+        """
         return sorted(k for k in self._d
                       if k.startswith(prefix) and self.get(k, t) is not None)
 ```
@@ -93,13 +131,40 @@ class TxKV:
         return self.layers[-1] if self.layers else self.base
 
     def set(self, k, v):
+        """Write into the innermost open layer (or the base if none).
+
+        Example:
+            >>> db = TxKV()
+            >>> db.set('a', 1)
+            >>> db.get('a')
+            1
+        """
         self._top()[k] = v
 
     def delete(self, k):
+        """Shadow the key with a tombstone in the current layer.
+
+        Example:
+            >>> db = TxKV()
+            >>> db.set('a', 1)
+            >>> db.delete('a')
+            >>> db.get('a', default='gone')
+            'gone'
+        """
         # A tombstone, NOT `del`: must shadow values in lower layers.
         self._top()[k] = _TOMBSTONE
 
     def get(self, k, default=None):
+        """Read through the layers, newest first; default if the key is unset or deleted.
+
+        Example:
+            >>> db = TxKV()
+            >>> db.set('a', 1)
+            >>> db.get('a')
+            1
+            >>> db.get('missing', default=0)
+            0
+        """
         for layer in reversed(self.layers):
             if k in layer:
                 v = layer[k]
@@ -108,15 +173,49 @@ class TxKV:
         return default if v is _TOMBSTONE else v
 
     def begin(self):
+        """Open a nested transaction layer.
+
+        Example:
+            >>> db = TxKV()
+            >>> db.set('a', 1)
+            >>> db.begin(); db.set('a', 2)
+            >>> db.get('a')
+            2
+            >>> db.rollback()
+            True
+            >>> db.get('a')
+            1
+        """
         self.layers.append({})
 
     def rollback(self) -> bool:
+        """Discard the top layer; False if none is open.
+
+        Example:
+            >>> db = TxKV()
+            >>> db.begin()
+            >>> db.rollback()
+            True
+            >>> db.rollback()
+            False
+        """
         if not self.layers:
             return False
         self.layers.pop()                   # O(1): discard the overlay
         return True
 
     def commit(self) -> bool:
+        """Merge the top layer down into its parent; False if none is open.
+
+        Example:
+            >>> db = TxKV()
+            >>> db.set('a', 1)
+            >>> db.begin(); db.set('a', 2)
+            >>> db.commit()
+            True
+            >>> db.get('a')
+            2
+        """
         if not self.layers:
             return False
         top = self.layers.pop()

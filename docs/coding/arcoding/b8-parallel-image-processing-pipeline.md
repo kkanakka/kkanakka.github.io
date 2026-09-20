@@ -45,7 +45,14 @@ OPS = {"grayscale": op_grayscale, "rotate90": op_rotate90,
 
 def process_one(path, pipeline, out_dir):
     """Runs in a worker PROCESS. Returns (path, error_or_None):
-    one corrupt image must produce an error entry, not kill the batch."""
+    one corrupt image must produce an error entry, not kill the batch.
+
+    Example:
+        # runs in a worker process; a bad file becomes an entry, not a crash
+        process_one('img0.png', ['grayscale', 'thumbnail'], out)  -> ('img0.png', None)
+        process_one('corrupt.png', ['grayscale'], out)
+          -> ('corrupt.png', 'UnidentifiedImageError: ...')
+    """
     try:
         with Image.open(path) as im:
             im.load()                      # force decode inside the try
@@ -60,6 +67,13 @@ def process_one(path, pipeline, out_dir):
 
 
 def run_batch(paths, pipeline, out_dir, workers=None):
+    """Example.
+
+    Example:
+        # fans the jobs across processes, returns a per-job status map:
+        run_batch(paths, ['grayscale', 'thumbnail'], out)
+        {'img0.png': None, 'img1.png': None, 'corrupt.png': 'UnidentifiedImageError: ...'}
+    """
     os.makedirs(out_dir, exist_ok=True)
     results = {}
     with ProcessPoolExecutor(max_workers=workers) as ex:
@@ -77,7 +91,12 @@ def run_batch(paths, pipeline, out_dir, workers=None):
 ```python
 def build_pipeline_trie(pipelines):
     """pipelines: {name: [op, ...]} -> nested trie:
-    node = {'children': {op: node}, 'outputs': [pipeline_names ending here]}"""
+    node = {'children': {op: node}, 'outputs': [pipeline_names ending here]}
+
+    Example:
+        >>> build_pipeline_trie({'g': ['grayscale'], 'gt': ['grayscale', 'thumbnail']})
+        {'children': {'grayscale': {'children': {'thumbnail': {'children': {}, 'outputs': ['gt']}}, 'outputs': ['g']}}, 'outputs': []}
+    """
     root = {"children": {}, "outputs": []}
     for name, ops in pipelines.items():
         node = root

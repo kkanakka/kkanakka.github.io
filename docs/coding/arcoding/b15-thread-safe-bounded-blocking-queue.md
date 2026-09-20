@@ -49,6 +49,15 @@ class BlockingQueue:
         self.closed = False
 
     def put(self, item, timeout=None) -> bool:
+        """Append an item, blocking while the queue is full. Returns True, or False on timeout.
+
+        Example:
+            >>> q = BlockingQueue(1)
+            >>> q.put('a')
+            True
+            >>> q.put('b', timeout=0.01)
+            False
+        """
         deadline = None if timeout is None else time.monotonic() + timeout
         with self.not_full:
             while len(self.q) >= self.cap and not self.closed:
@@ -63,6 +72,15 @@ class BlockingQueue:
             return True
 
     def get(self, timeout=None):
+        """Remove and return the oldest item, blocking while empty (TimeoutError on timeout).
+
+        Example:
+            >>> q = BlockingQueue(2)
+            >>> q.put('a')
+            True
+            >>> q.get()
+            'a'
+        """
         deadline = None if timeout is None else time.monotonic() + timeout
         with self.not_empty:
             while not self.q:
@@ -78,7 +96,12 @@ class BlockingQueue:
 
     def close(self):
         """Consumers drain remaining items, then see QueueClosed;
-        blocked producers are released with QueueClosed."""
+        blocked producers are released with QueueClosed.
+
+        Example:
+            q.close()      # wakes every blocked producer and consumer
+            q.get()        # once the queue is drained AND closed -> raises QueueClosed
+        """
         with self._lock:
             self.closed = True
             self.not_full.notify_all()

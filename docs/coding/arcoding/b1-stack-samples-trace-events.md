@@ -31,7 +31,13 @@ description: "B1 · Stack samples → trace events"
 ```python
 def samples_to_trace(samples):
     """samples: iterable of (timestamp, [root, ..., leaf]), timestamps increasing.
-    Returns [(timestamp, 'start'|'end', function_name)]."""
+    Returns [(timestamp, 'start'|'end', function_name)].
+
+    Example:
+        >>> s = [(0, ['main']), (1, ['main', 'work']), (4, ['main'])]
+        >>> samples_to_trace(s)
+        [(0, 'start', 'main'), (1, 'start', 'work'), (4, 'end', 'work'), (4, 'end', 'main')]
+    """
     events = []          # the output we are building
     prev = []            # the PREVIOUS sample's stack (empty before the first)
     prev_t = None        # the previous sample's timestamp
@@ -73,6 +79,13 @@ def samples_to_trace(samples):
 
 ```python
 def samples_to_intervals(samples):
+    """Same input, but emit (name, start, end, depth) intervals instead of events.
+
+    Example:
+        >>> s = [(0, ['main']), (1, ['main', 'work']), (4, ['main'])]
+        >>> samples_to_intervals(s)
+        [('work', 1, 4, 1), ('main', 0, 4, 0)]
+    """
     intervals, open_frames, prev, prev_t = [], [], [], None
     for t, stack in samples:
         lcp = 0

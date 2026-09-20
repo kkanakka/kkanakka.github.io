@@ -33,18 +33,52 @@ class MinStack:
         self._s = []                        # (value, min_including_this)
 
     def push(self, x):
+        """Push x, storing the running minimum alongside it.
+
+        Example:
+            >>> s = MinStack()
+            >>> s.push(5); s.push(3)
+            >>> s.get_min()
+            3
+        """
         m = x if not self._s else min(x, self._s[-1][1])
         self._s.append((x, m))
 
     def pop(self):
+        """Remove and return the top value (None if empty); the minimum self-restores.
+
+        Example:
+            >>> s = MinStack()
+            >>> s.push(5); s.push(3)
+            >>> s.pop()
+            3
+            >>> s.get_min()
+            5
+        """
         if not self._s:
             return None                     # spec-driven: sentinel, not raise
         return self._s.pop()[0]
 
     def top(self):
+        """Return the top value without removing it (None if empty).
+
+        Example:
+            >>> s = MinStack()
+            >>> s.push(5); s.push(3)
+            >>> s.top()
+            3
+        """
         return self._s[-1][0] if self._s else None
 
     def get_min(self):
+        """Return the current minimum in O(1) (None if empty).
+
+        Example:
+            >>> s = MinStack()
+            >>> s.push(5); s.push(3); s.push(7)
+            >>> s.get_min()
+            3
+        """
         return self._s[-1][1] if self._s else None
 ```
 

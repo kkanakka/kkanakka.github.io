@@ -41,7 +41,17 @@ class ClusterTracker:
     def update(self, node, status, ts) -> bool:
         """Last-writer-wins by timestamp. Returns False for stale updates.
         Tie rule: equal timestamps keep the existing record (first write
-        wins) — a deliberate, stated choice; deterministic either way."""
+        wins) — a deliberate, stated choice; deterministic either way.
+
+        Example:
+            >>> t = ClusterTracker()
+            >>> t.update('n1', 'up', ts=10)
+            True
+            >>> t.update('n1', 'down', ts=20)
+            True
+            >>> t.update('n1', 'up', ts=15)
+            False
+        """
         if self.keep_history:
             h = self.history.setdefault(node, [])
             bisect.insort(h, (ts, status))          # out-of-order friendly
@@ -58,17 +68,52 @@ class ClusterTracker:
         return True
 
     def status(self, node):
+        """The node's latest status, or None if unknown.
+
+        Example:
+            >>> t = ClusterTracker()
+            >>> t.update('n1', 'down', ts=10)
+            True
+            >>> t.status('n1')
+            'down'
+            >>> t.status('n9')   # -> None
+        """
         rec = self.latest.get(node)
         return rec[1] if rec else None
 
     def count(self, status) -> int:
+        """How many nodes are currently in this status, in O(1).
+
+        Example:
+            >>> t = ClusterTracker()
+            >>> t.update('n1', 'down', ts=1); t.update('n2', 'down', ts=1)
+            >>> t.count('down')
+            2
+        """
         return self.counts.get(status, 0)
 
     def nodes_in(self, status):
+        """Sorted list of nodes currently in this status.
+
+        Example:
+            >>> t = ClusterTracker()
+            >>> t.update('n2', 'down', ts=1); t.update('n1', 'down', ts=1)
+            >>> t.nodes_in('down')
+            ['n1', 'n2']
+        """
         return sorted(n for n, (_, s) in self.latest.items() if s == status)
 
     def status_at(self, node, ts):
-        """Extension: status as of time ts (requires keep_history=True)."""
+        """Extension: status as of time ts (requires keep_history=True).
+
+        Example:
+            >>> t = ClusterTracker(keep_history=True)
+            >>> t.update('n1', 'up', ts=10); t.update('n1', 'down', ts=20)
+            >>> t.status_at('n1', 15)
+            'up'
+            >>> t.status_at('n1', 25)
+            'down'
+        """
         h = self.history.get(node)
         if not h:
             return None

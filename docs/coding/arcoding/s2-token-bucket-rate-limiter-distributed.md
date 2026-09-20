@@ -48,6 +48,17 @@ class TokenBucket:
         self._lock = threading.Lock()
 
     def allow(self, key: str, now: float, cost: float = 1.0) -> bool:
+        """Refill from elapsed time, then allow (and spend) if enough tokens; else reject.
+
+        Example:
+            >>> tb = TokenBucket(rate=1.0, burst=2.0)
+            >>> tb.allow('u', now=0.0)
+            True
+            >>> tb.allow('u', now=0.0)
+            True
+            >>> tb.allow('u', now=0.0)
+            False
+        """
         with self._lock:
             tokens, last = self._state.get(key, (self.burst, now))
             if now < last:                      # clock skew guard

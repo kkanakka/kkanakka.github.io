@@ -53,6 +53,16 @@ class LRUCache:
         self.head.next = node
 
     def get(self, key):
+        """Return the value for key and mark it most-recently-used; -1 if absent.
+
+        Example:
+            >>> c = LRUCache(2)
+            >>> c.put('a', 1); c.put('b', 2)
+            >>> c.get('a')
+            1
+            >>> c.get('z')
+            -1
+        """
         node = self.map.get(key)
         if node is None:
             return -1
@@ -61,6 +71,17 @@ class LRUCache:
         return node.val
 
     def put(self, key, val):
+        """Insert or update key; if over capacity, evict the least-recently-used entry.
+
+        Example:
+            >>> c = LRUCache(2)
+            >>> c.put('a', 1); c.put('b', 2)
+            >>> c.get('a')
+            1
+            >>> c.put('c', 3)
+            >>> c.get('b')
+            -1
+        """
         node = self.map.get(key)
         if node is not None:
             node.val = val
@@ -93,7 +114,17 @@ def lru_memo(maxsize=128, path=None):
     - thread-safe
     - crash-resilient persistence: write-temp + atomic rename, so the file
       on disk is always either the old snapshot or the new one, never a
-      torn write."""
+      torn write.
+
+    Example:
+        >>> sq = lru_memo(maxsize=8)(lambda n: n * n)
+        >>> sq(12)
+        144
+        >>> sq(12)
+        144
+        >>> (sq.hits, sq.misses)
+        (1, 1)
+    """
     def deco(fn):
         store = OrderedDict()
         lock = threading.Lock()

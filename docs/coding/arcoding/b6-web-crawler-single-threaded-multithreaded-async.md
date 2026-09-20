@@ -30,10 +30,25 @@ from urllib.parse import urlparse
 
 
 def same_host(a: str, b_host: str) -> bool:
+    """True if URL a lives on host b_host.
+
+    Example:
+        >>> same_host('http://ex.com/x', 'ex.com')
+        True
+        >>> same_host('http://other.com/y', 'ex.com')
+        False
+    """
     return urlparse(a).netloc == b_host
 
 
 def crawl(start_url, get_links):
+    """Single-threaded same-host crawl; returns every reachable URL.
+
+    Example:
+        >>> site = {'/': ['/a', '/b', 'http://x.com/z'], '/a': ['/b'], '/b': []}
+        >>> sorted(crawl('/', lambda u: site.get(u, [])))
+        ['/', '/a', '/b']
+    """
     host = urlparse(start_url).netloc
     seen = {start_url}
     stack = [start_url]                      # DFS; deque.popleft() for BFS
@@ -56,6 +71,13 @@ from concurrent.futures import ThreadPoolExecutor
 
 
 def crawl_mt(start_url, get_links, workers=8):
+    """Same crawl across a thread pool; check-and-add on `seen` is locked.
+
+    Example:
+        >>> site = {'/': ['/a', '/b'], '/a': ['/b'], '/b': []}
+        >>> sorted(crawl_mt('/', lambda u: site.get(u, []), workers=4))
+        ['/', '/a', '/b']
+    """
     host = urlparse(start_url).netloc
     seen = {start_url}
     lock = threading.Lock()
@@ -86,6 +108,13 @@ import queue
 
 
 def crawl_q(start_url, get_links, workers=8):
+    """Same crawl with a work queue and poison-pill shutdown.
+
+    Example:
+        >>> site = {'/': ['/a', '/b'], '/a': ['/b'], '/b': []}
+        >>> sorted(crawl_q('/', lambda u: site.get(u, []), workers=4))
+        ['/', '/a', '/b']
+    """
     host = urlparse(start_url).netloc
     seen = {start_url}
     lock = threading.Lock()
@@ -129,6 +158,15 @@ import asyncio
 
 async def crawl_async(start_url, aget_links, *, concurrency=20,
                       per_request_timeout=10, max_retries=2):
+    """Same crawl on the event loop, bounded by a semaphore.
+
+    Example:
+        >>> import asyncio
+        >>> site = {'/': ['/a', '/b'], '/a': [], '/b': []}
+        >>> async def links(u): return site.get(u, [])
+        >>> sorted(asyncio.run(crawl_async('/', links)))
+        ['/', '/a', '/b']
+    """
     host = urlparse(start_url).netloc
     seen = {start_url}
     sem = asyncio.Semaphore(concurrency)              # politeness knob

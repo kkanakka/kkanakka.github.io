@@ -32,7 +32,13 @@ from collections import deque
 
 def infection_times(grid, k):
     """grid: 1 = infected at round 0, 0 = healthy.
-    Returns times[r][c] = infection round, or -1 if never infected."""
+    Returns times[r][c] = infection round, or -1 if never infected.
+
+    Example:
+        >>> grid = [[1, 0, 0], [0, 0, 0], [0, 0, 1]]
+        >>> infection_times(grid, k=1)
+        [[0, 1, 2], [1, 2, 1], [2, 1, 0]]
+    """
     R, C = len(grid), len(grid[0])
     times = [[-1] * C for _ in range(R)]
     infected_nbrs = [[0] * C for _ in range(R)]

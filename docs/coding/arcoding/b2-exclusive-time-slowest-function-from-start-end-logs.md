@@ -40,7 +40,13 @@ def profile(events, *, end_inclusive=False):
     """events: iterable of (name, 'START'|'END', t), t non-decreasing.
     end_inclusive=True treats an END at t as running through the end of
     time unit t (the LeetCode-636 convention) — ask which one applies!
-    Returns (exclusive_times, (slowest_name, slowest_wall), call_log)."""
+    Returns (exclusive_times, (slowest_name, slowest_wall), call_log).
+
+    Example:
+        >>> evs = [('main','START',0), ('work','START',2), ('work','END',5), ('main','END',6)]
+        >>> profile(evs, end_inclusive=True)
+        ({'main': 3, 'work': 4}, ('main', 7), [('work', 2, 6, 1), ('main', 0, 7, 0)])
+    """
     bump = 1 if end_inclusive else 0
     excl = defaultdict(int)
     stack = []                     # [name, entry_t, last_resume_t]
@@ -81,7 +87,13 @@ def profile(events, *, end_inclusive=False):
 
 
 def stack_at(call_log, T):
-    """Active call stack at time T, outermost first (variant c)."""
+    """Active call stack at time T, outermost first (variant c).
+
+    Example:
+        >>> _, _, log = profile([('main','START',0), ('work','START',2), ('work','END',5), ('main','END',6)], end_inclusive=True)
+        >>> stack_at(log, 3)
+        ['main', 'work']
+    """
     frames = [(d, n) for n, s, e, d in call_log if s <= T < e]
     return [n for d, n in sorted(frames)]
 ```

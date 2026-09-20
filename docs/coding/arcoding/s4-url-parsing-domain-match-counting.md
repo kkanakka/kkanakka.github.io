@@ -36,10 +36,24 @@ URL_RE = re.compile(r"""https?://[^\s<>"'\)\]]+""", re.IGNORECASE)
 
 
 def extract_urls(text: str) -> list[str]:
+    """Example.
+
+    Example:
+        >>> extract_urls('see https://a.example.com/x and http://example.com.')
+        ['https://a.example.com/x', 'http://example.com']
+    """
     return [u.rstrip(".,;:!?") for u in URL_RE.findall(text)]   # trim trailing punctuation
 
 
 def normalize_host(url: str) -> str | None:
+    """Example.
+
+    Example:
+        >>> normalize_host('https://EXAMPLE.com:8443/p')
+        'example.com'
+        >>> normalize_host('https://user:pw@api.example.com/v1')
+        'api.example.com'
+    """
     try:
         host = urlparse(url).netloc
     except ValueError:
@@ -50,11 +64,28 @@ def normalize_host(url: str) -> str | None:
 
 
 def host_matches(host: str, domain: str) -> bool:
+    """Example.
+
+    Example:
+        >>> host_matches('api.example.com', 'example.com')
+        True
+        >>> host_matches('notexample.com', 'example.com')
+        False
+        >>> host_matches('example.com.evil.net', 'example.com')
+        False
+    """
     domain = domain.lower().rstrip(".")
     return host == domain or host.endswith("." + domain)
 
 
 def count_domain(docs: list[str], domain: str) -> int:
+    """Example.
+
+    Example:
+        >>> docs = ['visit https://api.example.com and http://example.com', 'https://evil.net/x']
+        >>> count_domain(docs, 'example.com')
+        2
+    """
     n = 0
     for doc in docs:
         for url in extract_urls(doc):

@@ -33,7 +33,14 @@ from collections import defaultdict
 
 
 def digest(path, limit=None, chunk=1 << 20, algo="sha256"):
-    """Streaming hash — constant memory regardless of file size."""
+    """Streaming hash — constant memory regardless of file size.
+
+    Example:
+        # hashes a file in 1 MB blocks, so memory stays flat for any size
+        digest(path)          # for b'hello world' * 100
+        '68cd07733b3b9792...'  # full 64-char sha256 hex
+        digest(path, limit=4096)   # hash only the first 4 KB (stage 2)
+    """
     h = hashlib.new(algo)
     remaining = limit
     with open(path, "rb") as f:
@@ -50,7 +57,13 @@ def digest(path, limit=None, chunk=1 << 20, algo="sha256"):
 
 def identical(p1, p2, chunk=1 << 20):
     """Optional stage 4: byte compare for certainty (or for the paranoid
-    interviewer who asks about hash collisions)."""
+    interviewer who asks about hash collisions).
+
+    Example:
+        # byte-for-byte compare, for the paranoid final stage
+        identical('a.txt', 'b.txt')   # same bytes  -> True
+        identical('a.txt', 'd.txt')   # differ      -> False
+    """
     with open(p1, "rb") as f1, open(p2, "rb") as f2:
         while True:
             b1, b2 = f1.read(chunk), f2.read(chunk)
@@ -61,6 +74,13 @@ def identical(p1, p2, chunk=1 << 20):
 
 
 def duplicate_groups(root, follow_symlinks=False):
+    """Example.
+
+    Example:
+        # given a.txt == b.txt == nested/c.txt, and a unique d.txt:
+        duplicate_groups(root)
+        [['.../a.txt', '.../b.txt', '.../nested/c.txt']]
+    """
     by_size = defaultdict(list)                       # stage 1: size
     for dirpath, dirnames, filenames in os.walk(root,
                                                 followlinks=follow_symlinks):
@@ -100,7 +120,13 @@ def duplicate_groups(root, follow_symlinks=False):
 
 ```python
 def duplicates_from_records(records):
-    """records like: 'root/a 1.txt(abc) 2.txt(def)' — group by content."""
+    """records like: 'root/a 1.txt(abc) 2.txt(def)' — group by content.
+
+    Example:
+        >>> recs = ['root/a 1.txt(abc) 2.txt(xyz)', 'root/b 3.txt(abc)']
+        >>> duplicates_from_records(recs)
+        [['root/a/1.txt', 'root/b/3.txt']]
+    """
     by_content = defaultdict(list)
     for rec in records:
         parts = rec.split()

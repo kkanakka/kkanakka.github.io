@@ -70,7 +70,12 @@ def shape_of_the_spike(latencies_ms):
     Everything moving together == a uniform per-request cost increase.
 
     These two findings send you down completely different paths, so this
-    is the first thing to compute and the first thing to say out loud."""
+    is the first thing to compute and the first thing to say out loud.
+
+    Example:
+        >>> shape_of_the_spike([10, 10, 10, 10, 500])
+        {'mean': 108.0, 'p50': 10, 'p95': 500, 'p99': 500, 'tail_ratio': 50.0, 'verdict': 'subset stalling'}
+    """
     xs = sorted(latencies_ms)
     n  = len(xs)
     p = lambda q: xs[min(n - 1, int(q * n))]          # nearest-rank percentile
@@ -151,7 +156,13 @@ async def timed_pool_acquire(pool, report):
 def looks_like_retry_amplification(our_p99_ms, dep_timeout_ms, max_attempts):
     """A dependency that got slightly slower becomes a cliff once retries
     multiply it. Retries need all three of: backoff, jitter, and a budget —
-    without them they amplify the very incident that triggered them."""
+    without them they amplify the very incident that triggered them.
+
+    Example:
+        >>> looks_like_retry_amplification(2100, dep_timeout_ms=1000, max_attempts=3)
+        'p99 ~= 2 x dependency timeout — retry storm'
+        >>> looks_like_retry_amplification(640, dep_timeout_ms=1000, max_attempts=3)   # -> None
+    """
     for attempts in range(1, max_attempts + 1):
         expected = attempts * dep_timeout_ms
         if abs(our_p99_ms - expected) / expected < 0.15:      # within 15%
@@ -209,6 +220,14 @@ class LatencyLedger:
 
     @contextlib.contextmanager
     def phase(self, name):
+        """Example.
+
+        Example:
+            led = LatencyLedger()
+            with led.phase('db'):      # times the block
+                run_query()
+            led.phases['db']           # -> seconds spent, e.g. 0.21
+        """
         t0 = time.perf_counter()
         try:
             yield
@@ -218,6 +237,12 @@ class LatencyLedger:
             self.phases[name] = self.phases.get(name, 0.0) + (time.perf_counter() - t0)
 
     def finish(self):
+        """Example.
+
+        Example:
+            led.finish()   # phase totals plus the gap before any phase began:
+            {'db': 0.21, 'unaccounted': 0.01, 'total': 0.22}   # seconds; values vary
+        """
         total = time.perf_counter() - self._start
         accounted = sum(self.phases.values())
         # The gap is the finding: time the request spent queued BEFORE any
