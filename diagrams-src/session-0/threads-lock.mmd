@@ -1,0 +1,18 @@
+sequenceDiagram
+    autonumber
+    participant T1 as Thread 1
+    participant M as counter (shared)
+    participant T2 as Thread 2
+    Note over T1,T2: WITHOUT the lock — counter += 1 is read, add, write
+    T1->>M: read counter → 41
+    T2->>M: read counter → 41
+    T1->>M: write 42
+    T2->>M: write 42
+    Note over T1,T2: two increments happened, the value rose by ONE — a lost update
+    Note over T1,T2: WITH `with lock:` — the three steps become one unit
+    T1->>M: acquire lock
+    T1->>M: read 42, add, write 43
+    T1->>M: release lock
+    T2->>M: acquire lock (waited here)
+    T2->>M: read 43, add, write 44
+    T2->>M: release lock

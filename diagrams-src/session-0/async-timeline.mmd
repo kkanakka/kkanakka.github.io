@@ -1,0 +1,16 @@
+flowchart TB
+    subgraph SEQ["await one, THEN the next — about 3 s"]
+        direction LR
+        S1["fetch u1<br/>0 s → 1 s"] --> S2["fetch u2<br/>1 s → 2 s"] --> S3["fetch u3<br/>2 s → 3 s"]
+    end
+    subgraph GAT["asyncio.gather(...) — about 1 s"]
+        direction LR
+        G1["fetch u1<br/>0 s → 1 s"]
+        G2["fetch u2<br/>0 s → 1 s"]
+        G3["fetch u3<br/>0 s → 1 s"]
+    end
+    SEQ --> LOOP["ONE thread, one event loop.<br/>Each await hands control back to the loop,<br/>which runs whichever task is ready."]
+    GAT --> LOOP
+    LOOP --> RULE["So a BLOCKING call inside async def<br/>(time.sleep, requests.get) freezes every task —<br/>nothing else can run. That is S5's hypothesis #1."]
+    RULE:::bad
+    classDef bad fill:#ffe0e0,stroke:#8a1c1c,color:#1f2328

@@ -1,0 +1,13 @@
+flowchart TB
+    T["try:<br/>process(msg)"] --> Q{"did it raise?"}
+    Q -- "no" --> OK["the try block finishes"]
+    Q -- "yes" --> M{"does an except clause match the type?"}
+    M -- "yes · except OSError" --> H["handler runs — recover and carry on<br/>(B7 skips the vanished file)"]
+    M -- "no match" --> P["the exception keeps propagating up the call stack"]:::bad
+    OK --> F["finally:<br/>q.task_done()"]
+    H --> F
+    P --> F
+    F --> NOTE["finally runs on ALL three paths —<br/>that is why S3 acks there and nowhere else"]
+    NOTE:::note
+    classDef bad fill:#ffe0e0,stroke:#8a1c1c,color:#1f2328
+    classDef note fill:#fff8e6,stroke:#d4a72c,color:#4d2d00

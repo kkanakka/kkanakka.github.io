@@ -1,0 +1,21 @@
+flowchart TB
+    subgraph S1["1 · after cache['a'], ['b'], ['c']"]
+        direction LR
+        A1["a<br/>(oldest)"] --> B1["b"] --> C1["c<br/>(newest)"]
+    end
+    subgraph S2["2 · cache.move_to_end('a') — 'a' was just used"]
+        direction LR
+        B2["b<br/>(oldest)"] --> C2["c"] --> A2["a<br/>(newest)"]
+    end
+    subgraph S3["3 · cache.popitem(last=False) — evict the front"]
+        direction LR
+        C3["c<br/>(oldest)"] --> A3["a<br/>(newest)"]
+        B3["b evicted"]:::gone
+    end
+    S1 --> S2 --> S3
+    LRU["front = least recently used = the eviction end"]:::note
+    MRU["back = most recently used = where a touch moves a key"]:::note
+    S3 --- LRU
+    S3 --- MRU
+    classDef gone fill:#ffe0e0,stroke:#8a1c1c,color:#1f2328
+    classDef note fill:#fff8e6,stroke:#d4a72c,color:#4d2d00

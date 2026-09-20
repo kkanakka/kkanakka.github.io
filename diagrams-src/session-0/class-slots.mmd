@@ -1,0 +1,14 @@
+flowchart TB
+    subgraph N["an ordinary class"]
+        direction LR
+        O1["_Node instance"] --> D1["__dict__ — a hash table<br/>per object, with resize headroom"]
+    end
+    N --> MID["self.key reads identically in both —<br/>the difference is what sits behind the attribute"]
+    MID --> S
+    subgraph S["__slots__ = ('key','val','prev','next')"]
+        direction LR
+        O2["_Node instance"] --> D2["four fixed slots laid out inline —<br/>no per-instance dict at all"]
+    end
+    S --> WHEN["attribute access becomes a fixed offset instead of a hash<br/>lookup, and each object drops the dict's overhead.<br/>It only matters in the millions — B3 makes one _Node per entry."]:::note
+    S --> COST["the trade: no new attributes at runtime,<br/>and no __dict__ to poke at while debugging"]:::note
+    classDef note fill:#fff8e6,stroke:#d4a72c,color:#4d2d00

@@ -1,0 +1,17 @@
+flowchart TB
+    subgraph BAD["the clock read INSIDE the method"]
+        direction TB
+        B1["store.get('k')"] --> B2["expiry &lt;= time.time()?"]
+        B2 --> B3["to test expiry at all, the test<br/>has to really sleep for 10 seconds"]:::bad
+    end
+    subgraph GOOD["the clock passed IN as a parameter"]
+        direction TB
+        G1["store.get('k', now=109)"] --> G2["expiry &lt;= now?"]
+        G2 --> G3["assert alive at 109, dead at 110 —<br/>instant, deterministic, nothing sleeps"]:::good
+    end
+    BAD --> WHY["Same logic either way; the only question is who supplies 'now'.<br/>Injecting it lets the grader replay any timeline it likes, and<br/>'inject the clock' is a habit interviewers actively look for."]
+    GOOD --> WHY
+    WHY --> MONO["Durations are a separate matter: time.monotonic() only ever moves<br/>forward, while time.time() can jump backwards when NTP corrects it."]:::note
+    classDef bad fill:#ffe0e0,stroke:#8a1c1c,color:#1f2328
+    classDef good fill:#dafbe1,stroke:#1a7f37,color:#1f2328
+    classDef note fill:#fff8e6,stroke:#d4a72c,color:#4d2d00

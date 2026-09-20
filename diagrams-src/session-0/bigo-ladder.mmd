@@ -1,0 +1,18 @@
+---
+config:
+  flowchart:
+    wrappingWidth: 700
+---
+flowchart TB
+    Q["You have a pile of n things.<br/>When the pile DOUBLES, how much more work do you do?"]
+    Q --> O1["O(1) — constant<br/>you already know the page number, so you flip straight to it<br/>pile doubles → exactly the same work"]:::best
+    O1 --> OL["O(log n) — halving<br/>open the middle, throw away half, repeat<br/>pile doubles → just ONE extra step"]:::good
+    OL --> ON["O(n) — linear<br/>you read every name once<br/>pile doubles → twice the work"]:::ok
+    ON --> ONL["O(n log n) — sorting<br/>you read everything, about log n times over<br/>pile doubles → a bit more than twice"]:::ok
+    ONL --> ON2["O(n²) — every pair<br/>every kid high-fives every other kid<br/>pile doubles → FOUR times the work"]:::bad
+    ON2 --> NOTE["Each rung is a different ANSWER to that one question.<br/>That answer is the whole of Big-O — not seconds, not how fast your laptop is."]:::note
+    classDef best fill:#dafbe1,stroke:#1a7f37,color:#1f2328
+    classDef good fill:#dafbe1,stroke:#1a7f37,color:#1f2328
+    classDef ok fill:#ddf4ff,stroke:#0969da,color:#1f2328
+    classDef bad fill:#ffe0e0,stroke:#8a1c1c,color:#1f2328
+    classDef note fill:#fff8e6,stroke:#d4a72c,color:#4d2d00

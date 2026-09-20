@@ -1,0 +1,14 @@
+flowchart TB
+    subgraph L["[n*2 for n in nums] — a list comprehension"]
+        direction LR
+        LA["read every item"] --> LB["build EVERY result<br/>6, 2, 8, 2, 10"] --> LC["hand back the finished list"]
+    end
+    L --> N1["memory grows with the input —<br/>fine for five items, fatal for a 10 GB scan"]:::note
+    N1 --> G
+    subgraph G["(n*2 for n in nums) — a generator"]
+        direction LR
+        GA["read ONE item"] --> GB["yield ONE result"] --> GC["caller consumes it,<br/>then asks for the next"]
+        GC -. "resume where it left off" .-> GA
+    end
+    G --> N2["one item resident at a time — this is why<br/>S1.scan and B6's frontier stream instead of materialising"]:::note
+    classDef note fill:#fff8e6,stroke:#d4a72c,color:#4d2d00

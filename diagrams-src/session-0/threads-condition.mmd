@@ -1,0 +1,17 @@
+sequenceDiagram
+    autonumber
+    participant C as Consumer
+    participant L as Condition (lock + waiting room)
+    participant P as Producer
+    C->>L: with cond → acquire the lock
+    C->>C: while not items → the fact is false
+    C->>L: cond.wait()
+    Note over C,L: wait() RELEASES the lock and sleeps —<br/>otherwise no producer could ever get in
+    P->>L: with cond → acquire the lock
+    P->>P: items.append(x)
+    P->>L: cond.notify()
+    P->>L: leaving the with block releases the lock
+    L-->>C: woken up
+    C->>L: re-acquire the lock (automatic)
+    C->>C: re-check `while not items` — now true, take the item
+    Note over C: the loop is `while`, never `if`:<br/>a wake-up is a hint, not a guarantee

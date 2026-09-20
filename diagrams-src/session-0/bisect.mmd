@@ -1,0 +1,17 @@
+flowchart TB
+    subgraph ARR["timestamps = [10, 20, 30, 40] (already sorted)"]
+        direction LR
+        T0["10<br/>i=0"] --- T1["20<br/>i=1"] --- T2["30<br/>i=2"] --- T3["40<br/>i=3"]
+    end
+    Q25["value_at(25)"] --> B25["bisect_right(ts, 25) = 2<br/>two entries are ≤ 25"]
+    B25 --> V25["values[2-1] = values[1] = 'b'"]
+    Q30["value_at(30)"] --> B30["bisect_right(ts, 30) = 3<br/>an exact hit counts as ≤ t"]
+    B30 --> V30["values[3-1] = values[2] = 'c'"]
+    Q05["value_at(5)"] --> B05["bisect_right(ts, 5) = 0"]
+    B05 --> V05["i == 0 → nothing was written yet → None"]
+    ARR --> Q25
+    ARR --> Q30
+    ARR --> Q05
+    V30 --- NOTE["bisect_LEFT(ts, 30) would give 2 → 'b':<br/>the write AT time t would be invisible at time t.<br/>That one index is the whole difference."]
+    NOTE:::note
+    classDef note fill:#fff8e6,stroke:#d4a72c,color:#4d2d00

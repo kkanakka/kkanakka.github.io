@@ -1,0 +1,18 @@
+flowchart TB
+    subgraph TREE["the heap invariant: every parent ≤ both children"]
+        R["(100, 'wake-up')<br/>index 0"]
+        C1["(300, 'pay-rent')<br/>index 1"]
+        C2["(200, 'coffee')<br/>index 2"]
+        R --> C1
+        R --> C2
+    end
+    subgraph LIST["…but it is just a plain list"]
+        direction LR
+        L0["h[0]<br/>(100, wake-up)"] --- L1["h[1]<br/>(300, pay-rent)"] --- L2["h[2]<br/>(200, coffee)"]
+    end
+    TREE --> LIST
+    LIST --> PEEK["h[0] is ALWAYS the smallest → peek is O(1)<br/>children of i live at 2i+1 and 2i+2"]
+    PEEK --> POP["heappop: take h[0], move the last item to the root,<br/>sift it down until the invariant holds again → O(log n)"]
+    POP --> USE["the settle() pattern:<br/>while sched and sched[0][0] &lt;= now: heappop"]
+    USE:::note
+    classDef note fill:#fff8e6,stroke:#d4a72c,color:#4d2d00

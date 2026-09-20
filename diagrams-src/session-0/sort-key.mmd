@@ -1,0 +1,11 @@
+flowchart TB
+    subgraph IN["each item is decorated by key=lambda kv: (-kv[1], kv[0])"]
+        direction TB
+        I1["('bob', 300)"] --> K1["(-300, 'bob')"]
+        I2["('amy', 300)"] --> K2["(-300, 'amy')"]
+        I3["('cat', 100)"] --> K3["(-100, 'cat')"]
+    end
+    IN --> CMP["tuples compare LEFT TO RIGHT: −300 &lt; −100, so the<br/>biggest spenders sort first — negating a field flips it.<br/>Only on a tie does the second field decide: 'amy' &lt; 'bob'."]
+    CMP --> OUT["[('amy', 300), ('bob', 300), ('cat', 100)]"]
+    OUT --> ST["and the sort is STABLE: fully equal keys keep their original order"]:::note
+    classDef note fill:#fff8e6,stroke:#d4a72c,color:#4d2d00

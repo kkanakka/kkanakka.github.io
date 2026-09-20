@@ -1,0 +1,17 @@
+flowchart TB
+    subgraph READ["hashing a file bigger than RAM (B7)"]
+        direction TB
+        F["file on disk — 8 GB"] --> R["block = f.read(1 &lt;&lt; 20)<br/>one 1 MB slice"]
+        R --> E{"block empty?"}
+        E -- "no" --> U["h.update(block), then drop it"]
+        U --> R
+        E -- "yes · EOF" --> D["h.hexdigest()"]
+    end
+    subgraph SAVE["saving without ever leaving a torn file (B3)"]
+        direction TB
+        W1["write the new JSON to a TEMP file"] --> W2["os.replace(tmp, 'cache.json')"]
+        W2 --> W3["an atomic rename: a reader sees the OLD file<br/>or the NEW one, never a half-written one"]
+    end
+    READ --> MEM["peak memory = ONE block,<br/>whatever the file size"]:::note
+    SAVE --> CRASH["crash mid-write? the temp file is garbage and the<br/>real file is still the last good snapshot"]:::note
+    classDef note fill:#fff8e6,stroke:#d4a72c,color:#4d2d00

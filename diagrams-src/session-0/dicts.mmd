@@ -1,0 +1,11 @@
+flowchart TD
+    S["spent['alice'] += 50"] --> Q{"is 'alice' already a key?"}
+    Q -- "yes" --> R["read the stored value"]
+    Q -- "no · plain dict{}" --> E["KeyError — the program stops"]
+    Q -- "no · defaultdict(int)" --> D["call the factory: int() → 0<br/>insert 'alice' → 0"]
+    Q -- "no · Counter()" --> C["missing key reads as 0<br/>(no insert until you write)"]
+    D --> R
+    C --> R
+    R --> W["add 50, store it back"]
+    E:::bad
+    classDef bad fill:#ffe0e0,stroke:#8a1c1c,color:#1f2328

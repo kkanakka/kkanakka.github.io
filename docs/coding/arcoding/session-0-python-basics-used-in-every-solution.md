@@ -11,9 +11,101 @@ description: "Session 0 · Python basics used in every solution"
 ## Session 0 · Python basics used in every solution
 
 <p class="lede">Every construct that appears in the 21 solutions, taught with tiny commented examples. Work through this once before the coding sections; each mini-lesson says exactly which questions use it.</p>
+<h3 id="py-bigo">0.0 Reading O(1), O(log n), O(n) — what the letters mean</h3>
+<p class="covers">Used in: every "Complexity &amp; efficiency" box in this guide — read this first</p>
+<p>Picture a phone book with <code>n</code> names in it. Big-O is <em>not</em> "how many seconds" and <em>not</em> "how fast is my laptop." It answers exactly one question: <strong>when the phone book gets bigger, how much more work do I have to do?</strong> Everything else is detail.</p>
+
+<img src="/diagrams/session-0/bigo-ladder.svg" alt="A ladder of complexity classes answering one question — when the pile doubles, how much more work do you do: O(1) the same, O(log n) one extra step, O(n) twice, O(n log n) a bit more than twice, O(n squared) four times." class="doc-diagram doc-diagram-seq" />
+
+<p>Three rules make the notation readable, and they are the only three:</p>
+<ol>
+<li><strong><code>n</code> is the size of your pile — and you must say what it is.</strong> "O(n) where n is the number of log events" is an answer; a bare "O(n)" is half of one.</li>
+<li><strong>Constants are thrown away.</strong> Reading the book twice is <code>2n</code>, which is still O(n): double the pile, double the work, whether the multiplier is 2 or 200.</li>
+<li><strong>Only the biggest term survives.</strong> <code>n² + n + 5</code> is O(n²) — once <code>n</code> is a million, the <code>n²</code> part dwarfs everything else so completely that the rest is rounding error.</li>
+</ol>
+<h4>O(1) — constant: the pile size does not matter</h4>
+<p>You already know the page number, so you flip straight to it. The book can hold a hundred names or a hundred million — it is still one flip.</p>
+
+```python
+d["alice"]        # a dict lookup jumps straight to the slot
+h[0]              # the smallest item in a heap is always at index 0
+len(items)        # Python stores the count; it does not recount
+stack.append(x)   # adding to the end of a list
+```
+
+<div class="adm info"><div class="adm-title">📍 Where you'll use it</div>
+<p>Dict get/set — in <em>every</em> solution. Peeking <code>sched[0][0]</code> before deciding whether to pop (B5, B12, S1). <code>MinStack.push/pop/top/get_min</code>, where O(1) is the entire point of the question (B10). <code>move_to_end</code> and <code>popitem</code> in the LRU cache (B3). <code>TokenBucket.allow</code>, which recomputes tokens from elapsed time instead of scanning history (S2).</p></div>
+<h4>O(log n) — halving: doubling the pile costs one more step</h4>
+<p>Open the book in the middle. The name you want is in one half, so throw the other half away. Repeat. A million names takes about 20 steps, and two million takes 21 — that is what "logarithmic" buys you.</p>
+
+```python
+i = bisect.bisect_right(timestamps, t)   # ~20 comparisons over a million entries
+heapq.heappush(h, (due, seq, payload))   # sift up through the tree's height
+heapq.heappop(h)                         # sift down through the tree's height
+```
+
+<div class="adm info"><div class="adm-title">📍 Where you'll use it</div>
+<p>Every "latest value at or before time t" query: B4's versioned reads, B5's <code>balance_at</code>, B11's <code>status_at</code> — all <code>bisect</code> on a sorted timestamp list. Every scheduled-work heap: B12's expiring grants, B5's cashback queue, S1's TTL expiry. The heap's height <em>is</em> the log.</p></div>
+<h4>O(n) — linear: touch each thing once</h4>
+<p>You read every name in the book. Twice the names, twice the reading. This is the honest cost of "look at all the data", and it is usually the best possible answer when the question genuinely requires seeing everything.</p>
+
+```python
+for t, stack in samples:      # one pass over the samples (B1)
+    ...
+max(counts.values())          # one pass to find the biggest
+"".join(parts)                # one pass over the pieces
+```
+
+<div class="adm info"><div class="adm-title">📍 Where you'll use it</div>
+<p>B9's tokenizer sweeps the text once. B16's infection BFS visits each cell once — here <code>n</code> is <code>rows × columns</code>, which is worth saying out loud. B7 walks the directory tree once to bucket files by size. B14 folds each streaming chunk in as it arrives. B1 and B2 each make a single pass over the event list.</p></div>
+<h4>O(n log n) — sorting: read everything, about log n times over</h4>
+<p>Shuffle a deck and put it in order properly: you keep merging sorted runs into bigger sorted runs, and there are about <code>log n</code> rounds of merging. This is what <code>sorted()</code> costs, and it is the floor for comparison-based sorting — you cannot do better without extra assumptions.</p>
+
+```python
+ranked = sorted(spend.items(), key=lambda kv: (-kv[1], kv[0]))   # B5
+sorted(k for k in self._d if k.startswith(prefix))               # S1.scan
+```
+
+<div class="adm info"><div class="adm-title">📍 Where you'll use it</div>
+<p>B5's <code>top_spenders</code> sorts the whole spend table. S1's and B4's <code>scan</code> sort the matching keys before returning. B11's <code>nodes_in</code> sorts for a deterministic answer. Useful follow-up to have ready: if you only need the top 3, <code>heapq.nlargest(3, …)</code> is O(n log 3) — effectively O(n) — and beats sorting everything.</p></div>
+<h4>O(n²) — every pair: the one you are usually avoiding</h4>
+<p>Every kid in the class high-fives every other kid. Twenty kids is 190 high-fives; forty kids is 780 — double the class, <em>quadruple</em> the work. Two nested loops over the same data is the shape to watch for.</p>
+
+```python
+for a in files:               # the naive duplicate finder
+    for b in files:           # compare everything with everything
+        if same_content(a, b):
+            ...
+```
+
+<div class="adm info"><div class="adm-title">📍 Where you'll use it</div>
+<p>Mostly, you don't — you <em>replace</em> it, and saying so is the point being tested. B7's deduplication is exactly this problem, and its size → first-4 KB → full-hash pipeline collapses the pairwise comparison into a near-linear group-by. The general move is the same every time: <strong>hash into buckets, or sort once, instead of comparing every pair.</strong></p></div>
+<h4>Why the difference is not academic</h4>
+<p>Steps taken for a pile of <code>n</code> items, assuming one step per unit:</p>
+<div class="tablewrap"><table>
+<tr><th>Shape</th><th>n = 1,000</th><th>n = 1,000,000</th><th>Feels like</th></tr>
+<tr><td>O(1)</td><td>1</td><td>1</td><td>instant, forever</td></tr>
+<tr><td>O(log n)</td><td>~10</td><td>~20</td><td>instant, forever</td></tr>
+<tr><td>O(n)</td><td>1,000</td><td>1,000,000</td><td>a blink</td></tr>
+<tr><td>O(n log n)</td><td>~10,000</td><td>~20,000,000</td><td>still well under a second</td></tr>
+<tr><td>O(n²)</td><td>1,000,000</td><td>1,000,000,000,000</td><td>a trillion steps — hours to days</td></tr>
+</table></div>
+<p>That last row is the whole reason this notation exists. At a thousand items, every approach on this list looks fine on your laptop; at a million, the gap between O(n log n) and O(n²) is the gap between "done" and "still running tomorrow."</p>
+<h4>Two words that will come up</h4>
+<p><strong>Amortized.</strong> "Usually instant, occasionally a big tidy-up, and cheap on average." <code>list.append</code> is amortized O(1): most appends just write into spare space, but now and then the list outgrows its block and copies everything to a bigger one. Spread over all the appends, it averages out to constant. Worth knowing because B10 claims something stronger — its O(1) is <em>hard</em>, worst-case, every single call, with no occasional expensive one hiding in the average.</p>
+<p><strong>Space complexity.</strong> Same letters, counting memory instead of steps. B10 stores a pair per element, so O(n) space. B7 hashes an 8 GB file in O(1) space by reading 1 MB at a time. That is also the real difference between a list comprehension and a generator in lesson 0.3: same O(n) time, but O(n) space versus O(1).</p>
+<div class="card"><h4 style="margin-top:0">🎯 5 things they commonly ask about complexity</h4>
+<p><strong>Q1) "What is the complexity of your solution?"</strong> — Answer in three parts, always: time, space, and what <code>n</code> is. "O(n log n) time where n is the number of events, O(n) space for the call log."</p>
+<p><strong>Q2) "Can you do better?"</strong> — Sometimes the honest answer is no, and saying why scores: if the problem requires looking at every item, O(n) is the floor. B10's O(1)-everything is optimal for the same reason — you cannot beat constant.</p>
+<p><strong>Q3) "What is the complexity of <code>x in my_list</code>?"</strong> — O(n), because it scans. <code>x in my_set</code> and <code>x in my_dict</code> are O(1). Swapping a list for a set is the single most common way an O(n²) loop becomes O(n).</p>
+<p><strong>Q4) "What about the worst case?"</strong> — Dict and set operations are O(1) <em>average</em>; with adversarial key collisions they degrade. Say "average O(1)" and you have shown you know the difference.</p>
+<p><strong>Q5) "Two loops, one after the other — is that O(n²)?"</strong> — No. Sequential loops <em>add</em>: n + n = 2n = O(n). Only <em>nested</em> loops multiply. This trips people up constantly, so check whether the second loop is inside the first or after it.</p>
+</div>
 <h3 id="py-dicts">0.1 Dictionaries, <code>defaultdict</code>, <code>Counter</code></h3>
 <p class="covers">Used in: almost everything — S1, S4, B2, B5, B7, B11 …</p>
 <p>A dict maps keys to values. <code>defaultdict</code> is a dict that auto-creates a starting value the first time you touch a missing key — it removes the "does the key exist yet?" boilerplate. <code>Counter</code> is a dict specialized for counting.</p>
+
+<img src="/diagrams/session-0/dicts.svg" alt="A missing key branches three ways: a plain dict raises KeyError, defaultdict(int) calls the factory and inserts 0, and Counter reads as 0 without inserting." class="doc-diagram doc-diagram-seq" />
 
 ```python
 # --- plain dict -----------------------------------------------------
@@ -84,6 +176,8 @@ def first_unique(s):
 <p class="covers">Used in: B1 (samples), B2 (events), B5 (top spenders), B12 (heap entries)</p>
 <p>A tuple is a fixed little bundle of values: <code>(timestamp, name)</code>. Two superpowers: they <em>unpack</em> into variables, and they compare element-by-element — which is how you sort by multiple criteria at once.</p>
 
+<img src="/diagrams/session-0/sort-key.svg" alt="sorted() decorates each item with the key function, then compares the resulting tuples left to right; negating a field reverses that field, and equal keys keep their original order." class="doc-diagram doc-diagram-seq" />
+
 ```python
 record = (1200, "deposit", 50)      # a tuple: time, kind, amount
 t, kind, amount = record            # UNPACKING: three variables at once
@@ -134,6 +228,8 @@ nums.sort(key=lambda x: x % 2)       # Python's sort is STABLE:
 </div>
 <h3 id="py-comp">0.3 Comprehensions, generators, and <code>for/else</code></h3>
 <p class="covers">Used in: S1 (scan), B1, B6 (frontier), B9 (tokenizer), B13</p>
+
+<img src="/diagrams/session-0/generators.svg" alt="A list comprehension builds every result before handing any back; a generator produces one item at a time and resumes where it left off, so memory stays flat." class="doc-diagram doc-diagram-seq" />
 
 ```python
 nums = [3, 1, 4, 1, 5]
@@ -192,6 +288,8 @@ first_admin = next((u for u in users if u.is_admin), None)
 <p class="covers">Used in: B3 (the entire LRU family)</p>
 <p>Modern dicts keep insertion order, but <code>OrderedDict</code> adds two methods that make an LRU cache almost free: move a key to the end, and pop from either end.</p>
 
+<img src="/diagrams/session-0/lru-order.svg" alt="Three states of an OrderedDict: insertion order a, b, c; move_to_end('a') makes it b, c, a; popitem(last=False) evicts b from the front. The front is the least-recently-used end." class="doc-diagram doc-diagram-seq" />
+
 ```python
 from collections import OrderedDict
 
@@ -239,6 +337,8 @@ def fib(n): ...                      # hand-roll only when asked to
 <h3 id="py-heapq">0.5 <code>heapq</code> — always know the smallest item</h3>
 <p class="covers">Used in: S1 (eager expiry), B5 (scheduled cashback), B12 (expiring grants)</p>
 <p>A heap is a list kept arranged so the <em>smallest</em> element is always at index 0. Push and pop cost O(log n). Store tuples and the heap orders by the first element (ties fall to the second — hence the <code>seq</code> counters you see everywhere).</p>
+
+<img src="/diagrams/session-0/heap.svg" alt="A heap is a list whose every parent is smaller than both children, so h[0] is always the minimum; heappop moves the last item to the root and sifts it down in O(log n)." class="doc-diagram doc-diagram-seq" />
 
 ```python
 import heapq
@@ -297,6 +397,8 @@ heapq.heappush(h, (priority, seq, task))
 <p class="covers">Used in: B4 (versioned reads), B5 (historical balance), B11 (status_at)</p>
 <p>Given a sorted list, <code>bisect_right(a, x)</code> returns the index where <code>x</code> would be inserted to keep it sorted, after any equal values. That gives you the guide's most repeated query — <em>"latest entry at or before time t"</em> — in O(log n):</p>
 
+<img src="/diagrams/session-0/bisect.svg" alt="bisect_right on a sorted timestamp list returns the count of entries at or before t, so values[i-1] is the value visible at t; i == 0 means nothing was written yet." class="doc-diagram doc-diagram-seq" />
+
 ```python
 import bisect
 
@@ -343,6 +445,8 @@ best = min(a[max(0, i - 1):i + 1], key=lambda v: abs(v - x))
 </div>
 <h3 id="py-classes">0.7 Classes, <code>self</code>, dataclasses, <code>__slots__</code></h3>
 <p class="covers">Used in: every solution that says <code>class</code> — S1, S2, S3, B3, B5 …</p>
+
+<img src="/diagrams/session-0/class-slots.svg" alt="An ordinary instance keeps its attributes in a per-object __dict__ hash table; a __slots__ class lays the same four fields out inline, trading runtime flexibility for memory and lookup speed." class="doc-diagram doc-diagram-seq" />
 
 ```python
 # --- the anatomy every solution shares ------------------------------
@@ -405,6 +509,8 @@ def from_json(cls, s):
 </div>
 <h3 id="py-except">0.8 Exceptions — <code>try / except / finally / raise</code></h3>
 <p class="covers">Used in: S3 (retries), B3 (loading a corrupt cache), B7 (files vanishing), B8 (bad images)</p>
+
+<img src="/diagrams/session-0/exceptions.svg" alt="Control flow through try/except/finally: a matching except clause recovers, an unmatched exception keeps propagating, and the finally block runs on all three paths." class="doc-diagram doc-diagram-seq" />
 
 ```python
 # --- catch and recover ----------------------------------------------
@@ -482,6 +588,8 @@ finally:
 <h3 id="py-files">0.9 Files, <code>with</code> blocks, and reading in chunks</h3>
 <p class="covers">Used in: B3 (persistence), B7 (hashing huge files)</p>
 
+<img src="/diagrams/session-0/chunked-io.svg" alt="Reading a file one 1 MB block at a time keeps peak memory at one block regardless of file size; saving via a temp file plus an atomic rename means a reader never sees a half-written file." class="doc-diagram doc-diagram-seq" />
+
 ```python
 # --- `with` = open, and GUARANTEE the close, even on errors ---------
 with open("data.txt") as f:      # text mode
@@ -539,6 +647,8 @@ with open(src, "rb") as fin, open(dst, "wb") as fout:
 <p class="covers">Used in: S1, S2, B3, B6 (crawler), B15 (blocking queue)</p>
 <p>Threads run functions "at the same time." When two threads touch the same data, you need a <code>Lock</code> so their read-modify-write steps don't interleave. Python's GIL means threads don't speed up pure CPU work — but they're great for I/O (network, disk), because waiting threads release the GIL.</p>
 
+<img src="/diagrams/session-0/threads-lock.svg" alt="Two threads doing counter += 1 without a lock both read 41 and both write 42, so one increment is lost; with the lock the read-add-write triple becomes one indivisible unit." class="doc-diagram doc-diagram-seq" />
+
 ```python
 import threading
 
@@ -576,6 +686,8 @@ def producer(x):
         cond.notify()            # wake one waiting consumer
 ```
 
+<img src="/diagrams/session-0/threads-condition.svg" alt="A consumer holding the condition calls wait(), which releases the lock and sleeps; the producer appends an item and calls notify(); the consumer re-acquires the lock and re-checks the condition, which is why the guard is a while loop and not an if." class="doc-diagram doc-diagram-seq" />
+
 <div class="adm tip"><div class="adm-title">💡 The GIL in one breath (they will ask)</div>
 <p>"The GIL lets only one thread execute Python bytecode at a time, so threads don't parallelize CPU-bound Python — use <code>multiprocessing</code> for that (B8). Threads still help for I/O-bound work because blocked I/O releases the GIL (B6's crawler)." Memorize that sentence.</p></div>
 <div class="card"><h4 style="margin-top:0">🎯 5 things they commonly ask about threads</h4>
@@ -610,6 +722,8 @@ while not stop.is_set():
 <h3 id="py-async">0.11 <code>async</code> / <code>await</code> — many waits, one thread</h3>
 <p class="covers">Used in: S3 (ingestor), S4 (async fetcher), B6 (async crawler)</p>
 <p>asyncio gets concurrency <em>without threads</em>: one event loop runs many coroutines, and every <code>await</code> is a spot where the current task pauses so others can run. Perfect for "thousands of slow network calls at once."</p>
+
+<img src="/diagrams/session-0/async-timeline.svg" alt="Three one-second fetches awaited one after another take about three seconds; the same three under asyncio.gather overlap and take about one, because each await hands control back to the single event loop." class="doc-diagram doc-diagram-seq" />
 
 ```python
 import asyncio
@@ -684,6 +798,8 @@ await task                           # or: task.cancel()
 </div>
 <h3 id="py-time">0.12 Time, and why the solutions pass <code>now</code> in</h3>
 <p class="covers">Used in: S1, S2, B5, B12 — every TTL/timestamp problem</p>
+
+<img src="/diagrams/session-0/clock-injection.svg" alt="Reading the clock inside a method forces a test to sleep in real time; passing now in as a parameter makes expiry assertions instant and deterministic." class="doc-diagram doc-diagram-seq" />
 
 ```python
 import time
