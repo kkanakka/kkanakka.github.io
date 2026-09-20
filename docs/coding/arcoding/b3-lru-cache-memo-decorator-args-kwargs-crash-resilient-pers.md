@@ -14,7 +14,7 @@ description: "B3 · LRU cache → memo decorator (args/kwargs) → crash-resilie
 <h4>Level 1 — the O(1) structure, hand-rolled</h4>
 <p>Lead with <code>OrderedDict</code> for speed, but the interviewer may ask for the underlying structure — hash map + doubly linked list with sentinel nodes (sentinels remove every null-check special case):</p>
 
-```
+```python
 class _Node:
     __slots__ = ("key", "val", "prev", "next")
     def __init__(self, key=None, val=None):
@@ -66,7 +66,7 @@ class LRUCache:
 
 <h4>Levels 2–3 — memoization decorator with kwargs, thread safety, atomic persistence</h4>
 
-```
+```python
 import functools
 import json
 import os

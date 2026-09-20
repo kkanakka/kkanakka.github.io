@@ -21,7 +21,7 @@ description: "S2 · Token-bucket rate limiter → distributed"
 <p>Fixed windows allow 2× bursts at boundaries; sliding-window logs are exact but O(requests) memory; sliding-window <em>counters</em> approximate well; token bucket gives smooth rate + configurable burst in O(1) state per key — the standard choice for API gateways. Naming the alternatives and choosing is worth more than the code.</p>
 <h4>Levels 1–2</h4>
 
-```
+```python
 import threading
 
 
@@ -78,7 +78,7 @@ return allowed
 ```
 
 
-```
+```python
 import time
 
 class DistributedLimiter:

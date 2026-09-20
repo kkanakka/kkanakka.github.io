@@ -15,7 +15,7 @@ description: "Session 0 · Python basics used in every solution"
 <p class="covers">Used in: almost everything — S1, S4, B2, B5, B7, B11 …</p>
 <p>A dict maps keys to values. <code>defaultdict</code> is a dict that auto-creates a starting value the first time you touch a missing key — it removes the "does the key exist yet?" boilerplate. <code>Counter</code> is a dict specialized for counting.</p>
 
-```
+```python
 # --- plain dict -----------------------------------------------------
 d = {}                      # empty dict
 d["alice"] = 100            # add / overwrite a key
@@ -52,7 +52,7 @@ status_count.get("gone", 0) # -> 0 (safe read of missing key)
 <p>B5 uses <code>defaultdict(int)</code> for per-account spend totals; B7 uses <code>defaultdict(list)</code> to group file paths by size/hash; B11 uses <code>Counter</code> for nodes-per-status. The pattern to internalize: <em>grouping things by a key</em> is always <code>defaultdict(list)</code> + <code>append</code>.</p></div>
 <div class="card"><h4 style="margin-top:0">🎯 5 things they commonly ask about dicts &amp; Counter</h4>
 
-```
+```python
 # Q1) Count word frequencies; return the top 3.
 from collections import Counter
 words = "the cat and the hat and the bat".split()
@@ -84,7 +84,7 @@ def first_unique(s):
 <p class="covers">Used in: B1 (samples), B2 (events), B5 (top spenders), B12 (heap entries)</p>
 <p>A tuple is a fixed little bundle of values: <code>(timestamp, name)</code>. Two superpowers: they <em>unpack</em> into variables, and they compare element-by-element — which is how you sort by multiple criteria at once.</p>
 
-```
+```python
 record = (1200, "deposit", 50)      # a tuple: time, kind, amount
 t, kind, amount = record            # UNPACKING: three variables at once
 
@@ -112,7 +112,7 @@ ranked = sorted(spend.items(),                 # [("bob",300), ...]
 <p>B5's <code>top_spenders</code> is exactly the <code>(-amount, name)</code> trick — descending by spend, ascending by name on ties. Heaps (next lessons) rely on tuple comparison too: <code>(due_time, seq, ...)</code> orders by time first, insertion order on ties.</p></div>
 <div class="card"><h4 style="margin-top:0">🎯 5 things they commonly ask about sorting</h4>
 
-```
+```python
 # Q1) Sort people by age DESC, then name ASC.   p = (name, age)
 people.sort(key=lambda p: (-p[1], p[0]))
 
@@ -135,7 +135,7 @@ nums.sort(key=lambda x: x % 2)       # Python's sort is STABLE:
 <h3 id="py-comp">0.3 Comprehensions, generators, and <code>for/else</code></h3>
 <p class="covers">Used in: S1 (scan), B1, B6 (frontier), B9 (tokenizer), B13</p>
 
-```
+```python
 nums = [3, 1, 4, 1, 5]
 
 # --- list comprehension: build a list in one line -------------------
@@ -169,7 +169,7 @@ else:
 <p><code>for/else</code> is the heart of B9's tokenizer: try every length longest-first; the <code>else</code> branch is "nothing in the vocab matched here." It reads oddly at first — think of <code>else</code> as <em>"no break happened."</em></p></div>
 <div class="card"><h4 style="margin-top:0">🎯 5 things they commonly ask about comprehensions</h4>
 
-```
+```python
 # Q1) Squares of only the even numbers.
 [n * n for n in nums if n % 2 == 0]
 
@@ -192,7 +192,7 @@ first_admin = next((u for u in users if u.is_admin), None)
 <p class="covers">Used in: B3 (the entire LRU family)</p>
 <p>Modern dicts keep insertion order, but <code>OrderedDict</code> adds two methods that make an LRU cache almost free: move a key to the end, and pop from either end.</p>
 
-```
+```python
 from collections import OrderedDict
 
 cache = OrderedDict()
@@ -214,7 +214,7 @@ cache.popitem(last=True)    # pop the BACK  = most-recent ("a")
 
 <div class="card"><h4 style="margin-top:0">🎯 5 things they commonly ask about OrderedDict / caches</h4>
 
-```
+```python
 # Q1) Evict the least-recently-used entry.
 cache.popitem(last=False)
 
@@ -240,7 +240,7 @@ def fib(n): ...                      # hand-roll only when asked to
 <p class="covers">Used in: S1 (eager expiry), B5 (scheduled cashback), B12 (expiring grants)</p>
 <p>A heap is a list kept arranged so the <em>smallest</em> element is always at index 0. Push and pop cost O(log n). Store tuples and the heap orders by the first element (ties fall to the second — hence the <code>seq</code> counters you see everywhere).</p>
 
-```
+```python
 import heapq
 
 h = []                          # a heap is just a list + the heapq functions
@@ -272,7 +272,7 @@ def settle(now):
 
 <div class="card"><h4 style="margin-top:0">🎯 5 things they commonly ask about heaps</h4>
 
-```
+```python
 # Q1) The 3 smallest / 3 largest.
 heapq.nsmallest(3, nums)
 heapq.nlargest(3, scores.items(), key=lambda kv: kv[1])
@@ -297,7 +297,7 @@ heapq.heappush(h, (priority, seq, task))
 <p class="covers">Used in: B4 (versioned reads), B5 (historical balance), B11 (status_at)</p>
 <p>Given a sorted list, <code>bisect_right(a, x)</code> returns the index where <code>x</code> would be inserted to keep it sorted, after any equal values. That gives you the guide's most repeated query — <em>"latest entry at or before time t"</em> — in O(log n):</p>
 
-```
+```python
 import bisect
 
 timestamps = [10, 20, 30, 40]        # MUST already be sorted
@@ -321,7 +321,7 @@ value_at(5)     # -> None
 <p><code>bisect_right</code> vs <code>bisect_left</code> differ only when <code>t</code> exactly equals a stored timestamp: <code>right</code> means "a write AT time t is visible at time t" — which is what B4/B5 want. Draw the four-element picture above once and this never confuses you again.</p></div>
 <div class="card"><h4 style="margin-top:0">🎯 5 things they commonly ask about binary search</h4>
 
-```
+```python
 # Q1) Insert into a sorted list, keeping it sorted.
 bisect.insort(a, x)                  # O(log n) find + O(n) shift
 
@@ -344,7 +344,7 @@ best = min(a[max(0, i - 1):i + 1], key=lambda v: abs(v - x))
 <h3 id="py-classes">0.7 Classes, <code>self</code>, dataclasses, <code>__slots__</code></h3>
 <p class="covers">Used in: every solution that says <code>class</code> — S1, S2, S3, B3, B5 …</p>
 
-```
+```python
 # --- the anatomy every solution shares ------------------------------
 class Bank:
     def __init__(self):          # runs when you do Bank()
@@ -376,7 +376,7 @@ class _Node:
 
 <div class="card"><h4 style="margin-top:0">🎯 5 things they commonly ask about classes</h4>
 
-```
+```python
 # Q1) Make objects print readably while debugging.
 def __repr__(self):
     return f"Node(key={self.key!r}, val={self.val!r})"
@@ -406,7 +406,7 @@ def from_json(cls, s):
 <h3 id="py-except">0.8 Exceptions — <code>try / except / finally / raise</code></h3>
 <p class="covers">Used in: S3 (retries), B3 (loading a corrupt cache), B7 (files vanishing), B8 (bad images)</p>
 
-```
+```python
 # --- catch and recover ----------------------------------------------
 try:
     size = os.path.getsize(path)
@@ -444,7 +444,7 @@ for attempt in range(max_retries + 1):
 <p>Catch the <em>narrowest</em> exception that matches the failure you expect (<code>OSError</code> for files, <code>ValueError</code> for bad data). A bare <code>except Exception</code> is acceptable only at a boundary whose job is "isolate this task's failure" — B8's per-image worker — and say that's why.</p></div>
 <div class="card"><h4 style="margin-top:0">🎯 5 things they commonly ask about exceptions</h4>
 
-```
+```python
 # Q1) Handle two failure kinds differently.
 try:
     v = int(text)
@@ -482,7 +482,7 @@ finally:
 <h3 id="py-files">0.9 Files, <code>with</code> blocks, and reading in chunks</h3>
 <p class="covers">Used in: B3 (persistence), B7 (hashing huge files)</p>
 
-```
+```python
 # --- `with` = open, and GUARANTEE the close, even on errors ---------
 with open("data.txt") as f:      # text mode
     text = f.read()              # whole file at once (small files only!)
@@ -509,7 +509,7 @@ os.replace(tmp, "cache.json")    # atomic: readers see old OR new,
 
 <div class="card"><h4 style="margin-top:0">🎯 5 things they commonly ask about files</h4>
 
-```
+```python
 # Q1) Count lines without loading the whole file.
 with open(path) as f:
     n = sum(1 for _ in f)            # file objects iterate line by line
@@ -539,7 +539,7 @@ with open(src, "rb") as fin, open(dst, "wb") as fout:
 <p class="covers">Used in: S1, S2, B3, B6 (crawler), B15 (blocking queue)</p>
 <p>Threads run functions "at the same time." When two threads touch the same data, you need a <code>Lock</code> so their read-modify-write steps don't interleave. Python's GIL means threads don't speed up pure CPU work — but they're great for I/O (network, disk), because waiting threads release the GIL.</p>
 
-```
+```python
 import threading
 
 counter = 0
@@ -580,7 +580,7 @@ def producer(x):
 <p>"The GIL lets only one thread execute Python bytecode at a time, so threads don't parallelize CPU-bound Python — use <code>multiprocessing</code> for that (B8). Threads still help for I/O-bound work because blocked I/O releases the GIL (B6's crawler)." Memorize that sentence.</p></div>
 <div class="card"><h4 style="margin-top:0">🎯 5 things they commonly ask about threads</h4>
 
-```
+```python
 # Q1) "Why does the unlocked counter print less than 200000?"
 # counter += 1 is THREE steps (read, add, write); two threads
 # interleave the steps and updates are lost. The lock makes the
@@ -611,7 +611,7 @@ while not stop.is_set():
 <p class="covers">Used in: S3 (ingestor), S4 (async fetcher), B6 (async crawler)</p>
 <p>asyncio gets concurrency <em>without threads</em>: one event loop runs many coroutines, and every <code>await</code> is a spot where the current task pauses so others can run. Perfect for "thousands of slow network calls at once."</p>
 
-```
+```python
 import asyncio
 
 # --- coroutine basics ----------------------------------------------
@@ -655,7 +655,7 @@ worker.cancel()                            # ... stop it later
 <p>Never call slow <em>blocking</em> functions (<code>time.sleep</code>, <code>requests.get</code>, big file reads) inside <code>async def</code> — they freeze the whole event loop and every task in it. That exact mistake is hypothesis #1 in S5's p99-spike debugging question — the guide comes full circle here.</p></div>
 <div class="card"><h4 style="margin-top:0">🎯 5 things they commonly ask about async / await</h4>
 
-```
+```python
 # Q1) Run many coroutines; one failure must not kill the rest.
 results = await asyncio.gather(*tasks, return_exceptions=True)
 errors = [r for r in results if isinstance(r, Exception)]
@@ -685,7 +685,7 @@ await task                           # or: task.cancel()
 <h3 id="py-time">0.12 Time, and why the solutions pass <code>now</code> in</h3>
 <p class="covers">Used in: S1, S2, B5, B12 — every TTL/timestamp problem</p>
 
-```
+```python
 import time
 
 time.time()          # wall-clock seconds since 1970 (can jump: NTP!)
@@ -708,7 +708,7 @@ assert store.get("k", now=110) is None    # dead exactly at 100+10
 
 <div class="card"><h4 style="margin-top:0">🎯 5 things they commonly ask about time</h4>
 
-```
+```python
 # Q1) Time a block correctly (monotonic, never time.time).
 t0 = time.monotonic()
 work()

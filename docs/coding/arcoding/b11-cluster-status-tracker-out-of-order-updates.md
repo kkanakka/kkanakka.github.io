@@ -14,7 +14,7 @@ description: "B11 · Cluster status tracker (out-of-order updates)"
 <div class="adm info"><div class="adm-title">ℹ️ Problem</div>
 <p><code>update(node_id, status, timestamp)</code> where updates may arrive out of order; queries: a node's current status, count of nodes per status, and (extension) a node's status as of an arbitrary past time.</p></div>
 
-```
+```python
 import bisect
 from collections import Counter
 

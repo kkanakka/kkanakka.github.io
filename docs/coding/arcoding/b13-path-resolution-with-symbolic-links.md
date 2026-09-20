@@ -13,7 +13,7 @@ description: "B13 · Path resolution with symbolic links"
 <p class="covers">Covers: Path Resolution with Symbolic Links, and the traversal core of "Implement a hierarchical file store".</p>
 <h4>Warm-up (do this first): simplify a path — no links</h4>
 
-```
+```python
 def simplify(path: str) -> str:
     """/a/./b/../c -> /a/c   — the LC-71 core everyone should nail fast."""
     out = []
@@ -31,7 +31,7 @@ def simplify(path: str) -> str:
 <h4>Full version — component-wise symlink resolution with loop detection</h4>
 <p>The key insight: you cannot textually simplify first and then substitute links. A symlink can appear <em>mid-path</em>, its target can be relative, contain <code>..</code>, or contain further links — so resolution must proceed one component at a time against the <em>resolved-so-far</em> prefix.</p>
 
-```
+```python
 class SymlinkLoopError(RuntimeError):
     pass
 

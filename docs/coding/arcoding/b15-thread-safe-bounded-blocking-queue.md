@@ -12,7 +12,7 @@ description: "B15 · Thread-safe bounded blocking queue"
 
 <p class="covers">Covers: Implement thread-safe blocking queue — the purest concurrency question in the bank; also the building block inside S3 and B6.</p>
 
-```
+```python
 import threading
 import time
 from collections import deque

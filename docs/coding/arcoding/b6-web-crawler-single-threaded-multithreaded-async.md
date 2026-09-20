@@ -13,7 +13,7 @@ description: "B6 · Web crawler: single-threaded → multithreaded → async"
 <p class="covers">Covers 8 variants: single- and multi-threaded crawler · concurrent crawler · Same-Domain BFS · same-host crawler ×3 · Crawl Same-Domain Links · hostname-restricted crawler · crawler using a provided API.</p>
 <h4>Level 1 — single-threaded, correct hostname filter</h4>
 
-```
+```python
 from urllib.parse import urlparse
 
 
@@ -38,7 +38,7 @@ def crawl(start_url, get_links):
 <p>Two workable shapes; know both and justify your pick:</p>
 <p><strong>(a) Frontier rounds</strong> — trivially correct termination, slight loss of parallelism at round edges:</p>
 
-```
+```python
 import threading
 from concurrent.futures import ThreadPoolExecutor
 
@@ -69,7 +69,7 @@ def crawl_mt(start_url, get_links, workers=8):
 
 <p><strong>(b) Shared queue + in-flight counter</strong> — full parallelism; termination is the hard part (queue empty ≠ done while any worker may still add URLs). <code>queue.Queue.task_done()/join()</code> solves exactly this:</p>
 
-```
+```python
 import queue
 
 
@@ -111,7 +111,7 @@ def crawl_q(start_url, get_links, workers=8):
 
 <h4>Level 3 — asyncio with politeness (rate limit + timeout + retry)</h4>
 
-```
+```python
 import asyncio
 
 

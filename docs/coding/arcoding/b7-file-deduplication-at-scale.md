@@ -14,7 +14,7 @@ description: "B7 · File deduplication at scale"
 <h4>The expected answer: a three-stage funnel</h4>
 <p>Never hash everything. Each stage is strictly cheaper than the next and eliminates most candidates: <strong>size</strong> (free, from metadata) → <strong>head hash</strong> (first 4 KB) → <strong>full streaming hash</strong>. State the cost model: total ≈ one <code>stat</code> per file + 4 KB per size-collided file + full read only for genuine near-duplicates.</p>
 
-```
+```python
 import hashlib
 import os
 from collections import defaultdict
@@ -86,7 +86,7 @@ def duplicate_groups(root, follow_symlinks=False):
 
 <h4>The toy-input variant (parse directory-description strings)</h4>
 
-```
+```python
 def duplicates_from_records(records):
     """records like: 'root/a 1.txt(abc) 2.txt(def)' — group by content."""
     by_content = defaultdict(list)

@@ -13,7 +13,7 @@ description: "B8 · Parallel image processing pipeline"
 <p class="covers">Covers 4 variants: Implement a Parallel Image Processor · Implement Parallel Image Processing · Batch Image Processor · Generate outputs for images and pipelines (the m×n matrix version).</p>
 <h4>Core version — process pool with per-job isolation</h4>
 
-```
+```python
 import os
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from PIL import Image, ImageFilter
@@ -62,7 +62,7 @@ def run_batch(paths, pipeline, out_dir, workers=None):
 <h4>The m×n variant — share pipeline prefixes</h4>
 <p>With m images × n pipelines, pipelines often share prefixes (<code>[resize, gray, blur]</code> and <code>[resize, gray, sharpen]</code> share two ops). Build a trie of ops and DFS it per image, so each shared prefix is computed once:</p>
 
-```
+```python
 def build_pipeline_trie(pipelines):
     """pipelines: {name: [op, ...]} -> nested trie:
     node = {'children': {op: node}, 'outputs': [pipeline_names ending here]}"""

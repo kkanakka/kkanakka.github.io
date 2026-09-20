@@ -16,7 +16,7 @@ description: "B12 · Account balance with expiring grants"
 <h4>Why soonest-expiring-first is not just convention</h4>
 <p>It's the greedy that <em>maximizes future spendable balance</em>: any other order preserves credit that dies sooner at the expense of credit that lives longer — strictly dominated. An exchange argument proves it in one sentence; give that sentence.</p>
 
-```
+```python
 import heapq
 
 

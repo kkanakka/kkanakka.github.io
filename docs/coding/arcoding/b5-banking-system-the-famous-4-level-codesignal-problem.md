@@ -25,7 +25,7 @@ description: "B5 · Banking system — the famous 4-level CodeSignal problem"
 <li><strong>Alias map for merges:</strong> resolve <code>acct → canonical</code> at the top of every method; merged accounts never physically move their history.</li>
 </ul>
 
-```
+```python
 import bisect
 import heapq
 from collections import defaultdict

@@ -14,7 +14,7 @@ description: "B16 · Grid infection with neighbor threshold"
 <h4>Why the naive simulation fails</h4>
 <p>Re-scanning the grid every round is O(R·C·rounds) — quadratic-ish on a snake-shaped infection front. The fix: <strong>incremental neighbor counting</strong>. Each cell, when it becomes infected, pushes +1 to each healthy neighbor exactly once; a neighbor crossing the threshold joins the <em>next</em> round's frontier. Total work: every cell contributes ≤ 4 increments ever → O(R·C).</p>
 
-```
+```python
 from collections import deque
 
 

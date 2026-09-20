@@ -119,7 +119,7 @@ const config = {
         // is what makes the command/output blocks legible at this density
         theme: prismThemes.dracula,
         darkTheme: prismThemes.dracula,
-        additionalLanguages: ['bash', 'python', 'sql', 'yaml', 'json', 'go', 'java', 'c'],
+        additionalLanguages: ['bash', 'python', 'sql', 'yaml', 'json', 'go', 'java', 'c', 'lua', 'diff'],
       },
       tableOfContents: { minHeadingLevel: 2, maxHeadingLevel: 4 },
       mermaid: {

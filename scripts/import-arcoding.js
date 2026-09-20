@@ -43,6 +43,20 @@ const intro = parts.shift();                       // <h1> + lede
 const title = (intro.match(/<h1[^>]*>([\s\S]*?)<\/h1>/) || [, 'Overview'])[1]
   .replace(/<[^>]+>/g, '').trim();
 
+/**
+ * The source never tagged its code blocks, so every fence came out bare and
+ * Prism highlighted nothing. This is a Python prep document: default to
+ * python and only override for shell, which is the one other thing present.
+ * An explicit class is trusted unless it is a language Prism is not loaded
+ * for, in which case the sniff is a better guess than a blank fence.
+ */
+const PRISM = new Set(['bash', 'python', 'sql', 'yaml', 'json', 'go', 'java', 'c', 'lua', 'diff', 'text']);
+function sniff(body, declared) {
+  if (declared && PRISM.has(declared)) return declared;
+  if (/^\s*(\$ |sudo |kubectl |pip3? |python3? -m |curl |grep |perf |docker |git )/m.test(body)) return 'bash';
+  return 'python';
+}
+
 const decode = (s) =>
   s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"')
    .replace(/&#39;/g, "'").replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&');
@@ -60,12 +74,13 @@ function toMarkdown(html) {
     /<pre[^>]*>\s*<code(?:[^>]*class="language-([\w-]+)")?[^>]*>([\s\S]*?)<\/code>\s*<\/pre>/gi,
     (_, lang, code) => {
       const body = decode(code).replace(/\s+$/, '');
-      fences.push('```' + (lang || '') + '\n' + body + '\n```');
+      fences.push('```' + sniff(body, lang) + '\n' + body + '\n```');
       return `\n\n@@FENCE${fences.length - 1}@@\n\n`;
     }
   );
   html = html.replace(/<pre[^>]*>([\s\S]*?)<\/pre>/gi, (_, code) => {
-    fences.push('```\n' + decode(code).replace(/\s+$/, '') + '\n```');
+    const body = decode(code).replace(/\s+$/, '');
+    fences.push('```' + sniff(body, null) + '\n' + body + '\n```');
     return `\n\n@@FENCE${fences.length - 1}@@\n\n`;
   });
   // collapse blank lines in the surviving HTML so blocks stay intact
@@ -143,12 +158,21 @@ parts.forEach((chunk, i) => {
 // Section anchors in the original were intra-page (#s1, #py-heapq). After the
 // split, ones that name another section must become cross-page links; the rest
 // (the python sub-lessons) stay as in-page anchors on their own page.
+const EXTRAS = path.join(OUT, '_extras');
+/** Hand-written supplements, appended inside the page's .arcoding wrapper. */
+const extraFor = (slug) => {
+  const f = path.join(EXTRAS, `${slug}.md`);
+  return fs.existsSync(f) ? '\n' + fs.readFileSync(f, 'utf8').trim() + '\n' : '';
+};
+
 const fixLinks = (text) =>
   text.replace(/href="#([a-z0-9-]+)"/g, (m, id) =>
     idToSlug.has(id) ? `href="/docs/coding/arcoding/${idToSlug.get(id)}"` : m);
 
 for (const [slug, fm] of written) {
-  fs.writeFileSync(path.join(OUT, `${slug}.md`), fixLinks(fm));
+  const extra = extraFor(slug);
+  const body = extra ? fm.replace(/\n<\/div>\n$/, `\n${extra}\n</div>\n`) : fm;
+  fs.writeFileSync(path.join(OUT, `${slug}.md`), fixLinks(body));
 }
 
 // overview page carrying the original h1 lede and a contents list

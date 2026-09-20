@@ -19,7 +19,7 @@ description: "B14 · Streaming token usage cost calculator"
 <li><strong>Cumulative vs incremental confusion.</strong> Summing counters that are already cumulative double-bills; taking the max of counters that are incremental under-bills. Normalize explicitly per field, and let a final authoritative record win.</li>
 </ol>
 
-```
+```python
 from decimal import Decimal, ROUND_HALF_UP
 
 

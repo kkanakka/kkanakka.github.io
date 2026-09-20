@@ -12,7 +12,7 @@ description: "B10 · Min stack — O(1) minimum query"
 
 <p class="covers">Covers: Design stack with O(1) minimum query — the listing explicitly calls out empty-stack edge cases.</p>
 
-```
+```python
 class MinStack:
     """Every element is stored with the minimum of the stack AT THE TIME it
     was pushed — so pop restores the previous minimum with zero recompute."""

@@ -14,7 +14,7 @@ description: "B4 · In-memory DB: versioned/time-based reads + nested transactio
 <h4>Part 1 — time-based/versioned store with TTL, tombstones, historical reads</h4>
 <p>The "versioned DB" variant merges three ideas: append-only version lists per key, deletes as <em>tombstone versions</em> (so history is preserved), and TTL applied per write. Every read is then one binary search.</p>
 
-```
+```python
 import bisect
 
 _TOMBSTONE = object()
@@ -68,7 +68,7 @@ class VersionedKV:
 <p>The elegant consequence to point out: <strong>expiry never mutates history</strong>. A version simply stops being visible for reads at <code>t ≥ expiry</code>, but a historical read at an earlier t still sees it — deletion-by-non-visibility, the same trick MVCC databases use.</p>
 <h4>Part 2 — nested transactions over a committed base</h4>
 
-```
+```python
 class TxKV:
     """begin/commit/rollback nest arbitrarily. Reads see the newest layer;
     commit merges ONE level down (into the parent tx, not the base)."""

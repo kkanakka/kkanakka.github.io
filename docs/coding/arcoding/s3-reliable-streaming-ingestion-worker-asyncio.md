@@ -23,7 +23,7 @@ description: "S3 · Reliable streaming ingestion worker (asyncio)"
 </ol>
 <h4>Full solution</h4>
 
-```
+```python
 import asyncio
 import random
 import time

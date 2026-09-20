@@ -14,7 +14,7 @@ description: "S4 · URL parsing / domain match counting"
 <h4>Level 1 — extraction + correct domain matching</h4>
 <p>The correctness core is the matcher: <code>api.example.com</code> matches <code>example.com</code>, but <code>badexample.com</code> must not — compare on label boundaries, never with a raw substring test.</p>
 
-```
+```python
 import re
 from collections import Counter
 from urllib.parse import urlparse
@@ -54,7 +54,7 @@ def count_domain(docs: list[str], domain: str) -> int:
 
 <h4>Follow-up 1 — make it asynchronous (the docs are URLs to fetch)</h4>
 
-```
+```python
 import asyncio
 import aiohttp
 

@@ -15,7 +15,7 @@ description: "B9 · Longest-match tokenizer"
 <p>Given a case-sensitive vocabulary <code>token_text → id</code>, tokenize input greedily: at each position take the <em>longest</em> vocab match. Characters matching nothing become unknown tokens — per character, or coalesced into runs (level boundary). Emit <code>(token_id, exact_consumed_text)</code>.</p></div>
 <h4>Version 1 — direct (correct first)</h4>
 
-```
+```python
 def tokenize(text, vocab, *, unk_id=-1, coalesce_unknown=True):
     max_len = max(map(len, vocab), default=0)
     out, unk_run = [], []
@@ -47,7 +47,7 @@ def tokenize(text, vocab, *, unk_id=-1, coalesce_unknown=True):
 <h4>Version 2 — trie (the optimization they'll ask for)</h4>
 <p>The direct version does O(max_len) slices per position — fine until the vocab has one very long token. A trie walks characters once per position and remembers the <em>last</em> accepting depth:</p>
 
-```
+```python
 class TrieTokenizer:
     def __init__(self, vocab):
         self.root = {}

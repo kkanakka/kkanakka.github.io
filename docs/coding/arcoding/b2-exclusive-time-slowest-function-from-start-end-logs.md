@@ -16,7 +16,7 @@ description: "B2 · Exclusive time & slowest function from START–END logs"
 <h4>Two clocks per frame</h4>
 <p>Each open frame carries <code>entry_t</code> (for wall time → slowest call) and <code>last_resume_t</code> (for exclusive time). START pauses the caller's exclusive clock; END credits the popped frame and resumes the caller's clock. That separation is the entire problem.</p>
 
-```
+```python
 from collections import defaultdict
 
 

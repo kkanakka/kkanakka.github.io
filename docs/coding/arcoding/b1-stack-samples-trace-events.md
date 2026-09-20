@@ -16,7 +16,7 @@ description: "B1 · Stack samples → trace events"
 <h4>The one idea: longest common prefix</h4>
 <p>Between consecutive samples, the LCP of the two stacks is exactly the set of frames that survived. Everything in the old stack below the LCP ended (close leaf-first); everything in the new stack below the LCP started (open root-first). Positional comparison is what makes recursion correct for free: <code>[a,b,a]</code> → <code>[a,b]</code> has LCP length 2, so only the inner <code>a</code> closes.</p>
 
-```
+```python
 def samples_to_trace(samples):
     """samples: iterable of (timestamp, [root, ..., leaf]), timestamps increasing.
     Returns [(timestamp, 'start'|'end', function_name)]."""
@@ -59,7 +59,7 @@ def samples_to_trace(samples):
 <h4>Variant A — interval output ("Convert Samples into Event Intervals")</h4>
 <p>Same LCP core, but pair each start with its end and emit <code>(name, start_t, end_t, depth)</code>:</p>
 
-```
+```python
 def samples_to_intervals(samples):
     intervals, open_frames, prev, prev_t = [], [], [], None
     for t, stack in samples:

@@ -27,7 +27,7 @@ description: "S1 · In-memory key-value store with TTL + backup/restore"
 </ul>
 <h4>Full solution (all levels + follow-ups)</h4>
 
-```
+```python
 import heapq
 import threading
 
