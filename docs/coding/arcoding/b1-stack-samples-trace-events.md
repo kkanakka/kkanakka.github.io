@@ -13,6 +13,12 @@ description: "B1 · Stack samples → trace events"
 <p class="covers">Covers 6 listed variants: Convert Streaming Call-Stack Samples · Convert Stack Samples into Trace Events · Generate Function Profiling Events · Convert stack samples to execution trace · Convert Samples into Event Intervals · Convert State Stream to Events. <strong>The most-reported Anthropic question family</strong> (1,000+ recorded solves across variants).</p>
 <div class="adm info"><div class="adm-title">ℹ️ Problem</div>
 <p>A sampling profiler emits <code>(timestamp, stack)</code> in increasing time order, stack listed root→leaf. Reconstruct minimal ordered start/end events. A frame continues between consecutive samples only if the same function name appears at the same depth with identical ancestors. Recursive frames (<code>[a, b, a]</code>) are distinct occurrences. Emit end events before start events at a shared timestamp; close all open frames after the last sample.</p></div>
+
+### The approach
+
+<img src="/diagrams/arcoding/b1.svg" alt="Two adjacent stack samples are compared by longest common prefix; frames below it in the old stack end deepest-first, frames below it in the new stack start root-first." class="doc-diagram doc-diagram-seq" />
+
+<p>Two adjacent samples can only differ at their tail, so the <strong>longest common prefix is exactly the set of frames that survived</strong> between them. Everything below the prefix in the old stack has ended; everything below it in the new stack has begun. Emitting the ends deepest-first and the starts root-first is what keeps the trace well-nested — a callee has to close before its caller, and a caller has to open before its callee. The only state you carry between samples is the previous stack.</p>
 <h4>The one idea: longest common prefix</h4>
 <p>Between consecutive samples, the LCP of the two stacks is exactly the set of frames that survived. Everything in the old stack below the LCP ended (close leaf-first); everything in the new stack below the LCP started (open root-first). Positional comparison is what makes recursion correct for free: <code>[a,b,a]</code> → <code>[a,b]</code> has LCP length 2, so only the inner <code>a</code> closes.</p>
 

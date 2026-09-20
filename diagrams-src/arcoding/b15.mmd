@@ -1,0 +1,13 @@
+---
+config:
+  flowchart:
+    wrappingWidth: 330
+---
+flowchart TB
+    L["ONE lock, with TWO condition<br/>variables sharing it"]:::good --> P["put: while full and not closed<br/>→ wait(not_full), then append<br/>and notify(not_empty)"]
+    L --> G["get: while empty → wait(not_empty),<br/>then popleft and notify(not_full)"]
+    P --> W["'while', never 'if' — a wake-up is only<br/>a hint, so the predicate must be<br/>re-checked after waking"]:::warn
+    G --> W
+    L --> C["close(): notify_all on both —<br/>consumers drain what is left, then see<br/>QueueClosed; blocked producers wake"]
+    classDef good fill:#dafbe1,stroke:#1a7f37
+    classDef warn fill:#fff8e6,stroke:#d4a72c

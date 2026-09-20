@@ -1,0 +1,15 @@
+---
+config:
+  flowchart:
+    wrappingWidth: 400
+---
+flowchart TB
+    I["cursor at position i"] --> L["try the LONGEST piece first:<br/>length = max_len down to 1"]
+    L --> Q{"is text[i:i+length] in the vocab?"}
+    Q -- "yes" --> E["emit (id, piece), i += length"]:::good
+    Q -- "no length matched<br/>— the for/else branch" --> U["buffer text[i] as unknown, i += 1"]:::warn
+    E --> I
+    U --> I
+    U -.-> FL["a run of unknowns flushes as ONE token,<br/>not one per character"]
+    classDef good fill:#dafbe1,stroke:#1a7f37
+    classDef warn fill:#fff8e6,stroke:#d4a72c

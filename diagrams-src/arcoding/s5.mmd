@@ -1,0 +1,15 @@
+---
+config:
+  flowchart:
+    wrappingWidth: 520
+---
+flowchart TB
+    SY["p99 up 10×, mean and CPU flat"] --> SH["FIRST, compute the SHAPE:<br/>the p99 / p50 ratio"]:::good
+    SH --> V{"tail ratio past ~10×?"}
+    V -- "yes" --> SUB["a MINORITY is stalling — queueing,<br/>head-of-line blocking, a lock"]:::warn
+    V -- "no" --> UNI["a uniform shift — every request<br/>pays some new cost"]
+    SUB --> LAD["walk the hypothesis ladder, cheapest test first:<br/>loop lag → pool wait → retries → GIL → GC → infra"]
+    UNI --> LAD
+    LAD --> LED["add the measurement that is missing: a per-request<br/>phase ledger. Its unaccounted gap IS the queue wait."]:::good
+    classDef good fill:#dafbe1,stroke:#1a7f37
+    classDef warn fill:#fff8e6,stroke:#d4a72c

@@ -1,0 +1,16 @@
+---
+config:
+  flowchart:
+    wrappingWidth: 360
+---
+flowchart TB
+    SRC["source stream"] --> Q["asyncio.Queue(maxsize) — when it is full<br/>the producer blocks. That IS the backpressure."]:::good
+    Q --> W["N worker tasks pull from it"]
+    W --> H["handler, wrapped in wait_for(timeout)<br/>so one slow call cannot pin a worker"]
+    H -- "raised or timed out" --> RT["retry: exponential backoff + jitter"]:::warn
+    RT --> H
+    RT -- "attempts exhausted" --> DL["dead-letter it — persisted, never dropped"]:::warn
+    H -.-> CB["circuit breaker: N consecutive failures opens it,<br/>so a sick downstream stops being hammered"]
+    W --> AK["task_done() in a finally — the ack happens<br/>AFTER handling, on every path"]:::good
+    classDef good fill:#dafbe1,stroke:#1a7f37
+    classDef warn fill:#fff8e6,stroke:#d4a72c

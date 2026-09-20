@@ -1,0 +1,14 @@
+---
+config:
+  flowchart:
+    wrappingWidth: 340
+---
+flowchart LR
+    subgraph ST["every cell stores (value, min BELOW-AND-INCLUDING it)"]
+        direction LR
+        A["(5, 5)"] --> B["(3, 3)"] --> C["(7, 3)"] --> D["(3, 3)<br/>← top"]
+    end
+    ST --> PU["push x: store (x, min(x, current min))"]
+    ST --> PO["pop: drop the pair — the new top<br/>ALREADY carries the previous minimum"]:::good
+    ST --> GM["get_min: read the top's second field"]:::good
+    classDef good fill:#dafbe1,stroke:#1a7f37

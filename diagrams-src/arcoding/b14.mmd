@@ -1,0 +1,12 @@
+---
+config:
+  flowchart:
+    wrappingWidth: 400
+---
+flowchart TB
+    CH["each streaming chunk"] --> F{"is_final?"}
+    F -- "no" --> MX["totals[k] = max(totals[k], v)<br/>cumulative counters only ever rise, so a<br/>late or duplicated chunk cannot regress them"]:::good
+    F -- "yes" --> OV["authoritative overwrite —<br/>the final chunk wins outright"]:::good
+    MX --> CO["cost = Σ tokens × price ÷ 1e6 in Decimal,<br/>prices parsed from STRINGS, rounded ONCE<br/>at the very end"]
+    OV --> CO
+    classDef good fill:#dafbe1,stroke:#1a7f37

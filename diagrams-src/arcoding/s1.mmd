@@ -1,0 +1,14 @@
+---
+config:
+  flowchart:
+    wrappingWidth: 300
+---
+flowchart TB
+    OP["every operation is given 'now'"] --> PU["_purge(now): pop the expiry heap<br/>while the soonest lease is due"]
+    PU --> CH{"does the dict still hold<br/>that exact lease?"}
+    CH -- "no — overwritten or deleted" --> ST["a stale entry: just drop it —<br/>cheaper than deleting from a heap"]:::warn
+    CH -- "yes" --> DL["delete the key"]:::good
+    OP --> LZ["_live(key, now) re-checks on touch:<br/>eager purge PLUS lazy check"]
+    OP --> BK["backup stores REMAINING ttl, not<br/>absolute expiry — restore re-anchors<br/>each lease to the restore time"]:::good
+    classDef good fill:#dafbe1,stroke:#1a7f37
+    classDef warn fill:#fff8e6,stroke:#d4a72c

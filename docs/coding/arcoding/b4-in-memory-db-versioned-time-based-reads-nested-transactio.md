@@ -11,6 +11,12 @@ description: "B4 · In-memory DB: versioned/time-based reads + nested transactio
 ## B4 · In-memory DB: versioned/time-based reads + nested transactions
 
 <p class="covers">Covers: Build a Versioned In-Memory Database · Time-Based Key-Value Store · In-Memory KV Database with Nested Transactions. (TTL/backup family → see <a href="/docs/coding/arcoding/s1-in-memory-key-value-store-with-ttl-backup-restore">S1</a>.)</p>
+
+### The approach
+
+<img src="/diagrams/arcoding/b4.svg" alt="A write appends to parallel sorted arrays of timestamps and values; a read binary-searches for the newest write at or before t, then checks for a tombstone or an expired TTL." class="doc-diagram doc-diagram-seq" />
+
+<p>Each key owns two parallel lists — timestamps and values — kept sorted because writes must arrive with increasing <code>t</code>. A historical read is then just <code>bisect_right</code> for <strong>the newest write at or before t</strong>, with <code>i == 0</code> meaning the key did not exist yet. Deletes are tombstone versions rather than removals, because a delete has to be visible at later times while earlier reads still see the old value. Transactions are the same idea one level up: a stack of overlay dicts, where commit merges down one level and rollback just discards the top.</p>
 <h4>Part 1 — time-based/versioned store with TTL, tombstones, historical reads</h4>
 <p>The "versioned DB" variant merges three ideas: append-only version lists per key, deletes as <em>tombstone versions</em> (so history is preserved), and TTL applied per write. Every read is then one binary search.</p>
 

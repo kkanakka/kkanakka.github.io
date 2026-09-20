@@ -1,0 +1,10 @@
+---
+config:
+  flowchart:
+    wrappingWidth: 320
+---
+flowchart LR
+    SE["EVERY operation starts here:<br/>_settle(t) drains the cashback<br/>heap while due &lt;= t"]:::first --> CA["_canon(acct) follows merge<br/>aliases, then the operation<br/>applies to the survivor"]
+    CA --> RE["_record appends (t, balance);<br/>balance_at(t) is later just a<br/>bisect on that history"]:::good
+    classDef first fill:#fff8e6,stroke:#d4a72c
+    classDef good fill:#dafbe1,stroke:#1a7f37

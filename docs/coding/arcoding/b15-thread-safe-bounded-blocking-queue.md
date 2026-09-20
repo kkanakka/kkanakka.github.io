@@ -12,6 +12,12 @@ description: "B15 · Thread-safe bounded blocking queue"
 
 <p class="covers">Covers: Implement thread-safe blocking queue — the purest concurrency question in the bank; also the building block inside S3 and B6.</p>
 
+### The approach
+
+<img src="/diagrams/arcoding/b15.svg" alt="One lock carries two condition variables; put waits for not-full and get waits for not-empty, each re-checking its predicate in a while loop, and close wakes everyone." class="doc-diagram doc-diagram-seq" />
+
+<p>Both conditions must share <strong>one lock</strong>, or a thread could check a predicate and then sleep through the very notification it was waiting for. Each wait sits in a <code>while</code> loop, never an <code>if</code>: a wake-up is a hint that something changed, not a guarantee that it is still true by the time you re-acquire the lock. <code>close()</code> notifies both conditions, which gives a clean shutdown — consumers drain what remains and then see the closed state, and blocked producers are released rather than hanging forever.</p>
+
 ```python
 import threading
 import time

@@ -1,0 +1,9 @@
+---
+config:
+  flowchart:
+    wrappingWidth: 300
+---
+flowchart LR
+    S["START name @t"] --> P["pause the caller:<br/>excl[caller] += t − resume<br/>caller.resume = t"] --> PU["push frame<br/>[name, entry=t, resume=t]"]
+    E["END name @t"] --> PO["pop it — the top frame<br/>must match, or the log<br/>is malformed"] --> CR["excl[name] += t − resume<br/>wall = t − entry"] --> RS["caller.resume = t<br/>its clock restarts"]
+    classDef x fill:#ddf4ff,stroke:#0969da

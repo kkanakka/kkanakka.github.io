@@ -1,0 +1,15 @@
+---
+config:
+  flowchart:
+    wrappingWidth: 360
+---
+flowchart LR
+    F["frontier<br/>(this round's URLs)"] --> V["visit(url):<br/>get_links(url)"]
+    V --> H{"same host?"}
+    H -- "no" --> D["drop"]:::warn
+    H -- "yes" --> S{"already in seen?"}
+    S -- "yes" --> D
+    S -- "no" --> A["add to seen<br/>UNDER THE LOCK,<br/>then queue it"]:::good
+    A --> F
+    classDef good fill:#dafbe1,stroke:#1a7f37
+    classDef warn fill:#fff8e6,stroke:#d4a72c

@@ -11,6 +11,12 @@ description: "B6 · Web crawler: single-threaded → multithreaded → async"
 ## B6 · Web crawler: single-threaded → multithreaded → async
 
 <p class="covers">Covers 8 variants: single- and multi-threaded crawler · concurrent crawler · Same-Domain BFS · same-host crawler ×3 · Crawl Same-Domain Links · hostname-restricted crawler · crawler using a provided API.</p>
+
+### The approach
+
+<img src="/diagrams/arcoding/b6.svg" alt="URLs flow from a frontier through a link fetch, are filtered to the same host, checked against a seen set under a lock, and the survivors become the next frontier." class="doc-diagram doc-diagram-seq" />
+
+<p>The crawl is one loop: take a frontier, fetch links, keep the same-host ones you have not seen, and those become the next frontier. The single correctness requirement is that <strong>check-and-add on the seen set is atomic</strong> — test then add as two steps lets two threads both claim a URL. Everything else is a concurrency-strategy swap over that same skeleton: a thread pool, a worker queue with poison pills, or asyncio with a semaphore for politeness.</p>
 <h4>Level 1 — single-threaded, correct hostname filter</h4>
 
 ```python

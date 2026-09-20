@@ -1,0 +1,14 @@
+---
+config:
+  flowchart:
+    wrappingWidth: 480
+---
+flowchart TB
+    ALL["every file under the root"] --> S1["stage 1 — group by SIZE<br/>(a stat call; nothing is read)"]
+    S1 --> S2["stage 2 — only groups of 2+ survive:<br/>hash the first 4 KB (one cheap read)"]
+    S2 --> S3["stage 3 — survivors only: full streaming hash<br/>(the one genuinely expensive read)"]:::good
+    S3 --> DUP["whatever still shares a hash is a duplicate group"]:::good
+    S1 -. "alone at this size" .-> OUT["never opened at all —<br/>the cheap stages do the eliminating"]:::warn
+    S2 -. "differs in the first 4 KB" .-> OUT
+    classDef good fill:#dafbe1,stroke:#1a7f37
+    classDef warn fill:#fff8e6,stroke:#d4a72c

@@ -1,0 +1,13 @@
+---
+config:
+  flowchart:
+    wrappingWidth: 400
+---
+flowchart TB
+    G["grant(amount, expiry)"] --> H["min-heap ordered by (expiry, seq)<br/>— the soonest to die is always on top"]
+    Q["balance(now) or spend(now)"] --> PR["_prune(now): pop while the top has<br/>expiry &lt;= now, subtracting each from the total"]:::warn
+    PR --> H
+    PR --> SP["spend draws from the SOONEST-expiring grant<br/>first, mutating its cell in place — no re-push"]:::good
+    SP --> TO["a running total makes balance() O(1)"]
+    classDef good fill:#dafbe1,stroke:#1a7f37
+    classDef warn fill:#fff8e6,stroke:#d4a72c

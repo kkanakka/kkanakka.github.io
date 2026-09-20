@@ -12,6 +12,12 @@ description: "B10 · Min stack — O(1) minimum query"
 
 <p class="covers">Covers: Design stack with O(1) minimum query — the listing explicitly calls out empty-stack edge cases.</p>
 
+### The approach
+
+<img src="/diagrams/arcoding/b10.svg" alt="Each stack cell stores a value together with the minimum at the time it was pushed, so popping automatically restores the previous minimum." class="doc-diagram doc-diagram-seq" />
+
+<p>Store a <em>pair</em> per cell: the value, and the minimum of the stack at the moment it was pushed. Popping then needs no recomputation at all — <strong>the new top already carries the previous minimum</strong>. A single running-minimum variable cannot work, because popping the current minimum leaves you with no way to recover the next-smallest without scanning. The paired storage is that history, computed once at push time.</p>
+
 ```python
 class MinStack:
     """Every element is stored with the minimum of the stack AT THE TIME it

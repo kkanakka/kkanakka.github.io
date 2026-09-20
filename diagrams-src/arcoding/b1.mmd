@@ -1,0 +1,16 @@
+---
+config:
+  flowchart:
+    wrappingWidth: 420
+---
+flowchart LR
+    P["previous stack<br/>main · load · parse"] --> LCP{"longest<br/>common prefix"}
+    N["new stack @t<br/>main · render"] --> LCP
+    LCP --> K["main survives<br/>emit nothing"]:::ok
+    LCP --> E["old frames below it:<br/>end parse, end load<br/>DEEPEST first"]:::warn
+    LCP --> S["new frames below it:<br/>start render<br/>ROOT first"]:::good
+    E --> F["after the last sample,<br/>close whatever is still open"]
+    S --> F
+    classDef ok fill:#ddf4ff,stroke:#0969da
+    classDef good fill:#dafbe1,stroke:#1a7f37
+    classDef warn fill:#fff8e6,stroke:#d4a72c

@@ -11,6 +11,12 @@ description: "B13 · Path resolution with symbolic links"
 ## B13 · Path resolution with symbolic links
 
 <p class="covers">Covers: Path Resolution with Symbolic Links, and the traversal core of "Implement a hierarchical file store".</p>
+
+### The approach
+
+<img src="/diagrams/arcoding/b13.svg" alt="Path components are walked one at a time against a resolved-path stack; an absolute symlink target restarts from the root, a relative one replaces the link component, and a hop counter raises ELOOP." class="doc-diagram doc-diagram-seq" />
+
+<p>Resolution is <strong>component-by-component</strong>, not a single string rewrite, because a symlink anywhere in the middle changes the meaning of everything after it. An absolute target clears the resolved path and restarts at the root; a relative one replaces just the link component. <code>..</code> applies to the <em>resolved</em> path, not the literal one — that is the detail that separates this from plain string simplification. The hop counter is what catches cycles: a visited-set misses growing traps like <code>a → a/b</code>, while a hop cap catches both.</p>
 <h4>Warm-up (do this first): simplify a path — no links</h4>
 
 ```python

@@ -1,0 +1,13 @@
+---
+config:
+  flowchart:
+    wrappingWidth: 360
+---
+flowchart TB
+    A["allow(key, now, cost)"] --> R["tokens = min(burst, tokens + elapsed × rate)<br/>— refilled lazily from the clock,<br/>so there is no timer thread anywhere"]:::good
+    R --> C{"tokens &gt;= cost?"}
+    C -- "yes" --> Y["subtract the cost, allow the request"]:::good
+    C -- "no" --> N["reject — but still write back the refilled<br/>tokens and the new timestamp"]:::warn
+    R -.-> SK["now &lt; last? clamp it forward —<br/>a backwards clock must never mint tokens"]
+    classDef good fill:#dafbe1,stroke:#1a7f37
+    classDef warn fill:#fff8e6,stroke:#d4a72c

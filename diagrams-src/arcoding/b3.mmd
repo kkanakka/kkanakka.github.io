@@ -1,0 +1,15 @@
+---
+config:
+  flowchart:
+    wrappingWidth: 400
+---
+flowchart TB
+    M["map: key → node<br/>O(1) find"] --> L
+    subgraph L["doubly linked list — O(1) unlink from the middle"]
+        direction LR
+        H["head<br/>MOST recent"] --> A["node"] --> B["node"] --> T["tail<br/>LEAST recent"]
+    end
+    L --> G["get(k): unlink the node, push it to the front"]:::good
+    L --> P["put(k): insert at the front;<br/>over capacity → evict tail.prev"]:::warn
+    classDef good fill:#dafbe1,stroke:#1a7f37
+    classDef warn fill:#fff8e6,stroke:#d4a72c

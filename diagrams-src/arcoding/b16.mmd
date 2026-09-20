@@ -1,0 +1,13 @@
+---
+config:
+  flowchart:
+    wrappingWidth: 380
+---
+flowchart TB
+    F["this round's newly infected cells"] --> N["for each of their 4 neighbours:<br/>infected_nbrs[cell] += 1"]
+    N --> K{"has that cell reached k?"}
+    K -- "no" --> W["stays healthy — but the count PERSISTS,<br/>so a later neighbour can still tip it over"]:::warn
+    K -- "yes" --> I["times[cell] = round + 1;<br/>it joins the NEXT round's frontier"]:::good
+    I --> F
+    classDef good fill:#dafbe1,stroke:#1a7f37
+    classDef warn fill:#fff8e6,stroke:#d4a72c

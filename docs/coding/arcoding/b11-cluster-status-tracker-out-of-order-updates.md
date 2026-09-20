@@ -14,6 +14,12 @@ description: "B11 · Cluster status tracker (out-of-order updates)"
 <div class="adm info"><div class="adm-title">ℹ️ Problem</div>
 <p><code>update(node_id, status, timestamp)</code> where updates may arrive out of order; queries: a node's current status, count of nodes per status, and (extension) a node's status as of an arbitrary past time.</p></div>
 
+### The approach
+
+<img src="/diagrams/arcoding/b11.svg" alt="An update is applied only if its timestamp beats the stored one; when it is, the status counters are adjusted on the write so that count queries stay O(1)." class="doc-diagram doc-diagram-seq" />
+
+<p>Updates arrive out of order, so the rule is <strong>last-writer-wins by timestamp</strong>, not by arrival: compare against the stored timestamp and drop anything staler. The status counts are maintained <em>on write</em> — decrement the old, increment the new — so <code>count()</code> never has to scan the cluster. Ties at equal timestamps need a stated rule (here, first write wins); either choice is defensible, but it must be deterministic and consistent everywhere.</p>
+
 ```python
 import bisect
 from collections import Counter

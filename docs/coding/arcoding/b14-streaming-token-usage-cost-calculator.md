@@ -13,6 +13,12 @@ description: "B14 · Streaming token usage cost calculator"
 <p class="covers">Covers: Calculate Streaming Token Usage Costs — Anthropic-flavored: exact billing from streaming API chunks with separate input/output prices.</p>
 <div class="adm info"><div class="adm-title">ℹ️ Problem</div>
 <p>A streaming response emits usage in chunks — an initial event with input tokens, deltas during generation, a final authoritative total. Different fields may be <em>cumulative</em> or <em>incremental</em>; the final event supersedes. Compute the exact cost given per-million-token prices; support tiered extras (e.g., cache reads billed at a discount). Money must be exact.</p></div>
+
+### The approach
+
+<img src="/diagrams/arcoding/b14.svg" alt="Streaming chunks update cumulative token counters with max so late duplicates cannot regress them, the final chunk overwrites authoritatively, and cost is computed once in Decimal." class="doc-diagram doc-diagram-seq" />
+
+<p>The field semantics have to be <em>declared</em> before any code is written: these counters are cumulative, so a chunk carrying a smaller number is a late or duplicated one and <code>max</code> is the correct merge. The final chunk is authoritative and overwrites outright. Money is computed in <code>Decimal</code> from price <strong>strings</strong>, with exactly one rounding step at the very end — floats would drift, and rounding per-chunk would compound the error.</p>
 <h4>The two traps, named up front</h4>
 <ol>
 <li><strong>Float money.</strong> <code>0.000003 * 1_234_567</code> in binary floating point accumulates error across billions of requests; billing does not tolerate "approximately". Use <code>Decimal</code>, constructed from <em>strings</em> (constructing from a float imports the float's error).</li>

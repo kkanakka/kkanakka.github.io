@@ -13,6 +13,12 @@ description: "S3 · Reliable streaming ingestion worker (asyncio)"
 <p class="covers">Mirrors the reported live-coding session: "build a reliable message ingestion component that handles streaming data with unpredictable latency spikes."</p>
 <div class="adm info"><div class="adm-title">ℹ️ Problem</div>
 <p>Consume an async stream of messages; process with bounded concurrency; a slow or failing handler must not lose messages or blow up memory; support clean shutdown; expose health metrics. Extend with retry policy and a circuit breaker.</p></div>
+
+### The approach
+
+<img src="/diagrams/arcoding/s3.svg" alt="A bounded queue applies backpressure between the source and a pool of workers, each handler running under a timeout with retries, a circuit breaker, a dead-letter path, and an ack in finally." class="doc-diagram doc-diagram-seq" />
+
+<p>The bounded queue <em>is</em> the backpressure — when it fills, the producer blocks and the upstream naturally slows. Each handler runs under a timeout so one slow call cannot pin a worker forever, retries use exponential backoff <strong>with jitter</strong> so failures do not resynchronise into a thundering herd, and anything that exhausts its attempts is dead-lettered rather than dropped. The circuit breaker stops retry pressure from finishing off a downstream that is already struggling, and the ack sits in a <code>finally</code> so it happens on every path.</p>
 <h4>The five properties to name before coding</h4>
 <ol>
 <li><strong>Backpressure:</strong> a bounded queue — when workers fall behind, <code>put()</code> blocks the reader instead of buffering unboundedly. An unbounded buffer doesn't fix overload, it hides it until OOM.</li>

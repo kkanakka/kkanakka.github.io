@@ -13,6 +13,12 @@ description: "B2 · Exclusive time & slowest function from START–END logs"
 <p class="covers">Covers 5 variants: Compute Exclusive Time from Stack Events · Simulate stack traces from logs · Compute exclusive times and call stack from logs · Find the Slowest Function from Profiler Events · Parse and Reconstruct Stack Trace.</p>
 <div class="adm info"><div class="adm-title">ℹ️ Problem</div>
 <p>Single-threaded event log of <code>(name, START|END, t)</code>. Compute (a) exclusive time per function — time with the function on top of the stack, excluding callees; (b) the slowest single <em>call</em> by wall time; (c) the active call stack at any query time T. Handle malformed logs.</p></div>
+
+### The approach
+
+<img src="/diagrams/arcoding/b2.svg" alt="A START pauses the caller by crediting it up to t and resetting its resume marker before pushing the new frame; an END pops, credits the elapsed time since the last resume, and restarts the caller's clock." class="doc-diagram doc-diagram-seq" />
+
+<p>Each stack frame carries three numbers: the name, when it was entered, and <strong>when its own clock last resumed</strong>. A START pauses the caller — credit it up to now, then reset its marker — before pushing the new frame; an END credits the popped frame from its last resume and restarts the caller. That third number is the whole trick: without it you cannot separate a function's own time from time spent inside its callees. Exclusive time comes from the resume marker, wall time from the entry timestamp.</p>
 <h4>Two clocks per frame</h4>
 <p>Each open frame carries <code>entry_t</code> (for wall time → slowest call) and <code>last_resume_t</code> (for exclusive time). START pauses the caller's exclusive clock; END credits the popped frame and resumes the caller's clock. That separation is the entire problem.</p>
 

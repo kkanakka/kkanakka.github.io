@@ -11,6 +11,12 @@ description: "B7 · File deduplication at scale"
 ## B7 · File deduplication at scale
 
 <p class="covers">Covers 9 variants: Find Duplicate Files · Detect duplicate files efficiently/by content · Group Duplicate Files by Content · file dedup at scale ×3 · Find and remove duplicates · dedup across nested directories · duplicate files + image ops (Part A). Also the toy-input variant (directory description strings) and the design variant (chunking strategy).</p>
+
+### The approach
+
+<img src="/diagrams/arcoding/b7.svg" alt="Files pass through three widening filters — group by size, then by the hash of the first 4 KB, then by full hash — so expensive reads only ever touch files that are still candidates." class="doc-diagram doc-diagram-seq" />
+
+<p>Comparing every file with every other is O(n²); this is the standard escape. Three filters run <strong>cheapest first</strong>: size needs only a <code>stat</code>, the first 4 KB needs one small read, and the full streaming hash — the genuinely expensive step — only ever runs on files that survived both. Most files leave at stage one and are never opened at all. Hashing streams in 1 MB blocks so memory stays constant no matter how big the file is.</p>
 <h4>The expected answer: a three-stage funnel</h4>
 <p>Never hash everything. Each stage is strictly cheaper than the next and eliminates most candidates: <strong>size</strong> (free, from metadata) → <strong>head hash</strong> (first 4 KB) → <strong>full streaming hash</strong>. State the cost model: total ≈ one <code>stat</code> per file + 4 KB per size-collided file + full read only for genuine near-duplicates.</p>
 

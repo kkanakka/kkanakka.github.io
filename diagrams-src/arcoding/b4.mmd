@@ -1,0 +1,16 @@
+---
+config:
+  flowchart:
+    wrappingWidth: 440
+---
+flowchart TB
+    W["set(key, value, t)"] --> AP["append t to ts[]<br/>append (value, expiry) to vals[]<br/>— t must increase, so ts[] stays sorted"]
+    R["get(key, t)"] --> BI["i = bisect_right(ts, t)<br/>= how many writes happened at or before t"]
+    BI --> Z{"i == 0?"}
+    Z -- "yes" --> N["None — the key did not exist yet at t"]:::warn
+    Z -- "no" --> V["look at vals[i−1] — the newest write ≤ t"]
+    V --> C{"tombstone, or expired by t?"}
+    C -- "yes" --> N
+    C -- "no" --> OK["that value"]:::good
+    classDef good fill:#dafbe1,stroke:#1a7f37
+    classDef warn fill:#fff8e6,stroke:#d4a72c

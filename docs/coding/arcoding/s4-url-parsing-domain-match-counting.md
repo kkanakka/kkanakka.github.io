@@ -11,6 +11,12 @@ description: "S4 · URL parsing / domain match counting"
 ## S4 · URL parsing / domain match counting
 
 <p class="covers">Reported screen question: "parse all URLs from a list and count matches for a given domain, with follow-ups on asynchronous design and scaling."</p>
+
+### The approach
+
+<img src="/diagrams/arcoding/s4.svg" alt="URLs are extracted with a regex, hosts are normalised by stripping credentials, port and case, and matching is host equality or a dot-prefixed suffix so look-alike domains are rejected." class="doc-diagram doc-diagram-seq" />
+
+<p>Almost all the difficulty is in <strong>normalisation, not extraction</strong>: strip <code>user:pw@</code>, strip the port, lowercase, and drop a trailing dot before comparing anything. The match is then equality or a suffix test against <code>'.' + domain</code> — and that leading dot is what rejects <code>notexample.com</code>, while the suffix direction is what rejects <code>example.com.evil.net</code>. Getting those two wrong is the failure this question is really testing for.</p>
 <h4>Level 1 — extraction + correct domain matching</h4>
 <p>The correctness core is the matcher: <code>api.example.com</code> matches <code>example.com</code>, but <code>badexample.com</code> must not — compare on label boundaries, never with a raw substring test.</p>
 

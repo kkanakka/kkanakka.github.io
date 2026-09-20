@@ -11,6 +11,12 @@ description: "B3 · LRU cache → memo decorator (args/kwargs) → crash-resilie
 ## B3 · LRU cache → memo decorator (args/kwargs) → crash-resilient persistence
 
 <p class="covers">Covers 8 variants: LRU Cache · Implement a Least-Recently-Used Cache · crash-resilient LRU · Persistent Memoization LRU · Python LRU with args and persistence · Python LRU with varargs · recency-eviction bounded cache · Build an LRU cache.</p>
+
+### The approach
+
+<img src="/diagrams/arcoding/b3.svg" alt="A hash map from key to node, plus a doubly linked list whose head is the most recent and whose tail is the least recent; get unlinks and pushes to the front, put evicts from the tail." class="doc-diagram doc-diagram-seq" />
+
+<p>No single structure gives you both O(1) lookup and O(1) reordering, so you combine two: a <strong>dict for finding the node, a doubly linked list for ordering it</strong>. The list is what makes unlinking from the <em>middle</em> free — an array would have to shift. Head sentinel and tail sentinel remove every edge case around the first and last element, which is why the code has no <code>if node is head</code> branches anywhere.</p>
 <h4>Level 1 — the O(1) structure, hand-rolled</h4>
 <p>Lead with <code>OrderedDict</code> for speed, but the interviewer may ask for the underlying structure — hash map + doubly linked list with sentinel nodes (sentinels remove every null-check special case):</p>
 

@@ -1,0 +1,17 @@
+---
+config:
+  flowchart:
+    wrappingWidth: 380
+---
+flowchart TB
+    C["take the next component<br/>off the pending stack"] --> D{"what is it?"}
+    D -- "'.'" --> C
+    D -- "'..'" --> UP["pop one off the RESOLVED path"] --> C
+    D -- "a name" --> PU["push it, then look the full path up<br/>in the symlink table"]
+    PU -- "not a link" --> C
+    PU -- "link → absolute target" --> AB["clear the resolved path:<br/>restart from the root"]:::warn
+    PU -- "link → relative target" --> RE["pop the link component, push<br/>the target's parts onto pending"]:::warn
+    AB --> HOP["hops += 1 — past max_hops, raise ELOOP.<br/>A counter catches cycles a visited-set misses."]
+    RE --> HOP
+    HOP --> C
+    classDef warn fill:#fff8e6,stroke:#d4a72c

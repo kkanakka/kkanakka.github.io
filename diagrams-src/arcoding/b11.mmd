@@ -1,0 +1,12 @@
+---
+config:
+  flowchart:
+    wrappingWidth: 380
+---
+flowchart TB
+    U["update(node, status, ts)<br/>— arrives in ANY order"] --> C{"ts &gt; the stored ts<br/>for this node?"}
+    C -- "no — stale, or a tie" --> D["return False, change nothing"]:::warn
+    C -- "yes" --> S["counts[old] −= 1, counts[new] += 1<br/>latest[node] = (ts, status)"]:::good
+    S --> Q["count(status) stays O(1) — the Counter is<br/>maintained on write, never recomputed on read"]
+    classDef good fill:#dafbe1,stroke:#1a7f37
+    classDef warn fill:#fff8e6,stroke:#d4a72c

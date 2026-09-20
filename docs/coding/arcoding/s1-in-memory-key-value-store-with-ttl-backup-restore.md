@@ -19,6 +19,12 @@ description: "S1 · In-memory key-value store with TTL + backup/restore"
 <li><strong>L4:</strong> <code>backup(now)</code> / <code>restore(now, backup)</code> — restored keys keep their <em>remaining</em> TTL relative to restore time.</li>
 <li><strong>Live follow-ups:</strong> thread safety; eager expiry so memory doesn't grow; nested <code>key → field → value</code> variant.</li>
 </ol></div>
+
+### The approach
+
+<img src="/diagrams/arcoding/s1.svg" alt="Every operation is given the current time and purges due leases from an expiry heap, tolerating stale entries by re-checking the dict, with backup storing remaining rather than absolute TTL." class="doc-diagram doc-diagram-seq" />
+
+<p>The dict holds values and expiry times; a heap ordered by expiry makes it cheap to find what is due without scanning. Because you cannot remove an arbitrary entry from a heap, an overwritten key leaves a <strong>stale entry that is simply dropped on pop</strong> after re-checking the dict — lazy deletion, and far cheaper than keeping the heap exact. Backup stores <em>remaining</em> TTL rather than absolute expiry, so a restore at any later time re-anchors every lease correctly.</p>
 <h4>Design decisions before typing</h4>
 <ul>
 <li>Store <strong>absolute expiry timestamps</strong>, never countdowns — every question about "is this alive at time t" becomes one comparison, and backup/restore becomes arithmetic.</li>

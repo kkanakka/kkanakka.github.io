@@ -1,0 +1,13 @@
+---
+config:
+  flowchart:
+    wrappingWidth: 380
+---
+flowchart TB
+    T["document text"] --> EX["extract http(s):// runs with a regex,<br/>then trim trailing punctuation"]
+    EX --> NO["normalise the host: drop user:pw@,<br/>drop :port, lowercase it,<br/>strip the trailing dot"]:::good
+    NO --> M{"host == domain, or<br/>host endswith '.' + domain?"}
+    M -- "yes" --> C["count it — api.example.com matches"]:::good
+    M -- "no" --> S["skip — notexample.com and<br/>example.com.evil.net must NOT match"]:::warn
+    classDef good fill:#dafbe1,stroke:#1a7f37
+    classDef warn fill:#fff8e6,stroke:#d4a72c

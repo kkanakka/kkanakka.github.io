@@ -11,6 +11,12 @@ description: "B16 · Grid infection with neighbor threshold"
 ## B16 · Grid infection with neighbor threshold
 
 <p class="covers">Covers: Simulate Threshold Infection Efficiently — rotting-oranges generalized: a healthy cell becomes infected in round r+1 once ≥ k of its 4-neighbors are infected. Compute each cell's infection round; −1 if never. "Efficiently" is the actual question.</p>
+
+### The approach
+
+<img src="/diagrams/arcoding/b16.svg" alt="Infection spreads in synchronous rounds: each newly infected cell increments its neighbours' counters, and a cell joins the next round once its count reaches the threshold k." class="doc-diagram doc-diagram-seq" />
+
+<p>This is BFS with a counter instead of a simple visited flag. Each newly infected cell bumps its neighbours' tallies, and a neighbour flips only once its tally reaches <code>k</code> — crucially, <strong>the tally persists across rounds</strong>, so a cell can be tipped over by neighbours that fall at different times. Processing a whole frontier before starting the next one is what makes the round boundaries synchronous, which is what gives every cell the correct infection <em>time</em> rather than just a yes/no.</p>
 <h4>Why the naive simulation fails</h4>
 <p>Re-scanning the grid every round is O(R·C·rounds) — quadratic-ish on a snake-shaped infection front. The fix: <strong>incremental neighbor counting</strong>. Each cell, when it becomes infected, pushes +1 to each healthy neighbor exactly once; a neighbor crossing the threshold joins the <em>next</em> round's frontier. Total work: every cell contributes ≤ 4 increments ever → O(R·C).</p>
 

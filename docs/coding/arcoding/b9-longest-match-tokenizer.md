@@ -13,6 +13,12 @@ description: "B9 · Longest-match tokenizer"
 <p class="covers">Covers: Implement a Longest-Match Tokenizer (both listed versions). Maximally on-theme for an LLM company.</p>
 <div class="adm info"><div class="adm-title">ℹ️ Problem</div>
 <p>Given a case-sensitive vocabulary <code>token_text → id</code>, tokenize input greedily: at each position take the <em>longest</em> vocab match. Characters matching nothing become unknown tokens — per character, or coalesced into runs (level boundary). Emit <code>(token_id, exact_consumed_text)</code>.</p></div>
+
+### The approach
+
+<img src="/diagrams/arcoding/b9.svg" alt="At each cursor position the tokenizer tries the longest candidate piece first and walks down; if no length matches, the for/else branch buffers one unknown character and advances." class="doc-diagram doc-diagram-seq" />
+
+<p>Greedy longest-match: at each position, try the longest piece that could fit and walk down until one is in the vocabulary. Python's <code>for/else</code> is a natural fit — the <code>else</code> branch means <strong>no length matched</strong>, so you buffer one character as unknown and move on. Consecutive unknowns are flushed as a single token rather than one per character. The trie variant does the same walk in one pass, remembering the last accepting node instead of re-slicing the string for every candidate length.</p>
 <h4>Version 1 — direct (correct first)</h4>
 
 ```python

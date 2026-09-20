@@ -1,0 +1,14 @@
+---
+config:
+  flowchart:
+    wrappingWidth: 380
+---
+flowchart TB
+    P["image paths"] --> EX["ProcessPoolExecutor — real cores,<br/>so the GIL never applies"]
+    EX --> W["each worker: open → apply ops → save,<br/>all inside one try/except"]
+    W --> OK["success → (path, None)"]:::good
+    W --> ER["failure → (path, 'TypeName: msg')<br/>one corrupt image must not kill the batch"]:::warn
+    OK --> M["a per-job results map comes back"]
+    ER --> M
+    classDef good fill:#dafbe1,stroke:#1a7f37
+    classDef warn fill:#fff8e6,stroke:#d4a72c
