@@ -184,6 +184,48 @@ t=9  : True
 t=9  : False
 ```
 
+<h4>Why the program above never calls <code>DistributedLimiter</code></h4>
+<p>The demo exercises the in-process <code>TokenBucket</code> only — that is the part that runs with no external services. <code>DistributedLimiter</code> is the same limiter for a <em>fleet</em> of servers sharing one Redis. In production you would use it like this:</p>
+
+```python
+import redis
+
+r = redis.Redis(host="localhost", port=6379)
+
+limiter = DistributedLimiter(redis_client=r, rate=5, burst=3)
+
+if limiter.allow("user:1"):
+    print("Request allowed")
+else:
+    print("429 Too Many Requests")
+```
+
+<p>Conceptually, the local demo and the production path differ only in <em>where the token math happens</em>:</p>
+
+```text
+Local demo:
+    request → TokenBucket.allow()          # in-process, this machine only
+
+Production (distributed):
+    request → DistributedLimiter.allow()
+                    ↓
+                 Redis Lua (atomic)
+                    ↓
+                True / False
+```
+
+<p>Inside <code>DistributedLimiter.allow()</code>, that one hop is a single call into Redis:</p>
+
+```python
+return bool(
+    self.script(
+        keys=[f"rl:{key}"],
+        args=[self.rate, self.burst, now_ms, cost],
+    )
+)
+```
+
+<p>So the test program never touches <code>DistributedLimiter</code> — it runs the in-process bucket, and the snippets above show how the <em>same</em> rate limiter works across many servers. The token-bucket math is identical; it just moves into the atomic Lua script so every server reads and writes one shared count instead of its own.</p>
 <div class="adm tip"><div class="adm-title">💡 What they probe</div>
 <ul>
 <li><strong>Fail open vs closed is a reliability decision, not a default.</strong> For a paid inference API: fail open with a conservative local fallback (availability &gt; perfect enforcement), but fail <em>closed</em> for abuse-tier keys. Being able to argue both directions is the point.</li>
